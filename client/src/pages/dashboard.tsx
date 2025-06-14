@@ -176,7 +176,7 @@ export default function Dashboard() {
           <div className="space-y-6">
             <AIInsights insights={dashboardData?.insights || {}} />
             <TrainingRecommendations recommendations={dashboardData?.insights?.recommendations || []} />
-            <FitnessTrends />
+            <FitnessTrends chartData={dashboardData?.chartData || []} />
             <GoalProgress />
           </div>
         </div>

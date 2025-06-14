@@ -91,6 +91,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user: {
           name: user.username,
           stravaConnected: user.stravaConnected,
+          unitPreference: user.unitPreference || "km",
         },
         stats: {
           totalDistance: (totalDistance / 1000).toFixed(1),

@@ -80,6 +80,12 @@ export default function Header({
               </Button>
             )}
             
+            <Link href="/settings">
+              <Button variant="ghost" size="sm">
+                <Settings className="h-4 w-4" />
+              </Button>
+            </Link>
+            
             <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
               <User className="text-gray-600" size={16} />
             </div>

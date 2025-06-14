@@ -120,7 +120,8 @@ class DatabaseStorageWithDemo extends DatabaseStorage {
     // Create demo user
     const demoUser = await this.createUser({
       username: "demo_runner",
-      password: "demo123"
+      password: "demo123",
+      unitPreference: "km"
     });
 
     // Add demo activities
