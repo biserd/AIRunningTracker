@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { stravaService } from "./services/strava";
 import { aiService } from "./services/ai";
 import { mlService } from "./services/ml";
+import { performanceService } from "./services/performance";
 import { insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -476,6 +477,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Injury risk analysis error:', error);
       res.status(500).json({ message: error.message || "Failed to analyze injury risk" });
+    }
+  });
+
+  // Performance Analytics - VO2 Max
+  app.get("/api/performance/vo2max/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      const vo2MaxData = await performanceService.calculateVO2Max(userId);
+      res.json(vo2MaxData);
+    } catch (error: any) {
+      console.error('VO2 Max calculation error:', error);
+      res.status(500).json({ message: error.message || "Failed to calculate VO2 Max" });
+    }
+  });
+
+  // Performance Analytics - Heart Rate Zones
+  app.get("/api/performance/hr-zones/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { maxHR, restingHR } = req.query;
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      const heartRateZones = performanceService.calculateHeartRateZones(
+        maxHR ? parseInt(maxHR as string) : undefined,
+        restingHR ? parseInt(restingHR as string) : undefined
+      );
+      res.json({ heartRateZones });
+    } catch (error: any) {
+      console.error('Heart rate zones calculation error:', error);
+      res.status(500).json({ message: error.message || "Failed to calculate heart rate zones" });
+    }
+  });
+
+  // Performance Analytics - Running Efficiency
+  app.get("/api/performance/efficiency/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      const efficiencyData = await performanceService.analyzeRunningEfficiency(userId);
+      res.json(efficiencyData);
+    } catch (error: any) {
+      console.error('Running efficiency analysis error:', error);
+      res.status(500).json({ message: error.message || "Failed to analyze running efficiency" });
+    }
+  });
+
+  // Performance Analytics - Complete Metrics
+  app.get("/api/performance/metrics/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      const performanceMetrics = await performanceService.getPerformanceMetrics(userId);
+      res.json(performanceMetrics);
+    } catch (error: any) {
+      console.error('Performance metrics calculation error:', error);
+      res.status(500).json({ message: error.message || "Failed to calculate performance metrics" });
     }
   });
 
