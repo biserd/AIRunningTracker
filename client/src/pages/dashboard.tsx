@@ -44,7 +44,7 @@ export default function Dashboard() {
   const insightsMutation = useMutation({
     mutationFn: (userId: number) => api.generateInsights(userId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/dashboard', userId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${userId}`] });
       toast({
         title: "AI insights generated",
         description: "Your performance insights have been updated",

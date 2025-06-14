@@ -119,11 +119,36 @@ export default function ActivityPage() {
             <CardTitle>Route Map</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <MapPin className="mx-auto h-12 w-12 text-gray-400 mb-2" />
-                <p className="text-gray-600">Route visualization</p>
-                <p className="text-sm text-gray-500">GPS data from Strava activity</p>
+            <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+              <div className="w-full h-full bg-gradient-to-br from-green-100 via-blue-100 to-purple-100 relative">
+                {/* Simulated route path */}
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
+                  <path
+                    d="M50,150 Q100,100 150,120 T250,110 Q300,90 350,100"
+                    stroke="#FC4C02"
+                    strokeWidth="3"
+                    fill="none"
+                    strokeLinecap="round"
+                  />
+                  {/* Start marker */}
+                  <circle cx="50" cy="150" r="6" fill="#22C55E" stroke="white" strokeWidth="2"/>
+                  {/* End marker */}
+                  <circle cx="350" cy="100" r="6" fill="#EF4444" stroke="white" strokeWidth="2"/>
+                </svg>
+                
+                {/* Map overlay info */}
+                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
+                  <div className="flex items-center space-x-4 text-sm">
+                    <div className="flex items-center space-x-1">
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <span className="text-gray-700">Start</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                      <span className="text-gray-700">End</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>
