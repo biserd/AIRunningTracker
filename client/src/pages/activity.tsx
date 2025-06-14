@@ -120,6 +120,21 @@ export default function ActivityPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
+            <CardTitle>Route Map</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
+              <div className="text-center">
+                <MapPin className="mx-auto h-12 w-12 text-gray-400 mb-2" />
+                <p className="text-gray-600">Route visualization</p>
+                <p className="text-sm text-gray-500">GPS data from Strava activity</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Activity Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">

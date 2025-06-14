@@ -6,9 +6,10 @@ interface FitnessTrendsProps {
     pace: number;
     distance: number;
   }>;
+  unitPreference?: string;
 }
 
-export default function FitnessTrends({ chartData = [] }: FitnessTrendsProps) {
+export default function FitnessTrends({ chartData = [], unitPreference }: FitnessTrendsProps) {
   // Calculate fitness metrics from real data
   const avgPace = chartData.length > 0 ? 
     chartData.reduce((sum, week) => sum + week.pace, 0) / chartData.length : 0;
@@ -22,13 +23,13 @@ export default function FitnessTrends({ chartData = [] }: FitnessTrendsProps) {
   const fitnessMetrics = [
     { 
       label: 'Average Pace', 
-      value: avgPace > 0 ? `${avgPace.toFixed(1)} min/km` : 'N/A', 
+      value: avgPace > 0 ? `${avgPace.toFixed(1)} min/${unitPreference === "miles" ? "mi" : "km"}` : 'N/A', 
       progress: avgPace > 0 ? Math.min(100, (6 - avgPace) * 20) : 0, 
       color: 'bg-performance-blue' 
     },
     { 
       label: 'Weekly Volume', 
-      value: `${totalDistance.toFixed(1)} km`, 
+      value: `${totalDistance.toFixed(1)} ${unitPreference === "miles" ? "mi" : "km"}`, 
       progress: Math.min(100, (totalDistance / 50) * 100), 
       color: 'bg-strava-orange' 
     },

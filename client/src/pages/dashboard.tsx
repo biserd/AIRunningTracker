@@ -169,14 +169,21 @@ export default function Dashboard() {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            <PerformanceChart data={dashboardData?.chartData || []} />
+            <PerformanceChart 
+              data={dashboardData?.chartData || []} 
+              unitPreference={dashboardData?.user?.unitPreference}
+              onTimeRangeChange={(range) => {
+                // TODO: Implement API call for different time ranges
+                console.log('Time range changed to:', range);
+              }}
+            />
             <RecentActivities activities={dashboardData?.activities || []} unitPreference={dashboardData?.user?.unitPreference} />
           </div>
           
           <div className="space-y-6">
             <AIInsights insights={dashboardData?.insights || {}} />
             <TrainingRecommendations recommendations={dashboardData?.insights?.recommendations || []} />
-            <FitnessTrends chartData={dashboardData?.chartData || []} />
+            <FitnessTrends chartData={dashboardData?.chartData || []} unitPreference={dashboardData?.user?.unitPreference} />
             <GoalProgress />
           </div>
         </div>

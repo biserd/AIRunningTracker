@@ -26,7 +26,7 @@ export default function PerformanceChart({ data, unitPreference, onTimeRangeChan
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl font-semibold text-charcoal">Performance Trends</CardTitle>
-          <Select defaultValue="30days">
+          <Select defaultValue="30days" onValueChange={onTimeRangeChange}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select period" />
             </SelectTrigger>
