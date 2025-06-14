@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stravaService } from "./services/strava";
 import { aiService } from "./services/ai";
+import { mlService } from "./services/ml";
 import { insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -423,6 +424,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Demo user creation error:', error);
       res.status(500).json({ message: "Failed to create demo user" });
+    }
+  });
+
+  // ML Features - Race Predictions
+  app.get("/api/ml/predictions/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      const predictions = await mlService.predictRacePerformance(userId);
+      res.json({ predictions });
+    } catch (error: any) {
+      console.error('Race prediction error:', error);
+      res.status(500).json({ message: error.message || "Failed to generate race predictions" });
+    }
+  });
+
+  // ML Features - Training Plans
+  app.post("/api/ml/training-plan/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { weeks = 4 } = req.body;
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      const trainingPlan = await mlService.generateTrainingPlan(userId, weeks);
+      res.json({ trainingPlan });
+    } catch (error: any) {
+      console.error('Training plan generation error:', error);
+      res.status(500).json({ message: error.message || "Failed to generate training plan" });
+    }
+  });
+
+  // ML Features - Injury Risk Analysis
+  app.get("/api/ml/injury-risk/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      const riskAnalysis = await mlService.analyzeInjuryRisk(userId);
+      res.json(riskAnalysis);
+    } catch (error: any) {
+      console.error('Injury risk analysis error:', error);
+      res.status(500).json({ message: error.message || "Failed to analyze injury risk" });
     }
   });
 
