@@ -94,15 +94,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           unitPreference: user.unitPreference || "km",
         },
         stats: {
-          totalDistance: (totalDistance / 1000).toFixed(1),
+          totalDistance: user.unitPreference === "miles" ? 
+            ((totalDistance / 1000) * 0.621371).toFixed(1) : 
+            (totalDistance / 1000).toFixed(1),
           avgPace: avgPace > 0 ? `${Math.floor(avgPace)}:${String(Math.round((avgPace % 1) * 60)).padStart(2, '0')}` : "0:00",
           trainingLoad: monthlyActivities.length * 85, // Simple calculation
           recovery: "Good", // Placeholder
+          unitPreference: user.unitPreference || "km",
         },
         activities: activities.map(activity => ({
           id: activity.id,
           name: activity.name,
-          distance: (activity.distance / 1000).toFixed(1),
+          distance: user.unitPreference === "miles" ? 
+            ((activity.distance / 1000) * 0.621371).toFixed(1) : 
+            (activity.distance / 1000).toFixed(1),
           pace: activity.distance > 0 ? 
             `${Math.floor((activity.movingTime / 60) / (activity.distance / 1000))}:${String(Math.round(((activity.movingTime / 60) / (activity.distance / 1000) % 1) * 60)).padStart(2, '0')}` 
             : "0:00",
@@ -172,6 +177,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Settings update error:', error);
       res.status(500).json({ message: error.message || "Failed to update settings" });
+    }
+  });
+
+  // Disconnect Strava
+  app.post("/api/strava/disconnect/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      const updatedUser = await storage.updateUser(userId, {
+        stravaConnected: false,
+        stravaAccessToken: null,
+        stravaRefreshToken: null,
+        stravaAthleteId: null,
+      });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Strava disconnect error:', error);
+      res.status(500).json({ message: error.message || "Failed to disconnect Strava" });
     }
   });
 

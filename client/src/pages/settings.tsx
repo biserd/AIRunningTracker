@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Save } from "lucide-react";
+import { Settings, Save, ArrowLeft, Unlink } from "lucide-react";
+import { Link } from "wouter";
 
 export default function SettingsPage() {
   const [userId] = useState(1);
@@ -45,13 +46,50 @@ export default function SettingsPage() {
     },
   });
 
+  const disconnectStravaMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/strava/disconnect/${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!response.ok) throw new Error('Failed to disconnect Strava');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard', userId] });
+      toast({
+        title: "Strava disconnected",
+        description: "Your Strava account has been disconnected successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Disconnect failed",
+        description: error.message || "Failed to disconnect Strava",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSave = () => {
     updateSettingsMutation.mutate({ unitPreference });
+  };
+
+  const handleDisconnectStrava = () => {
+    if (confirm("Are you sure you want to disconnect your Strava account? This will remove access to your Strava activities.")) {
+      disconnectStravaMutation.mutate();
+    }
   };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-8">
+        <Link href="/dashboard">
+          <Button variant="ghost" className="mb-4">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Dashboard
+          </Button>
+        </Link>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
         <p className="text-gray-600">Customize your running analytics experience</p>
       </div>
@@ -116,9 +154,22 @@ export default function SettingsPage() {
             </div>
             <div>
               <Label className="text-sm font-medium text-gray-700">Strava Connection</Label>
-              <p className={`text-sm ${dashboardData?.user?.stravaConnected ? "text-green-600" : "text-gray-500"}`}>
-                {dashboardData?.user?.stravaConnected ? "✓ Connected" : "Not connected"}
-              </p>
+              <div className="flex items-center justify-between mt-1">
+                <p className={`text-sm ${dashboardData?.user?.stravaConnected ? "text-green-600" : "text-gray-500"}`}>
+                  {dashboardData?.user?.stravaConnected ? "✓ Connected" : "Not connected"}
+                </p>
+                {dashboardData?.user?.stravaConnected && (
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={handleDisconnectStrava}
+                    disabled={disconnectStravaMutation.isPending}
+                  >
+                    <Unlink className="h-4 w-4 mr-2" />
+                    {disconnectStravaMutation.isPending ? "Disconnecting..." : "Disconnect"}
+                  </Button>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>

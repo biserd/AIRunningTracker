@@ -7,6 +7,7 @@ interface QuickStatsProps {
     avgPace: string;
     trainingLoad: number;
     recovery: string;
+    unitPreference?: string;
   };
 }
 
@@ -19,7 +20,7 @@ export default function QuickStats({ stats }: QuickStatsProps) {
             <div>
               <p className="text-sm font-medium text-gray-600">Total Distance</p>
               <p className="text-3xl font-bold text-charcoal">{stats.totalDistance}</p>
-              <p className="text-sm text-gray-500">km this month</p>
+              <p className="text-sm text-gray-500">{stats.unitPreference === "miles" ? "mi" : "km"} this month</p>
             </div>
             <div className="w-12 h-12 bg-strava-orange/10 rounded-full flex items-center justify-center">
               <Route className="text-strava-orange" size={20} />
