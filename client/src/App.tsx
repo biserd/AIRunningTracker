@@ -7,6 +7,7 @@ import Dashboard from "@/pages/dashboard";
 import SettingsPage from "@/pages/settings";
 import ActivityPage from "@/pages/activity";
 import MLInsightsPage from "@/pages/ml-insights";
+import PerformancePage from "@/pages/performance";
 
 function Router() {
   return (
@@ -14,6 +15,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/ml-insights" component={MLInsightsPage} />
+      <Route path="/performance" component={PerformancePage} />
       <Route path="/settings" component={SettingsPage} />
       <Route path="/activity/:id" component={ActivityPage} />
       <Route component={() => <div>Page not found</div>} />

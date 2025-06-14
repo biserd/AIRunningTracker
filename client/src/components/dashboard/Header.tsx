@@ -97,6 +97,13 @@ export default function Header({
                     ML Insights
                   </Button>
                 </Link>
+
+                <Link href="/performance">
+                  <Button variant="outline" size="sm" className="border-red-200 text-red-700 hover:bg-red-50">
+                    <Activity className="h-4 w-4 mr-2" />
+                    Performance
+                  </Button>
+                </Link>
               </>
             ) : (
               <Button onClick={onStravaConnect} className="bg-strava-orange hover:bg-strava-orange/90 text-white">

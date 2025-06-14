@@ -163,15 +163,16 @@ export default function HeartRateZones({ userId }: HeartRateZonesProps) {
                     <Badge variant="outline" className="bg-white/80">
                       Zone {zoneKey.slice(-1)}
                     </Badge>
-                    <span className="font-semibold">{zone.name}</span>
+                    <span className="font-semibold">{zoneData.name}</span>
                   </div>
                   <span className="font-bold text-lg">
-                    {zone.min} - {zone.max} bpm
+                    {zoneData.min} - {zoneData.max} bpm
                   </span>
                 </div>
-                <p className="text-sm opacity-90">{zone.description}</p>
+                <p className="text-sm opacity-90">{zoneData.description}</p>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Training Guidelines */}
