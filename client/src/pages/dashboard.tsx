@@ -13,10 +13,12 @@ import FitnessTrends from "@/components/dashboard/FitnessTrends";
 import GoalProgress from "@/components/dashboard/GoalProgress";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 export default function Dashboard() {
   const [userId, setUserId] = useState<number | null>(null);
   const { toast } = useToast();
+  const [location] = useLocation();
 
   // Create demo user on first load
   const createUserMutation = useMutation({
@@ -85,6 +87,25 @@ export default function Dashboard() {
     if (!userId) {
       createUserMutation.mutate();
     }
+
+    // Handle URL parameters for Strava connection feedback
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('connected') === 'true') {
+      toast({
+        title: "Strava Connected!",
+        description: "Your Strava account has been successfully connected",
+      });
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (urlParams.get('error')) {
+      toast({
+        title: "Connection Failed",
+        description: "Failed to connect to Strava. Please try again.",
+        variant: "destructive",
+      });
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, []);
 
   const handleStravaConnect = () => {
@@ -145,7 +166,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-light-grey">
       <Header 
-        stravaConnected={dashboardData.user.stravaConnected}
+        stravaConnected={dashboardData?.user?.stravaConnected || false}
         onStravaConnect={handleStravaConnect}
         onSyncActivities={handleSyncActivities}
         onGenerateInsights={handleGenerateInsights}
@@ -154,19 +175,19 @@ export default function Dashboard() {
       />
       
       <main className="max-w-7xl mx-auto px-6 py-8">
-        <WelcomeSection userName={dashboardData.user.name} />
+        <WelcomeSection userName={dashboardData?.user?.name || "Runner"} />
         
-        <QuickStats stats={dashboardData.stats} />
+        <QuickStats stats={dashboardData?.stats || { totalDistance: "0.0", avgPace: "0:00", trainingLoad: 0, recovery: "Unknown" }} />
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            <PerformanceChart data={dashboardData.chartData} />
-            <RecentActivities activities={dashboardData.activities} />
+            <PerformanceChart data={dashboardData?.chartData || []} />
+            <RecentActivities activities={dashboardData?.activities || []} />
           </div>
           
           <div className="space-y-6">
-            <AIInsights insights={dashboardData.insights} />
-            <TrainingRecommendations recommendations={dashboardData.insights.recommendations} />
+            <AIInsights insights={dashboardData?.insights || {}} />
+            <TrainingRecommendations recommendations={dashboardData?.insights?.recommendations || []} />
             <FitnessTrends />
             <GoalProgress />
           </div>
