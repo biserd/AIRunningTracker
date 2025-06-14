@@ -30,6 +30,66 @@ export class MemStorage implements IStorage {
     this.currentUserId = 1;
     this.currentActivityId = 1;
     this.currentInsightId = 1;
+    
+    // Create a default demo user
+    this.initializeDemoUser();
+  }
+
+  private async initializeDemoUser() {
+    const demoUser = await this.createUser({
+      username: "demo_runner",
+      password: "demo123",
+    });
+
+    // Add some demo activities for testing
+    const demoActivities = [
+      {
+        userId: demoUser.id,
+        stravaId: "demo_1",
+        name: "Morning Run",
+        distance: 5200, // 5.2km in meters
+        movingTime: 1560, // 26 minutes
+        totalElevationGain: 45,
+        averageSpeed: 3.33, // m/s
+        maxSpeed: 4.5,
+        averageHeartrate: 165,
+        maxHeartrate: 180,
+        startDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+        type: "Run",
+      },
+      {
+        userId: demoUser.id,
+        stravaId: "demo_2", 
+        name: "Easy Recovery Run",
+        distance: 3800, // 3.8km
+        movingTime: 1320, // 22 minutes
+        totalElevationGain: 20,
+        averageSpeed: 2.88, // m/s
+        maxSpeed: 3.2,
+        averageHeartrate: 145,
+        maxHeartrate: 160,
+        startDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000), // 4 days ago
+        type: "Run",
+      },
+      {
+        userId: demoUser.id,
+        stravaId: "demo_3",
+        name: "Tempo Run",
+        distance: 8000, // 8km
+        movingTime: 2400, // 40 minutes
+        totalElevationGain: 80,
+        averageSpeed: 3.33, // m/s
+        maxSpeed: 4.0,
+        averageHeartrate: 175,
+        maxHeartrate: 185,
+        startDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000), // 6 days ago
+        type: "Run",
+      }
+    ];
+
+    for (const activity of demoActivities) {
+      await this.createActivity(activity);
+    }
   }
 
   async getUser(id: number): Promise<User | undefined> {

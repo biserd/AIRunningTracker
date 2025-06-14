@@ -16,28 +16,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 
 export default function Dashboard() {
-  const [userId, setUserId] = useState<number | null>(null);
+  const [userId, setUserId] = useState<number>(1); // Use consistent user ID
   const { toast } = useToast();
   const [location] = useLocation();
-
-  // Create demo user on first load
-  const createUserMutation = useMutation({
-    mutationFn: api.createDemoUser,
-    onSuccess: (data) => {
-      setUserId(data.user.id);
-      toast({
-        title: "Demo user created",
-        description: "You can now connect to Strava to see your data",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to create demo user",
-        variant: "destructive",
-      });
-    },
-  });
 
   // Sync activities mutation
   const syncMutation = useMutation({
@@ -78,16 +59,11 @@ export default function Dashboard() {
   });
 
   // Dashboard data query
-  const { data: dashboardData, isLoading, error } = useQuery({
+  const { data: dashboardData, isLoading, error } = useQuery<any>({
     queryKey: ['/api/dashboard', userId],
-    enabled: !!userId,
   });
 
   useEffect(() => {
-    if (!userId) {
-      createUserMutation.mutate();
-    }
-
     // Handle URL parameters for Strava connection feedback
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('connected') === 'true') {
@@ -109,6 +85,15 @@ export default function Dashboard() {
   }, []);
 
   const handleStravaConnect = () => {
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "Please wait for the app to load",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID || "default_client_id";
     const redirectUri = `${window.location.origin}/strava/callback`;
     const scope = "read,activity:read_all";
