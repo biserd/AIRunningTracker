@@ -149,6 +149,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get chart data with time range
+  app.get("/api/chart/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const timeRange = req.query.range as string || "30days";
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Calculate date range
+      const now = new Date();
+      let startDate = new Date();
+      let activityLimit = 6;
+
+      switch (timeRange) {
+        case "3months":
+          startDate.setMonth(now.getMonth() - 3);
+          activityLimit = 12;
+          break;
+        case "year":
+          startDate.setFullYear(now.getFullYear() - 1);
+          activityLimit = 24;
+          break;
+        default: // 30days
+          startDate.setDate(now.getDate() - 30);
+          activityLimit = 6;
+      }
+
+      const activities = await storage.getActivitiesByUserId(userId, activityLimit);
+      const filteredActivities = activities.filter(a => new Date(a.startDate) >= startDate);
+
+      const chartData = filteredActivities.reverse().map((activity, index) => {
+        const distanceInKm = activity.distance / 1000;
+        const distanceConverted = user.unitPreference === "miles" ? distanceInKm * 0.621371 : distanceInKm;
+        const pacePerKm = activity.distance > 0 ? (activity.movingTime / 60) / distanceInKm : 0;
+        const paceConverted = user.unitPreference === "miles" ? pacePerKm / 0.621371 : pacePerKm;
+        
+        return {
+          week: timeRange === "year" ? `Month ${index + 1}` : `Week ${index + 1}`,
+          pace: paceConverted,
+          distance: distanceConverted,
+        };
+      });
+
+      res.json({ chartData });
+    } catch (error) {
+      console.error('Chart data error:', error);
+      res.status(500).json({ message: "Failed to fetch chart data" });
+    }
+  });
+
   // Generate AI insights
   app.post("/api/ai/insights/:userId", async (req, res) => {
     try {

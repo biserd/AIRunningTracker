@@ -17,6 +17,7 @@ import { useLocation } from "wouter";
 
 export default function Dashboard() {
   const [userId, setUserId] = useState<number>(1); // Use consistent user ID
+  const [chartTimeRange, setChartTimeRange] = useState<string>("30days");
   const { toast } = useToast();
   const [location] = useLocation();
 
@@ -62,6 +63,16 @@ export default function Dashboard() {
   const { data: dashboardData, isLoading, error } = useQuery<any>({
     queryKey: [`/api/dashboard/${userId}`],
   });
+
+  // Chart data query with time range
+  const { data: chartData } = useQuery({
+    queryKey: ['/api/chart', userId, chartTimeRange],
+    queryFn: () => fetch(`/api/chart/${userId}?range=${chartTimeRange}`).then(res => res.json()),
+  });
+
+  const handleTimeRangeChange = (range: string) => {
+    setChartTimeRange(range);
+  };
 
 
 
@@ -170,12 +181,9 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             <PerformanceChart 
-              data={dashboardData?.chartData || []} 
+              data={chartData?.chartData || dashboardData?.chartData || []} 
               unitPreference={dashboardData?.user?.unitPreference}
-              onTimeRangeChange={(range) => {
-                // TODO: Implement API call for different time ranges
-                console.log('Time range changed to:', range);
-              }}
+              onTimeRangeChange={handleTimeRangeChange}
             />
             <RecentActivities activities={dashboardData?.activities || []} unitPreference={dashboardData?.user?.unitPreference} />
           </div>
