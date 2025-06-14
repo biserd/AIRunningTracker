@@ -10,6 +10,7 @@ export const users = pgTable("users", {
   stravaRefreshToken: text("strava_refresh_token"),
   stravaAthleteId: text("strava_athlete_id"),
   stravaConnected: boolean("strava_connected").default(false),
+  unitPreference: text("unit_preference", { enum: ["km", "miles"] }).default("km"),
 });
 
 export const activities = pgTable("activities", {

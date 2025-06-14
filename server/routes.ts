@@ -26,6 +26,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stravaConnected: true,
       });
 
+      // Auto-sync activities after connecting
+      try {
+        await stravaService.syncActivitiesForUser(userId);
+      } catch (syncError) {
+        console.error('Auto-sync failed after Strava connection:', syncError);
+        // Don't fail the connection if sync fails
+      }
+
       res.json({ success: true });
     } catch (error) {
       console.error('Strava connection error:', error);
@@ -136,6 +144,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('AI insights error:', error);
       res.status(500).json({ message: error.message || "Failed to generate insights" });
+    }
+  });
+
+  // Update user settings
+  app.patch("/api/users/:userId/settings", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { unitPreference } = req.body;
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      if (unitPreference && !["km", "miles"].includes(unitPreference)) {
+        return res.status(400).json({ message: "Invalid unit preference" });
+      }
+
+      const updatedUser = await storage.updateUser(userId, { unitPreference });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({ success: true, user: updatedUser });
+    } catch (error: any) {
+      console.error('Settings update error:', error);
+      res.status(500).json({ message: error.message || "Failed to update settings" });
+    }
+  });
+
+  // Get activity details
+  app.get("/api/activities/:activityId", async (req, res) => {
+    try {
+      const activityId = parseInt(req.params.activityId);
+      
+      if (isNaN(activityId)) {
+        return res.status(400).json({ message: "Invalid activity ID" });
+      }
+
+      // For now, get activity by ID - we'll need to add this method to storage
+      const activities = await storage.getActivitiesByUserId(1); // Get all activities for user 1
+      const activity = activities.find(a => a.id === activityId);
+      
+      if (!activity) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
+
+      res.json({ activity });
+    } catch (error: any) {
+      console.error('Activity fetch error:', error);
+      res.status(500).json({ message: error.message || "Failed to fetch activity" });
     }
   });
 
