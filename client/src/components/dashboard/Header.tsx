@@ -90,6 +90,13 @@ export default function Header({
                     <p>Generate AI-powered performance insights</p>
                   </TooltipContent>
                 </Tooltip>
+
+                <Link href="/ml-insights">
+                  <Button variant="outline" size="sm" className="border-purple-200 text-purple-700 hover:bg-purple-50">
+                    <Brain className="h-4 w-4 mr-2" />
+                    ML Insights
+                  </Button>
+                </Link>
               </>
             ) : (
               <Button onClick={onStravaConnect} className="bg-strava-orange hover:bg-strava-orange/90 text-white">

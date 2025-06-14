@@ -6,12 +6,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
 import SettingsPage from "@/pages/settings";
 import ActivityPage from "@/pages/activity";
+import MLInsightsPage from "@/pages/ml-insights";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/ml-insights" component={MLInsightsPage} />
       <Route path="/settings" component={SettingsPage} />
       <Route path="/activity/:id" component={ActivityPage} />
       <Route component={() => <div>Page not found</div>} />

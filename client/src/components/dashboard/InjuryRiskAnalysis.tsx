@@ -141,7 +141,7 @@ export default function InjuryRiskAnalysis({ userId }: InjuryRiskAnalysisProps) 
                 Recommendations
               </h4>
               <div className="space-y-2">
-                {riskData.recommendations.map((recommendation, index) => (
+                {riskData.recommendations.map((recommendation: string, index: number) => (
                   <div key={index} className="flex items-start space-x-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                     <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
                     <p className="text-sm text-green-800">{recommendation}</p>
