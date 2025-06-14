@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Activity, ArrowRight } from "lucide-react";
+import { Link } from "wouter";
 
 interface ActivityData {
   id: number;
@@ -56,26 +57,25 @@ export default function RecentActivities({ activities }: RecentActivitiesProps) 
       <CardContent>
         <div className="space-y-4">
           {activities.slice(0, 3).map((activity, index) => (
-            <div 
-              key={activity.id} 
-              className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-            >
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getActivityIcon(index)}`}>
-                <Activity size={20} />
+            <Link key={activity.id} href={`/activity/${activity.id}`}>
+              <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getActivityIcon(index)}`}>
+                  <Activity size={20} />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-charcoal">{activity.name}</h4>
+                  <p className="text-sm text-gray-600">{activity.date}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold text-charcoal">{activity.distance} km</p>
+                  <p className="text-sm text-gray-600">{activity.pace} /km</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold text-charcoal">{activity.duration}</p>
+                  <p className="text-sm text-gray-600">{activity.elevation}</p>
+                </div>
               </div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-charcoal">{activity.name}</h4>
-                <p className="text-sm text-gray-600">{activity.date}</p>
-              </div>
-              <div className="text-right">
-                <p className="font-semibold text-charcoal">{activity.distance} km</p>
-                <p className="text-sm text-gray-600">{activity.pace} /km</p>
-              </div>
-              <div className="text-right">
-                <p className="font-semibold text-charcoal">{activity.duration}</p>
-                <p className="text-sm text-gray-600">{activity.elevation}</p>
-              </div>
-            </div>
+            </Link>
           ))}
         </div>
       </CardContent>

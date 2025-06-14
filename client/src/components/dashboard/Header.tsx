@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Activity, RefreshCw, Brain, User } from "lucide-react";
+import { Activity, RefreshCw, Brain, User, Settings } from "lucide-react";
+import { Link } from "wouter";
 
 interface HeaderProps {
   stravaConnected: boolean;
