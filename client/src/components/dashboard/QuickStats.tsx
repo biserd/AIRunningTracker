@@ -40,7 +40,7 @@ export default function QuickStats({ stats }: QuickStatsProps) {
             <div>
               <p className="text-sm font-medium text-gray-600">Avg Pace</p>
               <p className="text-3xl font-bold text-charcoal">{stats.avgPace}</p>
-              <p className="text-sm text-gray-500">min/km</p>
+              <p className="text-sm text-gray-500">min/{stats.unitPreference === "miles" ? "mi" : "km"}</p>
             </div>
             <div className="w-12 h-12 bg-performance-blue/10 rounded-full flex items-center justify-center">
               <Timer className="text-performance-blue" size={20} />

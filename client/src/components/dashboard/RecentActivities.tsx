@@ -15,9 +15,10 @@ interface ActivityData {
 
 interface RecentActivitiesProps {
   activities: ActivityData[];
+  unitPreference?: string;
 }
 
-export default function RecentActivities({ activities }: RecentActivitiesProps) {
+export default function RecentActivities({ activities, unitPreference }: RecentActivitiesProps) {
   const getActivityIcon = (index: number) => {
     const colors = [
       'bg-strava-orange/10 text-strava-orange',
@@ -67,8 +68,8 @@ export default function RecentActivities({ activities }: RecentActivitiesProps) 
                   <p className="text-sm text-gray-600">{activity.date}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold text-charcoal">{activity.distance} km</p>
-                  <p className="text-sm text-gray-600">{activity.pace} /km</p>
+                  <p className="font-semibold text-charcoal">{activity.distance} {unitPreference === "miles" ? "mi" : "km"}</p>
+                  <p className="text-sm text-gray-600">{activity.pace} /{unitPreference === "miles" ? "mi" : "km"}</p>
                 </div>
                 <div className="text-right">
                   <p className="font-semibold text-charcoal">{activity.duration}</p>
