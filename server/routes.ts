@@ -97,7 +97,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalDistance: user.unitPreference === "miles" ? 
             ((totalDistance / 1000) * 0.621371).toFixed(1) : 
             (totalDistance / 1000).toFixed(1),
-          avgPace: avgPace > 0 ? `${Math.floor(avgPace)}:${String(Math.round((avgPace % 1) * 60)).padStart(2, '0')}` : "0:00",
+          avgPace: avgPace > 0 ? (() => {
+            const paceToShow = user.unitPreference === "miles" ? avgPace / 0.621371 : avgPace;
+            return `${Math.floor(paceToShow)}:${String(Math.round((paceToShow % 1) * 60)).padStart(2, '0')}`;
+          })() : "0:00",
           trainingLoad: monthlyActivities.length * 85, // Simple calculation
           recovery: "Good", // Placeholder
           unitPreference: user.unitPreference || "km",
@@ -108,9 +111,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           distance: user.unitPreference === "miles" ? 
             ((activity.distance / 1000) * 0.621371).toFixed(1) : 
             (activity.distance / 1000).toFixed(1),
-          pace: activity.distance > 0 ? 
-            `${Math.floor((activity.movingTime / 60) / (activity.distance / 1000))}:${String(Math.round(((activity.movingTime / 60) / (activity.distance / 1000) % 1) * 60)).padStart(2, '0')}` 
-            : "0:00",
+          pace: activity.distance > 0 ? (() => {
+            const distanceInKm = activity.distance / 1000;
+            const pacePerKm = (activity.movingTime / 60) / distanceInKm;
+            const paceToShow = user.unitPreference === "miles" ? pacePerKm / 0.621371 : pacePerKm;
+            return `${Math.floor(paceToShow)}:${String(Math.round((paceToShow % 1) * 60)).padStart(2, '0')}`;
+          })() : "0:00",
           duration: `${Math.floor(activity.movingTime / 60)}:${String(activity.movingTime % 60).padStart(2, '0')}`,
           elevation: `+${Math.round(activity.totalElevationGain)}m`,
           date: new Date(activity.startDate).toLocaleDateString(),
@@ -122,11 +128,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           recovery: insights.find(i => i.type === 'recovery'),
           recommendations: insights.filter(i => i.type === 'recommendation'),
         },
-        chartData: activities.slice(0, 6).reverse().map((activity, index) => ({
-          week: `Week ${index + 1}`,
-          pace: activity.distance > 0 ? (activity.movingTime / 60) / (activity.distance / 1000) : 0,
-          distance: activity.distance / 1000,
-        })),
+        chartData: activities.slice(0, 6).reverse().map((activity, index) => {
+          const distanceInKm = activity.distance / 1000;
+          const distanceConverted = user.unitPreference === "miles" ? distanceInKm * 0.621371 : distanceInKm;
+          const pacePerKm = activity.distance > 0 ? (activity.movingTime / 60) / distanceInKm : 0;
+          const paceConverted = user.unitPreference === "miles" ? pacePerKm / 0.621371 : pacePerKm;
+          
+          return {
+            week: `Week ${index + 1}`,
+            pace: paceConverted,
+            distance: distanceConverted,
+          };
+        }),
       };
 
       res.json(dashboardData);

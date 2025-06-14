@@ -8,16 +8,18 @@ interface PerformanceChartProps {
     pace: number;
     distance: number;
   }>;
+  unitPreference?: string;
+  onTimeRangeChange?: (range: string) => void;
 }
 
-export default function PerformanceChart({ data }: PerformanceChartProps) {
+export default function PerformanceChart({ data, unitPreference, onTimeRangeChange }: PerformanceChartProps) {
   const formatPace = (value: number) => {
     const minutes = Math.floor(value);
     const seconds = Math.round((value - minutes) * 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const formatDistance = (value: number) => `${value.toFixed(1)}km`;
+  const formatDistance = (value: number) => `${value.toFixed(1)}${unitPreference === "miles" ? "mi" : "km"}`;
 
   return (
     <Card>
