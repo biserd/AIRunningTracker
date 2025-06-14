@@ -11,6 +11,7 @@ interface HeaderProps {
   onGenerateInsights: () => void;
   isSyncing: boolean;
   isGeneratingInsights: boolean;
+  lastSyncAt?: string;
 }
 
 export default function Header({ 
@@ -19,8 +20,24 @@ export default function Header({
   onSyncActivities, 
   onGenerateInsights,
   isSyncing,
-  isGeneratingInsights 
+  isGeneratingInsights,
+  lastSyncAt 
 }: HeaderProps) {
+
+  const formatSyncTime = (dateString?: string) => {
+    if (!dateString) return "Never";
+    
+    const now = new Date();
+    const syncDate = new Date(dateString);
+    const diffMs = now.getTime() - syncDate.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMins / 60);
+    
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    return syncDate.toLocaleDateString();
+  };
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-6 py-4">

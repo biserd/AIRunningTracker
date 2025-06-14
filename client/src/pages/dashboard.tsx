@@ -174,7 +174,7 @@ export default function Dashboard() {
       />
       
       <main className="max-w-7xl mx-auto px-6 py-8">
-        <WelcomeSection userName={dashboardData?.user?.name || "Runner"} />
+        <WelcomeSection userName={dashboardData?.user?.name || "Runner"} lastSyncAt={dashboardData?.user?.lastSyncAt} />
         
         <QuickStats stats={dashboardData?.stats || { totalDistance: "0.0", avgPace: "0:00", trainingLoad: 0, recovery: "Unknown" }} />
         

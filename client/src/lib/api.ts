@@ -5,6 +5,7 @@ export interface DashboardData {
     name: string;
     stravaConnected: boolean;
     unitPreference?: string;
+    lastSyncAt?: string;
   };
   stats: {
     totalDistance: string;
