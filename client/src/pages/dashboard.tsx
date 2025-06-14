@@ -60,8 +60,10 @@ export default function Dashboard() {
 
   // Dashboard data query
   const { data: dashboardData, isLoading, error } = useQuery<any>({
-    queryKey: ['/api/dashboard', userId],
+    queryKey: [`/api/dashboard/${userId}`],
   });
+
+
 
   useEffect(() => {
     // Handle URL parameters for Strava connection feedback
@@ -137,11 +139,12 @@ export default function Dashboard() {
   }
 
   if (error) {
+    console.error('Dashboard error:', error);
     return (
       <div className="min-h-screen bg-light-grey flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-charcoal mb-4">Error loading dashboard</h1>
-          <p className="text-gray-600 mb-4">Please try refreshing the page</p>
+          <p className="text-gray-600 mb-4">Error: {error?.message || 'Unknown error'}</p>
           <Button onClick={() => window.location.reload()}>Refresh</Button>
         </div>
       </div>
