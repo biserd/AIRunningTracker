@@ -19,6 +19,9 @@ interface StravaTokenResponse {
   refresh_token: string;
   athlete: {
     id: number;
+    firstname: string;
+    lastname: string;
+    username: string;
   };
 }
 

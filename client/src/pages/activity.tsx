@@ -40,10 +40,6 @@ export default function ActivityPage() {
   }
 
   const activity = activityData.activity;
-  const distanceKm = (activity.distance / 1000).toFixed(2);
-  const paceMinKm = activity.distance > 0 ? (activity.movingTime / 60) / (activity.distance / 1000) : 0;
-  const paceDisplay = paceMinKm > 0 ? `${Math.floor(paceMinKm)}:${String(Math.round((paceMinKm % 1) * 60)).padStart(2, '0')}` : "0:00";
-  const durationDisplay = `${Math.floor(activity.movingTime / 60)}:${String(activity.movingTime % 60).padStart(2, '0')}`;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -74,7 +70,7 @@ export default function ActivityPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{distanceKm} km</div>
+            <div className="text-2xl font-bold text-gray-900">{activity.formattedDistance} {activity.distanceUnit}</div>
           </CardContent>
         </Card>
 
@@ -86,7 +82,7 @@ export default function ActivityPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{durationDisplay}</div>
+            <div className="text-2xl font-bold text-gray-900">{activity.formattedDuration}</div>
           </CardContent>
         </Card>
 
@@ -98,7 +94,7 @@ export default function ActivityPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{paceDisplay} /km</div>
+            <div className="text-2xl font-bold text-gray-900">{activity.formattedPace} {activity.paceUnit}</div>
           </CardContent>
         </Card>
 
@@ -149,11 +145,11 @@ export default function ActivityPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Average Speed</p>
-                <p className="text-gray-900">{(activity.averageSpeed * 3.6).toFixed(1)} km/h</p>
+                <p className="text-gray-900">{activity.formattedSpeed} {activity.speedUnit}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Max Speed</p>
-                <p className="text-gray-900">{(activity.maxSpeed * 3.6).toFixed(1)} km/h</p>
+                <p className="text-gray-900">{activity.formattedMaxSpeed} {activity.speedUnit}</p>
               </div>
               {activity.maxHeartrate && (
                 <>
@@ -176,7 +172,7 @@ export default function ActivityPage() {
               <div className="p-4 bg-blue-50 rounded-lg">
                 <h4 className="font-medium text-blue-900 mb-2">Pace Analysis</h4>
                 <p className="text-sm text-blue-800">
-                  Your average pace of {paceDisplay} /km shows {paceMinKm < 5 ? "strong" : paceMinKm < 6 ? "moderate" : "easy"} effort intensity.
+                  Your average pace of {activity.formattedPace} {activity.paceUnit} shows consistent effort throughout the activity.
                 </p>
               </div>
               

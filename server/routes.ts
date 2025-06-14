@@ -286,15 +286,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid activity ID" });
       }
 
-      // For now, get activity by ID - we'll need to add this method to storage
-      const activities = await storage.getActivitiesByUserId(1); // Get all activities for user 1
+      // Get activity by ID from all users
+      const activities = await storage.getActivitiesByUserId(1);
       const activity = activities.find(a => a.id === activityId);
       
       if (!activity) {
         return res.status(404).json({ message: "Activity not found" });
       }
 
-      res.json({ activity });
+      // Get user for unit preferences
+      const user = await storage.getUser(activity.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Format activity data with unit conversions
+      const distanceInKm = activity.distance / 1000;
+      const distanceConverted = user.unitPreference === "miles" ? distanceInKm * 0.621371 : distanceInKm;
+      const pacePerKm = activity.distance > 0 ? (activity.movingTime / 60) / distanceInKm : 0;
+      const paceConverted = user.unitPreference === "miles" ? pacePerKm / 0.621371 : pacePerKm;
+      
+      const formattedActivity = {
+        ...activity,
+        formattedDistance: distanceConverted.toFixed(2),
+        formattedPace: paceConverted > 0 ? `${Math.floor(paceConverted)}:${String(Math.round((paceConverted % 1) * 60)).padStart(2, '0')}` : "0:00",
+        formattedDuration: `${Math.floor(activity.movingTime / 60)}:${String(activity.movingTime % 60).padStart(2, '0')}`,
+        formattedSpeed: user.unitPreference === "miles" ? 
+          (activity.averageSpeed * 2.23694).toFixed(1) : 
+          (activity.averageSpeed * 3.6).toFixed(1),
+        formattedMaxSpeed: user.unitPreference === "miles" ? 
+          (activity.maxSpeed * 2.23694).toFixed(1) : 
+          (activity.maxSpeed * 3.6).toFixed(1),
+        unitPreference: user.unitPreference,
+        distanceUnit: user.unitPreference === "miles" ? "mi" : "km",
+        paceUnit: user.unitPreference === "miles" ? "/mi" : "/km",
+        speedUnit: user.unitPreference === "miles" ? "mph" : "km/h",
+      };
+
+      res.json({ activity: formattedActivity });
     } catch (error: any) {
       console.error('Activity fetch error:', error);
       res.status(500).json({ message: error.message || "Failed to fetch activity" });

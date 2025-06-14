@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,13 @@ export default function SettingsPage() {
     queryFn: () => fetch(`/api/dashboard/${userId}`).then(res => res.json())
   });
 
-  const [unitPreference, setUnitPreference] = useState(dashboardData?.user?.unitPreference || "km");
+  const [unitPreference, setUnitPreference] = useState("km");
+
+  useEffect(() => {
+    if (dashboardData?.user?.unitPreference) {
+      setUnitPreference(dashboardData.user.unitPreference);
+    }
+  }, [dashboardData]);
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (settings: { unitPreference: string }) => {
