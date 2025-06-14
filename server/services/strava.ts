@@ -128,8 +128,13 @@ export class StravaService {
           type: stravaActivity.type,
         });
       }
+
+      // Update last sync timestamp
+      await storage.updateUser(userId, {
+        lastSyncAt: new Date(),
+      });
     } catch (error) {
-      if (error.message.includes('Unauthorized')) {
+      if ((error as Error).message?.includes('Unauthorized')) {
         // Try to refresh token
         if (user.stravaRefreshToken) {
           try {

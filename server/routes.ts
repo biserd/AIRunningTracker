@@ -92,6 +92,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: user.username,
           stravaConnected: user.stravaConnected,
           unitPreference: user.unitPreference || "km",
+          lastSyncAt: user.lastSyncAt,
         },
         stats: {
           totalDistance: user.unitPreference === "miles" ? 
