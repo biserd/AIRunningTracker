@@ -44,7 +44,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await stravaService.syncActivitiesForUser(userId);
       res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Sync error:', error);
       res.status(500).json({ message: error.message || "Failed to sync activities" });
     }
@@ -133,9 +133,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await aiService.generateInsights(userId);
       res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
       console.error('AI insights error:', error);
       res.status(500).json({ message: error.message || "Failed to generate insights" });
+    }
+  });
+
+  // Strava OAuth callback handler
+  app.get("/strava/callback", async (req, res) => {
+    try {
+      const { code, state } = req.query;
+      
+      if (!code || !state) {
+        return res.redirect("/?error=missing_params");
+      }
+
+      const userId = parseInt(state as string);
+      if (isNaN(userId)) {
+        return res.redirect("/?error=invalid_user");
+      }
+
+      const tokenData = await stravaService.exchangeCodeForTokens(code as string);
+      
+      await storage.updateUser(userId, {
+        stravaAccessToken: tokenData.access_token,
+        stravaRefreshToken: tokenData.refresh_token,
+        stravaAthleteId: tokenData.athlete.id.toString(),
+        stravaConnected: true,
+      });
+
+      res.redirect("/?connected=true");
+    } catch (error: any) {
+      console.error('Strava callback error:', error);
+      res.redirect("/?error=connection_failed");
     }
   });
 
@@ -147,8 +177,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: "demo123",
       });
 
+      // Add some demo activities for testing
+      const demoActivities = [
+        {
+          userId: user.id,
+          stravaId: "demo_1",
+          name: "Morning Run",
+          distance: 5200, // 5.2km in meters
+          movingTime: 1560, // 26 minutes
+          totalElevationGain: 45,
+          averageSpeed: 3.33, // m/s
+          maxSpeed: 4.5,
+          averageHeartrate: 165,
+          maxHeartrate: 180,
+          startDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+          type: "Run",
+        },
+        {
+          userId: user.id,
+          stravaId: "demo_2", 
+          name: "Easy Recovery Run",
+          distance: 3800, // 3.8km
+          movingTime: 1320, // 22 minutes
+          totalElevationGain: 20,
+          averageSpeed: 2.88, // m/s
+          maxSpeed: 3.2,
+          averageHeartrate: 145,
+          maxHeartrate: 160,
+          startDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000), // 4 days ago
+          type: "Run",
+        },
+        {
+          userId: user.id,
+          stravaId: "demo_3",
+          name: "Tempo Run",
+          distance: 8000, // 8km
+          movingTime: 2400, // 40 minutes
+          totalElevationGain: 80,
+          averageSpeed: 3.33, // m/s
+          maxSpeed: 4.0,
+          averageHeartrate: 175,
+          maxHeartrate: 185,
+          startDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000), // 6 days ago
+          type: "Run",
+        }
+      ];
+
+      for (const activity of demoActivities) {
+        await storage.createActivity(activity);
+      }
+
       res.json({ user });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Demo user creation error:', error);
       res.status(500).json({ message: "Failed to create demo user" });
     }

@@ -70,6 +70,9 @@ export class MemStorage implements IStorage {
     const activity: Activity = {
       ...insertActivity,
       id,
+      type: insertActivity.type || "Run",
+      averageHeartrate: insertActivity.averageHeartrate || null,
+      maxHeartrate: insertActivity.maxHeartrate || null,
       createdAt: new Date(),
     };
     this.activities.set(id, activity);
