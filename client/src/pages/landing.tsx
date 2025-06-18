@@ -17,11 +17,7 @@ const emailSchema = z.object({
 
 type EmailData = z.infer<typeof emailSchema>;
 
-interface LandingPageProps {
-  onGetStarted: () => void;
-}
-
-export default function LandingPage({ onGetStarted }: LandingPageProps) {
+export default function LandingPage() {
   const [submitted, setSubmitted] = useState(false);
   const { toast } = useToast();
 
@@ -67,7 +63,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
               </div>
               <h1 className="text-2xl font-bold text-charcoal">RunAnalytics</h1>
             </div>
-            <Button onClick={onGetStarted} variant="outline">
+            <Button variant="outline">
               Sign In
             </Button>
           </div>
@@ -132,7 +128,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
 
           <p className="text-sm text-gray-500">
             Already have an account?{" "}
-            <Button variant="link" onClick={onGetStarted} className="p-0 h-auto text-strava-orange">
+            <Button variant="link" className="p-0 h-auto text-strava-orange">
               Sign in here
             </Button>
           </p>
