@@ -1,6 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -9,13 +10,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Settings, Save, ArrowLeft, Unlink } from "lucide-react";
 import { Link } from "wouter";
 
-export default function SettingsPage() {
-  const [userId] = useState(1);
+function SettingsPageContent() {
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const { data: dashboardData } = useQuery({
-    queryKey: ['/api/dashboard', userId],
-    queryFn: () => fetch(`/api/dashboard/${userId}`).then(res => res.json())
+    queryKey: [`/api/dashboard/${user!.id}`],
   });
 
   const [unitPreference, setUnitPreference] = useState("km");
@@ -28,16 +28,10 @@ export default function SettingsPage() {
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (settings: { unitPreference: string }) => {
-      const response = await fetch(`/api/users/${userId}/settings`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings)
-      });
-      if (!response.ok) throw new Error('Failed to update settings');
-      return response.json();
+      return apiRequest(`/api/users/${user!.id}/settings`, "PATCH", settings);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/dashboard', userId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user!.id}`] });
       toast({
         title: "Settings updated",
         description: "Your preferences have been saved successfully",
@@ -54,15 +48,10 @@ export default function SettingsPage() {
 
   const disconnectStravaMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/strava/disconnect/${userId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      if (!response.ok) throw new Error('Failed to disconnect Strava');
-      return response.json();
+      return apiRequest(`/api/strava/disconnect/${user!.id}`, "POST");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/dashboard', userId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user!.id}`] });
       toast({
         title: "Strava disconnected",
         description: "Your Strava account has been disconnected successfully",
@@ -182,4 +171,25 @@ export default function SettingsPage() {
       </div>
     </div>
   );
+}
+
+export default function SettingsPage() {
+  const { user, isLoading: authLoading } = useAuth();
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  return <SettingsPageContent />;
 }

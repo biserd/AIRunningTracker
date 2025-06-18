@@ -332,6 +332,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid user ID" });
       }
 
+      // Verify the user owns this resource
+      if (req.user.id !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
       if (unitPreference && !["km", "miles"].includes(unitPreference)) {
         return res.status(400).json({ message: "Invalid unit preference" });
       }
