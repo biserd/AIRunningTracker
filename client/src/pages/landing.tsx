@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -63,9 +64,11 @@ export default function LandingPage() {
               </div>
               <h1 className="text-2xl font-bold text-charcoal">RunAnalytics</h1>
             </div>
-            <Button variant="outline">
-              Sign In
-            </Button>
+            <Link href="/dashboard">
+              <Button variant="outline">
+                Sign In
+              </Button>
+            </Link>
           </div>
         </div>
       </header>
@@ -128,9 +131,11 @@ export default function LandingPage() {
 
           <p className="text-sm text-gray-500">
             Already have an account?{" "}
-            <Button variant="link" className="p-0 h-auto text-strava-orange">
-              Sign in here
-            </Button>
+            <Link href="/dashboard">
+              <Button variant="link" className="p-0 h-auto text-strava-orange">
+                Sign in here
+              </Button>
+            </Link>
           </p>
         </div>
       </section>
@@ -220,12 +225,14 @@ export default function LandingPage() {
           <p className="text-xl mb-8 opacity-90">
             Join thousands of runners who are already improving their performance with AI-powered insights.
           </p>
-          <Button
-            size="lg"
-            className="bg-white text-strava-orange hover:bg-gray-100"
-          >
-            Get Started Today
-          </Button>
+          <Link href="/dashboard">
+            <Button
+              size="lg"
+              className="bg-white text-strava-orange hover:bg-gray-100"
+            >
+              Get Started Today
+            </Button>
+          </Link>
         </div>
       </section>
 
@@ -248,20 +255,20 @@ export default function LandingPage() {
             <div>
               <h4 className="font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-gray-400">
-                <li>Features</li>
-                <li>Pricing</li>
-                <li>AI Insights</li>
-                <li>Training Plans</li>
+                <li><Link href="/dashboard" className="hover:text-white transition-colors">Features</Link></li>
+                <li><Link href="/dashboard" className="hover:text-white transition-colors">Pricing</Link></li>
+                <li><Link href="/ml-insights" className="hover:text-white transition-colors">AI Insights</Link></li>
+                <li><Link href="/performance" className="hover:text-white transition-colors">Training Plans</Link></li>
               </ul>
             </div>
             
             <div>
               <h4 className="font-semibold mb-4">Company</h4>
               <ul className="space-y-2 text-gray-400">
-                <li>About</li>
-                <li>Privacy Policy</li>
-                <li>Terms of Service</li>
-                <li>Contact</li>
+                <li><Link href="/dashboard" className="hover:text-white transition-colors">About</Link></li>
+                <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/dashboard" className="hover:text-white transition-colors">Terms of Service</Link></li>
+                <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
               </ul>
             </div>
           </div>
