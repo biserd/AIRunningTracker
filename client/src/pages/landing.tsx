@@ -64,7 +64,7 @@ export default function LandingPage() {
               </div>
               <h1 className="text-2xl font-bold text-charcoal">RunAnalytics</h1>
             </div>
-            <Link href="/dashboard">
+            <Link href="/auth">
               <Button variant="outline">
                 Sign In
               </Button>
@@ -131,7 +131,7 @@ export default function LandingPage() {
 
           <p className="text-sm text-gray-500">
             Already have an account?{" "}
-            <Link href="/dashboard">
+            <Link href="/auth">
               <Button variant="link" className="p-0 h-auto text-strava-orange">
                 Sign in here
               </Button>
@@ -225,7 +225,7 @@ export default function LandingPage() {
           <p className="text-xl mb-8 opacity-90">
             Join thousands of runners who are already improving their performance with AI-powered insights.
           </p>
-          <Link href="/dashboard">
+          <Link href="/auth">
             <Button
               size="lg"
               className="bg-white text-strava-orange hover:bg-gray-100"

@@ -2,21 +2,18 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Activity, Eye, EyeOff, Mail, Lock, User } from "lucide-react";
-import { loginSchema, registerSchema, type LoginData, type RegisterData } from "@shared/schema";
+import { Label } from "@/components/ui/label";
+import { Activity, Eye, EyeOff } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { loginSchema, registerSchema, type LoginData, type RegisterData } from "@shared/schema";
 
-interface AuthPageProps {
-  onAuthSuccess: (token: string, user: any) => void;
-}
-
-export default function AuthPage({ onAuthSuccess }: AuthPageProps) {
+export default function AuthPage() {
+  const [, setLocation] = useLocation();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
@@ -41,17 +38,18 @@ export default function AuthPage({ onAuthSuccess }: AuthPageProps) {
 
   const loginMutation = useMutation({
     mutationFn: (data: LoginData) => apiRequest("/api/auth/login", "POST", data),
-    onSuccess: (data) => {
+    onSuccess: (response: any) => {
+      localStorage.setItem("auth_token", response.token);
       toast({
         title: "Welcome back!",
         description: "Successfully logged in",
       });
-      onAuthSuccess(data.token, data.user);
+      setLocation("/dashboard");
     },
     onError: (error: any) => {
       toast({
         title: "Login failed",
-        description: error.message || "Invalid email or password",
+        description: error.message || "Invalid credentials",
         variant: "destructive",
       });
     },
@@ -59,17 +57,18 @@ export default function AuthPage({ onAuthSuccess }: AuthPageProps) {
 
   const registerMutation = useMutation({
     mutationFn: (data: RegisterData) => apiRequest("/api/auth/register", "POST", data),
-    onSuccess: (data) => {
+    onSuccess: (response: any) => {
+      localStorage.setItem("auth_token", response.token);
       toast({
         title: "Welcome to RunAnalytics!",
         description: "Account created successfully",
       });
-      onAuthSuccess(data.token, data.user);
+      setLocation("/dashboard");
     },
     onError: (error: any) => {
       toast({
         title: "Registration failed",
-        description: error.message || "Failed to create account",
+        description: error.message || "Please try again",
         variant: "destructive",
       });
     },
@@ -83,153 +82,172 @@ export default function AuthPage({ onAuthSuccess }: AuthPageProps) {
     registerMutation.mutate(data);
   };
 
-  const currentForm = isLogin ? loginForm : registerForm;
-  const isLoading = loginMutation.isPending || registerMutation.isPending;
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
+        {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-strava-orange rounded-xl flex items-center justify-center mx-auto mb-4">
-            <Activity className="text-white" size={32} />
-          </div>
-          <h1 className="text-3xl font-bold text-charcoal">RunAnalytics</h1>
-          <p className="text-gray-600 mt-2">AI-powered running insights</p>
+          <Link href="/">
+            <div className="flex items-center justify-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-strava-orange rounded-lg flex items-center justify-center">
+                <Activity className="text-white" size={24} />
+              </div>
+              <h1 className="text-3xl font-bold text-charcoal">RunAnalytics</h1>
+            </div>
+          </Link>
+          <p className="text-gray-600">
+            {isLogin ? "Welcome back!" : "Start your analytics journey"}
+          </p>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle className="text-center">
-              {isLogin ? "Welcome Back" : "Create Account"}
+              {isLogin ? "Sign In" : "Create Account"}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={currentForm.handleSubmit(isLogin ? onLoginSubmit : onRegisterSubmit)} className="space-y-4">
-              {!isLogin && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="firstName">First Name</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="firstName"
-                        {...registerForm.register("firstName")}
-                        className="pl-10"
-                        placeholder="John"
-                        disabled={isLoading}
-                      />
-                    </div>
-                    {registerForm.formState.errors.firstName && (
-                      <p className="text-sm text-red-600 mt-1">
-                        {registerForm.formState.errors.firstName.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="lastName"
-                        {...registerForm.register("lastName")}
-                        className="pl-10"
-                        placeholder="Doe"
-                        disabled={isLoading}
-                      />
-                    </div>
-                    {registerForm.formState.errors.lastName && (
-                      <p className="text-sm text-red-600 mt-1">
-                        {registerForm.formState.errors.lastName.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <CardContent className="space-y-4">
+            {isLogin ? (
+              <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     type="email"
-                    {...currentForm.register("email")}
-                    className="pl-10"
-                    placeholder="john@example.com"
-                    disabled={isLoading}
+                    {...loginForm.register("email")}
+                    placeholder="your@email.com"
                   />
+                  {loginForm.formState.errors.email && (
+                    <p className="text-sm text-red-500">{loginForm.formState.errors.email.message}</p>
+                  )}
                 </div>
-                {currentForm.formState.errors.email && (
-                  <p className="text-sm text-red-600 mt-1">
-                    {currentForm.formState.errors.email.message}
-                  </p>
-                )}
-              </div>
 
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    {...currentForm.register("password")}
-                    className="pl-10 pr-10"
-                    placeholder="••••••••"
-                    disabled={isLoading}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3"
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={isLoading}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      {...loginForm.register("password")}
+                      placeholder="••••••••"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  {loginForm.formState.errors.password && (
+                    <p className="text-sm text-red-500">{loginForm.formState.errors.password.message}</p>
+                  )}
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full bg-strava-orange hover:bg-strava-orange/90"
+                  disabled={loginMutation.isPending}
+                >
+                  {loginMutation.isPending ? "Signing in..." : "Sign In"}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input
+                      id="firstName"
+                      {...registerForm.register("firstName")}
+                      placeholder="John"
+                    />
+                    {registerForm.formState.errors.firstName && (
+                      <p className="text-sm text-red-500">{registerForm.formState.errors.firstName.message}</p>
                     )}
-                  </Button>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input
+                      id="lastName"
+                      {...registerForm.register("lastName")}
+                      placeholder="Doe"
+                    />
+                    {registerForm.formState.errors.lastName && (
+                      <p className="text-sm text-red-500">{registerForm.formState.errors.lastName.message}</p>
+                    )}
+                  </div>
                 </div>
-                {currentForm.formState.errors.password && (
-                  <p className="text-sm text-red-600 mt-1">
-                    {currentForm.formState.errors.password.message}
-                  </p>
-                )}
-              </div>
 
-              <Button
-                type="submit"
-                className="w-full bg-strava-orange hover:bg-strava-orange/90"
-                disabled={isLoading}
-              >
-                {isLoading ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
-              </Button>
-            </form>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    {...registerForm.register("email")}
+                    placeholder="your@email.com"
+                  />
+                  {registerForm.formState.errors.email && (
+                    <p className="text-sm text-red-500">{registerForm.formState.errors.email.message}</p>
+                  )}
+                </div>
 
-            <div className="mt-6 text-center">
-              <Button
-                variant="link"
-                onClick={() => {
-                  setIsLogin(!isLogin);
-                  currentForm.reset();
-                }}
-                disabled={isLoading}
-                className="text-gray-600 hover:text-charcoal"
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      {...registerForm.register("password")}
+                      placeholder="••••••••"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  {registerForm.formState.errors.password && (
+                    <p className="text-sm text-red-500">{registerForm.formState.errors.password.message}</p>
+                  )}
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full bg-strava-orange hover:bg-strava-orange/90"
+                  disabled={registerMutation.isPending}
+                >
+                  {registerMutation.isPending ? "Creating account..." : "Create Account"}
+                </Button>
+              </form>
+            )}
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-sm text-strava-orange hover:underline"
               >
-                {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-              </Button>
+                {isLogin 
+                  ? "Don't have an account? Sign up" 
+                  : "Already have an account? Sign in"
+                }
+              </button>
             </div>
 
-            {/* Demo Account Info */}
-            <Alert className="mt-4 border-blue-200 bg-blue-50">
-              <AlertDescription className="text-blue-800">
-                <strong>Demo Account:</strong> email: demo@example.com, password: demo123
-              </AlertDescription>
-            </Alert>
+            <div className="text-center">
+              <Link href="/">
+                <Button variant="ghost" className="text-sm">
+                  ← Back to Home
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>
