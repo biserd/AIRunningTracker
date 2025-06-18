@@ -5,11 +5,66 @@ import { stravaService } from "./services/strava";
 import { aiService } from "./services/ai";
 import { mlService } from "./services/ml";
 import { performanceService } from "./services/performance";
-import { insertUserSchema } from "@shared/schema";
+import { authService } from "./services/auth";
+import { insertUserSchema, loginSchema, registerSchema, insertEmailWaitlistSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // Authentication routes
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const userData = registerSchema.parse(req.body);
+      const result = await authService.register(userData);
+      res.json(result);
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      res.status(400).json({ message: error.message || "Failed to register user" });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const loginData = loginSchema.parse(req.body);
+      const result = await authService.login(loginData);
+      res.json(result);
+    } catch (error: any) {
+      console.error('Login error:', error);
+      res.status(400).json({ message: error.message || "Failed to login" });
+    }
+  });
+
+  app.post("/api/auth/verify", async (req, res) => {
+    try {
+      const { token } = req.body;
+      const user = await authService.verifyToken(token);
+      if (user) {
+        res.json({ user });
+      } else {
+        res.status(401).json({ message: "Invalid token" });
+      }
+    } catch (error: any) {
+      console.error('Token verification error:', error);
+      res.status(401).json({ message: "Invalid token" });
+    }
+  });
+
+  // Email waitlist endpoint
+  app.post("/api/waitlist", async (req, res) => {
+    try {
+      const { email } = insertEmailWaitlistSchema.parse(req.body);
+      await authService.addToWaitlist(email);
+      res.json({ message: "Successfully added to waitlist" });
+    } catch (error: any) {
+      console.error('Waitlist error:', error);
+      if (error.message?.includes('duplicate key')) {
+        res.status(400).json({ message: "Email already on waitlist" });
+      } else {
+        res.status(500).json({ message: "Failed to add email to waitlist" });
+      }
+    }
+  });
+
   // Strava OAuth
   app.post("/api/strava/connect", async (req, res) => {
     try {
