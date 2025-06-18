@@ -108,13 +108,21 @@ export class StravaService {
       console.log(`Fetched ${stravaActivities.length} activities from Strava API`);
       
       let syncedCount = 0;
+      const activityTypes = new Set();
+      
       for (const stravaActivity of stravaActivities) {
+        activityTypes.add(stravaActivity.type);
+        
         // Check if activity already exists
         const existingActivity = await storage.getActivityByStravaId(stravaActivity.id.toString());
-        if (existingActivity) continue;
+        if (existingActivity) {
+          console.log(`Activity already exists: ${stravaActivity.name}`);
+          continue;
+        }
 
-        // Only sync running activities
-        if (stravaActivity.type !== 'Run') {
+        // Sync running-related activities (Run, VirtualRun, Workout, etc.)
+        const runningTypes = ['Run', 'VirtualRun', 'Workout', 'TrailRun'];
+        if (!runningTypes.includes(stravaActivity.type)) {
           console.log(`Skipping non-running activity: ${stravaActivity.name} (${stravaActivity.type})`);
           continue;
         }
@@ -137,6 +145,7 @@ export class StravaService {
         syncedCount++;
       }
 
+      console.log(`Activity types found: ${Array.from(activityTypes).join(', ')}`);
       console.log(`Successfully synced ${syncedCount} running activities for user ${userId}`);
       
       // Update last sync timestamp

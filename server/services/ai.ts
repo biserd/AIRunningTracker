@@ -70,7 +70,10 @@ export class AIService {
 
   async generateInsights(userId: number): Promise<void> {
     const activities = await storage.getActivitiesByUserId(userId, 30);
+    console.log(`Generating insights for user ${userId} with ${activities.length} activities`);
+    
     if (activities.length === 0) {
+      console.log(`No activities found for user ${userId}, skipping insights generation`);
       return;
     }
 
