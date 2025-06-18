@@ -113,10 +113,10 @@ export class StravaService {
       for (const stravaActivity of stravaActivities) {
         activityTypes.add(stravaActivity.type);
         
-        // Check if activity already exists
-        const existingActivity = await storage.getActivityByStravaId(stravaActivity.id.toString());
+        // Check if activity already exists for this user
+        const existingActivity = await storage.getActivityByStravaIdAndUser(stravaActivity.id.toString(), userId);
         if (existingActivity) {
-          console.log(`Activity already exists: ${stravaActivity.name}`);
+          console.log(`Activity already exists for user ${userId}: ${stravaActivity.name}`);
           continue;
         }
 

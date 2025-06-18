@@ -12,6 +12,7 @@ export interface IStorage {
   createActivity(activity: InsertActivity): Promise<Activity>;
   getActivitiesByUserId(userId: number, limit?: number): Promise<Activity[]>;
   getActivityByStravaId(stravaId: string): Promise<Activity | undefined>;
+  getActivityByStravaIdAndUser(stravaId: string, userId: number): Promise<Activity | undefined>;
   
   createAIInsight(insight: InsertAIInsight): Promise<AIInsight>;
   getAIInsightsByUserId(userId: number, type?: string): Promise<AIInsight[]>;
@@ -76,6 +77,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(activities)
       .where(eq(activities.stravaId, stravaId));
+    return activity || undefined;
+  }
+
+  async getActivityByStravaIdAndUser(stravaId: string, userId: number): Promise<Activity | undefined> {
+    const [activity] = await db
+      .select()
+      .from(activities)
+      .where(and(eq(activities.stravaId, stravaId), eq(activities.userId, userId)));
     return activity || undefined;
   }
 
