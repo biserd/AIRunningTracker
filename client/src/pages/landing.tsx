@@ -221,7 +221,6 @@ export default function LandingPage() {
             Join thousands of runners who are already improving their performance with AI-powered insights.
           </p>
           <Button
-            onClick={onGetStarted}
             size="lg"
             className="bg-white text-strava-orange hover:bg-gray-100"
           >
