@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stravaService } from "./services/strava";
@@ -8,6 +8,27 @@ import { performanceService } from "./services/performance";
 import { authService } from "./services/auth";
 import { insertUserSchema, loginSchema, registerSchema, insertEmailWaitlistSchema } from "@shared/schema";
 import { z } from "zod";
+
+// Authentication middleware
+const authenticateJWT = async (req: any, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ message: "Access token required" });
+  }
+
+  try {
+    const user = await authService.verifyToken(token);
+    if (!user) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: "Invalid token" });
+  }
+};
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -34,18 +55,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/auth/verify", async (req, res) => {
+  app.get("/api/auth/user", authenticateJWT, async (req: any, res) => {
     try {
-      const { token } = req.body;
-      const user = await authService.verifyToken(token);
-      if (user) {
-        res.json({ user });
-      } else {
-        res.status(401).json({ message: "Invalid token" });
+      const user = await storage.getUser(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
       }
+      res.json(user);
     } catch (error: any) {
-      console.error('Token verification error:', error);
-      res.status(401).json({ message: "Invalid token" });
+      console.error('Get user error:', error);
+      res.status(500).json({ message: "Failed to get user" });
     }
   });
 
@@ -66,7 +85,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Strava OAuth
-  app.post("/api/strava/connect", async (req, res) => {
+  app.post("/api/strava/connect", authenticateJWT, async (req: any, res) => {
     try {
       const { code, userId } = req.body;
       
@@ -99,7 +118,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Sync activities from Strava
-  app.post("/api/strava/sync/:userId", async (req, res) => {
+  app.post("/api/strava/sync/:userId", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
       
@@ -116,7 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get user dashboard data
-  app.get("/api/dashboard/:userId", async (req, res) => {
+  app.get("/api/dashboard/:userId", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
       
