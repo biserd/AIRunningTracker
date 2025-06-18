@@ -1,7 +1,8 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/dashboard/Header";
 import WelcomeSection from "@/components/dashboard/WelcomeSection";
 import QuickStats from "@/components/dashboard/QuickStats";
@@ -16,16 +17,31 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 
 export default function Dashboard() {
-  const [userId, setUserId] = useState<number>(1); // Use consistent user ID
+  const { user, isLoading: authLoading } = useAuth();
   const [chartTimeRange, setChartTimeRange] = useState<string>("30days");
   const { toast } = useToast();
   const [location] = useLocation();
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
   // Sync activities mutation
   const syncMutation = useMutation({
-    mutationFn: (userId: number) => api.syncActivities(userId),
+    mutationFn: () => apiRequest(`/api/strava/sync/${user.id}`, "POST"),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/dashboard', userId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user.id}`] });
       toast({
         title: "Activities synced",
         description: "Your Strava activities have been synced successfully",
@@ -42,9 +58,9 @@ export default function Dashboard() {
 
   // Generate insights mutation
   const insightsMutation = useMutation({
-    mutationFn: (userId: number) => api.generateInsights(userId),
+    mutationFn: () => apiRequest(`/api/insights/generate/${user.id}`, "POST"),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${userId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user.id}`] });
       toast({
         title: "AI insights generated",
         description: "Your performance insights have been updated",
@@ -61,13 +77,13 @@ export default function Dashboard() {
 
   // Dashboard data query
   const { data: dashboardData, isLoading, error } = useQuery<any>({
-    queryKey: [`/api/dashboard/${userId}`],
+    queryKey: [`/api/dashboard/${user.id}`],
   });
 
   // Chart data query with time range
   const { data: chartData } = useQuery({
-    queryKey: ['/api/chart', userId, chartTimeRange],
-    queryFn: () => fetch(`/api/chart/${userId}?range=${chartTimeRange}`).then(res => res.json()),
+    queryKey: ['/api/chart', user.id, chartTimeRange],
+    queryFn: () => apiRequest(`/api/chart/${user.id}?range=${chartTimeRange}`, "GET"),
   });
 
   const handleTimeRangeChange = (range: string) => {
@@ -98,34 +114,21 @@ export default function Dashboard() {
   }, []);
 
   const handleStravaConnect = () => {
-    if (!userId) {
-      toast({
-        title: "Error",
-        description: "Please wait for the app to load",
-        variant: "destructive",
-      });
-      return;
-    }
-
     const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID || "default_client_id";
     const redirectUri = `${window.location.origin}/strava/callback`;
     const scope = "read,activity:read_all";
     
-    const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&approval_prompt=force&scope=${scope}&state=${userId}`;
+    const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&approval_prompt=force&scope=${scope}&state=${user.id}`;
     
     window.location.href = stravaAuthUrl;
   };
 
   const handleSyncActivities = () => {
-    if (userId) {
-      syncMutation.mutate(userId);
-    }
+    syncMutation.mutate();
   };
 
   const handleGenerateInsights = () => {
-    if (userId) {
-      insightsMutation.mutate(userId);
-    }
+    insightsMutation.mutate();
   };
 
   if (isLoading || !dashboardData) {

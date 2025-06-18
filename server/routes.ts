@@ -300,8 +300,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate AI insights
+  app.post("/api/insights/generate/:userId", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      // Verify the user owns this resource
+      if (req.user.id !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      await aiService.generateInsights(userId);
+      res.json({ success: true, message: "Insights generated successfully" });
+    } catch (error: any) {
+      console.error('Insights generation error:', error);
+      res.status(500).json({ message: error.message || "Failed to generate insights" });
+    }
+  });
+
   // Update user settings
-  app.patch("/api/users/:userId/settings", async (req, res) => {
+  app.patch("/api/users/:userId/settings", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const { unitPreference } = req.body;
