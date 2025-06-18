@@ -390,9 +390,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid activity ID" });
       }
 
-      // Get activity by ID from all users
-      const activities = await storage.getActivitiesByUserId(1);
-      const activity = activities.find(a => a.id === activityId);
+      // Find activity across all users by searching through database
+      const activity = await storage.getActivityById(activityId);
       
       if (!activity) {
         return res.status(404).json({ message: "Activity not found" });

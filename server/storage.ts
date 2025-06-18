@@ -11,6 +11,7 @@ export interface IStorage {
   
   createActivity(activity: InsertActivity): Promise<Activity>;
   getActivitiesByUserId(userId: number, limit?: number): Promise<Activity[]>;
+  getActivityById(activityId: number): Promise<Activity | undefined>;
   getActivityByStravaId(stravaId: string): Promise<Activity | undefined>;
   getActivityByStravaIdAndUser(stravaId: string, userId: number): Promise<Activity | undefined>;
   
@@ -70,6 +71,14 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(activities.startDate))
       .limit(limit);
     return userActivities;
+  }
+
+  async getActivityById(activityId: number): Promise<Activity | undefined> {
+    const [activity] = await db
+      .select()
+      .from(activities)
+      .where(eq(activities.id, activityId));
+    return activity || undefined;
   }
 
   async getActivityByStravaId(stravaId: string): Promise<Activity | undefined> {
