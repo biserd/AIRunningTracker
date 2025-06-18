@@ -457,10 +457,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stravaConnected: true,
       });
 
-      res.redirect("/?connected=true");
+      res.redirect("/dashboard?connected=true");
     } catch (error: any) {
       console.error('Strava callback error:', error);
-      res.redirect("/?error=connection_failed");
+      res.redirect("/dashboard?error=connection_failed");
     }
   });
 

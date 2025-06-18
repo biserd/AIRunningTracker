@@ -103,16 +103,23 @@ export class StravaService {
     }
 
     try {
+      console.log(`Syncing activities for user ${userId} with token: ${user.stravaAccessToken?.substring(0, 10)}...`);
       const stravaActivities = await this.getActivities(user.stravaAccessToken);
+      console.log(`Fetched ${stravaActivities.length} activities from Strava API`);
       
+      let syncedCount = 0;
       for (const stravaActivity of stravaActivities) {
         // Check if activity already exists
         const existingActivity = await storage.getActivityByStravaId(stravaActivity.id.toString());
         if (existingActivity) continue;
 
         // Only sync running activities
-        if (stravaActivity.type !== 'Run') continue;
+        if (stravaActivity.type !== 'Run') {
+          console.log(`Skipping non-running activity: ${stravaActivity.name} (${stravaActivity.type})`);
+          continue;
+        }
 
+        console.log(`Syncing running activity: ${stravaActivity.name}`);
         await storage.createActivity({
           userId,
           stravaId: stravaActivity.id.toString(),
@@ -127,8 +134,11 @@ export class StravaService {
           startDate: new Date(stravaActivity.start_date),
           type: stravaActivity.type,
         });
+        syncedCount++;
       }
 
+      console.log(`Successfully synced ${syncedCount} running activities for user ${userId}`);
+      
       // Update last sync timestamp
       await storage.updateUser(userId, {
         lastSyncAt: new Date(),
