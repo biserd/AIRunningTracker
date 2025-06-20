@@ -150,14 +150,27 @@ export default function ActivityPage() {
           {/* Route Map */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Route</h3>
-            {activity.startLatitude && activity.startLongitude ? (
+            {(activity.polyline || (activity.startLatitude && activity.startLongitude)) ? (
               <div className="aspect-video bg-gray-100 rounded-lg relative overflow-hidden">
-                <iframe
-                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${activity.startLongitude - 0.01},${activity.startLatitude - 0.01},${(activity.endLongitude || activity.startLongitude) + 0.01},${(activity.endLatitude || activity.startLatitude) + 0.01}&layer=mapnik&marker=${activity.startLatitude},${activity.startLongitude}`}
-                  className="w-full h-full rounded-lg"
-                  frameBorder="0"
-                  title="Activity Route Map"
-                />
+                {activity.polyline ? (
+                  <div className="w-full h-full rounded-lg bg-gray-50 flex items-center justify-center">
+                    <div className="text-center">
+                      <MapPin className="h-8 w-8 mx-auto mb-2 text-strava-orange" />
+                      <p className="text-sm text-gray-700 font-medium">Complete GPS Route Available</p>
+                      <p className="text-xs text-gray-600">Full route data from Strava</p>
+                      <div className="mt-2 text-xs text-gray-500">
+                        Polyline: {activity.polyline.substring(0, 20)}...
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <iframe
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${activity.startLongitude - 0.01},${activity.startLatitude - 0.01},${(activity.endLongitude || activity.startLongitude) + 0.01},${(activity.endLatitude || activity.startLatitude) + 0.01}&layer=mapnik&marker=${activity.startLatitude},${activity.startLongitude}`}
+                    className="w-full h-full rounded-lg"
+                    frameBorder="0"
+                    title="Activity Route Map"
+                  />
+                )}
                 <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
                   <div className="flex items-center space-x-4 text-sm">
                     <div className="flex items-center space-x-1">
@@ -171,9 +184,16 @@ export default function ActivityPage() {
                       </div>
                     )}
                   </div>
-                  <div className="text-xs text-gray-600 mt-1">
-                    {activity.startLatitude.toFixed(4)}, {activity.startLongitude.toFixed(4)}
-                  </div>
+                  {activity.startLatitude && activity.startLongitude && (
+                    <div className="text-xs text-gray-600 mt-1">
+                      {activity.startLatitude.toFixed(4)}, {activity.startLongitude.toFixed(4)}
+                    </div>
+                  )}
+                  {activity.polyline && (
+                    <div className="text-xs text-green-600 mt-1 font-medium">
+                      ✓ Full GPS route data
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

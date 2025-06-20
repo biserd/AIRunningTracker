@@ -27,6 +27,11 @@ interface StravaActivity {
   average_temp?: number;
   has_heartrate?: boolean;
   device_watts?: boolean;
+  map?: {
+    id: string;
+    polyline: string;
+    summary_polyline: string;
+  };
 }
 
 interface StravaTokenResponse {
@@ -111,6 +116,26 @@ export class StravaService {
     return response.json();
   }
 
+  async getDetailedActivity(accessToken: string, activityId: number): Promise<StravaActivity> {
+    const response = await fetch(
+      `https://www.strava.com/api/v3/activities/${activityId}?include_all_efforts=false`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Unauthorized - token may be expired');
+      }
+      throw new Error('Failed to fetch detailed activity from Strava');
+    }
+
+    return response.json();
+  }
+
   async syncActivitiesForUser(userId: number): Promise<void> {
     const user = await storage.getUser(userId);
     if (!user || !user.stravaAccessToken) {
@@ -143,6 +168,16 @@ export class StravaService {
         }
 
         console.log(`Syncing running activity: ${stravaActivity.name}`);
+        
+        // Fetch detailed activity data to get polyline
+        let detailedActivity = stravaActivity;
+        try {
+          detailedActivity = await this.getDetailedActivity(user.stravaAccessToken, stravaActivity.id);
+          console.log(`Fetched detailed data for activity ${stravaActivity.id}`);
+        } catch (error) {
+          console.log(`Could not fetch detailed data for activity ${stravaActivity.id}, using basic data`);
+        }
+        
         await storage.createActivity({
           userId,
           stravaId: stravaActivity.id.toString(),
@@ -170,6 +205,8 @@ export class StravaService {
           startLongitude: stravaActivity.start_latlng?.[1] || null,
           endLatitude: stravaActivity.end_latlng?.[0] || null,
           endLongitude: stravaActivity.end_latlng?.[1] || null,
+          polyline: detailedActivity.map?.summary_polyline || null,
+          detailedPolyline: detailedActivity.map?.polyline || null,
           averageTemp: stravaActivity.average_temp || null,
           hasHeartrate: stravaActivity.has_heartrate || false,
           deviceWatts: stravaActivity.device_watts || false,

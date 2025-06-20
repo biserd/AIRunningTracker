@@ -52,6 +52,8 @@ export const activities = pgTable("activities", {
   startLongitude: real("start_longitude"),
   endLatitude: real("end_latitude"),
   endLongitude: real("end_longitude"),
+  polyline: text("polyline"), // Encoded polyline from Strava
+  detailedPolyline: text("detailed_polyline"), // Higher resolution polyline
   averageTemp: real("average_temp"), // celsius
   hasHeartrate: boolean("has_heartrate").default(false),
   deviceWatts: boolean("device_watts").default(false),
