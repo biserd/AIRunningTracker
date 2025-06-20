@@ -1,6 +1,7 @@
 import { users, activities, aiInsights, emailWaitlist, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type InsertEmailWaitlist } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
+import bcrypt from "bcrypt";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -147,10 +148,11 @@ class DatabaseStorageWithDemo extends DatabaseStorage {
       return;
     }
 
-    // Create demo user
+    // Create demo user with hashed password
+    const hashedPassword = await bcrypt.hash("demo123", 10);
     const demoUser = await this.createUser({
       email: "demo@example.com",
-      password: "demo123",
+      password: hashedPassword,
       firstName: "Demo",
       lastName: "Runner",
       username: "demo_runner",
