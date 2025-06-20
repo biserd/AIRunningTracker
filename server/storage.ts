@@ -242,6 +242,16 @@ class DatabaseStorageWithDemo extends DatabaseStorage {
     await this.initializeDemoUser();
     return super.getUserByUsername(username);
   }
+
+  async createTrainingPlan(insertPlan: InsertTrainingPlan): Promise<TrainingPlan> {
+    await this.initializeDemoUser();
+    return super.createTrainingPlan(insertPlan);
+  }
+
+  async getLatestTrainingPlan(userId: number): Promise<TrainingPlan | undefined> {
+    await this.initializeDemoUser();
+    return super.getLatestTrainingPlan(userId);
+  }
 }
 
 export const storage = new DatabaseStorageWithDemo();

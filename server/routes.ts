@@ -624,10 +624,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const trainingPlan = await mlService.generateTrainingPlan(userId, weeks);
+      
+      // Save the training plan to database
+      await storage.createTrainingPlan({
+        userId,
+        weeks,
+        planData: trainingPlan
+      });
+      
       res.json({ trainingPlan });
     } catch (error: any) {
       console.error('Training plan generation error:', error);
       res.status(500).json({ message: error.message || "Failed to generate training plan" });
+    }
+  });
+
+  // Get latest training plan
+  app.get("/api/ml/training-plan/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      const savedPlan = await storage.getLatestTrainingPlan(userId);
+      
+      if (savedPlan) {
+        res.json({ trainingPlan: savedPlan.planData });
+      } else {
+        res.json({ trainingPlan: null });
+      }
+    } catch (error: any) {
+      console.error('Error fetching training plan:', error);
+      res.status(500).json({ message: error.message || "Failed to fetch training plan" });
     }
   });
 

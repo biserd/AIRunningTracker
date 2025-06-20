@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,23 @@ interface TrainingPlanProps {
 export default function TrainingPlan({ userId }: TrainingPlanProps) {
   const [selectedWeeks, setSelectedWeeks] = useState(4);
   const { toast } = useToast();
+  const [trainingPlan, setTrainingPlan] = useState<TrainingWeek[]>([]);
+
+  // Load existing training plan
+  const { data: savedPlan } = useQuery({
+    queryKey: ['training-plan', userId],
+    queryFn: () => 
+      fetch(`/api/ml/training-plan/${userId}`)
+        .then(res => res.json()),
+    enabled: !!userId,
+  });
+
+  // Update local state when saved plan is loaded
+  useEffect(() => {
+    if (savedPlan?.trainingPlan) {
+      setTrainingPlan(Array.isArray(savedPlan.trainingPlan) ? savedPlan.trainingPlan : []);
+    }
+  }, [savedPlan]);
 
   const generatePlanMutation = useMutation({
     mutationFn: (weeks: number) => 
@@ -51,8 +68,6 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
       });
     },
   });
-
-  const [trainingPlan, setTrainingPlan] = useState<TrainingWeek[]>([]);
 
   const getWorkoutTypeColor = (type: string) => {
     switch (type.toLowerCase()) {
