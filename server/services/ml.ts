@@ -116,14 +116,8 @@ export class MLService {
     const recentPace = metrics.avgPaces.slice(-4).reduce((a, b) => a + b, 0) / 4;
     const isMetric = user.unitPreference !== "miles";
 
-    console.log(`Race prediction debug for user ${userId}:`);
-    console.log(`Recent activities: ${activities.length}`);
-    console.log(`Recent pace (min/km): ${recentPace.toFixed(2)}`);
-    console.log(`Unit preference: ${isMetric ? 'kilometers' : 'miles'}`);
-
-    // Apply unit conversions if needed
-    const paceForPrediction = isMetric ? recentPace : recentPace * 0.621371;
-    console.log(`Pace for prediction (min/km): ${paceForPrediction.toFixed(2)}`);
+    // The pace is already calculated as min/km in analyzeTrainingData, no conversion needed
+    const paceForPrediction = recentPace; // Already in min/km
 
     const predictions: RacePrediction[] = [];
 
