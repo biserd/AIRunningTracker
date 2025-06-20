@@ -2,13 +2,13 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
+import AppHeader from "@/components/AppHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Save, ArrowLeft, Unlink } from "lucide-react";
-import { Link } from "wouter";
+import { Settings, Save, Unlink } from "lucide-react";
 
 function SettingsPageContent() {
   const { user } = useAuth();
@@ -77,17 +77,14 @@ function SettingsPageContent() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-8">
-        <Link href="/dashboard">
-          <Button variant="ghost" className="mb-4">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
-          </Button>
-        </Link>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
-        <p className="text-gray-600">Customize your running analytics experience</p>
-      </div>
+    <div className="min-h-screen bg-light-grey">
+      <AppHeader />
+      
+      <main className="max-w-4xl mx-auto px-6 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
+          <p className="text-gray-600">Customize your running analytics experience</p>
+        </div>
 
       <div className="grid gap-6">
         <Card>
@@ -169,6 +166,7 @@ function SettingsPageContent() {
           </CardContent>
         </Card>
       </div>
+      </main>
     </div>
   );
 }
