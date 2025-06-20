@@ -38,6 +38,23 @@ export const activities = pgTable("activities", {
   maxHeartrate: real("max_heartrate"),
   startDate: timestamp("start_date").notNull(),
   type: text("type").notNull().default("Run"),
+  // Additional Strava fields
+  calories: real("calories"),
+  averageCadence: real("average_cadence"), // steps per minute
+  maxCadence: real("max_cadence"),
+  averageWatts: real("average_watts"),
+  maxWatts: real("max_watts"),
+  sufferScore: integer("suffer_score"),
+  commentsCount: integer("comments_count").default(0),
+  kudosCount: integer("kudos_count").default(0),
+  achievementCount: integer("achievement_count").default(0),
+  startLatitude: real("start_latitude"),
+  startLongitude: real("start_longitude"),
+  endLatitude: real("end_latitude"),
+  endLongitude: real("end_longitude"),
+  averageTemp: real("average_temp"), // celsius
+  hasHeartrate: boolean("has_heartrate").default(false),
+  deviceWatts: boolean("device_watts").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

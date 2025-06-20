@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp } from "lucide-react";
+import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, ThumbsUp, MessageCircle, Trophy, Thermometer } from "lucide-react";
 import { Link } from "wouter";
 import AppHeader from "@/components/AppHeader";
 
@@ -64,57 +64,172 @@ export default function ActivityPage() {
           </p>
         </div>
 
+        {/* Primary Metrics */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
-              <MapPin className="mr-2 h-4 w-4" />
-              Distance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{activity.formattedDistance} {activity.distanceUnit}</div>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                <MapPin className="mr-2 h-4 w-4" />
+                Distance
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-gray-900">{activity.formattedDistance} {activity.distanceUnit}</div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
-              <Clock className="mr-2 h-4 w-4" />
-              Duration
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{activity.formattedDuration}</div>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                <Clock className="mr-2 h-4 w-4" />
+                Duration
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-gray-900">{activity.formattedDuration}</div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
-              <TrendingUp className="mr-2 h-4 w-4" />
-              Pace
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{activity.formattedPace} {activity.paceUnit}</div>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                <TrendingUp className="mr-2 h-4 w-4" />
+                Pace
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-gray-900">{activity.formattedPace} {activity.paceUnit}</div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
-              <Heart className="mr-2 h-4 w-4" />
-              Avg HR
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">
-              {activity.averageHeartrate ? `${Math.round(activity.averageHeartrate)} bpm` : "N/A"}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                <Heart className="mr-2 h-4 w-4" />
+                Avg HR
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-gray-900">
+                {activity.averageHeartrate ? `${Math.round(activity.averageHeartrate)} bpm` : "N/A"}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Extended Metrics */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5 mb-8">
+          {activity.calories && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <Flame className="mr-2 h-4 w-4" />
+                  Calories
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900">{Math.round(activity.calories)}</div>
+              </CardContent>
+            </Card>
+          )}
+
+          {activity.averageCadence && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <Activity className="mr-2 h-4 w-4" />
+                  Cadence
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900">{Math.round(activity.averageCadence)} spm</div>
+              </CardContent>
+            </Card>
+          )}
+
+          {activity.averageWatts && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <Zap className="mr-2 h-4 w-4" />
+                  Power
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900">{Math.round(activity.averageWatts)}W</div>
+              </CardContent>
+            </Card>
+          )}
+
+          {activity.sufferScore && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <TrendingUp className="mr-2 h-4 w-4" />
+                  Suffer Score
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900">{activity.sufferScore}</div>
+              </CardContent>
+            </Card>
+          )}
+
+          {activity.averageTemp && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <Thermometer className="mr-2 h-4 w-4" />
+                  Temperature
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900">{Math.round(activity.averageTemp)}°C</div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Social Metrics */}
+        {(activity.kudosCount > 0 || activity.commentsCount > 0 || activity.achievementCount > 0) && (
+          <div className="grid gap-6 md:grid-cols-3 mb-8">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <ThumbsUp className="mr-2 h-4 w-4" />
+                  Kudos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900">{activity.kudosCount || 0}</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  Comments
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900">{activity.commentsCount || 0}</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+                  <Trophy className="mr-2 h-4 w-4" />
+                  Achievements
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900">{activity.achievementCount || 0}</div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

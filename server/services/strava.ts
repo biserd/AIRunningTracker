@@ -12,6 +12,21 @@ interface StravaActivity {
   max_heartrate?: number;
   start_date: string;
   type: string;
+  // Additional Strava fields
+  calories?: number;
+  average_cadence?: number;
+  max_cadence?: number;
+  average_watts?: number;
+  max_watts?: number;
+  suffer_score?: number;
+  comment_count?: number;
+  kudos_count?: number;
+  achievement_count?: number;
+  start_latlng?: [number, number];
+  end_latlng?: [number, number];
+  average_temp?: number;
+  has_heartrate?: boolean;
+  device_watts?: boolean;
 }
 
 interface StravaTokenResponse {
@@ -141,6 +156,23 @@ export class StravaService {
           maxHeartrate: stravaActivity.max_heartrate || null,
           startDate: new Date(stravaActivity.start_date),
           type: stravaActivity.type,
+          // Additional Strava fields
+          calories: stravaActivity.calories || null,
+          averageCadence: stravaActivity.average_cadence || null,
+          maxCadence: stravaActivity.max_cadence || null,
+          averageWatts: stravaActivity.average_watts || null,
+          maxWatts: stravaActivity.max_watts || null,
+          sufferScore: stravaActivity.suffer_score || null,
+          commentsCount: stravaActivity.comment_count || 0,
+          kudosCount: stravaActivity.kudos_count || 0,
+          achievementCount: stravaActivity.achievement_count || 0,
+          startLatitude: stravaActivity.start_latlng?.[0] || null,
+          startLongitude: stravaActivity.start_latlng?.[1] || null,
+          endLatitude: stravaActivity.end_latlng?.[0] || null,
+          endLongitude: stravaActivity.end_latlng?.[1] || null,
+          averageTemp: stravaActivity.average_temp || null,
+          hasHeartrate: stravaActivity.has_heartrate || false,
+          deviceWatts: stravaActivity.device_watts || false,
         });
         syncedCount++;
       }
