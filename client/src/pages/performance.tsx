@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Activity } from "lucide-react";
-import { Link } from "wouter";
+import { Activity } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import AppHeader from "@/components/AppHeader";
 import VO2MaxTracker from "@/components/dashboard/VO2MaxTracker";
 import HeartRateZones from "@/components/dashboard/HeartRateZones";
 import RunningEfficiency from "@/components/dashboard/RunningEfficiency";
@@ -27,29 +27,20 @@ export default function PerformancePage() {
 
   return (
     <div className="min-h-screen bg-light-grey">
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center space-x-4">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Dashboard
-              </Button>
-            </Link>
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg flex items-center justify-center">
-                <Activity className="text-white" size={20} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-charcoal">Performance Analytics</h1>
-                <p className="text-gray-600">Advanced metrics for running optimization</p>
-              </div>
+      <AppHeader />
+      
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        <div className="mb-8">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg flex items-center justify-center">
+              <Activity className="text-white" size={20} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-charcoal">Performance Analytics</h1>
+              <p className="text-gray-600">Advanced metrics for running optimization</p>
             </div>
           </div>
         </div>
-      </div>
-
-      <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {/* VO2 Max Tracker */}
           <div className="xl:col-span-1">
