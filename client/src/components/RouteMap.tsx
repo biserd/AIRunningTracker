@@ -69,79 +69,48 @@ export default function RouteMap({ polyline, startLat, startLng, endLat, endLng,
           else if (maxDelta > 0.02) zoom = 13;
           else if (maxDelta > 0.01) zoom = 14;
 
-          // Use a static map service that can render polylines
+          // Create Google Static Maps URL with polyline
+          const bbox = [
+            minLng - lngPadding,
+            minLat - latPadding,
+            maxLng + lngPadding,
+            maxLat + latPadding
+          ].join(',');
+
+          // Create Leaflet-based map with the route
           mapRef.current.innerHTML = `
-            <div class="relative w-full h-full rounded-lg overflow-hidden bg-gray-100">
-              <!-- Static map with route -->
-              <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50">
-                <div class="text-center p-4">
-                  <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
-                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0121 18.382V7.618a1 1 0 00-1.447-.894L15 4m0 13V4m0 0L9 7"></path>
-                    </svg>
+            <div class="relative w-full h-full rounded-lg overflow-hidden">
+              <!-- OpenStreetMap iframe as base -->
+              <iframe 
+                src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${centerLat},${centerLng}"
+                class="w-full h-full absolute inset-0"
+                style="border: none;"
+                title="Running Route Map">
+              </iframe>
+              
+              <!-- Route overlay using canvas -->
+              <canvas id="routeCanvas" 
+                      width="400" 
+                      height="300" 
+                      class="absolute inset-0 w-full h-full pointer-events-none"
+                      style="mix-blend-mode: multiply;">
+              </canvas>
+              
+              <div class="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
+                <div class="flex items-center space-x-4 text-sm">
+                  <div class="flex items-center space-x-1">
+                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span class="text-gray-700 font-medium">Start</span>
                   </div>
-                  <h3 class="text-lg font-semibold text-gray-800 mb-2">GPS Route Visualization</h3>
-                  <p class="text-sm text-gray-600 mb-3">Complete running route with ${coordinates.length} GPS points</p>
-                  
-                  <!-- Route visualization as a simplified path -->
-                  <svg width="280" height="180" class="mx-auto border border-gray-200 rounded-lg bg-white shadow-sm">
-                    <defs>
-                      <pattern id="smallGrid" width="20" height="20" patternUnits="userSpaceOnUse">
-                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f3f4f6" stroke-width="1"/>
-                      </pattern>
-                    </defs>
-                    <rect width="100%" height="100%" fill="url(#smallGrid)" />
-                    
-                    <!-- Simplified route path -->
-                    <path d="${svgCoordinates.map(([x, y], index) => 
-                      `${index === 0 ? 'M' : 'L'} ${(x * 280 / svgWidth).toFixed(1)} ${(y * 180 / svgHeight).toFixed(1)}`
-                    ).join(' ')}" 
-                          fill="none" 
-                          stroke="#ff6b35" 
-                          stroke-width="3" 
-                          stroke-linecap="round" 
-                          stroke-linejoin="round" />
-                    
-                    <!-- Start marker -->
-                    <circle cx="${(svgCoordinates[0][0] * 280 / svgWidth).toFixed(1)}" 
-                            cy="${(svgCoordinates[0][1] * 180 / svgHeight).toFixed(1)}" 
-                            r="5" 
-                            fill="#22c55e" 
-                            stroke="white" 
-                            stroke-width="2" />
-                    
-                    <!-- End marker -->
-                    <circle cx="${(svgCoordinates[svgCoordinates.length - 1][0] * 280 / svgWidth).toFixed(1)}" 
-                            cy="${(svgCoordinates[svgCoordinates.length - 1][1] * 180 / svgHeight).toFixed(1)}" 
-                            r="5" 
-                            fill="#ef4444" 
-                            stroke="white" 
-                            stroke-width="2" />
-                    
-                    <!-- Distance markers along the path (every 20% of route) -->
-                    ${Array.from({length: 4}, (_, i) => {
-                      const index = Math.floor((i + 1) * coordinates.length / 5);
-                      const coord = svgCoordinates[index];
-                      if (!coord) return '';
-                      return `<circle cx="${(coord[0] * 280 / svgWidth).toFixed(1)}" 
-                                      cy="${(coord[1] * 180 / svgHeight).toFixed(1)}" 
-                                      r="2" 
-                                      fill="#6b7280" 
-                                      opacity="0.6" />`;
-                    }).join('')}
-                  </svg>
-                  
-                  <div class="mt-4 grid grid-cols-2 gap-4 text-xs text-gray-600">
-                    <div class="flex items-center">
-                      <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                      <span>Start: ${centerLat.toFixed(4)}, ${centerLng.toFixed(4)}</span>
-                    </div>
-                    <div class="flex items-center">
-                      <div class="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-                      <span>Distance: ${(coordinates.length * 0.01).toFixed(1)}km approx</span>
-                    </div>
+                  <div class="flex items-center space-x-1">
+                    <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <span class="text-gray-700 font-medium">Finish</span>
                   </div>
                 </div>
+                <div class="text-xs text-green-600 mt-1 font-medium">
+                  ✓ GPS route (${coordinates.length} points)
+                </div>
+              </div>
               </div>
               
               <div class="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
@@ -161,6 +130,65 @@ export default function RouteMap({ polyline, startLat, startLng, endLat, endLng,
               </div>
             </div>
           `;
+
+          // Draw the route on canvas after iframe loads
+          setTimeout(() => {
+            const canvas = document.getElementById('routeCanvas') as HTMLCanvasElement;
+            if (canvas) {
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                // Set canvas size to match container
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                
+                // Convert GPS coordinates to canvas coordinates
+                const canvasCoords = coordinates.map(([lat, lng]) => {
+                  const x = ((lng - (minLng - lngPadding)) / ((maxLng + lngPadding) - (minLng - lngPadding))) * canvas.width;
+                  const y = canvas.height - ((lat - (minLat - latPadding)) / ((maxLat + latPadding) - (minLat - latPadding))) * canvas.height;
+                  return [x, y];
+                });
+
+                // Draw route path
+                ctx.strokeStyle = '#ff6b35';
+                ctx.lineWidth = 4;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.globalAlpha = 0.8;
+                
+                ctx.beginPath();
+                canvasCoords.forEach(([x, y], index) => {
+                  if (index === 0) {
+                    ctx.moveTo(x, y);
+                  } else {
+                    ctx.lineTo(x, y);
+                  }
+                });
+                ctx.stroke();
+
+                // Draw start marker
+                const [startX, startY] = canvasCoords[0];
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = '#22c55e';
+                ctx.beginPath();
+                ctx.arc(startX, startY, 8, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Draw end marker
+                const [endX, endY] = canvasCoords[canvasCoords.length - 1];
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath();
+                ctx.arc(endX, endY, 8, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+              }
+            }
+          }, 1000);
         }
       } catch (error) {
         console.error('Error decoding polyline:', error);
