@@ -42,10 +42,12 @@ export default function ActivityPage() {
   const activity = activityData.activity;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <AppHeader />
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="mb-8">
+      
+      {/* Header Section */}
+      <div className="bg-white border-b">
+        <div className="container mx-auto px-4 py-6 max-w-6xl">
           <Link href="/dashboard">
             <Button variant="ghost" className="mb-4">
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -62,242 +64,220 @@ export default function ActivityPage() {
             })}
           </p>
         </div>
+      </div>
 
-        {/* Primary Metrics */}
-        <div className="border-b border-gray-200 pb-8 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Overview</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="flex items-center justify-center mb-2">
-                <MapPin className="h-5 w-5 text-blue-600 mr-2" />
-                <span className="text-sm font-medium text-gray-600">Distance</span>
-              </div>
-              <div className="text-3xl font-bold text-gray-900">{activity.formattedDistance}</div>
-              <div className="text-sm text-gray-500">{activity.distanceUnit}</div>
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        
+        {/* Main Stats Grid */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Activity Overview</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <MapPin className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-gray-900">{activity.formattedDistance}</div>
+              <div className="text-sm text-gray-600">{activity.distanceUnit}</div>
             </div>
-
-            <div className="text-center">
-              <div className="flex items-center justify-center mb-2">
-                <Clock className="h-5 w-5 text-green-600 mr-2" />
-                <span className="text-sm font-medium text-gray-600">Duration</span>
-              </div>
-              <div className="text-3xl font-bold text-gray-900">{activity.formattedDuration}</div>
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <Clock className="h-6 w-6 text-green-600 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-gray-900">{activity.formattedDuration}</div>
+              <div className="text-sm text-gray-600">Duration</div>
             </div>
-
-            <div className="text-center">
-              <div className="flex items-center justify-center mb-2">
-                <TrendingUp className="h-5 w-5 text-purple-600 mr-2" />
-                <span className="text-sm font-medium text-gray-600">Pace</span>
-              </div>
-              <div className="text-3xl font-bold text-gray-900">{activity.formattedPace}</div>
-              <div className="text-sm text-gray-500">{activity.paceUnit}</div>
+            <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <TrendingUp className="h-6 w-6 text-purple-600 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-gray-900">{activity.formattedPace}</div>
+              <div className="text-sm text-gray-600">{activity.paceUnit}</div>
             </div>
-
-            <div className="text-center">
-              <div className="flex items-center justify-center mb-2">
-                <Heart className="h-5 w-5 text-red-600 mr-2" />
-                <span className="text-sm font-medium text-gray-600">Avg HR</span>
-              </div>
-              <div className="text-3xl font-bold text-gray-900">
+            <div className="text-center p-4 bg-red-50 rounded-lg">
+              <Heart className="h-6 w-6 text-red-600 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-gray-900">
                 {activity.averageHeartrate ? Math.round(activity.averageHeartrate) : "N/A"}
               </div>
-              {activity.averageHeartrate && <div className="text-sm text-gray-500">bpm</div>}
+              <div className="text-sm text-gray-600">Avg HR</div>
             </div>
           </div>
         </div>
 
-        {/* Activity Details */}
-        <div className="border-b border-gray-200 pb-8 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Activity Details</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Type</p>
-              <p className="text-gray-900 font-medium">{activity.type}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Elevation Gain</p>
-              <p className="text-gray-900 font-medium">{activity.totalElevationGain} m</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Average Speed</p>
-              <p className="text-gray-900 font-medium">{activity.formattedSpeed} {activity.speedUnit}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Max Speed</p>
-              <p className="text-gray-900 font-medium">{activity.formattedMaxSpeed} {activity.speedUnit}</p>
-            </div>
-            {activity.maxHeartrate && (
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Max Heart Rate</p>
-                <p className="text-gray-900 font-medium">{Math.round(activity.maxHeartrate)} bpm</p>
+        {/* Two Column Layout */}
+        <div className="grid lg:grid-cols-2 gap-6 mb-6">
+          
+          {/* Route Map */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Route</h3>
+            <div className="aspect-video bg-gradient-to-br from-blue-100 via-green-100 to-purple-100 rounded-lg relative overflow-hidden">
+              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                  <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style={{stopColor:"#22C55E", stopOpacity:1}} />
+                    <stop offset="100%" style={{stopColor:"#EF4444", stopOpacity:1}} />
+                  </linearGradient>
+                </defs>
+                <path
+                  d="M50,150 Q100,100 150,120 T250,110 Q300,90 350,100"
+                  stroke="url(#routeGradient)"
+                  strokeWidth="4"
+                  fill="none"
+                  strokeLinecap="round"
+                />
+                <circle cx="50" cy="150" r="8" fill="#22C55E" stroke="white" strokeWidth="3"/>
+                <circle cx="350" cy="100" r="8" fill="#EF4444" stroke="white" strokeWidth="3"/>
+              </svg>
+              
+              <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
+                <div className="flex items-center space-x-4 text-sm">
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="text-gray-700 font-medium">Start</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <span className="text-gray-700 font-medium">Finish</span>
+                  </div>
+                </div>
               </div>
-            )}
-            {activity.maxCadence && (
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Max Cadence</p>
-                <p className="text-gray-900 font-medium">{Math.round(activity.maxCadence)} spm</p>
-              </div>
-            )}
-            {activity.maxWatts && (
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Max Power</p>
-                <p className="text-gray-900 font-medium">{Math.round(activity.maxWatts)}W</p>
-              </div>
-            )}
+            </div>
+          </div>
 
+          {/* Activity Details */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Details</h3>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm font-medium text-gray-600">Type</div>
+                  <div className="text-gray-900 font-semibold">{activity.type}</div>
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-gray-600">Elevation Gain</div>
+                  <div className="text-gray-900 font-semibold">{activity.totalElevationGain} m</div>
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-gray-600">Avg Speed</div>
+                  <div className="text-gray-900 font-semibold">{activity.formattedSpeed} {activity.speedUnit}</div>
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-gray-600">Max Speed</div>
+                  <div className="text-gray-900 font-semibold">{activity.formattedMaxSpeed} {activity.speedUnit}</div>
+                </div>
+                {activity.maxHeartrate && (
+                  <div>
+                    <div className="text-sm font-medium text-gray-600">Max HR</div>
+                    <div className="text-gray-900 font-semibold">{Math.round(activity.maxHeartrate)} bpm</div>
+                  </div>
+                )}
+                {activity.maxCadence && (
+                  <div>
+                    <div className="text-sm font-medium text-gray-600">Max Cadence</div>
+                    <div className="text-gray-900 font-semibold">{Math.round(activity.maxCadence)} spm</div>
+                  </div>
+                )}
+                {activity.maxWatts && (
+                  <div>
+                    <div className="text-sm font-medium text-gray-600">Max Power</div>
+                    <div className="text-gray-900 font-semibold">{Math.round(activity.maxWatts)}W</div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Performance Analysis */}
-        <div className="border-b border-gray-200 pb-8 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Performance Analysis</h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="p-6 bg-blue-50 rounded-lg">
-              <h4 className="font-semibold text-blue-900 mb-3">Pace Analysis</h4>
-              <p className="text-blue-800">
-                Your average pace of {activity.formattedPace} {activity.paceUnit} shows consistent effort throughout the activity.
-              </p>
-            </div>
-            
-            {activity.averageHeartrate && (
-              <div className="p-6 bg-green-50 rounded-lg">
-                <h4 className="font-semibold text-green-900 mb-3">Heart Rate Zone</h4>
-                <p className="text-green-800">
-                  Average HR of {Math.round(activity.averageHeartrate)} bpm indicates {
-                    activity.averageHeartrate < 140 ? "aerobic base" : 
-                    activity.averageHeartrate < 160 ? "aerobic threshold" : 
-                    "anaerobic"
-                  } training zone.
-                  {activity.maxHeartrate && ` Peak effort reached ${Math.round(activity.maxHeartrate)} bpm.`}
-                </p>
-              </div>
-            )}
-
-            {activity.averageCadence && (
-              <div className="p-6 bg-purple-50 rounded-lg">
-                <h4 className="font-semibold text-purple-900 mb-3">Running Form</h4>
-                <p className="text-purple-800">
-                  Cadence of {Math.round(activity.averageCadence)} steps per minute is {
-                    activity.averageCadence < 160 ? "below optimal range - consider increasing turnover" :
-                    activity.averageCadence < 180 ? "in good range" :
-                    activity.averageCadence < 190 ? "excellent - efficient running form" :
-                    "very high - ensure you're not overstriding"
-                  }.
-                </p>
-              </div>
-            )}
-
-            {activity.sufferScore && (
-              <div className="p-6 bg-red-50 rounded-lg">
-                <h4 className="font-semibold text-red-900 mb-3">Training Load</h4>
-                <p className="text-red-800">
-                  Suffer score of {activity.sufferScore} indicates {
-                    activity.sufferScore < 50 ? "low intensity training" :
-                    activity.sufferScore < 100 ? "moderate training load" :
-                    activity.sufferScore < 150 ? "challenging workout" :
-                    "very demanding session"
-                  }. Allow adequate recovery time.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Extended Metrics */}
+        {/* Performance Metrics */}
         {(activity.calories || activity.averageCadence || activity.averageWatts || activity.sufferScore || activity.averageTemp) && (
-          <div className="border-b border-gray-200 pb-8 mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Performance Data</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Metrics</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {activity.calories && (
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-2">
-                    <Flame className="h-5 w-5 text-orange-600 mr-2" />
-                    <span className="text-sm font-medium text-gray-600">Calories</span>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">{Math.round(activity.calories)}</div>
+                <div className="text-center p-4 bg-orange-50 rounded-lg">
+                  <Flame className="h-5 w-5 text-orange-600 mx-auto mb-2" />
+                  <div className="text-xl font-bold text-gray-900">{Math.round(activity.calories)}</div>
+                  <div className="text-sm text-gray-600">Calories</div>
                 </div>
               )}
-
               {activity.averageCadence && (
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-2">
-                    <Activity className="h-5 w-5 text-indigo-600 mr-2" />
-                    <span className="text-sm font-medium text-gray-600">Cadence</span>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">{Math.round(activity.averageCadence)}</div>
-                  <div className="text-sm text-gray-500">spm</div>
+                <div className="text-center p-4 bg-indigo-50 rounded-lg">
+                  <Activity className="h-5 w-5 text-indigo-600 mx-auto mb-2" />
+                  <div className="text-xl font-bold text-gray-900">{Math.round(activity.averageCadence)}</div>
+                  <div className="text-sm text-gray-600">Cadence (spm)</div>
                 </div>
               )}
-
               {activity.averageWatts && (
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-2">
-                    <Zap className="h-5 w-5 text-yellow-600 mr-2" />
-                    <span className="text-sm font-medium text-gray-600">Power</span>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">{Math.round(activity.averageWatts)}</div>
-                  <div className="text-sm text-gray-500">W</div>
+                <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                  <Zap className="h-5 w-5 text-yellow-600 mx-auto mb-2" />
+                  <div className="text-xl font-bold text-gray-900">{Math.round(activity.averageWatts)}</div>
+                  <div className="text-sm text-gray-600">Power (W)</div>
                 </div>
               )}
-
               {activity.sufferScore && (
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-2">
-                    <TrendingUp className="h-5 w-5 text-red-600 mr-2" />
-                    <span className="text-sm font-medium text-gray-600">Suffer Score</span>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">{activity.sufferScore}</div>
+                <div className="text-center p-4 bg-red-50 rounded-lg">
+                  <TrendingUp className="h-5 w-5 text-red-600 mx-auto mb-2" />
+                  <div className="text-xl font-bold text-gray-900">{activity.sufferScore}</div>
+                  <div className="text-sm text-gray-600">Suffer Score</div>
                 </div>
               )}
-
               {activity.averageTemp && (
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-2">
-                    <Thermometer className="h-5 w-5 text-blue-600 mr-2" />
-                    <span className="text-sm font-medium text-gray-600">Temperature</span>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">{Math.round(activity.averageTemp)}</div>
-                  <div className="text-sm text-gray-500">°C</div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <Thermometer className="h-5 w-5 text-blue-600 mx-auto mb-2" />
+                  <div className="text-xl font-bold text-gray-900">{Math.round(activity.averageTemp)}</div>
+                  <div className="text-sm text-gray-600">Temp (°C)</div>
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* Route Map */}
-        <div className="border-b border-gray-200 pb-8 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Route Map</h2>
-          <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
-            <div className="w-full h-full bg-gradient-to-br from-green-100 via-blue-100 to-purple-100 relative">
-              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200">
-                <path
-                  d="M50,150 Q100,100 150,120 T250,110 Q300,90 350,100"
-                  stroke="#FC4C02"
-                  strokeWidth="3"
-                  fill="none"
-                  strokeLinecap="round"
-                />
-                <circle cx="50" cy="150" r="6" fill="#22C55E" stroke="white" strokeWidth="2"/>
-                <circle cx="350" cy="100" r="6" fill="#EF4444" stroke="white" strokeWidth="2"/>
-              </svg>
-              
-              <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
-                <div className="flex items-center space-x-4 text-sm">
-                  <div className="flex items-center space-x-1">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span className="text-gray-700">Start</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <span className="text-gray-700">End</span>
-                  </div>
-                </div>
-              </div>
+        {/* Performance Analysis */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Analysis</h3>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="p-4 bg-blue-50 rounded-lg">
+              <h4 className="font-semibold text-blue-900 mb-2">Pace Analysis</h4>
+              <p className="text-sm text-blue-800">
+                Your average pace of {activity.formattedPace} {activity.paceUnit} shows consistent effort throughout the activity.
+              </p>
             </div>
+            
+            {activity.averageHeartrate && (
+              <div className="p-4 bg-green-50 rounded-lg">
+                <h4 className="font-semibold text-green-900 mb-2">Heart Rate Zone</h4>
+                <p className="text-sm text-green-800">
+                  Average HR of {Math.round(activity.averageHeartrate)} bpm indicates {
+                    activity.averageHeartrate < 140 ? "aerobic base" : 
+                    activity.averageHeartrate < 160 ? "aerobic threshold" : 
+                    "anaerobic"
+                  } training zone.
+                </p>
+              </div>
+            )}
+
+            {activity.averageCadence && (
+              <div className="p-4 bg-purple-50 rounded-lg">
+                <h4 className="font-semibold text-purple-900 mb-2">Running Form</h4>
+                <p className="text-sm text-purple-800">
+                  Cadence of {Math.round(activity.averageCadence)} spm is {
+                    activity.averageCadence < 160 ? "below optimal range" :
+                    activity.averageCadence < 180 ? "in good range" :
+                    activity.averageCadence < 190 ? "excellent form" :
+                    "very high turnover"
+                  }.
+                </p>
+              </div>
+            )}
+
+            {activity.sufferScore && (
+              <div className="p-4 bg-red-50 rounded-lg">
+                <h4 className="font-semibold text-red-900 mb-2">Training Load</h4>
+                <p className="text-sm text-red-800">
+                  Suffer score of {activity.sufferScore} indicates {
+                    activity.sufferScore < 50 ? "low intensity" :
+                    activity.sufferScore < 100 ? "moderate load" :
+                    activity.sufferScore < 150 ? "challenging workout" :
+                    "very demanding session"
+                  }.
+                </p>
+              </div>
+            )}
           </div>
         </div>
-
-
       </div>
     </div>
   );
