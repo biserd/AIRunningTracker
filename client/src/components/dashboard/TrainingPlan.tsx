@@ -35,7 +35,9 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
         body: JSON.stringify({ weeks })
       }).then(res => res.json()),
     onSuccess: (data) => {
-      setTrainingPlan(data.trainingPlan);
+      // Handle both nested and flat response structures
+      const plan = data.trainingPlan?.trainingPlan || data.trainingPlan || data;
+      setTrainingPlan(Array.isArray(plan) ? plan : []);
       toast({
         title: "Training plan generated",
         description: `Your ${selectedWeeks}-week personalized plan is ready`,
