@@ -486,6 +486,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         distanceUnit: user.unitPreference === "miles" ? "mi" : "km",
         paceUnit: user.unitPreference === "miles" ? "/mi" : "/km",
         speedUnit: user.unitPreference === "miles" ? "mph" : "km/h",
+        // Include GPS coordinates for mapping
+        startLatitude: activity.startLatitude,
+        startLongitude: activity.startLongitude,
+        endLatitude: activity.endLatitude,
+        endLongitude: activity.endLongitude,
       };
 
       res.json({ activity: formattedActivity });

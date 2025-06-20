@@ -150,38 +150,41 @@ export default function ActivityPage() {
           {/* Route Map */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Route</h3>
-            <div className="aspect-video bg-gradient-to-br from-blue-100 via-green-100 to-purple-100 rounded-lg relative overflow-hidden">
-              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid meet">
-                <defs>
-                  <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" style={{stopColor:"#22C55E", stopOpacity:1}} />
-                    <stop offset="100%" style={{stopColor:"#EF4444", stopOpacity:1}} />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M50,150 Q100,100 150,120 T250,110 Q300,90 350,100"
-                  stroke="url(#routeGradient)"
-                  strokeWidth="4"
-                  fill="none"
-                  strokeLinecap="round"
+            {activity.startLatitude && activity.startLongitude ? (
+              <div className="aspect-video bg-gray-100 rounded-lg relative overflow-hidden">
+                <iframe
+                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${activity.startLongitude - 0.01},${activity.startLatitude - 0.01},${(activity.endLongitude || activity.startLongitude) + 0.01},${(activity.endLatitude || activity.startLatitude) + 0.01}&layer=mapnik&marker=${activity.startLatitude},${activity.startLongitude}`}
+                  className="w-full h-full rounded-lg"
+                  frameBorder="0"
+                  title="Activity Route Map"
                 />
-                <circle cx="50" cy="150" r="8" fill="#22C55E" stroke="white" strokeWidth="3"/>
-                <circle cx="350" cy="100" r="8" fill="#EF4444" stroke="white" strokeWidth="3"/>
-              </svg>
-              
-              <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
-                <div className="flex items-center space-x-4 text-sm">
-                  <div className="flex items-center space-x-1">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span className="text-gray-700 font-medium">Start</span>
+                <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
+                  <div className="flex items-center space-x-4 text-sm">
+                    <div className="flex items-center space-x-1">
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <span className="text-gray-700 font-medium">Start</span>
+                    </div>
+                    {activity.endLatitude && activity.endLongitude && (
+                      <div className="flex items-center space-x-1">
+                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                        <span className="text-gray-700 font-medium">Finish</span>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center space-x-1">
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <span className="text-gray-700 font-medium">Finish</span>
+                  <div className="text-xs text-gray-600 mt-1">
+                    {activity.startLatitude.toFixed(4)}, {activity.startLongitude.toFixed(4)}
                   </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
+                <div className="text-center text-gray-500">
+                  <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No GPS data available</p>
+                  <p className="text-xs">Route tracking was not enabled for this activity</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Activity Details */}
