@@ -2,12 +2,28 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Brain } from "lucide-react";
 import { Link } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 import RacePredictions from "@/components/dashboard/RacePredictions";
 import TrainingPlan from "@/components/dashboard/TrainingPlan";
 import InjuryRiskAnalysis from "@/components/dashboard/InjuryRiskAnalysis";
 
 export default function MLInsightsPage() {
-  const [userId] = useState(1);
+  const { user, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-light-grey">
@@ -37,17 +53,17 @@ export default function MLInsightsPage() {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {/* Race Predictions */}
           <div className="xl:col-span-1">
-            <RacePredictions userId={userId} />
+            <RacePredictions userId={user.id} />
           </div>
 
           {/* Injury Risk Analysis */}
           <div className="xl:col-span-1">
-            <InjuryRiskAnalysis userId={userId} />
+            <InjuryRiskAnalysis userId={user.id} />
           </div>
 
           {/* Training Plan - Full Width */}
           <div className="xl:col-span-2">
-            <TrainingPlan userId={userId} />
+            <TrainingPlan userId={user.id} />
           </div>
         </div>
 

@@ -2,12 +2,28 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Activity } from "lucide-react";
 import { Link } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 import VO2MaxTracker from "@/components/dashboard/VO2MaxTracker";
 import HeartRateZones from "@/components/dashboard/HeartRateZones";
 import RunningEfficiency from "@/components/dashboard/RunningEfficiency";
 
 export default function PerformancePage() {
-  const [userId] = useState(1);
+  const { user, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-light-grey">
@@ -37,17 +53,17 @@ export default function PerformancePage() {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {/* VO2 Max Tracker */}
           <div className="xl:col-span-1">
-            <VO2MaxTracker userId={userId} />
+            <VO2MaxTracker userId={user.id} />
           </div>
 
           {/* Running Efficiency */}
           <div className="xl:col-span-1">
-            <RunningEfficiency userId={userId} />
+            <RunningEfficiency userId={user.id} />
           </div>
 
           {/* Heart Rate Zones - Full Width */}
           <div className="xl:col-span-2">
-            <HeartRateZones userId={userId} />
+            <HeartRateZones userId={user.id} />
           </div>
         </div>
 
