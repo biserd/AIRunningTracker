@@ -2,6 +2,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
+import type { DashboardData } from "@/lib/api";
 import AppHeader from "@/components/AppHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ function SettingsPageContent() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const { data: dashboardData } = useQuery({
+  const { data: dashboardData } = useQuery<DashboardData>({
     queryKey: [`/api/dashboard/${user!.id}`],
   });
 

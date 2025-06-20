@@ -6,7 +6,7 @@ import { aiService } from "./services/ai";
 import { mlService } from "./services/ml";
 import { performanceService } from "./services/performance";
 import { authService } from "./services/auth";
-import { insertUserSchema, loginSchema, registerSchema, insertEmailWaitlistSchema } from "@shared/schema";
+import { insertUserSchema, loginSchema, registerSchema, insertEmailWaitlistSchema, type Activity } from "@shared/schema";
 import { z } from "zod";
 
 // Authentication middleware
@@ -306,7 +306,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let totalPaceWeightedDistance = 0;
           let totalDistanceForPace = 0;
           
-          group.activities.forEach(activity => {
+          group.activities.forEach((activity: Activity) => {
             if (activity.distance > 0) {
               const activityDistanceKm = activity.distance / 1000;
               const activityPace = (activity.movingTime / 60) / activityDistanceKm; // min/km
@@ -529,6 +529,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/demo/user", async (req, res) => {
     try {
       const user = await storage.createUser({
+        email: "demo@runner.com",
         username: "demo_runner",
         password: "demo123",
       });
