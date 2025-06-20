@@ -44,7 +44,10 @@ export class PerformanceAnalyticsService {
     const activities = await storage.getActivitiesByUserId(userId, 50);
     const runningActivities = activities.filter(a => a.distance > 1000); // At least 1km runs
     
+    console.log(`VO2 calculation for user ${userId}: ${activities.length} total activities, ${runningActivities.length} running activities > 1km`);
+    
     if (runningActivities.length < 3) {
+      console.log(`Insufficient data for VO2 calculation: only ${runningActivities.length} activities`);
       return {
         current: 45, // Average baseline
         trend: 'stable',
@@ -56,6 +59,7 @@ export class PerformanceAnalyticsService {
 
     // Find best performances for different distances
     const bestEfforts = this.findBestEfforts(runningActivities);
+    console.log(`Best efforts found: ${bestEfforts.length} efforts`);
     let vo2Max = 0;
 
     // Use Jack Daniels' formula: VO2max = 15.3 × (MileTime in minutes)^-1
@@ -64,10 +68,15 @@ export class PerformanceAnalyticsService {
       const distanceInMiles = effort.distance / 1609.34;
       const pacePerMile = timeInMinutes / distanceInMiles;
       
+      console.log(`Effort: ${distanceInMiles.toFixed(2)} miles in ${timeInMinutes.toFixed(2)} min, pace: ${pacePerMile.toFixed(2)} min/mile`);
+      
       // Adjusted formula based on distance
       const estimatedVO2 = this.calculateVO2FromPace(pacePerMile, distanceInMiles);
+      console.log(`Estimated VO2 for this effort: ${estimatedVO2.toFixed(2)}`);
       vo2Max = Math.max(vo2Max, estimatedVO2);
     }
+    
+    console.log(`Final calculated VO2 Max: ${vo2Max.toFixed(2)}`)
 
     // Calculate trend based on recent vs older activities
     const trend = this.calculateVO2Trend(runningActivities);
@@ -239,15 +248,29 @@ export class PerformanceAnalyticsService {
   }
 
   private calculateVO2FromPace(pacePerMile: number, distanceInMiles: number): number {
-    // Jack Daniels' formula with distance adjustment
-    let baseVO2 = 15.3 / pacePerMile;
+    // Corrected Jack Daniels' formula: VO2max = 15.3 × (mile pace in minutes)^-1
+    // For marathon runners, use more realistic calculation
+    let baseVO2;
     
-    // Adjust for distance (longer distances typically show lower VO2max due to pacing)
-    if (distanceInMiles > 13) baseVO2 *= 1.05; // Half marathon+
-    if (distanceInMiles > 26) baseVO2 *= 1.08; // Marathon
-    if (distanceInMiles < 3) baseVO2 *= 0.95;  // Short distances
+    if (distanceInMiles >= 26) {
+      // Marathon pace formula: VO2max ≈ 850 / pace_seconds_per_mile
+      const paceSecondsPerMile = pacePerMile * 60;
+      baseVO2 = 850 / paceSecondsPerMile;
+    } else if (distanceInMiles >= 13) {
+      // Half marathon pace 
+      const paceSecondsPerMile = pacePerMile * 60;
+      baseVO2 = 900 / paceSecondsPerMile;
+    } else if (distanceInMiles >= 6) {
+      // 10K pace
+      const paceSecondsPerMile = pacePerMile * 60;
+      baseVO2 = 950 / paceSecondsPerMile;
+    } else {
+      // 5K and shorter
+      const paceSecondsPerMile = pacePerMile * 60;
+      baseVO2 = 1000 / paceSecondsPerMile;
+    }
     
-    return Math.min(baseVO2, 85); // Cap at realistic maximum
+    return Math.max(25, Math.min(baseVO2, 85)); // Realistic range for runners
   }
 
   private calculateVO2Trend(activities: Activity[]): 'improving' | 'stable' | 'declining' {
