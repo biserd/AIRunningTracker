@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Brain } from "lucide-react";
-import { Link } from "wouter";
+import { Brain } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import AppHeader from "@/components/AppHeader";
 import RacePredictions from "@/components/dashboard/RacePredictions";
 import TrainingPlan from "@/components/dashboard/TrainingPlan";
 import InjuryRiskAnalysis from "@/components/dashboard/InjuryRiskAnalysis";
@@ -27,29 +27,36 @@ export default function MLInsightsPage() {
 
   return (
     <div className="min-h-screen bg-light-grey">
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center space-x-4">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Dashboard
-              </Button>
-            </Link>
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-                <Brain className="text-white" size={20} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-charcoal">ML Performance Insights</h1>
-                <p className="text-gray-600">AI-powered analysis and predictions for your running</p>
-              </div>
+      <AppHeader />
+      
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        <div className="mb-8">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+              <Brain className="text-white" size={20} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-charcoal">ML Performance Insights</h1>
+              <p className="text-gray-600">AI-powered analysis and predictions for your running</p>
             </div>
           </div>
         </div>
-      </div>
-
-      <main className="max-w-7xl mx-auto px-6 py-8">
+        
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          <div className="xl:col-span-1">
+            <RacePredictions userId={user.id} />
+          </div>
+          <div className="xl:col-span-1">
+            <InjuryRiskAnalysis userId={user.id} />
+          </div>
+          <div className="xl:col-span-2">
+            <TrainingPlan userId={user.id} />
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {/* Race Predictions */}
           <div className="xl:col-span-1">

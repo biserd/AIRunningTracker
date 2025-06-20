@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
-import Header from "@/components/dashboard/Header";
+import AppHeader from "@/components/AppHeader";
 import WelcomeSection from "@/components/dashboard/WelcomeSection";
 import QuickStats from "@/components/dashboard/QuickStats";
 import PerformanceChart from "@/components/dashboard/PerformanceChart";
@@ -167,17 +167,39 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-light-grey">
-      <Header 
-        stravaConnected={dashboardData?.user?.stravaConnected || false}
-        onStravaConnect={handleStravaConnect}
-        onSyncActivities={handleSyncActivities}
-        onGenerateInsights={handleGenerateInsights}
-        isSyncing={syncMutation.isPending}
-        isGeneratingInsights={insightsMutation.isPending}
-      />
+      <AppHeader />
       
       <main className="max-w-7xl mx-auto px-6 py-8">
         <WelcomeSection userName={dashboardData?.user?.name || "Runner"} lastSyncAt={dashboardData?.user?.lastSyncAt} />
+        
+        {/* Strava Sync Actions */}
+        <div className="mb-8 flex flex-wrap gap-4">
+          {!dashboardData?.user?.stravaConnected ? (
+            <Button 
+              onClick={handleStravaConnect}
+              className="bg-strava-orange hover:bg-strava-orange/90 text-white"
+            >
+              Connect Strava Account
+            </Button>
+          ) : (
+            <>
+              <Button 
+                onClick={handleSyncActivities}
+                disabled={syncMutation.isPending}
+                variant="outline"
+              >
+                {syncMutation.isPending ? "Syncing..." : "Sync Activities"}
+              </Button>
+              <Button 
+                onClick={handleGenerateInsights}
+                disabled={insightsMutation.isPending}
+                variant="outline"
+              >
+                {insightsMutation.isPending ? "Generating..." : "Generate AI Insights"}
+              </Button>
+            </>
+          )}
+        </div>
         
         <QuickStats stats={dashboardData?.stats || { totalDistance: "0.0", avgPace: "0:00", trainingLoad: 0, recovery: "Unknown" }} />
         
