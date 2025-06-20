@@ -116,39 +116,48 @@ export class MLService {
     const recentPace = metrics.avgPaces.slice(-4).reduce((a, b) => a + b, 0) / 4;
     const isMetric = user.unitPreference !== "miles";
 
+    console.log(`Race prediction debug for user ${userId}:`);
+    console.log(`Recent activities: ${activities.length}`);
+    console.log(`Recent pace (min/km): ${recentPace.toFixed(2)}`);
+    console.log(`Unit preference: ${isMetric ? 'kilometers' : 'miles'}`);
+
     // Apply unit conversions if needed
     const paceForPrediction = isMetric ? recentPace : recentPace * 0.621371;
+    console.log(`Pace for prediction (min/km): ${paceForPrediction.toFixed(2)}`);
 
     const predictions: RacePrediction[] = [];
 
-    // 5K Prediction
-    const fiveKPace = paceForPrediction * 0.95; // Slightly faster than training pace
-    const fiveKTime = fiveKPace * 5;
+    // Convert training pace to realistic race paces using proven formulas
+    // Training pace is in min/km, convert to race predictions
+    
+    // 5K Prediction - typically 15-20 seconds per km faster than tempo pace
+    const fiveKPacePerKm = Math.max(3.5, paceForPrediction - 0.3); // Conservative speed increase
+    const fiveKTimeMinutes = fiveKPacePerKm * 5;
     predictions.push({
       distance: "5K",
-      predictedTime: this.formatTime(fiveKTime),
-      confidence: Math.min(95, 60 + metrics.weeklyMileage.length * 5),
-      recommendation: fiveKPace < 4.5 ? "Focus on speed work" : "Build more base mileage"
+      predictedTime: this.formatTime(fiveKTimeMinutes),
+      confidence: Math.min(85, 60 + activities.length * 2),
+      recommendation: fiveKPacePerKm < 4.0 ? "Focus on speed work and intervals" : "Build more base fitness"
     });
 
-    // 10K Prediction  
-    const tenKPace = paceForPrediction * 1.05;
-    const tenKTime = tenKPace * 10;
+    // 10K Prediction - typically 10-15 seconds per km faster than tempo
+    const tenKPacePerKm = Math.max(3.8, paceForPrediction - 0.2);
+    const tenKTimeMinutes = tenKPacePerKm * 10;
     predictions.push({
       distance: "10K",
-      predictedTime: this.formatTime(tenKTime),
-      confidence: Math.min(90, 55 + metrics.weeklyMileage.length * 4),
-      recommendation: "Add tempo runs to improve lactate threshold"
+      predictedTime: this.formatTime(tenKTimeMinutes),
+      confidence: Math.min(90, 55 + activities.length * 2),
+      recommendation: "Add tempo runs and threshold work"
     });
 
-    // Half Marathon Prediction
-    const halfPace = paceForPrediction * 1.15;
-    const halfTime = halfPace * 21.1;
+    // Half Marathon Prediction - typically 5-10 seconds per km slower than tempo
+    const halfPacePerKm = paceForPrediction + 0.1;
+    const halfTimeMinutes = halfPacePerKm * 21.1;
     predictions.push({
-      distance: "Half Marathon",
-      predictedTime: this.formatTime(halfTime),
-      confidence: Math.min(85, 50 + metrics.weeklyMileage.length * 3),
-      recommendation: "Increase long run distance gradually"
+      distance: "Half Marathon", 
+      predictedTime: this.formatTime(halfTimeMinutes),
+      confidence: Math.min(80, 50 + activities.length * 2),
+      recommendation: "Focus on long runs and aerobic base building"
     });
 
     return predictions;
