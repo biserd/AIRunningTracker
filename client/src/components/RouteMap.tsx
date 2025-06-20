@@ -53,41 +53,53 @@ export default function RouteMap({ polyline, startLat, startLng, endLat, endLng,
             `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`
           ).join(' ');
           
+          const bbox = [
+            minLng - lngPadding,
+            minLat - latPadding,
+            maxLng + lngPadding,
+            maxLat + latPadding
+          ].join(',');
+
+          // Create map with route overlay
           mapRef.current.innerHTML = `
-            <div class="relative w-full h-full bg-gray-50 rounded-lg overflow-hidden">
-              <svg width="100%" height="100%" viewBox="0 0 ${svgWidth} ${svgHeight}" class="w-full h-full">
-                <!-- Background grid -->
-                <defs>
-                  <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e5e7eb" stroke-width="0.5"/>
-                  </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#grid)" />
-                
-                <!-- Route path -->
-                <path d="${pathData}" 
-                      fill="none" 
-                      stroke="#ff6b35" 
-                      stroke-width="3" 
-                      stroke-linecap="round" 
-                      stroke-linejoin="round" />
-                
-                <!-- Start point -->
-                <circle cx="${svgCoordinates[0][0]}" 
-                        cy="${svgCoordinates[0][1]}" 
-                        r="6" 
-                        fill="#22c55e" 
-                        stroke="white" 
-                        stroke-width="2" />
-                
-                <!-- End point -->
-                <circle cx="${svgCoordinates[svgCoordinates.length - 1][0]}" 
-                        cy="${svgCoordinates[svgCoordinates.length - 1][1]}" 
-                        r="6" 
-                        fill="#ef4444" 
-                        stroke="white" 
-                        stroke-width="2" />
-              </svg>
+            <div class="relative w-full h-full rounded-lg overflow-hidden">
+              <!-- Background map -->
+              <iframe 
+                src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik"
+                class="absolute inset-0 w-full h-full"
+                style="border: none;"
+                title="Background Map">
+              </iframe>
+              
+              <!-- Route overlay -->
+              <div class="absolute inset-0 pointer-events-none">
+                <svg width="100%" height="100%" viewBox="0 0 ${svgWidth} ${svgHeight}" class="w-full h-full">
+                  <!-- Route path -->
+                  <path d="${pathData}" 
+                        fill="none" 
+                        stroke="#ff6b35" 
+                        stroke-width="4" 
+                        stroke-linecap="round" 
+                        stroke-linejoin="round"
+                        opacity="0.9" />
+                  
+                  <!-- Start point -->
+                  <circle cx="${svgCoordinates[0][0]}" 
+                          cy="${svgCoordinates[0][1]}" 
+                          r="8" 
+                          fill="#22c55e" 
+                          stroke="white" 
+                          stroke-width="3" />
+                  
+                  <!-- End point -->
+                  <circle cx="${svgCoordinates[svgCoordinates.length - 1][0]}" 
+                          cy="${svgCoordinates[svgCoordinates.length - 1][1]}" 
+                          r="8" 
+                          fill="#ef4444" 
+                          stroke="white" 
+                          stroke-width="3" />
+                </svg>
+              </div>
               
               <div class="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
                 <div class="flex items-center space-x-4 text-sm">
