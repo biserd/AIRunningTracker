@@ -61,14 +61,26 @@ export class AIService {
     };
   }
 
-  private formatActivitiesForAI(activities: Activity[]): string {
+  private formatActivitiesForAI(activities: Activity[], isMetric: boolean): string {
     return activities.slice(0, 10).map(activity => {
-      const pace = activity.distance > 0 ? (activity.movingTime / 60) / (activity.distance / 1000) : 0;
-      return `${activity.name}: ${(activity.distance / 1000).toFixed(1)}km, ${pace.toFixed(2)} min/km, ${activity.totalElevationGain}m elevation, ${activity.startDate.toDateString()}`;
+      const distanceInKm = activity.distance / 1000;
+      const pacePerKm = activity.distance > 0 ? (activity.movingTime / 60) / distanceInKm : 0;
+      
+      if (isMetric) {
+        return `${activity.name}: ${distanceInKm.toFixed(1)}km, ${pacePerKm.toFixed(2)} min/km, ${activity.totalElevationGain}m elevation, ${activity.startDate.toDateString()}`;
+      } else {
+        const distanceInMiles = distanceInKm * 0.621371;
+        const pacePerMile = pacePerKm / 0.621371;
+        const elevationInFeet = activity.totalElevationGain * 3.28084;
+        return `${activity.name}: ${distanceInMiles.toFixed(1)}mi, ${pacePerMile.toFixed(2)} min/mi, ${elevationInFeet.toFixed(0)}ft elevation, ${activity.startDate.toDateString()}`;
+      }
     }).join('\n');
   }
 
   async generateInsights(userId: number): Promise<void> {
+    const user = await storage.getUser(userId);
+    if (!user) throw new Error('User not found');
+    
     const activities = await storage.getActivitiesByUserId(userId, 30);
     console.log(`Generating insights for user ${userId} with ${activities.length} activities`);
     
@@ -77,18 +89,33 @@ export class AIService {
       return;
     }
 
+    const isMetric = user.unitPreference !== "miles";
     const stats = this.calculateStats(activities);
-    const activitiesText = this.formatActivitiesForAI(activities);
+    const activitiesText = this.formatActivitiesForAI(activities, isMetric);
+
+    // Format statistics based on unit preference
+    const totalDistance = isMetric ? 
+      `${(stats.totalDistance / 1000).toFixed(1)}km` : 
+      `${((stats.totalDistance / 1000) * 0.621371).toFixed(1)}mi`;
+    
+    const avgPace = isMetric ? 
+      `${stats.averagePace.toFixed(2)} min/km` : 
+      `${(stats.averagePace / 0.621371).toFixed(2)} min/mi`;
+    
+    const elevation = isMetric ? 
+      `${stats.totalElevation.toFixed(0)}m` : 
+      `${(stats.totalElevation * 3.28084).toFixed(0)}ft`;
 
     const prompt = `
 Analyze this runner's recent activity data and provide insights:
 
 Running Statistics:
-- Total distance: ${(stats.totalDistance / 1000).toFixed(1)}km
+- Total distance: ${totalDistance}
 - Total activities: ${stats.activityCount}
-- Average pace: ${stats.averagePace.toFixed(2)} min/km
-- Total elevation: ${stats.totalElevation.toFixed(0)}m
+- Average pace: ${avgPace}
+- Total elevation: ${elevation}
 - Average heart rate: ${stats.averageHeartRate?.toFixed(0) || 'N/A'} bpm
+- Unit preference: ${isMetric ? 'kilometers' : 'miles'}
 
 Recent Activities:
 ${activitiesText}
@@ -99,13 +126,13 @@ Provide analysis in the following JSON format:
   "pattern": "Training pattern insight (max 150 chars)", 
   "recovery": "Recovery insight (max 150 chars)",
   "recommendations": {
-    "speed": "Speed work recommendation (max 100 chars)",
-    "hills": "Hill training recommendation (max 100 chars)",
-    "longRun": "Long run recommendation (max 100 chars)"
+    "speed": "Speed work recommendation using ${isMetric ? 'km/meters' : 'miles/feet'} units (max 100 chars)",
+    "hills": "Hill training recommendation using ${isMetric ? 'km/meters' : 'miles/feet'} units (max 100 chars)",
+    "longRun": "Long run recommendation using ${isMetric ? 'km/meters' : 'miles/feet'} units (max 100 chars)"
   }
 }
 
-Focus on actionable insights based on the data patterns.`;
+IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all distance references in recommendations. Focus on actionable insights based on the data patterns.`;
 
     try {
       const response = await openai.chat.completions.create({
