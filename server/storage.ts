@@ -15,6 +15,7 @@ export interface IStorage {
   getActivityById(activityId: number): Promise<Activity | undefined>;
   getActivityByStravaId(stravaId: string): Promise<Activity | undefined>;
   getActivityByStravaIdAndUser(stravaId: string, userId: number): Promise<Activity | undefined>;
+  updateActivity(activityId: number, updates: Partial<Activity>): Promise<Activity | undefined>;
   
   createAIInsight(insight: InsertAIInsight): Promise<AIInsight>;
   getAIInsightsByUserId(userId: number, type?: string): Promise<AIInsight[]>;
@@ -150,6 +151,15 @@ export class DatabaseStorage implements IStorage {
     return plan || undefined;
   }
 
+  async updateActivity(activityId: number, updates: Partial<Activity>): Promise<Activity | undefined> {
+    const [activity] = await db
+      .update(activities)
+      .set(updates)
+      .where(eq(activities.id, activityId))
+      .returning();
+    return activity || undefined;
+  }
+
   async addToEmailWaitlist(email: string): Promise<void> {
     await db.insert(emailWaitlist).values({ email });
   }
@@ -251,6 +261,11 @@ class DatabaseStorageWithDemo extends DatabaseStorage {
   async getLatestTrainingPlan(userId: number): Promise<TrainingPlan | undefined> {
     await this.initializeDemoUser();
     return super.getLatestTrainingPlan(userId);
+  }
+
+  async updateActivity(activityId: number, updates: Partial<Activity>): Promise<Activity | undefined> {
+    await this.initializeDemoUser();
+    return super.updateActivity(activityId, updates);
   }
 }
 

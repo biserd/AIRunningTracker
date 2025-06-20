@@ -156,7 +156,25 @@ export class StravaService {
         // Check if activity already exists for this user
         const existingActivity = await storage.getActivityByStravaIdAndUser(stravaActivity.id.toString(), userId);
         if (existingActivity) {
-          console.log(`Activity already exists for user ${userId}: ${stravaActivity.name}`);
+          // Check if we need to update with polyline data
+          if (!existingActivity.polyline && !existingActivity.detailedPolyline) {
+            console.log(`Updating activity ${stravaActivity.name} with polyline data`);
+            try {
+              const detailedActivity = await this.getDetailedActivity(user.stravaAccessToken, stravaActivity.id);
+              if (detailedActivity.map?.summary_polyline || detailedActivity.map?.polyline) {
+                await storage.updateActivity(existingActivity.id, {
+                  polyline: detailedActivity.map?.summary_polyline || null,
+                  detailedPolyline: detailedActivity.map?.polyline || null,
+                });
+                console.log(`Updated activity ${stravaActivity.name} with GPS route data`);
+                syncedCount++;
+              }
+            } catch (error) {
+              console.log(`Could not fetch detailed data for existing activity ${stravaActivity.id}`);
+            }
+          } else {
+            console.log(`Activity already exists for user ${userId}: ${stravaActivity.name}`);
+          }
           continue;
         }
 
