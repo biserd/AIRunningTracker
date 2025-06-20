@@ -106,6 +106,53 @@ export default function ActivityPage() {
           </div>
         </div>
 
+        {/* Activity Details */}
+        <div className="border-b border-gray-200 pb-8 mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Activity Details</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Type</p>
+              <p className="text-gray-900 font-medium">{activity.type}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Elevation Gain</p>
+              <p className="text-gray-900 font-medium">{activity.totalElevationGain} m</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Average Speed</p>
+              <p className="text-gray-900 font-medium">{activity.formattedSpeed} {activity.speedUnit}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Max Speed</p>
+              <p className="text-gray-900 font-medium">{activity.formattedMaxSpeed} {activity.speedUnit}</p>
+            </div>
+            {activity.maxHeartrate && (
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">Max Heart Rate</p>
+                <p className="text-gray-900 font-medium">{Math.round(activity.maxHeartrate)} bpm</p>
+              </div>
+            )}
+            {activity.maxCadence && (
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">Max Cadence</p>
+                <p className="text-gray-900 font-medium">{Math.round(activity.maxCadence)} spm</p>
+              </div>
+            )}
+            {activity.maxWatts && (
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">Max Power</p>
+                <p className="text-gray-900 font-medium">{Math.round(activity.maxWatts)}W</p>
+              </div>
+            )}
+            {(activity.startLatitude && activity.startLongitude) && (
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">Start Location</p>
+                <p className="text-gray-900 font-medium text-xs">{activity.startLatitude.toFixed(4)}, {activity.startLongitude.toFixed(4)}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Extended Metrics */}
         {(activity.calories || activity.averageCadence || activity.averageWatts || activity.sufferScore || activity.averageTemp) && (
           <div className="border-b border-gray-200 pb-8 mb-8">
@@ -197,53 +244,6 @@ export default function ActivityPage() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Activity Details */}
-        <div className="border-b border-gray-200 pb-8 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Activity Details</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Type</p>
-              <p className="text-gray-900 font-medium">{activity.type}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Elevation Gain</p>
-              <p className="text-gray-900 font-medium">{activity.totalElevationGain} m</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Average Speed</p>
-              <p className="text-gray-900 font-medium">{activity.formattedSpeed} {activity.speedUnit}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Max Speed</p>
-              <p className="text-gray-900 font-medium">{activity.formattedMaxSpeed} {activity.speedUnit}</p>
-            </div>
-            {activity.maxHeartrate && (
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Max Heart Rate</p>
-                <p className="text-gray-900 font-medium">{Math.round(activity.maxHeartrate)} bpm</p>
-              </div>
-            )}
-            {activity.maxCadence && (
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Max Cadence</p>
-                <p className="text-gray-900 font-medium">{Math.round(activity.maxCadence)} spm</p>
-              </div>
-            )}
-            {activity.maxWatts && (
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Max Power</p>
-                <p className="text-gray-900 font-medium">{Math.round(activity.maxWatts)}W</p>
-              </div>
-            )}
-            {(activity.startLatitude && activity.startLongitude) && (
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Start Location</p>
-                <p className="text-gray-900 font-medium text-xs">{activity.startLatitude.toFixed(4)}, {activity.startLongitude.toFixed(4)}</p>
-              </div>
-            )}
           </div>
         </div>
 
