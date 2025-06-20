@@ -144,10 +144,60 @@ export default function ActivityPage() {
                 <p className="text-gray-900 font-medium">{Math.round(activity.maxWatts)}W</p>
               </div>
             )}
-            {(activity.startLatitude && activity.startLongitude) && (
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Start Location</p>
-                <p className="text-gray-900 font-medium text-xs">{activity.startLatitude.toFixed(4)}, {activity.startLongitude.toFixed(4)}</p>
+
+          </div>
+        </div>
+
+        {/* Performance Analysis */}
+        <div className="border-b border-gray-200 pb-8 mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Performance Analysis</h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="p-6 bg-blue-50 rounded-lg">
+              <h4 className="font-semibold text-blue-900 mb-3">Pace Analysis</h4>
+              <p className="text-blue-800">
+                Your average pace of {activity.formattedPace} {activity.paceUnit} shows consistent effort throughout the activity.
+              </p>
+            </div>
+            
+            {activity.averageHeartrate && (
+              <div className="p-6 bg-green-50 rounded-lg">
+                <h4 className="font-semibold text-green-900 mb-3">Heart Rate Zone</h4>
+                <p className="text-green-800">
+                  Average HR of {Math.round(activity.averageHeartrate)} bpm indicates {
+                    activity.averageHeartrate < 140 ? "aerobic base" : 
+                    activity.averageHeartrate < 160 ? "aerobic threshold" : 
+                    "anaerobic"
+                  } training zone.
+                  {activity.maxHeartrate && ` Peak effort reached ${Math.round(activity.maxHeartrate)} bpm.`}
+                </p>
+              </div>
+            )}
+
+            {activity.averageCadence && (
+              <div className="p-6 bg-purple-50 rounded-lg">
+                <h4 className="font-semibold text-purple-900 mb-3">Running Form</h4>
+                <p className="text-purple-800">
+                  Cadence of {Math.round(activity.averageCadence)} steps per minute is {
+                    activity.averageCadence < 160 ? "below optimal range - consider increasing turnover" :
+                    activity.averageCadence < 180 ? "in good range" :
+                    activity.averageCadence < 190 ? "excellent - efficient running form" :
+                    "very high - ensure you're not overstriding"
+                  }.
+                </p>
+              </div>
+            )}
+
+            {activity.sufferScore && (
+              <div className="p-6 bg-red-50 rounded-lg">
+                <h4 className="font-semibold text-red-900 mb-3">Training Load</h4>
+                <p className="text-red-800">
+                  Suffer score of {activity.sufferScore} indicates {
+                    activity.sufferScore < 50 ? "low intensity training" :
+                    activity.sufferScore < 100 ? "moderate training load" :
+                    activity.sufferScore < 150 ? "challenging workout" :
+                    "very demanding session"
+                  }. Allow adequate recovery time.
+                </p>
               </div>
             )}
           </div>
@@ -247,60 +297,7 @@ export default function ActivityPage() {
           </div>
         </div>
 
-        {/* Performance Analysis */}
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Performance Analysis</h2>
-          <div className="space-y-6">
-            <div className="p-6 bg-blue-50 rounded-lg">
-              <h4 className="font-semibold text-blue-900 mb-3">Pace Analysis</h4>
-              <p className="text-blue-800">
-                Your average pace of {activity.formattedPace} {activity.paceUnit} shows consistent effort throughout the activity.
-              </p>
-            </div>
-            
-            {activity.averageHeartrate && (
-              <div className="p-6 bg-green-50 rounded-lg">
-                <h4 className="font-semibold text-green-900 mb-3">Heart Rate Zone</h4>
-                <p className="text-green-800">
-                  Average HR of {Math.round(activity.averageHeartrate)} bpm indicates {
-                    activity.averageHeartrate < 140 ? "aerobic base" : 
-                    activity.averageHeartrate < 160 ? "aerobic threshold" : 
-                    "anaerobic"
-                  } training zone.
-                  {activity.maxHeartrate && ` Peak effort reached ${Math.round(activity.maxHeartrate)} bpm.`}
-                </p>
-              </div>
-            )}
 
-            {activity.averageCadence && (
-              <div className="p-6 bg-purple-50 rounded-lg">
-                <h4 className="font-semibold text-purple-900 mb-3">Running Form</h4>
-                <p className="text-purple-800">
-                  Cadence of {Math.round(activity.averageCadence)} steps per minute is {
-                    activity.averageCadence < 160 ? "below optimal range - consider increasing turnover" :
-                    activity.averageCadence < 180 ? "in good range" :
-                    activity.averageCadence < 190 ? "excellent - efficient running form" :
-                    "very high - ensure you're not overstriding"
-                  }.
-                </p>
-              </div>
-            )}
-
-            {activity.sufferScore && (
-              <div className="p-6 bg-red-50 rounded-lg">
-                <h4 className="font-semibold text-red-900 mb-3">Training Load</h4>
-                <p className="text-red-800">
-                  Suffer score of {activity.sufferScore} indicates {
-                    activity.sufferScore < 50 ? "low intensity training" :
-                    activity.sufferScore < 100 ? "moderate training load" :
-                    activity.sufferScore < 150 ? "challenging workout" :
-                    "very demanding session"
-                  }. Allow adequate recovery time.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );
