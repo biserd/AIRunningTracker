@@ -71,7 +71,9 @@ export default function ActivityPage() {
         {/* Main Stats Grid */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Activity Overview</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          
+          {/* Primary Metrics */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <MapPin className="h-6 w-6 text-blue-600 mx-auto mb-2" />
               <div className="text-2xl font-bold text-gray-900">{activity.formattedDistance}</div>
@@ -95,6 +97,51 @@ export default function ActivityPage() {
               <div className="text-sm text-gray-600">Avg HR</div>
             </div>
           </div>
+
+          {/* Performance Metrics */}
+          {(activity.calories || activity.averageCadence || activity.averageWatts || activity.sufferScore || activity.averageTemp) && (
+            <div>
+              <div className="border-t border-gray-200 pt-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                  {activity.calories && (
+                    <div className="text-center p-3 bg-orange-50 rounded-lg">
+                      <Flame className="h-5 w-5 text-orange-600 mx-auto mb-2" />
+                      <div className="text-lg font-bold text-gray-900">{Math.round(activity.calories)}</div>
+                      <div className="text-xs text-gray-600">Calories</div>
+                    </div>
+                  )}
+                  {activity.averageCadence && (
+                    <div className="text-center p-3 bg-indigo-50 rounded-lg">
+                      <Activity className="h-5 w-5 text-indigo-600 mx-auto mb-2" />
+                      <div className="text-lg font-bold text-gray-900">{Math.round(activity.averageCadence)}</div>
+                      <div className="text-xs text-gray-600">Cadence</div>
+                    </div>
+                  )}
+                  {activity.averageWatts && (
+                    <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                      <Zap className="h-5 w-5 text-yellow-600 mx-auto mb-2" />
+                      <div className="text-lg font-bold text-gray-900">{Math.round(activity.averageWatts)}</div>
+                      <div className="text-xs text-gray-600">Power</div>
+                    </div>
+                  )}
+                  {activity.sufferScore && (
+                    <div className="text-center p-3 bg-red-50 rounded-lg">
+                      <TrendingUp className="h-5 w-5 text-red-600 mx-auto mb-2" />
+                      <div className="text-lg font-bold text-gray-900">{activity.sufferScore}</div>
+                      <div className="text-xs text-gray-600">Suffer Score</div>
+                    </div>
+                  )}
+                  {activity.averageTemp && (
+                    <div className="text-center p-3 bg-blue-50 rounded-lg">
+                      <Thermometer className="h-5 w-5 text-blue-600 mx-auto mb-2" />
+                      <div className="text-lg font-bold text-gray-900">{Math.round(activity.averageTemp)}</div>
+                      <div className="text-xs text-gray-600">Temp (°C)</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Two Column Layout */}
@@ -181,49 +228,7 @@ export default function ActivityPage() {
           </div>
         </div>
 
-        {/* Performance Metrics */}
-        {(activity.calories || activity.averageCadence || activity.averageWatts || activity.sufferScore || activity.averageTemp) && (
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Metrics</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {activity.calories && (
-                <div className="text-center p-4 bg-orange-50 rounded-lg">
-                  <Flame className="h-5 w-5 text-orange-600 mx-auto mb-2" />
-                  <div className="text-xl font-bold text-gray-900">{Math.round(activity.calories)}</div>
-                  <div className="text-sm text-gray-600">Calories</div>
-                </div>
-              )}
-              {activity.averageCadence && (
-                <div className="text-center p-4 bg-indigo-50 rounded-lg">
-                  <Activity className="h-5 w-5 text-indigo-600 mx-auto mb-2" />
-                  <div className="text-xl font-bold text-gray-900">{Math.round(activity.averageCadence)}</div>
-                  <div className="text-sm text-gray-600">Cadence (spm)</div>
-                </div>
-              )}
-              {activity.averageWatts && (
-                <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                  <Zap className="h-5 w-5 text-yellow-600 mx-auto mb-2" />
-                  <div className="text-xl font-bold text-gray-900">{Math.round(activity.averageWatts)}</div>
-                  <div className="text-sm text-gray-600">Power (W)</div>
-                </div>
-              )}
-              {activity.sufferScore && (
-                <div className="text-center p-4 bg-red-50 rounded-lg">
-                  <TrendingUp className="h-5 w-5 text-red-600 mx-auto mb-2" />
-                  <div className="text-xl font-bold text-gray-900">{activity.sufferScore}</div>
-                  <div className="text-sm text-gray-600">Suffer Score</div>
-                </div>
-              )}
-              {activity.averageTemp && (
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <Thermometer className="h-5 w-5 text-blue-600 mx-auto mb-2" />
-                  <div className="text-xl font-bold text-gray-900">{Math.round(activity.averageTemp)}</div>
-                  <div className="text-sm text-gray-600">Temp (°C)</div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+
 
         {/* Performance Analysis */}
         <div className="bg-white rounded-lg shadow-sm p-6">
