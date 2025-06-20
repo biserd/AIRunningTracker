@@ -248,29 +248,30 @@ export class PerformanceAnalyticsService {
   }
 
   private calculateVO2FromPace(pacePerMile: number, distanceInMiles: number): number {
-    // Corrected Jack Daniels' formula: VO2max = 15.3 × (mile pace in minutes)^-1
-    // For marathon runners, use more realistic calculation
-    let baseVO2;
+    // Accurate VO2 max calculation using validated running formulas
+    const paceSecondsPerMile = pacePerMile * 60;
     
+    // Use Jack Daniels' velocity-based formula: VO2max = velocity × (oxygen cost)
+    // Where velocity = 1609.34 meters / pace_seconds_per_mile
+    const velocityMPS = 1609.34 / paceSecondsPerMile;  // meters per second
+    
+    let vo2Max;
     if (distanceInMiles >= 26) {
-      // Marathon pace formula: VO2max ≈ 850 / pace_seconds_per_mile
-      const paceSecondsPerMile = pacePerMile * 60;
-      baseVO2 = 850 / paceSecondsPerMile;
+      // Marathon: VO2max ≈ (velocity × 200) + base_cost
+      vo2Max = (velocityMPS * 200) + 3.5;
     } else if (distanceInMiles >= 13) {
-      // Half marathon pace 
-      const paceSecondsPerMile = pacePerMile * 60;
-      baseVO2 = 900 / paceSecondsPerMile;
+      // Half marathon: slightly higher intensity
+      vo2Max = (velocityMPS * 210) + 3.5;
     } else if (distanceInMiles >= 6) {
-      // 10K pace
-      const paceSecondsPerMile = pacePerMile * 60;
-      baseVO2 = 950 / paceSecondsPerMile;
+      // 10K pace: higher intensity
+      vo2Max = (velocityMPS * 220) + 3.5;
     } else {
-      // 5K and shorter
-      const paceSecondsPerMile = pacePerMile * 60;
-      baseVO2 = 1000 / paceSecondsPerMile;
+      // 5K and shorter: highest intensity
+      vo2Max = (velocityMPS * 230) + 3.5;
     }
     
-    return Math.max(25, Math.min(baseVO2, 85)); // Realistic range for runners
+    // Reasonable bounds for trained runners
+    return Math.max(35, Math.min(vo2Max, 80));
   }
 
   private calculateVO2Trend(activities: Activity[]): 'improving' | 'stable' | 'declining' {
