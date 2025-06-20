@@ -295,12 +295,46 @@ export default function ActivityPage() {
                 <p className="text-gray-900">{activity.formattedMaxSpeed} {activity.speedUnit}</p>
               </div>
               {activity.maxHeartrate && (
-                <>
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Max Heart Rate</p>
-                    <p className="text-gray-900">{Math.round(activity.maxHeartrate)} bpm</p>
-                  </div>
-                </>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Max Heart Rate</p>
+                  <p className="text-gray-900">{Math.round(activity.maxHeartrate)} bpm</p>
+                </div>
+              )}
+              {activity.maxCadence && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Max Cadence</p>
+                  <p className="text-gray-900">{Math.round(activity.maxCadence)} spm</p>
+                </div>
+              )}
+              {activity.maxWatts && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Max Power</p>
+                  <p className="text-gray-900">{Math.round(activity.maxWatts)}W</p>
+                </div>
+              )}
+              {activity.hasHeartrate && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Heart Rate Device</p>
+                  <p className="text-gray-900">Connected</p>
+                </div>
+              )}
+              {activity.deviceWatts && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Power Device</p>
+                  <p className="text-gray-900">Connected</p>
+                </div>
+              )}
+              {(activity.startLatitude && activity.startLongitude) && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Start Location</p>
+                  <p className="text-gray-900 text-xs">{activity.startLatitude.toFixed(4)}, {activity.startLongitude.toFixed(4)}</p>
+                </div>
+              )}
+              {(activity.endLatitude && activity.endLongitude) && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600">End Location</p>
+                  <p className="text-gray-900 text-xs">{activity.endLatitude.toFixed(4)}, {activity.endLongitude.toFixed(4)}</p>
+                </div>
               )}
             </div>
           </CardContent>
@@ -328,6 +362,45 @@ export default function ActivityPage() {
                       activity.averageHeartrate < 160 ? "aerobic threshold" : 
                       "anaerobic"
                     } training zone.
+                    {activity.maxHeartrate && ` Peak effort reached ${Math.round(activity.maxHeartrate)} bpm.`}
+                  </p>
+                </div>
+              )}
+
+              {activity.averageCadence && (
+                <div className="p-4 bg-purple-50 rounded-lg">
+                  <h4 className="font-medium text-purple-900 mb-2">Running Form</h4>
+                  <p className="text-sm text-purple-800">
+                    Cadence of {Math.round(activity.averageCadence)} steps per minute is {
+                      activity.averageCadence < 160 ? "below optimal range - consider increasing turnover" :
+                      activity.averageCadence < 180 ? "in good range" :
+                      activity.averageCadence < 190 ? "excellent - efficient running form" :
+                      "very high - ensure you're not overstriding"
+                    }.
+                  </p>
+                </div>
+              )}
+
+              {activity.sufferScore && (
+                <div className="p-4 bg-red-50 rounded-lg">
+                  <h4 className="font-medium text-red-900 mb-2">Training Load</h4>
+                  <p className="text-sm text-red-800">
+                    Suffer Score of {activity.sufferScore} indicates {
+                      activity.sufferScore < 50 ? "easy recovery effort" :
+                      activity.sufferScore < 100 ? "moderate training stress" :
+                      activity.sufferScore < 150 ? "hard training session" :
+                      "very intense workout requiring adequate recovery"
+                    }.
+                  </p>
+                </div>
+              )}
+
+              {activity.averageWatts && (
+                <div className="p-4 bg-yellow-50 rounded-lg">
+                  <h4 className="font-medium text-yellow-900 mb-2">Power Output</h4>
+                  <p className="text-sm text-yellow-800">
+                    Average power of {Math.round(activity.averageWatts)}W demonstrates your mechanical efficiency during this run.
+                    {activity.maxWatts && ` Peak power reached ${Math.round(activity.maxWatts)}W.`}
                   </p>
                 </div>
               )}
@@ -343,6 +416,15 @@ export default function ActivityPage() {
                   }
                 </p>
               </div>
+
+              {activity.calories && (
+                <div className="p-4 bg-pink-50 rounded-lg">
+                  <h4 className="font-medium text-pink-900 mb-2">Energy Expenditure</h4>
+                  <p className="text-sm text-pink-800">
+                    You burned approximately {Math.round(activity.calories)} calories during this {activity.formattedDuration} workout.
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
