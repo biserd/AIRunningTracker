@@ -76,10 +76,13 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
       case 'tempo run':
         return "bg-orange-100 text-orange-800 border-orange-200";
       case 'speed work':
-      case 'interval':
         return "bg-red-100 text-red-800 border-red-200";
       case 'long run':
         return "bg-blue-100 text-blue-800 border-blue-200";
+      case 'interval':
+        return "bg-purple-100 text-purple-800 border-purple-200";
+      case 'recovery':
+        return "bg-gray-100 text-gray-800 border-gray-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
@@ -181,16 +184,6 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
                   </div>
                 </div>
               ))}
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="font-medium text-blue-900 mb-2">Training Tips</h4>
-              <ul className="text-sm text-blue-800 space-y-1">
-                <li>• Follow the 80/20 rule: 80% easy effort, 20% hard effort</li>
-                <li>• Listen to your body and take extra rest if needed</li>
-                <li>• Gradually increase intensity and distance</li>
-                <li>• Stay hydrated and maintain proper nutrition</li>
-              </ul>
             </div>
           </div>
         )}
