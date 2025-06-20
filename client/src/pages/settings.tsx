@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, getQueryFn } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import type { DashboardData } from "@/lib/api";
 import AppHeader from "@/components/AppHeader";
@@ -17,6 +17,7 @@ function SettingsPageContent() {
 
   const { data: dashboardData } = useQuery<DashboardData>({
     queryKey: [`/api/dashboard/${user!.id}`],
+    queryFn: getQueryFn({ on401: "throw" }),
   });
 
   const [unitPreference, setUnitPreference] = useState("km");
