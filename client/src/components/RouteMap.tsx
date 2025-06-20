@@ -37,23 +37,58 @@ export default function RouteMap({ polyline, startLat, startLng, endLat, endLng,
           const latPadding = (maxLat - minLat) * 0.1;
           const lngPadding = (maxLng - minLng) * 0.1;
           
-          const bbox = [
-            minLng - lngPadding,
-            minLat - latPadding,
-            maxLng + lngPadding,
-            maxLat + latPadding
-          ].join(',');
-
-          // Create OpenStreetMap embed URL with route bounds
-          const embedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik`;
+          // Create an SVG visualization of the route
+          const svgWidth = 400;
+          const svgHeight = 300;
+          
+          // Convert coordinates to SVG space
+          const svgCoordinates = coordinates.map(([lat, lng]) => {
+            const x = ((lng - (minLng - lngPadding)) / ((maxLng + lngPadding) - (minLng - lngPadding))) * svgWidth;
+            const y = svgHeight - ((lat - (minLat - latPadding)) / ((maxLat + latPadding) - (minLat - latPadding))) * svgHeight;
+            return [x, y];
+          });
+          
+          // Create SVG path
+          const pathData = svgCoordinates.map(([x, y], index) => 
+            `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`
+          ).join(' ');
           
           mapRef.current.innerHTML = `
-            <div class="relative w-full h-full">
-              <iframe 
-                src="${embedUrl}" 
-                class="w-full h-full rounded-lg border-0"
-                title="GPS Route Map">
-              </iframe>
+            <div class="relative w-full h-full bg-gray-50 rounded-lg overflow-hidden">
+              <svg width="100%" height="100%" viewBox="0 0 ${svgWidth} ${svgHeight}" class="w-full h-full">
+                <!-- Background grid -->
+                <defs>
+                  <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e5e7eb" stroke-width="0.5"/>
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid)" />
+                
+                <!-- Route path -->
+                <path d="${pathData}" 
+                      fill="none" 
+                      stroke="#ff6b35" 
+                      stroke-width="3" 
+                      stroke-linecap="round" 
+                      stroke-linejoin="round" />
+                
+                <!-- Start point -->
+                <circle cx="${svgCoordinates[0][0]}" 
+                        cy="${svgCoordinates[0][1]}" 
+                        r="6" 
+                        fill="#22c55e" 
+                        stroke="white" 
+                        stroke-width="2" />
+                
+                <!-- End point -->
+                <circle cx="${svgCoordinates[svgCoordinates.length - 1][0]}" 
+                        cy="${svgCoordinates[svgCoordinates.length - 1][1]}" 
+                        r="6" 
+                        fill="#ef4444" 
+                        stroke="white" 
+                        stroke-width="2" />
+              </svg>
+              
               <div class="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
                 <div class="flex items-center space-x-4 text-sm">
                   <div class="flex items-center space-x-1">
