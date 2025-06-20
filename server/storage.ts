@@ -1,4 +1,4 @@
-import { users, activities, aiInsights, emailWaitlist, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type InsertEmailWaitlist } from "@shared/schema";
+import { users, activities, aiInsights, emailWaitlist, trainingPlans, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type InsertEmailWaitlist, type TrainingPlan, type InsertTrainingPlan } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
 import bcrypt from "bcrypt";
@@ -19,6 +19,9 @@ export interface IStorage {
   createAIInsight(insight: InsertAIInsight): Promise<AIInsight>;
   getAIInsightsByUserId(userId: number, type?: string): Promise<AIInsight[]>;
   deleteOldAIInsights(userId: number, type: string): Promise<void>;
+  
+  createTrainingPlan(plan: InsertTrainingPlan): Promise<TrainingPlan>;
+  getLatestTrainingPlan(userId: number): Promise<TrainingPlan | undefined>;
   
   addToEmailWaitlist(email: string): Promise<void>;
 }
@@ -127,6 +130,24 @@ export class DatabaseStorage implements IStorage {
         eq(aiInsights.userId, userId),
         eq(aiInsights.type, type)
       ));
+  }
+
+  async createTrainingPlan(insertPlan: InsertTrainingPlan): Promise<TrainingPlan> {
+    const [plan] = await db
+      .insert(trainingPlans)
+      .values(insertPlan)
+      .returning();
+    return plan;
+  }
+
+  async getLatestTrainingPlan(userId: number): Promise<TrainingPlan | undefined> {
+    const [plan] = await db
+      .select()
+      .from(trainingPlans)
+      .where(eq(trainingPlans.userId, userId))
+      .orderBy(desc(trainingPlans.createdAt))
+      .limit(1);
+    return plan || undefined;
   }
 
   async addToEmailWaitlist(email: string): Promise<void> {

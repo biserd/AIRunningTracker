@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, real, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, real, timestamp, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -68,6 +68,14 @@ export const aiInsights = pgTable("ai_insights", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const trainingPlans = pgTable("training_plans", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  weeks: integer("weeks").notNull(),
+  planData: json("plan_data").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   stravaConnected: true,
@@ -80,6 +88,11 @@ export const insertActivitySchema = createInsertSchema(activities).omit({
 });
 
 export const insertAIInsightSchema = createInsertSchema(aiInsights).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTrainingPlanSchema = createInsertSchema(trainingPlans).omit({
   id: true,
   createdAt: true,
 });
@@ -109,6 +122,8 @@ export type InsertActivity = z.infer<typeof insertActivitySchema>;
 export type Activity = typeof activities.$inferSelect;
 export type InsertAIInsight = z.infer<typeof insertAIInsightSchema>;
 export type AIInsight = typeof aiInsights.$inferSelect;
+export type InsertTrainingPlan = z.infer<typeof insertTrainingPlanSchema>;
+export type TrainingPlan = typeof trainingPlans.$inferSelect;
 export type InsertEmailWaitlist = z.infer<typeof insertEmailWaitlistSchema>;
 export type EmailWaitlist = typeof emailWaitlist.$inferSelect;
 export type LoginData = z.infer<typeof loginSchema>;
