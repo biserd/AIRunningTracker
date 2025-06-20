@@ -260,21 +260,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
           activityLimit = 6;
       }
 
-      const activities = await storage.getActivitiesByUserId(userId, activityLimit);
+      const activities = await storage.getActivitiesByUserId(userId, 100); // Get more activities for proper aggregation
       const filteredActivities = activities.filter(a => new Date(a.startDate) >= startDate);
 
-      const chartData = filteredActivities.reverse().map((activity, index) => {
-        const distanceInKm = activity.distance / 1000;
-        const distanceConverted = user.unitPreference === "miles" ? distanceInKm * 0.621371 : distanceInKm;
-        const pacePerKm = activity.distance > 0 ? (activity.movingTime / 60) / distanceInKm : 0;
-        const paceConverted = user.unitPreference === "miles" ? pacePerKm / 0.621371 : pacePerKm;
+      // Group activities by week/month
+      const groupedData = new Map();
+      
+      filteredActivities.forEach(activity => {
+        const activityDate = new Date(activity.startDate);
+        let groupKey: string;
         
-        return {
-          week: timeRange === "year" ? `Month ${index + 1}` : `Week ${index + 1}`,
-          pace: paceConverted,
-          distance: distanceConverted,
-        };
+        if (timeRange === "year") {
+          // Group by month for year view
+          groupKey = `${activityDate.getFullYear()}-${String(activityDate.getMonth() + 1).padStart(2, '0')}`;
+        } else {
+          // Group by week for 30days and 3months views
+          const weekStart = new Date(activityDate);
+          weekStart.setDate(activityDate.getDate() - activityDate.getDay()); // Start of week (Sunday)
+          groupKey = weekStart.toISOString().split('T')[0]; // YYYY-MM-DD format
+        }
+        
+        if (!groupedData.has(groupKey)) {
+          groupedData.set(groupKey, {
+            activities: [],
+            totalDistance: 0,
+            totalTime: 0,
+            date: activityDate
+          });
+        }
+        
+        const group = groupedData.get(groupKey);
+        group.activities.push(activity);
+        group.totalDistance += activity.distance;
+        group.totalTime += activity.movingTime;
       });
+
+      // Convert grouped data to chart format
+      const chartData = Array.from(groupedData.entries())
+        .sort(([a], [b]) => a.localeCompare(b)) // Sort by date
+        .map(([key, group], index) => {
+          const distanceInKm = group.totalDistance / 1000;
+          const distanceConverted = user.unitPreference === "miles" ? distanceInKm * 0.621371 : distanceInKm;
+          
+          // Calculate weighted average pace across all activities in the group
+          let totalPaceWeightedDistance = 0;
+          let totalDistanceForPace = 0;
+          
+          group.activities.forEach(activity => {
+            if (activity.distance > 0) {
+              const activityDistanceKm = activity.distance / 1000;
+              const activityPace = (activity.movingTime / 60) / activityDistanceKm; // min/km
+              totalPaceWeightedDistance += activityPace * activityDistanceKm;
+              totalDistanceForPace += activityDistanceKm;
+            }
+          });
+          
+          const averagePace = totalDistanceForPace > 0 ? totalPaceWeightedDistance / totalDistanceForPace : 0;
+          const paceConverted = user.unitPreference === "miles" ? averagePace / 0.621371 : averagePace;
+          
+          let label: string;
+          if (timeRange === "year") {
+            const date = new Date(key + "-01");
+            label = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+          } else {
+            const weekStart = new Date(key);
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            label = `${weekStart.getMonth() + 1}/${weekStart.getDate()}-${weekEnd.getMonth() + 1}/${weekEnd.getDate()}`;
+          }
+          
+          return {
+            week: label,
+            pace: paceConverted,
+            distance: distanceConverted,
+            activitiesCount: group.activities.length
+          };
+        })
+        .slice(-activityLimit); // Limit to requested number of periods
 
       res.json({ chartData });
     } catch (error) {
