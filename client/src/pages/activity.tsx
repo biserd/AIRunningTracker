@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp } from "lucide-react";
 import { Link } from "wouter";
+import AppHeader from "@/components/AppHeader";
 
 export default function ActivityPage() {
   const [match, params] = useRoute("/activity/:id");
@@ -42,26 +43,28 @@ export default function ActivityPage() {
   const activity = activityData.activity;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="mb-6">
-        <Link href="/dashboard">
-          <Button variant="ghost" className="mb-4">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
-          </Button>
-        </Link>
-        <h1 className="text-3xl font-bold text-gray-900">{activity.name}</h1>
-        <p className="text-gray-600">
-          {new Date(activity.startDate).toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })}
-        </p>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <AppHeader />
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="mb-6">
+          <Link href="/dashboard">
+            <Button variant="ghost" className="mb-4">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Dashboard
+            </Button>
+          </Link>
+          <h1 className="text-3xl font-bold text-gray-900">{activity.name}</h1>
+          <p className="text-gray-600">
+            {new Date(activity.startDate).toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}
+          </p>
+        </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
@@ -228,6 +231,7 @@ export default function ActivityPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   );
