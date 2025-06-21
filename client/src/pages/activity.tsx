@@ -499,6 +499,8 @@ function HeartRateChart({ activity, streams }: { activity: any, streams?: any })
   const avgHR = activity.averageHeartrate;
   const maxHR = activity.maxHeartrate || avgHR * 1.15;
   
+
+  
   let zones = [
     { zone: 'Zone 1', range: '50-60%', min: maxHR * 0.5, max: maxHR * 0.6, color: '#22c55e', time: 0 },
     { zone: 'Zone 2', range: '60-70%', min: maxHR * 0.6, max: maxHR * 0.7, color: '#3b82f6', time: 0 },
@@ -576,12 +578,12 @@ function HeartRateChart({ activity, streams }: { activity: any, streams?: any })
       </div>
 
       <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={timeInZones} layout="horizontal">
+        <BarChart data={timeInZones}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis type="number" />
-          <YAxis dataKey="zone" type="category" width={60} />
+          <XAxis dataKey="zone" />
+          <YAxis />
           <Tooltip formatter={(value: any) => [`${value} min`, 'Time']} />
-          <Bar dataKey="timeMinutes" fill="#3b82f6" />
+          <Bar dataKey="timeMinutes" fill="#ef4444" />
         </BarChart>
       </ResponsiveContainer>
 
