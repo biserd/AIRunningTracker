@@ -687,16 +687,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return activityDate.getMonth() === currentMonth && activityDate.getFullYear() === currentYear;
       });
 
-      // Calculate monthly distance
+      // Calculate monthly distance (convert from meters to km)
       const monthlyDistance = currentMonthActivities.reduce((total, activity) => {
-        return total + (activity.distance || 0);
+        return total + ((activity.distance || 0) / 1000); // Convert meters to km
       }, 0);
 
       // Calculate best 5K time from recent activities
       const fiveKActivities = activities.filter(activity => {
-        const distance = activity.distance || 0;
+        const distance = (activity.distance || 0) / 1000; // Convert to km
         return distance >= 4.5 && distance <= 5.5; // 5K range
-      }).sort((a, b) => (a.duration || 0) - (b.duration || 0));
+      }).sort((a, b) => (a.movingTime || 0) - (b.movingTime || 0));
 
       const best5K = fiveKActivities[0];
       
@@ -707,11 +707,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const weeklyDistance = weeklyActivities.reduce((total, activity) => {
-        return total + (activity.distance || 0);
+        return total + ((activity.distance || 0) / 1000); // Convert meters to km
       }, 0);
 
       // Format distance based on user preference
-      const isMetric = user.unitPreference !== 'imperial';
+      const isMetric = user.unitPreference === 'metric' || user.unitPreference === null;
       
       const goals = [];
 
@@ -732,7 +732,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 5K time goal (if user has 5K activities)
       if (best5K) {
-        const currentTime = best5K.duration || 0;
+        const currentTime = best5K.movingTime || 0;
         const targetTime = 20 * 60; // 20 minutes in seconds
         const currentTimeMinutes = Math.floor(currentTime / 60);
         const currentTimeSeconds = currentTime % 60;
