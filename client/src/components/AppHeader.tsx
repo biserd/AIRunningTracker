@@ -18,11 +18,11 @@ const navigationItems = [
 ];
 
 export default function AppHeader() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [location] = useLocation();
 
   const handleLogout = () => {
-    window.location.href = "/api/logout";
+    logout();
   };
 
   return (
