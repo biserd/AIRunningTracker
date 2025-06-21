@@ -564,6 +564,13 @@ function HeartRateChart({ activity, streams }: { activity: any, streams?: any })
     percentage: Math.round(zone.time * 100)
   }));
 
+  // Create chart data with proper structure
+  const chartData = timeInZones.map(zone => ({
+    zone: zone.zone,
+    time: zone.timeMinutes,
+    color: zone.color
+  }));
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4 text-sm">
@@ -577,15 +584,17 @@ function HeartRateChart({ activity, streams }: { activity: any, streams?: any })
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={timeInZones}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="zone" />
-          <YAxis />
-          <Tooltip formatter={(value: any) => [`${value} min`, 'Time']} />
-          <Bar dataKey="timeMinutes" fill="#ef4444" />
-        </BarChart>
-      </ResponsiveContainer>
+      <div className="h-48">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="zone" />
+            <YAxis label={{ value: 'Minutes', angle: -90, position: 'insideLeft' }} />
+            <Tooltip formatter={(value: any) => [`${value} min`, 'Time in Zone']} />
+            <Bar dataKey="time" fill="#ef4444" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
 
       <div className="space-y-2">
         {timeInZones.map((zone, index) => (
