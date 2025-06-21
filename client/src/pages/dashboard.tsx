@@ -44,8 +44,12 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user.id}`] });
       toast({
         title: "Activities synced",
-        description: "Your Strava activities have been synced successfully",
+        description: "Activities synced and AI insights generated successfully",
       });
+      // Refresh the page to show updated data
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     },
     onError: (error: any) => {
       toast({
@@ -81,10 +85,11 @@ export default function Dashboard() {
     if (urlParams.get('connected') === 'true') {
       toast({
         title: "Strava Connected!",
-        description: "Your Strava account has been successfully connected",
+        description: "Activities synced and AI insights generated successfully",
       });
-      // Clear URL parameters
+      // Clear URL parameters and refresh data
       window.history.replaceState({}, document.title, window.location.pathname);
+      queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user.id}`] });
     } else if (urlParams.get('error')) {
       toast({
         title: "Connection Failed",
@@ -94,7 +99,7 @@ export default function Dashboard() {
       // Clear URL parameters
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, []);
+  }, [user?.id]);
 
   const handleStravaConnect = () => {
     const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID || "default_client_id";
@@ -163,22 +168,13 @@ export default function Dashboard() {
               Connect Strava Account
             </Button>
           ) : (
-            <>
-              <Button 
-                onClick={handleSyncActivities}
-                disabled={syncMutation.isPending}
-                variant="outline"
-              >
-                {syncMutation.isPending ? "Syncing..." : "Sync Activities"}
-              </Button>
-              <Button 
-                onClick={handleGenerateInsights}
-                disabled={insightsMutation.isPending}
-                variant="outline"
-              >
-                {insightsMutation.isPending ? "Generating..." : "Generate AI Insights"}
-              </Button>
-            </>
+            <Button 
+              onClick={handleSyncActivities}
+              disabled={syncMutation.isPending}
+              variant="outline"
+            >
+              {syncMutation.isPending ? "Syncing..." : "Sync Activities"}
+            </Button>
           )}
         </div>
         

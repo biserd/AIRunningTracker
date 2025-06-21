@@ -729,7 +729,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }, 0);
 
       // Format distance based on user preference
-      const isMetric = user.unitPreference === 'metric' || user.unitPreference === null;
+      const isMetric = user.unitPreference === 'km' || user.unitPreference === null;
       
       const goals = [];
 

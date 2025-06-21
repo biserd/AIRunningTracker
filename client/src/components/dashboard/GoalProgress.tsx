@@ -67,7 +67,7 @@ export default function GoalProgress({ userId, unitPreference = 'metric' }: Goal
           </div>
         ) : (
           <div className="space-y-6">
-            {goals.map((goal, index) => {
+            {goals.map((goal: any, index: number) => {
               const IconComponent = getGoalIcon(goal.title);
               return (
                 <div key={index} className="space-y-3">
