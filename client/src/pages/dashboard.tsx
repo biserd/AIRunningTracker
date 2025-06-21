@@ -187,12 +187,12 @@ export default function Dashboard() {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            <RunnerScoreRadar />
             <PerformanceChart 
               data={chartData?.chartData || dashboardData?.chartData || []} 
               unitPreference={dashboardData?.user?.unitPreference}
               onTimeRangeChange={handleTimeRangeChange}
             />
+            <RunnerScoreRadar />
             <RecentActivities activities={dashboardData?.activities || []} unitPreference={dashboardData?.user?.unitPreference} />
           </div>
           

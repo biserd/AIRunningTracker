@@ -109,18 +109,30 @@ const RadarChart = ({ data }: { data: RunnerScoreData['components'] }) => {
           />
         ))}
         
-        {/* Labels */}
+        {/* Labels with background */}
         {axisPoints.map((point, index) => (
-          <text
-            key={index}
-            x={point.labelX}
-            y={point.labelY}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            className="text-base font-medium fill-gray-700"
-          >
-            {point.label}
-          </text>
+          <g key={index}>
+            {/* White background for label */}
+            <rect
+              x={point.labelX - 30}
+              y={point.labelY - 8}
+              width="60"
+              height="16"
+              fill="white"
+              stroke="#E5E7EB"
+              strokeWidth="1"
+              rx="8"
+            />
+            <text
+              x={point.labelX}
+              y={point.labelY}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              className="text-sm font-semibold fill-gray-800"
+            >
+              {point.label}
+            </text>
+          </g>
         ))}
       </svg>
       
