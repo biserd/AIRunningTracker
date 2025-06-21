@@ -340,13 +340,23 @@ export default function ActivityPage() {
             {activity.averageWatts && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Zap className="mr-2 h-5 w-5 text-yellow-600" />
-                    Power Analysis
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Zap className="mr-2 h-5 w-5 text-yellow-600" />
+                      Power Analysis
+                    </div>
+                    {performanceData?.streams?.watts && (
+                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                        Real Data
+                      </span>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <PowerChart activity={activity} />
+                  <PowerChart 
+                    activity={activity} 
+                    streams={performanceData?.streams}
+                  />
                 </CardContent>
               </Card>
             )}
@@ -675,25 +685,81 @@ function CadenceChart({ activity }: { activity: any }) {
 }
 
 // Power Chart Component  
-function PowerChart({ activity }: { activity: any }) {
+function PowerChart({ activity, streams }: { activity: any, streams?: any }) {
   const avgWatts = activity.averageWatts;
   const maxWatts = activity.maxWatts || avgWatts * 1.4;
   
   // Generate power zones based on FTP estimation
   const estimatedFTP = avgWatts * 0.85; // Rough FTP estimation
   
-  const powerZones = [
-    { zone: 'Zone 1', range: '<55% FTP', threshold: estimatedFTP * 0.55, time: 0.4, color: '#22c55e' },
-    { zone: 'Zone 2', range: '55-75% FTP', threshold: estimatedFTP * 0.75, time: 0.3, color: '#3b82f6' },
-    { zone: 'Zone 3', range: '75-90% FTP', threshold: estimatedFTP * 0.90, time: 0.2, color: '#f59e0b' },
-    { zone: 'Zone 4', range: '90-105% FTP', threshold: estimatedFTP * 1.05, time: 0.08, color: '#ef4444' },
-    { zone: 'Zone 5', range: '>105% FTP', threshold: estimatedFTP * 1.2, time: 0.02, color: '#7c3aed' }
+  let powerZones = [
+    { zone: 'Zone 1', range: '<55% FTP', min: 0, max: estimatedFTP * 0.55, time: 0, color: '#22c55e' },
+    { zone: 'Zone 2', range: '55-75% FTP', min: estimatedFTP * 0.55, max: estimatedFTP * 0.75, time: 0, color: '#3b82f6' },
+    { zone: 'Zone 3', range: '75-90% FTP', min: estimatedFTP * 0.75, max: estimatedFTP * 0.90, time: 0, color: '#f59e0b' },
+    { zone: 'Zone 4', range: '90-105% FTP', min: estimatedFTP * 0.90, max: estimatedFTP * 1.05, time: 0, color: '#ef4444' },
+    { zone: 'Zone 5', range: '>105% FTP', min: estimatedFTP * 1.05, max: maxWatts, time: 0, color: '#7c3aed' }
   ];
+
+  // Use real power data if available
+  if (streams?.watts?.data && streams?.time?.data) {
+    const powerData = streams.watts.data;
+    const timeData = streams.time.data;
+    const totalTime = activity.movingTime;
+    
+    // Calculate actual time in each zone
+    const zoneTimes = [0, 0, 0, 0, 0];
+    let previousTime = 0;
+    
+    powerData.forEach((watts: number, index: number) => {
+      if (watts > 0) {
+        const currentTime = timeData[index] || 0;
+        const timeDiff = index === 0 ? 0 : currentTime - previousTime;
+        
+        // Determine which zone this power falls into
+        if (watts >= powerZones[4].min) zoneTimes[4] += timeDiff;
+        else if (watts >= powerZones[3].min) zoneTimes[3] += timeDiff;
+        else if (watts >= powerZones[2].min) zoneTimes[2] += timeDiff;
+        else if (watts >= powerZones[1].min) zoneTimes[1] += timeDiff;
+        else zoneTimes[0] += timeDiff;
+        
+        previousTime = currentTime;
+      }
+    });
+    
+    // Update zones with actual data
+    powerZones = powerZones.map((zone, index) => ({
+      ...zone,
+      time: zoneTimes[index] / totalTime // Convert to percentage
+    }));
+  } else {
+    // Fallback to estimated distribution based on activity type and intensity
+    const intensity = avgWatts / estimatedFTP;
+    let zoneDistribution;
+    if (intensity < 0.7) {
+      zoneDistribution = [0.5, 0.3, 0.15, 0.04, 0.01]; // Easy effort
+    } else if (intensity < 0.85) {
+      zoneDistribution = [0.3, 0.4, 0.2, 0.08, 0.02]; // Moderate effort
+    } else {
+      zoneDistribution = [0.1, 0.25, 0.35, 0.25, 0.05]; // Hard effort
+    }
+    
+    powerZones = powerZones.map((zone, index) => ({
+      ...zone,
+      time: zoneDistribution[index]
+    }));
+  }
 
   const timeInZones = powerZones.map(zone => ({
     ...zone,
     timeMinutes: Math.round((zone.time * activity.movingTime) / 60),
     percentage: Math.round(zone.time * 100)
+  }));
+
+  // Create chart data with proper structure
+  const chartData = timeInZones.map(zone => ({
+    zone: zone.zone,
+    time: zone.timeMinutes,
+    color: zone.color
   }));
 
   return (
@@ -709,15 +775,17 @@ function PowerChart({ activity }: { activity: any }) {
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={timeInZones}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="zone" />
-          <YAxis />
-          <Tooltip formatter={(value: any) => [`${value} min`, 'Time']} />
-          <Bar dataKey="timeMinutes" fill="#eab308" />
-        </BarChart>
-      </ResponsiveContainer>
+      <div className="h-48">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="zone" />
+            <YAxis label={{ value: 'Minutes', angle: -90, position: 'insideLeft' }} />
+            <Tooltip formatter={(value: any) => [`${value} min`, 'Time in Zone']} />
+            <Bar dataKey="time" fill="#eab308" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
 
       <div className="space-y-2">
         {timeInZones.map((zone, index) => (
