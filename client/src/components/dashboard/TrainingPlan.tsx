@@ -40,7 +40,9 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
   // Update local state when saved plan is loaded
   useEffect(() => {
     if (savedPlan?.trainingPlan) {
-      setTrainingPlan(Array.isArray(savedPlan.trainingPlan) ? savedPlan.trainingPlan : []);
+      // Handle nested structure: savedPlan.trainingPlan.trainingPlan
+      const plan = savedPlan.trainingPlan.trainingPlan || savedPlan.trainingPlan;
+      setTrainingPlan(Array.isArray(plan) ? plan : []);
     }
   }, [savedPlan]);
 
