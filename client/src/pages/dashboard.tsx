@@ -187,6 +187,7 @@ export default function Dashboard() {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
+            <RunnerScoreRadar />
             <PerformanceChart 
               data={chartData?.chartData || dashboardData?.chartData || []} 
               unitPreference={dashboardData?.user?.unitPreference}
@@ -196,7 +197,6 @@ export default function Dashboard() {
           </div>
           
           <div className="space-y-6">
-            <RunnerScoreRadar />
             <AIInsights insights={dashboardData?.insights || {}} />
             <TrainingRecommendations recommendations={dashboardData?.insights?.recommendations || []} />
             <FitnessTrends chartData={dashboardData?.chartData || []} unitPreference={dashboardData?.user?.unitPreference} />
