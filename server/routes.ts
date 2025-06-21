@@ -811,6 +811,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (activity.streamsData) {
         try {
           streams = JSON.parse(activity.streamsData);
+          
+          // Convert cadence stream data from RPM to SPM (multiply by 2)
+          if (streams?.cadence?.data) {
+            streams.cadence.data = streams.cadence.data.map((rpm: number) => rpm * 2);
+          }
         } catch (e) {
           console.error('Error parsing streams data:', e);
         }
@@ -819,6 +824,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (activity.lapsData) {
         try {
           laps = JSON.parse(activity.lapsData);
+          
+          // Convert lap cadence data from RPM to SPM (multiply by 2)
+          if (laps && Array.isArray(laps)) {
+            laps = laps.map(lap => ({
+              ...lap,
+              average_cadence: lap.average_cadence ? lap.average_cadence * 2 : lap.average_cadence,
+              max_cadence: lap.max_cadence ? lap.max_cadence * 2 : lap.max_cadence
+            }));
+          }
         } catch (e) {
           console.error('Error parsing laps data:', e);
         }
