@@ -6,6 +6,7 @@ import { aiService } from "./services/ai";
 import { mlService } from "./services/ml";
 import { performanceService } from "./services/performance";
 import { authService } from "./services/auth";
+import { emailService } from "./services/email";
 import { insertUserSchema, loginSchema, registerSchema, insertEmailWaitlistSchema, type Activity } from "@shared/schema";
 import { z } from "zod";
 
@@ -37,6 +38,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userData = registerSchema.parse(req.body);
       const result = await authService.register(userData);
+      
+      // Send notification email
+      await emailService.sendRegistrationNotification(userData.email);
+      
       res.json(result);
     } catch (error: any) {
       console.error('Registration error:', error);
@@ -73,6 +78,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email } = insertEmailWaitlistSchema.parse(req.body);
       await authService.addToWaitlist(email);
+      
+      // Send notification email
+      await emailService.sendWaitlistNotification(email);
+      
       res.json({ message: "Successfully added to waitlist" });
     } catch (error: any) {
       console.error('Waitlist error:', error);
