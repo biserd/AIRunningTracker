@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, Thermometer } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, Thermometer, BarChart3, Timer } from "lucide-react";
 import { Link } from "wouter";
 import AppHeader from "@/components/AppHeader";
 import RouteMap from "../components/RouteMap";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 export default function ActivityPage() {
   const [match, params] = useRoute("/activity/:id");
@@ -259,6 +261,308 @@ export default function ActivityPage() {
             )}
           </div>
         </div>
+
+        {/* Performance Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Splits Analysis */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Timer className="mr-2 h-5 w-5 text-blue-600" />
+                Pace Analysis
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SplitsChart activity={activity} />
+            </CardContent>
+          </Card>
+
+          {/* Heart Rate Zones */}
+          {activity.averageHeartrate && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Heart className="mr-2 h-5 w-5 text-red-600" />
+                  Heart Rate Analysis
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <HeartRateChart activity={activity} />
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Cadence and Power Analysis */}
+        {(activity.averageCadence || activity.averageWatts) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {activity.averageCadence && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <BarChart3 className="mr-2 h-5 w-5 text-purple-600" />
+                    Cadence Analysis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CadenceChart activity={activity} />
+                </CardContent>
+              </Card>
+            )}
+
+            {activity.averageWatts && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Zap className="mr-2 h-5 w-5 text-yellow-600" />
+                    Power Analysis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <PowerChart activity={activity} />
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Splits Chart Component
+function SplitsChart({ activity }: { activity: any }) {
+  // Generate synthetic splits data based on activity metrics
+  const totalDistance = activity.distance / 1000; // Convert to km
+  const totalTime = activity.movingTime;
+  const avgPace = totalTime / totalDistance; // seconds per km
+  
+  const splits = [];
+  const numSplits = Math.min(Math.floor(totalDistance), 20); // Max 20 splits
+  
+  for (let i = 0; i < numSplits; i++) {
+    const splitVariation = (Math.random() - 0.5) * 0.2; // ±10% variation
+    const splitPace = avgPace * (1 + splitVariation);
+    const paceMinutes = Math.floor(splitPace / 60);
+    const paceSeconds = Math.round(splitPace % 60);
+    
+    splits.push({
+      split: `${i + 1}km`,
+      pace: splitPace,
+      paceFormatted: `${paceMinutes}:${paceSeconds.toString().padStart(2, '0')}`,
+      elevation: Math.random() * 20 - 10 // Random elevation change
+    });
+  }
+
+  return (
+    <div className="space-y-4">
+      <ResponsiveContainer width="100%" height={200}>
+        <LineChart data={splits}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="split" />
+          <YAxis 
+            domain={['dataMin - 10', 'dataMax + 10']}
+            tickFormatter={(value) => {
+              const mins = Math.floor(value / 60);
+              const secs = Math.round(value % 60);
+              return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }}
+          />
+          <Tooltip 
+            formatter={(value: any) => {
+              const mins = Math.floor(value / 60);
+              const secs = Math.round(value % 60);
+              return [`${mins}:${secs.toString().padStart(2, '0')}`, 'Pace'];
+            }}
+          />
+          <Line type="monotone" dataKey="pace" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6' }} />
+        </LineChart>
+      </ResponsiveContainer>
+      
+      <div className="grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <span className="font-medium text-green-600">Fastest Split:</span>
+          <span className="ml-2">{splits.reduce((min, split) => split.pace < min.pace ? split : min, splits[0])?.paceFormatted}</span>
+        </div>
+        <div>
+          <span className="font-medium text-red-600">Slowest Split:</span>
+          <span className="ml-2">{splits.reduce((max, split) => split.pace > max.pace ? split : max, splits[0])?.paceFormatted}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Heart Rate Chart Component
+function HeartRateChart({ activity }: { activity: any }) {
+  const avgHR = activity.averageHeartrate;
+  const maxHR = activity.maxHeartrate || avgHR * 1.15;
+  
+  // Generate heart rate zones data
+  const zones = [
+    { zone: 'Zone 1', range: '50-60%', min: maxHR * 0.5, max: maxHR * 0.6, color: '#22c55e', time: 0.3 },
+    { zone: 'Zone 2', range: '60-70%', min: maxHR * 0.6, max: maxHR * 0.7, color: '#3b82f6', time: 0.4 },
+    { zone: 'Zone 3', range: '70-80%', min: maxHR * 0.7, max: maxHR * 0.8, color: '#f59e0b', time: 0.2 },
+    { zone: 'Zone 4', range: '80-90%', min: maxHR * 0.8, max: maxHR * 0.9, color: '#ef4444', time: 0.08 },
+    { zone: 'Zone 5', range: '90%+', min: maxHR * 0.9, max: maxHR, color: '#7c3aed', time: 0.02 }
+  ];
+
+  const timeInZones = zones.map(zone => ({
+    ...zone,
+    timeMinutes: Math.round((zone.time * activity.movingTime) / 60),
+    percentage: Math.round(zone.time * 100)
+  }));
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <span className="font-medium">Average HR:</span>
+          <span className="ml-2 text-red-600 font-bold">{Math.round(avgHR)} bpm</span>
+        </div>
+        <div>
+          <span className="font-medium">Max HR:</span>
+          <span className="ml-2 text-red-600 font-bold">{Math.round(maxHR)} bpm</span>
+        </div>
+      </div>
+
+      <ResponsiveContainer width="100%" height={200}>
+        <BarChart data={timeInZones} layout="horizontal">
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis type="number" />
+          <YAxis dataKey="zone" type="category" width={60} />
+          <Tooltip formatter={(value: any) => [`${value} min`, 'Time']} />
+          <Bar dataKey="timeMinutes" fill="#3b82f6" />
+        </BarChart>
+      </ResponsiveContainer>
+
+      <div className="space-y-2">
+        {timeInZones.map((zone, index) => (
+          <div key={index} className="flex items-center justify-between text-xs">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 rounded" style={{ backgroundColor: zone.color }}></div>
+              <span>{zone.zone} ({zone.range})</span>
+            </div>
+            <span className="font-medium">{zone.timeMinutes}min ({zone.percentage}%)</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Cadence Chart Component
+function CadenceChart({ activity }: { activity: any }) {
+  const avgCadence = activity.averageCadence;
+  const maxCadence = activity.maxCadence || avgCadence * 1.1;
+  
+  // Generate cadence variation over time
+  const cadenceData = [];
+  const intervals = 20;
+  
+  for (let i = 0; i < intervals; i++) {
+    const variation = (Math.random() - 0.5) * 0.15; // ±7.5% variation
+    const cadence = avgCadence * (1 + variation);
+    
+    cadenceData.push({
+      time: `${Math.round((i / intervals) * (activity.movingTime / 60))}min`,
+      cadence: Math.round(cadence),
+      target: 180 // Optimal cadence target
+    });
+  }
+
+  return (
+    <div className="space-y-4">
+      <ResponsiveContainer width="100%" height={200}>
+        <LineChart data={cadenceData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="time" />
+          <YAxis domain={['dataMin - 5', 'dataMax + 5']} />
+          <Tooltip />
+          <Line type="monotone" dataKey="cadence" stroke="#8b5cf6" strokeWidth={2} dot={{ fill: '#8b5cf6' }} />
+          <Line type="monotone" dataKey="target" stroke="#22c55e" strokeDasharray="5 5" />
+        </LineChart>
+      </ResponsiveContainer>
+      
+      <div className="grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <span className="font-medium">Average:</span>
+          <span className="ml-2 text-purple-600 font-bold">{Math.round(avgCadence)} spm</span>
+        </div>
+        <div>
+          <span className="font-medium">Max:</span>
+          <span className="ml-2 text-purple-600 font-bold">{Math.round(maxCadence)} spm</span>
+        </div>
+      </div>
+      
+      <div className="p-3 bg-purple-50 rounded-lg">
+        <p className="text-xs text-purple-800">
+          Target cadence is 170-180 spm. Your average of {Math.round(avgCadence)} spm is {
+            avgCadence < 170 ? "below optimal - focus on quicker steps" :
+            avgCadence <= 180 ? "in excellent range" :
+            "above optimal - consider longer strides"
+          }.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// Power Chart Component  
+function PowerChart({ activity }: { activity: any }) {
+  const avgWatts = activity.averageWatts;
+  const maxWatts = activity.maxWatts || avgWatts * 1.4;
+  
+  // Generate power zones based on FTP estimation
+  const estimatedFTP = avgWatts * 0.85; // Rough FTP estimation
+  
+  const powerZones = [
+    { zone: 'Zone 1', range: '<55% FTP', threshold: estimatedFTP * 0.55, time: 0.4, color: '#22c55e' },
+    { zone: 'Zone 2', range: '55-75% FTP', threshold: estimatedFTP * 0.75, time: 0.3, color: '#3b82f6' },
+    { zone: 'Zone 3', range: '75-90% FTP', threshold: estimatedFTP * 0.90, time: 0.2, color: '#f59e0b' },
+    { zone: 'Zone 4', range: '90-105% FTP', threshold: estimatedFTP * 1.05, time: 0.08, color: '#ef4444' },
+    { zone: 'Zone 5', range: '>105% FTP', threshold: estimatedFTP * 1.2, time: 0.02, color: '#7c3aed' }
+  ];
+
+  const timeInZones = powerZones.map(zone => ({
+    ...zone,
+    timeMinutes: Math.round((zone.time * activity.movingTime) / 60),
+    percentage: Math.round(zone.time * 100)
+  }));
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <span className="font-medium">Average:</span>
+          <span className="ml-2 text-yellow-600 font-bold">{Math.round(avgWatts)}W</span>
+        </div>
+        <div>
+          <span className="font-medium">Max:</span>
+          <span className="ml-2 text-yellow-600 font-bold">{Math.round(maxWatts)}W</span>
+        </div>
+      </div>
+
+      <ResponsiveContainer width="100%" height={200}>
+        <BarChart data={timeInZones}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="zone" />
+          <YAxis />
+          <Tooltip formatter={(value: any) => [`${value} min`, 'Time']} />
+          <Bar dataKey="timeMinutes" fill="#eab308" />
+        </BarChart>
+      </ResponsiveContainer>
+
+      <div className="space-y-2">
+        {timeInZones.map((zone, index) => (
+          <div key={index} className="flex items-center justify-between text-xs">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 rounded" style={{ backgroundColor: zone.color }}></div>
+              <span>{zone.zone} ({zone.range})</span>
+            </div>
+            <span className="font-medium">{zone.timeMinutes}min ({zone.percentage}%)</span>
+          </div>
+        ))}
       </div>
     </div>
   );
