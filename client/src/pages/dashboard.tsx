@@ -4,7 +4,6 @@ import { api } from "@/lib/api";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import AppHeader from "@/components/AppHeader";
-import WelcomeSection from "@/components/dashboard/WelcomeSection";
 import QuickStats from "@/components/dashboard/QuickStats";
 import PerformanceChart from "@/components/dashboard/PerformanceChart";
 import RecentActivities from "@/components/dashboard/RecentActivities";
@@ -157,8 +156,6 @@ export default function Dashboard() {
       <AppHeader />
       
       <main className="max-w-7xl mx-auto px-6 py-8">
-        <WelcomeSection userName={dashboardData?.user?.name || "Runner"} lastSyncAt={dashboardData?.user?.lastSyncAt} />
-        
         {/* Strava Sync Actions */}
         <div className="mb-8 flex flex-wrap gap-4">
           {!dashboardData?.user?.stravaConnected ? (
@@ -169,13 +166,20 @@ export default function Dashboard() {
               Connect Strava Account
             </Button>
           ) : (
-            <Button 
-              onClick={handleSyncActivities}
-              disabled={syncMutation.isPending}
-              variant="outline"
-            >
-              {syncMutation.isPending ? "Syncing..." : "Sync Activities"}
-            </Button>
+            <div className="flex flex-col">
+              <Button 
+                onClick={handleSyncActivities}
+                disabled={syncMutation.isPending}
+                variant="outline"
+              >
+                {syncMutation.isPending ? "Syncing..." : "Sync Activities"}
+              </Button>
+              {dashboardData?.user?.lastSyncAt && (
+                <span className="text-xs text-gray-500 mt-1">
+                  Last sync: {new Date(dashboardData.user.lastSyncAt).toLocaleString()}
+                </span>
+              )}
+            </div>
           )}
         </div>
         
