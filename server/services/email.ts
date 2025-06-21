@@ -40,23 +40,23 @@ class EmailService {
 
   async sendEmail(options: EmailOptions): Promise<boolean> {
     try {
-      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-        console.log('Email service not configured - would send:', options.subject);
+      if (!this.transporter) {
+        console.log('📧 Email not configured - would send:', options.subject, 'to:', options.to);
         return false;
       }
 
       await this.transporter.sendMail({
-        from: process.env.EMAIL_USER,
+        from: process.env.EMAIL_USER || process.env.SMTP_USER,
         to: options.to,
         subject: options.subject,
         html: options.html,
         text: options.text
       });
       
-      console.log(`Email sent successfully: ${options.subject}`);
+      console.log(`📧 Email sent successfully: ${options.subject} to ${options.to}`);
       return true;
     } catch (error) {
-      console.error('Email sending failed:', error);
+      console.error('📧 Email sending failed:', error);
       return false;
     }
   }
