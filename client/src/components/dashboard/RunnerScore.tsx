@@ -29,8 +29,8 @@ export default function RunnerScore() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const { data: scoreData, isLoading } = useQuery<RunnerScoreData>({
-    queryKey: ["/api/runner-score", user?.id],
+  const { data: scoreData, isLoading, error } = useQuery<RunnerScoreData>({
+    queryKey: [`/api/runner-score/${user?.id}`],
     enabled: !!user?.id,
   });
 
@@ -102,7 +102,42 @@ export default function RunnerScore() {
     );
   }
 
-  if (!scoreData) return null;
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5" />
+            Runner Score
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-4">
+            <p className="text-gray-600">Unable to load runner score</p>
+            <p className="text-sm text-red-600">{error.message || 'Error loading data'}</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!scoreData) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5" />
+            Runner Score
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-4">
+            <p className="text-gray-600">No score data available</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
