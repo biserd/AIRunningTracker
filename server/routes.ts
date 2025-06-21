@@ -661,6 +661,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Goals Progress Tracking
+  app.get("/api/goals/progress/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const activities = await storage.getActivitiesByUserId(userId, 100);
+      
+      // Calculate current month's progress
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      
+      const currentMonthActivities = activities.filter(activity => {
+        const activityDate = new Date(activity.startDate);
+        return activityDate.getMonth() === currentMonth && activityDate.getFullYear() === currentYear;
+      });
+
+      // Calculate monthly distance
+      const monthlyDistance = currentMonthActivities.reduce((total, activity) => {
+        return total + (activity.distance || 0);
+      }, 0);
+
+      // Calculate best 5K time from recent activities
+      const fiveKActivities = activities.filter(activity => {
+        const distance = activity.distance || 0;
+        return distance >= 4.5 && distance <= 5.5; // 5K range
+      }).sort((a, b) => (a.duration || 0) - (b.duration || 0));
+
+      const best5K = fiveKActivities[0];
+      
+      // Calculate weekly distance (last 7 days)
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const weeklyActivities = activities.filter(activity => {
+        return new Date(activity.startDate) >= oneWeekAgo;
+      });
+      
+      const weeklyDistance = weeklyActivities.reduce((total, activity) => {
+        return total + (activity.distance || 0);
+      }, 0);
+
+      // Format distance based on user preference
+      const isMetric = user.unitPreference !== 'imperial';
+      
+      const goals = [];
+
+      // Monthly distance goal
+      const monthlyTarget = isMetric ? 150 : 93; // 150km or 93 miles
+      const monthlyProgress = Math.round((monthlyDistance / monthlyTarget) * 100);
+      const daysLeftInMonth = new Date(currentYear, currentMonth + 1, 0).getDate() - now.getDate();
+      
+      goals.push({
+        title: 'Monthly Distance',
+        current: (monthlyDistance / (isMetric ? 1 : 1.60934)).toFixed(1),
+        target: monthlyTarget.toString(),
+        unit: isMetric ? 'km' : 'mi',
+        progress: monthlyProgress,
+        timeLeft: `${daysLeftInMonth} days remaining`,
+        status: monthlyProgress >= 100 ? 'Completed!' : monthlyProgress >= 80 ? 'On track' : monthlyProgress >= 50 ? 'Behind pace' : 'Needs focus'
+      });
+
+      // 5K time goal (if user has 5K activities)
+      if (best5K) {
+        const currentTime = best5K.duration || 0;
+        const targetTime = 20 * 60; // 20 minutes in seconds
+        const currentTimeMinutes = Math.floor(currentTime / 60);
+        const currentTimeSeconds = currentTime % 60;
+        const targetProgress = Math.max(0, 100 - ((currentTime - targetTime) / targetTime * 100));
+        
+        goals.push({
+          title: 'Sub-20 5K Goal',
+          current: `${currentTimeMinutes}:${currentTimeSeconds.toString().padStart(2, '0')}`,
+          target: '20:00',
+          unit: 'PB',
+          progress: Math.round(Math.min(100, targetProgress)),
+          timeLeft: currentTime <= targetTime ? 'Achieved!' : `${Math.ceil((currentTime - targetTime) / 60)}min to improve`,
+          status: currentTime <= targetTime ? 'Goal achieved!' : currentTime <= targetTime + 60 ? 'Very close' : 'Keep training'
+        });
+      }
+
+      // Weekly consistency goal
+      const weeklyTarget = isMetric ? 30 : 18.6; // 30km or 18.6 miles per week
+      const weeklyProgress = Math.round((weeklyDistance / weeklyTarget) * 100);
+      
+      goals.push({
+        title: 'Weekly Consistency',
+        current: (weeklyDistance / (isMetric ? 1 : 1.60934)).toFixed(1),
+        target: (weeklyTarget / (isMetric ? 1 : 1.60934)).toFixed(0),
+        unit: isMetric ? 'km/week' : 'mi/week',
+        progress: weeklyProgress,
+        timeLeft: 'This week',
+        status: weeklyProgress >= 100 ? 'Exceeded!' : weeklyProgress >= 80 ? 'Strong week' : 'Build it up'
+      });
+
+      res.json({ goals });
+    } catch (error: any) {
+      console.error('Error calculating goal progress:', error);
+      res.status(500).json({ message: error.message || "Failed to calculate goal progress" });
+    }
+  });
+
   // ML Features - Injury Risk Analysis
   app.get("/api/ml/injury-risk/:userId", async (req, res) => {
     try {
