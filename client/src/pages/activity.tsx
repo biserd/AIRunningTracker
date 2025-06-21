@@ -332,13 +332,19 @@ export default function ActivityPage() {
 
 // Splits Chart Component
 function SplitsChart({ activity }: { activity: any }) {
-  // Generate synthetic splits data based on activity metrics
-  const totalDistance = activity.distance / 1000; // Convert to km
+  // Determine if using metric or imperial units
+  const isMetric = activity.distanceUnit === 'km';
+  const distanceInKm = activity.distance / 1000;
+  const distanceInMiles = distanceInKm * 0.621371;
+  
+  // Use appropriate distance and pace calculation
+  const totalDistance = isMetric ? distanceInKm : distanceInMiles;
   const totalTime = activity.movingTime;
-  const avgPace = totalTime / totalDistance; // seconds per km
+  const avgPace = totalTime / totalDistance; // seconds per km or mile
   
   const splits = [];
   const numSplits = Math.min(Math.floor(totalDistance), 20); // Max 20 splits
+  const unitLabel = isMetric ? 'km' : 'mi';
   
   for (let i = 0; i < numSplits; i++) {
     const splitVariation = (Math.random() - 0.5) * 0.2; // ±10% variation
@@ -347,7 +353,7 @@ function SplitsChart({ activity }: { activity: any }) {
     const paceSeconds = Math.round(splitPace % 60);
     
     splits.push({
-      split: `${i + 1}km`,
+      split: `${i + 1}${unitLabel}`,
       pace: splitPace,
       paceFormatted: `${paceMinutes}:${paceSeconds.toString().padStart(2, '0')}`,
       elevation: Math.random() * 20 - 10 // Random elevation change
