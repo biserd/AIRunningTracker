@@ -217,18 +217,18 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-6 bg-gradient-to-r from-strava-orange to-orange-600">
-        <div className="max-w-4xl mx-auto text-center text-white">
-          <h2 className="text-3xl font-bold mb-4">
+      <section className="py-20 px-6 bg-gradient-to-r from-blue-50 to-orange-50">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl font-bold mb-4 text-charcoal">
             Ready to Transform Your Running?
           </h2>
-          <p className="text-xl mb-8 opacity-90">
+          <p className="text-xl mb-8 text-gray-700">
             Join thousands of runners who are already improving their performance with AI-powered insights.
           </p>
           <Link href="/auth">
             <Button
               size="lg"
-              className="bg-white text-strava-orange hover:bg-gray-100"
+              className="bg-strava-orange text-white hover:bg-strava-orange/90"
             >
               Get Started Today
             </Button>
