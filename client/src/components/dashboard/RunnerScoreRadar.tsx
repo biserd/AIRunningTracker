@@ -181,11 +181,11 @@ export default function RunnerScoreRadar() {
   };
 
   const getGradeColor = (grade: string) => {
-    if (grade.startsWith('A')) return "bg-green-100 text-green-800";
-    if (grade.startsWith('B')) return "bg-blue-100 text-blue-800";
-    if (grade.startsWith('C')) return "bg-yellow-100 text-yellow-800";
-    if (grade.startsWith('D')) return "bg-orange-100 text-orange-800";
-    return "bg-red-100 text-red-800";
+    if (grade.startsWith('A')) return "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg";
+    if (grade.startsWith('B')) return "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg";
+    if (grade.startsWith('C')) return "bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg";
+    if (grade.startsWith('D')) return "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg";
+    return "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg";
   };
 
   const getScoreColor = (score: number) => {
@@ -249,15 +249,15 @@ export default function RunnerScoreRadar() {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Main Score Display */}
-        <div className="text-center space-y-2">
-          <div className={`text-5xl font-bold ${getScoreColor(scoreData.totalScore)}`}>
+        <div className="text-center space-y-4">
+          <div className={`text-6xl font-bold ${getScoreColor(scoreData.totalScore)}`}>
             {scoreData.totalScore}
           </div>
-          <div className="flex items-center justify-center gap-2">
-            <Badge className={getGradeColor(scoreData.grade)}>
+          <div className="flex flex-col items-center gap-3">
+            <Badge className={`text-2xl px-6 py-3 font-bold tracking-wide rounded-xl transform hover:scale-105 transition-transform ${getGradeColor(scoreData.grade)}`}>
               Grade {scoreData.grade}
             </Badge>
-            <span className="text-sm text-gray-600">
+            <span className="text-lg font-medium text-gray-600">
               {scoreData.percentile}th percentile
             </span>
           </div>
