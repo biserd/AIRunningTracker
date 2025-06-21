@@ -346,17 +346,32 @@ function SplitsChart({ activity }: { activity: any }) {
   const numSplits = Math.min(Math.floor(totalDistance), 20); // Max 20 splits
   const unitLabel = isMetric ? 'km' : 'mi';
   
+  // Create deterministic splits based on activity data to ensure consistency
+  const activitySeed = parseInt(activity.stravaId) % 1000; // Use strava ID for consistent data
+  
   for (let i = 0; i < numSplits; i++) {
-    const splitVariation = (Math.random() - 0.5) * 0.2; // ±10% variation
-    const splitPace = avgPace * (1 + splitVariation);
+    // Create deterministic variation based on split number and activity ID
+    const splitSeed = (activitySeed + i * 17) % 100;
+    const splitVariation = (splitSeed / 100 - 0.5) * 0.15; // ±7.5% variation, consistent per split
+    
+    // Apply typical running patterns (start conservative, negative split potential)
+    let paceAdjustment = 1 + splitVariation;
+    if (i === 0) paceAdjustment *= 1.02; // Slightly slower first split
+    if (i === numSplits - 1) paceAdjustment *= 0.98; // Slightly faster last split
+    
+    const splitPace = avgPace * paceAdjustment;
     const paceMinutes = Math.floor(splitPace / 60);
     const paceSeconds = Math.round(splitPace % 60);
+    
+    // Deterministic elevation based on position and activity data
+    const elevationSeed = (activitySeed + i * 23) % 100;
+    const elevation = (elevationSeed / 100 - 0.5) * (activity.totalElevationGain / numSplits * 2);
     
     splits.push({
       split: `${i + 1}${unitLabel}`,
       pace: splitPace,
       paceFormatted: `${paceMinutes}:${paceSeconds.toString().padStart(2, '0')}`,
-      elevation: Math.random() * 20 - 10 // Random elevation change
+      elevation: Math.round(elevation)
     });
   }
 
@@ -404,13 +419,29 @@ function HeartRateChart({ activity }: { activity: any }) {
   const avgHR = activity.averageHeartrate;
   const maxHR = activity.maxHeartrate || avgHR * 1.15;
   
-  // Generate heart rate zones data
+  // Calculate zone distribution based on average HR for consistency
+  const avgHRPercentage = avgHR / maxHR;
+  const activitySeed = parseInt(activity.stravaId) % 100;
+  
+  // Distribute time based on typical training patterns and activity intensity
+  let zoneDistribution;
+  if (avgHRPercentage < 0.65) {
+    // Easy run pattern
+    zoneDistribution = [0.15, 0.65, 0.15, 0.04, 0.01];
+  } else if (avgHRPercentage < 0.75) {
+    // Moderate run pattern  
+    zoneDistribution = [0.05, 0.35, 0.45, 0.12, 0.03];
+  } else {
+    // Hard run pattern
+    zoneDistribution = [0.02, 0.15, 0.35, 0.35, 0.13];
+  }
+  
   const zones = [
-    { zone: 'Zone 1', range: '50-60%', min: maxHR * 0.5, max: maxHR * 0.6, color: '#22c55e', time: 0.3 },
-    { zone: 'Zone 2', range: '60-70%', min: maxHR * 0.6, max: maxHR * 0.7, color: '#3b82f6', time: 0.4 },
-    { zone: 'Zone 3', range: '70-80%', min: maxHR * 0.7, max: maxHR * 0.8, color: '#f59e0b', time: 0.2 },
-    { zone: 'Zone 4', range: '80-90%', min: maxHR * 0.8, max: maxHR * 0.9, color: '#ef4444', time: 0.08 },
-    { zone: 'Zone 5', range: '90%+', min: maxHR * 0.9, max: maxHR, color: '#7c3aed', time: 0.02 }
+    { zone: 'Zone 1', range: '50-60%', min: maxHR * 0.5, max: maxHR * 0.6, color: '#22c55e', time: zoneDistribution[0] },
+    { zone: 'Zone 2', range: '60-70%', min: maxHR * 0.6, max: maxHR * 0.7, color: '#3b82f6', time: zoneDistribution[1] },
+    { zone: 'Zone 3', range: '70-80%', min: maxHR * 0.7, max: maxHR * 0.8, color: '#f59e0b', time: zoneDistribution[2] },
+    { zone: 'Zone 4', range: '80-90%', min: maxHR * 0.8, max: maxHR * 0.9, color: '#ef4444', time: zoneDistribution[3] },
+    { zone: 'Zone 5', range: '90%+', min: maxHR * 0.9, max: maxHR, color: '#7c3aed', time: zoneDistribution[4] }
   ];
 
   const timeInZones = zones.map(zone => ({
@@ -462,13 +493,19 @@ function CadenceChart({ activity }: { activity: any }) {
   const avgCadence = activity.averageCadence;
   const maxCadence = activity.maxCadence || avgCadence * 1.1;
   
-  // Generate cadence variation over time
+  // Generate deterministic cadence variation over time
   const cadenceData = [];
   const intervals = 20;
+  const activitySeed = parseInt(activity.stravaId) % 1000;
   
   for (let i = 0; i < intervals; i++) {
-    const variation = (Math.random() - 0.5) * 0.15; // ±7.5% variation
-    const cadence = avgCadence * (1 + variation);
+    // Create consistent variation based on time position and activity ID
+    const timeSeed = (activitySeed + i * 13) % 100;
+    const variation = (timeSeed / 100 - 0.5) * 0.12; // ±6% variation, consistent per time interval
+    
+    // Apply fatigue pattern - slight decrease over time for longer runs
+    const fatigueAdjustment = activity.movingTime > 3600 ? 1 - (i / intervals) * 0.03 : 1;
+    const cadence = avgCadence * (1 + variation) * fatigueAdjustment;
     
     cadenceData.push({
       time: `${Math.round((i / intervals) * (activity.movingTime / 60))}min`,
