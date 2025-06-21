@@ -275,8 +275,8 @@ export class StravaService {
           type: stravaActivity.type,
           // Additional Strava fields
           calories: stravaActivity.calories || null,
-          averageCadence: stravaActivity.average_cadence || null,
-          maxCadence: stravaActivity.max_cadence || null,
+          averageCadence: stravaActivity.average_cadence ? stravaActivity.average_cadence * 2 : null,
+          maxCadence: stravaActivity.max_cadence ? stravaActivity.max_cadence * 2 : null,
           averageWatts: stravaActivity.average_watts || null,
           maxWatts: stravaActivity.max_watts || null,
           sufferScore: stravaActivity.suffer_score || null,
