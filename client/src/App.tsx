@@ -13,6 +13,7 @@ import LandingPage from "@/pages/landing";
 import AuthPage from "@/pages/auth";
 import PrivacyPage from "@/pages/privacy";
 import ContactPage from "@/pages/contact";
+import RunnerScorePage from "@/pages/runner-score";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -44,6 +45,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/contact" component={ContactPage} />
+      <Route path="/runner-score/:userId" component={RunnerScorePage} />
       
       {/* Protected Routes */}
       <Route path="/dashboard">

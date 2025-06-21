@@ -35,17 +35,20 @@ export default function RunnerScore() {
   });
 
   const handleShare = async () => {
-    if (!scoreData) return;
+    if (!scoreData || !user?.id) return;
+
+    const shareUrl = `${window.location.origin}/runner-score/${user.id}`;
+    const shareText = `${scoreData.shareableMessage} ${shareUrl}`;
 
     try {
       if (navigator.share) {
         await navigator.share({
           title: "My Runner Score",
-          text: scoreData.shareableMessage,
-          url: window.location.origin
+          text: shareText,
+          url: shareUrl
         });
       } else {
-        await navigator.clipboard.writeText(scoreData.shareableMessage);
+        await navigator.clipboard.writeText(shareText);
         toast({
           title: "Copied to clipboard!",
           description: "Share your runner score on social media",

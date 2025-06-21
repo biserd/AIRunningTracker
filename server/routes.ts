@@ -417,7 +417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.redirect("/");
   });
 
-  // Runner Score endpoint
+  // Runner Score endpoint (authenticated)
   app.get("/api/runner-score/:userId", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
@@ -436,6 +436,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Runner score error:', error);
       res.status(500).json({ message: error.message || "Failed to calculate runner score" });
+    }
+  });
+
+  // Public Runner Score endpoint (for sharing)
+  app.get("/api/runner-score/public/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const runnerScore = await runnerScoreService.calculateRunnerScore(userId);
+      
+      // Add user name for public display
+      const publicScore = {
+        ...runnerScore,
+        userName: user.firstName && user.lastName 
+          ? `${user.firstName} ${user.lastName}` 
+          : user.email?.split('@')[0] || "Runner"
+      };
+      
+      res.json(publicScore);
+    } catch (error: any) {
+      console.error('Public runner score error:', error);
+      res.status(500).json({ message: error.message || "Failed to get runner score" });
     }
   });
 
