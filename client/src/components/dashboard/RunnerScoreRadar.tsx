@@ -33,9 +33,9 @@ const RadarChart = ({ data }: { data: RunnerScoreData['components'] }) => {
     { label: 'Improvement', value: (data.improvement / 25) * 100, color: '#8B5CF6' },
   ];
 
-  const size = 350;
+  const size = 500;
   const center = size / 2;
-  const maxRadius = 130;
+  const maxRadius = 140;
   
   // Calculate points for the radar chart
   const points = scores.map((score, index) => {
@@ -54,8 +54,8 @@ const RadarChart = ({ data }: { data: RunnerScoreData['components'] }) => {
     const angle = (index * 2 * Math.PI) / scores.length - Math.PI / 2;
     const x = center + maxRadius * Math.cos(angle);
     const y = center + maxRadius * Math.sin(angle);
-    const labelX = center + (maxRadius + 35) * Math.cos(angle);
-    const labelY = center + (maxRadius + 35) * Math.sin(angle);
+    const labelX = center + (maxRadius + 50) * Math.cos(angle);
+    const labelY = center + (maxRadius + 50) * Math.sin(angle);
     return { x, y, labelX, labelY, label: score.label };
   });
 
