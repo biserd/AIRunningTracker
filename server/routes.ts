@@ -102,15 +102,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stravaConnected: true,
       });
 
-      // Auto-sync activities after connecting
+      // Auto-sync activities and generate insights after connecting
       try {
         await stravaService.syncActivitiesForUser(userId);
+        console.log('Auto-sync completed after Strava connection');
+        
+        // Generate AI insights after sync
+        try {
+          await aiService.generateInsights(userId);
+          console.log('AI insights generated after Strava connection');
+        } catch (insightError) {
+          console.error('AI insight generation failed after connection:', insightError);
+        }
       } catch (syncError) {
         console.error('Auto-sync failed after Strava connection:', syncError);
         // Don't fail the connection if sync fails
       }
 
-      res.json({ success: true });
+      res.json({ success: true, autoSyncCompleted: true });
     } catch (error) {
       console.error('Strava connection error:', error);
       res.status(500).json({ message: "Failed to connect to Strava" });
@@ -127,6 +136,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       await stravaService.syncActivitiesForUser(userId);
+      
+      // Auto-generate AI insights after sync
+      try {
+        await aiService.generateInsights(userId);
+        console.log('AI insights generated after sync');
+      } catch (insightError) {
+        console.error('AI insight generation failed after sync:', insightError);
+      }
+      
       res.json({ success: true });
     } catch (error: any) {
       console.error('Sync error:', error);

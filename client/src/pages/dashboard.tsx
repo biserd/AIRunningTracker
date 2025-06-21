@@ -56,24 +56,7 @@ export default function Dashboard() {
     },
   });
 
-  // Generate insights mutation
-  const insightsMutation = useMutation({
-    mutationFn: () => apiRequest(`/api/insights/generate/${user.id}`, "POST"),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user.id}`] });
-      toast({
-        title: "AI insights generated",
-        description: "Your performance insights have been updated",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Insights failed",
-        description: error.message || "Failed to generate insights",
-        variant: "destructive",
-      });
-    },
-  });
+
 
   // Dashboard data query
   const { data: dashboardData, isLoading, error } = useQuery<any>({
@@ -127,9 +110,7 @@ export default function Dashboard() {
     syncMutation.mutate();
   };
 
-  const handleGenerateInsights = () => {
-    insightsMutation.mutate();
-  };
+
 
   if (isLoading || !dashboardData) {
     return (

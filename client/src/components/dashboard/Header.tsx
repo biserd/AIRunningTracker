@@ -10,19 +10,15 @@ interface HeaderProps {
   stravaConnected: boolean;
   onStravaConnect: () => void;
   onSyncActivities: () => void;
-  onGenerateInsights: () => void;
   isSyncing: boolean;
-  isGeneratingInsights: boolean;
   lastSyncAt?: string;
 }
 
 export default function Header({ 
   stravaConnected, 
   onStravaConnect, 
-  onSyncActivities, 
-  onGenerateInsights,
+  onSyncActivities,
   isSyncing,
-  isGeneratingInsights,
   lastSyncAt 
 }: HeaderProps) {
   const { user, logout } = useAuth();
@@ -77,22 +73,7 @@ export default function Header({
                   </TooltipContent>
                 </Tooltip>
 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={onGenerateInsights}
-                      disabled={isGeneratingInsights}
-                    >
-                      <Brain className={`h-4 w-4 mr-2 ${isGeneratingInsights ? 'animate-pulse' : ''}`} />
-                      {isGeneratingInsights ? 'Generating...' : 'AI Insights'}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Generate AI-powered performance insights</p>
-                  </TooltipContent>
-                </Tooltip>
+
 
                 <Link href="/ml-insights">
                   <Button variant="outline" size="sm" className="border-purple-200 text-purple-700 hover:bg-purple-50">
