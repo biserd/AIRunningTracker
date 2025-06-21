@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export function useAuth() {
   const token = localStorage.getItem("auth_token");
@@ -14,8 +14,32 @@ export function useAuth() {
 
   const logout = () => {
     localStorage.removeItem("auth_token");
+    // Clear all cached data
+    queryClient.clear();
     window.location.href = "/";
   };
+
+  // If no token, user is definitely not authenticated
+  if (!token) {
+    return {
+      user: null,
+      isLoading: false,
+      isAuthenticated: false,
+      logout,
+      token: null,
+    };
+  }
+
+  // If there's an error (like 401), user is not authenticated
+  if (error) {
+    return {
+      user: null,
+      isLoading: false,
+      isAuthenticated: false,
+      logout,
+      token,
+    };
+  }
 
   return {
     user,

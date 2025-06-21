@@ -74,6 +74,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/logout", (req, res) => {
+    // Clear any server-side session data if needed
+    res.redirect("/");
+  });
+
   // Email waitlist endpoint
   app.post("/api/waitlist", async (req, res) => {
     try {
