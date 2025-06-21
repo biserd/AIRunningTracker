@@ -7,6 +7,7 @@ import { mlService } from "./services/ml";
 import { performanceService } from "./services/performance";
 import { authService } from "./services/auth";
 import { emailService } from "./services/email";
+import { runnerScoreService } from "./services/runnerScore";
 import { insertUserSchema, loginSchema, registerSchema, insertEmailWaitlistSchema, type Activity } from "@shared/schema";
 import { z } from "zod";
 
@@ -414,6 +415,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Logout endpoint
   app.get("/api/logout", (req, res) => {
     res.redirect("/");
+  });
+
+  // Runner Score endpoint
+  app.get("/api/runner-score/:userId", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      // Verify the user owns this resource
+      if (req.user.id !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const runnerScore = await runnerScoreService.calculateRunnerScore(userId);
+      res.json(runnerScore);
+    } catch (error: any) {
+      console.error('Runner score error:', error);
+      res.status(500).json({ message: error.message || "Failed to calculate runner score" });
+    }
   });
 
   // Update user settings
