@@ -402,6 +402,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Logout endpoint
+  app.get("/api/logout", (req, res) => {
+    res.redirect("/");
+  });
+
   // Update user settings
   app.patch("/api/users/:userId/settings", authenticateJWT, async (req: any, res) => {
     try {
