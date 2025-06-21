@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function ActivityPage() {
   const [match, params] = useRoute("/activity/:id");
   const activityId = params?.id;
+  const { toast } = useToast();
 
   const { data: activityData, isLoading } = useQuery({
     queryKey: ['/api/activities', activityId],
@@ -24,6 +25,27 @@ export default function ActivityPage() {
     queryKey: ['/api/activities', activityId, 'performance'],
     queryFn: () => fetch(`/api/activities/${activityId}/performance`).then(res => res.json()),
     enabled: !!activityId
+  });
+
+  const fetchStreamsMutation = useMutation({
+    mutationFn: () => 
+      fetch(`/api/activities/${activityId}/fetch-streams`, {
+        method: 'POST'
+      }).then(res => res.json()),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'performance'] });
+      toast({
+        title: "Performance data fetched",
+        description: `${data.hasStreams ? 'Detailed streams' : ''} ${data.hasLaps ? 'and splits' : ''} data loaded from Strava`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to fetch data",
+        description: error.message || "Could not load detailed performance data from Strava",
+        variant: "destructive",
+      });
+    },
   });
 
   if (isLoading) {
@@ -271,17 +293,53 @@ export default function ActivityPage() {
         </div>
 
         {/* Performance Charts Section */}
+        {!performanceData?.hasPerformanceData && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Download className="mr-2 h-5 w-5 text-strava-orange" />
+                  Enhanced Performance Analysis
+                </div>
+                <Button 
+                  onClick={() => fetchStreamsMutation.mutate()}
+                  disabled={fetchStreamsMutation.isPending}
+                  className="bg-strava-orange hover:bg-strava-orange/90"
+                >
+                  {fetchStreamsMutation.isPending ? 'Fetching...' : 'Load Detailed Data'}
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">
+                Load detailed heart rate, cadence, power, and split data directly from Strava for comprehensive performance analysis.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Splits Analysis */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <Timer className="mr-2 h-5 w-5 text-blue-600" />
-                Pace Analysis
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Timer className="mr-2 h-5 w-5 text-blue-600" />
+                  Pace Analysis
+                </div>
+                {performanceData?.hasPerformanceData && (
+                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                    Strava Data
+                  </span>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <SplitsChart activity={activity} />
+              <SplitsChart 
+                activity={activity} 
+                streams={performanceData?.streams}
+                laps={performanceData?.laps}
+              />
             </CardContent>
           </Card>
 
@@ -289,13 +347,23 @@ export default function ActivityPage() {
           {activity.averageHeartrate && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Heart className="mr-2 h-5 w-5 text-red-600" />
-                  Heart Rate Analysis
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Heart className="mr-2 h-5 w-5 text-red-600" />
+                    Heart Rate Analysis
+                  </div>
+                  {performanceData?.streams?.heartrate && (
+                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                      Real Data
+                    </span>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <HeartRateChart activity={activity} />
+                <HeartRateChart 
+                  activity={activity}
+                  streams={performanceData?.streams}
+                />
               </CardContent>
             </Card>
           )}
@@ -339,7 +407,7 @@ export default function ActivityPage() {
 }
 
 // Splits Chart Component
-function SplitsChart({ activity }: { activity: any }) {
+function SplitsChart({ activity, streams, laps }: { activity: any, streams?: any, laps?: any[] }) {
   // Determine if using metric or imperial units
   const isMetric = activity.distanceUnit === 'km';
   const distanceInKm = activity.distance / 1000;
@@ -348,39 +416,92 @@ function SplitsChart({ activity }: { activity: any }) {
   // Use appropriate distance and pace calculation
   const totalDistance = isMetric ? distanceInKm : distanceInMiles;
   const totalTime = activity.movingTime;
-  const avgPace = totalTime / totalDistance; // seconds per km or mile
-  
-  const splits = [];
-  const numSplits = Math.min(Math.floor(totalDistance), 20); // Max 20 splits
   const unitLabel = isMetric ? 'km' : 'mi';
+  const splitDistance = isMetric ? 1 : 1; // 1km or 1mi splits
   
-  // Create deterministic splits based on activity data to ensure consistency
-  const activitySeed = parseInt(activity.stravaId) % 1000; // Use strava ID for consistent data
+  let splits = [];
   
-  for (let i = 0; i < numSplits; i++) {
-    // Create deterministic variation based on split number and activity ID
-    const splitSeed = (activitySeed + i * 17) % 100;
-    const splitVariation = (splitSeed / 100 - 0.5) * 0.15; // ±7.5% variation, consistent per split
-    
-    // Apply typical running patterns (start conservative, negative split potential)
-    let paceAdjustment = 1 + splitVariation;
-    if (i === 0) paceAdjustment *= 1.02; // Slightly slower first split
-    if (i === numSplits - 1) paceAdjustment *= 0.98; // Slightly faster last split
-    
-    const splitPace = avgPace * paceAdjustment;
-    const paceMinutes = Math.floor(splitPace / 60);
-    const paceSeconds = Math.round(splitPace % 60);
-    
-    // Deterministic elevation based on position and activity data
-    const elevationSeed = (activitySeed + i * 23) % 100;
-    const elevation = (elevationSeed / 100 - 0.5) * (activity.totalElevationGain / numSplits * 2);
-    
-    splits.push({
-      split: `${i + 1}${unitLabel}`,
-      pace: splitPace,
-      paceFormatted: `${paceMinutes}:${paceSeconds.toString().padStart(2, '0')}`,
-      elevation: Math.round(elevation)
+  // Use real Strava laps data if available
+  if (laps && laps.length > 0) {
+    splits = laps.map((lap, index) => {
+      const lapDistance = isMetric ? lap.distance / 1000 : (lap.distance / 1000) * 0.621371;
+      const lapPace = lap.moving_time / lapDistance;
+      const paceMinutes = Math.floor(lapPace / 60);
+      const paceSeconds = Math.round(lapPace % 60);
+      
+      return {
+        split: `${index + 1}${unitLabel}`,
+        pace: lapPace,
+        paceFormatted: `${paceMinutes}:${paceSeconds.toString().padStart(2, '0')}`,
+        elevation: lap.total_elevation_gain || 0,
+        realData: true
+      };
     });
+  } 
+  // Use streams data to calculate splits if available
+  else if (streams?.distance?.data && streams?.time?.data) {
+    const distances = streams.distance.data;
+    const times = streams.time.data;
+    const splitDistanceMeters = isMetric ? 1000 : 1609.34; // 1km or 1mi in meters
+    
+    let currentSplitIndex = 1;
+    let lastSplitDistance = 0;
+    let lastSplitTime = 0;
+    
+    for (let i = 0; i < distances.length; i++) {
+      const currentDistance = distances[i];
+      const currentTime = times[i];
+      
+      if (currentDistance >= currentSplitIndex * splitDistanceMeters) {
+        const splitTime = currentTime - lastSplitTime;
+        const splitDist = currentDistance - lastSplitDistance;
+        const actualSplitDistance = isMetric ? splitDist / 1000 : (splitDist / 1000) * 0.621371;
+        const splitPace = splitTime / actualSplitDistance;
+        const paceMinutes = Math.floor(splitPace / 60);
+        const paceSeconds = Math.round(splitPace % 60);
+        
+        splits.push({
+          split: `${currentSplitIndex}${unitLabel}`,
+          pace: splitPace,
+          paceFormatted: `${paceMinutes}:${paceSeconds.toString().padStart(2, '0')}`,
+          elevation: 0, // Could calculate from altitude stream if available
+          realData: true
+        });
+        
+        lastSplitDistance = currentDistance;
+        lastSplitTime = currentTime;
+        currentSplitIndex++;
+        
+        if (currentSplitIndex > 20) break; // Max 20 splits
+      }
+    }
+  }
+  // Fallback to synthetic data if no real data available
+  else {
+    const avgPace = totalTime / totalDistance;
+    const numSplits = Math.min(Math.floor(totalDistance), 20);
+    const activitySeed = parseInt(activity.stravaId) % 1000;
+    
+    for (let i = 0; i < numSplits; i++) {
+      const splitSeed = (activitySeed + i * 17) % 100;
+      const splitVariation = (splitSeed / 100 - 0.5) * 0.15;
+      
+      let paceAdjustment = 1 + splitVariation;
+      if (i === 0) paceAdjustment *= 1.02;
+      if (i === numSplits - 1) paceAdjustment *= 0.98;
+      
+      const splitPace = avgPace * paceAdjustment;
+      const paceMinutes = Math.floor(splitPace / 60);
+      const paceSeconds = Math.round(splitPace % 60);
+      
+      splits.push({
+        split: `${i + 1}${unitLabel}`,
+        pace: splitPace,
+        paceFormatted: `${paceMinutes}:${paceSeconds.toString().padStart(2, '0')}`,
+        elevation: 0,
+        realData: false
+      });
+    }
   }
 
   return (
@@ -423,34 +544,66 @@ function SplitsChart({ activity }: { activity: any }) {
 }
 
 // Heart Rate Chart Component
-function HeartRateChart({ activity }: { activity: any }) {
+function HeartRateChart({ activity, streams }: { activity: any, streams?: any }) {
   const avgHR = activity.averageHeartrate;
   const maxHR = activity.maxHeartrate || avgHR * 1.15;
   
-  // Calculate zone distribution based on average HR for consistency
-  const avgHRPercentage = avgHR / maxHR;
-  const activitySeed = parseInt(activity.stravaId) % 100;
-  
-  // Distribute time based on typical training patterns and activity intensity
-  let zoneDistribution;
-  if (avgHRPercentage < 0.65) {
-    // Easy run pattern
-    zoneDistribution = [0.15, 0.65, 0.15, 0.04, 0.01];
-  } else if (avgHRPercentage < 0.75) {
-    // Moderate run pattern  
-    zoneDistribution = [0.05, 0.35, 0.45, 0.12, 0.03];
-  } else {
-    // Hard run pattern
-    zoneDistribution = [0.02, 0.15, 0.35, 0.35, 0.13];
-  }
-  
-  const zones = [
-    { zone: 'Zone 1', range: '50-60%', min: maxHR * 0.5, max: maxHR * 0.6, color: '#22c55e', time: zoneDistribution[0] },
-    { zone: 'Zone 2', range: '60-70%', min: maxHR * 0.6, max: maxHR * 0.7, color: '#3b82f6', time: zoneDistribution[1] },
-    { zone: 'Zone 3', range: '70-80%', min: maxHR * 0.7, max: maxHR * 0.8, color: '#f59e0b', time: zoneDistribution[2] },
-    { zone: 'Zone 4', range: '80-90%', min: maxHR * 0.8, max: maxHR * 0.9, color: '#ef4444', time: zoneDistribution[3] },
-    { zone: 'Zone 5', range: '90%+', min: maxHR * 0.9, max: maxHR, color: '#7c3aed', time: zoneDistribution[4] }
+  let zones = [
+    { zone: 'Zone 1', range: '50-60%', min: maxHR * 0.5, max: maxHR * 0.6, color: '#22c55e', time: 0 },
+    { zone: 'Zone 2', range: '60-70%', min: maxHR * 0.6, max: maxHR * 0.7, color: '#3b82f6', time: 0 },
+    { zone: 'Zone 3', range: '70-80%', min: maxHR * 0.7, max: maxHR * 0.8, color: '#f59e0b', time: 0 },
+    { zone: 'Zone 4', range: '80-90%', min: maxHR * 0.8, max: maxHR * 0.9, color: '#ef4444', time: 0 },
+    { zone: 'Zone 5', range: '90%+', min: maxHR * 0.9, max: maxHR, color: '#7c3aed', time: 0 }
   ];
+
+  // Use real heart rate data if available
+  if (streams?.heartrate?.data && streams?.time?.data) {
+    const hrData = streams.heartrate.data;
+    const timeData = streams.time.data;
+    const totalTime = activity.movingTime;
+    
+    // Calculate actual time in each zone
+    const zoneTimes = [0, 0, 0, 0, 0];
+    let previousTime = 0;
+    
+    hrData.forEach((hr: number, index: number) => {
+      if (hr > 0) {
+        const currentTime = timeData[index] || 0;
+        const timeDiff = index === 0 ? 0 : currentTime - previousTime;
+        
+        // Determine which zone this HR falls into
+        if (hr >= zones[4].min) zoneTimes[4] += timeDiff;
+        else if (hr >= zones[3].min) zoneTimes[3] += timeDiff;
+        else if (hr >= zones[2].min) zoneTimes[2] += timeDiff;
+        else if (hr >= zones[1].min) zoneTimes[1] += timeDiff;
+        else zoneTimes[0] += timeDiff;
+        
+        previousTime = currentTime;
+      }
+    });
+    
+    // Update zones with actual data
+    zones = zones.map((zone, index) => ({
+      ...zone,
+      time: zoneTimes[index] / totalTime // Convert to percentage
+    }));
+  } else {
+    // Fallback to estimated distribution based on average HR
+    const avgHRPercentage = avgHR / maxHR;
+    let zoneDistribution;
+    if (avgHRPercentage < 0.65) {
+      zoneDistribution = [0.15, 0.65, 0.15, 0.04, 0.01];
+    } else if (avgHRPercentage < 0.75) {
+      zoneDistribution = [0.05, 0.35, 0.45, 0.12, 0.03];
+    } else {
+      zoneDistribution = [0.02, 0.15, 0.35, 0.35, 0.13];
+    }
+    
+    zones = zones.map((zone, index) => ({
+      ...zone,
+      time: zoneDistribution[index]
+    }));
+  }
 
   const timeInZones = zones.map(zone => ({
     ...zone,
