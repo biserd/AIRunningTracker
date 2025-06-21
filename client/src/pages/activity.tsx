@@ -1,12 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, Thermometer, BarChart3, Timer } from "lucide-react";
+import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, Thermometer, BarChart3, Timer, Download } from "lucide-react";
 import { Link } from "wouter";
 import AppHeader from "@/components/AppHeader";
 import RouteMap from "../components/RouteMap";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ActivityPage() {
   const [match, params] = useRoute("/activity/:id");
@@ -15,6 +17,12 @@ export default function ActivityPage() {
   const { data: activityData, isLoading } = useQuery({
     queryKey: ['/api/activities', activityId],
     queryFn: () => fetch(`/api/activities/${activityId}`).then(res => res.json()),
+    enabled: !!activityId
+  });
+
+  const { data: performanceData, isLoading: performanceLoading } = useQuery({
+    queryKey: ['/api/activities', activityId, 'performance'],
+    queryFn: () => fetch(`/api/activities/${activityId}/performance`).then(res => res.json()),
     enabled: !!activityId
   });
 

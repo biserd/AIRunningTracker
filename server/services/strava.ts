@@ -136,6 +136,54 @@ export class StravaService {
     return response.json();
   }
 
+  async getActivityStreams(accessToken: string, activityId: number): Promise<any> {
+    const streamTypes = ['time', 'distance', 'latlng', 'altitude', 'velocity_smooth', 'heartrate', 'cadence', 'watts', 'temp', 'grade_smooth'];
+    const response = await fetch(
+      `https://www.strava.com/api/v3/activities/${activityId}/streams?keys=${streamTypes.join(',')}&key_by_type=true`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Unauthorized - token may be expired');
+      }
+      if (response.status === 404) {
+        // Activity streams not available
+        return null;
+      }
+      throw new Error('Failed to fetch activity streams from Strava');
+    }
+
+    return response.json();
+  }
+
+  async getActivityLaps(accessToken: string, activityId: number): Promise<any[]> {
+    const response = await fetch(
+      `https://www.strava.com/api/v3/activities/${activityId}/laps`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Unauthorized - token may be expired');
+      }
+      if (response.status === 404) {
+        return [];
+      }
+      throw new Error('Failed to fetch activity laps from Strava');
+    }
+
+    return response.json();
+  }
+
   async syncActivitiesForUser(userId: number): Promise<void> {
     const user = await storage.getUser(userId);
     if (!user || !user.stravaAccessToken) {
