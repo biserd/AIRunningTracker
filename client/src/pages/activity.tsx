@@ -1,19 +1,16 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, Thermometer, BarChart3, Timer, Download } from "lucide-react";
+import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, Thermometer, BarChart3, Timer } from "lucide-react";
 import { Link } from "wouter";
 import AppHeader from "@/components/AppHeader";
 import RouteMap from "../components/RouteMap";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
 
 export default function ActivityPage() {
   const [match, params] = useRoute("/activity/:id");
   const activityId = params?.id;
-  const { toast } = useToast();
 
   const { data: activityData, isLoading } = useQuery({
     queryKey: ['/api/activities', activityId],
@@ -25,27 +22,6 @@ export default function ActivityPage() {
     queryKey: ['/api/activities', activityId, 'performance'],
     queryFn: () => fetch(`/api/activities/${activityId}/performance`).then(res => res.json()),
     enabled: !!activityId
-  });
-
-  const fetchStreamsMutation = useMutation({
-    mutationFn: () => 
-      fetch(`/api/activities/${activityId}/fetch-streams`, {
-        method: 'POST'
-      }).then(res => res.json()),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'performance'] });
-      toast({
-        title: "Performance data fetched",
-        description: `${data.hasStreams ? 'Detailed streams' : ''} ${data.hasLaps ? 'and splits' : ''} data loaded from Strava`,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Failed to fetch data",
-        description: error.message || "Could not load detailed performance data from Strava",
-        variant: "destructive",
-      });
-    },
   });
 
   if (isLoading) {
@@ -293,31 +269,6 @@ export default function ActivityPage() {
         </div>
 
         {/* Performance Charts Section */}
-        {!performanceData?.hasPerformanceData && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <Download className="mr-2 h-5 w-5 text-strava-orange" />
-                  Enhanced Performance Analysis
-                </div>
-                <Button 
-                  onClick={() => fetchStreamsMutation.mutate()}
-                  disabled={fetchStreamsMutation.isPending}
-                  className="bg-strava-orange hover:bg-strava-orange/90"
-                >
-                  {fetchStreamsMutation.isPending ? 'Fetching...' : 'Load Detailed Data'}
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600">
-                Load detailed heart rate, cadence, power, and split data directly from Strava for comprehensive performance analysis.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Splits Analysis */}
           <Card>
@@ -329,7 +280,7 @@ export default function ActivityPage() {
                 </div>
                 {performanceData?.hasPerformanceData && (
                   <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                    Strava Data
+                    Real Data
                   </span>
                 )}
               </CardTitle>

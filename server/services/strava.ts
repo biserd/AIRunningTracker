@@ -235,11 +235,27 @@ export class StravaService {
 
         console.log(`Syncing running activity: ${stravaActivity.name}`);
         
-        // Fetch detailed activity data to get polyline
+        // Fetch detailed activity data and performance streams
         let detailedActivity = stravaActivity;
+        let streams = null;
+        let laps = null;
+        
         try {
           detailedActivity = await this.getDetailedActivity(user.stravaAccessToken, stravaActivity.id);
           console.log(`Fetched detailed data for activity ${stravaActivity.id}`);
+          
+          // Fetch performance streams and laps
+          [streams, laps] = await Promise.all([
+            this.getActivityStreams(user.stravaAccessToken, stravaActivity.id),
+            this.getActivityLaps(user.stravaAccessToken, stravaActivity.id)
+          ]);
+          
+          if (streams) {
+            console.log(`Fetched performance streams for activity ${stravaActivity.id}`);
+          }
+          if (laps && laps.length > 0) {
+            console.log(`Fetched ${laps.length} laps for activity ${stravaActivity.id}`);
+          }
         } catch (error) {
           console.log(`Could not fetch detailed data for activity ${stravaActivity.id}, using basic data`);
         }
@@ -273,6 +289,8 @@ export class StravaService {
           endLongitude: stravaActivity.end_latlng?.[1] || null,
           polyline: detailedActivity.map?.summary_polyline || null,
           detailedPolyline: detailedActivity.map?.polyline || null,
+          streamsData: streams ? JSON.stringify(streams) : null,
+          lapsData: laps && laps.length > 0 ? JSON.stringify(laps) : null,
           averageTemp: stravaActivity.average_temp || null,
           hasHeartrate: stravaActivity.has_heartrate || false,
           deviceWatts: stravaActivity.device_watts || false,

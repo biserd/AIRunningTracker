@@ -770,57 +770,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Fetch detailed Strava performance data for an activity
-  app.post("/api/activities/:activityId/fetch-streams", async (req, res) => {
-    try {
-      const activityId = parseInt(req.params.activityId);
-      
-      if (isNaN(activityId)) {
-        return res.status(400).json({ message: "Invalid activity ID" });
-      }
 
-      const activity = await storage.getActivityById(activityId);
-      if (!activity) {
-        return res.status(404).json({ message: "Activity not found" });
-      }
-
-      const user = await storage.getUser(activity.userId);
-      if (!user || !user.stravaAccessToken) {
-        return res.status(400).json({ message: "User not connected to Strava" });
-      }
-
-      try {
-        // Fetch streams and laps from Strava
-        const [streams, laps] = await Promise.all([
-          stravaService.getActivityStreams(user.stravaAccessToken, parseInt(activity.stravaId)),
-          stravaService.getActivityLaps(user.stravaAccessToken, parseInt(activity.stravaId))
-        ]);
-
-        // Update activity with the fetched data
-        await storage.updateActivity(activityId, {
-          streamsData: streams ? JSON.stringify(streams) : null,
-          lapsData: laps.length > 0 ? JSON.stringify(laps) : null
-        });
-
-        res.json({ 
-          success: true, 
-          hasStreams: !!streams,
-          hasLaps: laps.length > 0,
-          streams,
-          laps
-        });
-      } catch (stravaError: any) {
-        console.error('Strava API error:', stravaError);
-        if (stravaError.message.includes('Unauthorized')) {
-          return res.status(401).json({ message: "Strava authorization expired. Please reconnect." });
-        }
-        res.status(500).json({ message: "Failed to fetch data from Strava" });
-      }
-    } catch (error: any) {
-      console.error('Error fetching activity streams:', error);
-      res.status(500).json({ message: error.message || "Failed to fetch activity streams" });
-    }
-  });
 
   // Get activity with performance data
   app.get("/api/activities/:activityId/performance", async (req, res) => {
