@@ -36,6 +36,11 @@ export interface IStorage {
     recentActivities: Activity[];
   }>;
   getAllUsers(limit?: number): Promise<User[]>;
+  getWaitlistEmails(limit?: number): Promise<{
+    id: number;
+    email: string;
+    createdAt: string;
+  }[]>;
 }
 
 export class DatabaseStorage implements IStorage {
