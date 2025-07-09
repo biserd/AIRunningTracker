@@ -1,6 +1,6 @@
 import { users, activities, aiInsights, emailWaitlist, trainingPlans, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type InsertEmailWaitlist, type TrainingPlan, type InsertTrainingPlan } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 export interface IStorage {
@@ -25,6 +25,17 @@ export interface IStorage {
   getLatestTrainingPlan(userId: number): Promise<TrainingPlan | undefined>;
   
   addToEmailWaitlist(email: string): Promise<void>;
+  
+  // Admin methods
+  getAdminStats(): Promise<{
+    totalUsers: number;
+    connectedUsers: number;
+    totalActivities: number;
+    totalWaitlistEmails: number;
+    recentUsers: User[];
+    recentActivities: Activity[];
+  }>;
+  getAllUsers(limit?: number): Promise<User[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -163,6 +174,50 @@ export class DatabaseStorage implements IStorage {
   async addToEmailWaitlist(email: string): Promise<void> {
     await db.insert(emailWaitlist).values({ email });
   }
+
+  // Admin methods
+  async getAdminStats(): Promise<{
+    totalUsers: number;
+    connectedUsers: number;
+    totalActivities: number;
+    totalWaitlistEmails: number;
+    recentUsers: User[];
+    recentActivities: Activity[];
+  }> {
+    const [totalUsersResult] = await db.select({ count: sql<number>`count(*)` }).from(users);
+    const [connectedUsersResult] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.stravaConnected, true));
+    const [totalActivitiesResult] = await db.select({ count: sql<number>`count(*)` }).from(activities);
+    const [totalWaitlistResult] = await db.select({ count: sql<number>`count(*)` }).from(emailWaitlist);
+
+    const recentUsers = await db
+      .select()
+      .from(users)
+      .orderBy(desc(users.createdAt))
+      .limit(10);
+
+    const recentActivities = await db
+      .select()
+      .from(activities)
+      .orderBy(desc(activities.createdAt))
+      .limit(10);
+
+    return {
+      totalUsers: totalUsersResult.count,
+      connectedUsers: connectedUsersResult.count,
+      totalActivities: totalActivitiesResult.count,
+      totalWaitlistEmails: totalWaitlistResult.count,
+      recentUsers,
+      recentActivities
+    };
+  }
+
+  async getAllUsers(limit = 100): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .orderBy(desc(users.createdAt))
+      .limit(limit);
+  }
 }
 
 // Initialize with demo data
@@ -266,6 +321,23 @@ class DatabaseStorageWithDemo extends DatabaseStorage {
   async updateActivity(activityId: number, updates: Partial<Activity>): Promise<Activity | undefined> {
     await this.initializeDemoUser();
     return super.updateActivity(activityId, updates);
+  }
+
+  async getAdminStats(): Promise<{
+    totalUsers: number;
+    connectedUsers: number;
+    totalActivities: number;
+    totalWaitlistEmails: number;
+    recentUsers: User[];
+    recentActivities: Activity[];
+  }> {
+    await this.initializeDemoUser();
+    return super.getAdminStats();
+  }
+
+  async getAllUsers(limit = 100): Promise<User[]> {
+    await this.initializeDemoUser();
+    return super.getAllUsers(limit);
   }
 }
 

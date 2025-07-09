@@ -32,6 +32,34 @@ const authenticateJWT = async (req: any, res: Response, next: NextFunction) => {
   }
 };
 
+// Admin middleware
+const authenticateAdmin = async (req: any, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ message: "Access token required" });
+  }
+
+  try {
+    const user = await authService.verifyToken(token);
+    if (!user) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+    
+    // Check if user is admin
+    const fullUser = await storage.getUser(user.id);
+    if (!fullUser?.isAdmin) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+    
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: "Invalid token" });
+  }
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   
   // Authentication routes
@@ -1009,6 +1037,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Performance metrics calculation error:', error);
       res.status(500).json({ message: error.message || "Failed to calculate performance metrics" });
+    }
+  });
+
+  // Admin routes
+  app.get("/api/admin/stats", authenticateAdmin, async (req, res) => {
+    try {
+      const stats = await storage.getAdminStats();
+      res.json(stats);
+    } catch (error: any) {
+      console.error('Admin stats error:', error);
+      res.status(500).json({ message: error.message || "Failed to get admin stats" });
+    }
+  });
+
+  app.get("/api/admin/users", authenticateAdmin, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 100;
+      const users = await storage.getAllUsers(limit);
+      
+      // Remove sensitive data
+      const sanitizedUsers = users.map(user => ({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        stravaConnected: user.stravaConnected,
+        unitPreference: user.unitPreference,
+        isAdmin: user.isAdmin,
+        createdAt: user.createdAt,
+        lastSyncAt: user.lastSyncAt
+      }));
+      
+      res.json(sanitizedUsers);
+    } catch (error: any) {
+      console.error('Admin users error:', error);
+      res.status(500).json({ message: error.message || "Failed to get users" });
     }
   });
 

@@ -14,6 +14,7 @@ import AuthPage from "@/pages/auth";
 import PrivacyPage from "@/pages/privacy";
 import ContactPage from "@/pages/contact";
 import RunnerScorePage from "@/pages/runner-score";
+import AdminPage from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -62,6 +63,9 @@ function Router() {
       </Route>
       <Route path="/activity/:id">
         <ProtectedRoute component={ActivityPage} />
+      </Route>
+      <Route path="/admin">
+        <ProtectedRoute component={AdminPage} />
       </Route>
       
       <Route component={NotFound} />

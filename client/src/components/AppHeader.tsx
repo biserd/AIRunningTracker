@@ -1,4 +1,4 @@
-import { Activity, User, LogOut, Settings, BarChart3, Brain, Home } from "lucide-react";
+import { Activity, User, LogOut, Settings, BarChart3, Brain, Home, Shield } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
@@ -63,6 +63,23 @@ export default function AppHeader() {
                 </Link>
               );
             })}
+            
+            {/* Admin Link - only show for admin users */}
+            {user?.isAdmin && (
+              <Link href="/admin">
+                <Button
+                  variant={location === "/admin" ? "default" : "ghost"}
+                  className={`flex items-center space-x-2 ${
+                    location === "/admin"
+                      ? "bg-strava-orange text-white hover:bg-strava-orange/90" 
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  <Shield size={16} />
+                  <span>Admin</span>
+                </Button>
+              </Link>
+            )}
           </nav>
 
           {/* User Menu */}
