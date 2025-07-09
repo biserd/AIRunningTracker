@@ -223,6 +223,24 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(users.createdAt))
       .limit(limit);
   }
+
+  async getWaitlistEmails(limit = 100): Promise<{
+    id: number;
+    email: string;
+    createdAt: string;
+  }[]> {
+    const waitlistEmails = await db
+      .select()
+      .from(emailWaitlist)
+      .orderBy(desc(emailWaitlist.createdAt))
+      .limit(limit);
+    
+    return waitlistEmails.map(item => ({
+      id: item.id,
+      email: item.email,
+      createdAt: item.createdAt?.toISOString() || new Date().toISOString()
+    }));
+  }
 }
 
 // Initialize with demo data

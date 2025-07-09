@@ -1076,6 +1076,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/waitlist", authenticateAdmin, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 100;
+      const waitlistEmails = await storage.getWaitlistEmails(limit);
+      res.json(waitlistEmails);
+    } catch (error: any) {
+      console.error('Admin waitlist error:', error);
+      res.status(500).json({ message: error.message || "Failed to get waitlist emails" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

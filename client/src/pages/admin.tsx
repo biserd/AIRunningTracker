@@ -45,6 +45,12 @@ interface User {
   lastSyncAt?: string;
 }
 
+interface WaitlistEmail {
+  id: number;
+  email: string;
+  createdAt: string;
+}
+
 export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -57,6 +63,11 @@ export default function AdminPage() {
 
   const { data: users, isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
+    enabled: !!user,
+  });
+
+  const { data: waitlistEmails, isLoading: waitlistLoading } = useQuery<WaitlistEmail[]>({
+    queryKey: ["/api/admin/waitlist"],
     enabled: !!user,
   });
 
@@ -222,6 +233,49 @@ export default function AdminPage() {
                       </TableCell>
                     </TableRow>
                   ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Waitlist Emails */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Waitlist Emails
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {waitlistLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange mx-auto mb-4"></div>
+                <p>Loading waitlist...</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Signed Up</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {waitlistEmails?.length ? (
+                    waitlistEmails.map((email) => (
+                      <TableRow key={email.id}>
+                        <TableCell className="font-medium">{email.email}</TableCell>
+                        <TableCell>{formatDate(email.createdAt)}</TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={2} className="text-center text-gray-500 py-8">
+                        No waitlist emails yet
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             )}
