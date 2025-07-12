@@ -1,57 +1,9 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Activity, Mail, CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp, Trophy } from "lucide-react";
-import { z } from "zod";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-
-const emailSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-});
-
-type EmailData = z.infer<typeof emailSchema>;
+import { Activity, CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp, Trophy } from "lucide-react";
 
 export default function LandingPage() {
-  const [submitted, setSubmitted] = useState(false);
-  const { toast } = useToast();
-
-  const form = useForm<EmailData>({
-    resolver: zodResolver(emailSchema),
-    defaultValues: {
-      email: "",
-    },
-  });
-
-  const emailMutation = useMutation({
-    mutationFn: (data: EmailData) => apiRequest("/api/waitlist", "POST", data),
-    onSuccess: () => {
-      setSubmitted(true);
-      toast({
-        title: "Welcome to the waitlist!",
-        description: "We'll notify you when RunAnalytics launches",
-      });
-      form.reset();
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Something went wrong",
-        description: error.message || "Please try again",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const onSubmit = (data: EmailData) => {
-    emailMutation.mutate(data);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
       {/* Header */}
@@ -76,10 +28,6 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="py-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <Badge className="mb-6 bg-blue-100 text-blue-800 border-blue-200">
-            Coming Soon
-          </Badge>
-          
           <h1 className="text-5xl md:text-6xl font-bold text-charcoal mb-6">
             AI-Powered Running
             <span className="text-strava-orange"> Analytics</span>
@@ -90,52 +38,29 @@ export default function LandingPage() {
             Connect your Strava account and unlock your running potential.
           </p>
 
-          {/* Email Signup */}
-          <Card className="max-w-md mx-auto mb-12">
-            <CardContent className="p-6">
-              {submitted ? (
-                <div className="text-center space-y-4">
-                  <CheckCircle className="h-12 w-12 text-green-600 mx-auto" />
-                  <h3 className="text-lg font-semibold text-charcoal">You're on the list!</h3>
-                  <p className="text-gray-600">We'll notify you when RunAnalytics launches.</p>
-                </div>
-              ) : (
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <h3 className="text-lg font-semibold text-charcoal">Join the waitlist</h3>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input
-                      type="email"
-                      {...form.register("email")}
-                      className="pl-10"
-                      placeholder="Enter your email"
-                      disabled={emailMutation.isPending}
-                    />
-                  </div>
-                  {form.formState.errors.email && (
-                    <p className="text-sm text-red-600 text-left">
-                      {form.formState.errors.email.message}
-                    </p>
-                  )}
-                  <Button
-                    type="submit"
-                    className="w-full bg-strava-orange hover:bg-strava-orange/90"
-                    disabled={emailMutation.isPending}
-                  >
-                    {emailMutation.isPending ? "Adding..." : "Get Early Access"}
-                  </Button>
-                </form>
-              )}
-            </CardContent>
-          </Card>
-
-          <p className="text-sm text-gray-500">
-            Already have an account?{" "}
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Link href="/auth">
-              <Button variant="link" className="p-0 h-auto text-strava-orange">
-                Sign in here
+              <Button
+                size="lg"
+                className="bg-strava-orange text-white hover:bg-strava-orange/90"
+              >
+                Get Started Free
               </Button>
             </Link>
+            <Link href="/auth">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-gray-300 text-charcoal hover:bg-gray-50"
+              >
+                Sign In
+              </Button>
+            </Link>
+          </div>
+
+          <p className="text-sm text-gray-500">
+            Free to use • Connect with Strava • No credit card required
           </p>
         </div>
       </section>
@@ -363,16 +288,27 @@ export default function LandingPage() {
             Ready to Transform Your Running?
           </h2>
           <p className="text-xl mb-8 text-gray-700">
-            Join thousands of runners who are already improving their performance with AI-powered insights.
+            Start analyzing your performance today with AI-powered insights and your personal Runner Score.
           </p>
-          <Link href="/auth">
-            <Button
-              size="lg"
-              className="bg-strava-orange text-white hover:bg-strava-orange/90"
-            >
-              Get Started Today
-            </Button>
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/auth">
+              <Button
+                size="lg"
+                className="bg-strava-orange text-white hover:bg-strava-orange/90"
+              >
+                Create Free Account
+              </Button>
+            </Link>
+            <Link href="/auth">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-gray-300 text-charcoal hover:bg-white"
+              >
+                Sign In
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
