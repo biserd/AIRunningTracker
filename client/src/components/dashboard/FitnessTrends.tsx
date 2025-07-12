@@ -12,10 +12,18 @@ interface FitnessTrendsProps {
 export default function FitnessTrends({ chartData = [], unitPreference }: FitnessTrendsProps) {
   // Calculate fitness metrics from real data
   const avgPace = chartData.length > 0 ? 
-    chartData.reduce((sum, week) => sum + week.pace, 0) / chartData.length : 0;
+    chartData.reduce((sum, activity) => sum + activity.pace, 0) / chartData.length : 0;
   
+  // Since chartData contains individual activities (not actual weekly aggregations),
+  // we need to calculate a more meaningful weekly volume
   const totalDistance = chartData.length > 0 ? 
-    chartData.reduce((sum, week) => sum + week.distance, 0) : 0;
+    chartData.reduce((sum, activity) => sum + activity.distance, 0) : 0;
+  
+  // Calculate average distance per run, which is more meaningful than summing all activities
+  const avgDistancePerRun = chartData.length > 0 ? totalDistance / chartData.length : 0;
+  
+  // Use average distance per run as a better metric than misleading "weekly volume"
+  const weeklyVolume = avgDistancePerRun;
   
   const paceImprovement = chartData.length >= 2 ? 
     ((chartData[0].pace - chartData[chartData.length - 1].pace) / chartData[0].pace) * 100 : 0;
@@ -28,9 +36,9 @@ export default function FitnessTrends({ chartData = [], unitPreference }: Fitnes
       color: 'bg-performance-blue' 
     },
     { 
-      label: 'Weekly Volume', 
-      value: `${totalDistance.toFixed(1)} ${unitPreference === "miles" ? "mi" : "km"}`, 
-      progress: Math.min(100, (totalDistance / 50) * 100), 
+      label: 'Avg Distance/Run', 
+      value: `${weeklyVolume.toFixed(1)} ${unitPreference === "miles" ? "mi" : "km"}`, 
+      progress: Math.min(100, (weeklyVolume / 10) * 100), // Adjusted target for average run distance
       color: 'bg-strava-orange' 
     },
     { 
