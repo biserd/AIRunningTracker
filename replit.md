@@ -8,6 +8,12 @@ RunAnalytics is a comprehensive running analytics platform that integrates with 
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes (January 2025)
+
+- **Landing Page Updates (Jan 12)**: Removed "Coming Soon" elements and waitlist functionality. Users can now register and login directly through "Get Started Free" and "Sign In" buttons.
+- **Dashboard Fix (Jan 12)**: Fixed misleading percentage calculations that showed "-100% vs last month" when insufficient previous data existed. Now shows "No previous data" or meaningful percentages only.
+- **Fitness Trends Fix (Jan 12)**: Corrected "Weekly Volume" metric that was incorrectly summing individual activities. Changed to "Avg Distance/Run" for more accurate representation.
+
 ## System Architecture
 
 ### Frontend Architecture
