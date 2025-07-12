@@ -246,13 +246,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lastMonthAvgPace = lastMonthDistance > 0 ? (lastMonthTime / 60) / (lastMonthDistance / 1000) : 0;
       const lastMonthActivitiesCount = lastMonthActivities.length;
       
-      // Calculate percentage changes
-      const distanceChange = lastMonthDistance > 0 ? 
-        ((totalDistance - lastMonthDistance) / lastMonthDistance) * 100 : 0;
-      const paceChange = lastMonthAvgPace > 0 ? 
-        ((avgPace - lastMonthAvgPace) / lastMonthAvgPace) * 100 : 0; // Positive means slower, negative means faster
+      // Calculate percentage changes (only if we have meaningful comparison data)
+      const distanceChange = lastMonthDistance > 0 && totalDistance > 0 ? 
+        ((totalDistance - lastMonthDistance) / lastMonthDistance) * 100 : null;
+      const paceChange = lastMonthAvgPace > 0 && avgPace > 0 && lastMonthActivitiesCount >= 3 && totalActivities >= 3 ? 
+        ((avgPace - lastMonthAvgPace) / lastMonthAvgPace) * 100 : null; // Positive means slower, negative means faster
       const activitiesChange = lastMonthActivitiesCount > 0 ? 
-        ((totalActivities - lastMonthActivitiesCount) / lastMonthActivitiesCount) * 100 : 0;
+        ((totalActivities - lastMonthActivitiesCount) / lastMonthActivitiesCount) * 100 : null;
       
       const dashboardData = {
         user: {
@@ -273,10 +273,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           recovery: "Good", // Placeholder
           unitPreference: user.unitPreference || "km",
           // Add percentage changes
-          distanceChange: Math.round(distanceChange),
-          paceChange: Math.round(paceChange),
-          activitiesChange: Math.round(activitiesChange),
-          trainingLoadChange: Math.round(activitiesChange), // Same as activities change for now
+          distanceChange: distanceChange !== null ? Math.round(distanceChange) : null,
+          paceChange: paceChange !== null ? Math.round(paceChange) : null,
+          activitiesChange: activitiesChange !== null ? Math.round(activitiesChange) : null,
+          trainingLoadChange: activitiesChange !== null ? Math.round(activitiesChange) : null, // Same as activities change for now
         },
         activities: activities.map(activity => ({
           id: activity.id,

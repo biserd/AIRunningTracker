@@ -8,16 +8,24 @@ interface QuickStatsProps {
     trainingLoad: number;
     recovery: string;
     unitPreference?: string;
-    distanceChange?: number;
-    paceChange?: number;
-    activitiesChange?: number;
-    trainingLoadChange?: number;
+    distanceChange?: number | null;
+    paceChange?: number | null;
+    activitiesChange?: number | null;
+    trainingLoadChange?: number | null;
   };
 }
 
 export default function QuickStats({ stats }: QuickStatsProps) {
-  const formatPercentageChange = (change: number | undefined, positiveIsGood: boolean = true) => {
-    if (change === undefined || change === 0) return null;
+  const formatPercentageChange = (change: number | undefined | null, positiveIsGood: boolean = true) => {
+    if (change === undefined || change === null) {
+      return (
+        <div className="mt-4 flex items-center text-sm">
+          <span className="text-gray-500">No previous data</span>
+        </div>
+      );
+    }
+    
+    if (change === 0) return null;
     
     const isPositive = change > 0;
     const isGoodChange = positiveIsGood ? isPositive : !isPositive;
