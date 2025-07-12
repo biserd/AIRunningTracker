@@ -96,6 +96,7 @@ process.on('unhandledRejection', (reason, promise) => {
       reusePort: true,
     }, () => {
       log(`serving on port ${port}`);
+      console.log(`🚀 RunAnalytics app is ready at http://localhost:${port}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
