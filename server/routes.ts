@@ -212,17 +212,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const activities = await storage.getActivitiesByUserId(userId, 10);
       const insights = await storage.getAIInsightsByUserId(userId);
       
-      // Calculate quick stats
+      // Calculate quick stats for this month and last month
       const thisMonth = new Date();
       thisMonth.setDate(1);
+      thisMonth.setHours(0, 0, 0, 0);
       
-      const monthlyActivities = activities.filter(a => 
+      const lastMonth = new Date(thisMonth);
+      lastMonth.setMonth(lastMonth.getMonth() - 1);
+      
+      const twoMonthsAgo = new Date(lastMonth);
+      twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 1);
+      
+      // Get all activities for comparison
+      const allActivities = await storage.getActivitiesByUserId(userId, 100);
+      
+      const thisMonthActivities = allActivities.filter(a => 
         new Date(a.startDate) >= thisMonth
       );
       
-      const totalDistance = monthlyActivities.reduce((sum, a) => sum + a.distance, 0);
-      const totalTime = monthlyActivities.reduce((sum, a) => sum + a.movingTime, 0);
+      const lastMonthActivities = allActivities.filter(a => 
+        new Date(a.startDate) >= lastMonth && new Date(a.startDate) < thisMonth
+      );
+      
+      // Calculate this month stats
+      const totalDistance = thisMonthActivities.reduce((sum, a) => sum + a.distance, 0);
+      const totalTime = thisMonthActivities.reduce((sum, a) => sum + a.movingTime, 0);
       const avgPace = totalDistance > 0 ? (totalTime / 60) / (totalDistance / 1000) : 0;
+      const totalActivities = thisMonthActivities.length;
+      
+      // Calculate last month stats for comparison
+      const lastMonthDistance = lastMonthActivities.reduce((sum, a) => sum + a.distance, 0);
+      const lastMonthTime = lastMonthActivities.reduce((sum, a) => sum + a.movingTime, 0);
+      const lastMonthAvgPace = lastMonthDistance > 0 ? (lastMonthTime / 60) / (lastMonthDistance / 1000) : 0;
+      const lastMonthActivitiesCount = lastMonthActivities.length;
+      
+      // Calculate percentage changes
+      const distanceChange = lastMonthDistance > 0 ? 
+        ((totalDistance - lastMonthDistance) / lastMonthDistance) * 100 : 0;
+      const paceChange = lastMonthAvgPace > 0 ? 
+        ((avgPace - lastMonthAvgPace) / lastMonthAvgPace) * 100 : 0; // Positive means slower, negative means faster
+      const activitiesChange = lastMonthActivitiesCount > 0 ? 
+        ((totalActivities - lastMonthActivitiesCount) / lastMonthActivitiesCount) * 100 : 0;
       
       const dashboardData = {
         user: {
@@ -239,9 +269,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const paceToShow = user.unitPreference === "miles" ? avgPace / 0.621371 : avgPace;
             return `${Math.floor(paceToShow)}:${String(Math.round((paceToShow % 1) * 60)).padStart(2, '0')}`;
           })() : "0:00",
-          trainingLoad: monthlyActivities.length * 85, // Simple calculation
+          trainingLoad: thisMonthActivities.length * 85, // Simple calculation
           recovery: "Good", // Placeholder
           unitPreference: user.unitPreference || "km",
+          // Add percentage changes
+          distanceChange: Math.round(distanceChange),
+          paceChange: Math.round(paceChange),
+          activitiesChange: Math.round(activitiesChange),
+          trainingLoadChange: Math.round(activitiesChange), // Same as activities change for now
         },
         activities: activities.map(activity => ({
           id: activity.id,

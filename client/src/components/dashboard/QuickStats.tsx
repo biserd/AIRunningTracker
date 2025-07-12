@@ -8,10 +8,35 @@ interface QuickStatsProps {
     trainingLoad: number;
     recovery: string;
     unitPreference?: string;
+    distanceChange?: number;
+    paceChange?: number;
+    activitiesChange?: number;
+    trainingLoadChange?: number;
   };
 }
 
 export default function QuickStats({ stats }: QuickStatsProps) {
+  const formatPercentageChange = (change: number | undefined, positiveIsGood: boolean = true) => {
+    if (change === undefined || change === 0) return null;
+    
+    const isPositive = change > 0;
+    const isGoodChange = positiveIsGood ? isPositive : !isPositive;
+    
+    return (
+      <div className="mt-4 flex items-center text-sm">
+        {isGoodChange ? (
+          <ArrowUp className="text-achievement-green mr-1" size={16} />
+        ) : (
+          <ArrowDown className="text-red-500 mr-1" size={16} />
+        )}
+        <span className={`font-medium ${isGoodChange ? 'text-achievement-green' : 'text-red-500'}`}>
+          {isPositive ? '+' : ''}{change}%
+        </span>
+        <span className="text-gray-500 ml-1">vs last month</span>
+      </div>
+    );
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
       <Card>
@@ -26,11 +51,7 @@ export default function QuickStats({ stats }: QuickStatsProps) {
               <Route className="text-strava-orange" size={20} />
             </div>
           </div>
-          <div className="mt-4 flex items-center text-sm">
-            <ArrowUp className="text-achievement-green mr-1" size={16} />
-            <span className="text-achievement-green font-medium">+12%</span>
-            <span className="text-gray-500 ml-1">vs last month</span>
-          </div>
+          {formatPercentageChange(stats.distanceChange, true)}
         </CardContent>
       </Card>
 
@@ -46,11 +67,7 @@ export default function QuickStats({ stats }: QuickStatsProps) {
               <Timer className="text-performance-blue" size={20} />
             </div>
           </div>
-          <div className="mt-4 flex items-center text-sm">
-            <ArrowDown className="text-achievement-green mr-1" size={16} />
-            <span className="text-achievement-green font-medium">-8s</span>
-            <span className="text-gray-500 ml-1">improvement</span>
-          </div>
+          {formatPercentageChange(stats.paceChange, false)}
         </CardContent>
       </Card>
 
@@ -66,9 +83,7 @@ export default function QuickStats({ stats }: QuickStatsProps) {
               <TrendingUp className="text-achievement-green" size={20} />
             </div>
           </div>
-          <div className="mt-4 flex items-center text-sm">
-            <span className="text-gray-500">Optimal range</span>
-          </div>
+          {formatPercentageChange(stats.trainingLoadChange, true)}
         </CardContent>
       </Card>
 
