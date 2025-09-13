@@ -8,16 +8,16 @@ RunAnalytics is a comprehensive running analytics platform that integrates with 
 
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes (January 2025)
+## Recent Changes (September 2025)
 
-- **Version 1.0.0 Release (Jan 13)**: Added comprehensive versioning system with release notes tracking and FAQ page for user support.
-- **Landing Page Updates (Jan 12)**: Removed "Coming Soon" elements and waitlist functionality. Users can now register and login directly through "Get Started Free" and "Sign In" buttons.
-- **Dashboard Fix (Jan 12)**: Fixed misleading percentage calculations that showed "-100% vs last month" when insufficient previous data existed. Now shows "No previous data" or meaningful percentages only.
-- **Fitness Trends Fix (Jan 12)**: Corrected "Weekly Volume" metric that was incorrectly summing individual activities. Changed to "Avg Distance/Run" for more accurate representation.
+- **Version 2.0.0 Release (Sep 13)**: Major platform transformation with 9 comprehensive enhancements including advanced analytics, admin dashboard with user monitoring and performance tracking, detailed splits analysis, historical Runner Score tracking, and enhanced AI insights with actionable recommendations.
+- **Enhanced User Experience (Sep 13)**: Added comparison arrows, trend indicators, performance chart time filters, and comprehensive splits analysis for improved data visualization.
+- **Admin Dashboard Launch (Sep 13)**: Complete administrative platform with real-time user analytics (DAU/WAU/MAU), system performance monitoring, API metrics tracking, and live system health monitoring.
+- **AI Insights Expansion (Sep 13)**: Expanded to 5 comprehensive categories (Performance, Training, Health, Goals, Motivation) with insight history timeline and actionable recommendations.
 
 ## Version Management
 
-### Current Version: 1.0.0
+### Current Version: 2.0.0
 
 The application now includes a comprehensive versioning system to track features, improvements, and fixes across releases:
 
