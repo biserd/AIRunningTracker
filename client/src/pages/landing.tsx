@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Activity, CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp, Trophy } from "lucide-react";
+import { VERSION } from "@shared/version";
 
 export default function LandingPage() {
   return (
@@ -342,6 +343,7 @@ export default function LandingPage() {
               <h4 className="font-semibold mb-4">Company</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><Link href="/dashboard" className="hover:text-white transition-colors">About</Link></li>
+                <li><Link href="/faq" className="hover:text-white transition-colors" data-testid="link-faq">FAQ</Link></li>
                 <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
                 <li><Link href="/dashboard" className="hover:text-white transition-colors">Terms of Service</Link></li>
                 <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
@@ -350,7 +352,15 @@ export default function LandingPage() {
           </div>
           
           <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 RunAnalytics. All rights reserved.</p>
+            <div className="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
+              <p>&copy; 2024 RunAnalytics. All rights reserved.</p>
+              <div className="flex items-center space-x-4">
+                <span className="text-sm" data-testid="text-version">v{VERSION}</span>
+                <Link href="/release-notes" className="text-sm hover:text-white transition-colors" data-testid="link-release-notes">
+                  Release Notes
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </footer>

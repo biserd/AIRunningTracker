@@ -10,9 +10,32 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (January 2025)
 
+- **Version 1.0.0 Release (Jan 13)**: Added comprehensive versioning system with release notes tracking and FAQ page for user support.
 - **Landing Page Updates (Jan 12)**: Removed "Coming Soon" elements and waitlist functionality. Users can now register and login directly through "Get Started Free" and "Sign In" buttons.
 - **Dashboard Fix (Jan 12)**: Fixed misleading percentage calculations that showed "-100% vs last month" when insufficient previous data existed. Now shows "No previous data" or meaningful percentages only.
 - **Fitness Trends Fix (Jan 12)**: Corrected "Weekly Volume" metric that was incorrectly summing individual activities. Changed to "Avg Distance/Run" for more accurate representation.
+
+## Version Management
+
+### Current Version: 1.0.0
+
+The application now includes a comprehensive versioning system to track features, improvements, and fixes across releases:
+
+- **Version Configuration**: Centralized version management in `shared/version.ts`
+- **Release Notes**: Structured changelog with categorized changes (features, fixes, improvements, breaking changes)
+- **Version Display**: Application version shown in landing page footer and release notes page
+- **Release Notes Page**: Dedicated page at `/release-notes` for viewing version history
+- **Automated Tracking**: Each release includes detailed descriptions and categorized change lists
+
+### Release Process
+
+When adding new features or making changes:
+1. Update the `VERSION` constant in `shared/version.ts`
+2. Add a new entry to `RELEASE_NOTES` array with:
+   - Version number and release date
+   - Descriptive title and summary
+   - Categorized list of changes (feature, fix, improvement, breaking)
+3. Document significant changes in this file's "Recent Changes" section
 
 ## System Architecture
 
@@ -65,6 +88,12 @@ The application uses a PostgreSQL database with the following main entities:
 - Running efficiency metrics
 - Training load analysis
 - Progress tracking and trends
+
+### User Support & Documentation
+- **FAQ Page**: Comprehensive frequently asked questions covering platform features, data handling, training insights, and user support
+- **Release Notes**: Version history with detailed changelog showing new features, bug fixes, and improvements
+- **Contact Support**: Direct communication channel for user assistance and feature requests
+- **Privacy & Security**: Detailed privacy policy and data protection information
 
 ## Data Flow
 

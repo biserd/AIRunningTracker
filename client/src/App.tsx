@@ -13,6 +13,8 @@ import LandingPage from "@/pages/landing";
 import AuthPage from "@/pages/auth";
 import PrivacyPage from "@/pages/privacy";
 import ContactPage from "@/pages/contact";
+import FAQPage from "@/pages/faq";
+import ReleaseNotesPage from "@/pages/release-notes";
 import RunnerScorePage from "@/pages/runner-score";
 import AdminPage from "@/pages/admin";
 import NotFound from "@/pages/not-found";
@@ -46,6 +48,8 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/contact" component={ContactPage} />
+      <Route path="/faq" component={FAQPage} />
+      <Route path="/release-notes" component={ReleaseNotesPage} />
       <Route path="/runner-score/:userId" component={RunnerScorePage} />
       
       {/* Protected Routes */}
