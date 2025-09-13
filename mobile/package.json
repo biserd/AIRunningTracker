@@ -1,7 +1,7 @@
 {
   "name": "runanalytics-mobile",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "App.js",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
@@ -9,6 +9,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@expo/ngrok": "^4.1.0",
     "expo": "~51.0.0",
     "expo-status-bar": "~1.12.1",
     "react": "18.2.0",
@@ -17,5 +18,9 @@
   "devDependencies": {
     "@babel/core": "^7.20.0"
   },
-  "private": true
+  "private": true,
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
 }
