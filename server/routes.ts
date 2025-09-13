@@ -382,6 +382,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           performance: insights.find(i => i.type === 'performance'),
           pattern: insights.find(i => i.type === 'pattern'),
           recovery: insights.find(i => i.type === 'recovery'),
+          motivation: insights.find(i => i.type === 'motivation'),
+          technique: insights.find(i => i.type === 'technique'),
           recommendations: insights.filter(i => i.type === 'recommendation'),
         },
         chartData: activities.slice(0, 6).reverse().map((activity, index) => {

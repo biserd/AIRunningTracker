@@ -11,11 +11,13 @@ interface AIInsightsProps {
     performance?: InsightData;
     pattern?: InsightData;
     recovery?: InsightData;
+    motivation?: InsightData;
+    technique?: InsightData;
   };
 }
 
 export default function AIInsights({ insights }: AIInsightsProps) {
-  const hasInsights = insights.performance || insights.pattern || insights.recovery;
+  const hasInsights = insights.performance || insights.pattern || insights.recovery || insights.motivation || insights.technique;
 
   if (!hasInsights) {
     return (
@@ -69,6 +71,20 @@ export default function AIInsights({ insights }: AIInsightsProps) {
             <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border-l-4 border-achievement-green">
               <h4 className="font-semibold text-charcoal mb-2">{insights.recovery.title}</h4>
               <p className="text-sm text-gray-700">{insights.recovery.content}</p>
+            </div>
+          )}
+
+          {insights.motivation && (
+            <div className="p-4 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg border-l-4 border-yellow-500">
+              <h4 className="font-semibold text-charcoal mb-2">{insights.motivation.title}</h4>
+              <p className="text-sm text-gray-700">{insights.motivation.content}</p>
+            </div>
+          )}
+
+          {insights.technique && (
+            <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border-l-4 border-indigo-500">
+              <h4 className="font-semibold text-charcoal mb-2">{insights.technique.title}</h4>
+              <p className="text-sm text-gray-700">{insights.technique.content}</p>
             </div>
           )}
         </div>

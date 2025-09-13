@@ -20,6 +20,8 @@ interface AIAnalysisResult {
   performance: string;
   pattern: string;
   recovery: string;
+  motivation: string;
+  technique: string;
   recommendations: {
     speed: string;
     hills: string;
@@ -125,6 +127,8 @@ Provide analysis in the following JSON format:
   "performance": "Performance analysis insight (max 150 chars)",
   "pattern": "Training pattern insight (max 150 chars)", 
   "recovery": "Recovery insight (max 150 chars)",
+  "motivation": "Motivational insight highlighting achievements and encouraging progress (max 150 chars)",
+  "technique": "Running form, cadence, or technique insight with actionable tips (max 150 chars)",
   "recommendations": {
     "speed": "Speed work recommendation using ${isMetric ? 'km/meters' : 'miles/feet'} units (max 100 chars)",
     "hills": "Hill training recommendation using ${isMetric ? 'km/meters' : 'miles/feet'} units (max 100 chars)",
@@ -157,6 +161,8 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
       await storage.deleteOldAIInsights(userId, 'performance');
       await storage.deleteOldAIInsights(userId, 'pattern');
       await storage.deleteOldAIInsights(userId, 'recovery');
+      await storage.deleteOldAIInsights(userId, 'motivation');
+      await storage.deleteOldAIInsights(userId, 'technique');
       await storage.deleteOldAIInsights(userId, 'recommendation');
 
       // Store new insights
@@ -183,6 +189,28 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
         content: analysis.recovery,
         confidence: 0.75,
       });
+
+      // Store motivation insight with fallback
+      if (analysis.motivation && analysis.motivation.trim()) {
+        await storage.createAIInsight({
+          userId,
+          type: 'motivation',
+          title: 'Motivation Boost',
+          content: analysis.motivation.slice(0, 150), // Enforce 150 char limit
+          confidence: 0.8,
+        });
+      }
+
+      // Store technique insight with fallback
+      if (analysis.technique && analysis.technique.trim()) {
+        await storage.createAIInsight({
+          userId,
+          type: 'technique',
+          title: 'Technique Tips',
+          content: analysis.technique.slice(0, 150), // Enforce 150 char limit
+          confidence: 0.85,
+        });
+      }
 
       // Store recommendations
       await storage.createAIInsight({
