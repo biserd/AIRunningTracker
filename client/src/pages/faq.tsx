@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Activity, HelpCircle, Zap, Target, BarChart, Shield, Clock } from "lucide-react";
 import { Link } from "wouter";
+import Footer from "@/components/Footer";
 
 export default function FAQPage() {
   return (
@@ -279,6 +280,7 @@ export default function FAQPage() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

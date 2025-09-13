@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Activity, Calendar, Star, Bug, Wrench, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
 import { RELEASE_NOTES, VERSION } from "@shared/version";
+import Footer from "@/components/Footer";
 
 const changeTypeIcons = {
   feature: Star,
@@ -12,10 +13,10 @@ const changeTypeIcons = {
 };
 
 const changeTypeColors = {
-  feature: "bg-green-100 text-green-800",
-  fix: "bg-red-100 text-red-800", 
-  improvement: "bg-blue-100 text-blue-800",
-  breaking: "bg-orange-100 text-orange-800"
+  feature: "bg-green-600 text-white",
+  fix: "bg-red-600 text-white", 
+  improvement: "bg-blue-600 text-white",
+  breaking: "bg-orange-600 text-white"
 };
 
 export default function ReleaseNotesPage() {
@@ -131,6 +132,7 @@ export default function ReleaseNotesPage() {
           </Link>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }
