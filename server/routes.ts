@@ -407,6 +407,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get historical insights for timeline view
+  app.get("/api/insights/history/:userId", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      // Security check: ensure user can only access their own insights history
+      if (req.user.id !== userId) {
+        return res.status(403).json({ message: "Access denied: cannot access another user's insights history" });
+      }
+
+      const historicalInsights = await storage.getHistoricalAIInsights(userId, 50);
+      
+      // Group insights by date for timeline display
+      const timelineData = historicalInsights.reduce((acc: any, insight) => {
+        const date = new Date(insight.createdAt).toISOString().split('T')[0]; // YYYY-MM-DD format
+        
+        if (!acc[date]) {
+          acc[date] = {
+            date,
+            insights: {
+              performance: [],
+              pattern: [],
+              recovery: [],
+              motivation: [],
+              technique: [],
+              recommendation: []
+            }
+          };
+        }
+        
+        acc[date].insights[insight.type as keyof typeof acc[date].insights].push({
+          id: insight.id,
+          title: insight.title,
+          content: insight.content,
+          confidence: insight.confidence,
+          createdAt: insight.createdAt
+        });
+        
+        return acc;
+      }, {});
+
+      // Convert to array and sort by date (newest first)
+      const timeline = Object.values(timelineData).sort((a: any, b: any) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+
+      res.json({ timeline });
+    } catch (error) {
+      console.error('Insights history error:', error);
+      res.status(500).json({ message: "Failed to fetch insights history" });
+    }
+  });
+
   // Get chart data with time range
   app.get("/api/chart/:userId", authenticateJWT, async (req: any, res) => {
     try {

@@ -1,6 +1,6 @@
 import { users, activities, aiInsights, emailWaitlist, trainingPlans, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type InsertEmailWaitlist, type TrainingPlan, type InsertTrainingPlan } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, inArray } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 export interface IStorage {
@@ -20,6 +20,8 @@ export interface IStorage {
   createAIInsight(insight: InsertAIInsight): Promise<AIInsight>;
   getAIInsightsByUserId(userId: number, type?: string): Promise<AIInsight[]>;
   deleteOldAIInsights(userId: number, type: string): Promise<void>;
+  cleanupOldAIInsights(userId: number, type: string, keepCount?: number): Promise<void>;
+  getHistoricalAIInsights(userId: number, limit?: number): Promise<AIInsight[]>;
   
   createTrainingPlan(plan: InsertTrainingPlan): Promise<TrainingPlan>;
   getLatestTrainingPlan(userId: number): Promise<TrainingPlan | undefined>;
@@ -147,6 +149,44 @@ export class DatabaseStorage implements IStorage {
         eq(aiInsights.userId, userId),
         eq(aiInsights.type, type)
       ));
+  }
+
+  // Keep only the most recent N insights per type for timeline history
+  async cleanupOldAIInsights(userId: number, type: string, keepCount: number = 10): Promise<void> {
+    // Get all insights of this type for this user, ordered by creation date
+    const insights = await db
+      .select()
+      .from(aiInsights)
+      .where(and(
+        eq(aiInsights.userId, userId),
+        eq(aiInsights.type, type)
+      ))
+      .orderBy(desc(aiInsights.createdAt));
+
+    // If we have more than keepCount, delete the oldest ones
+    if (insights.length > keepCount) {
+      const idsToDelete = insights.slice(keepCount).map(insight => insight.id);
+      if (idsToDelete.length > 0) {
+        await db
+          .delete(aiInsights)
+          .where(and(
+            eq(aiInsights.userId, userId),
+            eq(aiInsights.type, type),
+            inArray(aiInsights.id, idsToDelete)
+          ));
+      }
+    }
+  }
+
+  // Get historical insights for timeline view
+  async getHistoricalAIInsights(userId: number, limit: number = 50): Promise<AIInsight[]> {
+    const insights = await db
+      .select()
+      .from(aiInsights)
+      .where(eq(aiInsights.userId, userId))
+      .orderBy(desc(aiInsights.createdAt))
+      .limit(limit);
+    return insights;
   }
 
   async createTrainingPlan(insertPlan: InsertTrainingPlan): Promise<TrainingPlan> {

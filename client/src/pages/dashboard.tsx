@@ -12,6 +12,7 @@ import TrainingRecommendations from "@/components/dashboard/TrainingRecommendati
 import FitnessTrends from "@/components/dashboard/FitnessTrends";
 import GoalProgress from "@/components/dashboard/GoalProgress";
 import RunnerScoreRadar from "@/components/dashboard/RunnerScoreRadar";
+import InsightHistory from "@/components/dashboard/InsightHistory";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -199,6 +200,7 @@ export default function Dashboard() {
           
           <div className="space-y-6">
             <AIInsights insights={dashboardData?.insights || {}} />
+            <InsightHistory userId={user?.id!} />
             <TrainingRecommendations recommendations={dashboardData?.insights?.recommendations || []} />
             <FitnessTrends chartData={dashboardData?.chartData || []} unitPreference={dashboardData?.user?.unitPreference} />
             <GoalProgress userId={user?.id!} unitPreference={dashboardData?.user?.unitPreference} />

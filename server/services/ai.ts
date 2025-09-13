@@ -157,13 +157,8 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
 
       const analysis: AIAnalysisResult = JSON.parse(response.choices[0].message.content || '{}');
 
-      // Clear old insights
-      await storage.deleteOldAIInsights(userId, 'performance');
-      await storage.deleteOldAIInsights(userId, 'pattern');
-      await storage.deleteOldAIInsights(userId, 'recovery');
-      await storage.deleteOldAIInsights(userId, 'motivation');
-      await storage.deleteOldAIInsights(userId, 'technique');
-      await storage.deleteOldAIInsights(userId, 'recommendation');
+      // Store new insights first, then cleanup old ones to preserve history
+      // This ensures we always have the latest insight before cleanup
 
       // Store new insights
       await storage.createAIInsight({
@@ -236,6 +231,14 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
         content: analysis.recommendations.longRun,
         confidence: 0.9,
       });
+
+      // Now cleanup old insights while preserving recent history (keep last 10 of each type)
+      await storage.cleanupOldAIInsights(userId, 'performance', 10);
+      await storage.cleanupOldAIInsights(userId, 'pattern', 10);
+      await storage.cleanupOldAIInsights(userId, 'recovery', 10);
+      await storage.cleanupOldAIInsights(userId, 'motivation', 10);
+      await storage.cleanupOldAIInsights(userId, 'technique', 10);
+      await storage.cleanupOldAIInsights(userId, 'recommendation', 30); // Keep more recommendations for variety
 
     } catch (error) {
       console.error('Failed to generate AI insights:', error);
