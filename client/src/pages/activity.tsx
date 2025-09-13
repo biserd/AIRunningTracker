@@ -6,6 +6,7 @@ import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, Ther
 import { Link } from "wouter";
 import AppHeader from "@/components/AppHeader";
 import RouteMap from "../components/RouteMap";
+import DetailedSplitsAnalysis from "@/components/activity/DetailedSplitsAnalysis";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 export default function ActivityPage() {
@@ -270,29 +271,12 @@ export default function ActivityPage() {
 
         {/* Performance Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Splits Analysis */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <Timer className="mr-2 h-5 w-5 text-blue-600" />
-                  Pace Analysis
-                </div>
-                {performanceData?.hasPerformanceData && (
-                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                    Real Data
-                  </span>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SplitsChart 
-                activity={activity} 
-                streams={performanceData?.streams}
-                laps={performanceData?.laps}
-              />
-            </CardContent>
-          </Card>
+          {/* Enhanced Splits Analysis */}
+          <DetailedSplitsAnalysis
+            activity={activity}
+            streams={performanceData?.streams}
+            laps={performanceData?.laps}
+          />
 
           {/* Heart Rate Zones */}
           {activity.averageHeartrate && (
@@ -367,142 +351,6 @@ export default function ActivityPage() {
   );
 }
 
-// Splits Chart Component
-function SplitsChart({ activity, streams, laps }: { activity: any, streams?: any, laps?: any[] }) {
-  // Determine if using metric or imperial units
-  const isMetric = activity.distanceUnit === 'km';
-  const distanceInKm = activity.distance / 1000;
-  const distanceInMiles = distanceInKm * 0.621371;
-  
-  // Use appropriate distance and pace calculation
-  const totalDistance = isMetric ? distanceInKm : distanceInMiles;
-  const totalTime = activity.movingTime;
-  const unitLabel = isMetric ? 'km' : 'mi';
-  const splitDistance = isMetric ? 1 : 1; // 1km or 1mi splits
-  
-  let splits = [];
-  
-  // Use real Strava laps data if available
-  if (laps && laps.length > 0) {
-    splits = laps.map((lap, index) => {
-      const lapDistance = isMetric ? lap.distance / 1000 : (lap.distance / 1000) * 0.621371;
-      const lapPace = lap.moving_time / lapDistance;
-      const paceMinutes = Math.floor(lapPace / 60);
-      const paceSeconds = Math.round(lapPace % 60);
-      
-      return {
-        split: `${index + 1}${unitLabel}`,
-        pace: lapPace,
-        paceFormatted: `${paceMinutes}:${paceSeconds.toString().padStart(2, '0')}`,
-        elevation: lap.total_elevation_gain || 0,
-        realData: true
-      };
-    });
-  } 
-  // Use streams data to calculate splits if available
-  else if (streams?.distance?.data && streams?.time?.data) {
-    const distances = streams.distance.data;
-    const times = streams.time.data;
-    const splitDistanceMeters = isMetric ? 1000 : 1609.34; // 1km or 1mi in meters
-    
-    let currentSplitIndex = 1;
-    let lastSplitDistance = 0;
-    let lastSplitTime = 0;
-    
-    for (let i = 0; i < distances.length; i++) {
-      const currentDistance = distances[i];
-      const currentTime = times[i];
-      
-      if (currentDistance >= currentSplitIndex * splitDistanceMeters) {
-        const splitTime = currentTime - lastSplitTime;
-        const splitDist = currentDistance - lastSplitDistance;
-        const actualSplitDistance = isMetric ? splitDist / 1000 : (splitDist / 1000) * 0.621371;
-        const splitPace = splitTime / actualSplitDistance;
-        const paceMinutes = Math.floor(splitPace / 60);
-        const paceSeconds = Math.round(splitPace % 60);
-        
-        splits.push({
-          split: `${currentSplitIndex}${unitLabel}`,
-          pace: splitPace,
-          paceFormatted: `${paceMinutes}:${paceSeconds.toString().padStart(2, '0')}`,
-          elevation: 0, // Could calculate from altitude stream if available
-          realData: true
-        });
-        
-        lastSplitDistance = currentDistance;
-        lastSplitTime = currentTime;
-        currentSplitIndex++;
-        
-        if (currentSplitIndex > 20) break; // Max 20 splits
-      }
-    }
-  }
-  // Fallback to synthetic data if no real data available
-  else {
-    const avgPace = totalTime / totalDistance;
-    const numSplits = Math.min(Math.floor(totalDistance), 20);
-    const activitySeed = parseInt(activity.stravaId) % 1000;
-    
-    for (let i = 0; i < numSplits; i++) {
-      const splitSeed = (activitySeed + i * 17) % 100;
-      const splitVariation = (splitSeed / 100 - 0.5) * 0.15;
-      
-      let paceAdjustment = 1 + splitVariation;
-      if (i === 0) paceAdjustment *= 1.02;
-      if (i === numSplits - 1) paceAdjustment *= 0.98;
-      
-      const splitPace = avgPace * paceAdjustment;
-      const paceMinutes = Math.floor(splitPace / 60);
-      const paceSeconds = Math.round(splitPace % 60);
-      
-      splits.push({
-        split: `${i + 1}${unitLabel}`,
-        pace: splitPace,
-        paceFormatted: `${paceMinutes}:${paceSeconds.toString().padStart(2, '0')}`,
-        elevation: 0,
-        realData: false
-      });
-    }
-  }
-
-  return (
-    <div className="space-y-4">
-      <ResponsiveContainer width="100%" height={200}>
-        <LineChart data={splits}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="split" />
-          <YAxis 
-            domain={['dataMin - 10', 'dataMax + 10']}
-            tickFormatter={(value) => {
-              const mins = Math.floor(value / 60);
-              const secs = Math.round(value % 60);
-              return `${mins}:${secs.toString().padStart(2, '0')}`;
-            }}
-          />
-          <Tooltip 
-            formatter={(value: any) => {
-              const mins = Math.floor(value / 60);
-              const secs = Math.round(value % 60);
-              return [`${mins}:${secs.toString().padStart(2, '0')}`, 'Pace'];
-            }}
-          />
-          <Line type="monotone" dataKey="pace" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6' }} />
-        </LineChart>
-      </ResponsiveContainer>
-      
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <span className="font-medium text-green-600">Fastest Split:</span>
-          <span className="ml-2">{splits.reduce((min, split) => split.pace < min.pace ? split : min, splits[0])?.paceFormatted}</span>
-        </div>
-        <div>
-          <span className="font-medium text-red-600">Slowest Split:</span>
-          <span className="ml-2">{splits.reduce((max, split) => split.pace > max.pace ? split : max, splits[0])?.paceFormatted}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // Heart Rate Chart Component
 function HeartRateChart({ activity, streams }: { activity: any, streams?: any }) {
