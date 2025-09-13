@@ -10,9 +10,10 @@ interface PerformanceChartProps {
   }>;
   unitPreference?: string;
   onTimeRangeChange?: (range: string) => void;
+  currentTimeRange?: string;
 }
 
-export default function PerformanceChart({ data, unitPreference, onTimeRangeChange }: PerformanceChartProps) {
+export default function PerformanceChart({ data, unitPreference, onTimeRangeChange, currentTimeRange = "30days" }: PerformanceChartProps) {
   const formatPace = (value: number) => {
     const minutes = Math.floor(value);
     const seconds = Math.round((value - minutes) * 60);
@@ -21,19 +22,40 @@ export default function PerformanceChart({ data, unitPreference, onTimeRangeChan
 
   const formatDistance = (value: number) => `${value.toFixed(1)}${unitPreference === "miles" ? "mi" : "km"}`;
 
+  const getPeriodLabel = () => {
+    switch (currentTimeRange) {
+      case "7days": return "Day";
+      case "year": 
+      case "1year": return "Month";
+      default: return "Week"; // 30days, 3months, 6months
+    }
+  };
+
+  const getDistanceLabel = () => {
+    switch (currentTimeRange) {
+      case "7days": return "Daily Distance";
+      case "year": 
+      case "1year": return "Monthly Distance";
+      default: return "Weekly Distance";
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl font-semibold text-charcoal">Performance Trends</CardTitle>
-          <Select defaultValue="30days" onValueChange={onTimeRangeChange}>
+          <Select value={currentTimeRange} onValueChange={onTimeRangeChange}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select period" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="30days">Last 30 days</SelectItem>
-              <SelectItem value="3months">Last 3 months</SelectItem>
-              <SelectItem value="year">This year</SelectItem>
+              <SelectItem value="7days" data-testid="option-7days">Last 7 days</SelectItem>
+              <SelectItem value="30days" data-testid="option-30days">Last 30 days</SelectItem>
+              <SelectItem value="3months" data-testid="option-3months">Last 3 months</SelectItem>
+              <SelectItem value="6months" data-testid="option-6months">Last 6 months</SelectItem>
+              <SelectItem value="year" data-testid="option-year">This year</SelectItem>
+              <SelectItem value="1year" data-testid="option-1year">Last 12 months</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -66,10 +88,10 @@ export default function PerformanceChart({ data, unitPreference, onTimeRangeChan
                 tickFormatter={formatDistance}
               />
               <Tooltip 
-                labelFormatter={(label) => `Week: ${label}`}
+                labelFormatter={(label) => `${getPeriodLabel()}: ${label}`}
                 formatter={(value, name) => [
                   name === 'pace' ? formatPace(Number(value)) : formatDistance(Number(value)),
-                  name === 'pace' ? 'Average Pace' : 'Weekly Distance'
+                  name === 'pace' ? 'Average Pace' : getDistanceLabel()
                 ]}
                 contentStyle={{
                   backgroundColor: 'white',

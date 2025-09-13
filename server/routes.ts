@@ -406,13 +406,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get chart data with time range
-  app.get("/api/chart/:userId", async (req, res) => {
+  app.get("/api/chart/:userId", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const timeRange = req.query.range as string || "30days";
       
       if (isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      // Security check: ensure user can only access their own chart data
+      if (req.user.id !== userId) {
+        return res.status(403).json({ message: "Access denied: cannot access another user's chart data" });
       }
 
       const user = await storage.getUser(userId);
@@ -426,17 +431,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let activityLimit = 6;
 
       switch (timeRange) {
+        case "7days":
+          startDate.setDate(now.getDate() - 7);
+          activityLimit = 7; // One data point per day
+          break;
         case "3months":
           startDate.setMonth(now.getMonth() - 3);
-          activityLimit = 12;
+          activityLimit = 12; // Group by week
+          break;
+        case "6months":
+          startDate.setMonth(now.getMonth() - 6);
+          activityLimit = 26; // Group by week (~6 months = 26 weeks)
           break;
         case "year":
+          // This year - from January 1st to now
+          startDate = new Date(now.getFullYear(), 0, 1);
+          activityLimit = 12; // Group by month
+          break;
+        case "1year":
+          // Last 12 months from today
           startDate.setFullYear(now.getFullYear() - 1);
-          activityLimit = 24;
+          activityLimit = 12; // Group by month
           break;
         default: // 30days
           startDate.setDate(now.getDate() - 30);
-          activityLimit = 6;
+          activityLimit = 6; // Group by week
       }
 
       const activities = await storage.getActivitiesByUserId(userId, 100); // Get more activities for proper aggregation
@@ -449,11 +468,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const activityDate = new Date(activity.startDate);
         let groupKey: string;
         
-        if (timeRange === "year") {
-          // Group by month for year view
+        if (timeRange === "7days") {
+          // Group by day for 7-day view
+          groupKey = activityDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+        } else if (timeRange === "year" || timeRange === "1year") {
+          // Group by month for year views
           groupKey = `${activityDate.getFullYear()}-${String(activityDate.getMonth() + 1).padStart(2, '0')}`;
         } else {
-          // Group by week for 30days and 3months views
+          // Group by week for 30days, 3months, and 6months views
           const weekStart = new Date(activityDate);
           weekStart.setDate(activityDate.getDate() - activityDate.getDay()); // Start of week (Sunday)
           groupKey = weekStart.toISOString().split('T')[0]; // YYYY-MM-DD format
@@ -498,10 +520,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const paceConverted = user.unitPreference === "miles" ? averagePace / 0.621371 : averagePace;
           
           let label: string;
-          if (timeRange === "year") {
+          if (timeRange === "7days") {
+            // Daily labels for 7-day view
+            const date = new Date(key);
+            label = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+          } else if (timeRange === "year" || timeRange === "1year") {
+            // Monthly labels for year views
             const date = new Date(key + "-01");
             label = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
           } else {
+            // Weekly labels for 30days, 3months, and 6months views
             const weekStart = new Date(key);
             const weekEnd = new Date(weekStart);
             weekEnd.setDate(weekStart.getDate() + 6);

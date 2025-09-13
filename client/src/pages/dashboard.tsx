@@ -191,6 +191,7 @@ export default function Dashboard() {
               data={chartData?.chartData || dashboardData?.chartData || []} 
               unitPreference={dashboardData?.user?.unitPreference}
               onTimeRangeChange={handleTimeRangeChange}
+              currentTimeRange={chartTimeRange}
             />
             <RunnerScoreRadar />
             <RecentActivities activities={dashboardData?.activities || []} unitPreference={dashboardData?.user?.unitPreference} />
