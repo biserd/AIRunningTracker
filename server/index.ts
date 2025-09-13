@@ -1,8 +1,22 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// CORS configuration for mobile app access
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'https://snack.expo.dev',
+    'https://snack-web-player.s3.us-west-1.amazonaws.com',
+    'https://d1wp6m56sqw74a.cloudfront.net',
+    /^https:\/\/.*\.expo\.dev$/,
+    /^https:\/\/.*\.repl\.co$/
+  ],
+  credentials: true
+}));
 
 // Security headers for HTTPS
 app.use((req, res, next) => {
