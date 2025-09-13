@@ -1346,6 +1346,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Guard against unknown API routes - prevent SPA fallback from serving HTML for API requests
+  app.all("/api/*", (_req, res) => {
+    res.status(404).json({ message: "API endpoint not found" });
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
