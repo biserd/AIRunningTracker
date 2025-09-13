@@ -204,6 +204,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid user ID" });
       }
 
+      // Security check: ensure user can only access their own dashboard
+      if (req.user.id !== userId) {
+        return res.status(403).json({ message: "Access denied: cannot access another user's dashboard" });
+      }
+
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -212,7 +217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const activities = await storage.getActivitiesByUserId(userId, 10);
       const insights = await storage.getAIInsightsByUserId(userId);
       
-      // Calculate quick stats for this month and last month
+      // Calculate quick stats for this month and last month, plus weekly comparisons
       const thisMonth = new Date();
       thisMonth.setDate(1);
       thisMonth.setHours(0, 0, 0, 0);
@@ -220,18 +225,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lastMonth = new Date(thisMonth);
       lastMonth.setMonth(lastMonth.getMonth() - 1);
       
-      const twoMonthsAgo = new Date(lastMonth);
-      twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 1);
+      // Calculate weekly periods
+      const thisWeek = new Date();
+      const daysSinceMonday = (thisWeek.getDay() + 6) % 7; // Monday = 0
+      thisWeek.setDate(thisWeek.getDate() - daysSinceMonday);
+      thisWeek.setHours(0, 0, 0, 0);
+      
+      const lastWeek = new Date(thisWeek);
+      lastWeek.setDate(lastWeek.getDate() - 7);
       
       // Get all activities for comparison
-      const allActivities = await storage.getActivitiesByUserId(userId, 100);
+      const allActivities = await storage.getActivitiesByUserId(userId, 200);
       
+      // Filter activities by time periods
       const thisMonthActivities = allActivities.filter(a => 
         new Date(a.startDate) >= thisMonth
       );
       
       const lastMonthActivities = allActivities.filter(a => 
         new Date(a.startDate) >= lastMonth && new Date(a.startDate) < thisMonth
+      );
+      
+      const thisWeekActivities = allActivities.filter(a => 
+        new Date(a.startDate) >= thisWeek
+      );
+      
+      const lastWeekActivities = allActivities.filter(a => 
+        new Date(a.startDate) >= lastWeek && new Date(a.startDate) < thisWeek
       );
       
       // Calculate this month stats
@@ -246,13 +266,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lastMonthAvgPace = lastMonthDistance > 0 ? (lastMonthTime / 60) / (lastMonthDistance / 1000) : 0;
       const lastMonthActivitiesCount = lastMonthActivities.length;
       
-      // Calculate percentage changes (only if we have meaningful comparison data)
-      const distanceChange = lastMonthDistance > 0 && totalDistance > 0 ? 
+      // Calculate this week stats
+      const thisWeekDistance = thisWeekActivities.reduce((sum, a) => sum + a.distance, 0);
+      const thisWeekTime = thisWeekActivities.reduce((sum, a) => sum + a.movingTime, 0);
+      const thisWeekAvgPace = thisWeekDistance > 0 ? (thisWeekTime / 60) / (thisWeekDistance / 1000) : 0;
+      const thisWeekActivitiesCount = thisWeekActivities.length;
+      
+      // Calculate last week stats for comparison
+      const lastWeekDistance = lastWeekActivities.reduce((sum, a) => sum + a.distance, 0);
+      const lastWeekTime = lastWeekActivities.reduce((sum, a) => sum + a.movingTime, 0);
+      const lastWeekAvgPace = lastWeekDistance > 0 ? (lastWeekTime / 60) / (lastWeekDistance / 1000) : 0;
+      const lastWeekActivitiesCount = lastWeekActivities.length;
+      
+      // Calculate percentage changes (monthly comparisons)
+      const monthlyDistanceChange = lastMonthDistance > 0 && totalDistance > 0 ? 
         ((totalDistance - lastMonthDistance) / lastMonthDistance) * 100 : null;
-      const paceChange = lastMonthAvgPace > 0 && avgPace > 0 && lastMonthActivitiesCount >= 3 && totalActivities >= 3 ? 
+      const monthlyPaceChange = lastMonthAvgPace > 0 && avgPace > 0 && lastMonthActivitiesCount >= 3 && totalActivities >= 3 ? 
         ((avgPace - lastMonthAvgPace) / lastMonthAvgPace) * 100 : null; // Positive means slower, negative means faster
-      const activitiesChange = lastMonthActivitiesCount > 0 ? 
+      const monthlyActivitiesChange = lastMonthActivitiesCount > 0 ? 
         ((totalActivities - lastMonthActivitiesCount) / lastMonthActivitiesCount) * 100 : null;
+      
+      // Calculate percentage changes (weekly comparisons)
+      const weeklyDistanceChange = lastWeekDistance > 0 && thisWeekDistance > 0 ? 
+        ((thisWeekDistance - lastWeekDistance) / lastWeekDistance) * 100 : null;
+      const weeklyPaceChange = lastWeekAvgPace > 0 && thisWeekAvgPace > 0 && lastWeekActivitiesCount >= 2 && thisWeekActivitiesCount >= 2 ? 
+        ((thisWeekAvgPace - lastWeekAvgPace) / lastWeekAvgPace) * 100 : null;
+      const weeklyActivitiesChange = lastWeekActivitiesCount > 0 ? 
+        ((thisWeekActivitiesCount - lastWeekActivitiesCount) / lastWeekActivitiesCount) * 100 : null;
       
       const dashboardData = {
         user: {
@@ -262,6 +302,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastSyncAt: user.lastSyncAt,
         },
         stats: {
+          // Monthly totals (current behavior)
+          monthlyTotalDistance: user.unitPreference === "miles" ? 
+            ((totalDistance / 1000) * 0.621371).toFixed(1) : 
+            (totalDistance / 1000).toFixed(1),
+          monthlyAvgPace: avgPace > 0 ? (() => {
+            const paceToShow = user.unitPreference === "miles" ? avgPace / 0.621371 : avgPace;
+            return `${Math.floor(paceToShow)}:${String(Math.round((paceToShow % 1) * 60)).padStart(2, '0')}`;
+          })() : "0:00",
+          monthlyTotalActivities: totalActivities,
+          monthlyTrainingLoad: totalActivities * 85,
+          
+          // Weekly totals
+          weeklyTotalDistance: user.unitPreference === "miles" ? 
+            ((thisWeekDistance / 1000) * 0.621371).toFixed(1) : 
+            (thisWeekDistance / 1000).toFixed(1),
+          weeklyAvgPace: thisWeekAvgPace > 0 ? (() => {
+            const paceToShow = user.unitPreference === "miles" ? thisWeekAvgPace / 0.621371 : thisWeekAvgPace;
+            return `${Math.floor(paceToShow)}:${String(Math.round((paceToShow % 1) * 60)).padStart(2, '0')}`;
+          })() : "0:00",
+          weeklyTotalActivities: thisWeekActivitiesCount,
+          weeklyTrainingLoad: thisWeekActivitiesCount * 85,
+          
+          // Recovery based on weekly activity
+          recovery: thisWeekActivitiesCount >= 4 ? "Good" : thisWeekActivitiesCount >= 2 ? "Moderate" : "Low",
+          unitPreference: user.unitPreference || "km",
+          
+          // Calculate proper training load changes
+          monthlyTrainingLoadActual: totalActivities * 85,
+          lastMonthTrainingLoadActual: lastMonthActivitiesCount * 85,
+          weeklyTrainingLoadActual: thisWeekActivitiesCount * 85,
+          lastWeekTrainingLoadActual: lastWeekActivitiesCount * 85,
+          
+          // Monthly percentage changes
+          monthlyDistanceChange: monthlyDistanceChange !== null ? Math.round(monthlyDistanceChange) : null,
+          monthlyPaceChange: monthlyPaceChange !== null ? Math.round(monthlyPaceChange) : null,
+          monthlyActivitiesChange: monthlyActivitiesChange !== null ? Math.round(monthlyActivitiesChange) : null,
+          monthlyTrainingLoadChange: lastMonthActivitiesCount > 0 ? Math.round(((totalActivities * 85 - lastMonthActivitiesCount * 85) / (lastMonthActivitiesCount * 85)) * 100) : null,
+          
+          // Weekly percentage changes
+          weeklyDistanceChange: weeklyDistanceChange !== null ? Math.round(weeklyDistanceChange) : null,
+          weeklyPaceChange: weeklyPaceChange !== null ? Math.round(weeklyPaceChange) : null,
+          weeklyActivitiesChange: weeklyActivitiesChange !== null ? Math.round(weeklyActivitiesChange) : null,
+          weeklyTrainingLoadChange: lastWeekActivitiesCount > 0 ? Math.round(((thisWeekActivitiesCount * 85 - lastWeekActivitiesCount * 85) / (lastWeekActivitiesCount * 85)) * 100) : null,
+          
+          // Backward compatibility (default to monthly)
           totalDistance: user.unitPreference === "miles" ? 
             ((totalDistance / 1000) * 0.621371).toFixed(1) : 
             (totalDistance / 1000).toFixed(1),
@@ -269,14 +354,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const paceToShow = user.unitPreference === "miles" ? avgPace / 0.621371 : avgPace;
             return `${Math.floor(paceToShow)}:${String(Math.round((paceToShow % 1) * 60)).padStart(2, '0')}`;
           })() : "0:00",
-          trainingLoad: thisMonthActivities.length * 85, // Simple calculation
-          recovery: "Good", // Placeholder
-          unitPreference: user.unitPreference || "km",
-          // Add percentage changes
-          distanceChange: distanceChange !== null ? Math.round(distanceChange) : null,
-          paceChange: paceChange !== null ? Math.round(paceChange) : null,
-          activitiesChange: activitiesChange !== null ? Math.round(activitiesChange) : null,
-          trainingLoadChange: activitiesChange !== null ? Math.round(activitiesChange) : null, // Same as activities change for now
+          trainingLoad: totalActivities * 85,
+          totalActivities: totalActivities,
+          distanceChange: monthlyDistanceChange !== null ? Math.round(monthlyDistanceChange) : null,
+          paceChange: monthlyPaceChange !== null ? Math.round(monthlyPaceChange) : null,
+          activitiesChange: monthlyActivitiesChange !== null ? Math.round(monthlyActivitiesChange) : null,
+          trainingLoadChange: lastMonthActivitiesCount > 0 ? Math.round(((totalActivities * 85 - lastMonthActivitiesCount * 85) / (lastMonthActivitiesCount * 85)) * 100) : null,
         },
         activities: activities.map(activity => ({
           id: activity.id,

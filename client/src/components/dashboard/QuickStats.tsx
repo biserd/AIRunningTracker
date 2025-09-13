@@ -1,13 +1,39 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Route, Timer, TrendingUp, Heart, ArrowUp, ArrowDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Route, Timer, TrendingUp, Heart, ArrowUp, ArrowDown, Calendar, Clock } from "lucide-react";
 
 interface QuickStatsProps {
   stats: {
+    // Period-specific totals
+    monthlyTotalDistance: string;
+    monthlyAvgPace: string;
+    monthlyTrainingLoad: number;
+    monthlyTotalActivities: number;
+    weeklyTotalDistance: string;
+    weeklyAvgPace: string;
+    weeklyTrainingLoad: number;
+    weeklyTotalActivities: number;
+    
+    recovery: string;
+    unitPreference?: string;
+    
+    // Monthly changes
+    monthlyDistanceChange?: number | null;
+    monthlyPaceChange?: number | null;
+    monthlyActivitiesChange?: number | null;
+    monthlyTrainingLoadChange?: number | null;
+    // Weekly changes
+    weeklyDistanceChange?: number | null;
+    weeklyPaceChange?: number | null;
+    weeklyActivitiesChange?: number | null;
+    weeklyTrainingLoadChange?: number | null;
+    
+    // Backward compatibility
     totalDistance: string;
     avgPace: string;
     trainingLoad: number;
-    recovery: string;
-    unitPreference?: string;
+    totalActivities?: number;
     distanceChange?: number | null;
     paceChange?: number | null;
     activitiesChange?: number | null;
@@ -16,7 +42,24 @@ interface QuickStatsProps {
 }
 
 export default function QuickStats({ stats }: QuickStatsProps) {
-  const formatPercentageChange = (change: number | undefined | null, positiveIsGood: boolean = true) => {
+  const [comparisonPeriod, setComparisonPeriod] = useState<'weekly' | 'monthly'>('monthly');
+
+  // Helper functions to get period-specific values
+  const getCurrentDistance = () => comparisonPeriod === 'weekly' ? stats.weeklyTotalDistance : stats.monthlyTotalDistance;
+  const getCurrentPace = () => comparisonPeriod === 'weekly' ? stats.weeklyAvgPace : stats.monthlyAvgPace;
+  const getCurrentTrainingLoad = () => comparisonPeriod === 'weekly' ? stats.weeklyTrainingLoad : stats.monthlyTrainingLoad;
+  const getCurrentActivities = () => comparisonPeriod === 'weekly' ? stats.weeklyTotalActivities : stats.monthlyTotalActivities;
+  const getPeriodLabel = () => comparisonPeriod === 'weekly' ? 'this week' : 'this month';
+  const getTrainingLoadLabel = () => comparisonPeriod === 'weekly' ? 'TSS this week' : 'TSS this month';
+
+  const formatPercentageChange = (
+    weeklyChange: number | undefined | null, 
+    monthlyChange: number | undefined | null, 
+    positiveIsGood: boolean = true
+  ) => {
+    const change = comparisonPeriod === 'weekly' ? weeklyChange : monthlyChange;
+    const period = comparisonPeriod === 'weekly' ? 'last week' : 'last month';
+    
     if (change === undefined || change === null) {
       return (
         <div className="mt-4 flex items-center text-sm">
@@ -40,78 +83,113 @@ export default function QuickStats({ stats }: QuickStatsProps) {
         <span className={`font-medium ${isGoodChange ? 'text-achievement-green' : 'text-red-500'}`}>
           {isPositive ? '+' : ''}{change}%
         </span>
-        <span className="text-gray-500 ml-1">vs last month</span>
+        <span className="text-gray-500 ml-1">vs {period}</span>
       </div>
     );
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Distance</p>
-              <p className="text-3xl font-bold text-charcoal">{stats.totalDistance}</p>
-              <p className="text-sm text-gray-500">{stats.unitPreference === "miles" ? "mi" : "km"} this month</p>
-            </div>
-            <div className="w-12 h-12 bg-strava-orange/10 rounded-full flex items-center justify-center">
-              <Route className="text-strava-orange" size={20} />
-            </div>
-          </div>
-          {formatPercentageChange(stats.distanceChange, true)}
-        </CardContent>
-      </Card>
+    <div className="mb-8">
+      {/* Comparison Period Toggle */}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-charcoal">Quick Stats</h2>
+        <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1" data-testid="comparison-toggle">
+          <Button
+            variant={comparisonPeriod === 'weekly' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setComparisonPeriod('weekly')}
+            className={`text-xs ${comparisonPeriod === 'weekly' ? 'bg-strava-orange text-white' : 'text-gray-600'}`}
+            data-testid="button-weekly-comparison"
+          >
+            <Clock className="mr-1" size={14} />
+            Weekly
+          </Button>
+          <Button
+            variant={comparisonPeriod === 'monthly' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setComparisonPeriod('monthly')}
+            className={`text-xs ${comparisonPeriod === 'monthly' ? 'bg-strava-orange text-white' : 'text-gray-600'}`}
+            data-testid="button-monthly-comparison"
+          >
+            <Calendar className="mr-1" size={14} />
+            Monthly
+          </Button>
+        </div>
+      </div>
 
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Avg Pace</p>
-              <p className="text-3xl font-bold text-charcoal">{stats.avgPace}</p>
-              <p className="text-sm text-gray-500">min/{stats.unitPreference === "miles" ? "mi" : "km"}</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Distance</p>
+                <p className="text-3xl font-bold text-charcoal">{getCurrentDistance()}</p>
+                <p className="text-sm text-gray-500">{stats.unitPreference === "miles" ? "mi" : "km"} {getPeriodLabel()}</p>
+              </div>
+              <div className="w-12 h-12 bg-strava-orange/10 rounded-full flex items-center justify-center">
+                <Route className="text-strava-orange" size={20} />
+              </div>
             </div>
-            <div className="w-12 h-12 bg-performance-blue/10 rounded-full flex items-center justify-center">
-              <Timer className="text-performance-blue" size={20} />
-            </div>
-          </div>
-          {formatPercentageChange(stats.paceChange, false)}
-        </CardContent>
-      </Card>
+            {formatPercentageChange(stats.weeklyDistanceChange, stats.monthlyDistanceChange, true)}
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Training Load</p>
-              <p className="text-3xl font-bold text-charcoal">{stats.trainingLoad}</p>
-              <p className="text-sm text-gray-500">TSS this week</p>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Avg Pace</p>
+                <p className="text-3xl font-bold text-charcoal">{getCurrentPace()}</p>
+                <p className="text-sm text-gray-500">min/{stats.unitPreference === "miles" ? "mi" : "km"} {getPeriodLabel()}</p>
+              </div>
+              <div className="w-12 h-12 bg-performance-blue/10 rounded-full flex items-center justify-center">
+                <Timer className="text-performance-blue" size={20} />
+              </div>
             </div>
-            <div className="w-12 h-12 bg-achievement-green/10 rounded-full flex items-center justify-center">
-              <TrendingUp className="text-achievement-green" size={20} />
-            </div>
-          </div>
-          {formatPercentageChange(stats.trainingLoadChange, true)}
-        </CardContent>
-      </Card>
+            {formatPercentageChange(stats.weeklyPaceChange, stats.monthlyPaceChange, false)}
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Recovery</p>
-              <p className="text-3xl font-bold text-charcoal">{stats.recovery}</p>
-              <p className="text-sm text-gray-500">HRV status</p>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Training Load</p>
+                <p className="text-3xl font-bold text-charcoal">{getCurrentTrainingLoad()}</p>
+                <p className="text-sm text-gray-500">{getTrainingLoadLabel()}</p>
+              </div>
+              <div className="w-12 h-12 bg-achievement-green/10 rounded-full flex items-center justify-center">
+                <TrendingUp className="text-achievement-green" size={20} />
+              </div>
             </div>
-            <div className="w-12 h-12 bg-achievement-green/10 rounded-full flex items-center justify-center">
-              <Heart className="text-achievement-green" size={20} />
+            {formatPercentageChange(stats.weeklyTrainingLoadChange, stats.monthlyTrainingLoadChange, true)}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Recovery Status</p>
+                <p className="text-3xl font-bold text-charcoal">{stats.recovery}</p>
+                <p className="text-sm text-gray-500">{getCurrentActivities()} runs {getPeriodLabel()}</p>
+              </div>
+              <div className="w-12 h-12 bg-achievement-green/10 rounded-full flex items-center justify-center">
+                <Heart className="text-achievement-green" size={20} />
+              </div>
             </div>
-          </div>
-          <div className="mt-4 flex items-center text-sm">
-            <span className="text-achievement-green font-medium">Ready to train</span>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="mt-4 flex items-center text-sm">
+              <span className={`font-medium ${
+                stats.recovery === 'Good' ? 'text-achievement-green' : 
+                stats.recovery === 'Moderate' ? 'text-yellow-600' : 'text-red-500'
+              }`}>
+                {stats.recovery === 'Good' ? 'Ready to train' : 
+                 stats.recovery === 'Moderate' ? 'Consider rest' : 'Take a break'}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
