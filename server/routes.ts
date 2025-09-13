@@ -425,7 +425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Group insights by date for timeline display
       const timelineData = historicalInsights.reduce((acc: any, insight) => {
-        const date = new Date(insight.createdAt).toISOString().split('T')[0]; // YYYY-MM-DD format
+        const date = new Date(insight.createdAt || new Date()).toISOString().split('T')[0]; // YYYY-MM-DD format
         
         if (!acc[date]) {
           acc[date] = {
@@ -441,13 +441,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
         }
         
-        acc[date].insights[insight.type as keyof typeof acc[date].insights].push({
-          id: insight.id,
-          title: insight.title,
-          content: insight.content,
-          confidence: insight.confidence,
-          createdAt: insight.createdAt
-        });
+        const insightType = insight.type as 'performance' | 'pattern' | 'recovery' | 'motivation' | 'technique' | 'recommendation';
+        if (acc[date].insights[insightType]) {
+          acc[date].insights[insightType].push({
+            id: insight.id,
+            title: insight.title,
+            content: insight.content,
+            confidence: insight.confidence,
+            createdAt: insight.createdAt
+          });
+        }
         
         return acc;
       }, {});
