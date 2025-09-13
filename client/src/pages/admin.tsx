@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, Activity, Mail, TrendingUp, Calendar, Shield, Database } from "lucide-react";
+import { Users, Activity, Mail, TrendingUp, Calendar, Shield, Database, BarChart3, Clock, Target, Signal } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -51,6 +52,21 @@ interface WaitlistEmail {
   createdAt: string;
 }
 
+interface UserAnalytics {
+  dailyActiveUsers: number;
+  weeklyActiveUsers: number;
+  monthlyActiveUsers: number;
+  avgActivitiesPerUser: number;
+  avgDistancePerActivity: number;
+  avgTimePerActivity: number;
+  newUsersToday: number;
+  newUsersThisWeek: number;
+  syncSuccessRate: number;
+  topActivityTypes: Array<{ type: string; count: number }>;
+  userGrowthTrend: Array<{ date: string; count: number }>;
+  activityTrend: Array<{ date: string; count: number }>;
+}
+
 export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -68,6 +84,11 @@ export default function AdminPage() {
 
   const { data: waitlistEmails, isLoading: waitlistLoading } = useQuery<WaitlistEmail[]>({
     queryKey: ["/api/admin/waitlist"],
+    enabled: !!user,
+  });
+
+  const { data: analytics, isLoading: analyticsLoading } = useQuery<UserAnalytics>({
+    queryKey: ["/api/admin/analytics"],
     enabled: !!user,
   });
 
@@ -178,6 +199,285 @@ export default function AdminPage() {
               <p className="text-xs text-muted-foreground">
                 Users with Strava connected
               </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* User Analytics Section */}
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Usage Analytics</h2>
+            <p className="text-gray-600">Detailed platform usage and engagement metrics</p>
+          </div>
+
+          {/* Activity Analytics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Daily Active Users</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="stat-daily-active-users">
+                  {analyticsLoading ? "-" : analytics?.dailyActiveUsers}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Users with activities today
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Weekly Active Users</CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="stat-weekly-active-users">
+                  {analyticsLoading ? "-" : analytics?.weeklyActiveUsers}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Users active in last 7 days
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Monthly Active Users</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="stat-monthly-active-users">
+                  {analyticsLoading ? "-" : analytics?.monthlyActiveUsers}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Users active in last 30 days
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">New Users Today</CardTitle>
+                <Database className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="stat-new-users-today">
+                  {analyticsLoading ? "-" : analytics?.newUsersToday}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {analyticsLoading ? "-" : analytics?.newUsersThisWeek} this week
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Platform Usage Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Avg Activities/User</CardTitle>
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="stat-avg-activities-per-user">
+                  {analyticsLoading ? "-" : analytics?.avgActivitiesPerUser}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Activities per user average
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Avg Distance</CardTitle>
+                <Target className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="stat-avg-distance">
+                  {analyticsLoading ? "-" : `${analytics?.avgDistancePerActivity}km`}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Average per activity
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Avg Duration</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="stat-avg-duration">
+                  {analyticsLoading ? "-" : `${analytics?.avgTimePerActivity}min`}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Average per activity
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Sync Success Rate</CardTitle>
+                <Signal className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="stat-sync-success-rate">
+                  {analyticsLoading ? "-" : `${analytics?.syncSuccessRate}%`}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Users synced in last 7 days
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* User Growth Trend */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  User Growth Trend (7 Days)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {analyticsLoading ? (
+                  <div className="h-64 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange"></div>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <LineChart data={analytics?.userGrowthTrend}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="date" 
+                        tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      />
+                      <YAxis />
+                      <Tooltip 
+                        labelFormatter={(value) => new Date(value).toLocaleDateString()}
+                        formatter={(value: any) => [value, 'New Users']}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="count" 
+                        stroke="#3b82f6" 
+                        strokeWidth={2} 
+                        dot={{ fill: '#3b82f6' }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Activity Trend */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  Activity Trend (7 Days)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {analyticsLoading ? (
+                  <div className="h-64 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange"></div>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <LineChart data={analytics?.activityTrend}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="date" 
+                        tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      />
+                      <YAxis />
+                      <Tooltip 
+                        labelFormatter={(value) => new Date(value).toLocaleDateString()}
+                        formatter={(value: any) => [value, 'Activities']}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="count" 
+                        stroke="#10b981" 
+                        strokeWidth={2} 
+                        dot={{ fill: '#10b981' }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Top Activity Types */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Top Activity Types
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {analyticsLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange mx-auto mb-4"></div>
+                  <p>Loading activity types...</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    {analytics?.topActivityTypes.map((type, index) => (
+                      <div key={type.type} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div 
+                            className="w-4 h-4 rounded-full"
+                            style={{ 
+                              backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 5] 
+                            }}
+                          />
+                          <span className="font-medium" data-testid={`activity-type-${type.type.toLowerCase()}`}>
+                            {type.type}
+                          </span>
+                        </div>
+                        <span className="text-lg font-bold text-gray-900" data-testid={`activity-count-${type.type.toLowerCase()}`}>
+                          {type.count}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <ResponsiveContainer width="100%" height={200}>
+                      <PieChart>
+                        <Pie
+                          data={analytics?.topActivityTypes}
+                          dataKey="count"
+                          nameKey="type"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          label={({ type, percent }) => `${type} ${(percent * 100).toFixed(0)}%`}
+                        >
+                          {analytics?.topActivityTypes.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 5]} 
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

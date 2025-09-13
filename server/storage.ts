@@ -1,6 +1,6 @@
 import { users, activities, aiInsights, emailWaitlist, trainingPlans, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type InsertEmailWaitlist, type TrainingPlan, type InsertTrainingPlan } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql, inArray } from "drizzle-orm";
+import { eq, desc, and, sql, inArray, gte, gt, lt } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 export interface IStorage {
@@ -43,6 +43,20 @@ export interface IStorage {
     email: string;
     createdAt: string;
   }[]>;
+  getUserAnalytics(): Promise<{
+    dailyActiveUsers: number;
+    weeklyActiveUsers: number;
+    monthlyActiveUsers: number;
+    avgActivitiesPerUser: number;
+    avgDistancePerActivity: number;
+    avgTimePerActivity: number;
+    newUsersToday: number;
+    newUsersThisWeek: number;
+    syncSuccessRate: number;
+    topActivityTypes: Array<{ type: string; count: number }>;
+    userGrowthTrend: Array<{ date: string; count: number }>;
+    activityTrend: Array<{ date: string; count: number }>;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -280,6 +294,185 @@ export class DatabaseStorage implements IStorage {
       email: item.email,
       createdAt: item.createdAt?.toISOString() || new Date().toISOString()
     }));
+  }
+
+  async getUserAnalytics(): Promise<{
+    dailyActiveUsers: number;
+    weeklyActiveUsers: number;
+    monthlyActiveUsers: number;
+    avgActivitiesPerUser: number;
+    avgDistancePerActivity: number;
+    avgTimePerActivity: number;
+    newUsersToday: number;
+    newUsersThisWeek: number;
+    syncSuccessRate: number;
+    topActivityTypes: Array<{ type: string; count: number }>;
+    userGrowthTrend: Array<{ date: string; count: number }>;
+    activityTrend: Array<{ date: string; count: number }>;
+  }> {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekStart = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const monthStart = new Date(todayStart.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    // Daily/Weekly/Monthly Active Users (users with activities)
+    const [dailyActiveResult] = await db
+      .select({ count: sql<number>`count(distinct ${activities.userId})` })
+      .from(activities)
+      .where(gte(activities.startDate, todayStart.toISOString()));
+
+    const [weeklyActiveResult] = await db
+      .select({ count: sql<number>`count(distinct ${activities.userId})` })
+      .from(activities)
+      .where(gte(activities.startDate, weekStart.toISOString()));
+
+    const [monthlyActiveResult] = await db
+      .select({ count: sql<number>`count(distinct ${activities.userId})` })
+      .from(activities)
+      .where(gte(activities.startDate, monthStart.toISOString()));
+
+    // Average activities per user
+    const [avgActivitiesResult] = await db
+      .select({ 
+        avgActivities: sql<number>`avg(activity_count)` 
+      })
+      .from(
+        db
+          .select({ 
+            userId: activities.userId,
+            activityCount: sql<number>`count(*)`.as('activity_count')
+          })
+          .from(activities)
+          .groupBy(activities.userId)
+          .as('user_activity_counts')
+      );
+
+    // Average distance and time per activity
+    const [avgStatsResult] = await db
+      .select({
+        avgDistance: sql<number>`avg(${activities.distance})`,
+        avgTime: sql<number>`avg(${activities.movingTime})`
+      })
+      .from(activities)
+      .where(gt(activities.distance, 0));
+
+    // New users
+    const [newUsersTodayResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(gte(users.createdAt, todayStart.toISOString()));
+
+    const [newUsersWeekResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(gte(users.createdAt, weekStart.toISOString()));
+
+    // Sync success rate (users with recent sync vs connected users)
+    const [connectedUsersResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(eq(users.stravaConnected, true));
+
+    const recentSyncCutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const [recentlySyncedResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(
+        and(
+          eq(users.stravaConnected, true),
+          gte(users.lastSyncAt, recentSyncCutoff.toISOString())
+        )
+      );
+
+    const syncSuccessRate = connectedUsersResult.count > 0 
+      ? (recentlySyncedResult.count / connectedUsersResult.count) * 100 
+      : 0;
+
+    // Top activity types (using activity names as proxy)
+    const topActivityTypes = await db
+      .select({
+        type: sql<string>`
+          case 
+            when lower(${activities.name}) like '%run%' then 'Running'
+            when lower(${activities.name}) like '%bike%' or lower(${activities.name}) like '%cycling%' then 'Cycling'
+            when lower(${activities.name}) like '%walk%' then 'Walking'
+            when lower(${activities.name}) like '%swim%' then 'Swimming'
+            else 'Other'
+          end
+        `,
+        count: sql<number>`count(*)`
+      })
+      .from(activities)
+      .groupBy(sql`
+        case 
+          when lower(${activities.name}) like '%run%' then 'Running'
+          when lower(${activities.name}) like '%bike%' or lower(${activities.name}) like '%cycling%' then 'Cycling'
+          when lower(${activities.name}) like '%walk%' then 'Walking'
+          when lower(${activities.name}) like '%swim%' then 'Swimming'
+          else 'Other'
+        end
+      `)
+      .orderBy(desc(sql<number>`count(*)`))
+      .limit(5);
+
+    // User growth trend (last 7 days)
+    const userGrowthTrend = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(todayStart.getTime() - i * 24 * 60 * 60 * 1000);
+      const nextDate = new Date(date.getTime() + 24 * 60 * 60 * 1000);
+      
+      const [result] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(users)
+        .where(
+          and(
+            gte(users.createdAt, date.toISOString()),
+            lt(users.createdAt, nextDate.toISOString())
+          )
+        );
+      
+      userGrowthTrend.push({
+        date: date.toISOString().split('T')[0],
+        count: result.count
+      });
+    }
+
+    // Activity trend (last 7 days)
+    const activityTrend = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(todayStart.getTime() - i * 24 * 60 * 60 * 1000);
+      const nextDate = new Date(date.getTime() + 24 * 60 * 60 * 1000);
+      
+      const [result] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(activities)
+        .where(
+          and(
+            gte(activities.startDate, date.toISOString()),
+            lt(activities.startDate, nextDate.toISOString())
+          )
+        );
+      
+      activityTrend.push({
+        date: date.toISOString().split('T')[0],
+        count: result.count
+      });
+    }
+
+    return {
+      dailyActiveUsers: dailyActiveResult.count,
+      weeklyActiveUsers: weeklyActiveResult.count,
+      monthlyActiveUsers: monthlyActiveResult.count,
+      avgActivitiesPerUser: Math.round(avgActivitiesResult.avgActivities || 0),
+      avgDistancePerActivity: Math.round((avgStatsResult.avgDistance || 0) / 1000 * 10) / 10,
+      avgTimePerActivity: Math.round((avgStatsResult.avgTime || 0) / 60),
+      newUsersToday: newUsersTodayResult.count,
+      newUsersThisWeek: newUsersWeekResult.count,
+      syncSuccessRate: Math.round(syncSuccessRate),
+      topActivityTypes: topActivityTypes.map(t => ({ type: t.type, count: t.count })),
+      userGrowthTrend,
+      activityTrend
+    };
   }
 }
 

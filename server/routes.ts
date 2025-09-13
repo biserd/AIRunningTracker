@@ -1314,6 +1314,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/analytics", authenticateAdmin, async (req, res) => {
+    try {
+      const analytics = await storage.getUserAnalytics();
+      res.json(analytics);
+    } catch (error: any) {
+      console.error('Admin analytics error:', error);
+      res.status(500).json({ message: error.message || "Failed to get user analytics" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
