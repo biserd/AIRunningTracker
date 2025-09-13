@@ -62,6 +62,15 @@ const authenticateAdmin = async (req: any, res: Response, next: NextFunction) =>
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // Health check endpoint
+  app.get("/api/health", (req, res) => {
+    res.json({ 
+      message: "RunAnalytics API is running!", 
+      status: "ok",
+      timestamp: new Date().toISOString()
+    });
+  });
+  
   // Authentication routes
   app.post("/api/auth/register", async (req, res) => {
     try {
