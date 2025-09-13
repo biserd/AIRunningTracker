@@ -59,22 +59,22 @@ export default function ReleaseNotesPage() {
         <div className="space-y-8">
           {RELEASE_NOTES.map((release, index) => (
             <div key={release.version} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-strava-orange to-orange-600 px-6 py-4 text-white">
+              <div className="bg-gradient-to-r from-gray-800 to-charcoal px-6 py-4 text-white">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="flex items-center space-x-3">
-                      <h2 className="text-xl font-semibold" data-testid={`text-version-${release.version}`}>
+                      <h2 className="text-xl font-semibold text-white" data-testid={`text-version-${release.version}`}>
                         Version {release.version}
                       </h2>
                       {index === 0 && (
-                        <Badge className="bg-white text-strava-orange" data-testid="badge-latest">
+                        <Badge className="bg-strava-orange text-white" data-testid="badge-latest">
                           Latest
                         </Badge>
                       )}
                     </div>
-                    <h3 className="text-lg opacity-90 mt-1">{release.title}</h3>
+                    <h3 className="text-lg text-gray-200 mt-1">{release.title}</h3>
                   </div>
-                  <div className="flex items-center space-x-2 text-orange-100">
+                  <div className="flex items-center space-x-2 text-gray-300">
                     <Calendar size={16} />
                     <span className="text-sm">{new Date(release.date).toLocaleDateString('en-US', { 
                       year: 'numeric', 
