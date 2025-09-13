@@ -14,7 +14,7 @@ export interface ReleaseNote {
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
     version: "1.0.0",
-    date: "2025-01-13",
+    date: "2025-09-13",
     title: "Initial Release",
     description: "Welcome to RunAnalytics - Your AI-powered running analytics platform",
     changes: [
