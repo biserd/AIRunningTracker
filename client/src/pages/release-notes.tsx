@@ -13,10 +13,17 @@ const changeTypeIcons = {
 };
 
 const changeTypeColors = {
-  feature: "bg-green-600 text-white",
-  fix: "bg-red-600 text-white", 
-  improvement: "bg-blue-600 text-white",
-  breaking: "bg-orange-600 text-white"
+  feature: "bg-green-50 text-green-700 border-green-200",
+  fix: "bg-red-50 text-red-700 border-red-200", 
+  improvement: "bg-blue-50 text-blue-700 border-blue-200",
+  breaking: "bg-orange-50 text-orange-700 border-orange-200"
+};
+
+const changeTypeIconColors = {
+  feature: "text-green-600",
+  fix: "text-red-600",
+  improvement: "text-blue-600",
+  breaking: "text-orange-600"
 };
 
 export default function ReleaseNotesPage() {
@@ -56,27 +63,35 @@ export default function ReleaseNotesPage() {
           </div>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-12">
           {RELEASE_NOTES.map((release, index) => (
-            <div key={release.version} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-gray-800 to-charcoal px-6 py-4 text-white">
+            <div key={release.version} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              {/* Clean Header Design */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100 px-8 py-6">
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-3">
-                      <h2 className="text-xl font-semibold text-white" data-testid={`text-version-${release.version}`}>
-                        Version {release.version}
-                      </h2>
-                      {index === 0 && (
-                        <Badge className="bg-strava-orange text-white" data-testid="badge-latest">
-                          Latest
-                        </Badge>
-                      )}
+                      <div className="w-12 h-12 bg-gradient-to-r from-strava-orange to-orange-500 rounded-xl flex items-center justify-center shadow-sm">
+                        <Activity className="text-white" size={24} />
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-3">
+                          <h2 className="text-2xl font-bold text-charcoal" data-testid={`text-version-${release.version}`}>
+                            Version {release.version}
+                          </h2>
+                          {index === 0 && (
+                            <Badge className="bg-strava-orange text-white px-3 py-1 rounded-full text-sm font-medium" data-testid="badge-latest">
+                              Latest Release
+                            </Badge>
+                          )}
+                        </div>
+                        <h3 className="text-lg text-gray-600 mt-1 font-medium">{release.title}</h3>
+                      </div>
                     </div>
-                    <h3 className="text-lg text-gray-200 mt-1">{release.title}</h3>
                   </div>
-                  <div className="flex items-center space-x-2 text-gray-300">
-                    <Calendar size={16} />
-                    <span className="text-sm">{new Date(release.date).toLocaleDateString('en-US', { 
+                  <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg border border-gray-200">
+                    <Calendar size={18} className="text-gray-500" />
+                    <span className="text-sm font-medium text-gray-700">{new Date(release.date).toLocaleDateString('en-US', { 
                       year: 'numeric', 
                       month: 'long', 
                       day: 'numeric' 
@@ -85,51 +100,57 @@ export default function ReleaseNotesPage() {
                 </div>
               </div>
               
-              <div className="p-6">
-                <p className="text-gray-700 mb-6">{release.description}</p>
+              {/* Content Area */}
+              <div className="p-8">
+                <p className="text-gray-700 text-lg mb-8 leading-relaxed">{release.description}</p>
                 
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-charcoal mb-3">What's New:</h4>
-                  <ul className="space-y-3">
+                <div className="space-y-6">
+                  <h4 className="text-xl font-semibold text-charcoal mb-6">What's New in This Release</h4>
+                  <div className="grid gap-4">
                     {release.changes.map((change, changeIndex) => {
                       const Icon = changeTypeIcons[change.type];
                       return (
-                        <li key={changeIndex} className="flex items-start space-x-3">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${changeTypeColors[change.type]}`}>
-                            <Icon size={12} />
+                        <div key={changeIndex} className={`flex items-start space-x-4 p-4 rounded-lg border ${changeTypeColors[change.type]}`}>
+                          <div className={`w-8 h-8 rounded-lg bg-white border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${changeTypeIconColors[change.type]} border-current`}>
+                            <Icon size={16} />
                           </div>
                           <div className="flex-1">
-                            <div className="flex items-center space-x-2">
-                              <Badge 
-                                variant="outline" 
-                                className={`text-xs px-2 py-0.5 ${changeTypeColors[change.type]} border-0 capitalize`}
-                                data-testid={`badge-change-type-${change.type}`}
-                              >
+                            <div className="flex items-center space-x-3 mb-1">
+                              <span className="text-xs font-semibold uppercase tracking-wider opacity-75 capitalize">
                                 {change.type}
-                              </Badge>
-                              <span className="text-gray-700">{change.description}</span>
+                              </span>
                             </div>
+                            <p className="text-gray-800 font-medium leading-relaxed">{change.description}</p>
                           </div>
-                        </li>
+                        </div>
                       );
                     })}
-                  </ul>
+                  </div>
                 </div>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="mt-12 bg-white rounded-lg p-6 text-center border border-gray-200">
-          <h3 className="text-lg font-semibold text-charcoal mb-2">Want to suggest a feature?</h3>
-          <p className="text-gray-600 mb-4">
-            We're always looking to improve RunAnalytics based on your feedback.
-          </p>
-          <Link href="/contact">
-            <Button className="bg-strava-orange text-white hover:bg-strava-orange/90" data-testid="button-suggest-feature">
-              Suggest a Feature
-            </Button>
-          </Link>
+        <div className="mt-16 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-8 text-center border border-gray-200">
+          <div className="max-w-2xl mx-auto">
+            <div className="w-16 h-16 bg-gradient-to-r from-strava-orange to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Star className="text-white" size={24} />
+            </div>
+            <h3 className="text-2xl font-bold text-charcoal mb-3">Help Shape RunAnalytics</h3>
+            <p className="text-gray-700 mb-6 text-lg leading-relaxed">
+              Your feedback drives our innovation. Share your ideas and help us build the features that matter most to you.
+            </p>
+            <Link href="/contact">
+              <Button 
+                size="lg" 
+                className="bg-strava-orange text-white hover:bg-strava-orange/90 px-8 py-3 text-lg font-medium rounded-lg shadow-sm" 
+                data-testid="button-suggest-feature"
+              >
+                Share Your Ideas
+              </Button>
+            </Link>
+          </div>
         </div>
       </main>
       <Footer />
