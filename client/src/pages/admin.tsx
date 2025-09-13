@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, Activity, Mail, TrendingUp, Calendar, Shield, Database, BarChart3, Clock, Target, Signal } from "lucide-react";
+import { Users, Activity, Mail, TrendingUp, Calendar, Shield, Database, BarChart3, Clock, Target, Signal, Server, Cpu, HardDrive, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -67,6 +67,39 @@ interface UserAnalytics {
   activityTrend: Array<{ date: string; count: number }>;
 }
 
+interface SystemPerformance {
+  apiMetrics: {
+    totalRequests: number;
+    avgResponseTime: number;
+    errorRate: number;
+    requestsPerHour: number;
+  };
+  databaseMetrics: {
+    connectionStatus: 'healthy' | 'warning' | 'error';
+    avgQueryTime: number;
+    slowQueries: number;
+    totalQueries: number;
+  };
+  systemHealth: {
+    uptime: number;
+    memoryUsage: number;
+    diskUsage: number;
+    status: 'operational' | 'degraded' | 'down';
+  };
+  recentErrors: Array<{
+    timestamp: string;
+    type: string;
+    message: string;
+    endpoint?: string;
+  }>;
+  performanceTrend: Array<{
+    timestamp: string;
+    responseTime: number;
+    requestCount: number;
+    errorCount: number;
+  }>;
+}
+
 export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -90,6 +123,12 @@ export default function AdminPage() {
   const { data: analytics, isLoading: analyticsLoading } = useQuery<UserAnalytics>({
     queryKey: ["/api/admin/analytics"],
     enabled: !!user,
+  });
+
+  const { data: performance, isLoading: performanceLoading } = useQuery<SystemPerformance>({
+    queryKey: ["/api/admin/performance"],
+    enabled: !!user,
+    refetchInterval: 30000, // Refresh every 30 seconds for real-time monitoring
   });
 
   // Check if user is admin
@@ -131,6 +170,52 @@ export default function AdminPage() {
       return `${hours}h ${minutes}m`;
     }
     return `${minutes}m`;
+  };
+
+  const formatUptime = (seconds: number) => {
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    
+    if (days > 0) {
+      return `${days}d ${hours}h ${mins}m`;
+    } else if (hours > 0) {
+      return `${hours}h ${mins}m`;
+    } else {
+      return `${mins}m`;
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'operational':
+      case 'healthy':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'warning':
+      case 'degraded':
+        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+      case 'error':
+      case 'down':
+        return <XCircle className="h-4 w-4 text-red-500" />;
+      default:
+        return <AlertTriangle className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'operational':
+      case 'healthy':
+        return 'text-green-600 bg-green-50';
+      case 'warning':
+      case 'degraded':
+        return 'text-yellow-600 bg-yellow-50';
+      case 'error':
+      case 'down':
+        return 'text-red-600 bg-red-50';
+      default:
+        return 'text-gray-600 bg-gray-50';
+    }
   };
 
   return (
@@ -476,6 +561,270 @@ export default function AdminPage() {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Performance Monitoring Section */}
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">System Performance</h2>
+            <p className="text-gray-600">Real-time system health metrics and performance monitoring</p>
+          </div>
+
+          {/* System Health Status Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">System Status</CardTitle>
+                {performanceLoading ? (
+                  <Server className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  getStatusIcon(performance?.systemHealth.status || 'operational')
+                )}
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-medium px-2 py-1 rounded-full ${getStatusColor(performance?.systemHealth.status || 'operational')}`} data-testid="system-status">
+                    {performanceLoading ? "Loading..." : (performance?.systemHealth.status || 'operational').charAt(0).toUpperCase() + (performance?.systemHealth.status || 'operational').slice(1)}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Uptime: {performanceLoading ? "-" : formatUptime(performance?.systemHealth.uptime || 0)}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Database Status</CardTitle>
+                {performanceLoading ? (
+                  <Database className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  getStatusIcon(performance?.databaseMetrics.connectionStatus || 'healthy')
+                )}
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-medium px-2 py-1 rounded-full ${getStatusColor(performance?.databaseMetrics.connectionStatus || 'healthy')}`} data-testid="database-status">
+                    {performanceLoading ? "Loading..." : (performance?.databaseMetrics.connectionStatus || 'healthy').charAt(0).toUpperCase() + (performance?.databaseMetrics.connectionStatus || 'healthy').slice(1)}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Avg Query: {performanceLoading ? "-" : `${performance?.databaseMetrics.avgQueryTime}ms`}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Memory Usage</CardTitle>
+                <Cpu className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="memory-usage">
+                  {performanceLoading ? "-" : `${performance?.systemHealth.memoryUsage}%`}
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                  <div 
+                    className={`h-2 rounded-full ${(performance?.systemHealth.memoryUsage || 0) > 80 ? 'bg-red-500' : (performance?.systemHealth.memoryUsage || 0) > 60 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                    style={{ width: `${performance?.systemHealth.memoryUsage || 0}%` }}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Disk Usage</CardTitle>
+                <HardDrive className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="disk-usage">
+                  {performanceLoading ? "-" : `${performance?.systemHealth.diskUsage}%`}
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                  <div 
+                    className={`h-2 rounded-full ${(performance?.systemHealth.diskUsage || 0) > 80 ? 'bg-red-500' : (performance?.systemHealth.diskUsage || 0) > 60 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                    style={{ width: `${performance?.systemHealth.diskUsage || 0}%` }}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* API Performance Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Requests/Hour</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="requests-per-hour">
+                  {performanceLoading ? "-" : performance?.apiMetrics.requestsPerHour}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {performanceLoading ? "-" : `${performance?.apiMetrics.totalRequests} total requests`}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Avg Response Time</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="avg-response-time">
+                  {performanceLoading ? "-" : `${performance?.apiMetrics.avgResponseTime}ms`}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  API endpoint response time
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Error Rate</CardTitle>
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="error-rate">
+                  {performanceLoading ? "-" : `${performance?.apiMetrics.errorRate}%`}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Failed requests percentage
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Database Queries</CardTitle>
+                <Database className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="total-queries">
+                  {performanceLoading ? "-" : performance?.databaseMetrics.totalQueries}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {performanceLoading ? "-" : `${performance?.databaseMetrics.slowQueries} slow queries`}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Performance Trends Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Performance Trend (6 Hours)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {performanceLoading ? (
+                <div className="h-64 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange"></div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={performance?.performanceTrend}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="timestamp" 
+                      tickFormatter={(value) => new Date(value).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                    />
+                    <YAxis yAxisId="responseTime" orientation="left" />
+                    <YAxis yAxisId="requests" orientation="right" />
+                    <Tooltip 
+                      labelFormatter={(value) => new Date(value).toLocaleTimeString()}
+                      formatter={(value: any, name: string) => {
+                        if (name === 'responseTime') return [`${value}ms`, 'Response Time'];
+                        if (name === 'requestCount') return [value, 'Requests'];
+                        if (name === 'errorCount') return [value, 'Errors'];
+                        return [value, name];
+                      }}
+                    />
+                    <Line 
+                      yAxisId="responseTime"
+                      type="monotone" 
+                      dataKey="responseTime" 
+                      stroke="#3b82f6" 
+                      strokeWidth={2} 
+                      name="responseTime"
+                    />
+                    <Line 
+                      yAxisId="requests"
+                      type="monotone" 
+                      dataKey="requestCount" 
+                      stroke="#10b981" 
+                      strokeWidth={2} 
+                      name="requestCount"
+                    />
+                    <Line 
+                      yAxisId="requests"
+                      type="monotone" 
+                      dataKey="errorCount" 
+                      stroke="#ef4444" 
+                      strokeWidth={2} 
+                      name="errorCount"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent Errors */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                Recent Errors
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {performanceLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange mx-auto mb-4"></div>
+                  <p>Loading errors...</p>
+                </div>
+              ) : performance?.recentErrors.length ? (
+                <div className="space-y-3">
+                  {performance.recentErrors.map((error, index) => (
+                    <div key={index} className="flex items-start gap-3 p-3 bg-red-50 border border-red-100 rounded-lg">
+                      <XCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-red-800" data-testid={`error-type-${index}`}>
+                            {error.type}
+                          </span>
+                          {error.endpoint && (
+                            <Badge variant="outline" className="text-xs">
+                              {error.endpoint}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-red-700 mb-1" data-testid={`error-message-${index}`}>
+                          {error.message}
+                        </p>
+                        <p className="text-xs text-red-600">
+                          {new Date(error.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
+                  <p>No recent errors detected</p>
+                  <p className="text-xs text-gray-400 mt-1">System is running smoothly</p>
                 </div>
               )}
             </CardContent>

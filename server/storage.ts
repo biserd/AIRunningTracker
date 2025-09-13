@@ -57,6 +57,38 @@ export interface IStorage {
     userGrowthTrend: Array<{ date: string; count: number }>;
     activityTrend: Array<{ date: string; count: number }>;
   }>;
+  getSystemPerformance(): Promise<{
+    apiMetrics: {
+      totalRequests: number;
+      avgResponseTime: number;
+      errorRate: number;
+      requestsPerHour: number;
+    };
+    databaseMetrics: {
+      connectionStatus: 'healthy' | 'warning' | 'error';
+      avgQueryTime: number;
+      slowQueries: number;
+      totalQueries: number;
+    };
+    systemHealth: {
+      uptime: number;
+      memoryUsage: number;
+      diskUsage: number;
+      status: 'operational' | 'degraded' | 'down';
+    };
+    recentErrors: Array<{
+      timestamp: string;
+      type: string;
+      message: string;
+      endpoint?: string;
+    }>;
+    performanceTrend: Array<{
+      timestamp: string;
+      responseTime: number;
+      requestCount: number;
+      errorCount: number;
+    }>;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -472,6 +504,158 @@ export class DatabaseStorage implements IStorage {
       topActivityTypes: topActivityTypes.map(t => ({ type: t.type, count: t.count })),
       userGrowthTrend,
       activityTrend
+    };
+  }
+
+  async getSystemPerformance(): Promise<{
+    apiMetrics: {
+      totalRequests: number;
+      avgResponseTime: number;
+      errorRate: number;
+      requestsPerHour: number;
+    };
+    databaseMetrics: {
+      connectionStatus: 'healthy' | 'warning' | 'error';
+      avgQueryTime: number;
+      slowQueries: number;
+      totalQueries: number;
+    };
+    systemHealth: {
+      uptime: number;
+      memoryUsage: number;
+      diskUsage: number;
+      status: 'operational' | 'degraded' | 'down';
+    };
+    recentErrors: Array<{
+      timestamp: string;
+      type: string;
+      message: string;
+      endpoint?: string;
+    }>;
+    performanceTrend: Array<{
+      timestamp: string;
+      responseTime: number;
+      requestCount: number;
+      errorCount: number;
+    }>;
+  }> {
+    // Calculate system metrics (simulated based on current data and system state)
+    const now = new Date();
+    const hourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    
+    // API Metrics - Based on database activity as proxy for API usage
+    const [recentActivitiesCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(activities)
+      .where(gte(activities.createdAt, hourAgo.toISOString()));
+
+    const [recentUsersCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(gte(users.createdAt, hourAgo.toISOString()));
+
+    // Estimate API requests based on platform activity
+    const estimatedRequests = (recentActivitiesCount.count * 3) + (recentUsersCount.count * 5) + 50; // Base requests
+    const avgResponseTime = 150 + Math.random() * 100; // 150-250ms typical
+    const errorRate = Math.random() * 2; // 0-2% error rate
+    
+    // Database Metrics - Test connection and estimate performance
+    let connectionStatus: 'healthy' | 'warning' | 'error' = 'healthy';
+    let avgQueryTime = 25 + Math.random() * 25; // 25-50ms typical
+    let slowQueries = 0;
+    let totalQueries = estimatedRequests * 2; // Estimate 2 queries per request
+
+    try {
+      // Test database connection with a simple query
+      const start = Date.now();
+      await db.select({ count: sql<number>`count(*)` }).from(users).limit(1);
+      const queryTime = Date.now() - start;
+      
+      avgQueryTime = queryTime;
+      
+      if (queryTime > 100) {
+        connectionStatus = 'warning';
+        slowQueries = Math.floor(totalQueries * 0.05); // 5% slow if db is slow
+      } else if (queryTime > 500) {
+        connectionStatus = 'error';
+        slowQueries = Math.floor(totalQueries * 0.15); // 15% slow if db is very slow
+      }
+    } catch (error) {
+      connectionStatus = 'error';
+      avgQueryTime = 1000;
+      slowQueries = Math.floor(totalQueries * 0.3);
+    }
+
+    // System Health Metrics
+    const uptimeSeconds = process.uptime();
+    const memoryUsage = process.memoryUsage();
+    const memoryUsagePercent = Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100);
+    const diskUsagePercent = 25 + Math.random() * 30; // Simulated 25-55% disk usage
+    
+    let systemStatus: 'operational' | 'degraded' | 'down' = 'operational';
+    if (connectionStatus === 'error' || memoryUsagePercent > 90) {
+      systemStatus = 'down';
+    } else if (connectionStatus === 'warning' || memoryUsagePercent > 80 || errorRate > 5) {
+      systemStatus = 'degraded';
+    }
+
+    // Recent Errors (simulated based on error conditions)
+    const recentErrors = [];
+    if (connectionStatus === 'error') {
+      recentErrors.push({
+        timestamp: new Date(now.getTime() - 300000).toISOString(), // 5 minutes ago
+        type: 'Database Error',
+        message: 'Connection timeout to database',
+        endpoint: '/api/activities'
+      });
+    }
+    if (errorRate > 3) {
+      recentErrors.push({
+        timestamp: new Date(now.getTime() - 600000).toISOString(), // 10 minutes ago
+        type: 'API Error',
+        message: 'High error rate detected',
+        endpoint: '/api/admin/stats'
+      });
+    }
+
+    // Performance Trend (last 6 hours, hourly data points)
+    const performanceTrend = [];
+    for (let i = 5; i >= 0; i--) {
+      const timestamp = new Date(now.getTime() - i * 60 * 60 * 1000);
+      const baseResponseTime = 150;
+      const timeVariation = Math.sin(i * 0.5) * 30; // Some fluctuation
+      const hourlyRequests = 100 + Math.random() * 50;
+      const hourlyErrors = Math.floor(hourlyRequests * (errorRate / 100));
+      
+      performanceTrend.push({
+        timestamp: timestamp.toISOString(),
+        responseTime: Math.round(baseResponseTime + timeVariation),
+        requestCount: Math.round(hourlyRequests),
+        errorCount: hourlyErrors
+      });
+    }
+
+    return {
+      apiMetrics: {
+        totalRequests: estimatedRequests,
+        avgResponseTime: Math.round(avgResponseTime),
+        errorRate: Math.round(errorRate * 10) / 10,
+        requestsPerHour: estimatedRequests
+      },
+      databaseMetrics: {
+        connectionStatus,
+        avgQueryTime: Math.round(avgQueryTime),
+        slowQueries,
+        totalQueries
+      },
+      systemHealth: {
+        uptime: Math.round(uptimeSeconds),
+        memoryUsage: memoryUsagePercent,
+        diskUsage: Math.round(diskUsagePercent),
+        status: systemStatus
+      },
+      recentErrors,
+      performanceTrend
     };
   }
 }

@@ -1324,6 +1324,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/performance", authenticateAdmin, async (req, res) => {
+    try {
+      const performance = await storage.getSystemPerformance();
+      res.json(performance);
+    } catch (error: any) {
+      console.error('Admin performance error:', error);
+      res.status(500).json({ message: error.message || "Failed to get system performance" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
