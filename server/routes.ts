@@ -677,6 +677,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Historical Runner Score endpoint (authenticated)
+  app.get("/api/runner-score/:userId/history", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      // Verify the user owns this resource
+      if (req.user.id !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const historicalData = await runnerScoreService.calculateHistoricalRunnerScore(userId);
+      res.json(historicalData);
+    } catch (error: any) {
+      console.error('Historical runner score error:', error);
+      res.status(500).json({ message: error.message || "Failed to get historical runner score" });
+    }
+  });
+
   // Public Runner Score endpoint (for sharing)
   app.get("/api/runner-score/public/:userId", async (req, res) => {
     try {

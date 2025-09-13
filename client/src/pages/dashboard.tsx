@@ -12,6 +12,7 @@ import TrainingRecommendations from "@/components/dashboard/TrainingRecommendati
 import FitnessTrends from "@/components/dashboard/FitnessTrends";
 import GoalProgress from "@/components/dashboard/GoalProgress";
 import RunnerScoreRadar from "@/components/dashboard/RunnerScoreRadar";
+import HistoricalRunnerScore from "@/components/dashboard/HistoricalRunnerScore";
 import InsightHistory from "@/components/dashboard/InsightHistory";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -195,6 +196,7 @@ export default function Dashboard() {
               currentTimeRange={chartTimeRange}
             />
             <RunnerScoreRadar />
+            <HistoricalRunnerScore />
             <RecentActivities activities={dashboardData?.activities || []} unitPreference={dashboardData?.user?.unitPreference} />
           </div>
           

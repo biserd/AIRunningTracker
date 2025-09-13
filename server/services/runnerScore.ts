@@ -21,6 +21,13 @@ interface RunnerScoreData {
   shareableMessage: string;
 }
 
+interface HistoricalScorePoint {
+  date: string;
+  totalScore: number;
+  grade: string;
+  components: RunnerScoreComponents;
+}
+
 export class RunnerScoreService {
   
   /**
@@ -262,6 +269,50 @@ export class RunnerScoreService {
     const badgeText = topBadges ? ` ${topBadges}` : '';
     
     return `🏃‍♂️ My Runner Score: ${score}/100 (${grade})${badgeText} | Track your running progress with RunAnalytics!`;
+  }
+
+  /**
+   * Calculate historical runner scores by simulating scores at different time periods
+   */
+  async calculateHistoricalRunnerScore(userId: number): Promise<HistoricalScorePoint[]> {
+    const activities = await storage.getActivitiesByUserId(userId, 500); // Get more activities for history
+    
+    if (activities.length < 5) {
+      return []; // Not enough data for meaningful history
+    }
+
+    const sortedActivities = activities.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+    const now = new Date();
+    const historicalPoints: HistoricalScorePoint[] = [];
+
+    // Generate score snapshots for the last 6 months, weekly
+    for (let weeksAgo = 24; weeksAgo >= 0; weeksAgo -= 2) {
+      const cutoffDate = new Date(now.getTime() - (weeksAgo * 7 * 24 * 60 * 60 * 1000));
+      
+      // Get activities up to this point in time
+      const activitiesUpToCutoff = sortedActivities.filter(activity => 
+        new Date(activity.startDate) <= cutoffDate
+      );
+
+      if (activitiesUpToCutoff.length >= 3) {
+        const components = this.calculateScoreComponents(activitiesUpToCutoff);
+        const totalScore = Math.round(components.consistency + components.performance + components.volume + components.improvement);
+        const grade = this.getGrade(totalScore);
+        
+        historicalPoints.push({
+          date: cutoffDate.toISOString().split('T')[0], // YYYY-MM-DD format
+          totalScore,
+          grade,
+          components
+        });
+      }
+    }
+
+    return historicalPoints.filter((point, index, array) => {
+      // Remove duplicate scores that don't show meaningful change
+      if (index === 0) return true;
+      return Math.abs(point.totalScore - array[index - 1].totalScore) > 2;
+    });
   }
 
   private getDefaultScore(): RunnerScoreData {
