@@ -17,6 +17,7 @@ import FAQPage from "@/pages/faq";
 import ReleaseNotesPage from "@/pages/release-notes";
 import RunnerScorePage from "@/pages/runner-score";
 import AdminPage from "@/pages/admin";
+import MobilePage from "@/pages/mobile";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -71,6 +72,9 @@ function Router() {
       <Route path="/admin">
         <ProtectedRoute component={AdminPage} />
       </Route>
+      
+      {/* Mobile App Route */}
+      <Route path="/mobile" component={MobilePage} />
       
       <Route component={NotFound} />
     </Switch>
