@@ -2,7 +2,9 @@ import { storage } from "../storage";
 import { Activity } from "@shared/schema";
 import OpenAI from "openai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({ 
+  apiKey: process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY || "default_key" 
+});
 
 interface TrainingMetrics {
   weeklyMileage: number[];
