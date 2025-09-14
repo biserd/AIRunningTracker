@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, StatusBar, AppRegistry } from 'react-native';
 
 // Your RunAnalytics backend URL - using Replit's direct URL
 const API_BASE_URL = 'https://8569cb03-f268-4195-b845-f9a7784a2141-00-5cx90hqzmtzl.riker.replit.dev';
@@ -1024,3 +1024,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
+
+// Register the main component
+AppRegistry.registerComponent('main', () => App);
