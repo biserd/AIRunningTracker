@@ -17,6 +17,10 @@ import FAQPage from "@/pages/faq";
 import ReleaseNotesPage from "@/pages/release-notes";
 import RunnerScorePage from "@/pages/runner-score";
 import AdminPage from "@/pages/admin";
+import AboutPage from "@/pages/about";
+import TermsPage from "@/pages/terms";
+import FeaturesPage from "@/pages/features";
+import PricingPage from "@/pages/pricing";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -46,6 +50,10 @@ function Router() {
     <Switch>
       <Route path="/" component={LandingPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/about" component={AboutPage} />
+      <Route path="/terms" component={TermsPage} />
+      <Route path="/features" component={FeaturesPage} />
+      <Route path="/pricing" component={PricingPage} />
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/contact" component={ContactPage} />
       <Route path="/faq" component={FAQPage} />
