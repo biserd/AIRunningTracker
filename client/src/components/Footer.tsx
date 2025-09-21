@@ -22,20 +22,20 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold mb-4">Product</h4>
             <ul className="space-y-2 text-gray-400">
-              <li><Link href="/dashboard" className="hover:text-white transition-colors">Features</Link></li>
-              <li><Link href="/dashboard" className="hover:text-white transition-colors">Pricing</Link></li>
-              <li><Link href="/ml-insights" className="hover:text-white transition-colors">AI Insights</Link></li>
-              <li><Link href="/performance" className="hover:text-white transition-colors">Training Plans</Link></li>
+              <li><Link href="/features" className="hover:text-white transition-colors" data-testid="link-features">Features</Link></li>
+              <li><Link href="/pricing" className="hover:text-white transition-colors" data-testid="link-pricing">Pricing</Link></li>
+              <li><Link href="/features#ai-insights" className="hover:text-white transition-colors">AI Insights</Link></li>
+              <li><Link href="/features#training-plans" className="hover:text-white transition-colors">Training Plans</Link></li>
             </ul>
           </div>
           
           <div>
             <h4 className="font-semibold mb-4">Company</h4>
             <ul className="space-y-2 text-gray-400">
-              <li><Link href="/dashboard" className="hover:text-white transition-colors">About</Link></li>
+              <li><Link href="/about" className="hover:text-white transition-colors" data-testid="link-about">About</Link></li>
               <li><Link href="/faq" className="hover:text-white transition-colors" data-testid="link-faq">FAQ</Link></li>
               <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-              <li><Link href="/dashboard" className="hover:text-white transition-colors">Terms of Service</Link></li>
+              <li><Link href="/terms" className="hover:text-white transition-colors" data-testid="link-terms">Terms of Service</Link></li>
               <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
             </ul>
           </div>
