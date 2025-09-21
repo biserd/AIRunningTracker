@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Activity, CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp, Trophy } from "lucide-react";
 import { VERSION } from "@shared/version";
+import Footer from "@/components/Footer";
 
 export default function LandingPage() {
   return (
