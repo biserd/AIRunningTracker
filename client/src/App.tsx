@@ -22,6 +22,7 @@ import TermsPage from "@/pages/terms";
 import FeaturesPage from "@/pages/features";
 import PricingPage from "@/pages/pricing";
 import SubscribePage from "@/pages/subscribe";
+import BillingPage from "@/pages/billing";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -74,6 +75,9 @@ function Router() {
       </Route>
       <Route path="/settings">
         <ProtectedRoute component={SettingsPage} />
+      </Route>
+      <Route path="/billing">
+        <ProtectedRoute component={BillingPage} />
       </Route>
       <Route path="/activity/:id">
         <ProtectedRoute component={ActivityPage} />
