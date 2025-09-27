@@ -79,7 +79,7 @@ export default function SubscribePage() {
     if (!user) return;
 
     // Create subscription as soon as the page loads
-    apiRequest("POST", "/api/create-subscription", { 
+    apiRequest("/api/create-subscription", "POST", { 
       priceId: "price_pro_monthly" // This would be configured in Stripe dashboard
     })
       .then((data) => {
