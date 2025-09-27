@@ -122,9 +122,11 @@ export default function PricingPage() {
                 </li>
               </ul>
               
-              <Button className="w-full bg-strava-orange hover:bg-strava-orange/90" disabled>
-                Coming Soon
-              </Button>
+              <Link href="/subscribe">
+                <Button className="w-full bg-strava-orange hover:bg-strava-orange/90" data-testid="button-upgrade-pro">
+                  Upgrade to Pro
+                </Button>
+              </Link>
             </div>
           </div>
 
