@@ -10,6 +10,11 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
   
+  // Stripe subscription methods
+  updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<User | undefined>;
+  updateStripeSubscriptionId(userId: number, stripeSubscriptionId: string): Promise<User | undefined>;
+  updateSubscriptionStatus(userId: number, status: string, plan?: string): Promise<User | undefined>;
+  
   createActivity(activity: InsertActivity): Promise<Activity>;
   getActivitiesByUserId(userId: number, limit?: number): Promise<Activity[]>;
   getActivityById(activityId: number): Promise<Activity | undefined>;
@@ -120,6 +125,37 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set(updates)
       .where(eq(users.id, id))
+      .returning();
+    return user || undefined;
+  }
+
+  async updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ stripeCustomerId })
+      .where(eq(users.id, userId))
+      .returning();
+    return user || undefined;
+  }
+
+  async updateStripeSubscriptionId(userId: number, stripeSubscriptionId: string): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ stripeSubscriptionId })
+      .where(eq(users.id, userId))
+      .returning();
+    return user || undefined;
+  }
+
+  async updateSubscriptionStatus(userId: number, status: string, plan?: string): Promise<User | undefined> {
+    const updates: Partial<User> = { subscriptionStatus: status as any };
+    if (plan) {
+      updates.subscriptionPlan = plan as any;
+    }
+    const [user] = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, userId))
       .returning();
     return user || undefined;
   }
@@ -778,6 +814,21 @@ class DatabaseStorageWithDemo extends DatabaseStorage {
   async getAllUsers(limit = 100): Promise<User[]> {
     await this.initializeDemoUser();
     return super.getAllUsers(limit);
+  }
+
+  async updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<User | undefined> {
+    await this.initializeDemoUser();
+    return super.updateStripeCustomerId(userId, stripeCustomerId);
+  }
+
+  async updateStripeSubscriptionId(userId: number, stripeSubscriptionId: string): Promise<User | undefined> {
+    await this.initializeDemoUser();
+    return super.updateStripeSubscriptionId(userId, stripeSubscriptionId);
+  }
+
+  async updateSubscriptionStatus(userId: number, status: string, plan?: string): Promise<User | undefined> {
+    await this.initializeDemoUser();
+    return super.updateSubscriptionStatus(userId, status, plan);
   }
 }
 

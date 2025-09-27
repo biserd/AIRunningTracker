@@ -16,6 +16,17 @@ export const users = pgTable("users", {
   unitPreference: text("unit_preference", { enum: ["km", "miles"] }).default("km"),
   isAdmin: boolean("is_admin").default(false),
   lastSyncAt: timestamp("last_sync_at"),
+  // Stripe subscription fields
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  subscriptionStatus: text("subscription_status", { 
+    enum: ["trialing", "active", "past_due", "canceled", "unpaid"] 
+  }),
+  subscriptionPlan: text("subscription_plan", { 
+    enum: ["free", "pro", "premium"] 
+  }).default("free"),
+  trialEndsAt: timestamp("trial_ends_at"),
+  subscriptionEndsAt: timestamp("subscription_ends_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
