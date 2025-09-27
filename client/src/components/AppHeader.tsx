@@ -1,4 +1,4 @@
-import { Activity, User, LogOut, Settings, BarChart3, Brain, Home, Shield } from "lucide-react";
+import { Activity, User, LogOut, Settings, BarChart3, Brain, Home, Shield, CreditCard } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
+import { Badge } from "@/components/ui/badge";
 
 const navigationItems = [
   { path: "/dashboard", label: "Dashboard", icon: Home },
@@ -19,6 +21,7 @@ const navigationItems = [
 
 export default function AppHeader() {
   const { user, logout } = useAuth();
+  const { isPro } = useSubscription();
   const [location] = useLocation();
 
   const handleLogout = () => {
@@ -92,9 +95,12 @@ export default function AppHeader() {
                       {user?.email?.charAt(0).toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="hidden md:inline text-sm text-gray-700">
-                    {user?.email}
-                  </span>
+                  <div className="hidden md:flex flex-col items-end">
+                    <span className="text-sm text-gray-700">{user?.email}</span>
+                    {isPro && (
+                      <Badge className="bg-strava-orange text-xs px-1 py-0">Pro</Badge>
+                    )}
+                  </div>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -102,6 +108,12 @@ export default function AppHeader() {
                   <Link href="/settings" className="flex items-center space-x-2 cursor-pointer">
                     <Settings size={16} />
                     <span>Settings</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/billing" className="flex items-center space-x-2 cursor-pointer" data-testid="nav-billing">
+                    <CreditCard size={16} />
+                    <span>Billing</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
