@@ -12,8 +12,8 @@ import { insertUserSchema, loginSchema, registerSchema, insertEmailWaitlistSchem
 import { z } from "zod";
 import Stripe from "stripe";
 
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+// Initialize Stripe with testing keys
+const stripe = new Stripe(process.env.TESTING_STRIPE_SECRET_KEY!, {
   apiVersion: "2024-06-20",
 });
 
