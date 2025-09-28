@@ -131,6 +131,12 @@ export default function PricingPage() {
           </div>
 
           <div className="text-center mt-16">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 max-w-2xl mx-auto">
+              <p className="text-sm text-blue-800">
+                <strong>What you're paying for:</strong> Our AI analytics services, machine learning algorithms, and premium features. 
+                Strava integration is free in both plans - you pay for our advanced analytics, not for data access.
+              </p>
+            </div>
             <p className="text-gray-600 mb-4">
               Questions about pricing? <Link href="/contact" className="text-strava-orange hover:underline">Contact us</Link>
             </p>
