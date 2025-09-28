@@ -17,6 +17,7 @@ import InsightHistory from "@/components/dashboard/InsightHistory";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { StravaConnectButton, StravaPoweredBy } from "@/components/StravaConnect";
 
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
@@ -161,12 +162,11 @@ export default function Dashboard() {
         {/* Strava Sync Actions */}
         <div className="mb-8 flex flex-wrap gap-4">
           {!dashboardData?.user?.stravaConnected ? (
-            <Button 
+            <StravaConnectButton 
               onClick={handleStravaConnect}
-              className="bg-strava-orange hover:bg-strava-orange/90 text-white"
-            >
-              Connect Strava Account
-            </Button>
+              variant="orange"
+              size="default"
+            />
           ) : (
             <div className="flex flex-col">
               <Button 

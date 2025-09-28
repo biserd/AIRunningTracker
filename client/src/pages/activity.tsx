@@ -8,6 +8,7 @@ import AppHeader from "@/components/AppHeader";
 import RouteMap from "../components/RouteMap";
 import DetailedSplitsAnalysis from "@/components/activity/DetailedSplitsAnalysis";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { ViewOnStravaLink, StravaPoweredBy } from "@/components/StravaConnect";
 
 export default function ActivityPage() {
   const [match, params] = useRoute("/activity/:id");
@@ -64,15 +65,26 @@ export default function ActivityPage() {
               Back to Dashboard
             </Button>
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{activity.name}</h1>
-          <p className="text-gray-600 text-lg">
-            {new Date(activity.startDate).toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })}
-          </p>
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{activity.name}</h1>
+              <p className="text-gray-600 text-lg mb-3">
+                {new Date(activity.startDate).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </p>
+              <div className="flex items-center gap-4">
+                <ViewOnStravaLink 
+                  activityId={activity.stravaActivityId || activity.id}
+                  className="text-sm"
+                />
+                <StravaPoweredBy variant="orange" size="sm" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

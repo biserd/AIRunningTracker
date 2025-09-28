@@ -5,6 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Activity, RefreshCw, Brain, User, Settings, LogOut } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import { StravaConnectButton } from "@/components/StravaConnect";
 
 interface HeaderProps {
   stravaConnected: boolean;
@@ -90,9 +91,11 @@ export default function Header({
                 </Link>
               </>
             ) : (
-              <Button onClick={onStravaConnect} className="bg-strava-orange hover:bg-strava-orange/90 text-white">
-                Connect Strava
-              </Button>
+              <StravaConnectButton 
+                onClick={onStravaConnect}
+                variant="orange"
+                size="sm"
+              />
             )}
             
             <DropdownMenu>

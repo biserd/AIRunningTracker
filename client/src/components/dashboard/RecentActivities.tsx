@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Activity, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
+import { StravaPoweredBy } from "@/components/StravaConnect";
 
 interface ActivityData {
   id: number;
@@ -78,6 +79,9 @@ export default function RecentActivities({ activities, unitPreference }: RecentA
               </div>
             </Link>
           ))}
+        </div>
+        <div className="mt-4 pt-4 border-t border-gray-100 flex justify-center">
+          <StravaPoweredBy variant="orange" size="sm" />
         </div>
       </CardContent>
     </Card>
