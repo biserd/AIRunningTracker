@@ -118,50 +118,25 @@ export default function SubscribePage() {
   useEffect(() => {
     if (!user) return;
 
-    // Create subscription with optional promotion code
-    const createSubscription = () => {
-      const requestData: any = {
-        priceId: "price_1SC8NIRwvWaTf8xf67fw70NB" // Test price for RunAnalytics Pro - $9.99/month
-      };
-
-      if (promotionCode) {
-        requestData.promotionCode = promotionCode;
-      }
-
-      apiRequest("/api/create-subscription", "POST", requestData)
-        .then((data) => {
-          if (data.freeSubscription) {
-            // Handle 100% discount - no payment required
-            toast({
-              title: "Subscription Activated!",
-              description: "Your subscription is now active with the promotion code discount.",
-            });
-            window.location.href = "/dashboard";
-            return;
-          }
-          
-          setClientSecret(data.clientSecret);
-          if (data.discount) {
-            setDiscountApplied(data.discount);
-            toast({
-              title: "Promotion Code Applied!",
-              description: `${data.discount.name} - ${data.discount.percent_off ? data.discount.percent_off + '% off' : '$' + (data.discount.amount_off / 100) + ' off'}`,
-            });
-          }
-          setIsLoading(false);
-        })
-        .catch((error) => {
-          console.error('Failed to create subscription:', error);
-          toast({
-            title: "Subscription Error",
-            description: error.message || "Failed to create subscription. Please try again.",
-            variant: "destructive",
-          });
-          setIsLoading(false);
-        });
+    // Create initial subscription without promotion code to get payment form ready
+    const requestData: any = {
+      priceId: "price_1SC8NIRwvWaTf8xf67fw70NB" // Test price for RunAnalytics Pro - $9.99/month
     };
 
-    createSubscription();
+    apiRequest("/api/create-subscription", "POST", requestData)
+      .then((data) => {
+        setClientSecret(data.clientSecret);
+        setIsLoading(false);
+      })
+      .catch((error) => {
+        console.error('Failed to create subscription:', error);
+        toast({
+          title: "Subscription Error",
+          description: error.message || "Failed to create subscription. Please try again.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+      });
   }, [user]);
 
   if (!user) {
@@ -287,57 +262,55 @@ export default function SubscribePage() {
                   <Button 
                     type="button" 
                     variant="outline"
-                    onClick={() => {
+                    onClick={async () => {
+                      if (!promotionCode.trim()) return;
+                      
                       setIsLoading(true);
-                      setClientSecret("");
-                      const createSubscription = () => {
-                        const requestData: any = {
-                          priceId: "price_1SC8NIRwvWaTf8xf67fw70NB"
-                        };
-
-                        if (promotionCode) {
-                          requestData.promotionCode = promotionCode;
-                        }
-
-                        apiRequest("/api/create-subscription", "POST", requestData)
-                          .then((data) => {
-                            if (data.freeSubscription) {
-                              // Handle 100% discount - no payment required
-                              toast({
-                                title: "Subscription Activated!",
-                                description: "Your subscription is now active with the promotion code discount.",
-                              });
-                              window.location.href = "/dashboard";
-                              return;
-                            }
-                            
-                            setClientSecret(data.clientSecret);
-                            if (data.discount) {
-                              setDiscountApplied(data.discount);
-                              toast({
-                                title: "Promotion Code Applied!",
-                                description: `${data.discount.name} - ${data.discount.percent_off ? data.discount.percent_off + '% off' : '$' + (data.discount.amount_off / 100) + ' off'}`,
-                              });
-                            } else if (promotionCode) {
-                              toast({
-                                title: "Invalid Promotion Code",
-                                description: "The promotion code you entered is not valid or has expired.",
-                                variant: "destructive",
-                              });
-                            }
-                            setIsLoading(false);
-                          })
-                          .catch((error) => {
-                            console.error('Failed to create subscription:', error);
-                            toast({
-                              title: "Subscription Error",
-                              description: error.message || "Failed to create subscription. Please try again.",
-                              variant: "destructive",
-                            });
-                            setIsLoading(false);
-                          });
+                      
+                      const requestData: any = {
+                        priceId: "price_1SC8NIRwvWaTf8xf67fw70NB",
+                        promotionCode: promotionCode
                       };
-                      createSubscription();
+
+                      try {
+                        const data = await apiRequest("/api/create-subscription", "POST", requestData);
+                        
+                        if (data.freeSubscription) {
+                          // Handle 100% discount - no payment required
+                          toast({
+                            title: "Subscription Activated!",
+                            description: "Your subscription is now active with the promotion code discount.",
+                          });
+                          window.location.href = "/dashboard";
+                          return;
+                        }
+                        
+                        // Update client secret with discounted subscription
+                        setClientSecret(data.clientSecret);
+                        
+                        if (data.discount) {
+                          setDiscountApplied(data.discount);
+                          toast({
+                            title: "Promotion Code Applied!",
+                            description: `${data.discount.name} - ${data.discount.percent_off ? data.discount.percent_off + '% off' : '$' + (data.discount.amount_off / 100) + ' off'}`,
+                          });
+                        } else {
+                          toast({
+                            title: "Invalid Promotion Code",
+                            description: "The promotion code you entered is not valid or has expired.",
+                            variant: "destructive",
+                          });
+                        }
+                      } catch (error: any) {
+                        console.error('Failed to apply promotion code:', error);
+                        toast({
+                          title: "Promotion Code Error",
+                          description: error.message || "Failed to apply promotion code. Please try again.",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setIsLoading(false);
+                      }
                     }}
                     disabled={!promotionCode || isLoading}
                     data-testid="button-apply-code"
