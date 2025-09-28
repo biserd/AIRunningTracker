@@ -7,7 +7,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, ArrowLeft, Crown } from "lucide-react";
+import { Check, ArrowLeft, Crown, Tag } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Link } from "wouter";
 
 // Make sure to call `loadStripe` outside of a component's render to avoid
@@ -108,23 +110,58 @@ const SubscribeForm = () => {
 export default function SubscribePage() {
   const [clientSecret, setClientSecret] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [promotionCode, setPromotionCode] = useState("");
+  const [discountApplied, setDiscountApplied] = useState<any>(null);
   const { user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!user) return;
 
-    // Create subscription as soon as the page loads
-    apiRequest("/api/create-subscription", "POST", { 
-      priceId: "price_1SC8NIRwvWaTf8xf67fw70NB" // Test price for RunAnalytics Pro - $9.99/month
-    })
-      .then((data) => {
-        setClientSecret(data.clientSecret);
-        setIsLoading(false);
-      })
-      .catch((error) => {
-        console.error('Failed to create subscription:', error);
-        setIsLoading(false);
-      });
+    // Create subscription with optional promotion code
+    const createSubscription = () => {
+      const requestData: any = {
+        priceId: "price_1SC8NIRwvWaTf8xf67fw70NB" // Test price for RunAnalytics Pro - $9.99/month
+      };
+
+      if (promotionCode) {
+        requestData.promotionCode = promotionCode;
+      }
+
+      apiRequest("/api/create-subscription", "POST", requestData)
+        .then((data) => {
+          if (data.freeSubscription) {
+            // Handle 100% discount - no payment required
+            toast({
+              title: "Subscription Activated!",
+              description: "Your subscription is now active with the promotion code discount.",
+            });
+            window.location.href = "/dashboard";
+            return;
+          }
+          
+          setClientSecret(data.clientSecret);
+          if (data.discount) {
+            setDiscountApplied(data.discount);
+            toast({
+              title: "Promotion Code Applied!",
+              description: `${data.discount.name} - ${data.discount.percent_off ? data.discount.percent_off + '% off' : '$' + (data.discount.amount_off / 100) + ' off'}`,
+            });
+          }
+          setIsLoading(false);
+        })
+        .catch((error) => {
+          console.error('Failed to create subscription:', error);
+          toast({
+            title: "Subscription Error",
+            description: error.message || "Failed to create subscription. Please try again.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+        });
+    };
+
+    createSubscription();
   }, [user]);
 
   if (!user) {
@@ -233,6 +270,94 @@ export default function SubscribePage() {
               <CardTitle>Payment Information</CardTitle>
             </CardHeader>
             <CardContent>
+              {/* Promotion Code Section */}
+              <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <div className="flex items-center mb-3">
+                  <Tag className="h-4 w-4 text-gray-600 mr-2" />
+                  <Label htmlFor="promotion-code" className="font-medium">Have a promotion code?</Label>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    id="promotion-code"
+                    placeholder="Enter promotion code (e.g., TESTFREE1)"
+                    value={promotionCode}
+                    onChange={(e) => setPromotionCode(e.target.value.toUpperCase())}
+                    data-testid="input-promotion-code"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={() => {
+                      setIsLoading(true);
+                      setClientSecret("");
+                      const createSubscription = () => {
+                        const requestData: any = {
+                          priceId: "price_1SC8NIRwvWaTf8xf67fw70NB"
+                        };
+
+                        if (promotionCode) {
+                          requestData.promotionCode = promotionCode;
+                        }
+
+                        apiRequest("/api/create-subscription", "POST", requestData)
+                          .then((data) => {
+                            if (data.freeSubscription) {
+                              // Handle 100% discount - no payment required
+                              toast({
+                                title: "Subscription Activated!",
+                                description: "Your subscription is now active with the promotion code discount.",
+                              });
+                              window.location.href = "/dashboard";
+                              return;
+                            }
+                            
+                            setClientSecret(data.clientSecret);
+                            if (data.discount) {
+                              setDiscountApplied(data.discount);
+                              toast({
+                                title: "Promotion Code Applied!",
+                                description: `${data.discount.name} - ${data.discount.percent_off ? data.discount.percent_off + '% off' : '$' + (data.discount.amount_off / 100) + ' off'}`,
+                              });
+                            } else if (promotionCode) {
+                              toast({
+                                title: "Invalid Promotion Code",
+                                description: "The promotion code you entered is not valid or has expired.",
+                                variant: "destructive",
+                              });
+                            }
+                            setIsLoading(false);
+                          })
+                          .catch((error) => {
+                            console.error('Failed to create subscription:', error);
+                            toast({
+                              title: "Subscription Error",
+                              description: error.message || "Failed to create subscription. Please try again.",
+                              variant: "destructive",
+                            });
+                            setIsLoading(false);
+                          });
+                      };
+                      createSubscription();
+                    }}
+                    disabled={!promotionCode || isLoading}
+                    data-testid="button-apply-code"
+                  >
+                    Apply
+                  </Button>
+                </div>
+                {discountApplied && (
+                  <div className="mt-3 p-3 bg-green-100 border border-green-300 rounded-md">
+                    <div className="flex items-center text-green-800">
+                      <Check className="h-4 w-4 mr-2" />
+                      <span className="font-medium">Discount Applied!</span>
+                    </div>
+                    <p className="text-sm text-green-700 mt-1">
+                      {discountApplied.name} - {discountApplied.percent_off ? `${discountApplied.percent_off}% off` : `$${(discountApplied.amount_off / 100)} off`}
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <Elements stripe={stripePromise} options={{ clientSecret }}>
                 <SubscribeForm />
               </Elements>

@@ -857,7 +857,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create subscription checkout session
   app.post("/api/create-subscription", authenticateJWT, async (req: any, res) => {
     try {
-      const { priceId } = req.body;
+      const { priceId, promotionCode } = req.body;
       const user = await storage.getUser(req.user.id);
       
       if (!user) {
@@ -876,8 +876,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateStripeCustomerId(user.id, stripeCustomerId);
       }
 
+      // Validate and apply promotion code if provided
+      let couponId = null;
+      let discountInfo = null;
+      
+      if (promotionCode) {
+        try {
+          // Find promotion code in Stripe
+          const promoCodes = await stripe.promotionCodes.list({
+            code: promotionCode,
+            active: true,
+            limit: 1
+          });
+          
+          if (promoCodes.data.length > 0) {
+            const promoCode = promoCodes.data[0];
+            couponId = promoCode.coupon.id;
+            discountInfo = {
+              name: promoCode.coupon.name,
+              percent_off: promoCode.coupon.percent_off,
+              amount_off: promoCode.coupon.amount_off,
+              duration: promoCode.coupon.duration,
+              duration_in_months: promoCode.coupon.duration_in_months
+            };
+          } else {
+            console.log(`Promotion code not found: ${promotionCode}`);
+          }
+        } catch (promoError: any) {
+          console.warn('Promotion code validation error:', promoError.message);
+          // Continue with subscription creation without discount
+        }
+      }
+
       // Create subscription
-      const subscription = await stripe.subscriptions.create({
+      const subscriptionParams: any = {
         customer: stripeCustomerId,
         items: [{ price: priceId }],
         payment_behavior: 'default_incomplete',
@@ -886,19 +918,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
           save_default_payment_method: 'on_subscription'
         },
         expand: ['latest_invoice.payment_intent'],
-      });
+      };
+
+      // Add coupon if promotion code was valid
+      if (couponId) {
+        subscriptionParams.coupon = couponId;
+      }
+
+      const subscription = await stripe.subscriptions.create(subscriptionParams);
 
       // Update user with subscription ID and set plan to pro
       await storage.updateStripeSubscriptionId(user.id, subscription.id);
       await storage.updateSubscriptionStatus(user.id, 'incomplete', 'pro');
 
       const invoice = subscription.latest_invoice as Stripe.Invoice;
-      const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
+      const paymentIntent = invoice?.payment_intent as Stripe.PaymentIntent;
 
-      res.json({
+      const response: any = {
         subscriptionId: subscription.id,
-        clientSecret: paymentIntent.client_secret,
-      });
+      };
+
+      // Only include client secret if payment is required (not for 100% off coupons)
+      if (paymentIntent && paymentIntent.client_secret) {
+        response.clientSecret = paymentIntent.client_secret;
+      } else if (invoice && invoice.total === 0) {
+        // For 100% discount, update subscription status to active immediately
+        await storage.updateSubscriptionStatus(user.id, 'active', 'pro');
+        response.freeSubscription = true;
+      }
+
+      // Include discount information if applied
+      if (discountInfo) {
+        response.discount = discountInfo;
+      }
+
+      res.json(response);
     } catch (error: any) {
       console.error('Subscription creation error:', error);
       res.status(500).json({ message: error.message || "Failed to create subscription" });
