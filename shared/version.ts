@@ -1,4 +1,4 @@
-export const VERSION = "2.0.0";
+export const VERSION = "2.1.0";
 
 export interface ReleaseNote {
   version: string;
@@ -12,6 +12,54 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "2.1.0",
+    date: "2025-09-28",
+    title: "SaaS Platform Transformation",
+    description: "RunAnalytics is now a full Software-as-a-Service platform with subscription-based billing, featuring Free and Pro tiers with advanced AI insights, unlimited data access, and premium features for serious runners",
+    changes: [
+      {
+        type: "feature",
+        description: "Subscription billing system with Stripe integration for secure payments"
+      },
+      {
+        type: "feature", 
+        description: "Free tier with basic analytics, Strava integration, and 30 days of data"
+      },
+      {
+        type: "feature",
+        description: "Pro tier ($9.99/month) with advanced AI insights, training plans, race predictions, and unlimited history"
+      },
+      {
+        type: "feature",
+        description: "Feature gating system with smart upgrade prompts and subscription status tracking"
+      },
+      {
+        type: "feature",
+        description: "Billing management page for subscription control and cancellation"
+      },
+      {
+        type: "feature",
+        description: "Pricing page with clear plan comparison and upgrade flows"
+      },
+      {
+        type: "feature",
+        description: "Pro badge indicators in navigation for subscribed users"
+      },
+      {
+        type: "improvement",
+        description: "Enhanced navigation with billing access and subscription status indicators"
+      },
+      {
+        type: "improvement",
+        description: "Comprehensive API endpoints for subscription management and webhook handling"
+      },
+      {
+        type: "improvement",
+        description: "Database schema updates for customer and subscription tracking"
+      }
+    ]
+  },
   {
     version: "2.0.0",
     date: "2025-09-13",
