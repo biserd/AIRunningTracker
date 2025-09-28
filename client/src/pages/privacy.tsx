@@ -31,7 +31,7 @@ export default function PrivacyPage() {
         <div className="prose prose-lg max-w-none">
           <div className="mb-8">
             <p className="text-gray-600 text-lg">
-              <strong>Last Updated:</strong> January 2024
+              <strong>Last Updated:</strong> September 2025
             </p>
             <p className="text-gray-600">
               At RunAnalytics, we are committed to protecting your privacy and ensuring the security of your personal information. 
@@ -59,13 +59,21 @@ export default function PrivacyPage() {
                 </div>
                 
                 <div>
-                  <h3 className="font-semibold text-charcoal mb-2">Strava Data</h3>
+                  <h3 className="font-semibold text-charcoal mb-2">Strava Data (Third-Party Integration)</h3>
+                  <p className="mb-2 text-sm text-gray-600">
+                    When you choose to connect your Strava account, we collect the following data through Strava's official API:
+                  </p>
                   <ul className="list-disc list-inside space-y-1">
                     <li>Running activities (distance, pace, duration, elevation)</li>
                     <li>Heart rate data (when available)</li>
                     <li>GPS tracking data and routes</li>
                     <li>Basic athlete profile information</li>
+                    <li>Activity metadata (timestamps, activity type, descriptions)</li>
                   </ul>
+                  <p className="mt-3 text-sm text-gray-600">
+                    <strong>Important:</strong> Connecting to Strava is entirely optional. You can use RunAnalytics without a Strava connection, 
+                    though some advanced analytics features require activity data.
+                  </p>
                 </div>
                 
                 <div>
@@ -74,6 +82,66 @@ export default function PrivacyPage() {
                     <li>App usage patterns and feature interactions</li>
                     <li>Performance analytics requests and results</li>
                     <li>Training plan preferences and feedback</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            <section className="bg-white rounded-lg p-6 border border-gray-200">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-8 h-8 bg-strava-orange/10 rounded-lg flex items-center justify-center">
+                  <Activity className="h-4 w-4 text-strava-orange" />
+                </div>
+                <h2 className="text-xl font-semibold text-charcoal">Strava Integration & Data Handling</h2>
+              </div>
+              
+              <div className="space-y-4 text-gray-700">
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <p className="text-sm font-medium text-amber-800 mb-1">Third-Party Integration Notice</p>
+                  <p className="text-sm text-amber-700">
+                    RunAnalytics integrates with Strava's API to enhance your running analytics. 
+                    This integration is governed by both our Privacy Policy and Strava's API Agreement.
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-charcoal mb-2">How Strava Data Is Used</h3>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li><strong>Personal Analytics Only:</strong> Your Strava data is used exclusively for your personal running analytics and AI insights</li>
+                    <li><strong>No Data Sales:</strong> We never sell, license, or monetize your Strava data in any way</li>
+                    <li><strong>Privacy Protection:</strong> Only you can see your own Strava data - we never display other users' data, even if it's public on Strava</li>
+                    <li><strong>Enhanced Features:</strong> Strava data enables advanced AI coaching, race predictions, and performance trends</li>
+                  </ul>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-charcoal mb-2">Your Strava Data Rights</h3>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li><strong>Complete Control:</strong> You can disconnect your Strava account at any time from your settings</li>
+                    <li><strong>Data Deletion:</strong> When you disconnect Strava, we delete all your Strava data within 30 days</li>
+                    <li><strong>Access Rights:</strong> You can request a copy of all Strava data we have stored for you</li>
+                    <li><strong>Strava Access:</strong> You retain full access to your original data on Strava's platform</li>
+                  </ul>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-charcoal mb-2">Security Measures for Strava Data</h3>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li><strong>Encrypted Storage:</strong> All Strava data is encrypted both in transit (HTTPS) and at rest</li>
+                    <li><strong>Secure Authentication:</strong> We use Strava's official OAuth flow for secure authorization</li>
+                    <li><strong>Access Controls:</strong> Strict access controls ensure only authorized systems can process your data</li>
+                    <li><strong>Breach Notification:</strong> Any security incidents involving your data will be reported to both you and Strava within 24 hours</li>
+                  </ul>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-charcoal mb-2">Compliance & Third-Party Terms</h3>
+                  <p className="mb-2">Our use of Strava data is governed by:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Strava's API Agreement and Terms of Service</li>
+                    <li>Our commitment to data privacy and user rights</li>
+                    <li>All applicable data protection laws (GDPR, CCPA, etc.)</li>
+                    <li>Industry-standard security practices for third-party integrations</li>
                   </ul>
                 </div>
               </div>
