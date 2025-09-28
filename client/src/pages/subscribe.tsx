@@ -80,7 +80,7 @@ export default function SubscribePage() {
 
     // Create subscription as soon as the page loads
     apiRequest("/api/create-subscription", "POST", { 
-      priceId: "price_pro_monthly" // This would be configured in Stripe dashboard
+      priceId: "price_1SC8NIRwvWaTf8xf67fw70NB" // Test price for RunAnalytics Pro - $9.99/month
     })
       .then((data) => {
         setClientSecret(data.clientSecret);
