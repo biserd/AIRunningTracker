@@ -22,49 +22,84 @@ const SubscribeForm = () => {
   const elements = useElements();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isElementsReady, setIsElementsReady] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Check if Stripe and elements are loaded and ready
     if (!stripe || !elements) {
+      toast({
+        title: "Payment Error",
+        description: "Payment system is not ready. Please wait a moment and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Double-check that the PaymentElement is mounted
+    const paymentElement = elements.getElement('payment');
+    if (!paymentElement) {
+      toast({
+        title: "Payment Error", 
+        description: "Payment form is not ready. Please refresh the page and try again.",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsLoading(true);
 
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/dashboard?subscription=success`,
-      },
-    });
-
-    if (error) {
-      toast({
-        title: "Payment Failed",
-        description: error.message,
-        variant: "destructive",
+    try {
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/dashboard?subscription=success`,
+        },
       });
-    } else {
+
+      if (error) {
+        toast({
+          title: "Payment Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Payment Successful",
+          description: "Welcome to RunAnalytics Pro!",
+        });
+      }
+    } catch (err: any) {
       toast({
-        title: "Payment Successful",
-        description: "Welcome to RunAnalytics Pro!",
+        title: "Payment Error",
+        description: err.message || "An unexpected error occurred. Please try again.",
+        variant: "destructive",
       });
     }
 
     setIsLoading(false);
   }
 
+  const handleElementsReady = () => {
+    setIsElementsReady(true);
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <PaymentElement />
+      <PaymentElement 
+        onReady={handleElementsReady}
+        options={{
+          layout: "tabs"
+        }}
+      />
       <Button 
         type="submit" 
         className="w-full bg-strava-orange hover:bg-strava-orange/90" 
-        disabled={!stripe || isLoading}
+        disabled={!stripe || !isElementsReady || isLoading}
         data-testid="button-subscribe"
       >
-        {isLoading ? "Processing..." : "Subscribe to Pro"}
+        {isLoading ? "Processing..." : !isElementsReady ? "Loading..." : "Subscribe to Pro"}
       </Button>
     </form>
   );
