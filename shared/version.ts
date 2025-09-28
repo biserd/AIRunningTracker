@@ -1,4 +1,4 @@
-export const VERSION = "2.1.0";
+export const VERSION = "2.2.0";
 
 export interface ReleaseNote {
   version: string;
@@ -12,6 +12,46 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "2.2.0",
+    date: "2025-09-28",
+    title: "Promotion Code System",
+    description: "Enhanced subscription system with promotion code support for friend testing and user acquisition. Share discount codes to invite friends to test RunAnalytics Pro with special pricing or completely free access.",
+    changes: [
+      {
+        type: "feature",
+        description: "Promotion code system with real-time validation via Stripe API"
+      },
+      {
+        type: "feature",
+        description: "Test promotion codes: TESTFREE1 (100% off 1 month), HALFPRICE (50% off 3 months), FIRSTFREE ($9.99 off first month)"
+      },
+      {
+        type: "feature",
+        description: "Smart subscription handling for 100% discount codes with immediate activation"
+      },
+      {
+        type: "feature",
+        description: "Promotion code input field on subscription page with apply functionality"
+      },
+      {
+        type: "feature",
+        description: "Success/error notifications for promotion code validation and application"
+      },
+      {
+        type: "improvement",
+        description: "Enhanced subscription creation API to support coupon application and discount tracking"
+      },
+      {
+        type: "improvement",
+        description: "Automatic subscription activation for free trials without payment processing"
+      },
+      {
+        type: "fix",
+        description: "Fixed null pointer exception for 100% discount subscriptions that don't require payment"
+      }
+    ]
+  },
   {
     version: "2.1.0",
     date: "2025-09-28",
