@@ -40,7 +40,14 @@ export class PerformanceAnalyticsService {
   /**
    * Calculate VO2 Max using Jack Daniels' formula and activity data
    */
-  async calculateVO2Max(userId: number): Promise<VO2MaxData> {
+  async calculateVO2Max(userId: number): Promise<VO2MaxData | null> {
+    // Check if user has Strava connected
+    const user = await storage.getUser(userId);
+    if (!user || !user.stravaConnected) {
+      console.log(`User ${userId} does not have Strava connected`);
+      return null;
+    }
+
     const activities = await storage.getActivitiesByUserId(userId, 50);
     const runningActivities = activities.filter(a => a.distance > 1000); // At least 1km runs
     
@@ -48,13 +55,7 @@ export class PerformanceAnalyticsService {
     
     if (runningActivities.length < 3) {
       console.log(`Insufficient data for VO2 calculation: only ${runningActivities.length} activities`);
-      return {
-        current: 45, // Average baseline
-        trend: 'stable',
-        ageGradePercentile: 50,
-        comparison: 'Insufficient data for accurate calculation',
-        targetRange: { min: 45, max: 55 }
-      };
+      return null;
     }
 
     // Find best performances for different distances
@@ -94,10 +95,14 @@ export class PerformanceAnalyticsService {
   /**
    * Calculate heart rate zones based on max HR and threshold data
    */
-  calculateHeartRateZones(maxHR?: number, restingHR?: number): HeartRateZones {
-    // If no max HR provided, estimate using 220 - age (assuming age 30)
-    const estimatedMaxHR = maxHR || 190;
-    const estimatedRestingHR = restingHR || 60;
+  calculateHeartRateZones(maxHR?: number, restingHR?: number): HeartRateZones | null {
+    // Only return heart rate zones if we have actual data, not estimates
+    if (!maxHR || !restingHR) {
+      return null;
+    }
+
+    const estimatedMaxHR = maxHR;
+    const estimatedRestingHR = restingHR;
     
     // Using Karvonen method for more accurate zones
     const heartRateReserve = estimatedMaxHR - estimatedRestingHR;
@@ -139,23 +144,20 @@ export class PerformanceAnalyticsService {
   /**
    * Analyze running efficiency metrics
    */
-  async analyzeRunningEfficiency(userId: number): Promise<RunningEfficiencyData> {
+  async analyzeRunningEfficiency(userId: number): Promise<RunningEfficiencyData | null> {
+    // Check if user has Strava connected
+    const user = await storage.getUser(userId);
+    if (!user || !user.stravaConnected) {
+      console.log(`User ${userId} does not have Strava connected`);
+      return null;
+    }
+
     const activities = await storage.getActivitiesByUserId(userId, 30);
     const runningActivities = activities.filter(a => a.distance > 1000);
     
     if (runningActivities.length < 5) {
-      return {
-        averageCadence: 180, // Target cadence
-        strideLength: 1.2,
-        verticalOscillation: 8.5,
-        groundContactTime: 250,
-        efficiency: 75,
-        recommendations: [
-          'Complete more runs to get accurate efficiency metrics',
-          'Focus on maintaining consistent cadence around 180 steps per minute',
-          'Work on shorter, quicker steps to improve efficiency'
-        ]
-      };
+      console.log(`Insufficient data for efficiency calculation: only ${runningActivities.length} activities`);
+      return null;
     }
 
     // Calculate efficiency metrics from activity data
@@ -185,12 +187,17 @@ export class PerformanceAnalyticsService {
   /**
    * Calculate comprehensive performance metrics
    */
-  async getPerformanceMetrics(userId: number): Promise<PerformanceMetrics> {
+  async getPerformanceMetrics(userId: number): Promise<PerformanceMetrics | null> {
     const activities = await storage.getActivitiesByUserId(userId, 50);
     const runningActivities = activities.filter(a => a.distance > 1000);
     
     const vo2MaxData = await this.calculateVO2Max(userId);
     const efficiency = await this.analyzeRunningEfficiency(userId);
+    
+    // Return null if we don't have sufficient data
+    if (!vo2MaxData || !efficiency) {
+      return null;
+    }
     
     // Calculate training stress and thresholds
     const trainingStressScore = this.calculateTrainingStress(runningActivities);
