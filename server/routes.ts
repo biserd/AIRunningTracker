@@ -888,8 +888,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expand: ['latest_invoice.payment_intent'],
       });
 
-      // Update user with subscription ID
+      // Update user with subscription ID and set plan to pro
       await storage.updateStripeSubscriptionId(user.id, subscription.id);
+      await storage.updateSubscriptionStatus(user.id, 'incomplete', 'pro');
 
       const invoice = subscription.latest_invoice as Stripe.Invoice;
       const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
