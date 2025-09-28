@@ -1,6 +1,7 @@
 import { Activity } from "lucide-react";
 import { Link } from "wouter";
 import { VERSION } from "@shared/version";
+import { StravaPoweredBy } from "@/components/StravaConnect";
 
 export default function Footer() {
   return (
@@ -42,8 +43,11 @@ export default function Footer() {
         </div>
         
         <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-          <div className="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
-            <p>&copy; 2024 RunAnalytics. All rights reserved.</p>
+          <div className="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
+            <div className="flex flex-col items-center sm:items-start space-y-2">
+              <p>&copy; 2024 RunAnalytics. All rights reserved.</p>
+              <StravaPoweredBy variant="white" size="sm" />
+            </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm" data-testid="text-version">v{VERSION}</span>
               <Link href="/release-notes" className="text-sm hover:text-white transition-colors" data-testid="link-release-notes">
