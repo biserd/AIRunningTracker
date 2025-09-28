@@ -10,14 +10,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (September 2025)
 
+- **Version 2.3.0 Release (Sep 28)**: Full Strava API Agreement compliance with enhanced privacy protections, official branding implementation, security procedures documentation, and subscription model transparency ensuring all Strava developer requirements are met.
+- **Version 2.2.0 Release (Sep 28)**: Enhanced subscription system with promotion code support for friend testing and user acquisition, including test codes TESTFREE1, HALFPRICE, and FIRSTFREE for flexible discount options.
+- **Version 2.1.0 Release (Sep 28)**: SaaS platform transformation with subscription billing, Free tier (30 days data) and Pro tier ($9.99/month) with advanced AI insights and unlimited history.
 - **Version 2.0.0 Release (Sep 13)**: Major platform transformation with 9 comprehensive enhancements including advanced analytics, admin dashboard with user monitoring and performance tracking, detailed splits analysis, historical Runner Score tracking, and enhanced AI insights with actionable recommendations.
-- **Enhanced User Experience (Sep 13)**: Added comparison arrows, trend indicators, performance chart time filters, and comprehensive splits analysis for improved data visualization.
-- **Admin Dashboard Launch (Sep 13)**: Complete administrative platform with real-time user analytics (DAU/WAU/MAU), system performance monitoring, API metrics tracking, and live system health monitoring.
-- **AI Insights Expansion (Sep 13)**: Expanded to 5 comprehensive categories (Performance, Training, Health, Goals, Motivation) with insight history timeline and actionable recommendations.
 
 ## Version Management
 
-### Current Version: 2.0.0
+### Current Version: 2.3.0
 
 The application now includes a comprehensive versioning system to track features, improvements, and fixes across releases:
 

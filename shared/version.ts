@@ -1,4 +1,4 @@
-export const VERSION = "2.2.0";
+export const VERSION = "2.3.0";
 
 export interface ReleaseNote {
   version: string;
@@ -12,6 +12,42 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "2.3.0",
+    date: "2025-09-28",
+    title: "Strava API Agreement Compliance",
+    description: "Full compliance with Strava's API Agreement and Terms of Service, including enhanced privacy protections, security procedures, and clear subscription model transparency. RunAnalytics now meets all official Strava developer requirements while maintaining user privacy and data protection.",
+    changes: [
+      {
+        type: "feature",
+        description: "Enhanced Privacy Policy with comprehensive Strava data handling section"
+      },
+      {
+        type: "feature",
+        description: "Official Strava branding compliance with 'Connect with Strava' buttons, 'Powered by Strava' attribution, and 'View on Strava' links"
+      },
+      {
+        type: "feature",
+        description: "Security procedures documentation with 24-hour breach notification requirement to Strava"
+      },
+      {
+        type: "feature",
+        description: "Subscription model transparency - clarifying users pay for AI analytics services, not Strava data access"
+      },
+      {
+        type: "improvement",
+        description: "Added Strava attribution to all relevant pages including dashboard, activity pages, and footer"
+      },
+      {
+        type: "improvement",
+        description: "Enhanced security protocols with incident response procedures and compliance templates"
+      },
+      {
+        type: "improvement",
+        description: "Clear separation of Strava integration (free) from premium AI analytics features"
+      }
+    ]
+  },
   {
     version: "2.2.0",
     date: "2025-09-28",
