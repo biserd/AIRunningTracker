@@ -156,6 +156,25 @@ The RunAnalytics Team
       text
     });
   }
+
+  async sendRegistrationNotification(email: string): Promise<void> {
+    const subject = 'New User Registration - RunAnalytics';
+    const html = `
+      <h2>New User Registration</h2>
+      <p>A new user has registered for RunAnalytics:</p>
+      <ul>
+        <li><strong>Email:</strong> ${email}</li>
+        <li><strong>Date:</strong> ${new Date().toLocaleString()}</li>
+      </ul>
+    `;
+    
+    await this.sendEmail({
+      to: 'hello@bigappledigital.nyc',
+      subject,
+      html,
+      text: `New user registration: ${email} at ${new Date().toLocaleString()}`
+    });
+  }
 }
 
 export const emailService = new EmailService();

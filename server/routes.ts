@@ -77,6 +77,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send welcome email to new user
       await emailService.sendWelcomeEmail(userData.email);
       
+      // Send notification to admin
+      await emailService.sendRegistrationNotification(userData.email);
+      
       res.json(result);
     } catch (error: any) {
       console.error('Registration error:', error);
