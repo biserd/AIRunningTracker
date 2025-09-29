@@ -74,8 +74,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userData = registerSchema.parse(req.body);
       const result = await authService.register(userData);
       
-      // Send notification email
-      await emailService.sendRegistrationNotification(userData.email);
+      // Send welcome email to new user
+      await emailService.sendWelcomeEmail(userData.email);
       
       res.json(result);
     } catch (error: any) {
