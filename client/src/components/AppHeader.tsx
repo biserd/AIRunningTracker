@@ -1,5 +1,6 @@
-import { Activity, User, LogOut, Settings, BarChart3, Brain, Home, Shield } from "lucide-react";
+import { Activity, User, LogOut, Settings, BarChart3, Brain, Home, Shield, MessageCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,6 +13,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Badge } from "@/components/ui/badge";
+import FeedbackDialog from "@/components/FeedbackDialog";
 
 const navigationItems = [
   { path: "/dashboard", label: "Dashboard", icon: Home },
@@ -23,6 +25,7 @@ export default function AppHeader() {
   const { user, logout } = useAuth();
   const { isPro } = useSubscription();
   const [location] = useLocation();
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -145,6 +148,19 @@ export default function AppHeader() {
           })}
         </nav>
       </div>
+
+      {/* Floating Feedback Button */}
+      <Button
+        onClick={() => setFeedbackOpen(true)}
+        className="fixed bottom-6 right-6 z-50 h-14 px-6 bg-strava-orange hover:bg-strava-orange/90 text-white shadow-lg rounded-full flex items-center gap-2"
+        data-testid="button-feedback"
+      >
+        <MessageCircle size={20} />
+        <span className="font-medium">Feedback</span>
+      </Button>
+
+      {/* Feedback Dialog */}
+      <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
     </header>
   );
 }

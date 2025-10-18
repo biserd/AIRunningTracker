@@ -92,6 +92,17 @@ export const trainingPlans = pgTable("training_plans", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const feedback = pgTable("feedback", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  userEmail: text("user_email"),
+  type: text("type", { enum: ["bug", "feature"] }).notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  status: text("status", { enum: ["new", "in_progress", "resolved", "closed"] }).default("new"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   stravaConnected: true,
@@ -118,6 +129,12 @@ export const insertEmailWaitlistSchema = createInsertSchema(emailWaitlist).omit(
   createdAt: true,
 });
 
+export const insertFeedbackSchema = createInsertSchema(feedback).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+});
+
 // Login schema for authentication
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -142,5 +159,7 @@ export type InsertTrainingPlan = z.infer<typeof insertTrainingPlanSchema>;
 export type TrainingPlan = typeof trainingPlans.$inferSelect;
 export type InsertEmailWaitlist = z.infer<typeof insertEmailWaitlistSchema>;
 export type EmailWaitlist = typeof emailWaitlist.$inferSelect;
+export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
+export type Feedback = typeof feedback.$inferSelect;
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;

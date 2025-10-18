@@ -8,7 +8,7 @@ import { performanceService } from "./services/performance";
 import { authService } from "./services/auth";
 import { emailService } from "./services/email";
 import { runnerScoreService } from "./services/runnerScore";
-import { insertUserSchema, loginSchema, registerSchema, insertEmailWaitlistSchema, type Activity } from "@shared/schema";
+import { insertUserSchema, loginSchema, registerSchema, insertEmailWaitlistSchema, insertFeedbackSchema, type Activity } from "@shared/schema";
 import { z } from "zod";
 import Stripe from "stripe";
 
@@ -133,6 +133,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ message: "Failed to add email to waitlist" });
       }
+    }
+  });
+
+  // Feedback endpoint
+  app.post("/api/feedback", authenticateJWT, async (req: any, res) => {
+    try {
+      const feedbackData = insertFeedbackSchema.parse(req.body);
+      
+      // Create feedback in database
+      const feedback = await storage.createFeedback(feedbackData);
+      
+      // Send email notification
+      await emailService.sendFeedbackNotification(
+        feedbackData.type,
+        feedbackData.title,
+        feedbackData.description,
+        feedbackData.userEmail || 'Unknown'
+      );
+      
+      res.json({ success: true, message: "Feedback submitted successfully" });
+    } catch (error: any) {
+      console.error('Feedback error:', error);
+      res.status(500).json({ message: "Failed to submit feedback" });
     }
   });
 

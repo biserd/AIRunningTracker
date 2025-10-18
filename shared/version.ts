@@ -1,4 +1,4 @@
-export const VERSION = "2.3.0";
+export const VERSION = "2.4.0";
 
 export interface ReleaseNote {
   version: string;
@@ -12,6 +12,66 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "2.4.0",
+    date: "2025-10-18",
+    title: "Free Platform & User Feedback System",
+    description: "RunAnalytics is now completely free for all users with all premium features unlocked. Enhanced user feedback system, improved pricing page readability, full marathon predictions, and refined training recommendations.",
+    changes: [
+      {
+        type: "breaking",
+        description: "All premium features now completely free - removed subscription paywalls for everyone"
+      },
+      {
+        type: "feature",
+        description: "Bug Report & Feature Suggestion system with popup dialog, database storage, and email notifications"
+      },
+      {
+        type: "feature",
+        description: "Floating feedback button in all authenticated pages for easy bug reporting and feature suggestions"
+      },
+      {
+        type: "feature",
+        description: "Full Marathon (42.2km) race prediction added alongside 5K, 10K, and Half Marathon predictions"
+      },
+      {
+        type: "improvement",
+        description: "Training Recommendations now show top 3 most important items with improved visual hierarchy"
+      },
+      {
+        type: "improvement",
+        description: "Pricing page completely redesigned with better readability and contrast - white background with green checkmarks"
+      },
+      {
+        type: "improvement",
+        description: "All existing users automatically upgraded to Pro tier with full feature access"
+      },
+      {
+        type: "improvement",
+        description: "Removed billing navigation, Pro badges, and upgrade prompts from interface"
+      },
+      {
+        type: "improvement",
+        description: "SEO enhancement with comprehensive meta tags, Open Graph, and JSON-LD structured data"
+      },
+      {
+        type: "improvement",
+        description: "Mobile optimization - all touch targets 44px minimum, responsive text scaling"
+      },
+      {
+        type: "improvement",
+        description: "Landing page CTA optimization with social proof and trust indicators"
+      },
+      {
+        type: "improvement",
+        description: "4-step onboarding modal and progress checklist for new user guidance"
+      },
+      {
+        type: "improvement",
+        description: "Welcome email system for new users with admin signup notifications"
+      }
+    ]
+  },
   {
     version: "2.3.0",
     date: "2025-09-28",

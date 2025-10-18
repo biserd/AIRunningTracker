@@ -40,58 +40,79 @@ export default function PricingPage() {
 
           <div className="flex justify-center">
             {/* Free Plan with All Features */}
-            <div className="bg-gradient-to-br from-strava-orange to-orange-600 rounded-2xl p-8 text-white shadow-2xl max-w-lg w-full">
-              <div className="text-center mb-8">
-                <div className="inline-block bg-white/20 backdrop-blur-sm px-4 py-1 rounded-full text-sm font-semibold mb-4">
-                  All Features Included
+            <div className="bg-white rounded-2xl p-10 shadow-2xl max-w-2xl w-full border-4 border-strava-orange">
+              <div className="text-center mb-10">
+                <div className="inline-block bg-strava-orange text-white px-6 py-2 rounded-full text-base font-bold mb-6 shadow-lg">
+                  All Features Included - 100% Free
                 </div>
-                <h2 className="text-3xl font-bold mb-2">RunAnalytics</h2>
-                <div className="text-5xl font-bold mb-2">$0</div>
-                <p className="text-white/90">Forever free for all runners</p>
+                <h2 className="text-4xl font-bold mb-4 text-charcoal">RunAnalytics</h2>
+                <div className="flex items-baseline justify-center gap-2 mb-3">
+                  <span className="text-7xl font-extrabold text-strava-orange">$0</span>
+                  <span className="text-2xl text-gray-600">/forever</span>
+                </div>
+                <p className="text-lg text-gray-700 font-medium">For all runners, everywhere</p>
               </div>
               
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center">
-                  <Check className="text-white mr-3 flex-shrink-0" size={20} />
-                  <span>Complete performance analytics</span>
+              <ul className="space-y-4 mb-10">
+                <li className="flex items-center text-charcoal">
+                  <div className="bg-green-100 rounded-full p-1 mr-4">
+                    <Check className="text-green-600 flex-shrink-0" size={20} strokeWidth={3} />
+                  </div>
+                  <span className="text-lg font-medium">Complete performance analytics</span>
                 </li>
-                <li className="flex items-center">
-                  <Check className="text-white mr-3 flex-shrink-0" size={20} />
-                  <span>Strava integration</span>
+                <li className="flex items-center text-charcoal">
+                  <div className="bg-green-100 rounded-full p-1 mr-4">
+                    <Check className="text-green-600 flex-shrink-0" size={20} strokeWidth={3} />
+                  </div>
+                  <span className="text-lg font-medium">Strava integration</span>
                 </li>
-                <li className="flex items-center">
-                  <Check className="text-white mr-3 flex-shrink-0" size={20} />
-                  <span>Runner Score calculation</span>
+                <li className="flex items-center text-charcoal">
+                  <div className="bg-green-100 rounded-full p-1 mr-4">
+                    <Check className="text-green-600 flex-shrink-0" size={20} strokeWidth={3} />
+                  </div>
+                  <span className="text-lg font-medium">Runner Score calculation</span>
                 </li>
-                <li className="flex items-center">
-                  <Check className="text-white mr-3 flex-shrink-0" size={20} />
-                  <span>Advanced AI insights</span>
+                <li className="flex items-center text-charcoal">
+                  <div className="bg-green-100 rounded-full p-1 mr-4">
+                    <Check className="text-green-600 flex-shrink-0" size={20} strokeWidth={3} />
+                  </div>
+                  <span className="text-lg font-medium">Advanced AI insights</span>
                 </li>
-                <li className="flex items-center">
-                  <Check className="text-white mr-3 flex-shrink-0" size={20} />
-                  <span>Personalized training plans</span>
+                <li className="flex items-center text-charcoal">
+                  <div className="bg-green-100 rounded-full p-1 mr-4">
+                    <Check className="text-green-600 flex-shrink-0" size={20} strokeWidth={3} />
+                  </div>
+                  <span className="text-lg font-medium">Personalized training plans</span>
                 </li>
-                <li className="flex items-center">
-                  <Check className="text-white mr-3 flex-shrink-0" size={20} />
-                  <span>Race time predictions</span>
+                <li className="flex items-center text-charcoal">
+                  <div className="bg-green-100 rounded-full p-1 mr-4">
+                    <Check className="text-green-600 flex-shrink-0" size={20} strokeWidth={3} />
+                  </div>
+                  <span className="text-lg font-medium">Race time predictions</span>
                 </li>
-                <li className="flex items-center">
-                  <Check className="text-white mr-3 flex-shrink-0" size={20} />
-                  <span>Injury risk analysis</span>
+                <li className="flex items-center text-charcoal">
+                  <div className="bg-green-100 rounded-full p-1 mr-4">
+                    <Check className="text-green-600 flex-shrink-0" size={20} strokeWidth={3} />
+                  </div>
+                  <span className="text-lg font-medium">Injury risk analysis</span>
                 </li>
-                <li className="flex items-center">
-                  <Check className="text-white mr-3 flex-shrink-0" size={20} />
-                  <span>Unlimited data history</span>
+                <li className="flex items-center text-charcoal">
+                  <div className="bg-green-100 rounded-full p-1 mr-4">
+                    <Check className="text-green-600 flex-shrink-0" size={20} strokeWidth={3} />
+                  </div>
+                  <span className="text-lg font-medium">Unlimited data history</span>
                 </li>
-                <li className="flex items-center">
-                  <Check className="text-white mr-3 flex-shrink-0" size={20} />
-                  <span>Full customer support</span>
+                <li className="flex items-center text-charcoal">
+                  <div className="bg-green-100 rounded-full p-1 mr-4">
+                    <Check className="text-green-600 flex-shrink-0" size={20} strokeWidth={3} />
+                  </div>
+                  <span className="text-lg font-medium">Full customer support</span>
                 </li>
               </ul>
               
               <Link href="/auth">
-                <Button className="w-full bg-white text-strava-orange hover:bg-white/90 font-bold text-lg h-12">
-                  Get Started Free
+                <Button className="w-full bg-strava-orange hover:bg-strava-orange/90 text-white font-bold text-xl h-14 shadow-lg">
+                  Get Started Free →
                 </Button>
               </Link>
             </div>

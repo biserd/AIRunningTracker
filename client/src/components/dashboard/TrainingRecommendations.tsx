@@ -145,14 +145,24 @@ export default function TrainingRecommendations({ recommendations }: TrainingRec
     );
   }
 
+  // Show only top 3 recommendations
+  const topRecommendations = recommendations.slice(0, 3);
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl font-semibold text-charcoal">Training Recommendations</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-xl font-semibold text-charcoal">Top 3 Training Recommendations</CardTitle>
+          {recommendations.length > 3 && (
+            <Badge variant="outline" className="text-xs">
+              {recommendations.length} total
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {recommendations.map((recommendation, index) => {
+          {topRecommendations.map((recommendation, index) => {
             const { icon: Icon, color } = getRecommendationIcon(recommendation.title);
             const bgColor = getRecommendationBackground(recommendation.title);
             

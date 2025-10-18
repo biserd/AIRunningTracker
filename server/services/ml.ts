@@ -154,6 +154,16 @@ export class MLService {
       recommendation: "Focus on long runs and aerobic base building"
     });
 
+    // Full Marathon Prediction - typically 15-25 seconds per km slower than tempo
+    const marathonPacePerKm = paceForPrediction + 0.35;
+    const marathonTimeMinutes = marathonPacePerKm * 42.195;
+    predictions.push({
+      distance: "Marathon", 
+      predictedTime: this.formatTime(marathonTimeMinutes),
+      confidence: Math.min(75, 45 + activities.length * 2),
+      recommendation: "Build endurance with consistent long runs of 25-32km"
+    });
+
     return predictions;
   }
 

@@ -1,4 +1,4 @@
-import { users, activities, aiInsights, emailWaitlist, trainingPlans, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type InsertEmailWaitlist, type TrainingPlan, type InsertTrainingPlan } from "@shared/schema";
+import { users, activities, aiInsights, emailWaitlist, trainingPlans, feedback, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type InsertEmailWaitlist, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, inArray, gte, gt, lt } from "drizzle-orm";
 import bcrypt from "bcrypt";
@@ -32,6 +32,8 @@ export interface IStorage {
   getLatestTrainingPlan(userId: number): Promise<TrainingPlan | undefined>;
   
   addToEmailWaitlist(email: string): Promise<void>;
+  
+  createFeedback(feedback: InsertFeedback): Promise<Feedback>;
   
   // Admin methods
   getAdminStats(): Promise<{
@@ -300,6 +302,14 @@ export class DatabaseStorage implements IStorage {
 
   async addToEmailWaitlist(email: string): Promise<void> {
     await db.insert(emailWaitlist).values({ email });
+  }
+
+  async createFeedback(insertFeedback: InsertFeedback): Promise<Feedback> {
+    const [feedbackRecord] = await db
+      .insert(feedback)
+      .values(insertFeedback)
+      .returning();
+    return feedbackRecord;
   }
 
   // Admin methods

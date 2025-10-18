@@ -175,6 +175,45 @@ The RunAnalytics Team
       text: `New user registration: ${email} at ${new Date().toLocaleString()}`
     });
   }
+
+  async sendFeedbackNotification(type: string, title: string, description: string, userEmail: string): Promise<void> {
+    const feedbackType = type === 'bug' ? 'Bug Report' : 'Feature Suggestion';
+    const subject = `[RunAnalytics] New ${feedbackType}: ${title}`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: ${type === 'bug' ? '#e74c3c' : '#3498db'};">New ${feedbackType}</h2>
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>Type:</strong> ${feedbackType}</p>
+          <p><strong>Title:</strong> ${title}</p>
+          <p><strong>User Email:</strong> ${userEmail}</p>
+          <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
+        </div>
+        <div style="background: white; border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">Description:</h3>
+          <p style="white-space: pre-wrap;">${description}</p>
+        </div>
+      </div>
+    `;
+    
+    const text = `
+New ${feedbackType}
+
+Type: ${feedbackType}
+Title: ${title}
+User Email: ${userEmail}
+Date: ${new Date().toLocaleString()}
+
+Description:
+${description}
+    `;
+    
+    await this.sendEmail({
+      to: 'hello@bigappledigital.nyc',
+      subject,
+      html,
+      text
+    });
+  }
 }
 
 export const emailService = new EmailService();
