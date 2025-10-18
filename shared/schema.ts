@@ -21,10 +21,10 @@ export const users = pgTable("users", {
   stripeSubscriptionId: text("stripe_subscription_id"),
   subscriptionStatus: text("subscription_status", { 
     enum: ["trialing", "active", "past_due", "canceled", "unpaid"] 
-  }),
+  }).default("active"),
   subscriptionPlan: text("subscription_plan", { 
     enum: ["free", "pro", "premium"] 
-  }).default("free"),
+  }).default("pro"),
   trialEndsAt: timestamp("trial_ends_at"),
   subscriptionEndsAt: timestamp("subscription_ends_at"),
   createdAt: timestamp("created_at").defaultNow(),

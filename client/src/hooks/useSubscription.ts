@@ -20,8 +20,9 @@ export function useSubscription() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const isPro = subscription?.status === 'active' && subscription?.plan === 'pro';
-  const isFree = !isPro;
+  // All features are now free - everyone gets Pro access
+  const isPro = true;
+  const isFree = false;
 
   return {
     subscription,
@@ -29,7 +30,7 @@ export function useSubscription() {
     error,
     isPro,
     isFree,
-    hasActiveSubscription: subscription?.status === 'active',
+    hasActiveSubscription: true,
   };
 }
 
