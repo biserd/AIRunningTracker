@@ -10,6 +10,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (October 2025)
 
+- **Platform Made Completely Free (Oct 18)**: Removed all subscription paywalls and made premium features available to everyone:
+  - **All Users Get Pro Access**: Updated subscription system to grant all users full Pro tier features
+  - **Database Updates**: Changed default subscription plan to 'pro' with 'active' status for all new and existing users (23 users upgraded)
+  - **UI Cleanup**: Removed billing navigation, Pro badges, and upgrade prompts from interface
+  - **Pricing Page Updated**: Redesigned to showcase that all features (AI insights, training plans, race predictions, unlimited history) are completely free
+  - **No Limitations**: Removed 30-day data limit, insight limits, and all feature restrictions
 - **Marketing Campaign Launch Preparation (Oct 18)**: Comprehensive optimization for marketing campaign launch including:
   - **SEO Enhancement**: Added comprehensive meta tags, Open Graph tags, Twitter cards, and JSON-LD structured data (WebApplication + Organization schemas) for improved search visibility and social sharing
   - **Mobile Optimization**: Optimized all touch targets to 44px minimum, responsive text scaling, full mobile responsiveness across all pages
