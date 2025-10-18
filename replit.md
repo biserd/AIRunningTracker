@@ -8,8 +8,14 @@ RunAnalytics is a comprehensive running analytics platform that integrates with 
 
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes (September 2025)
+## Recent Changes (October 2025)
 
+- **Marketing Campaign Launch Preparation (Oct 18)**: Comprehensive optimization for marketing campaign launch including:
+  - **SEO Enhancement**: Added comprehensive meta tags, Open Graph tags, Twitter cards, and JSON-LD structured data (WebApplication + Organization schemas) for improved search visibility and social sharing
+  - **Mobile Optimization**: Optimized all touch targets to 44px minimum, responsive text scaling, full mobile responsiveness across all pages
+  - **Landing Page CTA Optimization**: Enhanced primary CTAs with larger sizes, social proof ("Join 10,000+ runners"), trust indicators ("Free forever", "No credit card required"), and improved conversion funnel
+  - **Onboarding Flow**: Created 4-step welcome modal (Welcome, Strava Connection, Runner Score, AI Insights) with progress tracking and localStorage persistence, plus dashboard progress checklist for new user guidance
+  - **Welcome Email System**: Automated welcome emails for new users and admin notifications to hello@bigappledigital.nyc
 - **Version 2.3.0 Release (Sep 28)**: Full Strava API Agreement compliance with enhanced privacy protections, official branding implementation, security procedures documentation, and subscription model transparency ensuring all Strava developer requirements are met.
 - **Version 2.2.0 Release (Sep 28)**: Enhanced subscription system with promotion code support for friend testing and user acquisition, including test codes TESTFREE1, HALFPRICE, and FIRSTFREE for flexible discount options.
 - **Version 2.1.0 Release (Sep 28)**: SaaS platform transformation with subscription billing, Free tier (30 days data) and Pro tier ($9.99/month) with advanced AI insights and unlimited history.
