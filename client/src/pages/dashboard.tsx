@@ -14,6 +14,8 @@ import GoalProgress from "@/components/dashboard/GoalProgress";
 import RunnerScoreRadar from "@/components/dashboard/RunnerScoreRadar";
 import HistoricalRunnerScore from "@/components/dashboard/HistoricalRunnerScore";
 import InsightHistory from "@/components/dashboard/InsightHistory";
+import ProgressChecklist from "@/components/dashboard/ProgressChecklist";
+import Onboarding from "@/components/Onboarding";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -22,6 +24,7 @@ import { StravaConnectButton, StravaPoweredBy } from "@/components/StravaConnect
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const [chartTimeRange, setChartTimeRange] = useState<string>("30days");
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const { toast } = useToast();
   const [location] = useLocation();
 
@@ -81,6 +84,17 @@ export default function Dashboard() {
   };
 
 
+
+  useEffect(() => {
+    // Check if user should see onboarding
+    const onboardingCompleted = localStorage.getItem('onboardingCompleted');
+    if (!onboardingCompleted && user) {
+      // Small delay to ensure dashboard data is loaded
+      setTimeout(() => {
+        setShowOnboarding(true);
+      }, 500);
+    }
+  }, [user]);
 
   useEffect(() => {
     // Handle URL parameters for Strava connection feedback
@@ -158,6 +172,14 @@ export default function Dashboard() {
     <div className="min-h-screen bg-light-grey">
       <AppHeader />
       
+      {/* Onboarding Modal */}
+      <Onboarding 
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+        onStravaConnect={handleStravaConnect}
+        isStravaConnected={dashboardData?.user?.stravaConnected || false}
+      />
+      
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* Strava Sync Actions */}
         <div className="mb-8 flex flex-wrap gap-4">
@@ -201,6 +223,13 @@ export default function Dashboard() {
           </div>
           
           <div className="space-y-6">
+            {/* Progress Checklist for New Users */}
+            <ProgressChecklist 
+              isStravaConnected={dashboardData?.user?.stravaConnected || false}
+              hasActivities={(dashboardData?.activities?.length || 0) > 0}
+              hasViewedScore={true} // They're on the dashboard, so they've seen it
+            />
+            
             <AIInsights insights={dashboardData?.insights || {}} />
             <InsightHistory userId={user?.id!} />
             <TrainingRecommendations recommendations={dashboardData?.insights?.recommendations || []} />
