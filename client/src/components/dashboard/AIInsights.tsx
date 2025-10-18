@@ -119,7 +119,7 @@ export default function AIInsights({ insights }: AIInsightsProps) {
     );
   }
 
-  // Pro users see all insights
+  // All users see all insights (everything is free now)
   return (
     <Card>
       <CardHeader>
@@ -130,10 +130,6 @@ export default function AIInsights({ insights }: AIInsightsProps) {
             </div>
             <CardTitle className="text-xl font-semibold text-charcoal">AI Insights</CardTitle>
           </div>
-          <Badge className="bg-strava-orange">
-            <Crown className="h-3 w-3 mr-1" />
-            Pro
-          </Badge>
         </div>
       </CardHeader>
       <CardContent>

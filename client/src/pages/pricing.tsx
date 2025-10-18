@@ -31,117 +31,82 @@ export default function PricingPage() {
       <section className="py-20 px-6">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-5xl font-bold text-charcoal mb-8 text-center">
-            Simple <span className="text-strava-orange">Pricing</span>
+            All Features <span className="text-strava-orange">Completely Free</span>
           </h1>
           
           <p className="text-xl text-gray-600 mb-16 text-center max-w-3xl mx-auto">
-            Start free and upgrade when you're ready for advanced features. No hidden fees, cancel anytime.
+            RunAnalytics is now completely free for everyone. Get full access to all premium features, AI insights, and unlimited data history.
           </p>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Free Plan */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200">
+          <div className="flex justify-center">
+            {/* Free Plan with All Features */}
+            <div className="bg-gradient-to-br from-strava-orange to-orange-600 rounded-2xl p-8 text-white shadow-2xl max-w-lg w-full">
               <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-charcoal mb-2">Free</h2>
-                <div className="text-4xl font-bold text-charcoal mb-2">$0</div>
-                <p className="text-gray-600">Perfect for getting started</p>
+                <div className="inline-block bg-white/20 backdrop-blur-sm px-4 py-1 rounded-full text-sm font-semibold mb-4">
+                  All Features Included
+                </div>
+                <h2 className="text-3xl font-bold mb-2">RunAnalytics</h2>
+                <div className="text-5xl font-bold mb-2">$0</div>
+                <p className="text-white/90">Forever free for all runners</p>
               </div>
               
-              <ul className="space-y-4 mb-8">
+              <ul className="space-y-3 mb-8">
                 <li className="flex items-center">
-                  <Check className="text-green-500 mr-3" size={20} />
-                  <span>Basic performance analytics</span>
+                  <Check className="text-white mr-3 flex-shrink-0" size={20} />
+                  <span>Complete performance analytics</span>
                 </li>
                 <li className="flex items-center">
-                  <Check className="text-green-500 mr-3" size={20} />
+                  <Check className="text-white mr-3 flex-shrink-0" size={20} />
                   <span>Strava integration</span>
                 </li>
                 <li className="flex items-center">
-                  <Check className="text-green-500 mr-3" size={20} />
+                  <Check className="text-white mr-3 flex-shrink-0" size={20} />
                   <span>Runner Score calculation</span>
                 </li>
                 <li className="flex items-center">
-                  <Check className="text-green-500 mr-3" size={20} />
-                  <span>Basic AI insights</span>
+                  <Check className="text-white mr-3 flex-shrink-0" size={20} />
+                  <span>Advanced AI insights</span>
                 </li>
                 <li className="flex items-center">
-                  <Check className="text-green-500 mr-3" size={20} />
-                  <span>Last 30 days of data</span>
+                  <Check className="text-white mr-3 flex-shrink-0" size={20} />
+                  <span>Personalized training plans</span>
+                </li>
+                <li className="flex items-center">
+                  <Check className="text-white mr-3 flex-shrink-0" size={20} />
+                  <span>Race time predictions</span>
+                </li>
+                <li className="flex items-center">
+                  <Check className="text-white mr-3 flex-shrink-0" size={20} />
+                  <span>Injury risk analysis</span>
+                </li>
+                <li className="flex items-center">
+                  <Check className="text-white mr-3 flex-shrink-0" size={20} />
+                  <span>Unlimited data history</span>
+                </li>
+                <li className="flex items-center">
+                  <Check className="text-white mr-3 flex-shrink-0" size={20} />
+                  <span>Full customer support</span>
                 </li>
               </ul>
               
               <Link href="/auth">
-                <Button className="w-full" variant="outline">
+                <Button className="w-full bg-white text-strava-orange hover:bg-white/90 font-bold text-lg h-12">
                   Get Started Free
-                </Button>
-              </Link>
-            </div>
-
-            {/* Pro Plan */}
-            <div className="bg-charcoal rounded-2xl p-8 text-white relative">
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <span className="bg-strava-orange text-white px-4 py-1 rounded-full text-sm font-semibold">
-                  Coming Soon
-                </span>
-              </div>
-              
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold mb-2">Pro</h2>
-                <div className="text-4xl font-bold mb-2">$9.99</div>
-                <p className="text-gray-300">per month</p>
-              </div>
-              
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center">
-                  <Check className="text-strava-orange mr-3" size={20} />
-                  <span>Everything in Free</span>
-                </li>
-                <li className="flex items-center">
-                  <Check className="text-strava-orange mr-3" size={20} />
-                  <span>Advanced AI insights</span>
-                </li>
-                <li className="flex items-center">
-                  <Check className="text-strava-orange mr-3" size={20} />
-                  <span>Personalized training plans</span>
-                </li>
-                <li className="flex items-center">
-                  <Check className="text-strava-orange mr-3" size={20} />
-                  <span>Race time predictions</span>
-                </li>
-                <li className="flex items-center">
-                  <Check className="text-strava-orange mr-3" size={20} />
-                  <span>Injury risk analysis</span>
-                </li>
-                <li className="flex items-center">
-                  <Check className="text-strava-orange mr-3" size={20} />
-                  <span>Unlimited data history</span>
-                </li>
-                <li className="flex items-center">
-                  <Check className="text-strava-orange mr-3" size={20} />
-                  <span>Priority support</span>
-                </li>
-              </ul>
-              
-              <Link href="/subscribe">
-                <Button className="w-full bg-strava-orange hover:bg-strava-orange/90" data-testid="button-upgrade-pro">
-                  Upgrade to Pro
                 </Button>
               </Link>
             </div>
           </div>
 
           <div className="text-center mt-16">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 max-w-2xl mx-auto">
-              <p className="text-sm text-blue-800">
-                <strong>What you're paying for:</strong> Our AI analytics services, machine learning algorithms, and premium features. 
-                Strava integration is free in both plans - you pay for our advanced analytics, not for data access.
+            <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6 max-w-2xl mx-auto">
+              <p className="text-green-800">
+                <strong className="text-lg">🎉 Great News!</strong><br/>
+                All premium features are now completely free. No credit card required, no hidden fees, no limitations. 
+                We believe every runner deserves access to powerful analytics and AI-powered insights.
               </p>
             </div>
             <p className="text-gray-600 mb-4">
-              Questions about pricing? <Link href="/contact" className="text-strava-orange hover:underline">Contact us</Link>
-            </p>
-            <p className="text-sm text-gray-500">
-              All plans include basic customer support • 30-day money-back guarantee for Pro plan
+              Questions? <Link href="/contact" className="text-strava-orange hover:underline">Contact us</Link>
             </p>
           </div>
         </div>

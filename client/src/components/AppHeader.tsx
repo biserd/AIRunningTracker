@@ -1,4 +1,4 @@
-import { Activity, User, LogOut, Settings, BarChart3, Brain, Home, Shield, CreditCard } from "lucide-react";
+import { Activity, User, LogOut, Settings, BarChart3, Brain, Home, Shield } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
@@ -97,9 +97,6 @@ export default function AppHeader() {
                   </Avatar>
                   <div className="hidden md:flex flex-col items-end">
                     <span className="text-sm text-gray-700">{user?.email}</span>
-                    {isPro && (
-                      <Badge className="bg-strava-orange text-xs px-1 py-0">Pro</Badge>
-                    )}
                   </div>
                 </Button>
               </DropdownMenuTrigger>
@@ -108,12 +105,6 @@ export default function AppHeader() {
                   <Link href="/settings" className="flex items-center space-x-2 cursor-pointer">
                     <Settings size={16} />
                     <span>Settings</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/billing" className="flex items-center space-x-2 cursor-pointer" data-testid="nav-billing">
-                    <CreditCard size={16} />
-                    <span>Billing</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
