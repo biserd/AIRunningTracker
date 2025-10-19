@@ -111,6 +111,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get current user data (for authenticated queries)
+  app.get("/api/user", authenticateJWT, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(user);
+    } catch (error: any) {
+      console.error('Get user error:', error);
+      res.status(500).json({ message: "Failed to get user" });
+    }
+  });
+
   app.get("/api/logout", (req, res) => {
     // Clear any server-side session data if needed
     res.redirect("/");
