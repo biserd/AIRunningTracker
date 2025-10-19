@@ -335,7 +335,6 @@ Remember: Create a realistic, achievable plan based on their ACTUAL current pace
           }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.7,
       });
 
       const result = JSON.parse(response.choices[0].message.content || '{"weeks": []}');
