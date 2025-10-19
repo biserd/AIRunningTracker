@@ -1,4 +1,4 @@
-export const VERSION = "2.5.1";
+export const VERSION = "2.6.0";
 
 export interface ReleaseNote {
   version: string;
@@ -12,6 +12,58 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "2.6.0",
+    date: "2025-10-19",
+    title: "Goals & Training Tracking System",
+    description: "Transform AI training recommendations into trackable goals with automatic completion detection. Set personalized training goals, track progress, and let the system automatically mark goals complete when you achieve them through your activities.",
+    changes: [
+      {
+        type: "feature",
+        description: "Training Goals system - convert AI recommendations into trackable, actionable goals"
+      },
+      {
+        type: "feature",
+        description: "Simplified Training Recommendations UI with single 'Action' button and detailed rationale modal"
+      },
+      {
+        type: "feature",
+        description: "My Goals dashboard section showing active and completed goals with visual progress tracking"
+      },
+      {
+        type: "feature",
+        description: "Automatic goal completion detection - goals auto-complete when activity criteria are met during Strava sync"
+      },
+      {
+        type: "feature",
+        description: "Manual goal completion via checkbox for flexible tracking"
+      },
+      {
+        type: "feature",
+        description: "Goal type categorization (Speed, Hills, Endurance, General) with custom icons and visual styling"
+      },
+      {
+        type: "feature",
+        description: "Smart completion criteria: Speed goals (2+ speed workouts), Hill goals (2+ elevation workouts), Endurance goals (2+ long runs)"
+      },
+      {
+        type: "feature",
+        description: "Goal management features including deletion with confirmation and completion date tracking"
+      },
+      {
+        type: "improvement",
+        description: "Enhanced recommendation modal with rationale, context, and clear call-to-action for goal setting"
+      },
+      {
+        type: "improvement",
+        description: "Integrated goals tracking into Strava activity sync workflow for seamless auto-completion"
+      },
+      {
+        type: "fix",
+        description: "Fixed query key formatting for proper goal data fetching and cache invalidation"
+      }
+    ]
+  },
   {
     version: "2.5.1",
     date: "2025-10-19",

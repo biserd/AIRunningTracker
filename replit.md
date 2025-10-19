@@ -10,6 +10,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (October 2025)
 
+- **Version 2.6.0 Release (Oct 19)**: Goals & Training Tracking System - Transform AI recommendations into trackable goals:
+  - **Training Goals Feature**: Convert AI training recommendations into trackable, actionable goals with progress monitoring
+  - **Simplified UI**: Replaced multiple action buttons with single "Action" button that opens detailed rationale modal
+  - **My Goals Dashboard**: New dashboard section showing active and completed goals with visual progress tracking
+  - **Auto-Completion**: Goals automatically complete when activity criteria are met during Strava sync (e.g., 2+ speed workouts for speed goals)
+  - **Manual Tracking**: Checkbox-based manual completion for flexible goal management
+  - **Smart Criteria**: Goal-specific completion logic for Speed (fast/interval workouts), Hills (elevation workouts), and Endurance (long runs)
+  - **Goal Management**: Delete goals with confirmation, track completion dates, and view goal history
+  - **Enhanced Modals**: Recommendation details show full rationale, context, and clear "Set as Goal" action
 - **Version 2.5.1 Release (Oct 19)**: Critical bug fixes for AI insights generation and unit preference display:
   - **OpenAI API Compatibility**: Fixed parameter issue preventing AI insights generation (max_tokens → max_completion_tokens for GPT-5 models)
   - **Authentication Fix**: Resolved 401 error on /api/user endpoint preventing unit preference retrieval
@@ -36,7 +45,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Version Management
 
-### Current Version: 2.5.1
+### Current Version: 2.6.0
 
 The application now includes a comprehensive versioning system to track features, improvements, and fixes across releases:
 
