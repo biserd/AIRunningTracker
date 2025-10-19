@@ -825,7 +825,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/activities", authenticateJWT, async (req: any, res) => {
     try {
       const userId = req.user!.id;
+      console.log(`Fetching activities for user ${userId}`);
       const activities = await storage.getActivitiesByUserId(userId);
+      console.log(`Found ${activities.length} activities for user ${userId}`);
       res.json(activities);
     } catch (error: any) {
       console.error('Get activities error:', error);
