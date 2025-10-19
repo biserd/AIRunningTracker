@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -105,7 +106,10 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
         throw error;
       }
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      // Invalidate the query cache to force a refetch
+      await queryClient.invalidateQueries({ queryKey: ['training-plan', userId] });
+      
       // Handle both nested and flat response structures
       const plan = data.trainingPlan?.trainingPlan || data.trainingPlan || data;
       setTrainingPlan(Array.isArray(plan) ? plan : []);
@@ -115,11 +119,16 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
         description: `Your ${selectedWeeks}-week personalized training plan is ready`,
       });
     },
-    onError: (error: any) => {
+    onError: async (error: any) => {
       setDialogOpen(false);
+      
+      // Even if there's a timeout error, the plan might have been generated
+      // Try to refetch the plan in case it was created in the background
+      await queryClient.invalidateQueries({ queryKey: ['training-plan', userId] });
+      
       toast({
-        title: "Generation failed",
-        description: error.message || "Failed to generate training plan. Please try again.",
+        title: "Generation may have timed out",
+        description: "The plan might still be ready. Refreshing...",
         variant: "destructive",
       });
     },
