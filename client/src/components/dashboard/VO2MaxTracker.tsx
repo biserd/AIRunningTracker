@@ -6,9 +6,13 @@ import { TrendingUp, TrendingDown, Minus, Heart, Target } from "lucide-react";
 
 interface VO2MaxData {
   current: number;
+  raceVO2Max: number;
+  trainingVO2Max: number;
   trend: 'improving' | 'stable' | 'declining';
   ageGradePercentile: number;
   comparison: string;
+  raceComparison: string;
+  trainingComparison: string;
   targetRange: { min: number; max: number };
 }
 
@@ -101,20 +105,60 @@ export default function VO2MaxTracker({ userId }: VO2MaxTrackerProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          {/* Current VO2 Max Display */}
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-2 mb-2">
-              <span className="text-4xl font-bold text-charcoal">{vo2Data.current}</span>
-              <span className="text-lg text-gray-600 mt-2">ml/kg/min</span>
-              <Badge className={getTrendColor(vo2Data.trend)}>
-                {getTrendIcon(vo2Data.trend)}
-                <span className="ml-1 capitalize">{vo2Data.trend}</span>
-              </Badge>
+          {/* Race vs Training VO2 Max Display */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Race VO2 Max */}
+            <div className="border-2 border-strava-orange bg-orange-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-orange-900">🏃‍♂️ Race VO2 Max</span>
+                <Badge variant="outline" className="border-orange-400 text-orange-700 text-xs">Peak</Badge>
+              </div>
+              <div className="flex items-baseline space-x-1 mb-1">
+                <span className="text-3xl font-bold text-orange-900">{vo2Data.raceVO2Max}</span>
+                <span className="text-sm text-orange-700">ml/kg/min</span>
+              </div>
+              <p className="text-xs text-orange-800">{vo2Data.raceComparison}</p>
+              <p className="text-xs text-orange-700 mt-2 italic">
+                Your maximum aerobic capacity measured from race performances
+              </p>
             </div>
-            
-            <Progress value={progressPercentage} className="h-3 mb-2" />
-            
-            <p className="text-sm text-gray-600">{vo2Data.comparison}</p>
+
+            {/* Training VO2 Max */}
+            <div className="border-2 border-performance-blue bg-blue-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-blue-900">🏃 Training VO2 Max</span>
+                <Badge variant="outline" className="border-blue-400 text-blue-700 text-xs">Typical</Badge>
+              </div>
+              <div className="flex items-baseline space-x-1 mb-1">
+                <span className="text-3xl font-bold text-blue-900">{vo2Data.trainingVO2Max}</span>
+                <span className="text-sm text-blue-700">ml/kg/min</span>
+              </div>
+              <p className="text-xs text-blue-800">{vo2Data.trainingComparison}</p>
+              <p className="text-xs text-blue-700 mt-2 italic">
+                Your typical aerobic fitness from regular training runs
+              </p>
+            </div>
+          </div>
+
+          {/* Explanation Box */}
+          <div className="bg-gradient-to-r from-gray-50 to-blue-50 border border-gray-200 rounded-lg p-4">
+            <h4 className="font-medium text-charcoal mb-2 flex items-center">
+              <span className="mr-2">💡</span>
+              Understanding Your VO2 Max Values
+            </h4>
+            <div className="text-sm text-gray-700 space-y-2">
+              <p>
+                <strong className="text-strava-orange">Race VO2 Max</strong> shows your peak aerobic capacity during race efforts. 
+                It's calculated from your best 5K, 10K, and race performances where you pushed your hardest.
+              </p>
+              <p>
+                <strong className="text-performance-blue">Training VO2 Max</strong> reflects your everyday training fitness. 
+                It's based on regular training runs and shows your sustainable aerobic capacity.
+              </p>
+              <p className="text-xs text-gray-600 pt-1 border-t border-gray-200">
+                A gap between these values is normal - you run faster in races than in training!
+              </p>
+            </div>
           </div>
 
           {/* Age Grade Percentile */}

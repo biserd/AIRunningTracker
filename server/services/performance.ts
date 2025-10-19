@@ -29,9 +29,13 @@ interface RunningEfficiencyData {
 
 interface VO2MaxData {
   current: number;
+  raceVO2Max: number;
+  trainingVO2Max: number;
   trend: 'improving' | 'stable' | 'declining';
   ageGradePercentile: number;
   comparison: string;
+  raceComparison: string;
+  trainingComparison: string;
   targetRange: { min: number; max: number };
 }
 
@@ -58,45 +62,100 @@ export class PerformanceAnalyticsService {
       return null;
     }
 
-    // Find best performances for different distances
-    const bestEfforts = this.findBestEfforts(runningActivities);
-    console.log(`Best efforts found: ${bestEfforts.length} efforts`);
-    let vo2Max = 0;
-
-    // Use Jack Daniels' formula: VO2max = 15.3 × (MileTime in minutes)^-1
-    for (const effort of bestEfforts) {
-      const timeInMinutes = effort.time / 60;
-      const distanceInMiles = effort.distance / 1609.34;
-      const distanceInKm = effort.distance / 1000;
-      const pacePerMile = timeInMinutes / distanceInMiles;
-      const pacePerKm = timeInMinutes / distanceInKm;
-      
-      console.log(`\n=== VO2 Calculation Debug ===`);
-      console.log(`Raw effort: ${effort.distance}m in ${effort.time}s`);
-      console.log(`Distance: ${distanceInKm.toFixed(2)} km / ${distanceInMiles.toFixed(2)} miles`);
-      console.log(`Time: ${timeInMinutes.toFixed(2)} minutes`);
-      console.log(`Pace: ${pacePerKm.toFixed(2)} min/km = ${pacePerMile.toFixed(2)} min/mile`);
-      
-      // Adjusted formula based on distance
-      const estimatedVO2 = this.calculateVO2FromPace(pacePerMile, distanceInMiles);
-      console.log(`Estimated VO2 for this effort: ${estimatedVO2.toFixed(2)}`);
-      console.log(`===========================\n`);
-      vo2Max = Math.max(vo2Max, estimatedVO2);
-    }
+    // Separate race efforts from training runs
+    const raceActivities = runningActivities.filter(a => this.isRaceEffort(a));
+    const trainingActivities = runningActivities.filter(a => !this.isRaceEffort(a));
     
-    console.log(`Final calculated VO2 Max: ${vo2Max.toFixed(2)}`)
+    console.log(`Race activities: ${raceActivities.length}, Training activities: ${trainingActivities.length}`);
+
+    // Calculate Race VO2 Max (from best race performances)
+    let raceVO2Max = 0;
+    if (raceActivities.length >= 1) {
+      const raceEfforts = this.findBestEfforts(raceActivities);
+      console.log(`\n=== RACE VO2 MAX CALCULATION ===`);
+      for (const effort of raceEfforts) {
+        const vo2 = this.calculateVO2ForEffort(effort);
+        raceVO2Max = Math.max(raceVO2Max, vo2);
+      }
+      console.log(`Race VO2 Max: ${raceVO2Max.toFixed(2)}\n`);
+    }
+
+    // Calculate Training VO2 Max (from best training runs)
+    let trainingVO2Max = 0;
+    if (trainingActivities.length >= 3) {
+      const trainingEfforts = this.findBestEfforts(trainingActivities);
+      console.log(`\n=== TRAINING VO2 MAX CALCULATION ===`);
+      for (const effort of trainingEfforts) {
+        const vo2 = this.calculateVO2ForEffort(effort);
+        trainingVO2Max = Math.max(trainingVO2Max, vo2);
+      }
+      console.log(`Training VO2 Max: ${trainingVO2Max.toFixed(2)}\n`);
+    }
+
+    // Use race VO2 if available, otherwise training VO2
+    const primaryVO2 = raceVO2Max > 0 ? raceVO2Max : trainingVO2Max;
+    
+    // If no race data, use training data for both
+    if (raceVO2Max === 0) {
+      raceVO2Max = trainingVO2Max;
+    }
+    // If no training data, use race data for both
+    if (trainingVO2Max === 0) {
+      trainingVO2Max = raceVO2Max;
+    }
+
+    console.log(`Final - Race VO2: ${raceVO2Max.toFixed(2)}, Training VO2: ${trainingVO2Max.toFixed(2)}, Primary: ${primaryVO2.toFixed(2)}`);
 
     // Calculate trend based on recent vs older activities
     const trend = this.calculateVO2Trend(runningActivities);
-    const ageGradePercentile = this.calculateAgeGradePercentile(vo2Max);
+    const ageGradePercentile = this.calculateAgeGradePercentile(primaryVO2);
     
     return {
-      current: Math.round(vo2Max * 10) / 10,
+      current: Math.round(primaryVO2 * 10) / 10,
+      raceVO2Max: Math.round(raceVO2Max * 10) / 10,
+      trainingVO2Max: Math.round(trainingVO2Max * 10) / 10,
       trend,
       ageGradePercentile,
-      comparison: this.getVO2Comparison(vo2Max),
-      targetRange: this.getTargetVO2Range(vo2Max)
+      comparison: this.getVO2Comparison(primaryVO2),
+      raceComparison: this.getVO2Comparison(raceVO2Max),
+      trainingComparison: this.getVO2Comparison(trainingVO2Max),
+      targetRange: this.getTargetVO2Range(primaryVO2)
     };
+  }
+
+  /**
+   * Helper to calculate VO2 for a single effort
+   */
+  private calculateVO2ForEffort(effort: { distance: number; time: number }): number {
+    const timeInMinutes = effort.time / 60;
+    const distanceInMiles = effort.distance / 1609.34;
+    const distanceInKm = effort.distance / 1000;
+    const pacePerMile = timeInMinutes / distanceInMiles;
+    const pacePerKm = timeInMinutes / distanceInKm;
+    
+    console.log(`  Effort: ${distanceInKm.toFixed(2)}km in ${timeInMinutes.toFixed(2)}min (${pacePerKm.toFixed(2)} min/km = ${pacePerMile.toFixed(2)} min/mile)`);
+    
+    const estimatedVO2 = this.calculateVO2FromPace(pacePerMile, distanceInMiles);
+    console.log(`  → VO2 = ${estimatedVO2.toFixed(2)}`);
+    return estimatedVO2;
+  }
+
+  /**
+   * Determine if an activity is likely a race effort based on name and characteristics
+   */
+  private isRaceEffort(activity: Activity): boolean {
+    const name = activity.name?.toLowerCase() || '';
+    
+    // Keywords that indicate race efforts
+    const raceKeywords = [
+      'race', 'marathon', 'half', '10k', '5k', '10 k', '5 k',
+      'parkrun', 'turkey trot', 'turkey day', 
+      'competition', 'championship', 'qualifier',
+      '🏃‍♂️', '🎖️', '🏅', '🥇', '🥈', '🥉', // race/medal emojis
+      'pr ', 'pb ', 'personal best', 'personal record'
+    ];
+    
+    return raceKeywords.some(keyword => name.includes(keyword));
   }
 
   /**
