@@ -170,15 +170,41 @@ export class MLService {
   /**
    * Generate personalized training plan using AI
    */
-  async generateTrainingPlan(userId: number, weeks: number = 4): Promise<TrainingPlan[]> {
+  async generateTrainingPlan(userId: number, params: {
+    weeks?: number;
+    goal?: string;
+    daysPerWeek?: number;
+    targetDistance?: number;
+    raceDate?: string;
+    fitnessLevel?: string;
+  }): Promise<TrainingPlan[]> {
     const user = await storage.getUser(userId);
     if (!user) throw new Error('User not found');
+
+    const {
+      weeks = 4,
+      goal = 'general',
+      daysPerWeek = 4,
+      targetDistance,
+      raceDate,
+      fitnessLevel = 'intermediate'
+    } = params;
 
     const activities = await storage.getActivitiesByUserId(userId, 50);
     const metrics = this.analyzeTrainingData(activities);
     
     const isMetric = user.unitPreference !== "miles";
     const unit = isMetric ? 'km' : 'mi';
+    
+    // Map goal to readable format
+    const goalMap: Record<string, string> = {
+      '5k': '5K race',
+      '10k': '10K race',
+      'half-marathon': 'Half Marathon',
+      'marathon': 'Marathon',
+      'general': 'General Fitness'
+    };
+    const readableGoal = goalMap[goal] || 'General Fitness';
     
     // Convert weekly mileage to user's preferred unit
     const currentWeeklyMileage = metrics.weeklyMileage.slice(-2).reduce((a, b) => a + b, 0) / 2;
@@ -231,7 +257,11 @@ export class MLService {
     }
 
     const prompt = `
-Create a ${weeks}-week progressive training plan for a runner with these characteristics:
+Create a ${weeks}-week progressive training plan for a runner with these specific goals and characteristics:
+
+TRAINING GOAL: ${readableGoal}${raceDate ? ` (Race date: ${raceDate})` : ''}
+TRAINING FREQUENCY: ${daysPerWeek} days per week
+FITNESS LEVEL: ${fitnessLevel.charAt(0).toUpperCase() + fitnessLevel.slice(1)}${targetDistance ? `\nTARGET WEEKLY DISTANCE: ${targetDistance} ${unit}` : ''}
 
 Current Fitness Level:
 - Average weekly mileage: ${weeklyMileageConverted.toFixed(1)} ${unit}
@@ -263,12 +293,15 @@ CRITICAL INSTRUCTIONS FOR PACE RECOMMENDATIONS:
 7. Use the race predictions above to understand their realistic race paces
 
 Guidelines:
+- Plan MUST have exactly ${daysPerWeek} running days per week${targetDistance ? ` and build toward ${targetDistance} ${unit} weekly volume` : ''}
+- Structure the plan specifically for ${readableGoal} training
 - Increase weekly mileage by 10% each week maximum
 - Include easy runs (80%), tempo runs (15%), and speed work (5%)
-- Schedule rest days appropriately (at least 1-2 per week)
+- Schedule rest days appropriately (${7 - daysPerWeek} rest days per week)
+- Adjust intensity based on ${fitnessLevel} fitness level
 - ALL pace targets must be achievable based on their current fitness level shown above
 - Focus on gradual progression and injury prevention
-- Consider their current fitness indicators (VO2 max, runner score) when setting difficulty
+- Consider their current fitness indicators (VO2 max, runner score) when setting difficulty${raceDate ? `\n- Taper appropriately in final weeks before race date` : ''}
 
 Return a JSON array with this structure:
 [{
@@ -284,7 +317,7 @@ Return a JSON array with this structure:
   ]
 }]
 
-Remember: Create a realistic, achievable plan based on their ACTUAL current paces, not idealized paces.`;
+Remember: Create a realistic, achievable plan based on their ACTUAL current paces and specific ${readableGoal} training goal, not idealized paces.`;
 
     try {
       const response = await openai.chat.completions.create({
@@ -292,7 +325,7 @@ Remember: Create a realistic, achievable plan based on their ACTUAL current pace
         messages: [
           {
             role: "system", 
-            content: "You are an expert running coach who creates personalized training plans based on each runner's actual current fitness level. You provide realistic, achievable pace recommendations that match their demonstrated capabilities, not idealized or aspirational paces. Always return valid JSON."
+            content: `You are an expert running coach who creates goal-specific, personalized training plans. You tailor plans based on the runner's specific training goal (${readableGoal}), current fitness level (${fitnessLevel}), and desired training frequency (${daysPerWeek} days/week). You provide realistic, achievable pace recommendations that match their demonstrated capabilities, not idealized or aspirational paces. Always return valid JSON.`
           },
           {
             role: "user",

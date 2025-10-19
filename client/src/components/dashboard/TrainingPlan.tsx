@@ -3,7 +3,11 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, PlayCircle, Clock, MapPin } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { CalendarDays, PlayCircle, Clock, MapPin, Target } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Workout {
@@ -23,10 +27,27 @@ interface TrainingPlanProps {
   userId: number;
 }
 
+interface TrainingPlanParams {
+  weeks: number;
+  goal: string;
+  daysPerWeek: number;
+  targetDistance?: number;
+  raceDate?: string;
+  fitnessLevel: string;
+}
+
 export default function TrainingPlan({ userId }: TrainingPlanProps) {
   const [selectedWeeks, setSelectedWeeks] = useState(4);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
   const [trainingPlan, setTrainingPlan] = useState<TrainingWeek[]>([]);
+  
+  // Training plan configuration state
+  const [goal, setGoal] = useState("general");
+  const [daysPerWeek, setDaysPerWeek] = useState(4);
+  const [targetDistance, setTargetDistance] = useState("");
+  const [raceDate, setRaceDate] = useState("");
+  const [fitnessLevel, setFitnessLevel] = useState("intermediate");
 
   // Load existing training plan
   const { data: savedPlan } = useQuery({
@@ -47,19 +68,20 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
   }, [savedPlan]);
 
   const generatePlanMutation = useMutation({
-    mutationFn: (weeks: number) => 
+    mutationFn: (params: TrainingPlanParams) => 
       fetch(`/api/ml/training-plan/${userId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ weeks })
+        body: JSON.stringify(params)
       }).then(res => res.json()),
     onSuccess: (data) => {
       // Handle both nested and flat response structures
       const plan = data.trainingPlan?.trainingPlan || data.trainingPlan || data;
       setTrainingPlan(Array.isArray(plan) ? plan : []);
+      setDialogOpen(false);
       toast({
         title: "Training plan generated",
-        description: `Your ${selectedWeeks}-week personalized plan is ready`,
+        description: `Your ${selectedWeeks}-week personalized training plan is ready`,
       });
     },
     onError: (error: any) => {
@@ -90,20 +112,154 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
     }
   };
 
+  const handleOpenDialog = () => {
+    setDialogOpen(true);
+  };
+
   const handleGeneratePlan = () => {
-    generatePlanMutation.mutate(selectedWeeks);
+    const params: TrainingPlanParams = {
+      weeks: selectedWeeks,
+      goal,
+      daysPerWeek,
+      targetDistance: targetDistance ? parseFloat(targetDistance) : undefined,
+      raceDate: raceDate || undefined,
+      fitnessLevel,
+    };
+    generatePlanMutation.mutate(params);
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-xl font-semibold text-charcoal flex items-center">
-          <CalendarDays className="mr-2 h-5 w-5 text-strava-orange" />
-          AI Training Plan
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {trainingPlan.length === 0 ? (
+    <>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Target className="mr-2 h-5 w-5 text-strava-orange" />
+              Configure Your Training Plan
+            </DialogTitle>
+            <DialogDescription>
+              Tell us about your training goals to get a personalized plan
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="goal">Training Goal</Label>
+              <Select value={goal} onValueChange={setGoal}>
+                <SelectTrigger id="goal" data-testid="select-goal">
+                  <SelectValue placeholder="Select your goal" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5k">5K Race</SelectItem>
+                  <SelectItem value="10k">10K Race</SelectItem>
+                  <SelectItem value="half-marathon">Half Marathon</SelectItem>
+                  <SelectItem value="marathon">Marathon</SelectItem>
+                  <SelectItem value="general">General Fitness</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="weeks">Plan Duration</Label>
+              <div className="grid grid-cols-4 gap-2">
+                {[4, 6, 8, 12].map(weeks => (
+                  <Button
+                    key={weeks}
+                    variant={selectedWeeks === weeks ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedWeeks(weeks)}
+                    className={selectedWeeks === weeks ? "bg-strava-orange hover:bg-strava-orange/90" : ""}
+                    data-testid={`button-weeks-${weeks}`}
+                  >
+                    {weeks}w
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="days">Training Days per Week</Label>
+              <Select value={daysPerWeek.toString()} onValueChange={(v) => setDaysPerWeek(parseInt(v))}>
+                <SelectTrigger id="days" data-testid="select-days">
+                  <SelectValue placeholder="Select days" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="3">3 days</SelectItem>
+                  <SelectItem value="4">4 days</SelectItem>
+                  <SelectItem value="5">5 days</SelectItem>
+                  <SelectItem value="6">6 days</SelectItem>
+                  <SelectItem value="7">7 days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="fitness">Current Fitness Level</Label>
+              <Select value={fitnessLevel} onValueChange={setFitnessLevel}>
+                <SelectTrigger id="fitness" data-testid="select-fitness">
+                  <SelectValue placeholder="Select fitness level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="beginner">Beginner</SelectItem>
+                  <SelectItem value="intermediate">Intermediate</SelectItem>
+                  <SelectItem value="advanced">Advanced</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="distance">Target Weekly Distance (optional)</Label>
+              <Input 
+                id="distance"
+                type="number" 
+                placeholder="e.g., 30 miles or km"
+                value={targetDistance}
+                onChange={(e) => setTargetDistance(e.target.value)}
+                data-testid="input-target-distance"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="raceDate">Race Date (optional)</Label>
+              <Input 
+                id="raceDate"
+                type="date" 
+                value={raceDate}
+                onChange={(e) => setRaceDate(e.target.value)}
+                data-testid="input-race-date"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setDialogOpen(false)}
+              data-testid="button-cancel"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleGeneratePlan}
+              disabled={generatePlanMutation.isPending}
+              className="bg-strava-orange hover:bg-strava-orange/90"
+              data-testid="button-submit-plan"
+            >
+              {generatePlanMutation.isPending ? 'Generating...' : 'Generate Plan'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold text-charcoal flex items-center">
+            <CalendarDays className="mr-2 h-5 w-5 text-strava-orange" />
+            AI Training Plan
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {trainingPlan.length === 0 ? (
           <div className="text-center py-8">
             <CalendarDays className="mx-auto h-12 w-12 text-gray-300 mb-4" />
             <p className="text-gray-600 mb-6">Generate a personalized training plan based on your running data</p>
@@ -118,6 +274,7 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
                     size="sm"
                     onClick={() => setSelectedWeeks(weeks)}
                     className={selectedWeeks === weeks ? "bg-strava-orange hover:bg-strava-orange/90" : ""}
+                    data-testid={`button-duration-${weeks}`}
                   >
                     {weeks} weeks
                   </Button>
@@ -126,12 +283,13 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
             </div>
 
             <Button 
-              onClick={handleGeneratePlan}
+              onClick={handleOpenDialog}
               disabled={generatePlanMutation.isPending}
               className="bg-strava-orange hover:bg-strava-orange/90 text-white"
+              data-testid="button-generate-plan"
             >
               <PlayCircle className="mr-2 h-4 w-4" />
-              {generatePlanMutation.isPending ? 'Generating...' : 'Generate Plan'}
+              Generate Plan
             </Button>
           </div>
         ) : (
@@ -143,8 +301,9 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={handleGeneratePlan}
+                onClick={handleOpenDialog}
                 disabled={generatePlanMutation.isPending}
+                data-testid="button-regenerate-plan"
               >
                 Regenerate
               </Button>
@@ -191,5 +350,6 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
         )}
       </CardContent>
     </Card>
+    </>
   );
 }

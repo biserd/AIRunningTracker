@@ -1362,15 +1362,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ml/training-plan/:userId", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
-      const { weeks = 4 } = req.body;
+      const { 
+        weeks = 4, 
+        goal = 'general', 
+        daysPerWeek = 4, 
+        targetDistance, 
+        raceDate,
+        fitnessLevel = 'intermediate'
+      } = req.body;
       
       if (isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
 
-      const trainingPlan = await mlService.generateTrainingPlan(userId, weeks);
+      const params = {
+        weeks,
+        goal,
+        daysPerWeek,
+        targetDistance,
+        raceDate,
+        fitnessLevel
+      };
+
+      const trainingPlan = await mlService.generateTrainingPlan(userId, params);
       
-      // Save the training plan to database
+      // Save the training plan to database with metadata
       await storage.createTrainingPlan({
         userId,
         weeks,
