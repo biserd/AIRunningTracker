@@ -79,12 +79,32 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
   }, [savedPlan]);
 
   const generatePlanMutation = useMutation({
-    mutationFn: (params: TrainingPlanParams) => 
-      fetch(`/api/ml/training-plan/${userId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params)
-      }).then(res => res.json()),
+    mutationFn: async (params: TrainingPlanParams) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
+      try {
+        const response = await fetch(`/api/ml/training-plan/${userId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(params),
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`);
+        }
+        
+        return await response.json();
+      } catch (error: any) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('Request timeout - GPT-5 is taking too long. Please try again.');
+        }
+        throw error;
+      }
+    },
     onSuccess: (data) => {
       // Handle both nested and flat response structures
       const plan = data.trainingPlan?.trainingPlan || data.trainingPlan || data;
@@ -96,9 +116,10 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
       });
     },
     onError: (error: any) => {
+      setDialogOpen(false);
       toast({
         title: "Generation failed",
-        description: error.message || "Failed to generate training plan",
+        description: error.message || "Failed to generate training plan. Please try again.",
         variant: "destructive",
       });
     },
