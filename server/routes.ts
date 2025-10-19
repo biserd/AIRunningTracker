@@ -8,7 +8,7 @@ import { performanceService } from "./services/performance";
 import { authService } from "./services/auth";
 import { emailService } from "./services/email";
 import { runnerScoreService } from "./services/runnerScore";
-import { insertUserSchema, loginSchema, registerSchema, insertEmailWaitlistSchema, insertFeedbackSchema, type Activity } from "@shared/schema";
+import { insertUserSchema, loginSchema, registerSchema, insertEmailWaitlistSchema, insertFeedbackSchema, insertGoalSchema, type Activity } from "@shared/schema";
 import { z } from "zod";
 import Stripe from "stripe";
 
@@ -171,6 +171,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Feedback error:', error);
       res.status(500).json({ message: "Failed to submit feedback" });
+    }
+  });
+
+  // Goal endpoints
+  app.get("/api/goals/:userId", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { status } = req.query;
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const goals = await storage.getGoalsByUserId(userId, status as string);
+      res.json(goals);
+    } catch (error: any) {
+      console.error('Get goals error:', error);
+      res.status(500).json({ message: "Failed to get goals" });
+    }
+  });
+
+  app.post("/api/goals", authenticateJWT, async (req: any, res) => {
+    try {
+      const goalData = insertGoalSchema.parse(req.body);
+      const goal = await storage.createGoal(goalData);
+      res.json(goal);
+    } catch (error: any) {
+      console.error('Create goal error:', error);
+      res.status(400).json({ message: error.message || "Failed to create goal" });
+    }
+  });
+
+  app.patch("/api/goals/:id/complete", authenticateJWT, async (req: any, res) => {
+    try {
+      const goalId = parseInt(req.params.id);
+      
+      if (isNaN(goalId)) {
+        return res.status(400).json({ message: "Invalid goal ID" });
+      }
+      
+      const goal = await storage.completeGoal(goalId);
+      if (!goal) {
+        return res.status(404).json({ message: "Goal not found" });
+      }
+      
+      res.json(goal);
+    } catch (error: any) {
+      console.error('Complete goal error:', error);
+      res.status(500).json({ message: "Failed to complete goal" });
+    }
+  });
+
+  app.delete("/api/goals/:id", authenticateJWT, async (req: any, res) => {
+    try {
+      const goalId = parseInt(req.params.id);
+      
+      if (isNaN(goalId)) {
+        return res.status(400).json({ message: "Invalid goal ID" });
+      }
+      
+      await storage.deleteGoal(goalId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Delete goal error:', error);
+      res.status(500).json({ message: "Failed to delete goal" });
     }
   });
 
