@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import { storage } from "../storage";
 import type { Activity } from "@shared/schema";
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+// Using GPT-5 (released August 2025) for enhanced AI insights generation
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY || "default_key" 
 });
@@ -140,7 +140,7 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
 
     try {
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5",
         messages: [
           {
             role: "system",

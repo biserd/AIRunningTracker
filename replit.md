@@ -63,7 +63,7 @@ When adding new features or making changes:
 - **Database**: PostgreSQL with Drizzle ORM
 - **Authentication**: JWT-based with bcrypt password hashing
 - **API Integration**: Strava API for activity synchronization
-- **AI Services**: OpenAI GPT-4o for insights generation
+- **AI Services**: OpenAI GPT-5 for insights and training plan generation
 
 ## Key Components
 
@@ -136,7 +136,7 @@ The application uses a PostgreSQL database with the following main entities:
 
 ### Core Services
 - **Neon Database**: PostgreSQL hosting with serverless architecture
-- **OpenAI API**: GPT-4o for AI-powered insights
+- **OpenAI API**: GPT-5 for AI-powered insights and training plans
 - **Strava API**: Activity data synchronization
 - **Email Services**: Multiple SMTP options (Gmail, Outlook, Yahoo)
 
