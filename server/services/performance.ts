@@ -268,14 +268,19 @@ export class PerformanceAnalyticsService {
 
   private calculateVO2FromPace(pacePerMile: number, distanceInMiles: number): number {
     // Realistic VO2 max calculation based on Jack Daniels' running formula
-    // For recreational marathoners, use conservative estimates
+    // For recreational to elite runners
     
     let vo2Result: number;
     let tier: string;
     
-    if (pacePerMile >= 10) {
-      // 10+ min/mile pace - recreational runner
-      tier = "Recreational (10+ min/mile)";
+    if (pacePerMile > 12) {
+      // Very slow pace (>12 min/mile) - beginner/recovery runs
+      // Use minimum VO2 max to avoid negative values
+      tier = "Beginner (>12 min/mile)";
+      vo2Result = Math.max(25, 35 - (pacePerMile - 12) * 1.5);
+    } else if (pacePerMile >= 10) {
+      // 10-12 min/mile pace - recreational runner
+      tier = "Recreational (10-12 min/mile)";
       vo2Result = 35 + (12 - pacePerMile) * 2;
     } else if (pacePerMile >= 8.5) {
       // 8.5-10 min/mile pace - trained recreational runner  
