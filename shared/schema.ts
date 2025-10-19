@@ -103,6 +103,20 @@ export const feedback = pgTable("feedback", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const goals = pgTable("goals", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  type: text("type").notNull(), // 'speed', 'endurance', 'distance', 'hills', etc.
+  targetValue: text("target_value"), // What they're aiming for (e.g., "Complete 3 speed workouts")
+  currentProgress: real("current_progress").default(0), // Current progress toward goal
+  status: text("status", { enum: ["active", "completed"] }).default("active"),
+  source: text("source", { enum: ["recommendation", "manual"] }).default("recommendation"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   stravaConnected: true,
@@ -135,6 +149,13 @@ export const insertFeedbackSchema = createInsertSchema(feedback).omit({
   status: true,
 });
 
+export const insertGoalSchema = createInsertSchema(goals).omit({
+  id: true,
+  createdAt: true,
+  completedAt: true,
+  currentProgress: true,
+});
+
 // Login schema for authentication
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -161,5 +182,7 @@ export type InsertEmailWaitlist = z.infer<typeof insertEmailWaitlistSchema>;
 export type EmailWaitlist = typeof emailWaitlist.$inferSelect;
 export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 export type Feedback = typeof feedback.$inferSelect;
+export type InsertGoal = z.infer<typeof insertGoalSchema>;
+export type Goal = typeof goals.$inferSelect;
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;
