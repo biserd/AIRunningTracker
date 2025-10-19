@@ -1,6 +1,8 @@
 import { storage } from "../storage";
 import { Activity } from "@shared/schema";
 import OpenAI from "openai";
+import { PerformanceAnalyticsService } from "./performance";
+import { RunnerScoreService } from "./runnerScore";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -240,10 +242,8 @@ export class MLService {
     const speedPaceMin = fastestPace * 0.95; // 5% faster than fastest
     const speedPaceMax = fastestPace; // At fastest
     
-    // Import performance and runner score services
-    const { PerformanceService } = require('./performance');
-    const { RunnerScoreService } = require('./runnerScore');
-    const performanceService = new PerformanceService();
+    // Instantiate performance and runner score services
+    const performanceService = new PerformanceAnalyticsService();
     const runnerScoreService = new RunnerScoreService();
     
     // Get VO2 max and runner score data
