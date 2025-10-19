@@ -1255,6 +1255,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const result = await stravaService.syncActivitiesForUser(userId, maxActivities);
       
+      // Auto-generate AI insights after sync
+      try {
+        await aiService.generateInsights(userId);
+        console.log('AI insights regenerated after manual sync');
+      } catch (error) {
+        console.error('Error generating AI insights after sync:', error);
+      }
+      
       res.json({
         success: true,
         syncedCount: result.syncedCount,
