@@ -23,7 +23,7 @@ export default function ActivitiesPage() {
   const { user, isLoading: authLoading } = useAuth();
 
   const { data: activities, isLoading } = useQuery<ActivityData[]>({
-    queryKey: ['/api/activities', user?.id],
+    queryKey: ['/api/activities'],
     enabled: !!user,
   });
 
