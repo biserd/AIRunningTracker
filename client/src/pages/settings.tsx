@@ -204,10 +204,16 @@ function SettingsPageContent() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm text-gray-600 mb-2">
                   By default, we import your last 200 activities when you connect Strava. 
                   Use this button to fetch more historical data if you want your complete running history.
                 </p>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-amber-800">
+                    ⏱️ <strong>Please be patient:</strong> Syncing activities can take over a minute, especially if you have many activities. 
+                    The page will update automatically when complete.
+                  </p>
+                </div>
                 <Button 
                   onClick={handleSyncActivities}
                   disabled={syncActivitiesMutation.isPending}

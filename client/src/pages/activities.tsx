@@ -2,9 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import AppHeader from "@/components/AppHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, Calendar, Clock, TrendingUp, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Activity, Calendar, Clock, TrendingUp, Zap, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { Link } from "wouter";
 import { StravaPoweredBy } from "@/components/StravaConnect";
+import { useState } from "react";
 
 interface ActivityData {
   id: number;
@@ -19,11 +23,26 @@ interface ActivityData {
   averageHeartrate?: number;
 }
 
+interface ActivitiesResponse {
+  activities: ActivityData[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 export default function ActivitiesPage() {
   const { user, isLoading: authLoading } = useAuth();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [minDistance, setMinDistance] = useState("");
+  const [maxDistance, setMaxDistance] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
 
-  const { data: activities, isLoading } = useQuery<ActivityData[]>({
-    queryKey: ['/api/activities'],
+  const { data: response, isLoading } = useQuery<ActivitiesResponse>({
+    queryKey: ['/api/activities', page, pageSize, minDistance, maxDistance, startDate, endDate],
     enabled: !!user,
   });
 
@@ -33,6 +52,8 @@ export default function ActivitiesPage() {
   });
 
   const unitPreference = dashboardData?.user?.unitPreference || 'km';
+  const activities = response?.activities || [];
+  const totalPages = response?.totalPages || 1;
 
   const formatDistance = (meters: number) => {
     if (unitPreference === 'miles') {
@@ -73,6 +94,16 @@ export default function ActivitiesPage() {
     });
   };
 
+  const handleClearFilters = () => {
+    setMinDistance("");
+    setMaxDistance("");
+    setStartDate("");
+    setEndDate("");
+    setPage(1);
+  };
+
+  const hasActiveFilters = minDistance || maxDistance || startDate || endDate;
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -95,8 +126,108 @@ export default function ActivitiesPage() {
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">All Activities</h1>
-          <p className="text-gray-600">Complete history of your running activities</p>
+          <p className="text-gray-600">
+            {response?.total ? `${response.total} total activities` : 'Complete history of your running activities'}
+          </p>
         </div>
+
+        {/* Filters */}
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Filter className="h-5 w-5" />
+                Filters
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                data-testid="toggle-filters"
+              >
+                {showFilters ? 'Hide' : 'Show'}
+              </Button>
+            </div>
+          </CardHeader>
+          {showFilters && (
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                    Min Distance ({unitPreference === 'miles' ? 'mi' : 'km'})
+                  </label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={minDistance}
+                    onChange={(e) => {
+                      setMinDistance(e.target.value);
+                      setPage(1);
+                    }}
+                    placeholder="0"
+                    data-testid="input-min-distance"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                    Max Distance ({unitPreference === 'miles' ? 'mi' : 'km'})
+                  </label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={maxDistance}
+                    onChange={(e) => {
+                      setMaxDistance(e.target.value);
+                      setPage(1);
+                    }}
+                    placeholder="100"
+                    data-testid="input-max-distance"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                    Start Date
+                  </label>
+                  <Input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => {
+                      setStartDate(e.target.value);
+                      setPage(1);
+                    }}
+                    data-testid="input-start-date"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                    End Date
+                  </label>
+                  <Input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => {
+                      setEndDate(e.target.value);
+                      setPage(1);
+                    }}
+                    data-testid="input-end-date"
+                  />
+                </div>
+              </div>
+              {hasActiveFilters && (
+                <div className="mt-4 flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleClearFilters}
+                    data-testid="button-clear-filters"
+                  >
+                    Clear Filters
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          )}
+        </Card>
 
         {isLoading ? (
           <div className="text-center py-12">
@@ -108,8 +239,24 @@ export default function ActivitiesPage() {
             <CardContent className="py-12">
               <div className="text-center">
                 <Activity className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No activities yet</h3>
-                <p className="text-gray-500">Connect to Strava and sync your activities to see them here.</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  {hasActiveFilters ? 'No activities match your filters' : 'No activities yet'}
+                </h3>
+                <p className="text-gray-500">
+                  {hasActiveFilters 
+                    ? 'Try adjusting your filter criteria.' 
+                    : 'Connect to Strava and sync your activities to see them here.'}
+                </p>
+                {hasActiveFilters && (
+                  <Button
+                    variant="outline"
+                    className="mt-4"
+                    onClick={handleClearFilters}
+                    data-testid="button-clear-filters-empty"
+                  >
+                    Clear Filters
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -117,10 +264,34 @@ export default function ActivitiesPage() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  {activities.length} {activities.length === 1 ? 'Activity' : 'Activities'}
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-5 w-5" />
+                    {hasActiveFilters 
+                      ? `${activities.length} Filtered Activities (${response?.total} total)`
+                      : `${activities.length} Activities`}
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Show</span>
+                    <Select
+                      value={pageSize.toString()}
+                      onValueChange={(value) => {
+                        setPageSize(Number(value));
+                        setPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="w-20" data-testid="select-page-size">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -194,6 +365,37 @@ export default function ActivitiesPage() {
                     </Link>
                   ))}
                 </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
+                      Page {page} of {totalPages}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage(Math.max(1, page - 1))}
+                        disabled={page === 1}
+                        data-testid="button-prev-page"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage(Math.min(totalPages, page + 1))}
+                        disabled={page === totalPages}
+                        data-testid="button-next-page"
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="mt-6 pt-4 border-t border-gray-100 flex justify-center">
                   <StravaPoweredBy variant="orange" size="sm" />

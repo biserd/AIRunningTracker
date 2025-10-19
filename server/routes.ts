@@ -821,14 +821,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all activities for a user
+  // Get all activities for a user with pagination and filtering
   app.get("/api/activities", authenticateJWT, async (req: any, res) => {
     try {
       const userId = req.user!.id;
-      console.log(`Fetching activities for user ${userId}`);
-      const activities = await storage.getActivitiesByUserId(userId);
-      console.log(`Found ${activities.length} activities for user ${userId}`);
-      res.json(activities);
+      const page = parseInt(req.query.page as string) || 1;
+      const pageSize = parseInt(req.query.pageSize as string) || 25;
+      const minDistance = req.query.minDistance ? parseFloat(req.query.minDistance as string) : undefined;
+      const maxDistance = req.query.maxDistance ? parseFloat(req.query.maxDistance as string) : undefined;
+      const startDate = req.query.startDate as string | undefined;
+      const endDate = req.query.endDate as string | undefined;
+
+      // Get user for unit preference
+      const user = await storage.getUser(userId);
+      const unitPreference = user?.unitPreference || 'km';
+
+      // Convert distance filters to meters based on unit preference
+      let minDistanceMeters = minDistance;
+      let maxDistanceMeters = maxDistance;
+      
+      if (minDistance) {
+        minDistanceMeters = unitPreference === 'miles' ? minDistance * 1609.34 : minDistance * 1000;
+      }
+      if (maxDistance) {
+        maxDistanceMeters = unitPreference === 'miles' ? maxDistance * 1609.34 : maxDistance * 1000;
+      }
+
+      const result = await storage.getActivitiesByUserIdPaginated(userId, {
+        page,
+        pageSize,
+        minDistance: minDistanceMeters,
+        maxDistance: maxDistanceMeters,
+        startDate,
+        endDate,
+      });
+
+      res.json(result);
     } catch (error: any) {
       console.error('Get activities error:', error);
       res.status(500).json({ message: error.message || "Failed to fetch activities" });

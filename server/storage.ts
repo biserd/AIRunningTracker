@@ -17,6 +17,20 @@ export interface IStorage {
   
   createActivity(activity: InsertActivity): Promise<Activity>;
   getActivitiesByUserId(userId: number, limit?: number): Promise<Activity[]>;
+  getActivitiesByUserIdPaginated(userId: number, options: {
+    page: number;
+    pageSize: number;
+    minDistance?: number;
+    maxDistance?: number;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<{
+    activities: Activity[];
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  }>;
   getActivityById(activityId: number): Promise<Activity | undefined>;
   getActivityByStravaId(stravaId: string): Promise<Activity | undefined>;
   getActivityByStravaIdAndUser(stravaId: string, userId: number): Promise<Activity | undefined>;
@@ -178,6 +192,69 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(activities.startDate))
       .limit(limit);
     return userActivities;
+  }
+
+  async getActivitiesByUserIdPaginated(userId: number, options: {
+    page: number;
+    pageSize: number;
+    minDistance?: number;
+    maxDistance?: number;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<{
+    activities: Activity[];
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  }> {
+    const { page, pageSize, minDistance, maxDistance, startDate, endDate } = options;
+    
+    // Build where conditions
+    const conditions = [eq(activities.userId, userId)];
+    
+    if (minDistance !== undefined) {
+      conditions.push(gte(activities.distance, minDistance));
+    }
+    if (maxDistance !== undefined) {
+      conditions.push(sql`${activities.distance} <= ${maxDistance}`);
+    }
+    if (startDate) {
+      conditions.push(gte(activities.startDate, startDate));
+    }
+    if (endDate) {
+      // Add one day to endDate to include activities on that day
+      const endDateTime = new Date(endDate);
+      endDateTime.setDate(endDateTime.getDate() + 1);
+      conditions.push(lt(activities.startDate, endDateTime.toISOString()));
+    }
+
+    // Get total count
+    const [countResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(activities)
+      .where(and(...conditions));
+    
+    const total = countResult?.count || 0;
+    const totalPages = Math.ceil(total / pageSize);
+
+    // Get paginated activities
+    const offset = (page - 1) * pageSize;
+    const userActivities = await db
+      .select()
+      .from(activities)
+      .where(and(...conditions))
+      .orderBy(desc(activities.startDate))
+      .limit(pageSize)
+      .offset(offset);
+
+    return {
+      activities: userActivities,
+      total,
+      page,
+      pageSize,
+      totalPages,
+    };
   }
 
   async getActivityById(activityId: number): Promise<Activity | undefined> {
