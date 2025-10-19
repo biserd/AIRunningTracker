@@ -338,7 +338,8 @@ Remember: Create a realistic, achievable plan based on their ACTUAL current pace
       });
 
       const result = JSON.parse(response.choices[0].message.content || '{"weeks": []}');
-      return result.weeks || result;
+      // GPT-5 may return different structures: {plan: []}, {weeks: []}, or direct array
+      return result.plan || result.weeks || result;
 
     } catch (error) {
       console.error('Training plan generation error:', error);
