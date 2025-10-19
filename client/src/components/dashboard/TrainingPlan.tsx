@@ -82,7 +82,7 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
   const generatePlanMutation = useMutation({
     mutationFn: async (params: TrainingPlanParams) => {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout for GPT-5
+      const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout for GPT-5 (takes ~45-50 seconds)
       
       try {
         const response = await fetch(`/api/ml/training-plan/${userId}`, {
