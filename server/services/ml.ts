@@ -323,7 +323,7 @@ Remember: Create a realistic, achievable plan based on their ACTUAL current pace
 
     try {
       const response = await openai.chat.completions.create({
-        model: "gpt-5",
+        model: "gpt-5-mini",
         messages: [
           {
             role: "system", 
