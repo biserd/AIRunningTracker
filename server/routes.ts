@@ -1567,7 +1567,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const efficiencyData = await performanceService.analyzeRunningEfficiency(userId);
-      res.json(efficiencyData);
+      
+      // If no data available, return null (user will see fallback UI)
+      if (!efficiencyData) {
+        return res.json(null);
+      }
+      
+      // Get user's unit preference
+      const user = await storage.getUser(userId);
+      const unitPreference = user?.unitPreference || 'km';
+      
+      res.json({
+        ...efficiencyData,
+        unitPreference
+      });
     } catch (error: any) {
       console.error('Running efficiency analysis error:', error);
       res.status(500).json({ message: error.message || "Failed to analyze running efficiency" });

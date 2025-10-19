@@ -3,6 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Zap, Clock, Footprints, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
+import { 
+  metersToFeet, 
+  cmToInches, 
+  type UnitSystem 
+} from "@shared/utils";
 
 interface RunningEfficiencyData {
   averageCadence: number;
@@ -11,6 +16,7 @@ interface RunningEfficiencyData {
   groundContactTime: number;
   efficiency: number;
   recommendations: string[];
+  unitPreference: UnitSystem;
 }
 
 interface RunningEfficiencyProps {
@@ -87,6 +93,18 @@ export default function RunningEfficiency({ userId }: RunningEfficiencyProps) {
   const cadenceStatus = getCadenceStatus(efficiencyData.averageCadence);
   const CadenceIcon = cadenceStatus.icon;
 
+  // Convert units based on preference
+  const isImperial = efficiencyData.unitPreference === 'miles';
+  const strideValue = isImperial 
+    ? metersToFeet(efficiencyData.strideLength).toFixed(2)
+    : efficiencyData.strideLength.toFixed(2);
+  const strideUnit = isImperial ? 'ft' : 'm';
+  
+  const vertOscValue = isImperial
+    ? cmToInches(efficiencyData.verticalOscillation).toFixed(2)
+    : efficiencyData.verticalOscillation.toFixed(1);
+  const vertOscUnit = isImperial ? 'in' : 'cm';
+
   return (
     <Card>
       <CardHeader>
@@ -136,8 +154,8 @@ export default function RunningEfficiency({ userId }: RunningEfficiencyProps) {
                 <span className="font-medium text-charcoal">Stride Length</span>
               </div>
               <div className="flex items-baseline space-x-1">
-                <span className="text-2xl font-bold text-charcoal">{efficiencyData.strideLength}</span>
-                <span className="text-sm text-gray-600">m</span>
+                <span className="text-2xl font-bold text-charcoal">{strideValue}</span>
+                <span className="text-sm text-gray-600">{strideUnit}</span>
               </div>
               <p className="text-xs text-gray-600">Per stride distance</p>
             </div>
@@ -149,8 +167,8 @@ export default function RunningEfficiency({ userId }: RunningEfficiencyProps) {
                 <span className="font-medium text-charcoal">Vert. Oscillation</span>
               </div>
               <div className="flex items-baseline space-x-1">
-                <span className="text-2xl font-bold text-charcoal">{efficiencyData.verticalOscillation}</span>
-                <span className="text-sm text-gray-600">cm</span>
+                <span className="text-2xl font-bold text-charcoal">{vertOscValue}</span>
+                <span className="text-sm text-gray-600">{vertOscUnit}</span>
               </div>
               <p className="text-xs text-gray-600">Lower is better</p>
             </div>
@@ -198,13 +216,17 @@ export default function RunningEfficiency({ userId }: RunningEfficiencyProps) {
                 </div>
                 <div className="flex items-center space-x-2">
                   <TrendingUp className="h-3 w-3" />
-                  <span><strong>Stride Length:</strong> 1.0-1.3m</span>
+                  <span>
+                    <strong>Stride Length:</strong> {isImperial ? '3.3-4.3 ft' : '1.0-1.3 m'}
+                  </span>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <TrendingUp className="h-3 w-3 transform rotate-90" />
-                  <span><strong>Vert. Oscillation:</strong> &lt;9cm</span>
+                  <span>
+                    <strong>Vert. Oscillation:</strong> {isImperial ? '<3.5 in' : '<9 cm'}
+                  </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Clock className="h-3 w-3" />

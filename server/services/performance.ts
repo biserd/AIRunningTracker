@@ -299,7 +299,8 @@ export class PerformanceAnalyticsService {
     const estimatedCadence = this.estimateCadence(avgPace);
     
     // Calculate stride length: Speed = Cadence × Stride Length
-    const avgSpeedMps = 1000 / avgPace; // meters per second
+    // avgPace is in seconds per meter, so 1/avgPace gives meters per second
+    const avgSpeedMps = 1 / avgPace; // meters per second
     const strideLength = (avgSpeedMps * 60) / estimatedCadence; // meters per stride
     
     // Efficiency score based on multiple factors
