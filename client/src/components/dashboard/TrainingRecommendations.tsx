@@ -1,8 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Flame, Mountain, Clock, Play, MapPin, Target, ExternalLink } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Flame, Mountain, Clock, Target, TrendingUp, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface RecommendationData {
   title: string;
@@ -12,101 +16,63 @@ interface RecommendationData {
 
 interface TrainingRecommendationsProps {
   recommendations: RecommendationData[];
+  userId?: number;
 }
 
-export default function TrainingRecommendations({ recommendations }: TrainingRecommendationsProps) {
+export default function TrainingRecommendations({ recommendations, userId }: TrainingRecommendationsProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [selectedRecommendation, setSelectedRecommendation] = useState<RecommendationData | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Action handlers for different recommendation types
-  const handleAction = (type: string, action: string) => {
-    switch (`${type}-${action}`) {
-      case 'speed-start':
-        toast({
-          title: "Speed Session Started!",
-          description: "Your interval training session is now active. Focus on maintaining form!",
-        });
-        break;
-      case 'speed-workouts':
-        toast({
-          title: "Speed Workouts",
-          description: "Opening speed training library...",
-        });
-        break;
-      case 'speed-goal':
-        toast({
-          title: "Speed Goal Set",
-          description: "New speed improvement goal added to your training plan.",
-        });
-        break;
-      case 'hill-nearby':
-        toast({
-          title: "Finding Hills",
-          description: "Searching for hill training routes in your area...",
-        });
-        break;
-      case 'hill-start':
-        toast({
-          title: "Hill Session Started!",
-          description: "Time to conquer those hills! Focus on steady effort.",
-        });
-        break;
-      case 'hill-workouts':
-        toast({
-          title: "Hill Workouts",
-          description: "Opening hill training library...",
-        });
-        break;
-      case 'longrun-plan':
-        toast({
-          title: "Planning Long Run",
-          description: "Creating your optimal long run route and pacing strategy...",
-        });
-        break;
-      case 'longrun-start':
-        toast({
-          title: "Long Run Started!",
-          description: "Enjoy your long run! Remember to pace yourself.",
-        });
-        break;
-      case 'longrun-routes':
-        toast({
-          title: "Long Run Routes",
-          description: "Showing scenic long run routes in your area...",
-        });
-        break;
-      default:
-        toast({
-          title: "Action Triggered",
-          description: "This feature will be available soon!",
-        });
-    }
+  const createGoalMutation = useMutation({
+    mutationFn: async (goalData: any) => {
+      return apiRequest("/api/goals", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(goalData),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/goals", userId] });
+      toast({
+        title: "Goal Created!",
+        description: "Your training goal has been added successfully.",
+      });
+      setIsModalOpen(false);
+      setSelectedRecommendation(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create goal",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleActionClick = (recommendation: RecommendationData) => {
+    setSelectedRecommendation(recommendation);
+    setIsModalOpen(true);
   };
 
-  const getRecommendationActions = (title: string) => {
-    if (title.toLowerCase().includes('speed')) {
-      return [
-        { label: "Start Session", action: "start", icon: Play, variant: "default" as const },
-        { label: "View Workouts", action: "workouts", icon: ExternalLink, variant: "outline" as const },
-        { label: "Set Goal", action: "goal", icon: Target, variant: "outline" as const }
-      ];
-    }
-    if (title.toLowerCase().includes('hill')) {
-      return [
-        { label: "Find Hills", action: "nearby", icon: MapPin, variant: "default" as const },
-        { label: "Start Session", action: "start", icon: Play, variant: "outline" as const },
-        { label: "View Workouts", action: "workouts", icon: ExternalLink, variant: "outline" as const }
-      ];
-    }
-    if (title.toLowerCase().includes('long')) {
-      return [
-        { label: "Plan Route", action: "plan", icon: MapPin, variant: "default" as const },
-        { label: "Start Run", action: "start", icon: Play, variant: "outline" as const },
-        { label: "View Routes", action: "routes", icon: ExternalLink, variant: "outline" as const }
-      ];
-    }
-    return [
-      { label: "Take Action", action: "default", icon: Play, variant: "default" as const }
-    ];
+  const handleSetAsGoal = () => {
+    if (!selectedRecommendation || !userId) return;
+
+    const goalType = selectedRecommendation.title.toLowerCase().includes('speed') ? 'speed' :
+                     selectedRecommendation.title.toLowerCase().includes('hill') ? 'hills' :
+                     selectedRecommendation.title.toLowerCase().includes('long') ? 'endurance' : 'general';
+
+    createGoalMutation.mutate({
+      userId,
+      title: selectedRecommendation.title,
+      description: selectedRecommendation.content,
+      type: goalType,
+      status: 'active',
+      source: 'recommendation',
+    });
   };
   const getRecommendationIcon = (title: string) => {
     if (title.toLowerCase().includes('speed')) {
@@ -190,26 +156,105 @@ export default function TrainingRecommendations({ recommendations }: TrainingRec
                   </div>
                 </div>
                 
-                <div className="flex flex-wrap gap-2">
-                  {actions.map((action, actionIndex) => (
-                    <Button
-                      key={actionIndex}
-                      size="sm"
-                      variant={action.variant}
-                      onClick={() => handleAction(recommendationType, action.action)}
-                      className="text-xs"
-                      data-testid={`action-${recommendationType}-${action.action}`}
-                    >
-                      <action.icon className="w-3 h-3 mr-1" />
-                      {action.label}
-                    </Button>
-                  ))}
-                </div>
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={() => handleActionClick(recommendation)}
+                  className="text-xs w-full sm:w-auto"
+                  data-testid={`action-button-${index}`}
+                >
+                  <Target className="w-3 h-3 mr-1" />
+                  Action
+                </Button>
               </div>
             );
           })}
         </div>
       </CardContent>
+      
+      {/* Recommendation Details Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-2xl" data-testid="recommendation-modal">
+          {selectedRecommendation && (
+            <>
+              <DialogHeader>
+                <div className="flex items-center gap-3">
+                  {(() => {
+                    const { icon: Icon, color } = getRecommendationIcon(selectedRecommendation.title);
+                    return (
+                      <div className={`w-10 h-10 ${color} rounded-full flex items-center justify-center flex-shrink-0`}>
+                        <Icon size={20} />
+                      </div>
+                    );
+                  })()}
+                  <div>
+                    <DialogTitle className="text-xl">{selectedRecommendation.title}</DialogTitle>
+                    {selectedRecommendation.confidence && (
+                      <Badge variant="secondary" className="text-xs mt-1">
+                        {Math.round(selectedRecommendation.confidence * 100)}% confidence
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Info className="w-4 h-4 text-strava-orange" />
+                    <h4 className="font-semibold text-sm">Recommendation</h4>
+                  </div>
+                  <p className="text-sm text-gray-700 pl-6">{selectedRecommendation.content}</p>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="w-4 h-4 text-performance-blue" />
+                    <h4 className="font-semibold text-sm">Rationale</h4>
+                  </div>
+                  <p className="text-sm text-gray-700 pl-6">
+                    {selectedRecommendation.title.toLowerCase().includes('speed') && 
+                      "Based on your recent training patterns, incorporating speed work will improve your VO2 max and race pace. Short intervals help build cardiovascular efficiency and neuromuscular power."}
+                    {selectedRecommendation.title.toLowerCase().includes('hill') && 
+                      "Hill training strengthens key running muscles, improves form, and builds mental toughness. The analysis of your activity data suggests this would complement your current training well."}
+                    {selectedRecommendation.title.toLowerCase().includes('long') && 
+                      "Long runs build aerobic endurance and mental resilience. They're essential for improving your ability to sustain effort over distance and are a cornerstone of any training program."}
+                    {!selectedRecommendation.title.toLowerCase().includes('speed') && 
+                     !selectedRecommendation.title.toLowerCase().includes('hill') && 
+                     !selectedRecommendation.title.toLowerCase().includes('long') && 
+                      "This recommendation is based on analysis of your training patterns and performance metrics. It's designed to address gaps in your current routine and optimize your progress."}
+                  </p>
+                </div>
+
+                <div className="bg-strava-orange/10 p-4 rounded-lg border border-strava-orange/20">
+                  <h4 className="font-semibold text-sm mb-2">Set as Training Goal</h4>
+                  <p className="text-sm text-gray-700 mb-3">
+                    Add this recommendation to your active goals. We'll track your progress and automatically mark it complete when you achieve it through your training activities.
+                  </p>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsModalOpen(false)}
+                  data-testid="modal-cancel-button"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSetAsGoal}
+                  disabled={createGoalMutation.isPending}
+                  data-testid="modal-set-goal-button"
+                >
+                  <Target className="w-4 h-4 mr-2" />
+                  {createGoalMutation.isPending ? "Creating..." : "Set as Goal"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

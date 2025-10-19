@@ -232,7 +232,7 @@ export default function Dashboard() {
             
             <AIInsights insights={dashboardData?.insights || {}} />
             <InsightHistory userId={user?.id!} />
-            <TrainingRecommendations recommendations={dashboardData?.insights?.recommendations || []} />
+            <TrainingRecommendations recommendations={dashboardData?.insights?.recommendations || []} userId={user?.id} />
             <FitnessTrends chartData={dashboardData?.chartData || []} unitPreference={dashboardData?.user?.unitPreference} />
             <GoalProgress userId={user?.id!} unitPreference={dashboardData?.user?.unitPreference} />
           </div>
