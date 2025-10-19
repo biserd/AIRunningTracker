@@ -1200,6 +1200,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Manual Strava activity sync endpoint
+  app.post("/api/strava/sync-activities", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      const { maxActivities = 200 } = req.body;
+
+      const user = await storage.getUser(userId);
+      if (!user || !user.stravaConnected) {
+        return res.status(400).json({ message: "Strava not connected" });
+      }
+
+      const result = await stravaService.syncActivitiesForUser(userId, maxActivities);
+      
+      res.json({
+        success: true,
+        syncedCount: result.syncedCount,
+        totalActivities: result.totalActivities,
+        message: `Successfully synced ${result.syncedCount} new activities out of ${result.totalActivities} total activities`
+      });
+    } catch (error: any) {
+      console.error('Manual sync error:', error);
+      res.status(500).json({ message: error.message || "Failed to sync activities" });
+    }
+  });
+
   // Create a demo user for testing
   app.post("/api/demo/user", async (req, res) => {
     try {

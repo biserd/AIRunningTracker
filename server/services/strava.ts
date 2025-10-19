@@ -184,15 +184,29 @@ export class StravaService {
     return response.json();
   }
 
-  async syncActivitiesForUser(userId: number): Promise<void> {
+  async syncActivitiesForUser(userId: number, maxActivities: number = 200): Promise<{ syncedCount: number; totalActivities: number }> {
     const user = await storage.getUser(userId);
     if (!user || !user.stravaAccessToken) {
       throw new Error('User not connected to Strava');
     }
 
     try {
-      console.log(`Syncing activities for user ${userId} with token: ${user.stravaAccessToken?.substring(0, 10)}...`);
-      const stravaActivities = await this.getActivities(user.stravaAccessToken);
+      console.log(`Syncing up to ${maxActivities} activities for user ${userId}...`);
+      
+      // Fetch multiple pages to get more historical data
+      const allActivities: any[] = [];
+      const perPage = 50; // Max allowed by Strava API
+      const totalPages = Math.ceil(maxActivities / perPage);
+      
+      for (let page = 1; page <= totalPages; page++) {
+        const activities = await this.getActivities(user.stravaAccessToken, page, perPage);
+        if (activities.length === 0) break; // No more activities
+        allActivities.push(...activities);
+        console.log(`Fetched page ${page}: ${activities.length} activities (total: ${allActivities.length})`);
+        if (activities.length < perPage) break; // Last page
+      }
+      
+      const stravaActivities = allActivities.slice(0, maxActivities);
       console.log(`Fetched ${stravaActivities.length} activities from Strava API`);
       
       let syncedCount = 0;
@@ -305,6 +319,8 @@ export class StravaService {
       await storage.updateUser(userId, {
         lastSyncAt: new Date(),
       });
+      
+      return { syncedCount, totalActivities: stravaActivities.length };
     } catch (error) {
       if ((error as Error).message?.includes('Unauthorized')) {
         // Try to refresh token
@@ -317,8 +333,7 @@ export class StravaService {
             });
             
             // Retry sync with new token
-            await this.syncActivitiesForUser(userId);
-            return;
+            return await this.syncActivitiesForUser(userId, maxActivities);
           } catch (refreshError) {
             throw new Error('Failed to refresh Strava token');
           }

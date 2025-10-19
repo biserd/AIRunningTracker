@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Save, Unlink } from "lucide-react";
+import { Settings, Save, Unlink, RefreshCw } from "lucide-react";
 
 function SettingsPageContent() {
   const { user } = useAuth();
@@ -68,6 +68,27 @@ function SettingsPageContent() {
     },
   });
 
+  const syncActivitiesMutation = useMutation({
+    mutationFn: async (maxActivities: number = 200) => {
+      return apiRequest(`/api/strava/sync-activities`, "POST", { maxActivities });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user!.id}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/activities'] });
+      toast({
+        title: "Activities synced",
+        description: data.message || `Synced ${data.syncedCount} new activities`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Sync failed",
+        description: error.message || "Failed to sync activities",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSave = () => {
     updateSettingsMutation.mutate({ unitPreference });
   };
@@ -76,6 +97,10 @@ function SettingsPageContent() {
     if (confirm("Are you sure you want to disconnect your Strava account? This will remove access to your Strava activities.")) {
       disconnectStravaMutation.mutate();
     }
+  };
+
+  const handleSyncActivities = () => {
+    syncActivitiesMutation.mutate(200);
   };
 
   return (
@@ -158,6 +183,7 @@ function SettingsPageContent() {
                     size="sm"
                     onClick={handleDisconnectStrava}
                     disabled={disconnectStravaMutation.isPending}
+                    data-testid="button-disconnect-strava"
                   >
                     <Unlink className="h-4 w-4 mr-2" />
                     {disconnectStravaMutation.isPending ? "Disconnecting..." : "Disconnect"}
@@ -167,6 +193,39 @@ function SettingsPageContent() {
             </div>
           </CardContent>
         </Card>
+
+        {dashboardData?.user?.stravaConnected && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Strava Activity Sync</CardTitle>
+              <CardDescription>
+                Manually sync more activities from your Strava account
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-4">
+                  By default, we import your last 200 activities when you connect Strava. 
+                  Use this button to fetch more historical data if you want your complete running history.
+                </p>
+                <Button 
+                  onClick={handleSyncActivities}
+                  disabled={syncActivitiesMutation.isPending}
+                  className="flex items-center gap-2"
+                  data-testid="button-sync-activities"
+                >
+                  <RefreshCw className={`h-4 w-4 ${syncActivitiesMutation.isPending ? 'animate-spin' : ''}`} />
+                  {syncActivitiesMutation.isPending ? "Syncing Activities..." : "Sync More Activities"}
+                </Button>
+                {dashboardData?.user?.lastSyncAt && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Last synced: {new Date(dashboardData.user.lastSyncAt).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
       </main>
     </div>
