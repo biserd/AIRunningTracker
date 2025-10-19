@@ -152,7 +152,7 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
           }
         ],
         response_format: { type: "json_object" },
-        max_tokens: 800,
+        max_completion_tokens: 800,
       });
 
       const analysis: AIAnalysisResult = JSON.parse(response.choices[0].message.content || '{}');

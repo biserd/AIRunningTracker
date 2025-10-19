@@ -10,6 +10,11 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (October 2025)
 
+- **Version 2.5.1 Release (Oct 19)**: Critical bug fixes for AI insights generation and unit preference display:
+  - **OpenAI API Compatibility**: Fixed parameter issue preventing AI insights generation (max_tokens → max_completion_tokens for GPT-5 models)
+  - **Authentication Fix**: Resolved 401 error on /api/user endpoint preventing unit preference retrieval
+  - **Unit Display**: Corrected training plan display to show proper mi/km units based on user settings
+  - **Enhanced Auth**: Updated frontend API requests to include credentials for authenticated endpoints
 - **Version 2.5.0 Release (Oct 19)**: Complete AI engine upgrade to GPT-5 for superior intelligence and accuracy:
   - **GPT-5 Upgrade**: Platform-wide upgrade from GPT-4o to GPT-5 (released August 2025) for all AI features
   - **Enhanced Training Plans**: More intelligent training plan generation with race predictions, dual VO2 max scores, and Runner Score context for realistic pacing
@@ -31,7 +36,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Version Management
 
-### Current Version: 2.5.0
+### Current Version: 2.5.1
 
 The application now includes a comprehensive versioning system to track features, improvements, and fixes across releases:
 

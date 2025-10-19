@@ -1,4 +1,4 @@
-export const VERSION = "2.5.0";
+export const VERSION = "2.5.1";
 
 export interface ReleaseNote {
   version: string;
@@ -12,6 +12,34 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "2.5.1",
+    date: "2025-10-19",
+    title: "Critical Bug Fixes & Performance Improvements",
+    description: "Fixed critical authentication and API compatibility issues affecting AI insights generation and unit preference display. Improved stability and user experience across all features.",
+    changes: [
+      {
+        type: "fix",
+        description: "Fixed OpenAI API parameter compatibility issue preventing AI insights generation (changed max_tokens to max_completion_tokens for GPT-5)"
+      },
+      {
+        type: "fix",
+        description: "Fixed authentication issue on /api/user endpoint causing 401 errors and incorrect unit preference display"
+      },
+      {
+        type: "fix",
+        description: "Corrected training plan unit display to show proper distance units (mi/km) based on user preferences"
+      },
+      {
+        type: "improvement",
+        description: "Enhanced frontend API requests to include credentials for proper authentication across all endpoints"
+      },
+      {
+        type: "improvement",
+        description: "Improved error handling for AI service calls with better debugging information"
+      }
+    ]
+  },
   {
     version: "2.5.0",
     date: "2025-10-19",
