@@ -174,27 +174,101 @@ export class MLService {
     const user = await storage.getUser(userId);
     if (!user) throw new Error('User not found');
 
-    const activities = await storage.getActivitiesByUserId(userId, 30);
+    const activities = await storage.getActivitiesByUserId(userId, 50);
     const metrics = this.analyzeTrainingData(activities);
     
-    const currentWeeklyMileage = metrics.weeklyMileage.slice(-2).reduce((a, b) => a + b, 0) / 2;
-    const avgPace = metrics.avgPaces.slice(-4).reduce((a, b) => a + b, 0) / 4;
     const isMetric = user.unitPreference !== "miles";
+    const unit = isMetric ? 'km' : 'mi';
+    
+    // Convert weekly mileage to user's preferred unit
+    const currentWeeklyMileage = metrics.weeklyMileage.slice(-2).reduce((a, b) => a + b, 0) / 2;
+    const weeklyMileageConverted = isMetric ? currentWeeklyMileage : currentWeeklyMileage * 0.621371;
+    
+    // Calculate average pace in user's preferred unit with safe defaults
+    const avgPaceKm = metrics.avgPaces.slice(-4).reduce((a, b) => a + b, 0) / Math.max(1, metrics.avgPaces.slice(-4).length);
+    const avgPaceValid = avgPaceKm > 0 && avgPaceKm < 15; // Validate metric pace is reasonable
+    const avgPace = avgPaceValid 
+      ? (isMetric ? avgPaceKm : avgPaceKm / 0.621371)
+      : (isMetric ? 6.0 : 9.65); // Default to 6:00/km or 9:39/mi if invalid
+
+    // Get race predictions for realistic pace targets
+    const racePredictions = await this.predictRacePerformance(userId);
+    
+    // Calculate pace distribution from recent runs in user's preferred unit
+    const recentPaces = activities.slice(0, 20).map(a => {
+      const time = a.movingTime / 60; // minutes
+      const distanceKm = a.distance / 1000;
+      const pacePerKm = time / distanceKm;
+      // Convert to user's preferred unit
+      return isMetric ? pacePerKm : pacePerKm / 0.621371;
+    }).filter(p => p > 0 && p < (isMetric ? 15 : 25)); // Filter out unrealistic paces
+    
+    const fastestPace = recentPaces.length > 0 ? Math.min(...recentPaces) : avgPace * 0.9;
+    const slowestPace = recentPaces.length > 0 ? Math.max(...recentPaces) : avgPace * 1.1;
+    
+    // Calculate pace ranges using percentages (works for both units)
+    const easyPaceMin = avgPace * 1.05; // 5% slower
+    const easyPaceMax = avgPace * 1.08; // 8% slower
+    const tempoPaceMin = avgPace * 0.98; // 2% faster
+    const tempoPaceMax = avgPace; // At average
+    const speedPaceMin = fastestPace * 0.95; // 5% faster than fastest
+    const speedPaceMax = fastestPace; // At fastest
+    
+    // Import performance and runner score services
+    const { PerformanceService } = require('./performance');
+    const { RunnerScoreService } = require('./runnerScore');
+    const performanceService = new PerformanceService();
+    const runnerScoreService = new RunnerScoreService();
+    
+    // Get VO2 max and runner score data
+    let vo2Data: any = null;
+    let runnerScore: any = null;
+    try {
+      vo2Data = await performanceService.calculateVO2Max(userId);
+      runnerScore = await runnerScoreService.calculateRunnerScore(userId);
+    } catch (error) {
+      console.log('Could not fetch additional metrics:', error);
+    }
 
     const prompt = `
 Create a ${weeks}-week progressive training plan for a runner with these characteristics:
 
 Current Fitness Level:
-- Average weekly mileage: ${currentWeeklyMileage.toFixed(1)}${isMetric ? 'km' : 'mi'}
-- Average training pace: ${avgPace.toFixed(2)} min/${isMetric ? 'km' : 'mi'}
+- Average weekly mileage: ${weeklyMileageConverted.toFixed(1)} ${unit}
+- Average training pace: ${avgPace.toFixed(2)} min/${unit}
+- Pace range: ${fastestPace.toFixed(2)} - ${slowestPace.toFixed(2)} min/${unit} (fastest to slowest recent runs)
 - Training history: ${activities.length} recent activities
-- Unit preference: ${isMetric ? 'kilometers' : 'miles'}
+- Unit preference: ${unit}
+
+${vo2Data ? `Performance Metrics:
+- Race VO2 Max: ${vo2Data.raceVO2Max?.toFixed(1)} (${vo2Data.raceComparison})
+- Training VO2 Max: ${vo2Data.trainingVO2Max?.toFixed(1)} (${vo2Data.trainingComparison})
+- Fitness trend: ${vo2Data.trend}
+` : ''}
+
+${runnerScore ? `Runner Score: ${runnerScore.totalScore}/100 (Grade ${runnerScore.grade})
+- Percentile: ${runnerScore.percentile}th among runners
+` : ''}
+
+Race Predictions (Based on Current Fitness):
+${racePredictions.map(p => `- ${p.distance}: ${p.predictedTime} (${p.confidence}% confidence)`).join('\n')}
+
+CRITICAL INSTRUCTIONS FOR PACE RECOMMENDATIONS:
+1. The runner's ACTUAL training pace is ${avgPace.toFixed(2)} min/${unit}
+2. Their pace range is ${fastestPace.toFixed(2)} - ${slowestPace.toFixed(2)} min/${unit}
+3. DO NOT suggest paces faster than their fastest recent pace (${fastestPace.toFixed(2)} min/${unit})
+4. Easy runs should be SLOWER than their average pace (${easyPaceMin.toFixed(2)} - ${easyPaceMax.toFixed(2)} min/${unit})
+5. Tempo runs should be close to average pace (${tempoPaceMin.toFixed(2)} - ${tempoPaceMax.toFixed(2)} min/${unit})
+6. Speed work can be slightly faster but MUST be realistic (${speedPaceMin.toFixed(2)} - ${speedPaceMax.toFixed(2)} min/${unit})
+7. Use the race predictions above to understand their realistic race paces
 
 Guidelines:
 - Increase weekly mileage by 10% each week maximum
 - Include easy runs (80%), tempo runs (15%), and speed work (5%)
-- Schedule rest days appropriately
-- Provide specific pace targets for each workout type
+- Schedule rest days appropriately (at least 1-2 per week)
+- ALL pace targets must be achievable based on their current fitness level shown above
+- Focus on gradual progression and injury prevention
+- Consider their current fitness indicators (VO2 max, runner score) when setting difficulty
 
 Return a JSON array with this structure:
 [{
@@ -210,15 +284,15 @@ Return a JSON array with this structure:
   ]
 }]
 
-Focus on gradual progression and injury prevention.`;
+Remember: Create a realistic, achievable plan based on their ACTUAL current paces, not idealized paces.`;
 
     try {
       const response = await openai.chat.completions.create({
-        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        model: "gpt-5",
         messages: [
           {
             role: "system", 
-            content: "You are an expert running coach who creates personalized training plans. Always return valid JSON."
+            content: "You are an expert running coach who creates personalized training plans based on each runner's actual current fitness level. You provide realistic, achievable pace recommendations that match their demonstrated capabilities, not idealized or aspirational paces. Always return valid JSON."
           },
           {
             role: "user",
@@ -234,8 +308,8 @@ Focus on gradual progression and injury prevention.`;
 
     } catch (error) {
       console.error('Training plan generation error:', error);
-      // Fallback plan
-      return this.generateFallbackPlan(currentWeeklyMileage, avgPace, weeks, isMetric);
+      // Fallback plan - use converted values
+      return this.generateFallbackPlan(weeklyMileageConverted, avgPace, weeks, isMetric);
     }
   }
 
