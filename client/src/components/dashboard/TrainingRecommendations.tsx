@@ -125,11 +125,6 @@ export default function TrainingRecommendations({ recommendations, userId }: Tra
           {topRecommendations.map((recommendation, index) => {
             const { icon: Icon, color } = getRecommendationIcon(recommendation.title);
             const bgColor = getRecommendationBackground(recommendation.title);
-            
-            const actions = getRecommendationActions(recommendation.title);
-            const recommendationType = recommendation.title.toLowerCase().includes('speed') ? 'speed' :
-                                     recommendation.title.toLowerCase().includes('hill') ? 'hill' :
-                                     recommendation.title.toLowerCase().includes('long') ? 'longrun' : 'default';
 
             return (
               <div key={index} className={`p-4 ${bgColor} rounded-lg border border-gray-200 hover:border-gray-300 transition-colors`} data-testid={`recommendation-${index}`}>
