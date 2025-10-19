@@ -81,8 +81,9 @@ export class PerformanceAnalyticsService {
     }
 
     // Calculate Training VO2 Max (from best training runs)
+    // Only need 1+ training run to calculate training VO2
     let trainingVO2Max = 0;
-    if (trainingActivities.length >= 3) {
+    if (trainingActivities.length >= 1) {
       const trainingEfforts = this.findBestEfforts(trainingActivities);
       console.log(`\n=== TRAINING VO2 MAX CALCULATION ===`);
       for (const effort of trainingEfforts) {
@@ -92,16 +93,23 @@ export class PerformanceAnalyticsService {
       console.log(`Training VO2 Max: ${trainingVO2Max.toFixed(2)}\n`);
     }
 
-    // Use race VO2 if available, otherwise training VO2
-    const primaryVO2 = raceVO2Max > 0 ? raceVO2Max : trainingVO2Max;
+    // Determine primary VO2 and handle missing data scenarios
+    let primaryVO2: number;
     
-    // If no race data, use training data for both
-    if (raceVO2Max === 0) {
-      raceVO2Max = trainingVO2Max;
-    }
-    // If no training data, use race data for both
-    if (trainingVO2Max === 0) {
+    if (raceVO2Max > 0 && trainingVO2Max > 0) {
+      // Both available - use race VO2 as primary (represents peak fitness)
+      primaryVO2 = raceVO2Max;
+    } else if (raceVO2Max > 0) {
+      // Only race data - use it for both and primary
+      primaryVO2 = raceVO2Max;
       trainingVO2Max = raceVO2Max;
+    } else if (trainingVO2Max > 0) {
+      // Only training data - use it for both and primary
+      primaryVO2 = trainingVO2Max;
+      raceVO2Max = trainingVO2Max;
+    } else {
+      // Shouldn't happen due to earlier check, but safety fallback
+      return null;
     }
 
     console.log(`Final - Race VO2: ${raceVO2Max.toFixed(2)}, Training VO2: ${trainingVO2Max.toFixed(2)}, Primary: ${primaryVO2.toFixed(2)}`);
@@ -142,20 +150,77 @@ export class PerformanceAnalyticsService {
 
   /**
    * Determine if an activity is likely a race effort based on name and characteristics
+   * Strategy: Look for race indicators, but exclude if clearly labeled as a training run
    */
   private isRaceEffort(activity: Activity): boolean {
     const name = activity.name?.toLowerCase() || '';
     
-    // Keywords that indicate race efforts
-    const raceKeywords = [
-      'race', 'marathon', 'half', '10k', '5k', '10 k', '5 k',
-      'parkrun', 'turkey trot', 'turkey day', 
-      'competition', 'championship', 'qualifier',
-      '🏃‍♂️', '🎖️', '🏅', '🥇', '🥈', '🥉', // race/medal emojis
-      'pr ', 'pb ', 'personal best', 'personal record'
-    ];
+    // Check for race indicators first
+    const hasRaceIndicator = (
+      // Explicit "race" keyword
+      /\brace\b/i.test(name) ||
+      
+      // Marathon/Half Marathon (with or without hyphen)
+      /\b(half[-\s]?)?marathon\b/i.test(name) ||
+      
+      // Distance race patterns with K suffix (5K, 10K, 15K, 20K, 50K, etc.)
+      // These are almost always races, not "5k run" which would be training
+      /\b(5k|10k|15k|20k|50k|100k)\b/i.test(name) ||
+      
+      // Numeric race distances - only when clearly race context
+      // Match formats like: "13.1 mi", "26.2 miles", NOT "10 mile run"
+      /\b(3\.1|6\.2|10\.5|13\.1|21\.1|26\.2|42\.2|50|70\.3|100)\s*(mi|miles|km|k)\b/i.test(name) ||
+      
+      // "X miler" format (e.g., "10 miler", "5 miler") - almost always races
+      /\b(5|10|13|20)\s*miler\b/i.test(name) ||
+      
+      // Specific race events
+      /\bparkrun\b/i.test(name) ||
+      /\bturkey\s+trot\b/i.test(name) ||
+      /\bturkey\s+day\b/i.test(name) ||
+      /\bcompetition\b/i.test(name) ||
+      /\bchampionship\b/i.test(name) ||
+      /\bqualifier\b/i.test(name) ||
+      
+      // Medal/trophy emojis only (not regular runner emoji)
+      /🎖️|🏅|🥇|🥈|🥉/.test(name) ||
+      
+      // PR/PB indicators
+      /\bpr\b/i.test(name) ||
+      /\bpb\b/i.test(name) ||
+      /\bpersonal\s+best\b/i.test(name) ||
+      /\bpersonal\s+record\b/i.test(name) ||
+      
+      // Common race name patterns (city + distance, trail races, etc.)
+      /\b(brooklyn|queens|manhattan|bronx|nyc|new york|boston|chicago|philly|sf|trail)\s+(5k|10k|half|marathon)\b/i.test(name)
+    );
     
-    return raceKeywords.some(keyword => name.includes(keyword));
+    // If no race indicator, it's not a race
+    if (!hasRaceIndicator) {
+      return false;
+    }
+    
+    // Has race indicator - now check if it's explicitly described as a training run
+    const isExplicitlyTraining = (
+      // Workout keywords (standalone or with qualifiers)
+      /\b(repeats|intervals|splits|fartlek|strides)\b/i.test(name) ||
+      /\b(workout|tempo|easy|recovery|warmup|warm-up|cooldown|cool-down|shakeout|progression)\b/i.test(name) ||
+      /\blong run\b/i.test(name) ||
+      /\bbase run\b/i.test(name) ||
+      /\btraining\b/i.test(name) ||
+      /\bpractice\b/i.test(name) ||
+      /\bmile\s+repeats\b/i.test(name) || // "half mile repeats", "mile repeats"
+      /\bhill\s+repeats\b/i.test(name) ||
+      /\bspeed\s+work\b/i.test(name)
+    );
+    
+    // If explicitly training, it's not a race despite having race indicators
+    if (isExplicitlyTraining) {
+      return false;
+    }
+    
+    // Has race indicator and not explicitly training = race
+    return true;
   }
 
   /**
