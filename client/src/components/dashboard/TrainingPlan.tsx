@@ -376,7 +376,7 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
                             </div>
                             <div className="flex items-center space-x-1">
                               <Clock className="h-3 w-3 text-gray-500" />
-                              <span className="text-sm font-medium">{workout.pace} pace</span>
+                              <span className="text-sm font-medium">{workout.pace} min/{distanceUnit}</span>
                             </div>
                           </div>
                           <p className="text-sm text-gray-600">{workout.description}</p>
