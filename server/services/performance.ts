@@ -235,18 +235,23 @@ export class PerformanceAnalyticsService {
       distanceGroups.get(distanceKey)!.push(activity);
     });
 
+    console.log(`\n=== Distance Groups ===`);
     distanceGroups.forEach((groupActivities, distanceKey) => {
+      console.log(`${distanceKey}: ${groupActivities.length} activities`);
       const fastest = groupActivities.reduce((best, current) => {
         const currentPace = current.movingTime / current.distance;
         const bestPace = best.movingTime / best.distance;
         return currentPace < bestPace ? current : best;
       });
       
+      console.log(`  Best: ${fastest.distance}m in ${fastest.movingTime}s`);
+      
       efforts.push({
         distance: fastest.distance,
         time: fastest.movingTime
       });
     });
+    console.log(`=======================\n`);
 
     return efforts;
   }
