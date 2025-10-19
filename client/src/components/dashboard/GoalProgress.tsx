@@ -23,9 +23,7 @@ export default function GoalProgress({ userId, unitPreference = 'metric' }: Goal
 
   const completeGoalMutation = useMutation({
     mutationFn: async (goalId: number) => {
-      return apiRequest(`/api/goals/${goalId}/complete`, {
-        method: "PATCH",
-      });
+      return apiRequest(`/api/goals/${goalId}/complete`, "PATCH");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/goals", userId] });
@@ -45,9 +43,7 @@ export default function GoalProgress({ userId, unitPreference = 'metric' }: Goal
 
   const deleteGoalMutation = useMutation({
     mutationFn: async (goalId: number) => {
-      return apiRequest(`/api/goals/${goalId}`, {
-        method: "DELETE",
-      });
+      return apiRequest(`/api/goals/${goalId}`, "DELETE");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/goals", userId] });

@@ -8,6 +8,7 @@ import { performanceService } from "./services/performance";
 import { authService } from "./services/auth";
 import { emailService } from "./services/email";
 import { runnerScoreService } from "./services/runnerScore";
+import goalsService from "./services/goals";
 import { insertUserSchema, loginSchema, registerSchema, insertEmailWaitlistSchema, insertFeedbackSchema, insertGoalSchema, type Activity } from "@shared/schema";
 import { z } from "zod";
 import Stripe from "stripe";
@@ -1341,6 +1342,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('AI insights regenerated after manual sync');
       } catch (error) {
         console.error('Error generating AI insights after sync:', error);
+      }
+      
+      // Check and auto-complete goals based on new activities
+      try {
+        const goalsResult = await goalsService.checkAndCompleteGoals(userId);
+        if (goalsResult.completedGoals > 0) {
+          console.log(`Auto-completed ${goalsResult.completedGoals} goals for user ${userId}`);
+        }
+      } catch (error) {
+        console.error('Error checking goals after sync:', error);
       }
       
       res.json({

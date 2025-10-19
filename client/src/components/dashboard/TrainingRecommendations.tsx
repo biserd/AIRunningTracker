@@ -27,13 +27,7 @@ export default function TrainingRecommendations({ recommendations, userId }: Tra
 
   const createGoalMutation = useMutation({
     mutationFn: async (goalData: any) => {
-      return apiRequest("/api/goals", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(goalData),
-      });
+      return apiRequest("/api/goals", "POST", goalData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/goals", userId] });
