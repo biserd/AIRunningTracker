@@ -1360,6 +1360,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ML Features - Training Plans
   app.post("/api/ml/training-plan/:userId", async (req, res) => {
+    const startTime = Date.now();
     try {
       const userId = parseInt(req.params.userId);
       const { 
@@ -1370,6 +1371,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         raceDate,
         fitnessLevel = 'intermediate'
       } = req.body;
+      
+      console.log(`[Training Plan] Request received for user ${userId}:`, { weeks, goal, daysPerWeek, targetDistance, raceDate, fitnessLevel });
       
       if (isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
@@ -1384,18 +1387,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fitnessLevel
       };
 
+      console.log(`[Training Plan] Calling GPT-5 to generate plan...`);
       const trainingPlan = await mlService.generateTrainingPlan(userId, params);
+      const generationTime = Date.now() - startTime;
+      console.log(`[Training Plan] GPT-5 generation completed in ${generationTime}ms`);
       
       // Save the training plan to database with metadata
+      console.log(`[Training Plan] Saving plan to database...`);
       await storage.createTrainingPlan({
         userId,
         weeks,
         planData: trainingPlan
       });
+      console.log(`[Training Plan] Plan saved successfully`);
       
       res.json({ trainingPlan });
     } catch (error: any) {
-      console.error('Training plan generation error:', error);
+      const errorTime = Date.now() - startTime;
+      console.error(`[Training Plan] Generation error after ${errorTime}ms:`, error);
       res.status(500).json({ message: error.message || "Failed to generate training plan" });
     }
   });
