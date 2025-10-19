@@ -67,13 +67,20 @@ export class PerformanceAnalyticsService {
     for (const effort of bestEfforts) {
       const timeInMinutes = effort.time / 60;
       const distanceInMiles = effort.distance / 1609.34;
+      const distanceInKm = effort.distance / 1000;
       const pacePerMile = timeInMinutes / distanceInMiles;
+      const pacePerKm = timeInMinutes / distanceInKm;
       
-      console.log(`Effort: ${distanceInMiles.toFixed(2)} miles in ${timeInMinutes.toFixed(2)} min, pace: ${pacePerMile.toFixed(2)} min/mile`);
+      console.log(`\n=== VO2 Calculation Debug ===`);
+      console.log(`Raw effort: ${effort.distance}m in ${effort.time}s`);
+      console.log(`Distance: ${distanceInKm.toFixed(2)} km / ${distanceInMiles.toFixed(2)} miles`);
+      console.log(`Time: ${timeInMinutes.toFixed(2)} minutes`);
+      console.log(`Pace: ${pacePerKm.toFixed(2)} min/km = ${pacePerMile.toFixed(2)} min/mile`);
       
       // Adjusted formula based on distance
       const estimatedVO2 = this.calculateVO2FromPace(pacePerMile, distanceInMiles);
       console.log(`Estimated VO2 for this effort: ${estimatedVO2.toFixed(2)}`);
+      console.log(`===========================\n`);
       vo2Max = Math.max(vo2Max, estimatedVO2);
     }
     
@@ -258,22 +265,33 @@ export class PerformanceAnalyticsService {
     // Realistic VO2 max calculation based on Jack Daniels' running formula
     // For recreational marathoners, use conservative estimates
     
+    let vo2Result: number;
+    let tier: string;
+    
     if (pacePerMile >= 10) {
       // 10+ min/mile pace - recreational runner
-      return 35 + (12 - pacePerMile) * 2;
+      tier = "Recreational (10+ min/mile)";
+      vo2Result = 35 + (12 - pacePerMile) * 2;
     } else if (pacePerMile >= 8.5) {
       // 8.5-10 min/mile pace - trained recreational runner  
-      return 42 + (10 - pacePerMile) * 3;
+      tier = "Trained Recreational (8.5-10 min/mile)";
+      vo2Result = 42 + (10 - pacePerMile) * 3;
     } else if (pacePerMile >= 7.5) {
       // 7.5-8.5 min/mile pace - competitive runner
-      return 50 + (8.5 - pacePerMile) * 4;
+      tier = "Competitive (7.5-8.5 min/mile)";
+      vo2Result = 50 + (8.5 - pacePerMile) * 4;
     } else if (pacePerMile >= 6.5) {
       // 6.5-7.5 min/mile pace - advanced competitive
-      return 58 + (7.5 - pacePerMile) * 5;
+      tier = "Advanced Competitive (6.5-7.5 min/mile)";
+      vo2Result = 58 + (7.5 - pacePerMile) * 5;
     } else {
       // Sub-6.5 min/mile - elite level
-      return Math.min(70, 65 + (6.5 - pacePerMile) * 3);
+      tier = "Elite (sub-6.5 min/mile)";
+      vo2Result = Math.min(70, 65 + (6.5 - pacePerMile) * 3);
     }
+    
+    console.log(`Formula tier: ${tier} → VO2 = ${vo2Result.toFixed(2)}`);
+    return vo2Result;
   }
 
   private calculateVO2Trend(activities: Activity[]): 'improving' | 'stable' | 'declining' {
