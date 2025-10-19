@@ -821,6 +821,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all activities for a user
+  app.get("/api/activities", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      const activities = await storage.getActivitiesByUserId(userId);
+      res.json(activities);
+    } catch (error: any) {
+      console.error('Get activities error:', error);
+      res.status(500).json({ message: error.message || "Failed to fetch activities" });
+    }
+  });
+
   // Get activity details
   app.get("/api/activities/:activityId", async (req, res) => {
     try {

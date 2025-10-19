@@ -51,9 +51,11 @@ export default function RecentActivities({ activities, unitPreference }: RecentA
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl font-semibold text-charcoal">Recent Activities</CardTitle>
-          <Button variant="ghost" className="text-strava-orange hover:text-strava-orange/80 p-0">
-            View All <ArrowRight className="ml-1" size={16} />
-          </Button>
+          <Link href="/activities">
+            <Button variant="ghost" className="text-strava-orange hover:text-strava-orange/80 p-0" data-testid="button-view-all-activities">
+              View All <ArrowRight className="ml-1" size={16} />
+            </Button>
+          </Link>
         </div>
       </CardHeader>
       <CardContent>

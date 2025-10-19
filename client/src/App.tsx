@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Dashboard from "@/pages/dashboard";
 import SettingsPage from "@/pages/settings";
 import ActivityPage from "@/pages/activity";
+import ActivitiesPage from "@/pages/activities";
 import MLInsightsPage from "@/pages/ml-insights";
 import PerformancePage from "@/pages/performance";
 import LandingPage from "@/pages/landing";
@@ -78,6 +79,9 @@ function Router() {
       </Route>
       <Route path="/billing">
         <ProtectedRoute component={BillingPage} />
+      </Route>
+      <Route path="/activities">
+        <ProtectedRoute component={ActivitiesPage} />
       </Route>
       <Route path="/activity/:id">
         <ProtectedRoute component={ActivityPage} />
