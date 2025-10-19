@@ -49,6 +49,17 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
   const [raceDate, setRaceDate] = useState("");
   const [fitnessLevel, setFitnessLevel] = useState("intermediate");
 
+  // Get user's unit preference
+  const { data: userData } = useQuery({
+    queryKey: ['user', userId],
+    queryFn: () => 
+      fetch(`/api/user`)
+        .then(res => res.json()),
+    enabled: !!userId,
+  });
+  
+  const distanceUnit = userData?.unitPreference === 'miles' ? 'mi' : 'km';
+
   // Load existing training plan
   const { data: savedPlan } = useQuery({
     queryKey: ['training-plan', userId],
@@ -316,7 +327,7 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
                     <h4 className="font-semibold text-charcoal">Week {week.weekNumber}</h4>
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
                       <MapPin className="h-4 w-4" />
-                      <span>{week.totalMileage} total miles/km</span>
+                      <span>{week.totalMileage} total {distanceUnit}</span>
                     </div>
                   </div>
                   
@@ -331,7 +342,7 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
                           <div className="flex items-center space-x-4 mb-1">
                             <div className="flex items-center space-x-1">
                               <MapPin className="h-3 w-3 text-gray-500" />
-                              <span className="text-sm font-medium">{workout.distance} mi/km</span>
+                              <span className="text-sm font-medium">{workout.distance} {distanceUnit}</span>
                             </div>
                             <div className="flex items-center space-x-1">
                               <Clock className="h-3 w-3 text-gray-500" />
