@@ -1,4 +1,4 @@
-import { users, activities, aiInsights, emailWaitlist, trainingPlans, feedback, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type InsertEmailWaitlist, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback } from "@shared/schema";
+import { users, activities, aiInsights, emailWaitlist, trainingPlans, feedback, goals, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type InsertEmailWaitlist, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, inArray, gte, gt, lt } from "drizzle-orm";
 import bcrypt from "bcrypt";
@@ -48,6 +48,14 @@ export interface IStorage {
   addToEmailWaitlist(email: string): Promise<void>;
   
   createFeedback(feedback: InsertFeedback): Promise<Feedback>;
+  
+  // Goal methods
+  createGoal(goal: InsertGoal): Promise<Goal>;
+  getGoalsByUserId(userId: number, status?: string): Promise<Goal[]>;
+  getGoalById(goalId: number): Promise<Goal | undefined>;
+  updateGoalProgress(goalId: number, progress: number): Promise<Goal | undefined>;
+  completeGoal(goalId: number): Promise<Goal | undefined>;
+  deleteGoal(goalId: number): Promise<void>;
   
   // Admin methods
   getAdminStats(): Promise<{
@@ -387,6 +395,63 @@ export class DatabaseStorage implements IStorage {
       .values(insertFeedback)
       .returning();
     return feedbackRecord;
+  }
+
+  // Goal methods
+  async createGoal(insertGoal: InsertGoal): Promise<Goal> {
+    const [goal] = await db
+      .insert(goals)
+      .values(insertGoal)
+      .returning();
+    return goal;
+  }
+
+  async getGoalsByUserId(userId: number, status?: string): Promise<Goal[]> {
+    if (status) {
+      return await db
+        .select()
+        .from(goals)
+        .where(and(eq(goals.userId, userId), eq(goals.status, status as any)))
+        .orderBy(desc(goals.createdAt));
+    }
+    return await db
+      .select()
+      .from(goals)
+      .where(eq(goals.userId, userId))
+      .orderBy(desc(goals.createdAt));
+  }
+
+  async getGoalById(goalId: number): Promise<Goal | undefined> {
+    const [goal] = await db
+      .select()
+      .from(goals)
+      .where(eq(goals.id, goalId));
+    return goal || undefined;
+  }
+
+  async updateGoalProgress(goalId: number, progress: number): Promise<Goal | undefined> {
+    const [goal] = await db
+      .update(goals)
+      .set({ currentProgress: progress })
+      .where(eq(goals.id, goalId))
+      .returning();
+    return goal || undefined;
+  }
+
+  async completeGoal(goalId: number): Promise<Goal | undefined> {
+    const [goal] = await db
+      .update(goals)
+      .set({ 
+        status: 'completed',
+        completedAt: new Date()
+      })
+      .where(eq(goals.id, goalId))
+      .returning();
+    return goal || undefined;
+  }
+
+  async deleteGoal(goalId: number): Promise<void> {
+    await db.delete(goals).where(eq(goals.id, goalId));
   }
 
   // Admin methods
