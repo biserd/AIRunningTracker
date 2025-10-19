@@ -54,8 +54,12 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
   const { data: userData } = useQuery({
     queryKey: ['user', userId],
     queryFn: () => 
-      fetch(`/api/user`)
-        .then(res => res.json()),
+      fetch(`/api/user`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }).then(res => res.json()),
     enabled: !!userId,
   });
   
