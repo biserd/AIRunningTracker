@@ -44,6 +44,21 @@ export default function ActivitiesPage() {
   const { data: response, isLoading } = useQuery<ActivitiesResponse>({
     queryKey: ['/api/activities', page, pageSize, minDistance, maxDistance, startDate, endDate],
     enabled: !!user,
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('pageSize', pageSize.toString());
+      if (minDistance) params.append('minDistance', minDistance);
+      if (maxDistance) params.append('maxDistance', maxDistance);
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      
+      const response = await fetch(`/api/activities?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch activities');
+      }
+      return response.json();
+    },
   });
 
   const { data: dashboardData } = useQuery({
