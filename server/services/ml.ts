@@ -259,6 +259,8 @@ export class MLService {
     const prompt = `
 Create a ${weeks}-week progressive training plan for a runner with these specific goals and characteristics:
 
+IMPORTANT: ALL distances in this plan MUST be in ${unit}, and ALL paces MUST be in min/${unit}. Do NOT use any other unit.
+
 TRAINING GOAL: ${readableGoal}${raceDate ? ` (Race date: ${raceDate})` : ''}
 TRAINING FREQUENCY: ${daysPerWeek} days per week
 FITNESS LEVEL: ${fitnessLevel.charAt(0).toUpperCase() + fitnessLevel.slice(1)}${targetDistance ? `\nTARGET WEEKLY DISTANCE: ${targetDistance} ${unit}` : ''}
@@ -325,7 +327,7 @@ Remember: Create a realistic, achievable plan based on their ACTUAL current pace
         messages: [
           {
             role: "system", 
-            content: `You are an expert running coach who creates goal-specific, personalized training plans. You tailor plans based on the runner's specific training goal (${readableGoal}), current fitness level (${fitnessLevel}), and desired training frequency (${daysPerWeek} days/week). You provide realistic, achievable pace recommendations that match their demonstrated capabilities, not idealized or aspirational paces. Always return valid JSON.`
+            content: `You are an expert running coach who creates goal-specific, personalized training plans. You tailor plans based on the runner's specific training goal (${readableGoal}), current fitness level (${fitnessLevel}), and desired training frequency (${daysPerWeek} days/week). You provide realistic, achievable pace recommendations that match their demonstrated capabilities, not idealized or aspirational paces. CRITICAL: You MUST use ${unit} for ALL distances and min/${unit} for ALL paces in the training plan. Never mix units or use any other measurement system. Always return valid JSON.`
           },
           {
             role: "user",
