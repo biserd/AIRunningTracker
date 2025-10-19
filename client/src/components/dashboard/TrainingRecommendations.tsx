@@ -30,7 +30,7 @@ export default function TrainingRecommendations({ recommendations, userId }: Tra
       return apiRequest("/api/goals", "POST", goalData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/goals", userId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/goals/${userId}`] });
       toast({
         title: "Goal Created!",
         description: "Your training goal has been added successfully.",

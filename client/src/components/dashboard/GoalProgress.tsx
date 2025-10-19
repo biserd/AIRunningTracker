@@ -17,7 +17,7 @@ export default function GoalProgress({ userId, unitPreference = 'metric' }: Goal
   const queryClient = useQueryClient();
   
   const { data: goalsData, isLoading } = useQuery<Goal[]>({
-    queryKey: ["/api/goals", userId],
+    queryKey: [`/api/goals/${userId}`],
     enabled: !!userId,
   });
 
@@ -26,7 +26,7 @@ export default function GoalProgress({ userId, unitPreference = 'metric' }: Goal
       return apiRequest(`/api/goals/${goalId}/complete`, "PATCH");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/goals", userId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/goals/${userId}`] });
       toast({
         title: "Goal Completed!",
         description: "Congratulations on achieving your training goal!",
@@ -46,7 +46,7 @@ export default function GoalProgress({ userId, unitPreference = 'metric' }: Goal
       return apiRequest(`/api/goals/${goalId}`, "DELETE");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/goals", userId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/goals/${userId}`] });
       toast({
         title: "Goal Deleted",
         description: "Goal has been removed from your list",
