@@ -1,4 +1,4 @@
-export const VERSION = "2.4.0";
+export const VERSION = "2.5.0";
 
 export interface ReleaseNote {
   version: string;
@@ -12,6 +12,46 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "2.5.0",
+    date: "2025-10-19",
+    title: "GPT-5 AI Engine Upgrade",
+    description: "Complete platform upgrade to OpenAI's GPT-5 (released August 2025) for superior AI-powered insights and training recommendations. Enhanced intelligence across all AI features including performance analysis, training plans, race predictions, and personalized coaching with improved accuracy and more nuanced recommendations.",
+    changes: [
+      {
+        type: "improvement",
+        description: "Upgraded AI Insights generation from GPT-4o to GPT-5 for more intelligent pattern recognition and personalized coaching"
+      },
+      {
+        type: "improvement",
+        description: "Upgraded Training Plan generation from GPT-4o to GPT-5 for enhanced training recommendations"
+      },
+      {
+        type: "improvement",
+        description: "Enhanced training plan context with race predictions, dual VO2 max scores, and Runner Score for more realistic pacing"
+      },
+      {
+        type: "improvement",
+        description: "Improved unit conversion system with percentage-based pace adjustments for accurate metric/imperial recommendations"
+      },
+      {
+        type: "fix",
+        description: "Fixed training plan pace calculations to prevent unrealistic pace recommendations (e.g., 6:50/mi when runner averages 10-11 min/mi)"
+      },
+      {
+        type: "fix",
+        description: "Corrected pace range calculations to use percentage-based adjustments instead of fixed values for both metric and imperial users"
+      },
+      {
+        type: "improvement",
+        description: "Added comprehensive fitness context to AI prompts including actual pace distribution, fastest/slowest runs, and clear boundaries"
+      },
+      {
+        type: "improvement",
+        description: "Enhanced error handling with safe defaults for edge cases and insufficient data scenarios"
+      }
+    ]
+  },
   {
     version: "2.4.0",
     date: "2025-10-18",

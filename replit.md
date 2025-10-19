@@ -10,18 +10,20 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (October 2025)
 
-- **Platform Made Completely Free (Oct 18)**: Removed all subscription paywalls and made premium features available to everyone:
+- **Version 2.5.0 Release (Oct 19)**: Complete AI engine upgrade to GPT-5 for superior intelligence and accuracy:
+  - **GPT-5 Upgrade**: Platform-wide upgrade from GPT-4o to GPT-5 (released August 2025) for all AI features
+  - **Enhanced Training Plans**: More intelligent training plan generation with race predictions, dual VO2 max scores, and Runner Score context for realistic pacing
+  - **Improved AI Insights**: Superior pattern recognition and personalized coaching with more nuanced performance analysis
+  - **Fixed Pace Calculations**: Corrected unit conversion system using percentage-based adjustments to prevent unrealistic pace recommendations
+  - **Better Context**: AI now receives comprehensive fitness data including actual pace distribution, fastest/slowest runs, and clear performance boundaries
+  - **Error Handling**: Enhanced robustness with safe defaults for edge cases and insufficient data scenarios
+- **Version 2.4.0 Release (Oct 18)**: Platform made completely free with enhanced user feedback system:
   - **All Users Get Pro Access**: Updated subscription system to grant all users full Pro tier features
   - **Database Updates**: Changed default subscription plan to 'pro' with 'active' status for all new and existing users (23 users upgraded)
   - **UI Cleanup**: Removed billing navigation, Pro badges, and upgrade prompts from interface
   - **Pricing Page Updated**: Redesigned to showcase that all features (AI insights, training plans, race predictions, unlimited history) are completely free
   - **No Limitations**: Removed 30-day data limit, insight limits, and all feature restrictions
-- **Marketing Campaign Launch Preparation (Oct 18)**: Comprehensive optimization for marketing campaign launch including:
-  - **SEO Enhancement**: Added comprehensive meta tags, Open Graph tags, Twitter cards, and JSON-LD structured data (WebApplication + Organization schemas) for improved search visibility and social sharing
-  - **Mobile Optimization**: Optimized all touch targets to 44px minimum, responsive text scaling, full mobile responsiveness across all pages
-  - **Landing Page CTA Optimization**: Enhanced primary CTAs with larger sizes, social proof ("Join 10,000+ runners"), trust indicators ("Free forever", "No credit card required"), and improved conversion funnel
-  - **Onboarding Flow**: Created 4-step welcome modal (Welcome, Strava Connection, Runner Score, AI Insights) with progress tracking and localStorage persistence, plus dashboard progress checklist for new user guidance
-  - **Welcome Email System**: Automated welcome emails for new users and admin notifications to hello@bigappledigital.nyc
+  - **Marketing Campaign Launch Preparation**: Comprehensive optimization including SEO enhancement, mobile optimization, landing page CTA optimization, onboarding flow, and welcome email system
 - **Version 2.3.0 Release (Sep 28)**: Full Strava API Agreement compliance with enhanced privacy protections, official branding implementation, security procedures documentation, and subscription model transparency ensuring all Strava developer requirements are met.
 - **Version 2.2.0 Release (Sep 28)**: Enhanced subscription system with promotion code support for friend testing and user acquisition, including test codes TESTFREE1, HALFPRICE, and FIRSTFREE for flexible discount options.
 - **Version 2.1.0 Release (Sep 28)**: SaaS platform transformation with subscription billing, Free tier (30 days data) and Pro tier ($9.99/month) with advanced AI insights and unlimited history.
@@ -29,7 +31,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Version Management
 
-### Current Version: 2.3.0
+### Current Version: 2.5.0
 
 The application now includes a comprehensive versioning system to track features, improvements, and fixes across releases:
 
