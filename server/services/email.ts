@@ -114,11 +114,11 @@ class EmailService {
         </div>
         
         <div style="text-align: center; margin: 30px 0;">
-          <a href="https://runanalytics.ai/dashboard" style="background: #e74c3c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Start Your Journey →</a>
+          <a href="https://aitracker.run/dashboard" style="background: #e74c3c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Start Your Journey →</a>
         </div>
         
         <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; color: #666; font-size: 14px;">
-          <p>Need help getting started? Check out our <a href="https://runanalytics.ai/faq" style="color: #e74c3c;">FAQ page</a> or reply to this email.</p>
+          <p>Need help getting started? Check out our <a href="https://aitracker.run/faq" style="color: #e74c3c;">FAQ page</a> or reply to this email.</p>
           <p>Happy running!<br>The RunAnalytics Team</p>
         </div>
       </div>
@@ -141,9 +141,9 @@ What You Get with RunAnalytics:
 • Race time predictions and goal tracking
 • Comprehensive activity analysis and trends
 
-Start your journey: https://runanalytics.ai/dashboard
+Start your journey: https://aitracker.run/dashboard
 
-Need help? Check our FAQ: https://runanalytics.ai/faq
+Need help? Check our FAQ: https://aitracker.run/faq
 
 Happy running!
 The RunAnalytics Team
