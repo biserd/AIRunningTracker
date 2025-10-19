@@ -53,7 +53,16 @@ export default function ActivitiesPage() {
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
       
-      const response = await fetch(`/api/activities?${params.toString()}`);
+      const token = localStorage.getItem("auth_token");
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`/api/activities?${params.toString()}`, {
+        headers,
+        credentials: 'include',
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch activities');
       }
