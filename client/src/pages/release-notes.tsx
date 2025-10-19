@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Activity, Calendar, Star, Bug, Wrench, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Activity, Calendar, Star, Bug, Wrench, AlertTriangle, ChevronLeft, ChevronRight, Menu, X } from "lucide-react";
 import { Link } from "wouter";
 import { RELEASE_NOTES, VERSION } from "@shared/version";
 import Footer from "@/components/Footer";
@@ -29,10 +29,12 @@ const changeTypeIconColors = {
 
 export default function ReleaseNotesPage() {
   const [selectedVersionIndex, setSelectedVersionIndex] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const currentRelease = RELEASE_NOTES[selectedVersionIndex];
 
   const navigateToVersion = (index: number) => {
     setSelectedVersionIndex(index);
+    setSidebarOpen(false); // Close sidebar on mobile after selection
   };
 
   const navigatePrevious = () => {
@@ -49,39 +51,69 @@ export default function ReleaseNotesPage() {
 
   return (
     <div className="min-h-screen bg-light-grey">
+      {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <div className="flex items-center space-x-4">
-            <Link href="/">
-              <Button variant="ghost" size="sm" data-testid="button-back-home">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Home
-              </Button>
-            </Link>
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-strava-orange rounded-lg flex items-center justify-center">
-                <Activity className="text-white" size={20} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-charcoal">Release Notes</h1>
-                <p className="text-gray-600">Track new features, improvements, and fixes</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <Link href="/">
+                <Button variant="ghost" size="sm" className="px-2 sm:px-4" data-testid="button-back-home">
+                  <ArrowLeft className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Back to Home</span>
+                </Button>
+              </Link>
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-strava-orange rounded-lg flex items-center justify-center">
+                  <Activity className="text-white" size={16} />
+                </div>
+                <div>
+                  <h1 className="text-lg sm:text-2xl font-bold text-charcoal">Release Notes</h1>
+                  <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Track new features, improvements, and fixes</p>
+                </div>
               </div>
             </div>
+            
+            {/* Mobile Menu Toggle */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="lg:hidden"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              data-testid="button-toggle-sidebar"
+            >
+              {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              <span className="ml-2">Versions</span>
+            </Button>
           </div>
         </div>
       </div>
 
-      <div className="flex max-w-7xl mx-auto">
-        {/* Sidebar */}
-        <div className="w-80 bg-white border-r border-gray-200 min-h-screen sticky top-0">
-          <div className="p-6">
-            <h2 className="text-lg font-semibold text-charcoal mb-4">Version History</h2>
+      <div className="flex max-w-7xl mx-auto relative">
+        {/* Sidebar - Hidden on mobile, overlay on mobile when open */}
+        <div className={`
+          fixed lg:sticky lg:block top-0 left-0 z-50 h-screen
+          w-80 bg-white border-r border-gray-200
+          transition-transform duration-300 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}>
+          <div className="p-4 sm:p-6 overflow-y-auto h-full">
+            <div className="flex items-center justify-between mb-4 lg:hidden">
+              <h2 className="text-lg font-semibold text-charcoal">Version History</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <h2 className="text-lg font-semibold text-charcoal mb-4 hidden lg:block">Version History</h2>
             <div className="space-y-2">
               {RELEASE_NOTES.map((release, index) => (
                 <button
                   key={release.version}
                   onClick={() => navigateToVersion(index)}
-                  className={`w-full text-left p-4 rounded-lg border transition-all duration-200 ${
+                  className={`w-full text-left p-3 sm:p-4 rounded-lg border transition-all duration-200 ${
                     selectedVersionIndex === index
                       ? 'bg-strava-orange text-white border-strava-orange shadow-md'
                       : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
@@ -89,9 +121,9 @@ export default function ReleaseNotesPage() {
                   data-testid={`button-version-${release.version}`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold">v{release.version}</span>
+                    <span className="font-semibold text-sm sm:text-base">v{release.version}</span>
                     {index === 0 && (
-                      <Badge className={`text-xs px-2 py-1 ${
+                      <Badge className={`text-xs px-2 py-0.5 ${
                         selectedVersionIndex === index
                           ? 'bg-white text-strava-orange'
                           : 'bg-strava-orange text-white'
@@ -100,7 +132,7 @@ export default function ReleaseNotesPage() {
                       </Badge>
                     )}
                   </div>
-                  <p className={`text-sm font-medium mb-1 ${
+                  <p className={`text-xs sm:text-sm font-medium mb-1 line-clamp-2 ${
                     selectedVersionIndex === index ? 'text-white' : 'text-gray-800'
                   }`}>
                     {release.title}
@@ -120,133 +152,141 @@ export default function ReleaseNotesPage() {
           </div>
         </div>
 
+        {/* Overlay for mobile sidebar */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* Main Content */}
-        <main className="flex-1 px-6 py-12">
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-4">
-              <Badge className="bg-strava-orange text-white" data-testid="badge-current-version">
-                Current Version: v{VERSION}
-              </Badge>
-              <p className="text-gray-600">
-                Stay up-to-date with the latest improvements to RunAnalytics
-              </p>
-            </div>
-            
-            {/* Navigation Arrows */}
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={navigateNext}
-                disabled={selectedVersionIndex === 0}
-                className="flex items-center space-x-1"
-                data-testid="button-next-version"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                <span>Newer</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={navigatePrevious}
-                disabled={selectedVersionIndex === RELEASE_NOTES.length - 1}
-                className="flex items-center space-x-1"
-                data-testid="button-previous-version"
-              >
-                <span>Older</span>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+        <main className="flex-1 px-4 sm:px-6 py-6 sm:py-12 min-w-0">
+          <div className="mb-6 sm:mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                <Badge className="bg-strava-orange text-white w-fit text-xs sm:text-sm" data-testid="badge-current-version">
+                  Current: v{VERSION}
+                </Badge>
+                <p className="text-sm sm:text-base text-gray-600">
+                  Stay up-to-date with the latest improvements
+                </p>
+              </div>
+              
+              {/* Navigation Arrows */}
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={navigateNext}
+                  disabled={selectedVersionIndex === 0}
+                  className="flex items-center space-x-1 text-xs sm:text-sm"
+                  data-testid="button-next-version"
+                >
+                  <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span>Newer</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={navigatePrevious}
+                  disabled={selectedVersionIndex === RELEASE_NOTES.length - 1}
+                  className="flex items-center space-x-1 text-xs sm:text-sm"
+                  data-testid="button-previous-version"
+                >
+                  <span>Older</span>
+                  <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Single Version Display */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          {/* Clean Header Design */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100 px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gradient-to-r from-strava-orange to-orange-500 rounded-xl flex items-center justify-center shadow-sm">
-                    <Activity className="text-white" size={24} />
+          {/* Single Version Display */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            {/* Clean Header Design */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100 px-4 sm:px-8 py-4 sm:py-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-start sm:items-center space-x-3 sm:space-x-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-strava-orange to-orange-500 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
+                    <Activity className="text-white" size={20} />
                   </div>
-                  <div>
-                    <div className="flex items-center space-x-3">
-                      <h2 className="text-2xl font-bold text-charcoal" data-testid={`text-version-${currentRelease.version}`}>
+                  <div className="min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                      <h2 className="text-xl sm:text-2xl font-bold text-charcoal" data-testid={`text-version-${currentRelease.version}`}>
                         Version {currentRelease.version}
                       </h2>
                       {selectedVersionIndex === 0 && (
-                        <Badge className="bg-strava-orange text-white px-3 py-1 rounded-full text-sm font-medium" data-testid="badge-latest">
+                        <Badge className="bg-strava-orange text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium w-fit" data-testid="badge-latest">
                           Latest Release
                         </Badge>
                       )}
                     </div>
-                    <h3 className="text-lg text-gray-600 mt-1 font-medium">{currentRelease.title}</h3>
+                    <h3 className="text-sm sm:text-lg text-gray-600 mt-1 font-medium">{currentRelease.title}</h3>
                   </div>
                 </div>
+                <div className="flex items-center space-x-2 bg-white px-3 sm:px-4 py-2 rounded-lg border border-gray-200 w-fit">
+                  <Calendar size={16} className="text-gray-500 flex-shrink-0" />
+                  <span className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">
+                    {new Date(currentRelease.date).toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'short', 
+                      day: 'numeric' 
+                    })}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg border border-gray-200">
-                <Calendar size={18} className="text-gray-500" />
-                <span className="text-sm font-medium text-gray-700">{new Date(currentRelease.date).toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}</span>
+            </div>
+            
+            {/* Content Area */}
+            <div className="p-4 sm:p-8">
+              <p className="text-sm sm:text-lg text-gray-700 mb-6 sm:mb-8 leading-relaxed">{currentRelease.description}</p>
+              
+              <div className="space-y-4 sm:space-y-6">
+                <h4 className="text-lg sm:text-xl font-semibold text-charcoal mb-4 sm:mb-6">What's New in This Release</h4>
+                <div className="grid gap-3 sm:gap-4">
+                  {currentRelease.changes.map((change, changeIndex) => {
+                    const Icon = changeTypeIcons[change.type];
+                    return (
+                      <div key={changeIndex} className={`flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-lg border ${changeTypeColors[change.type]}`}>
+                        <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${changeTypeIconColors[change.type]} border-current`}>
+                          <Icon size={14} className="sm:w-4 sm:h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2 sm:space-x-3 mb-1">
+                            <span className="text-xs font-semibold uppercase tracking-wider opacity-75 capitalize">
+                              {change.type}
+                            </span>
+                          </div>
+                          <p className="text-sm sm:text-base text-gray-800 font-medium leading-relaxed break-words">{change.description}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
           
-          {/* Content Area */}
-          <div className="p-8">
-            <p className="text-gray-700 text-lg mb-8 leading-relaxed">{currentRelease.description}</p>
-            
-            <div className="space-y-6">
-              <h4 className="text-xl font-semibold text-charcoal mb-6">What's New in This Release</h4>
-              <div className="grid gap-4">
-                {currentRelease.changes.map((change, changeIndex) => {
-                  const Icon = changeTypeIcons[change.type];
-                  return (
-                    <div key={changeIndex} className={`flex items-start space-x-4 p-4 rounded-lg border ${changeTypeColors[change.type]}`}>
-                      <div className={`w-8 h-8 rounded-lg bg-white border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${changeTypeIconColors[change.type]} border-current`}>
-                        <Icon size={16} />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-1">
-                          <span className="text-xs font-semibold uppercase tracking-wider opacity-75 capitalize">
-                            {change.type}
-                          </span>
-                        </div>
-                        <p className="text-gray-800 font-medium leading-relaxed">{change.description}</p>
-                      </div>
-                    </div>
-                  );
-                })}
+          <div className="mt-8 sm:mt-16 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 sm:p-8 text-center border border-gray-200">
+            <div className="max-w-2xl mx-auto">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-strava-orange to-orange-500 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                <Star className="text-white" size={20} />
               </div>
+              <h3 className="text-xl sm:text-2xl font-bold text-charcoal mb-2 sm:mb-3">Help Shape RunAnalytics</h3>
+              <p className="text-sm sm:text-lg text-gray-700 mb-4 sm:mb-6 leading-relaxed">
+                Your feedback drives our innovation. Share your ideas and help us build the features that matter most to you.
+              </p>
+              <Link href="/contact">
+                <Button 
+                  size="lg" 
+                  className="bg-strava-orange text-white hover:bg-strava-orange/90 px-6 sm:px-8 py-2 sm:py-3 text-base sm:text-lg font-medium rounded-lg shadow-sm w-full sm:w-auto" 
+                  data-testid="button-suggest-feature"
+                >
+                  Share Your Ideas
+                </Button>
+              </Link>
             </div>
           </div>
-        </div>
-        
-        <div className="mt-16 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-8 text-center border border-gray-200">
-          <div className="max-w-2xl mx-auto">
-            <div className="w-16 h-16 bg-gradient-to-r from-strava-orange to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Star className="text-white" size={24} />
-            </div>
-            <h3 className="text-2xl font-bold text-charcoal mb-3">Help Shape RunAnalytics</h3>
-            <p className="text-gray-700 mb-6 text-lg leading-relaxed">
-              Your feedback drives our innovation. Share your ideas and help us build the features that matter most to you.
-            </p>
-            <Link href="/contact">
-              <Button 
-                size="lg" 
-                className="bg-strava-orange text-white hover:bg-strava-orange/90 px-8 py-3 text-lg font-medium rounded-lg shadow-sm" 
-                data-testid="button-suggest-feature"
-              >
-                Share Your Ideas
-              </Button>
-            </Link>
-          </div>
-        </div>
         </main>
       </div>
       <Footer />
