@@ -1,4 +1,4 @@
-export const VERSION = "2.6.0";
+export const VERSION = "2.7.0";
 
 export interface ReleaseNote {
   version: string;
@@ -12,6 +12,70 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "2.7.0",
+    date: "2025-10-21",
+    title: "Free Running Tools Section",
+    description: "Launched comprehensive Tools section with SEO-optimized running calculators and analyzers accessible to all users without requiring login. Tools work for everyone with enhanced Strava-connected features for authenticated users, providing valuable training insights and analysis for the entire running community.",
+    changes: [
+      {
+        type: "feature",
+        description: "Tools section with dedicated landing page showcasing free running calculators and analysis tools"
+      },
+      {
+        type: "feature",
+        description: "Aerobic Decoupling Calculator - analyze cardiovascular drift during long runs to assess aerobic fitness and endurance capacity"
+      },
+      {
+        type: "feature",
+        description: "Polarized vs Pyramidal Training Split Analyzer - classify training intensity distribution and receive personalized zone recommendations"
+      },
+      {
+        type: "feature",
+        description: "Dual-mode input system - Strava auto-fetch for authenticated users OR manual data entry for non-logged-in users"
+      },
+      {
+        type: "feature",
+        description: "Heart rate zone analysis with smart LT1/LT2 threshold detection (75% and 88% HRmax estimates)"
+      },
+      {
+        type: "feature",
+        description: "Training classification algorithm identifying Polarized (≥70% Z1), Pyramidal (Z1>Z2>Z3), or Threshold-Heavy (≥25% Z2) patterns"
+      },
+      {
+        type: "feature",
+        description: "Rich visualizations including stacked area charts for weekly zone distribution and ternary bar charts"
+      },
+      {
+        type: "feature",
+        description: "Personalized training recommendations with specific zone adjustments and detailed rationale"
+      },
+      {
+        type: "improvement",
+        description: "Complete SEO optimization with meta tags, Open Graph tags, and structured content for search visibility"
+      },
+      {
+        type: "improvement",
+        description: "Comprehensive QA instrumentation with data-testid attributes across all interactive and display elements"
+      },
+      {
+        type: "improvement",
+        description: "Public access design - tools work for all users with premium Strava features for logged-in runners"
+      },
+      {
+        type: "fix",
+        description: "Fixed state update during render issue in Training Split Analyzer by moving logic to useEffect hook"
+      },
+      {
+        type: "fix",
+        description: "Fixed database timestamp errors in training split analysis endpoint (ISO string conversion issue)"
+      },
+      {
+        type: "fix",
+        description: "Fixed React navigation warnings by correcting nested anchor tag structure in tool pages"
+      }
+    ]
+  },
   {
     version: "2.6.0",
     date: "2025-10-19",

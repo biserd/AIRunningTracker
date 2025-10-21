@@ -10,16 +10,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (October 2025)
 
-- **Polarized vs Pyramidal Training Split Analyzer Completion (Oct 21)**: Comprehensive tool for analyzing training intensity distribution:
-  - **Heart Rate Zone Analysis**: Automatically analyzes Strava activities with HR data over 28-42 day period to compute time in Z1 (Easy), Z2 (Threshold), Z3 (Hard)
-  - **Threshold Detection**: Smart LT1/LT2 estimation from HRmax when threshold data unavailable (LT1 ≈ 75% HRmax, LT2 ≈ 88% HRmax)
-  - **Training Classification**: Identifies polarized (≥70% Z1, ≥10% Z3, ≤20% Z2), pyramidal (Z1>Z2>Z3 with Z2 10-25%), or threshold-heavy (Z2≥25%) patterns
-  - **Rich Visualizations**: Stacked area charts for weekly zone distribution, ternary bar charts showing zone percentages
-  - **Personalized Recommendations**: Specific training adjustments based on classification with detailed rationale for each zone
-  - **Dual Mode Input**: Strava auto-fetch for authenticated users OR manual time-in-zone entry for non-logged-in users
-  - **SEO Optimized**: Full meta tags and structured content for search visibility
-  - **QA Instrumentation**: Complete data-testid coverage for automated testing across both manual and Strava workflows
-  - **Public Access**: Works for all users with enhanced Strava-connected features for logged-in runners
+- **Version 2.7.0 Release (Oct 21)**: Free Running Tools Section - SEO-optimized calculators and analyzers for all users:
+  - **Tools Section Launch**: Dedicated landing page at `/tools` showcasing free running calculators accessible to everyone
+  - **Aerobic Decoupling Calculator**: Analyze cardiovascular drift during long runs to assess aerobic fitness and endurance capacity
+  - **Training Split Analyzer**: Classify training intensity distribution as Polarized, Pyramidal, or Threshold-Heavy with personalized zone recommendations
+  - **Dual-Mode Input**: Strava auto-fetch for authenticated users OR manual data entry for non-logged-in users
+  - **HR Zone Analysis**: Smart LT1/LT2 threshold detection (75% and 88% HRmax estimates) with automatic zone classification
+  - **Rich Visualizations**: Stacked area charts for weekly zone distribution, ternary bar charts showing position on training spectrum
+  - **Personalized Recommendations**: Specific training adjustments with detailed rationale based on classification
+  - **SEO Optimized**: Complete meta tags, Open Graph tags, and structured content for search engine visibility
+  - **QA Instrumentation**: Comprehensive data-testid coverage across all interactive and display elements
+  - **Public Access Design**: Tools work for all users with enhanced Strava-connected features for logged-in runners
 - **Version 2.6.0 Release (Oct 19)**: Goals & Training Tracking System - Transform AI recommendations into trackable goals:
   - **Training Goals Feature**: Convert AI training recommendations into trackable, actionable goals with progress monitoring
   - **Simplified UI**: Replaced multiple action buttons with single "Action" button that opens detailed rationale modal
@@ -55,7 +56,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Version Management
 
-### Current Version: 2.6.0
+### Current Version: 2.7.0
 
 The application now includes a comprehensive versioning system to track features, improvements, and fixes across releases:
 
