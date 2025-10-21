@@ -902,6 +902,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get activities suitable for aerobic decoupling analysis
+  app.get("/api/activities/decoupling-suitable", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Get user for unit preference
+      const user = await storage.getUser(userId);
+      const unitPreference = user?.unitPreference || 'km';
+
+      // Fetch recent activities with minimum 45 minutes duration and heart rate data
+      const result = await storage.getActivitiesByUserIdPaginated(userId, {
+        page: 1,
+        pageSize: 20,
+        minDistance: undefined,
+        maxDistance: undefined,
+        startDate: undefined,
+        endDate: undefined,
+      });
+
+      // Filter for decoupling-suitable activities (60+ minutes, has HR data)
+      const suitableActivities = result.activities.filter(activity => 
+        activity.movingTime >= 3600 && // 60 minutes minimum
+        activity.hasHeartrate &&
+        activity.averageHeartrate !== null
+      ).map(activity => {
+        const distanceInKm = activity.distance / 1000;
+        const distanceConverted = unitPreference === 'miles' ? distanceInKm * 0.621371 : distanceInKm;
+        const pacePerKm = activity.distance > 0 ? (activity.movingTime / 60) / distanceInKm : 0;
+        const paceConverted = unitPreference === 'miles' ? pacePerKm / 0.621371 : pacePerKm;
+
+        return {
+          id: activity.id,
+          name: activity.name,
+          distance: distanceConverted,
+          distanceFormatted: distanceConverted.toFixed(2),
+          movingTime: activity.movingTime,
+          durationFormatted: `${Math.floor(activity.movingTime / 60)}:${String(Math.floor(activity.movingTime % 60)).padStart(2, '0')}`,
+          averageHeartrate: activity.averageHeartrate,
+          averageSpeed: activity.averageSpeed,
+          paceFormatted: paceConverted > 0 ? `${Math.floor(paceConverted)}:${String(Math.round((paceConverted % 1) * 60)).padStart(2, '0')}` : "0:00",
+          startDate: activity.startDate,
+          distanceUnit: unitPreference === 'miles' ? 'mi' : 'km',
+        };
+      });
+
+      res.json({ activities: suitableActivities });
+    } catch (error: any) {
+      console.error('Get decoupling-suitable activities error:', error);
+      res.status(500).json({ message: error.message || "Failed to fetch activities" });
+    }
+  });
+
   // Get all activities for a user with pagination and filtering
   app.get("/api/activities", authenticateJWT, async (req: any, res) => {
     try {

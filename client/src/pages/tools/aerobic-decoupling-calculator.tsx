@@ -15,6 +15,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useQuery } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 
 // Validation schema for manual input
 const manualInputSchema = z.object({
@@ -40,7 +43,14 @@ interface DecouplingResult {
 export default function AerobicDecouplingCalculator() {
   const { isAuthenticated, user } = useAuth();
   const [result, setResult] = useState<DecouplingResult | null>(null);
-  const [activeTab, setActiveTab] = useState<string>(isAuthenticated ? "strava" : "manual");
+  const [activeTab, setActiveTab] = useState<string>("manual"); // Default to manual for better UX
+  const [selectedActivityId, setSelectedActivityId] = useState<number | null>(null);
+
+  // Fetch suitable activities for logged-in users
+  const { data: activitiesData, isLoading: isLoadingActivities } = useQuery({
+    queryKey: ['/api/activities/decoupling-suitable'],
+    enabled: isAuthenticated,
+  });
 
   const form = useForm<ManualInputFormData>({
     resolver: zodResolver(manualInputSchema),
@@ -115,6 +125,82 @@ export default function AerobicDecouplingCalculator() {
   const onSubmit = (data: ManualInputFormData) => {
     const calculatedResult = calculateDecoupling(data);
     setResult(calculatedResult);
+  };
+
+  // Calculate decoupling from Strava activity streams
+  const calculateFromActivity = async (activityId: number) => {
+    try {
+      const response = await fetch(`/api/activities/${activityId}/performance`, {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      
+      if (!data.streams || !data.streams.time || !data.streams.heartrate || !data.streams.velocity_smooth) {
+        throw new Error("Activity does not have required stream data");
+      }
+
+      const streams = data.streams;
+      const timeData = streams.time.data;
+      const hrData = streams.heartrate.data;
+      const velocityData = streams.velocity_smooth.data; // in m/s
+      
+      // Find the midpoint
+      const totalTime = timeData[timeData.length - 1];
+      const midpoint = totalTime / 2;
+      const midpointIndex = timeData.findIndex((t: number) => t >= midpoint);
+      
+      // Calculate average velocity and HR for each half
+      const firstHalfVelocity = velocityData.slice(0, midpointIndex).reduce((sum: number, v: number) => sum + v, 0) / midpointIndex;
+      const secondHalfVelocity = velocityData.slice(midpointIndex).reduce((sum: number, v: number) => sum + v, 0) / (velocityData.length - midpointIndex);
+      
+      const firstHalfHR = hrData.slice(0, midpointIndex).reduce((sum: number, hr: number) => sum + hr, 0) / midpointIndex;
+      const secondHalfHR = hrData.slice(midpointIndex).reduce((sum: number, hr: number) => sum + hr, 0) / (hrData.length - midpointIndex);
+      
+      // Calculate Pa:HR ratios
+      const paHR1 = firstHalfVelocity / firstHalfHR;
+      const paHR2 = secondHalfVelocity / secondHalfHR;
+      
+      // Calculate decoupling percentage
+      const decouplingPercent = ((paHR2 / paHR1) - 1) * 100;
+      
+      // Interpret results (same logic as manual)
+      let interpretation = "";
+      let badge = "";
+      let color = "";
+
+      if (decouplingPercent <= -8) {
+        badge = "Significant Fade";
+        interpretation = "Your aerobic system showed significant fatigue in the second half. This suggests you may need to build more aerobic base or reduce your initial pace.";
+        color = "bg-red-500";
+      } else if (decouplingPercent <= -5) {
+        badge = "Moderate Fade";
+        interpretation = "Some aerobic fade detected. Consider slightly reducing your pace or building more aerobic endurance through longer, easier runs.";
+        color = "bg-orange-500";
+      } else if (decouplingPercent <= -3) {
+        badge = "Mild Fade";
+        interpretation = "Slight aerobic fade within normal range. Your pacing was generally good, with room for minor improvements.";
+        color = "bg-yellow-500";
+      } else if (decouplingPercent <= 3) {
+        badge = "Excellent";
+        interpretation = "Outstanding aerobic efficiency! Your pace and heart rate remained well-coupled throughout the run. Your aerobic base is strong.";
+        color = "bg-green-500";
+      } else {
+        badge = "Improved";
+        interpretation = "Interesting - you actually improved in the second half! This could indicate a conservative start or excellent negative-split pacing.";
+        color = "bg-blue-500";
+      }
+
+      setResult({
+        decouplingPercent,
+        interpretation,
+        badge,
+        color,
+        firstHalfPaHR: paHR1,
+        secondHalfPaHR: paHR2
+      });
+    } catch (error) {
+      console.error("Error calculating from activity:", error);
+    }
   };
 
   return (
@@ -209,11 +295,65 @@ export default function AerobicDecouplingCalculator() {
 
                 {isAuthenticated && (
                   <TabsContent value="strava">
-                    <div className="text-center py-12 text-gray-500">
-                      <ActivityIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                      <p className="text-lg font-medium mb-2">Strava Integration Coming Soon</p>
-                      <p className="text-sm">Select a recent long run to auto-calculate decoupling</p>
-                    </div>
+                    {isLoadingActivities ? (
+                      <div className="text-center py-12">
+                        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-strava-orange" />
+                        <p className="text-gray-600">Loading your activities...</p>
+                      </div>
+                    ) : activitiesData && (activitiesData as any).activities && (activitiesData as any).activities.length > 0 ? (
+                      <div className="space-y-4">
+                        <p className="text-sm text-gray-600">
+                          Select a long run (60+ minutes with heart rate data) to analyze:
+                        </p>
+                        <div className="max-h-96 overflow-y-auto space-y-2">
+                          {(activitiesData as any).activities.map((activity: any) => (
+                            <button
+                              key={activity.id}
+                              onClick={() => {
+                                setSelectedActivityId(activity.id);
+                                calculateFromActivity(activity.id);
+                              }}
+                              className={`w-full text-left p-4 rounded-lg border transition-all ${
+                                selectedActivityId === activity.id
+                                  ? 'border-strava-orange bg-orange-50'
+                                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                              }`}
+                              data-testid={`button-activity-${activity.id}`}
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="font-semibold text-charcoal">{activity.name}</h4>
+                                <Badge variant="outline" className="text-xs">
+                                  {new Date(activity.startDate).toLocaleDateString()}
+                                </Badge>
+                              </div>
+                              <div className="grid grid-cols-3 gap-4 text-sm text-gray-600">
+                                <div>
+                                  <span className="text-gray-500">Distance:</span>{' '}
+                                  <span className="font-medium">{activity.distanceFormatted} {activity.distanceUnit}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Time:</span>{' '}
+                                  <span className="font-medium">{activity.durationFormatted}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Avg HR:</span>{' '}
+                                  <span className="font-medium">{Math.round(activity.averageHeartrate)} bpm</span>
+                                </div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-gray-500">
+                        <ActivityIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                        <p className="text-lg font-medium mb-2">No Suitable Activities Found</p>
+                        <p className="text-sm">
+                          Activities need to be 60+ minutes long with heart rate data. 
+                          Try syncing your Strava data or use manual input.
+                        </p>
+                      </div>
+                    )}
                   </TabsContent>
                 )}
 
@@ -407,6 +547,92 @@ export default function AerobicDecouplingCalculator() {
                       <div className="font-semibold text-red-700 mb-1">&gt; 8%</div>
                       <div className="text-gray-600">Fade</div>
                     </div>
+                  </div>
+
+                  {/* Visualizations */}
+                  <div className="mt-8 space-y-6">
+                    {/* Split-Halves Slopegraph */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Split-Halves Comparison</CardTitle>
+                        <CardDescription>Pace-to-Heart Rate (Pa:HR) efficiency drift between halves</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={250}>
+                          <LineChart
+                            data={[
+                              { half: 'First Half', paHR: result.firstHalfPaHR * 1000 },
+                              { half: 'Second Half', paHR: result.secondHalfPaHR * 1000 }
+                            ]}
+                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="half" />
+                            <YAxis 
+                              label={{ value: 'Pa:HR (×1000)', angle: -90, position: 'insideLeft' }}
+                            />
+                            <Tooltip 
+                              formatter={(value: number) => value.toFixed(2)}
+                              contentStyle={{ backgroundColor: 'white', border: '1px solid #ccc' }}
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="paHR" 
+                              stroke="#ff5800" 
+                              strokeWidth={3}
+                              dot={{ fill: '#ff5800', r: 6 }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                        <p className="text-xs text-gray-500 mt-2 text-center">
+                          {result.decouplingPercent < 0 ? '↓ Downward slope indicates aerobic fade' : '↑ Upward slope indicates improved efficiency'}
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    {/* Decoupling Bar Chart */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Decoupling Breakdown</CardTitle>
+                        <CardDescription>Visual comparison against benchmark thresholds</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={250}>
+                          <BarChart
+                            data={[
+                              { category: 'Your Run', value: result.decouplingPercent, fill: result.color.replace('bg-', '#') },
+                              { category: 'Excellent Threshold', value: -3, fill: '#22c55e' },
+                              { category: 'Good Threshold', value: -5, fill: '#3b82f6' },
+                              { category: 'Fade Threshold', value: -8, fill: '#ef4444' }
+                            ]}
+                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="category" angle={-15} textAnchor="end" height={80} />
+                            <YAxis label={{ value: 'Decoupling %', angle: -90, position: 'insideLeft' }} />
+                            <Tooltip 
+                              formatter={(value: number) => `${value.toFixed(2)}%`}
+                              contentStyle={{ backgroundColor: 'white', border: '1px solid #ccc' }}
+                            />
+                            <Bar 
+                              dataKey="value" 
+                              fill="#ff5800"
+                            >
+                              {[0, 1, 2, 3].map((index) => (
+                                <Bar key={index} dataKey="value" fill={
+                                  index === 0 ? (result.color === 'bg-red-500' ? '#ef4444' : 
+                                                 result.color === 'bg-orange-500' ? '#f97316' :
+                                                 result.color === 'bg-yellow-500' ? '#eab308' :
+                                                 result.color === 'bg-green-500' ? '#22c55e' : '#3b82f6') :
+                                  index === 1 ? '#22c55e' :
+                                  index === 2 ? '#3b82f6' : '#ef4444'
+                                } />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
               )}
