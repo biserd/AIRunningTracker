@@ -994,16 +994,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Estimate HR zones from user's max HR or calculate from data
-      let hrMax = user.maxHeartRate || 185; // Default if not set
-      let lt1HR = Math.round(hrMax * 0.75); // ~75% HRmax
-      let lt2HR = Math.round(hrMax * 0.88); // ~88% HRmax
-
-      // If user has threshold HR set, use it
-      if (user.thresholdHeartRate) {
-        lt2HR = user.thresholdHeartRate;
-        lt1HR = Math.round(lt2HR * 0.85); // LT1 ~85% of LT2
-      }
+      // Estimate HR zones - use default values
+      // TODO: Could enhance by adding maxHeartRate and thresholdHeartRate to user schema
+      const hrMax = 185; // Default max HR estimate
+      const lt1HR = Math.round(hrMax * 0.75); // ~75% HRmax (Zone 1/2 boundary)
+      const lt2HR = Math.round(hrMax * 0.88); // ~88% HRmax (Zone 2/3 boundary)
 
       // Calculate time in each zone for each activity
       interface ActivityZones {

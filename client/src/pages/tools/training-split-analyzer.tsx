@@ -10,7 +10,7 @@ import { ArrowRight, TrendingUp, Info, Calculator, Activity as ActivityIcon, Tar
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { Helmet } from "react-helmet";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -197,9 +197,12 @@ export default function TrainingSplitAnalyzer() {
     refetchStrava();
   };
 
-  if (stravaAnalysis && activeTab === "strava" && !result) {
-    setResult(stravaAnalysis as ZoneDistribution);
-  }
+  // Update result when Strava analysis completes
+  useEffect(() => {
+    if (stravaAnalysis && activeTab === "strava") {
+      setResult(stravaAnalysis as ZoneDistribution);
+    }
+  }, [stravaAnalysis, activeTab]);
 
   const ternaryData = result ? [
     { zone: 'Z1', value: result.zone1Percent, color: '#10b981' },
@@ -523,7 +526,7 @@ export default function TrainingSplitAnalyzer() {
           </Tabs>
 
           {result && (
-            <div className="space-y-6">
+            <div className="space-y-6" data-testid="results-section">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -533,49 +536,49 @@ export default function TrainingSplitAnalyzer() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-center mb-6">
-                    <Badge className={`${result.classificationColor} text-white text-2xl px-6 py-3`}>
+                    <Badge className={`${result.classificationColor} text-white text-2xl px-6 py-3`} data-testid="badge-classification">
                       {result.classification}
                     </Badge>
                   </div>
 
                   <div className="grid md:grid-cols-3 gap-4 mb-6">
-                    <Card className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950">
+                    <Card className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950" data-testid="card-zone1">
                       <CardHeader>
                         <CardTitle className="text-sm text-gray-600 dark:text-gray-400">Zone 1 (Easy)</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+                        <div className="text-3xl font-bold text-green-600 dark:text-green-400" data-testid="text-zone1-percent">
                           {result.zone1Percent.toFixed(1)}%
                         </div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        <div className="text-sm text-gray-600 dark:text-gray-400 mt-1" data-testid="text-zone1-minutes">
                           {result.zone1Minutes} minutes
                         </div>
                       </CardContent>
                     </Card>
 
-                    <Card className="border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950">
+                    <Card className="border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950" data-testid="card-zone2">
                       <CardHeader>
                         <CardTitle className="text-sm text-gray-600 dark:text-gray-400">Zone 2 (Threshold)</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                        <div className="text-3xl font-bold text-orange-600 dark:text-orange-400" data-testid="text-zone2-percent">
                           {result.zone2Percent.toFixed(1)}%
                         </div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        <div className="text-sm text-gray-600 dark:text-gray-400 mt-1" data-testid="text-zone2-minutes">
                           {result.zone2Minutes} minutes
                         </div>
                       </CardContent>
                     </Card>
 
-                    <Card className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950">
+                    <Card className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950" data-testid="card-zone3">
                       <CardHeader>
                         <CardTitle className="text-sm text-gray-600 dark:text-gray-400">Zone 3 (Hard)</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-3xl font-bold text-red-600 dark:text-red-400">
+                        <div className="text-3xl font-bold text-red-600 dark:text-red-400" data-testid="text-zone3-percent">
                           {result.zone3Percent.toFixed(1)}%
                         </div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        <div className="text-sm text-gray-600 dark:text-gray-400 mt-1" data-testid="text-zone3-minutes">
                           {result.zone3Minutes} minutes
                         </div>
                       </CardContent>
@@ -639,15 +642,15 @@ export default function TrainingSplitAnalyzer() {
                   <CardContent>
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {result.recommendations.map((rec, idx) => (
-                        <Card key={idx} className="border-2">
+                        <Card key={idx} className="border-2" data-testid={`card-recommendation-${idx}`}>
                           <CardHeader>
-                            <CardTitle className="text-lg">{rec.zone}</CardTitle>
+                            <CardTitle className="text-lg" data-testid={`text-rec-zone-${idx}`}>{rec.zone}</CardTitle>
                           </CardHeader>
                           <CardContent>
-                            <div className="text-2xl font-bold text-orange-600 dark:text-orange-400 mb-2">
+                            <div className="text-2xl font-bold text-orange-600 dark:text-orange-400 mb-2" data-testid={`text-rec-adjustment-${idx}`}>
                               {rec.adjustment}
                             </div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                            <p className="text-sm text-gray-600 dark:text-gray-400" data-testid={`text-rec-rationale-${idx}`}>
                               {rec.rationale}
                             </p>
                           </CardContent>

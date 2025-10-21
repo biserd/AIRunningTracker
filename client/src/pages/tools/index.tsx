@@ -38,16 +38,16 @@ const tools = [
   },
   {
     id: "training-split-analyzer",
-    title: "Training Split Analyzer",
-    description: "Analyze your intensity distribution between Polarized and Pyramidal training approaches to optimize your training zones.",
+    title: "Polarized vs Pyramidal Training Split Analyzer",
+    description: "Analyze your training intensity distribution and discover if you're following a polarized, pyramidal, or threshold-heavy approach.",
     icon: Activity,
     url: "/tools/training-split-analyzer",
-    status: "coming-soon",
+    status: "available",
     features: [
-      "Zone distribution",
-      "Weekly recommendations",
-      "Ternary plots",
-      "Session analysis"
+      "Zone distribution analysis",
+      "Weekly trends",
+      "Training prescription",
+      "Auto-import from Strava"
     ]
   },
   {
