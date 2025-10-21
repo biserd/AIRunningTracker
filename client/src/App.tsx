@@ -26,6 +26,7 @@ import SubscribePage from "@/pages/subscribe";
 import BillingPage from "@/pages/billing";
 import ToolsPage from "@/pages/tools";
 import AerobicDecouplingCalculator from "@/pages/tools/aerobic-decoupling-calculator";
+import TrainingSplitAnalyzer from "@/pages/tools/training-split-analyzer";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -67,6 +68,7 @@ function Router() {
       <Route path="/runner-score/:userId" component={RunnerScorePage} />
       <Route path="/tools" component={ToolsPage} />
       <Route path="/tools/aerobic-decoupling-calculator" component={AerobicDecouplingCalculator} />
+      <Route path="/tools/training-split-analyzer" component={TrainingSplitAnalyzer} />
       
       {/* Protected Routes */}
       <Route path="/dashboard">

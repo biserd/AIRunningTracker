@@ -954,6 +954,244 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Analyze training split (polarized vs pyramidal)
+  app.get("/api/training-split/analyze", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      const periodDays = parseInt(req.query.periodDays as string) || 28;
+      
+      // Get user for HR zones and preferences
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Calculate date range
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - periodDays);
+
+      // Fetch activities with HR data in the period
+      const result = await storage.getActivitiesByUserIdPaginated(userId, {
+        page: 1,
+        pageSize: 500, // Get all activities in period
+        minDistance: undefined,
+        maxDistance: undefined,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+      });
+
+      // Filter for activities with HR data
+      const activitiesWithHR = result.activities.filter(activity => 
+        activity.hasHeartrate && 
+        activity.averageHeartrate !== null &&
+        activity.movingTime >= 600 // At least 10 minutes
+      );
+
+      if (activitiesWithHR.length === 0) {
+        return res.status(400).json({ 
+          message: "No activities with heart rate data found in the selected period"
+        });
+      }
+
+      // Estimate HR zones from user's max HR or calculate from data
+      let hrMax = user.maxHeartRate || 185; // Default if not set
+      let lt1HR = Math.round(hrMax * 0.75); // ~75% HRmax
+      let lt2HR = Math.round(hrMax * 0.88); // ~88% HRmax
+
+      // If user has threshold HR set, use it
+      if (user.thresholdHeartRate) {
+        lt2HR = user.thresholdHeartRate;
+        lt1HR = Math.round(lt2HR * 0.85); // LT1 ~85% of LT2
+      }
+
+      // Calculate time in each zone for each activity
+      interface ActivityZones {
+        activityId: number;
+        date: Date;
+        zone1Minutes: number;
+        zone2Minutes: number;
+        zone3Minutes: number;
+      }
+
+      const activityZones: ActivityZones[] = [];
+
+      for (const activity of activitiesWithHR) {
+        const avgHR = activity.averageHeartrate!;
+        const durationMinutes = activity.movingTime / 60;
+
+        // Simple estimation: allocate all time to the zone matching avg HR
+        // In a real implementation, we'd fetch HR streams for detailed analysis
+        let z1 = 0, z2 = 0, z3 = 0;
+        
+        if (avgHR < lt1HR) {
+          z1 = durationMinutes;
+        } else if (avgHR < lt2HR) {
+          z2 = durationMinutes;
+        } else {
+          z3 = durationMinutes;
+        }
+
+        activityZones.push({
+          activityId: activity.id,
+          date: new Date(activity.startDate),
+          zone1Minutes: z1,
+          zone2Minutes: z2,
+          zone3Minutes: z3,
+        });
+      }
+
+      // Aggregate total time in zones
+      const totalZ1 = activityZones.reduce((sum, a) => sum + a.zone1Minutes, 0);
+      const totalZ2 = activityZones.reduce((sum, a) => sum + a.zone2Minutes, 0);
+      const totalZ3 = activityZones.reduce((sum, a) => sum + a.zone3Minutes, 0);
+      const totalMinutes = totalZ1 + totalZ2 + totalZ3;
+
+      if (totalMinutes === 0) {
+        return res.status(400).json({ message: "No valid training data found" });
+      }
+
+      // Calculate percentages
+      const z1Pct = (totalZ1 / totalMinutes) * 100;
+      const z2Pct = (totalZ2 / totalMinutes) * 100;
+      const z3Pct = (totalZ3 / totalMinutes) * 100;
+
+      // Classify distribution
+      let classification = "Mixed";
+      let classificationColor = "bg-gray-500";
+
+      if (z1Pct >= 70 && z3Pct >= 10 && z2Pct <= 20) {
+        classification = "Polarized";
+        classificationColor = "bg-blue-500";
+      } else if (z2Pct >= 25) {
+        classification = "Threshold-Heavy";
+        classificationColor = "bg-orange-500";
+      } else if (z1Pct > z2Pct && z2Pct > z3Pct && z2Pct >= 10 && z2Pct <= 25) {
+        classification = "Pyramidal";
+        classificationColor = "bg-green-500";
+      }
+
+      // Generate weekly breakdown
+      const weeks = Math.ceil(periodDays / 7);
+      const weeklyData = [];
+      
+      for (let i = 0; i < weeks; i++) {
+        const weekStart = new Date(startDate);
+        weekStart.setDate(weekStart.getDate() + (i * 7));
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 7);
+
+        const weekActivities = activityZones.filter(a => 
+          a.date >= weekStart && a.date < weekEnd
+        );
+
+        const weekZ1 = weekActivities.reduce((sum, a) => sum + a.zone1Minutes, 0);
+        const weekZ2 = weekActivities.reduce((sum, a) => sum + a.zone2Minutes, 0);
+        const weekZ3 = weekActivities.reduce((sum, a) => sum + a.zone3Minutes, 0);
+
+        weeklyData.push({
+          week: `Week ${i + 1}`,
+          zone1: Math.round(weekZ1),
+          zone2: Math.round(weekZ2),
+          zone3: Math.round(weekZ3),
+          total: Math.round(weekZ1 + weekZ2 + weekZ3),
+        });
+      }
+
+      // Generate recommendations
+      const recommendations = [];
+      
+      if (classification === "Threshold-Heavy") {
+        const reduceZ2 = Math.round((z2Pct - 20) * totalMinutes / 100);
+        const addZ1 = Math.round(reduceZ2 * 0.7);
+        const addZ3 = Math.round(reduceZ2 * 0.3);
+        
+        recommendations.push({
+          zone: "Zone 1",
+          adjustment: `+${addZ1} min/week`,
+          rationale: "Increase aerobic base to balance intensity"
+        });
+        recommendations.push({
+          zone: "Zone 2",
+          adjustment: `-${reduceZ2} min/week`,
+          rationale: "Reduce threshold work to prevent overtraining"
+        });
+        recommendations.push({
+          zone: "Zone 3",
+          adjustment: `+${addZ3} min/week`,
+          rationale: "Add high-intensity to maintain fitness"
+        });
+      } else if (classification === "Polarized" || classification === "Pyramidal") {
+        recommendations.push({
+          zone: "Current Split",
+          adjustment: "Maintain",
+          rationale: "Your distribution is well-balanced for sustainable progress"
+        });
+        
+        if (z3Pct < 15) {
+          recommendations.push({
+            zone: "Zone 3",
+            adjustment: `+${Math.round((15 - z3Pct) * totalMinutes / 100)} min/week`,
+            rationale: "Consider adding more high-intensity for speed development"
+          });
+        }
+      } else {
+        const targetZ1 = 75;
+        const targetZ2 = 15;
+        const targetZ3 = 10;
+        
+        const z1Delta = Math.round((targetZ1 - z1Pct) * totalMinutes / 100);
+        const z2Delta = Math.round((targetZ2 - z2Pct) * totalMinutes / 100);
+        const z3Delta = Math.round((targetZ3 - z3Pct) * totalMinutes / 100);
+        
+        if (Math.abs(z1Delta) > 30) {
+          recommendations.push({
+            zone: "Zone 1",
+            adjustment: `${z1Delta > 0 ? '+' : ''}${z1Delta} min/week`,
+            rationale: z1Delta > 0 ? "Build aerobic base" : "Reduce easy volume slightly"
+          });
+        }
+        if (Math.abs(z2Delta) > 20) {
+          recommendations.push({
+            zone: "Zone 2",
+            adjustment: `${z2Delta > 0 ? '+' : ''}${z2Delta} min/week`,
+            rationale: z2Delta > 0 ? "Add threshold work" : "Reduce threshold volume"
+          });
+        }
+        if (Math.abs(z3Delta) > 15) {
+          recommendations.push({
+            zone: "Zone 3",
+            adjustment: `${z3Delta > 0 ? '+' : ''}${z3Delta} min/week`,
+            rationale: z3Delta > 0 ? "Increase high-intensity" : "Reduce high-intensity volume"
+          });
+        }
+      }
+
+      res.json({
+        zone1Percent: z1Pct,
+        zone2Percent: z2Pct,
+        zone3Percent: z3Pct,
+        zone1Minutes: Math.round(totalZ1),
+        zone2Minutes: Math.round(totalZ2),
+        zone3Minutes: Math.round(totalZ3),
+        totalMinutes: Math.round(totalMinutes),
+        classification,
+        classificationColor,
+        weeklyData,
+        recommendations,
+        hrZones: {
+          lt1HR,
+          lt2HR,
+          hrMax,
+        },
+        activitiesAnalyzed: activitiesWithHR.length,
+      });
+    } catch (error: any) {
+      console.error('Training split analysis error:', error);
+      res.status(500).json({ message: error.message || "Failed to analyze training split" });
+    }
+  });
+
   // Get all activities for a user with pagination and filtering
   app.get("/api/activities", authenticateJWT, async (req: any, res) => {
     try {
