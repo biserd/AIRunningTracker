@@ -111,23 +111,6 @@ export default function RouteMap({ polyline, startLat, startLng, endLat, endLng,
                   ✓ GPS route (${coordinates.length} points)
                 </div>
               </div>
-              </div>
-              
-              <div class="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
-                <div class="flex items-center space-x-4 text-sm">
-                  <div class="flex items-center space-x-1">
-                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span class="text-gray-700 font-medium">Start</span>
-                  </div>
-                  <div class="flex items-center space-x-1">
-                    <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <span class="text-gray-700 font-medium">Finish</span>
-                  </div>
-                </div>
-                <div class="text-xs text-green-600 mt-1 font-medium">
-                  ✓ Complete GPS route (${coordinates.length} points)
-                </div>
-              </div>
             </div>
           `;
 

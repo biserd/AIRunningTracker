@@ -234,7 +234,7 @@ export class DatabaseStorage implements IStorage {
       // Add one day to endDate to include activities on that day
       const endDateTime = new Date(endDate);
       endDateTime.setDate(endDateTime.getDate() + 1);
-      conditions.push(lt(activities.startDate, endDateTime.toISOString()));
+      conditions.push(lt(activities.startDate, endDateTime));
     }
 
     // Get total count
@@ -539,17 +539,17 @@ export class DatabaseStorage implements IStorage {
     const [dailyActiveResult] = await db
       .select({ count: sql<number>`count(distinct ${activities.userId})` })
       .from(activities)
-      .where(gte(activities.startDate, todayStart.toISOString()));
+      .where(gte(activities.startDate, todayStart));
 
     const [weeklyActiveResult] = await db
       .select({ count: sql<number>`count(distinct ${activities.userId})` })
       .from(activities)
-      .where(gte(activities.startDate, weekStart.toISOString()));
+      .where(gte(activities.startDate, weekStart));
 
     const [monthlyActiveResult] = await db
       .select({ count: sql<number>`count(distinct ${activities.userId})` })
       .from(activities)
-      .where(gte(activities.startDate, monthStart.toISOString()));
+      .where(gte(activities.startDate, monthStart));
 
     // Average activities per user
     const [avgActivitiesResult] = await db
@@ -580,12 +580,12 @@ export class DatabaseStorage implements IStorage {
     const [newUsersTodayResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(users)
-      .where(gte(users.createdAt, todayStart.toISOString()));
+      .where(gte(users.createdAt, todayStart));
 
     const [newUsersWeekResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(users)
-      .where(gte(users.createdAt, weekStart.toISOString()));
+      .where(gte(users.createdAt, weekStart));
 
     // Sync success rate (users with recent sync vs connected users)
     const [connectedUsersResult] = await db
@@ -600,7 +600,7 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(users.stravaConnected, true),
-          gte(users.lastSyncAt, recentSyncCutoff.toISOString())
+          gte(users.lastSyncAt, recentSyncCutoff)
         )
       );
 
@@ -646,8 +646,8 @@ export class DatabaseStorage implements IStorage {
         .from(users)
         .where(
           and(
-            gte(users.createdAt, date.toISOString()),
-            lt(users.createdAt, nextDate.toISOString())
+            gte(users.createdAt, date),
+            lt(users.createdAt, nextDate)
           )
         );
       
@@ -668,8 +668,8 @@ export class DatabaseStorage implements IStorage {
         .from(activities)
         .where(
           and(
-            gte(activities.startDate, date.toISOString()),
-            lt(activities.startDate, nextDate.toISOString())
+            gte(activities.startDate, date),
+            lt(activities.startDate, nextDate)
           )
         );
       
@@ -735,12 +735,12 @@ export class DatabaseStorage implements IStorage {
     const [recentActivitiesCount] = await db
       .select({ count: sql<number>`count(*)` })
       .from(activities)
-      .where(gte(activities.createdAt, hourAgo.toISOString()));
+      .where(gte(activities.createdAt, hourAgo));
 
     const [recentUsersCount] = await db
       .select({ count: sql<number>`count(*)` })
       .from(users)
-      .where(gte(users.createdAt, hourAgo.toISOString()));
+      .where(gte(users.createdAt, hourAgo));
 
     // Estimate API requests based on platform activity
     const estimatedRequests = (recentActivitiesCount.count * 3) + (recentUsersCount.count * 5) + 50; // Base requests
