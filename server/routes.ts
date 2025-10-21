@@ -977,8 +977,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pageSize: 500, // Get all activities in period
         minDistance: undefined,
         maxDistance: undefined,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
+        startDate: startDate,
+        endDate: endDate,
       });
 
       // Filter for activities with HR data

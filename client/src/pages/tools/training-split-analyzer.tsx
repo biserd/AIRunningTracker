@@ -223,20 +223,16 @@ export default function TrainingSplitAnalyzer() {
         <nav className="border-b bg-white dark:bg-gray-900">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
-              <Link href="/">
-                <a className="text-2xl font-bold text-orange-600 dark:text-orange-500">RunAnalytics</a>
+              <Link href="/" className="text-2xl font-bold text-orange-600 dark:text-orange-500">
+                RunAnalytics
               </Link>
               <div className="flex items-center gap-4">
-                <Link href="/tools">
-                  <a className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
-                    ← Back to Tools
-                  </a>
+                <Link href="/tools" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+                  ← Back to Tools
                 </Link>
                 {!isAuthenticated && (
                   <Link href="/login">
-                    <a>
-                      <Button variant="outline">Sign In</Button>
-                    </a>
+                    <Button variant="outline">Sign In</Button>
                   </Link>
                 )}
               </div>
@@ -721,12 +717,10 @@ export default function TrainingSplitAnalyzer() {
                 Sign up for RunAnalytics to get comprehensive training analysis, AI-powered insights, personalized training plans, and race predictions—all completely free!
               </p>
               <Link href={isAuthenticated ? "/dashboard" : "/register"}>
-                <a>
-                  <Button className="w-full sm:w-auto" data-testid="link-get-started">
-                    {isAuthenticated ? "Go to Dashboard" : "Get Started Free"}
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </a>
+                <Button className="w-full sm:w-auto" data-testid="link-get-started">
+                  {isAuthenticated ? "Go to Dashboard" : "Get Started Free"}
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
               </Link>
             </CardContent>
           </Card>
