@@ -197,12 +197,25 @@ export default function TrainingSplitAnalyzer() {
     refetchStrava();
   };
 
+  // Clear results when switching tabs
+  useEffect(() => {
+    setResult(null);
+  }, [activeTab]);
+
+  // Clear results when user is not authenticated
+  useEffect(() => {
+    if (!isAuthenticated && activeTab === "strava") {
+      setResult(null);
+      setActiveTab("manual");
+    }
+  }, [isAuthenticated, activeTab]);
+
   // Update result when Strava analysis completes
   useEffect(() => {
-    if (stravaAnalysis && activeTab === "strava") {
+    if (stravaAnalysis && activeTab === "strava" && isAuthenticated) {
       setResult(stravaAnalysis as ZoneDistribution);
     }
-  }, [stravaAnalysis, activeTab]);
+  }, [stravaAnalysis, activeTab, isAuthenticated]);
 
   const ternaryData = result ? [
     { zone: 'Z1', value: result.zone1Percent, color: '#10b981' },
