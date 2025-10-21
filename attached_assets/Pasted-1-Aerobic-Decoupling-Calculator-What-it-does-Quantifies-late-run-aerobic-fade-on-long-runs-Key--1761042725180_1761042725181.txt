@@ -1,0 +1,120 @@
+1) Aerobic Decoupling Calculator
+
+What it does: Quantifies late-run aerobic fade on long runs.
+
+Key inputs: Pace (or speed), heart rate (HR), timestamps; optional temp/elevation.
+
+Core formulas / logic
+
+Convert pace → speed (m/s).
+
+Pa:HR per sample: PaHR = speed / HR.
+
+Split run by elapsed time (50/50).
+
+Robust central tendency per half (median or Theil–Sen).
+
+Decoupling %: ((PaHR_second / PaHR_first) - 1) * 100.
+
+Bands: ≤3% excellent, 3–5% good, 5–8% borderline, >8% fade.
+
+Visualizations
+
+Split-halves slopegraph (line tilts show drift).
+
+Drift waterfall (bar per run, median line).
+
+Durability curve (duration bucket vs median drift; breakpoint where >5%).
+
+Optional heat-adjusted overlay toggle.
+
+2) Race Predictor (10k / Half / Marathon)
+
+What it does: Predicts race time with a confidence band; turns into pace tables.
+
+Key inputs: Recent race/effort (D₁, T₁), target distance D₂; training consistency; optional course & weather.
+
+Core formulas / logic
+
+Riegel: T₂ = T₁ * (D₂ / D₁)^k with k≈1.06 (personalize by volume/durability: ~1.04–1.08).
+
+Training Consistency Index (TCI): 1 − norm(stddev(weekly load)) (0–1).
+
+Confidence band (80%): ± base_error(distance) × (1 + (1−TCI)*α); e.g., base ≈ 2.5% (10k), 3.5% (HM), 5% (M).
+
+Weather/course adjustment: add time deltas from elevation/heat/wind models.
+
+Visualizations
+
+Fan/confidence plot (point + 80% interval).
+
+Pace ladder (goal pace with ±5/±10s rungs).
+
+Course profile + pace overlay (and gel markers).
+
+Weather dial with net impact (+sec/mi or +sec/km).
+
+3) Polarized vs Pyramidal Training Split Analyzer
+
+What it does: Classifies intensity distribution and suggests next-week tweaks.
+
+Key inputs: Time in Z1/Z2/Z3 over 28–42 days from HR (preferred) or pace/power; thresholds LT1/LT2 or estimates.
+
+Core formulas / logic
+
+Thresholds:
+
+If Threshold HR known: LT2 = thrHR, LT1 ≈ 0.78 × LT2.
+
+If HRmax only: LT1 ≈ 75% HRmax, LT2 ≈ 88% HRmax.
+
+Pace fallback: zones by % of threshold pace.
+
+Map samples to zones; compute %Z1/%Z2/%Z3.
+
+Labels (typical rules):
+
+Polarized: Z1 ≥ 70%, Z3 ≥ 10%, Z2 ≤ 20%
+
+Pyramidal: Z1 > Z2 > Z3 with Z2 ≈ 10–25%
+
+Threshold-heavy: Z2 ≥ 25%
+
+Visualizations
+
+Stacked area by week (Z1/Z2/Z3, plus total load line).
+
+Ternary (triangle) pin with 1-week trail.
+
+Zone Sankey (session types → zone time).
+
+Prescription chips (e.g., “Z1 +80m”, “Z2 −20m”).
+
+4) Cadence Drift & Form Stability Report
+
+What it does: Detects form fade and variability; outputs a Form Stability Score (0–100).
+
+Key inputs: Cadence (spm) time series; optional pace/HR; optional GCT/VO metrics.
+
+Core formulas / logic
+
+For each eligible run (≥45 min), robust fit: cadence vs time → slope drift (spm/hour).
+
+Cadence variability (CV): std(cadence) / mean(cadence) × 100.
+
+Stride-length proxy: stride = speed / (cadence/60); compute variability.
+
+Score (0–100):
+Score = 100 − (w1·norm(|drift|) + w2·norm(CV) + w3·norm(stride_var)), e.g., w1=0.5, w2=0.3, w3=0.2.
+
+Heuristics: drift ≤2 spm/hr = stable; 2–5 mild; >5 significant.
+
+Visualizations
+
+Cadence vs time with robust trend band (slope annotated).
+
+Stability gauge (0–100) with small “Drift/CV” readouts.
+
+Weekly box/violin for cadence spread (narrow = stable).
+
+Stride vs pace scatter with outlier flags.
