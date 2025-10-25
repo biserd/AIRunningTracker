@@ -488,7 +488,7 @@ export default function MarathonFuelingPlanner() {
                         {feedingEvents.length} total gels • Tap to change gel brand
                       </CardDescription>
                     </div>
-                    <Button onClick={handleOptimize} variant="outline" size="sm" data-testid="button-optimize">
+                    <Button onClick={handleOptimize} className="bg-strava-orange text-white hover:bg-strava-orange/90" size="sm" data-testid="button-optimize">
                       <TrendingUp className="w-4 h-4 mr-2" />
                       Optimize
                     </Button>
