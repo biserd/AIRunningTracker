@@ -27,7 +27,7 @@ export default function AdminPerformanceLogsPage() {
   
   // Filter state
   const [limit, setLimit] = useState("100");
-  const [method, setMethod] = useState<string>("");
+  const [method, setMethod] = useState<string>("all");
   const [endpoint, setEndpoint] = useState<string>("");
   const [minStatus, setMinStatus] = useState<string>("");
   const [maxStatus, setMaxStatus] = useState<string>("");
@@ -39,16 +39,31 @@ export default function AdminPerformanceLogsPage() {
     }
   }, [user, authLoading, setLocation]);
 
-  // Build query params
-  const queryParams = new URLSearchParams();
-  if (limit) queryParams.append('limit', limit);
-  if (method) queryParams.append('method', method);
-  if (endpoint) queryParams.append('endpoint', endpoint);
-  if (minStatus) queryParams.append('minStatusCode', minStatus);
-  if (maxStatus) queryParams.append('maxStatusCode', maxStatus);
-
   const { data, isLoading, refetch } = useQuery<{ logs: PerformanceLog[]; count: number }>({
-    queryKey: ["/api/admin/performance-logs", queryParams.toString()],
+    queryKey: ["/api/admin/performance-logs", limit, method, endpoint, minStatus, maxStatus],
+    queryFn: async () => {
+      const queryParams = new URLSearchParams();
+      if (limit) queryParams.append('limit', limit);
+      if (method && method !== 'all') queryParams.append('method', method);
+      if (endpoint) queryParams.append('endpoint', endpoint);
+      if (minStatus) queryParams.append('minStatusCode', minStatus);
+      if (maxStatus) queryParams.append('maxStatusCode', maxStatus);
+      
+      const token = localStorage.getItem("auth_token");
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`/api/admin/performance-logs?${queryParams.toString()}`, {
+        headers,
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch performance logs');
+      }
+      return response.json();
+    },
     enabled: !!user && user.isAdmin,
   });
 
@@ -195,7 +210,7 @@ export default function AdminPerformanceLogsPage() {
                     <SelectValue placeholder="All methods" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All methods</SelectItem>
+                    <SelectItem value="all">All methods</SelectItem>
                     <SelectItem value="GET">GET</SelectItem>
                     <SelectItem value="POST">POST</SelectItem>
                     <SelectItem value="PUT">PUT</SelectItem>
