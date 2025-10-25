@@ -77,7 +77,7 @@ export default function AdminPerformanceLogsPage() {
 
   const getStatusBadge = (statusCode: number) => {
     if (statusCode >= 200 && statusCode < 300) {
-      return <Badge variant="default" className="bg-green-500">{ {statusCode}}</Badge>;
+      return <Badge variant="default" className="bg-green-500">{statusCode}</Badge>;
     } else if (statusCode >= 300 && statusCode < 400) {
       return <Badge variant="secondary">{statusCode}</Badge>;
     } else if (statusCode >= 400 && statusCode < 500) {

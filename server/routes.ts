@@ -137,18 +137,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email } = z.object({ email: z.string().email() }).parse(req.body);
       
-      console.log(`🔐 Password reset requested for: ${email}`);
-      
       // Generate reset token and send email
       const resetToken = await authService.generatePasswordResetToken(email);
       
       if (resetToken) {
-        console.log(`✅ Reset token generated for ${email}, sending email...`);
         // Send password reset email
         await emailService.sendPasswordResetEmail(email, resetToken);
-        console.log(`📧 Password reset email sent to ${email}`);
-      } else {
-        console.log(`⚠️ No user found with email: ${email} (this is expected behavior)`);
       }
       
       // Always return success to prevent email enumeration
