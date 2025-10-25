@@ -31,6 +31,7 @@ import ToolsPage from "@/pages/tools";
 import AerobicDecouplingCalculator from "@/pages/tools/aerobic-decoupling-calculator";
 import TrainingSplitAnalyzer from "@/pages/tools/training-split-analyzer";
 import MarathonFuelingPlanner from "@/pages/tools/marathon-fueling";
+import RacePredictor from "@/pages/tools/race-predictor";
 import CadenceAnalyzer from "@/pages/tools/cadence-analyzer";
 import NotFound from "@/pages/not-found";
 
@@ -77,6 +78,7 @@ function Router() {
       <Route path="/tools/aerobic-decoupling-calculator" component={AerobicDecouplingCalculator} />
       <Route path="/tools/training-split-analyzer" component={TrainingSplitAnalyzer} />
       <Route path="/tools/marathon-fueling" component={MarathonFuelingPlanner} />
+      <Route path="/tools/race-predictor" component={RacePredictor} />
       <Route path="/tools/cadence-analyzer" component={CadenceAnalyzer} />
       
       {/* Protected Routes */}
