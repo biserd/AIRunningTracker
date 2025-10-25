@@ -1,0 +1,92 @@
+Absolutely—projected finish time should be a first-class input, because it determines how many feeding events you’ll have and therefore the total gels (and how much electrolytes your drink must carry).
+
+Here’s exactly how to wire it + concrete 4-hr vs 5-hr examples.
+
+1) Add these inputs
+	•	Projected finish time (HH:MM)
+	•	Feeding interval (default 30 min, allow 20–35)
+	•	First gel at (default 00:30; toggle pre-start gel at -00:10)
+	•	Last-gel cutoff (default 00:15 before finish)
+	•	Carb target (g/h; auto from gut-training level)
+	•	Sodium target (mg/h; auto from climate + sweat profile)
+	•	Gel catalog (brand, carb/gel, sodium/gel, caffeine)
+	•	Drink plan (ml/h and sodium mg/L; optional carbs g/L)
+
+2) Core math (simple & robust)
+
+Let:
+	•	T = race time in minutes
+	•	t0 = first in-race gel minute (e.g., 30)
+	•	cutoff = last-gel cutoff (e.g., 15)
+	•	Δ = feeding interval (e.g., 30)
+	•	pre = 1 if taking a pre-start gel (-10 min), else 0
+
+Feeding events (in-race gels):
+
+if T - cutoff < t0: events = 0
+else events = floor((T - cutoff - t0) / Δ) + 1
+
+Total gels = events + pre.
+
+Carb budget check:
+
+carb_needed_total = carb_target_gph * (T/60)
+carb_from_gels    = sum(gel_carb_g) over all events (choose per-event gel)
+carb_from_drink   = (drink_g_per_L * drink_L_per_h) * (T/60)
+shortfall_g       = max(0, carb_needed_total - carb_from_gels - carb_from_drink)
+
+Resolve shortfall by (a) swapping in higher-carb gels (e.g., 40 g) or
+(b) shortening interval to 25–20 min, or (c) adding drink carbs.
+
+Sodium budget (per hour):
+
+sodium_per_h = (sum(gel_Na_mg in that hour) / 1h) + (drink_mg_per_L * L_per_h)
+goal ≈ 300–600 mg/h (higher in heat/heavy sweater)
+
+3) Why interval matters
+	•	Every 30 min = ~2 gels/hour.
+	•	With 25 g gels → ≈50 g/h (too low for most marathoners).
+	•	With 40 g gels → ≈80 g/h (hits many targets).
+	•	If athlete insists on 25 g gels + 30-min interval, you must add drink carbs (e.g., 30–40 g/h) or switch to every 20–25 min.
+
+4) Example schedules (30-min interval)
+
+A) 4:00 marathon, pre-start gel ON, first in-race gel at 00:30, cutoff 00:15
+	•	In-race times: 00:30, 1:00, 1:30, 2:00, 2:30, 3:00, 3:30 → 7 in-race
+	•	Total gels = 7 + 1 pre-start = 8
+
+Plan 1 (hits 80 g/h cleanly, Maurten-leaning):
+	•	Use 40 g gels (e.g., Maurten GEL 160) for each feed.
+	•	Carbs: 8 × 40 = 320 g → 80 g/h ✅
+	•	Sodium from gels: ~240 mg total → 60 mg/h (low)
+	•	Drink: 500 ml/h @ 1000 mg/L → 500 mg Na/h → ~560 mg/h overall ✅
+
+Plan 2 (GU/SiS 22–25 g gels, user insists on 30-min interval):
+	•	Gels per hour: 2 × 25 g ≈ 50 g/h → add drink carbs 30 g/h
+	•	e.g., 500 ml/h of a 60 g/L mix → +30 g/h
+	•	Sodium: if gels are low-Na (SiS), make drink 900–1000 mg/L to hit ~400–600 mg/h.
+
+B) 5:00 marathon, pre-start gel OFF, first at 00:30, cutoff 00:15
+	•	In-race times: 00:30, 1:00, 1:30, 2:00, 2:30, 3:00, 3:30, 4:00, 4:30 → 9 gels
+	•	If you toggle pre-start gel ON, total becomes 10.
+
+Plan (40 g gels):
+	•	Carbs: 9 × 40 = 360 g → 72 g/h (borderline if target is 80 g/h)
+	•	Add pre-start gel to reach 10 × 40 = 400 g → 80 g/h ✅
+	•	Sodium: as above, rely on drink sodium (e.g., 500 ml/h @ 1000 mg/L = 500 mg/h).
+
+5) Brand-smart mixing (auto)
+
+Tell the solver to pick gels per event:
+	•	If interval = 30 min and carb_target ≥ 75 g/h → alternate 40 g + 25 g (≈65 g/h) or use all 40 g (≈80 g/h).
+	•	If athlete prefers high-Na gels (e.g., GU Roctane ~125 mg) but carb/g is low (~21 g), keep interval 30 min and raise drink carbs to hit g/h while relying on gels for sodium.
+
+6) UI that makes this obvious
+	•	Top row gauges: Carbs/h and Sodium/h (live as you tweak time/interval/brands).
+	•	Timeline strip: Icons at each feed (pre-start, 00:30, 1:00, …). Tap to switch gel brand for that slot.
+	•	Totals panel: “You’ll need 8 gels (5× Maurten 160, 3× GU), 2.0 L drink, 2000 mg sodium.”
+	•	Warnings: “At 30-min interval with 25 g gels you’re under target by 25–35 g/h. Add drink carbs or shorten interval.”
+
+⸻
+
+If you want, I can drop a tiny solver (TypeScript) that takes projected_time, interval, first_gel_min, cutoff, and your product catalog, then outputs the exact per-5K schedule, gel counts, and drink sodium needed to keep both gauges in the green.
