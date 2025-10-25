@@ -144,6 +144,13 @@ export default function AuthPage() {
                   {loginForm.formState.errors.password && (
                     <p className="text-sm text-red-500">{loginForm.formState.errors.password.message}</p>
                   )}
+                  <div className="text-right">
+                    <Link href="/forgot-password">
+                      <a className="text-sm text-strava-orange hover:underline" data-testid="link-forgot-password">
+                        Forgot password?
+                      </a>
+                    </Link>
+                  </div>
                 </div>
 
                 <Button 
