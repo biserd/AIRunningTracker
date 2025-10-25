@@ -121,18 +121,26 @@ export class AuthService {
     const crypto = await import('crypto');
     const resetToken = crypto.randomBytes(32).toString('hex');
     
+    // Hash the token before storing (security: prevent token leakage from DB compromise)
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    
     // Set expiry to 1 hour from now
     const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
     
-    // Store token in database
-    await storage.updateUserResetToken(user.id, resetToken, resetTokenExpiry);
+    // Store HASHED token in database (never store plaintext tokens)
+    await storage.updateUserResetToken(user.id, hashedToken, resetTokenExpiry);
     
+    // Return the original token (only sent to user via email)
     return resetToken;
   }
 
   async resetPassword(token: string, newPassword: string): Promise<boolean> {
-    // Find user by reset token
-    const user = await storage.getUserByResetToken(token);
+    // Hash the provided token to compare with stored hash
+    const crypto = await import('crypto');
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    
+    // Find user by hashed reset token
+    const user = await storage.getUserByResetToken(hashedToken);
     
     if (!user) {
       return false;
@@ -146,7 +154,7 @@ export class AuthService {
     // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
     
-    // Update password and clear reset token
+    // Update password and clear reset token (enforces single-use)
     await storage.updateUserPassword(user.id, hashedPassword);
     
     return true;
