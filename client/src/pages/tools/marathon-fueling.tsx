@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'wouter';
 import { ArrowLeft, Zap, Droplets, Calculator, AlertTriangle, CheckCircle2, TrendingUp, Sparkles } from 'lucide-react';
+import AppHeader from '@/components/AppHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -138,15 +139,21 @@ export default function MarathonFuelingPlanner() {
       </Helmet>
 
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+        {isAuthenticated && <AppHeader />}
+        
         <div className="container mx-auto px-4 py-8 max-w-7xl">
           {/* Header */}
+          {!isAuthenticated && (
+            <div className="mb-8">
+              <Link href="/tools">
+                <Button variant="ghost" size="sm" className="mb-4" data-testid="button-back-tools">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Tools
+                </Button>
+              </Link>
+            </div>
+          )}
           <div className="mb-8">
-            <Link href="/tools">
-              <Button variant="ghost" size="sm" className="mb-4" data-testid="button-back-tools">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Tools
-              </Button>
-            </Link>
             <h1 className="text-4xl font-bold mb-3" data-testid="text-page-title">Marathon Fueling Planner</h1>
             <p className="text-xl text-muted-foreground" data-testid="text-page-description">
               Calculate your optimal race nutrition strategy with precise gel timing and fueling targets

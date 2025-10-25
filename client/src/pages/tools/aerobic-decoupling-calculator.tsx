@@ -10,6 +10,7 @@ import { ArrowRight, TrendingDown, Info, Calculator, Activity as ActivityIcon } 
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { Helmet } from "react-helmet";
+import AppHeader from "@/components/AppHeader";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -216,43 +217,38 @@ export default function AerobicDecouplingCalculator() {
 
       <div className="min-h-screen bg-light-grey">
         {/* Header */}
-        <div className="bg-white shadow-sm border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <Link href="/tools">
-                  <Button variant="ghost" size="sm" data-testid="button-back-tools">
-                    <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
-                    All Tools
-                  </Button>
-                </Link>
-                <div className="hidden sm:flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-strava-orange rounded-lg flex items-center justify-center">
-                    <TrendingDown className="text-white" size={20} />
-                  </div>
-                  <div>
-                    <h1 className="text-xl font-bold text-charcoal">Aerobic Decoupling Calculator</h1>
-                    <p className="text-sm text-gray-600">Measure endurance efficiency</p>
+        {isAuthenticated ? (
+          <AppHeader />
+        ) : (
+          <div className="bg-white shadow-sm border-b border-gray-200">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <Link href="/tools">
+                    <Button variant="ghost" size="sm" data-testid="button-back-tools">
+                      <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
+                      All Tools
+                    </Button>
+                  </Link>
+                  <div className="hidden sm:flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-strava-orange rounded-lg flex items-center justify-center">
+                      <TrendingDown className="text-white" size={20} />
+                    </div>
+                    <div>
+                      <h1 className="text-xl font-bold text-charcoal">Aerobic Decoupling Calculator</h1>
+                      <p className="text-sm text-gray-600">Measure endurance efficiency</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              {!isAuthenticated && (
                 <Link href="/auth">
                   <Button className="bg-strava-orange text-white hover:bg-strava-orange/90" size="sm" data-testid="button-sign-in">
                     Sign In for Strava Import
                   </Button>
                 </Link>
-              )}
-              {isAuthenticated && (
-                <Link href="/dashboard">
-                  <Button variant="outline" size="sm" data-testid="button-dashboard">
-                    Dashboard
-                  </Button>
-                </Link>
-              )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Main Content */}
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">

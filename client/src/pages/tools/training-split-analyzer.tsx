@@ -10,6 +10,7 @@ import { ArrowRight, TrendingUp, Info, Calculator, Activity as ActivityIcon, Tar
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { Helmet } from "react-helmet";
+import AppHeader from "@/components/AppHeader";
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -233,25 +234,27 @@ export default function TrainingSplitAnalyzer() {
       </Helmet>
 
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
-        <nav className="border-b bg-white dark:bg-gray-900">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <Link href="/" className="text-2xl font-bold text-orange-600 dark:text-orange-500">
-                RunAnalytics
-              </Link>
-              <div className="flex items-center gap-4">
-                <Link href="/tools" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
-                  ← Back to Tools
+        {isAuthenticated ? (
+          <AppHeader />
+        ) : (
+          <nav className="border-b bg-white dark:bg-gray-900">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+              <div className="flex items-center justify-between">
+                <Link href="/" className="text-2xl font-bold text-orange-600 dark:text-orange-500">
+                  RunAnalytics
                 </Link>
-                {!isAuthenticated && (
-                  <Link href="/login">
+                <div className="flex items-center gap-4">
+                  <Link href="/tools" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+                    ← Back to Tools
+                  </Link>
+                  <Link href="/auth">
                     <Button variant="outline">Sign In</Button>
                   </Link>
-                )}
+                </div>
               </div>
             </div>
-          </div>
-        </nav>
+          </nav>
+        )}
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center mb-12">
