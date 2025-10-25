@@ -1349,6 +1349,187 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Race Predictor - Calculate race time prediction
+  app.post("/api/race-predictor/calculate", async (req, res) => {
+    try {
+      const { predictRaceTime } = await import("@shared/racePrediction");
+      const result = predictRaceTime(req.body);
+      res.json(result);
+    } catch (error: any) {
+      console.error('Race prediction error:', error);
+      res.status(500).json({ message: error.message || "Failed to calculate race prediction" });
+    }
+  });
+
+  // Race Predictor - Get suitable activities for base effort (recent race efforts)
+  app.get("/api/race-predictor/suitable-activities", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Get user for unit preference
+      const user = await storage.getUser(userId);
+      const unitPreference = user?.unitPreference || 'km';
+
+      // Fetch recent activities (last 90 days)
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 90);
+
+      const result = await storage.getActivitiesByUserIdPaginated(userId, {
+        page: 1,
+        pageSize: 100,
+        minDistance: 3000, // At least 3km
+        maxDistance: undefined,
+        startDate: startDate,
+        endDate: endDate,
+      });
+
+      // Filter for race-effort candidates (fast paces)
+      const suitableActivities = result.activities
+        .filter(activity => activity.movingTime >= 600) // At least 10 minutes
+        .map(activity => {
+          const distanceInKm = activity.distance / 1000;
+          const distanceConverted = unitPreference === 'miles' ? distanceInKm * 0.621371 : distanceInKm;
+          const pacePerKm = activity.distance > 0 ? (activity.movingTime / 60) / distanceInKm : 0;
+          const paceConverted = unitPreference === 'miles' ? pacePerKm / 0.621371 : pacePerKm;
+
+          return {
+            id: activity.id,
+            stravaId: activity.stravaId,
+            name: activity.name,
+            distance: activity.distance, // Keep in meters for calculation
+            distanceFormatted: distanceConverted.toFixed(2),
+            movingTime: activity.movingTime,
+            durationFormatted: `${Math.floor(activity.movingTime / 60)}:${String(Math.floor(activity.movingTime % 60)).padStart(2, '0')}`,
+            averageSpeed: activity.averageSpeed,
+            paceFormatted: paceConverted > 0 ? `${Math.floor(paceConverted)}:${String(Math.round((paceConverted % 1) * 60)).padStart(2, '0')}` : "0:00",
+            startDate: activity.startDate,
+            distanceUnit: unitPreference === 'miles' ? 'mi' : 'km',
+          };
+        })
+        .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()); // Most recent first
+
+      res.json({ activities: suitableActivities });
+    } catch (error: any) {
+      console.error('Get race predictor suitable activities error:', error);
+      res.status(500).json({ message: error.message || "Failed to fetch activities" });
+    }
+  });
+
+  // Cadence Analyzer - Analyze cadence from activity
+  app.post("/api/cadence/analyze", authenticateJWT, async (req: any, res) => {
+    try {
+      const { activityId } = req.body;
+      const userId = req.user!.id;
+
+      if (!activityId) {
+        return res.status(400).json({ message: "Activity ID required" });
+      }
+
+      // Fetch activity
+      const activity = await storage.getActivityById(activityId);
+      if (!activity || activity.userId !== userId) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
+
+      // Check if activity has cadence data
+      if (!activity.averageCadence) {
+        return res.status(400).json({ message: "Activity does not have cadence data" });
+      }
+
+      // Parse streams data
+      let streamsData: any = {};
+      if (activity.streamsData) {
+        try {
+          streamsData = typeof activity.streamsData === 'string' 
+            ? JSON.parse(activity.streamsData) 
+            : activity.streamsData;
+        } catch (e) {
+          console.error('Failed to parse streams data:', e);
+        }
+      }
+
+      // Extract cadence time series
+      const times = streamsData.time?.data || [];
+      const cadences = streamsData.cadence?.data || [];
+      const velocities = streamsData.velocity_smooth?.data || [];
+
+      if (cadences.length === 0) {
+        return res.status(400).json({ message: "No cadence stream data available for this activity" });
+      }
+
+      // Sample and analyze
+      const { sampleCadenceData, analyzeCadence } = await import("@shared/cadenceAnalysis");
+      const sampledData = sampleCadenceData(times, cadences, velocities);
+      
+      const analysis = analyzeCadence({
+        dataPoints: sampledData,
+        activityDuration: activity.movingTime,
+        activityName: activity.name,
+        distance: activity.distance
+      });
+
+      res.json(analysis);
+    } catch (error: any) {
+      console.error('Cadence analysis error:', error);
+      res.status(500).json({ message: error.message || "Failed to analyze cadence" });
+    }
+  });
+
+  // Cadence Analyzer - Get suitable activities (45+ min with cadence data)
+  app.get("/api/cadence/suitable-activities", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Get user for unit preference
+      const user = await storage.getUser(userId);
+      const unitPreference = user?.unitPreference || 'km';
+
+      // Fetch recent activities (last 60 days)
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 60);
+
+      const result = await storage.getActivitiesByUserIdPaginated(userId, {
+        page: 1,
+        pageSize: 100,
+        minDistance: undefined,
+        maxDistance: undefined,
+        startDate: startDate,
+        endDate: endDate,
+      });
+
+      // Filter for cadence-suitable activities (45+ min with cadence data)
+      const suitableActivities = result.activities
+        .filter(activity => 
+          activity.movingTime >= 2700 && // At least 45 minutes
+          activity.averageCadence !== null &&
+          activity.averageCadence > 0
+        )
+        .map(activity => {
+          const distanceInKm = activity.distance / 1000;
+          const distanceConverted = unitPreference === 'miles' ? distanceInKm * 0.621371 : distanceInKm;
+
+          return {
+            id: activity.id,
+            name: activity.name,
+            distance: distanceConverted.toFixed(2),
+            movingTime: activity.movingTime,
+            durationFormatted: `${Math.floor(activity.movingTime / 60)}:${String(Math.floor(activity.movingTime % 60)).padStart(2, '0')}`,
+            averageCadence: activity.averageCadence,
+            startDate: activity.startDate,
+            distanceUnit: unitPreference === 'miles' ? 'mi' : 'km',
+          };
+        })
+        .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+
+      res.json({ activities: suitableActivities });
+    } catch (error: any) {
+      console.error('Get cadence suitable activities error:', error);
+      res.status(500).json({ message: error.message || "Failed to fetch activities" });
+    }
+  });
+
   // Get all activities for a user with pagination and filtering
   app.get("/api/activities", authenticateJWT, async (req: any, res) => {
     try {
