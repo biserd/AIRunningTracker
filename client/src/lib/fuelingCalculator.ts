@@ -91,6 +91,33 @@ export const GEL_CATALOG: GelProduct[] = [
     description: 'Standard GU, 22g carbs'
   },
   {
+    id: 'precision-fuel-60',
+    brand: 'Precision Fuel & Hydration',
+    name: 'PF 60 Gel',
+    carbsPerGel: 60,
+    sodiumPerGel: 200,
+    caffeinePerGel: 0,
+    description: 'Ultra high-carb, 60g carbs'
+  },
+  {
+    id: 'sis-beta-fuel',
+    brand: 'SiS',
+    name: 'Beta Fuel',
+    carbsPerGel: 40,
+    sodiumPerGel: 40,
+    caffeinePerGel: 0,
+    description: 'High-carb dual-source, 40g carbs'
+  },
+  {
+    id: 'sis-beta-fuel-caf',
+    brand: 'SiS',
+    name: 'Beta Fuel + Caffeine',
+    carbsPerGel: 40,
+    sodiumPerGel: 40,
+    caffeinePerGel: 100,
+    description: '40g carbs + 100mg caffeine'
+  },
+  {
     id: 'sis-isotonic',
     brand: 'SiS',
     name: 'GO Isotonic',
@@ -98,6 +125,24 @@ export const GEL_CATALOG: GelProduct[] = [
     sodiumPerGel: 20,
     caffeinePerGel: 0,
     description: 'Easy-to-digest isotonic, 22g carbs'
+  },
+  {
+    id: 'neversecond-c30',
+    brand: 'Neversecond',
+    name: 'C30 Energy Gel',
+    carbsPerGel: 30,
+    sodiumPerGel: 50,
+    caffeinePerGel: 0,
+    description: 'High-carb, 30g carbs'
+  },
+  {
+    id: 'neversecond-c30-caf',
+    brand: 'Neversecond',
+    name: 'C30 + Caffeine',
+    carbsPerGel: 30,
+    sodiumPerGel: 50,
+    caffeinePerGel: 100,
+    description: '30g carbs + 100mg caffeine'
   },
   {
     id: 'spring-awesome',
@@ -109,6 +154,42 @@ export const GEL_CATALOG: GelProduct[] = [
     description: 'Real food ingredients, 26g carbs'
   },
   {
+    id: 'honey-stinger',
+    brand: 'Honey Stinger',
+    name: 'Energy Gel',
+    carbsPerGel: 27,
+    sodiumPerGel: 50,
+    caffeinePerGel: 0,
+    description: 'Honey-based, 27g carbs'
+  },
+  {
+    id: 'honey-stinger-caf',
+    brand: 'Honey Stinger',
+    name: 'Caffeinated Gel',
+    carbsPerGel: 27,
+    sodiumPerGel: 50,
+    caffeinePerGel: 32,
+    description: '27g carbs + 32mg caffeine'
+  },
+  {
+    id: 'clif-shot',
+    brand: 'Clif',
+    name: 'Shot Energy Gel',
+    carbsPerGel: 24,
+    sodiumPerGel: 90,
+    caffeinePerGel: 0,
+    description: 'Organic ingredients, 24g carbs'
+  },
+  {
+    id: 'clif-shot-caf',
+    brand: 'Clif',
+    name: 'Shot + Caffeine',
+    carbsPerGel: 24,
+    sodiumPerGel: 90,
+    caffeinePerGel: 50,
+    description: '24g carbs + 50mg caffeine'
+  },
+  {
     id: 'huma-original',
     brand: 'Huma',
     name: 'Original Gel',
@@ -118,7 +199,7 @@ export const GEL_CATALOG: GelProduct[] = [
     description: 'Chia-based, 21g carbs'
   },
   {
-    id: 'precision-fuel',
+    id: 'precision-fuel-30',
     brand: 'Precision Fuel & Hydration',
     name: 'PF 30 Gel',
     carbsPerGel: 30,
@@ -260,7 +341,7 @@ export function calculateFuelingPlan(
   if (carbShortfall > 10) {
     warnings.push(
       `You're ${Math.round(carbShortfall)}g short on carbs (${Math.round(carbShortfall / raceHours)}g/h under target). ` +
-      `Consider using higher-carb gels (40g), shortening feeding interval, or adding drink carbs.`
+      `Consider using higher-carb gels (40-60g), shortening feeding interval, or adding drink carbs.`
     );
   }
   
@@ -325,35 +406,48 @@ export function optimizeFuelingPlan(
   const targetCarbsPerGel = carbNeededFromGels / feedingEvents.length;
   const targetSodiumPerGel = sodiumNeededFromGels / feedingEvents.length;
 
-  // Strategy: Use high-carb gels (40g) for most, high-sodium for some if needed
-  const highCarbGel = GEL_CATALOG.find(g => g.carbsPerGel === 40) || GEL_CATALOG[0];
-  const highSodiumGel = GEL_CATALOG.find(g => g.sodiumPerGel >= 100) || GEL_CATALOG[3];
-  const caffeineGel = GEL_CATALOG.find(g => g.caffeinePerGel > 50) || GEL_CATALOG[2];
+  // Smart gel selection based on targets
+  const ultraHighCarbGel = GEL_CATALOG.find(g => g.carbsPerGel === 60); // PF 60
+  const highCarbGel = GEL_CATALOG.find(g => g.carbsPerGel === 40 && g.caffeinePerGel === 0); // Maurten 160 or SiS Beta Fuel
+  const highCarbCafGel = GEL_CATALOG.find(g => g.carbsPerGel === 40 && g.caffeinePerGel >= 100); // SiS Beta Fuel + Caf
+  const highSodiumGel = GEL_CATALOG.find(g => g.sodiumPerGel >= 100); // GU Roctane or PF
+  const caffeineGel = GEL_CATALOG.find(g => g.caffeinePerGel >= 100 && g.carbsPerGel >= 25); // Maurten CAF or SiS Beta Fuel CAF
 
   const optimizedEvents = feedingEvents.map((event, index) => {
-    // Pre-start gel: use medium carb
+    // Pre-start gel: use medium carb (25-30g)
     if (event.isPreStart) {
-      return { ...event, gelId: GEL_CATALOG[1].id };
+      const preStartGel = GEL_CATALOG.find(g => g.carbsPerGel >= 25 && g.carbsPerGel <= 30 && g.caffeinePerGel === 0);
+      return { ...event, gelId: preStartGel?.id || GEL_CATALOG[1].id };
     }
 
-    // Last 2-3 gels: use caffeine if available
+    // Last 2-3 gels: use caffeine for the finishing kick
     const isLastQuarter = index >= feedingEvents.length - Math.min(3, Math.ceil(feedingEvents.length / 4));
-    if (isLastQuarter && caffeineGel) {
-      return { ...event, gelId: caffeineGel.id };
+    if (isLastQuarter) {
+      // Prefer high-carb caffeine gel (40g + caffeine) for final gels
+      if (highCarbCafGel && targetCarbsPerGel >= 35) {
+        return { ...event, gelId: highCarbCafGel.id };
+      } else if (caffeineGel) {
+        return { ...event, gelId: caffeineGel.id };
+      }
     }
 
-    // If we need high carbs, use 40g gels
-    if (targetCarbsPerGel >= 30) {
+    // Very high carb targets (>50g per gel): use ultra high-carb gels
+    if (targetCarbsPerGel >= 50 && ultraHighCarbGel) {
+      return { ...event, gelId: ultraHighCarbGel.id };
+    }
+
+    // High carb targets (30-50g per gel): use 40g gels
+    if (targetCarbsPerGel >= 30 && highCarbGel) {
       return { ...event, gelId: highCarbGel.id };
     }
 
-    // If we need high sodium, alternate with high-sodium gels
-    if (targetSodiumPerGel >= 80 && index % 2 === 0) {
+    // High sodium needs: alternate with high-sodium gels
+    if (targetSodiumPerGel >= 80 && index % 2 === 0 && highSodiumGel) {
       return { ...event, gelId: highSodiumGel.id };
     }
 
-    // Default to high-carb gel
-    return { ...event, gelId: highCarbGel.id };
+    // Default: use 40g gel for optimal carb delivery
+    return { ...event, gelId: highCarbGel?.id || GEL_CATALOG[0].id };
   });
 
   return optimizedEvents;
