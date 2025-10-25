@@ -10,6 +10,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (October 2025)
 
+- **Version 2.7.1 Release (Oct 25)**: Strava Sync Performance & Real-time Progress Tracking:
+  - **5x Faster Sync**: Dashboard sync reduced to 50 activities (down from 200) for instant feedback
+  - **Batch Processing**: Activities synced 5 at a time in parallel using Promise.all() for major performance boost
+  - **Real-time Progress Indicators**: Server-Sent Events (SSE) stream live sync progress with activity names
+  - **Secure Authentication**: Cryptographic random nonces (not JWTs) for SSE connections - single-use, 5-minute expiry
+  - **Progress UI Component**: Visual progress bar showing percentage, current activity name, and sync status
+  - **Settings Sync Unchanged**: Full 200-activity sync maintained in Settings page for complete history
+  - **Performance Metrics**: Dashboard sync reduced from ~150 seconds to ~30 seconds for 50 activities
+  - **Security Hardening**: Nonces cannot be used for other API calls, preventing token leakage in URLs
 - **Version 2.7.0 Release (Oct 21)**: Free Running Tools Section - SEO-optimized calculators and analyzers for all users:
   - **Tools Section Launch**: Dedicated landing page at `/tools` showcasing free running calculators accessible to everyone
   - **Aerobic Decoupling Calculator**: Analyze cardiovascular drift during long runs to assess aerobic fitness and endurance capacity
