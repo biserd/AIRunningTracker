@@ -260,7 +260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Auto-sync activities and generate insights after connecting
       try {
-        await stravaService.syncActivitiesForUser(userId);
+        await stravaService.syncActivitiesForUser(userId, 50); // Initial connection: 50 activities
         console.log('Auto-sync completed after Strava connection');
         
         // Generate AI insights after sync
@@ -286,12 +286,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/strava/sync/:userId", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
+      const maxActivities = req.body?.maxActivities || 50; // Default to 50 for dashboard
       
       if (isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
 
-      await stravaService.syncActivitiesForUser(userId);
+      await stravaService.syncActivitiesForUser(userId, maxActivities);
       
       // Auto-generate AI insights after sync
       try {
