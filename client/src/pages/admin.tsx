@@ -222,11 +222,24 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center gap-3">
-            <Shield className="h-8 w-8 text-strava-orange" />
-            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <Shield className="h-8 w-8 text-strava-orange" />
+                <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+              </div>
+              <p className="text-gray-600 mt-2">Platform overview and user management</p>
+            </div>
+            <Button 
+              onClick={() => setLocation('/admin/performance-logs')}
+              variant="outline"
+              className="flex items-center gap-2"
+              data-testid="button-performance-logs"
+            >
+              <Server className="h-4 w-4" />
+              Performance Logs
+            </Button>
           </div>
-          <p className="text-gray-600 mt-2">Platform overview and user management</p>
         </div>
       </div>
 

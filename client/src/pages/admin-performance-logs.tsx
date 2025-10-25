@@ -18,6 +18,7 @@ interface PerformanceLog {
   method: string;
   statusCode: number;
   elapsedTime: number;
+  userAgent: string | null;
   timestamp: Date;
 }
 
@@ -271,12 +272,13 @@ export default function AdminPerformanceLogsPage() {
                     <TableHead>Status</TableHead>
                     <TableHead>Time</TableHead>
                     <TableHead>User ID</TableHead>
+                    <TableHead>User Agent</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {logs.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center text-muted-foreground">
                         No logs found
                       </TableCell>
                     </TableRow>
@@ -302,6 +304,13 @@ export default function AdminPerformanceLogsPage() {
                         </TableCell>
                         <TableCell data-testid={`log-user-${log.id}`}>
                           {log.userId || <span className="text-muted-foreground">-</span>}
+                        </TableCell>
+                        <TableCell className="text-xs max-w-xs truncate" data-testid={`log-useragent-${log.id}`} title={log.userAgent || undefined}>
+                          {log.userAgent ? (
+                            <span className="text-muted-foreground">{log.userAgent}</span>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))
