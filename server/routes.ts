@@ -2305,6 +2305,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get performance logs with filtering options
+  app.get("/api/admin/performance-logs", authenticateAdmin, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 100;
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
+      const endpoint = req.query.endpoint as string | undefined;
+      const method = req.query.method as string | undefined;
+      const minStatusCode = req.query.minStatusCode ? parseInt(req.query.minStatusCode as string) : undefined;
+      const maxStatusCode = req.query.maxStatusCode ? parseInt(req.query.maxStatusCode as string) : undefined;
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+
+      const logs = await storage.getPerformanceLogs({
+        limit,
+        userId,
+        endpoint,
+        method,
+        minStatusCode,
+        maxStatusCode,
+        startDate,
+        endDate,
+      });
+
+      res.json({ logs, count: logs.length });
+    } catch (error: any) {
+      console.error('Performance logs error:', error);
+      res.status(500).json({ message: error.message || "Failed to get performance logs" });
+    }
+  });
+
   app.get("/api/admin/performance", authenticateAdmin, async (req, res) => {
     try {
       const performance = await storage.getSystemPerformance();
