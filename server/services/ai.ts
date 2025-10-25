@@ -157,33 +157,57 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
 
       const analysis: AIAnalysisResult = JSON.parse(response.choices[0].message.content || '{}');
 
+      // Validate that we have required fields from AI response
+      if (!analysis || typeof analysis !== 'object') {
+        console.error('Invalid AI response format:', response.choices[0].message.content);
+        throw new Error('Invalid AI response format');
+      }
+
+      // Log what fields are present/missing for debugging
+      const missingFields = [];
+      if (!analysis.performance) missingFields.push('performance');
+      if (!analysis.pattern) missingFields.push('pattern');
+      if (!analysis.recovery) missingFields.push('recovery');
+      if (!analysis.recommendations) missingFields.push('recommendations');
+      
+      if (missingFields.length > 0) {
+        console.warn(`AI response missing fields: ${missingFields.join(', ')}`);
+        console.warn('Full AI response:', JSON.stringify(analysis, null, 2));
+      }
+
       // Store new insights first, then cleanup old ones to preserve history
       // This ensures we always have the latest insight before cleanup
 
-      // Store new insights
-      await storage.createAIInsight({
-        userId,
-        type: 'performance',
-        title: 'Performance Analysis',
-        content: analysis.performance,
-        confidence: 0.85,
-      });
+      // Store new insights - validate content is not null/undefined/empty
+      if (analysis.performance && analysis.performance.trim()) {
+        await storage.createAIInsight({
+          userId,
+          type: 'performance',
+          title: 'Performance Analysis',
+          content: analysis.performance,
+          confidence: 0.85,
+        });
+      }
 
-      await storage.createAIInsight({
-        userId,
-        type: 'pattern',
-        title: 'Training Pattern',
-        content: analysis.pattern,
-        confidence: 0.8,
-      });
+      if (analysis.pattern && analysis.pattern.trim()) {
+        await storage.createAIInsight({
+          userId,
+          type: 'pattern',
+          title: 'Training Pattern',
+          content: analysis.pattern,
+          confidence: 0.8,
+        });
+      }
 
-      await storage.createAIInsight({
-        userId,
-        type: 'recovery',
-        title: 'Recovery Insights',
-        content: analysis.recovery,
-        confidence: 0.75,
-      });
+      if (analysis.recovery && analysis.recovery.trim()) {
+        await storage.createAIInsight({
+          userId,
+          type: 'recovery',
+          title: 'Recovery Insights',
+          content: analysis.recovery,
+          confidence: 0.75,
+        });
+      }
 
       // Store motivation insight with fallback
       if (analysis.motivation && analysis.motivation.trim()) {
@@ -207,30 +231,36 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
         });
       }
 
-      // Store recommendations
-      await storage.createAIInsight({
-        userId,
-        type: 'recommendation',
-        title: 'Speed Work',
-        content: analysis.recommendations.speed,
-        confidence: 0.9,
-      });
+      // Store recommendations - validate each one
+      if (analysis.recommendations?.speed && analysis.recommendations.speed.trim()) {
+        await storage.createAIInsight({
+          userId,
+          type: 'recommendation',
+          title: 'Speed Work',
+          content: analysis.recommendations.speed,
+          confidence: 0.9,
+        });
+      }
 
-      await storage.createAIInsight({
-        userId,
-        type: 'recommendation',
-        title: 'Hill Training',
-        content: analysis.recommendations.hills,
-        confidence: 0.9,
-      });
+      if (analysis.recommendations?.hills && analysis.recommendations.hills.trim()) {
+        await storage.createAIInsight({
+          userId,
+          type: 'recommendation',
+          title: 'Hill Training',
+          content: analysis.recommendations.hills,
+          confidence: 0.9,
+        });
+      }
 
-      await storage.createAIInsight({
-        userId,
-        type: 'recommendation',
-        title: 'Long Run',
-        content: analysis.recommendations.longRun,
-        confidence: 0.9,
-      });
+      if (analysis.recommendations?.longRun && analysis.recommendations.longRun.trim()) {
+        await storage.createAIInsight({
+          userId,
+          type: 'recommendation',
+          title: 'Long Run',
+          content: analysis.recommendations.longRun,
+          confidence: 0.9,
+        });
+      }
 
       // Now cleanup old insights while preserving recent history (keep last 10 of each type)
       await storage.cleanupOldAIInsights(userId, 'performance', 10);
