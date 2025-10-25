@@ -282,14 +282,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Sync activities from Strava with SSE progress
-  app.get("/api/strava/sync/:userId/stream", authenticateJWT, async (req: any, res) => {
+  // Create short-lived SSE nonces for sync
+  const sseNonces = new Map<string, { userId: number; maxActivities: number; expiresAt: number }>();
+  
+  app.post("/api/strava/sync/:userId/start-stream", authenticateJWT, async (req: any, res) => {
     const userId = parseInt(req.params.userId);
-    const maxActivities = parseInt(req.query.maxActivities as string) || 50;
+    let maxActivities = parseInt(req.body?.maxActivities) || 50;
+    
+    if (isNaN(userId) || req.user.id !== userId) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+    
+    // Clamp maxActivities to prevent abuse
+    maxActivities = Math.max(1, Math.min(200, maxActivities));
+    
+    // Generate cryptographically random nonce (NOT a JWT)
+    const crypto = await import('crypto');
+    const nonce = crypto.randomBytes(32).toString('hex');
+    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
+    
+    sseNonces.set(nonce, { userId, maxActivities, expiresAt });
+    
+    // Clean up expired nonces
+    for (const [n, data] of sseNonces.entries()) {
+      if (data.expiresAt < Date.now()) {
+        sseNonces.delete(n);
+      }
+    }
+    
+    res.json({ sseNonce: nonce });
+  });
+
+  // Sync activities from Strava with SSE progress
+  app.get("/api/strava/sync/:userId/stream", async (req: any, res) => {
+    const userId = parseInt(req.params.userId);
+    const nonce = req.query.nonce as string;
     
     if (isNaN(userId)) {
       return res.status(400).json({ message: "Invalid user ID" });
     }
+    
+    // Validate single-use nonce (cannot be used for other API calls)
+    const nonceData = sseNonces.get(nonce);
+    if (!nonceData || nonceData.userId !== userId || nonceData.expiresAt < Date.now()) {
+      return res.status(401).json({ message: "Invalid or expired sync session" });
+    }
+    
+    // Consume the single-use nonce immediately
+    sseNonces.delete(nonce);
+    
+    const maxActivities = nonceData.maxActivities;
 
     // Set headers for SSE
     res.setHeader('Content-Type', 'text/event-stream');

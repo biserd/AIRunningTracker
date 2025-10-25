@@ -148,80 +148,70 @@ export default function Dashboard() {
     });
     
     try {
-      const token = localStorage.getItem('token');
+      // First, get a short-lived SSE nonce (cryptographic random, NOT a JWT)
+      const nonceResponse = await apiRequest(`/api/strava/sync/${user.id}/start-stream`, "POST", { maxActivities: 50 });
+      const nonce = nonceResponse.sseNonce;
+      
+      // Use EventSource with secure nonce (cannot be used for other API calls)
       const eventSource = new EventSource(
-        `${window.location.origin}/api/strava/sync/${user.id}/stream?maxActivities=50`,
-        {
-          withCredentials: true,
-        }
+        `/api/strava/sync/${user.id}/stream?nonce=${encodeURIComponent(nonce)}`
       );
       
-      // Add auth header via fetch workaround (EventSource doesn't support headers)
-      const response = await fetch(`/api/strava/sync/${user.id}/stream?maxActivities=50`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'text/event-stream',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to start sync');
-      }
-      
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      
-      if (!reader) {
-        throw new Error('No response body');
-      }
-      
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n\n');
-        
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = JSON.parse(line.slice(6));
-            
-            if (data.type === 'complete') {
-              setSyncProgress({
-                current: data.syncedCount,
-                total: data.totalActivities,
-                activityName: `Synced ${data.syncedCount} activities`,
-                status: 'complete'
-              });
-            } else if (data.type === 'insights') {
-              setSyncProgress(prev => prev ? { ...prev, status: 'insights' } : null);
-            } else if (data.type === 'insights_complete') {
-              // Refresh data and close progress
-              queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user.id}`] });
-              setTimeout(() => {
-                setSyncProgress(null);
-                window.location.reload();
-              }, 1500);
-            } else if (data.type === 'error') {
-              setSyncProgress({
-                current: 0,
-                total: 0,
-                activityName: '',
-                status: 'error',
-                errorMessage: data.message
-              });
-            } else {
-              // Progress update
-              setSyncProgress({
-                current: data.current,
-                total: data.total,
-                activityName: data.activityName,
-                status: 'syncing'
-              });
-            }
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          if (data.type === 'complete') {
+            setSyncProgress({
+              current: data.syncedCount,
+              total: data.totalActivities,
+              activityName: `Synced ${data.syncedCount} activities`,
+              status: 'complete'
+            });
+          } else if (data.type === 'insights') {
+            setSyncProgress(prev => prev ? { ...prev, status: 'insights' } : null);
+          } else if (data.type === 'insights_complete') {
+            eventSource.close();
+            // Refresh data and close progress
+            queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user.id}`] });
+            setTimeout(() => {
+              setSyncProgress(null);
+              window.location.reload();
+            }, 1500);
+          } else if (data.type === 'error') {
+            eventSource.close();
+            setSyncProgress({
+              current: 0,
+              total: 0,
+              activityName: '',
+              status: 'error',
+              errorMessage: data.message
+            });
+          } else {
+            // Progress update
+            setSyncProgress({
+              current: data.current,
+              total: data.total,
+              activityName: data.activityName,
+              status: 'syncing'
+            });
           }
+        } catch (parseError) {
+          console.error('Error parsing SSE data:', parseError);
         }
-      }
+      };
+      
+      eventSource.onerror = (error) => {
+        console.error('EventSource error:', error);
+        eventSource.close();
+        setSyncProgress({
+          current: 0,
+          total: 0,
+          activityName: '',
+          status: 'error',
+          errorMessage: 'Connection to server lost'
+        });
+      };
     } catch (error: any) {
       console.error('Sync error:', error);
       setSyncProgress({
