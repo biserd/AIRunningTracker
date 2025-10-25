@@ -1,4 +1,4 @@
-export const VERSION = "2.7.1";
+export const VERSION = "2.7.2";
 
 export interface ReleaseNote {
   version: string;
@@ -12,6 +12,66 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "2.7.2",
+    date: "2025-10-25",
+    title: "Marathon Fueling Planner - Race Nutrition Calculator",
+    description: "New comprehensive race nutrition calculator in the Tools section helps runners plan optimal marathon fueling strategy. Calculate precise gel timing, carb targets, and electrolyte balance with smart optimization across 19 gel brands (21-60g carbs). Features real-time nutrition gauges, interactive timeline, and shopping list generation.",
+    changes: [
+      {
+        type: "feature",
+        description: "Marathon Fueling Planner tool at /tools/marathon-fueling for race nutrition strategy planning"
+      },
+      {
+        type: "feature",
+        description: "Comprehensive gel catalog with 19 brands including Maurten, SiS Beta Fuel, GU, Precision Fuel PF 60 (60g ultra high-carb), Neversecond, Honey Stinger, and Clif"
+      },
+      {
+        type: "feature",
+        description: "Smart optimization algorithm that auto-suggests optimal gel combinations based on carb targets, sodium needs, and race duration"
+      },
+      {
+        type: "feature",
+        description: "Real-time carbs/h and sodium/h gauges with color-coded zones (green/yellow/red) showing target achievement"
+      },
+      {
+        type: "feature",
+        description: "Interactive feeding timeline with per-event gel brand selection - choices persist until schedule parameters change"
+      },
+      {
+        type: "feature",
+        description: "Preset nutrition targets: Carb (Beginner 60g/h → Elite 120g/h) and Sodium (Light 300mg/h → Very Heavy 900mg/h) with custom override"
+      },
+      {
+        type: "feature",
+        description: "Shopping list breakdown showing exact gel counts by brand and total drink requirements"
+      },
+      {
+        type: "feature",
+        description: "Actionable warnings when targets not met with specific recommendations (use higher-carb gels, shorten interval, add drink carbs)"
+      },
+      {
+        type: "feature",
+        description: "Drink strategy planning with volume, sodium concentration, and optional carb content configuration"
+      },
+      {
+        type: "feature",
+        description: "Educational content explaining feeding strategies, gauge interpretation, and common fueling approaches"
+      },
+      {
+        type: "improvement",
+        description: "Added signup call-to-action for non-authenticated users showcasing AI insights and Strava auto-import features"
+      },
+      {
+        type: "improvement",
+        description: "Orange-themed Optimize button for visual prominence and clear primary action indication"
+      },
+      {
+        type: "improvement",
+        description: "Separated state management into schedule generation and plan calculation effects to preserve user gel selections"
+      }
+    ]
+  },
   {
     version: "2.7.1",
     date: "2025-10-25",

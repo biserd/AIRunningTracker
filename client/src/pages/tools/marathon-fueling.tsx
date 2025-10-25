@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'wouter';
-import { ArrowLeft, Zap, Droplets, Calculator, AlertTriangle, CheckCircle2, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Zap, Droplets, Calculator, AlertTriangle, CheckCircle2, TrendingUp, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/hooks/useAuth';
 import {
   GEL_CATALOG,
   GUT_TRAINING_PRESETS,
@@ -24,6 +25,7 @@ import {
 } from '@/lib/fuelingCalculator';
 
 export default function MarathonFuelingPlanner() {
+  const { isAuthenticated } = useAuth();
   // Input state
   const [finishHours, setFinishHours] = useState('4');
   const [finishMinutes, setFinishMinutes] = useState('00');
@@ -150,6 +152,30 @@ export default function MarathonFuelingPlanner() {
               Calculate your optimal race nutrition strategy with precise gel timing and fueling targets
             </p>
           </div>
+
+          {/* CTA for non-authenticated users */}
+          {!isAuthenticated && (
+            <Card className="mb-6 bg-gradient-to-r from-strava-orange/10 to-strava-orange/5 border-strava-orange/20" data-testid="card-signup-cta">
+              <CardContent className="p-6">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <Sparkles className="w-6 h-6 text-strava-orange flex-shrink-0 mt-1" />
+                    <div>
+                      <h3 className="font-semibold text-lg mb-1">Want More Running Tools & AI Insights?</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Create a free account to access AI-powered training insights, race predictions, and personalized coaching - plus auto-import your Strava activities for instant analysis.
+                      </p>
+                    </div>
+                  </div>
+                  <Link href="/auth">
+                    <Button className="bg-strava-orange text-white hover:bg-strava-orange/90 whitespace-nowrap" data-testid="button-signup-cta">
+                      Get Started Free
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Left Column - Inputs */}
