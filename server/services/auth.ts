@@ -108,6 +108,49 @@ export class AuthService {
   async addToWaitlist(email: string): Promise<void> {
     await storage.addToEmailWaitlist(email);
   }
+
+  async generatePasswordResetToken(email: string): Promise<string | null> {
+    // Find user by email
+    const user = await storage.getUserByEmail(email);
+    if (!user) {
+      // Return null but don't reveal that user doesn't exist
+      return null;
+    }
+
+    // Generate cryptographically random token
+    const crypto = await import('crypto');
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    
+    // Set expiry to 1 hour from now
+    const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
+    
+    // Store token in database
+    await storage.updateUserResetToken(user.id, resetToken, resetTokenExpiry);
+    
+    return resetToken;
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<boolean> {
+    // Find user by reset token
+    const user = await storage.getUserByResetToken(token);
+    
+    if (!user) {
+      return false;
+    }
+    
+    // Check if token has expired
+    if (!user.resetTokenExpiry || user.resetTokenExpiry < new Date()) {
+      return false;
+    }
+    
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    
+    // Update password and clear reset token
+    await storage.updateUserPassword(user.id, hashedPassword);
+    
+    return true;
+  }
 }
 
 export const authService = new AuthService();

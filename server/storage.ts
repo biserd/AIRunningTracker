@@ -10,6 +10,11 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
   
+  // Password reset methods
+  updateUserResetToken(userId: number, resetToken: string, resetTokenExpiry: Date): Promise<void>;
+  getUserByResetToken(resetToken: string): Promise<User | undefined>;
+  updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
+  
   // Stripe subscription methods
   updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<User | undefined>;
   updateStripeSubscriptionId(userId: number, stripeSubscriptionId: string): Promise<User | undefined>;
@@ -182,6 +187,29 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
     return user || undefined;
+  }
+
+  async updateUserResetToken(userId: number, resetToken: string, resetTokenExpiry: Date): Promise<void> {
+    await db
+      .update(users)
+      .set({ resetToken, resetTokenExpiry })
+      .where(eq(users.id, userId));
+  }
+
+  async getUserByResetToken(resetToken: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.resetToken, resetToken));
+    return user || undefined;
+  }
+
+  async updateUserPassword(userId: number, hashedPassword: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ 
+        password: hashedPassword,
+        resetToken: null,
+        resetTokenExpiry: null
+      })
+      .where(eq(users.id, userId));
   }
 
   async createActivity(insertActivity: InsertActivity): Promise<Activity> {

@@ -132,6 +132,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.redirect("/");
   });
 
+  // Password reset endpoints
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { email } = z.object({ email: z.string().email() }).parse(req.body);
+      
+      // Generate reset token and send email
+      const resetToken = await authService.generatePasswordResetToken(email);
+      
+      if (resetToken) {
+        // Send password reset email
+        await emailService.sendPasswordResetEmail(email, resetToken);
+      }
+      
+      // Always return success to prevent email enumeration
+      res.json({ message: "If an account exists with that email, a password reset link has been sent." });
+    } catch (error: any) {
+      console.error('Forgot password error:', error);
+      res.status(400).json({ message: "Invalid email address" });
+    }
+  });
+
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { token, password } = z.object({ 
+        token: z.string(),
+        password: z.string().min(6)
+      }).parse(req.body);
+      
+      // Reset password using token
+      const success = await authService.resetPassword(token, password);
+      
+      if (!success) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+      
+      res.json({ message: "Password successfully reset. You can now log in with your new password." });
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      res.status(400).json({ message: error.message || "Failed to reset password" });
+    }
+  });
+
   // Email waitlist endpoint
   app.post("/api/waitlist", async (req, res) => {
     try {

@@ -214,6 +214,67 @@ ${description}
       text
     });
   }
+
+  async sendPasswordResetEmail(email: string, resetToken: string): Promise<void> {
+    const resetUrl = `${process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'http://localhost:5000'}/reset-password?token=${resetToken}`;
+    const subject = 'Reset Your RunAnalytics Password';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #e74c3c; margin: 0;">🏃‍♂️ RunAnalytics</h1>
+          <p style="color: #666; margin: 5px 0;">Password Reset Request</p>
+        </div>
+        
+        <h2 style="color: #2c3e50;">Reset Your Password</h2>
+        
+        <p>We received a request to reset your RunAnalytics password. Click the button below to create a new password:</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${resetUrl}" style="background: #e74c3c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Reset Password</a>
+        </div>
+        
+        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+          <p style="margin: 0; color: #856404;"><strong>⏱️ This link expires in 1 hour</strong></p>
+        </div>
+        
+        <p style="color: #666; font-size: 14px;">If the button doesn't work, copy and paste this link into your browser:</p>
+        <p style="color: #3498db; word-break: break-all; font-size: 14px;">${resetUrl}</p>
+        
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 0; color: #666; font-size: 14px;"><strong>Didn't request this?</strong> You can safely ignore this email. Your password will remain unchanged.</p>
+        </div>
+        
+        <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; color: #666; font-size: 14px;">
+          <p>For security, never share this link with anyone.</p>
+          <p>Happy running!<br>The RunAnalytics Team</p>
+        </div>
+      </div>
+    `;
+    
+    const text = `
+Reset Your RunAnalytics Password
+
+We received a request to reset your password. Click the link below to create a new password:
+
+${resetUrl}
+
+⏱️ This link expires in 1 hour.
+
+Didn't request this? You can safely ignore this email. Your password will remain unchanged.
+
+For security, never share this link with anyone.
+
+Happy running!
+The RunAnalytics Team
+    `;
+    
+    await this.sendEmail({
+      to: email,
+      subject,
+      html,
+      text
+    });
+  }
 }
 
 export const emailService = new EmailService();
