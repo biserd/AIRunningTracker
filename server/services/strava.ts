@@ -262,10 +262,11 @@ export class StravaService {
           
           try {
             // Fetch detailed activity data and performance streams in parallel
+            const accessToken = user.stravaAccessToken!; // Already checked at function start
             const [detailedActivity, streams, laps] = await Promise.all([
-              this.getDetailedActivity(user.stravaAccessToken, stravaActivity.id),
-              this.getActivityStreams(user.stravaAccessToken, stravaActivity.id),
-              this.getActivityLaps(user.stravaAccessToken, stravaActivity.id)
+              this.getDetailedActivity(accessToken, stravaActivity.id),
+              this.getActivityStreams(accessToken, stravaActivity.id),
+              this.getActivityLaps(accessToken, stravaActivity.id)
             ]);
             
             // Create activity in database
