@@ -3,7 +3,7 @@ import { storage } from "../storage";
 
 /**
  * Middleware to log API performance metrics to the database
- * Captures: endpoint, method, status code, elapsed time, user ID (if authenticated)
+ * Captures: endpoint, method, status code, elapsed time, user ID (if authenticated), user agent
  */
 export function performanceLogger(req: Request, res: Response, next: NextFunction) {
   const startTime = Date.now();
@@ -16,8 +16,11 @@ export function performanceLogger(req: Request, res: Response, next: NextFunctio
     const endpoint = req.path;
     const method = req.method;
     
-    // Extract user ID if authenticated (from session)
-    const userId = req.session?.userId || null;
+    // Extract user ID if authenticated (from JWT token)
+    const userId = (req as any).user?.id || null;
+    
+    // Extract user agent from headers
+    const userAgent = req.headers['user-agent'] || null;
 
     // Log to database asynchronously (don't block response)
     storage.createPerformanceLog({
@@ -26,6 +29,7 @@ export function performanceLogger(req: Request, res: Response, next: NextFunctio
       method,
       statusCode,
       elapsedTime,
+      userAgent,
     }).catch(error => {
       // Silently fail - don't impact user experience if logging fails
       console.error('Failed to log performance metric:', error);

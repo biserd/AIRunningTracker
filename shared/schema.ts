@@ -127,6 +127,7 @@ export const performanceLogs = pgTable("performance_logs", {
   method: text("method").notNull(), // GET, POST, PUT, DELETE, etc.
   statusCode: integer("status_code").notNull(), // 200, 400, 500, etc.
   elapsedTime: integer("elapsed_time").notNull(), // milliseconds
+  userAgent: text("user_agent"), // Browser/client user agent string
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
