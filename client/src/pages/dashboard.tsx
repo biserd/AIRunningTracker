@@ -162,12 +162,29 @@ export default function Dashboard() {
           const data = JSON.parse(event.data);
           
           if (data.type === 'complete') {
-            setSyncProgress({
-              current: data.syncedCount,
-              total: data.totalActivities,
-              activityName: `Synced ${data.syncedCount} activities`,
-              status: 'complete'
-            });
+            // No new activities - show quick success message and close immediately
+            if (data.syncedCount === 0) {
+              eventSource.close();
+              setSyncProgress({
+                current: 0,
+                total: 0,
+                activityName: 'Already up to date!',
+                status: 'complete'
+              });
+              // Refresh dashboard to update last sync time
+              queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user.id}`] });
+              setTimeout(() => {
+                setSyncProgress(null);
+              }, 2000);
+            } else {
+              // New activities synced - keep connection open for insights
+              setSyncProgress({
+                current: data.syncedCount,
+                total: data.totalActivities,
+                activityName: `Synced ${data.syncedCount} new activities`,
+                status: 'complete'
+              });
+            }
           } else if (data.type === 'insights') {
             setSyncProgress(prev => prev ? { ...prev, status: 'insights' } : null);
           } else if (data.type === 'insights_complete') {

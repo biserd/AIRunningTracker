@@ -337,6 +337,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering for nginx
+    
+    // Send initial connection confirmation
+    res.write(': connected\n\n');
+    
+    // Keep-alive ping every 15 seconds to prevent timeout
+    const keepAliveInterval = setInterval(() => {
+      if (!res.writableEnded) {
+        res.write(': keepalive\n\n');
+      }
+    }, 15000);
+    
+    // Clean up on client disconnect or any connection close
+    const cleanup = () => {
+      clearInterval(keepAliveInterval);
+    };
+    
+    req.on('close', cleanup);
+    res.on('close', cleanup);
     
     // Progress callback
     const onProgress = (current: number, total: number, activityName: string) => {
@@ -354,19 +373,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalActivities: result.totalActivities 
       })}\n\n`);
       
-      // Auto-generate AI insights after sync
-      try {
-        res.write(`data: ${JSON.stringify({ type: 'insights', message: 'Generating AI insights...' })}\n\n`);
-        await aiService.generateInsights(userId);
-        res.write(`data: ${JSON.stringify({ type: 'insights_complete', message: 'AI insights generated' })}\n\n`);
-      } catch (insightError) {
-        console.error('AI insight generation failed after sync:', insightError);
+      // Auto-generate AI insights after sync if there were new activities
+      if (result.syncedCount > 0) {
+        try {
+          res.write(`data: ${JSON.stringify({ type: 'insights', message: 'Generating AI insights...' })}\n\n`);
+          await aiService.generateInsights(userId);
+          res.write(`data: ${JSON.stringify({ type: 'insights_complete', message: 'AI insights generated' })}\n\n`);
+        } catch (insightError) {
+          console.error('AI insight generation failed after sync:', insightError);
+        }
       }
       
+      cleanup();
       res.end();
     } catch (error: any) {
       console.error('Sync error:', error);
       res.write(`data: ${JSON.stringify({ type: 'error', message: error.message || 'Failed to sync activities' })}\n\n`);
+      cleanup();
       res.end();
     }
   });
