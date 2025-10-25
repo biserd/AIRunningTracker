@@ -1,4 +1,4 @@
-export const VERSION = "2.7.2";
+export const VERSION = "2.7.3";
 
 export interface ReleaseNote {
   version: string;
@@ -12,6 +12,30 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "2.7.3",
+    date: "2025-10-25",
+    title: "Cadence & Form Stability Analyzer Bug Fixes",
+    description: "Fixed critical issues with the Cadence & Form Stability Analyzer tool preventing activity selection and analysis. The tool now properly loads suitable activities and analyzes cadence drift for form stability assessment.",
+    changes: [
+      {
+        type: "fix",
+        description: "Fixed Cadence Analyzer API response handling - updated to properly handle {activities: [...]} response structure instead of direct array"
+      },
+      {
+        type: "fix",
+        description: "Fixed Cadence Analyzer 'Analyze' button not responding to clicks - added explicit onClick handler with event propagation control"
+      },
+      {
+        type: "fix",
+        description: "Updated activity property names to match API response format (camelCase: movingTime, averageCadence, durationFormatted)"
+      },
+      {
+        type: "fix",
+        description: "Fixed Race Predictor routing - added missing /tools/race-predictor route to App.tsx router configuration"
+      }
+    ]
+  },
   {
     version: "2.7.2",
     date: "2025-10-25",
