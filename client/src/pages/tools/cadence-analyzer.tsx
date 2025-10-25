@@ -46,17 +46,25 @@ export default function CadenceAnalyzer() {
   // Mutation to analyze activity
   const analyzeMutation = useMutation({
     mutationFn: async (activityId: number) => {
+      console.log('mutationFn called with activityId:', activityId);
       const response = await apiRequest('POST', '/api/cadence/analyze', { activityId });
+      console.log('Analysis response:', response);
       return response as CadenceAnalysisResult;
     },
     onSuccess: (data) => {
+      console.log('Analysis succeeded:', data);
       setResult(data);
+    },
+    onError: (error: any) => {
+      console.error('Analysis failed:', error);
     },
   });
 
   const handleAnalyze = (activityId: number) => {
+    console.log('handleAnalyze called with activityId:', activityId);
     setSelectedActivityId(activityId);
     setResult(null);
+    console.log('About to call analyzeMutation.mutate');
     analyzeMutation.mutate(activityId);
   };
 
