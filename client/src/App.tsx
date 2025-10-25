@@ -12,6 +12,8 @@ import MLInsightsPage from "@/pages/ml-insights";
 import PerformancePage from "@/pages/performance";
 import LandingPage from "@/pages/landing";
 import AuthPage from "@/pages/auth";
+import ForgotPasswordPage from "@/pages/forgot-password";
+import ResetPasswordPage from "@/pages/reset-password";
 import PrivacyPage from "@/pages/privacy";
 import ContactPage from "@/pages/contact";
 import FAQPage from "@/pages/faq";
@@ -57,6 +59,8 @@ function Router() {
     <Switch>
       <Route path="/" component={LandingPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/forgot-password" component={ForgotPasswordPage} />
+      <Route path="/reset-password" component={ResetPasswordPage} />
       <Route path="/about" component={AboutPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/features" component={FeaturesPage} />
