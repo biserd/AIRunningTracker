@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
-import { Activity, TrendingDown, Calculator, BarChart3, ArrowRight } from "lucide-react";
+import { Activity, TrendingDown, Calculator, BarChart3, ArrowRight, Zap } from "lucide-react";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { Helmet } from "react-helmet";
@@ -23,20 +23,6 @@ const tools = [
     ]
   },
   {
-    id: "race-predictor",
-    title: "Race Time Predictor",
-    description: "Predict your race times for 10K, Half Marathon, and Marathon distances based on recent performances and training consistency.",
-    icon: BarChart3,
-    url: "/tools/race-predictor",
-    status: "coming-soon",
-    features: [
-      "Confidence intervals",
-      "Pace tables",
-      "Weather adjustments",
-      "Course profiles"
-    ]
-  },
-  {
     id: "training-split-analyzer",
     title: "Polarized vs Pyramidal Training Split Analyzer",
     description: "Analyze your training intensity distribution and discover if you're following a polarized, pyramidal, or threshold-heavy approach.",
@@ -48,6 +34,34 @@ const tools = [
       "Weekly trends",
       "Training prescription",
       "Auto-import from Strava"
+    ]
+  },
+  {
+    id: "marathon-fueling",
+    title: "Marathon Fueling Planner",
+    description: "Calculate your optimal race nutrition strategy with precise gel timing, carb targets, and electrolyte balance for marathon success.",
+    icon: Zap,
+    url: "/tools/marathon-fueling",
+    status: "available",
+    features: [
+      "Feeding schedule",
+      "Carb & sodium tracking",
+      "Gel optimization",
+      "Shopping list"
+    ]
+  },
+  {
+    id: "race-predictor",
+    title: "Race Time Predictor",
+    description: "Predict your race times for 10K, Half Marathon, and Marathon distances based on recent performances and training consistency.",
+    icon: BarChart3,
+    url: "/tools/race-predictor",
+    status: "coming-soon",
+    features: [
+      "Confidence intervals",
+      "Pace tables",
+      "Weather adjustments",
+      "Course profiles"
     ]
   },
   {
