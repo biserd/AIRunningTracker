@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Activity, CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp, Trophy, Users } from "lucide-react";
+import { Activity, CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp, Trophy, Users, TrendingDown, Calculator, ArrowRight } from "lucide-react";
 import { VERSION } from "@shared/version";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
@@ -352,6 +352,143 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Free Running Tools Section */}
+      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-gradient-to-br from-indigo-50 via-white to-blue-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12 sm:mb-16">
+            <div className="inline-flex items-center space-x-2 bg-strava-orange/10 text-strava-orange px-4 py-2 rounded-full mb-6">
+              <Calculator size={20} />
+              <span className="font-semibold text-sm">Free Tools for All Runners</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-charcoal mb-3 sm:mb-4 px-4">
+              Professional Analysis Tools
+            </h2>
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4">
+              Access powerful calculators and analyzers used by elite coaches. No account required.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 sm:gap-8 px-4">
+            {/* Aerobic Decoupling Calculator */}
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mb-4">
+                <TrendingDown className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-charcoal mb-3">Aerobic Decoupling</h3>
+              <p className="text-gray-600 mb-4 text-sm">
+                Measure cardiovascular drift during long runs to assess endurance efficiency and aerobic fitness.
+              </p>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                  <span>Split-halves analysis</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                  <span>Drift visualization</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                  <span>Auto-import from Strava</span>
+                </div>
+              </div>
+              <Link href="/tools/aerobic-decoupling-calculator">
+                <Button 
+                  className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700"
+                  data-testid="tool-cta-aerobic-decoupling"
+                >
+                  Try Calculator
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+
+            {/* Training Split Analyzer */}
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mb-4">
+                <Activity className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-charcoal mb-3">Training Split Analyzer</h3>
+              <p className="text-gray-600 mb-4 text-sm">
+                Discover if you're training polarized, pyramidal, or threshold-heavy with personalized zone recommendations.
+              </p>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                  <span>Zone distribution analysis</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                  <span>Weekly trends</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                  <span>Training prescription</span>
+                </div>
+              </div>
+              <Link href="/tools/training-split-analyzer">
+                <Button 
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:from-purple-600 hover:to-pink-700"
+                  data-testid="tool-cta-training-split"
+                >
+                  Analyze Training
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+
+            {/* Marathon Fueling Planner */}
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+              <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center mb-4">
+                <Zap className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-charcoal mb-3">Marathon Fueling</h3>
+              <p className="text-gray-600 mb-4 text-sm">
+                Calculate optimal race nutrition with precise gel timing, carb targets, and electrolyte balance.
+              </p>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                  <span>Feeding schedule</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                  <span>Carb & sodium tracking</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                  <span>Shopping list</span>
+                </div>
+              </div>
+              <Link href="/tools/marathon-fueling">
+                <Button 
+                  className="w-full bg-gradient-to-r from-orange-500 to-red-600 text-white hover:from-orange-600 hover:to-red-700"
+                  data-testid="tool-cta-marathon-fueling"
+                >
+                  Plan Nutrition
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          {/* View All Tools Link */}
+          <div className="text-center mt-8">
+            <Link href="/tools">
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="border-2 border-strava-orange text-strava-orange hover:bg-strava-orange/10"
+                data-testid="button-view-all-tools"
+              >
+                View All Tools
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
