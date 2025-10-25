@@ -16,6 +16,7 @@ import HistoricalRunnerScore from "@/components/dashboard/HistoricalRunnerScore"
 import InsightHistory from "@/components/dashboard/InsightHistory";
 import ProgressChecklist from "@/components/dashboard/ProgressChecklist";
 import Onboarding from "@/components/Onboarding";
+import { SyncProgress } from "@/components/SyncProgress";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -25,6 +26,13 @@ export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const [chartTimeRange, setChartTimeRange] = useState<string>("30days");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [syncProgress, setSyncProgress] = useState<{
+    current: number;
+    total: number;
+    activityName: string;
+    status: 'syncing' | 'insights' | 'complete' | 'error';
+    errorMessage?: string;
+  } | null>(null);
   const { toast } = useToast();
   const [location] = useLocation();
 
@@ -128,8 +136,102 @@ export default function Dashboard() {
     window.location.href = stravaAuthUrl;
   };
 
-  const handleSyncActivities = () => {
-    syncMutation.mutate();
+  const handleSyncActivities = async () => {
+    if (!user) return;
+    
+    // Reset progress state
+    setSyncProgress({
+      current: 0,
+      total: 0,
+      activityName: 'Starting sync...',
+      status: 'syncing'
+    });
+    
+    try {
+      const token = localStorage.getItem('token');
+      const eventSource = new EventSource(
+        `${window.location.origin}/api/strava/sync/${user.id}/stream?maxActivities=50`,
+        {
+          withCredentials: true,
+        }
+      );
+      
+      // Add auth header via fetch workaround (EventSource doesn't support headers)
+      const response = await fetch(`/api/strava/sync/${user.id}/stream?maxActivities=50`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'text/event-stream',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to start sync');
+      }
+      
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      
+      if (!reader) {
+        throw new Error('No response body');
+      }
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = JSON.parse(line.slice(6));
+            
+            if (data.type === 'complete') {
+              setSyncProgress({
+                current: data.syncedCount,
+                total: data.totalActivities,
+                activityName: `Synced ${data.syncedCount} activities`,
+                status: 'complete'
+              });
+            } else if (data.type === 'insights') {
+              setSyncProgress(prev => prev ? { ...prev, status: 'insights' } : null);
+            } else if (data.type === 'insights_complete') {
+              // Refresh data and close progress
+              queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user.id}`] });
+              setTimeout(() => {
+                setSyncProgress(null);
+                window.location.reload();
+              }, 1500);
+            } else if (data.type === 'error') {
+              setSyncProgress({
+                current: 0,
+                total: 0,
+                activityName: '',
+                status: 'error',
+                errorMessage: data.message
+              });
+            } else {
+              // Progress update
+              setSyncProgress({
+                current: data.current,
+                total: data.total,
+                activityName: data.activityName,
+                status: 'syncing'
+              });
+            }
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error('Sync error:', error);
+      setSyncProgress({
+        current: 0,
+        total: 0,
+        activityName: '',
+        status: 'error',
+        errorMessage: error.message || 'Failed to sync activities'
+      });
+    }
   };
 
 
@@ -190,22 +292,37 @@ export default function Dashboard() {
               size="default"
             />
           ) : (
-            <div className="flex flex-col">
+            <div className="flex flex-col w-full">
               <Button 
                 onClick={handleSyncActivities}
-                disabled={syncMutation.isPending}
+                disabled={syncProgress !== null}
                 variant="outline"
+                data-testid="button-sync-activities"
+                className="w-fit"
               >
-                {syncMutation.isPending ? "Syncing..." : "Sync Activities"}
+                {syncProgress !== null ? "Syncing..." : "Sync Activities"}
               </Button>
-              {dashboardData?.user?.lastSyncAt && (
-                <span className="text-xs text-gray-500 mt-1">
+              {dashboardData?.user?.lastSyncAt && !syncProgress && (
+                <span className="text-xs text-gray-500 mt-1" data-testid="text-last-sync">
                   Last sync: {new Date(dashboardData.user.lastSyncAt).toLocaleString()}
                 </span>
               )}
             </div>
           )}
         </div>
+        
+        {/* Sync Progress Indicator */}
+        {syncProgress && (
+          <div className="mb-8">
+            <SyncProgress 
+              current={syncProgress.current}
+              total={syncProgress.total}
+              activityName={syncProgress.activityName}
+              status={syncProgress.status}
+              errorMessage={syncProgress.errorMessage}
+            />
+          </div>
+        )}
         
         <QuickStats stats={dashboardData?.stats || { totalDistance: "0.0", avgPace: "0:00", trainingLoad: 0, recovery: "Unknown" }} />
         
