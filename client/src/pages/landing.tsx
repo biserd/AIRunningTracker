@@ -372,7 +372,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 sm:gap-8 px-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 px-4">
             {/* Aerobic Decoupling Calculator */}
             <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mb-4">
@@ -470,6 +470,74 @@ export default function LandingPage() {
                   data-testid="tool-cta-marathon-fueling"
                 >
                   Plan Nutrition
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+
+            {/* Race Predictor */}
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mb-4">
+                <TrendingUp className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-charcoal mb-3">Race Time Predictor</h3>
+              <p className="text-gray-600 mb-4 text-sm">
+                Predict your 10K, Half Marathon, and Marathon times with confidence intervals based on recent efforts.
+              </p>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                  <span>Riegel formula with personalization</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                  <span>Pace tables & split times</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                  <span>Weather & course adjustments</span>
+                </div>
+              </div>
+              <Link href="/tools/race-predictor">
+                <Button 
+                  className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700"
+                  data-testid="tool-cta-race-predictor"
+                >
+                  Predict Times
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+
+            {/* Cadence Analyzer */}
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+              <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center mb-4">
+                <Activity className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-charcoal mb-3">Form Stability Analyzer</h3>
+              <p className="text-gray-600 mb-4 text-sm">
+                Detect form fade through cadence drift analysis with a comprehensive Form Stability Score (0-100).
+              </p>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
+                  <span>Cadence drift tracking</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
+                  <span>Stride variability analysis</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
+                  <span>Form stability score</span>
+                </div>
+              </div>
+              <Link href="/tools/cadence-analyzer">
+                <Button 
+                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-600 hover:to-blue-700"
+                  data-testid="tool-cta-cadence-analyzer"
+                >
+                  Analyze Form
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>

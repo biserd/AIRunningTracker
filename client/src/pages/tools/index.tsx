@@ -57,7 +57,7 @@ const tools = [
     description: "Predict your race times for 10K, Half Marathon, and Marathon distances based on recent performances and training consistency.",
     icon: BarChart3,
     url: "/tools/race-predictor",
-    status: "coming-soon",
+    status: "available",
     features: [
       "Confidence intervals",
       "Pace tables",
@@ -66,12 +66,12 @@ const tools = [
     ]
   },
   {
-    id: "cadence-drift-analyzer",
+    id: "cadence-analyzer",
     title: "Cadence & Form Stability",
     description: "Detect form fade and variability with a comprehensive Form Stability Score based on cadence, stride length, and drift patterns.",
     icon: Calculator,
-    url: "/tools/cadence-drift-analyzer",
-    status: "coming-soon",
+    url: "/tools/cadence-analyzer",
+    status: "available",
     features: [
       "Form stability score",
       "Cadence drift tracking",
