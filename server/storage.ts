@@ -1,4 +1,4 @@
-import { users, activities, aiInsights, emailWaitlist, trainingPlans, feedback, goals, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type InsertEmailWaitlist, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal } from "@shared/schema";
+import { users, activities, aiInsights, emailWaitlist, trainingPlans, feedback, goals, performanceLogs, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type InsertEmailWaitlist, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, inArray, gte, gt, lt } from "drizzle-orm";
 import bcrypt from "bcrypt";
@@ -61,6 +61,19 @@ export interface IStorage {
   updateGoalProgress(goalId: number, progress: number): Promise<Goal | undefined>;
   completeGoal(goalId: number): Promise<Goal | undefined>;
   deleteGoal(goalId: number): Promise<void>;
+  
+  // Performance log methods
+  createPerformanceLog(log: InsertPerformanceLog): Promise<PerformanceLog>;
+  getPerformanceLogs(options: {
+    limit?: number;
+    userId?: number;
+    endpoint?: string;
+    method?: string;
+    minStatusCode?: number;
+    maxStatusCode?: number;
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<PerformanceLog[]>;
   
   // Admin methods
   getAdminStats(): Promise<{
@@ -488,6 +501,74 @@ export class DatabaseStorage implements IStorage {
 
   async deleteGoal(goalId: number): Promise<void> {
     await db.delete(goals).where(eq(goals.id, goalId));
+  }
+
+  // Performance log methods
+  async createPerformanceLog(log: InsertPerformanceLog): Promise<PerformanceLog> {
+    const [performanceLog] = await db
+      .insert(performanceLogs)
+      .values(log)
+      .returning();
+    return performanceLog;
+  }
+
+  async getPerformanceLogs(options: {
+    limit?: number;
+    userId?: number;
+    endpoint?: string;
+    method?: string;
+    minStatusCode?: number;
+    maxStatusCode?: number;
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<PerformanceLog[]> {
+    const {
+      limit = 100,
+      userId,
+      endpoint,
+      method,
+      minStatusCode,
+      maxStatusCode,
+      startDate,
+      endDate,
+    } = options;
+    
+    // Build WHERE conditions dynamically
+    const conditions = [];
+    
+    if (userId !== undefined) {
+      conditions.push(eq(performanceLogs.userId, userId));
+    }
+    if (endpoint) {
+      conditions.push(eq(performanceLogs.endpoint, endpoint));
+    }
+    if (method) {
+      conditions.push(eq(performanceLogs.method, method));
+    }
+    if (minStatusCode !== undefined) {
+      conditions.push(gte(performanceLogs.statusCode, minStatusCode));
+    }
+    if (maxStatusCode !== undefined) {
+      conditions.push(lt(performanceLogs.statusCode, maxStatusCode));
+    }
+    if (startDate) {
+      conditions.push(gte(performanceLogs.timestamp, startDate));
+    }
+    if (endDate) {
+      conditions.push(lt(performanceLogs.timestamp, endDate));
+    }
+
+    const query = db
+      .select()
+      .from(performanceLogs)
+      .orderBy(desc(performanceLogs.timestamp))
+      .limit(limit);
+
+    if (conditions.length > 0) {
+      return await query.where(and(...conditions));
+    }
+    
+    return await query;
   }
 
   // Admin methods
