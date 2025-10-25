@@ -16,6 +16,9 @@ export const users = pgTable("users", {
   unitPreference: text("unit_preference", { enum: ["km", "miles"] }).default("km"),
   isAdmin: boolean("is_admin").default(false),
   lastSyncAt: timestamp("last_sync_at"),
+  // Password reset fields
+  resetToken: text("reset_token"),
+  resetTokenExpiry: timestamp("reset_token_expiry"),
   // Stripe subscription fields
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
