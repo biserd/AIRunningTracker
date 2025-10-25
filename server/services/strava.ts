@@ -184,7 +184,11 @@ export class StravaService {
     return response.json();
   }
 
-  async syncActivitiesForUser(userId: number, maxActivities: number = 200): Promise<{ syncedCount: number; totalActivities: number }> {
+  async syncActivitiesForUser(
+    userId: number, 
+    maxActivities: number = 200,
+    onProgress?: (current: number, total: number, activityName: string) => void
+  ): Promise<{ syncedCount: number; totalActivities: number }> {
     const user = await storage.getUser(userId);
     if (!user || !user.stravaAccessToken) {
       throw new Error('User not connected to Strava');
@@ -212,104 +216,99 @@ export class StravaService {
       let syncedCount = 0;
       const activityTypes = new Set();
       
+      // Filter to only new running activities that need syncing
+      const activitiesToProcess: any[] = [];
+      
       for (const stravaActivity of stravaActivities) {
         activityTypes.add(stravaActivity.type);
         
         // Check if activity already exists for this user
         const existingActivity = await storage.getActivityByStravaIdAndUser(stravaActivity.id.toString(), userId);
         if (existingActivity) {
-          // Check if we need to update with polyline data
-          if (!existingActivity.polyline && !existingActivity.detailedPolyline) {
-            console.log(`Updating activity ${stravaActivity.name} with polyline data`);
-            try {
-              const detailedActivity = await this.getDetailedActivity(user.stravaAccessToken, stravaActivity.id);
-              if (detailedActivity.map?.summary_polyline || detailedActivity.map?.polyline) {
-                await storage.updateActivity(existingActivity.id, {
-                  polyline: detailedActivity.map?.summary_polyline || null,
-                  detailedPolyline: detailedActivity.map?.polyline || null,
-                });
-                console.log(`Updated activity ${stravaActivity.name} with GPS route data`);
-                syncedCount++;
-              }
-            } catch (error) {
-              console.log(`Could not fetch detailed data for existing activity ${stravaActivity.id}`);
-            }
-          } else {
-            console.log(`Activity already exists for user ${userId}: ${stravaActivity.name}`);
-          }
+          console.log(`Activity already exists for user ${userId}: ${stravaActivity.name}`);
           continue;
         }
 
-        // Sync running-related activities (Run, VirtualRun, Workout, etc.)
+        // Only sync running-related activities
         const runningTypes = ['Run', 'VirtualRun', 'Workout', 'TrailRun'];
         if (!runningTypes.includes(stravaActivity.type)) {
           console.log(`Skipping non-running activity: ${stravaActivity.name} (${stravaActivity.type})`);
           continue;
         }
 
-        console.log(`Syncing running activity: ${stravaActivity.name}`);
+        activitiesToProcess.push(stravaActivity);
+      }
+      
+      console.log(`Found ${activitiesToProcess.length} new running activities to sync`);
+      
+      // Process activities in batches of 5 for better performance
+      const batchSize = 5;
+      const totalToSync = activitiesToProcess.length;
+      
+      for (let i = 0; i < activitiesToProcess.length; i += batchSize) {
+        const batch = activitiesToProcess.slice(i, i + batchSize);
         
-        // Fetch detailed activity data and performance streams
-        let detailedActivity = stravaActivity;
-        let streams = null;
-        let laps = null;
-        
-        try {
-          detailedActivity = await this.getDetailedActivity(user.stravaAccessToken, stravaActivity.id);
-          console.log(`Fetched detailed data for activity ${stravaActivity.id}`);
+        // Process batch in parallel
+        await Promise.all(batch.map(async (stravaActivity, batchIndex) => {
+          const currentIndex = i + batchIndex + 1;
+          const activityName = stravaActivity.name;
           
-          // Fetch performance streams and laps
-          [streams, laps] = await Promise.all([
-            this.getActivityStreams(user.stravaAccessToken, stravaActivity.id),
-            this.getActivityLaps(user.stravaAccessToken, stravaActivity.id)
-          ]);
+          // Report progress
+          if (onProgress) {
+            onProgress(currentIndex, totalToSync, activityName);
+          }
           
-          if (streams) {
-            console.log(`Fetched performance streams for activity ${stravaActivity.id}`);
+          console.log(`[${currentIndex}/${totalToSync}] Syncing: ${activityName}`);
+          
+          try {
+            // Fetch detailed activity data and performance streams in parallel
+            const [detailedActivity, streams, laps] = await Promise.all([
+              this.getDetailedActivity(user.stravaAccessToken, stravaActivity.id),
+              this.getActivityStreams(user.stravaAccessToken, stravaActivity.id),
+              this.getActivityLaps(user.stravaAccessToken, stravaActivity.id)
+            ]);
+            
+            // Create activity in database
+            await storage.createActivity({
+              userId,
+              stravaId: stravaActivity.id.toString(),
+              name: stravaActivity.name,
+              distance: stravaActivity.distance,
+              movingTime: stravaActivity.moving_time,
+              totalElevationGain: stravaActivity.total_elevation_gain || 0,
+              averageSpeed: stravaActivity.average_speed,
+              maxSpeed: stravaActivity.max_speed,
+              averageHeartrate: stravaActivity.average_heartrate || null,
+              maxHeartrate: stravaActivity.max_heartrate || null,
+              startDate: new Date(stravaActivity.start_date),
+              type: stravaActivity.type,
+              calories: stravaActivity.calories || null,
+              averageCadence: stravaActivity.average_cadence ? stravaActivity.average_cadence * 2 : null,
+              maxCadence: stravaActivity.max_cadence ? stravaActivity.max_cadence * 2 : null,
+              averageWatts: stravaActivity.average_watts || null,
+              maxWatts: stravaActivity.max_watts || null,
+              sufferScore: stravaActivity.suffer_score || null,
+              commentsCount: stravaActivity.comment_count || 0,
+              kudosCount: stravaActivity.kudos_count || 0,
+              achievementCount: stravaActivity.achievement_count || 0,
+              startLatitude: stravaActivity.start_latlng?.[0] || null,
+              startLongitude: stravaActivity.start_latlng?.[1] || null,
+              endLatitude: stravaActivity.end_latlng?.[0] || null,
+              endLongitude: stravaActivity.end_latlng?.[1] || null,
+              polyline: detailedActivity.map?.summary_polyline || null,
+              detailedPolyline: detailedActivity.map?.polyline || null,
+              streamsData: streams ? JSON.stringify(streams) : null,
+              lapsData: laps && laps.length > 0 ? JSON.stringify(laps) : null,
+              averageTemp: stravaActivity.average_temp || null,
+              hasHeartrate: stravaActivity.has_heartrate || false,
+              deviceWatts: stravaActivity.device_watts || false,
+            });
+            
+            syncedCount++;
+          } catch (error) {
+            console.error(`Failed to sync activity ${activityName}:`, error);
           }
-          if (laps && laps.length > 0) {
-            console.log(`Fetched ${laps.length} laps for activity ${stravaActivity.id}`);
-          }
-        } catch (error) {
-          console.log(`Could not fetch detailed data for activity ${stravaActivity.id}, using basic data`);
-        }
-        
-        await storage.createActivity({
-          userId,
-          stravaId: stravaActivity.id.toString(),
-          name: stravaActivity.name,
-          distance: stravaActivity.distance,
-          movingTime: stravaActivity.moving_time,
-          totalElevationGain: stravaActivity.total_elevation_gain || 0,
-          averageSpeed: stravaActivity.average_speed,
-          maxSpeed: stravaActivity.max_speed,
-          averageHeartrate: stravaActivity.average_heartrate || null,
-          maxHeartrate: stravaActivity.max_heartrate || null,
-          startDate: new Date(stravaActivity.start_date),
-          type: stravaActivity.type,
-          // Additional Strava fields
-          calories: stravaActivity.calories || null,
-          averageCadence: stravaActivity.average_cadence ? stravaActivity.average_cadence * 2 : null,
-          maxCadence: stravaActivity.max_cadence ? stravaActivity.max_cadence * 2 : null,
-          averageWatts: stravaActivity.average_watts || null,
-          maxWatts: stravaActivity.max_watts || null,
-          sufferScore: stravaActivity.suffer_score || null,
-          commentsCount: stravaActivity.comment_count || 0,
-          kudosCount: stravaActivity.kudos_count || 0,
-          achievementCount: stravaActivity.achievement_count || 0,
-          startLatitude: stravaActivity.start_latlng?.[0] || null,
-          startLongitude: stravaActivity.start_latlng?.[1] || null,
-          endLatitude: stravaActivity.end_latlng?.[0] || null,
-          endLongitude: stravaActivity.end_latlng?.[1] || null,
-          polyline: detailedActivity.map?.summary_polyline || null,
-          detailedPolyline: detailedActivity.map?.polyline || null,
-          streamsData: streams ? JSON.stringify(streams) : null,
-          lapsData: laps && laps.length > 0 ? JSON.stringify(laps) : null,
-          averageTemp: stravaActivity.average_temp || null,
-          hasHeartrate: stravaActivity.has_heartrate || false,
-          deviceWatts: stravaActivity.device_watts || false,
-        });
-        syncedCount++;
+        }));
       }
 
       console.log(`Activity types found: ${Array.from(activityTypes).join(', ')}`);
@@ -333,7 +332,7 @@ export class StravaService {
             });
             
             // Retry sync with new token
-            return await this.syncActivitiesForUser(userId, maxActivities);
+            return await this.syncActivitiesForUser(userId, maxActivities, onProgress);
           } catch (refreshError) {
             throw new Error('Failed to refresh Strava token');
           }
