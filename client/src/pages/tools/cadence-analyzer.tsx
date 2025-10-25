@@ -18,10 +18,16 @@ import { apiRequest } from "@/lib/queryClient";
 interface SuitableActivity {
   id: number;
   name: string;
-  distance: number;
-  moving_time: number;
-  average_cadence?: number;
-  start_date: string;
+  distance: string;
+  movingTime: number;
+  durationFormatted: string;
+  averageCadence?: number;
+  startDate: string;
+  distanceUnit: string;
+}
+
+interface SuitableActivitiesResponse {
+  activities: SuitableActivity[];
 }
 
 export default function CadenceAnalyzer() {
@@ -30,10 +36,12 @@ export default function CadenceAnalyzer() {
   const [result, setResult] = useState<CadenceAnalysisResult | null>(null);
 
   // Fetch suitable activities for logged-in users
-  const { data: activitiesData, isLoading: isLoadingActivities, error: activitiesError } = useQuery<SuitableActivity[]>({
+  const { data: activitiesResponse, isLoading: isLoadingActivities, error: activitiesError } = useQuery<SuitableActivitiesResponse>({
     queryKey: ['/api/cadence/suitable-activities'],
     enabled: isAuthenticated,
   });
+
+  const activitiesData = activitiesResponse?.activities || [];
 
   // Mutation to analyze activity
   const analyzeMutation = useMutation({
@@ -52,19 +60,6 @@ export default function CadenceAnalyzer() {
     analyzeMutation.mutate(activityId);
   };
 
-  const formatDistance = (meters: number): string => {
-    const miles = meters / 1609.34;
-    return `${miles.toFixed(2)} mi`;
-  };
-
-  const formatDuration = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
-  };
 
   const formatTime = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
@@ -254,13 +249,13 @@ export default function CadenceAnalyzer() {
                             <div className="flex-1">
                               <h3 className="font-semibold text-gray-900 dark:text-white">{activity.name}</h3>
                               <div className="flex items-center space-x-4 mt-1 text-sm text-gray-600 dark:text-gray-400">
-                                <span>{formatDistance(activity.distance)}</span>
+                                <span>{activity.distance} {activity.distanceUnit}</span>
                                 <span>•</span>
-                                <span>{formatDuration(activity.moving_time)}</span>
-                                {activity.average_cadence && (
+                                <span>{activity.durationFormatted}</span>
+                                {activity.averageCadence && (
                                   <>
                                     <span>•</span>
-                                    <span>{activity.average_cadence.toFixed(0)} spm avg</span>
+                                    <span>{activity.averageCadence.toFixed(0)} spm avg</span>
                                   </>
                                 )}
                               </div>
