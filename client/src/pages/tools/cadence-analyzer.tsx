@@ -262,6 +262,10 @@ export default function CadenceAnalyzer() {
                             </div>
                             <Button 
                               size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAnalyze(activity.id);
+                              }}
                               disabled={analyzeMutation.isPending && selectedActivityId === activity.id}
                               data-testid={`button-analyze-${activity.id}`}
                             >
