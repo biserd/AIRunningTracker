@@ -472,7 +472,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user dashboard data
   app.get("/api/dashboard/:userId", authenticateJWT, async (req: any, res) => {
     try {
-      const dashboardStartTime = Date.now();
       const userId = parseInt(req.params.userId);
       
       if (isNaN(userId)) {
@@ -484,21 +483,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied: cannot access another user's dashboard" });
       }
 
-      console.log(`📊 [Dashboard ${userId}] Request started`);
-      const userStartTime = Date.now();
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      console.log(`📊 [Dashboard ${userId}] User lookup: ${Date.now() - userStartTime}ms`);
 
-      const activitiesStartTime = Date.now();
       const activities = await storage.getActivitiesByUserId(userId, 10);
-      console.log(`📊 [Dashboard ${userId}] Recent activities (10): ${Date.now() - activitiesStartTime}ms`);
       
-      const insightsStartTime = Date.now();
       const insights = await storage.getAIInsightsByUserId(userId);
-      console.log(`📊 [Dashboard ${userId}] AI insights: ${Date.now() - insightsStartTime}ms`);
       
       // Calculate quick stats for this month and last month, plus weekly comparisons
       const thisMonth = new Date();
@@ -523,12 +515,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
       threeMonthsAgo.setHours(0, 0, 0, 0);
       
-      const statsQueryStartTime = Date.now();
       const recentActivities = await storage.getActivitiesByUserId(userId, 200, threeMonthsAgo);
-      console.log(`📊 [Dashboard ${userId}] Stats activities query (last 3 months, count: ${recentActivities.length}): ${Date.now() - statsQueryStartTime}ms`);
       
       // Filter activities by time periods (using recentActivities from last 3 months)
-      const statsCalcStartTime = Date.now();
       const thisMonthActivities = recentActivities.filter(a => 
         new Date(a.startDate) >= thisMonth
       );
@@ -690,9 +679,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
         }),
       };
-
-      console.log(`📊 [Dashboard ${userId}] Stats calculation: ${Date.now() - statsCalcStartTime}ms`);
-      console.log(`📊 [Dashboard ${userId}] ✅ TOTAL REQUEST TIME: ${Date.now() - dashboardStartTime}ms`);
       
       res.json(dashboardData);
     } catch (error) {
@@ -761,7 +747,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get chart data with time range
   app.get("/api/chart/:userId", authenticateJWT, async (req: any, res) => {
     try {
-      const chartStartTime = Date.now();
       const userId = parseInt(req.params.userId);
       const timeRange = req.query.range as string || "30days";
       
@@ -774,13 +759,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied: cannot access another user's chart data" });
       }
 
-      console.log(`📈 [Chart ${userId}] Request started (range: ${timeRange})`);
-      const userStartTime = Date.now();
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      console.log(`📈 [Chart ${userId}] User lookup: ${Date.now() - userStartTime}ms`);
 
       // Calculate date range
       const now = new Date();
@@ -815,13 +797,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           activityLimit = 6; // Group by week
       }
 
-      const activitiesQueryStartTime = Date.now();
       const activities = await storage.getActivitiesByUserId(userId, 100); // Get more activities for proper aggregation
-      console.log(`📈 [Chart ${userId}] Activities query (limit 100): ${Date.now() - activitiesQueryStartTime}ms`);
       
-      const filterStartTime = Date.now();
       const filteredActivities = activities.filter(a => new Date(a.startDate) >= startDate);
-      console.log(`📈 [Chart ${userId}] Date filtering (${activities.length} -> ${filteredActivities.length}): ${Date.now() - filterStartTime}ms`);
 
       // Group activities by week/month
       const groupedData = new Map();
@@ -906,8 +884,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
         })
         .slice(-activityLimit); // Limit to requested number of periods
-
-      console.log(`📈 [Chart ${userId}] ✅ TOTAL REQUEST TIME: ${Date.now() - chartStartTime}ms`);
       
       res.json({ chartData });
     } catch (error) {
