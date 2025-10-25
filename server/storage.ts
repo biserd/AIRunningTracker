@@ -21,7 +21,7 @@ export interface IStorage {
   updateSubscriptionStatus(userId: number, status: string, plan?: string): Promise<User | undefined>;
   
   createActivity(activity: InsertActivity): Promise<Activity>;
-  getActivitiesByUserId(userId: number, limit?: number): Promise<Activity[]>;
+  getActivitiesByUserId(userId: number, limit?: number, startDate?: Date): Promise<Activity[]>;
   getActivitiesByUserIdPaginated(userId: number, options: {
     page: number;
     pageSize: number;
@@ -220,11 +220,19 @@ export class DatabaseStorage implements IStorage {
     return activity;
   }
 
-  async getActivitiesByUserId(userId: number, limit = 50): Promise<Activity[]> {
+  async getActivitiesByUserId(userId: number, limit = 50, startDate?: Date): Promise<Activity[]> {
+    // Build WHERE conditions
+    const conditions = [eq(activities.userId, userId)];
+    
+    // Add date filter if provided (OPTIMIZATION: filters at database level)
+    if (startDate) {
+      conditions.push(gte(activities.startDate, startDate));
+    }
+    
     const userActivities = await db
       .select()
       .from(activities)
-      .where(eq(activities.userId, userId))
+      .where(and(...conditions))
       .orderBy(desc(activities.startDate))
       .limit(limit);
     return userActivities;
