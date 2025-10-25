@@ -282,7 +282,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Sync activities from Strava
+  // Sync activities from Strava with SSE progress
+  app.get("/api/strava/sync/:userId/stream", authenticateJWT, async (req: any, res) => {
+    const userId = parseInt(req.params.userId);
+    const maxActivities = parseInt(req.query.maxActivities as string) || 50;
+    
+    if (isNaN(userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+
+    // Set headers for SSE
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    // Progress callback
+    const onProgress = (current: number, total: number, activityName: string) => {
+      res.write(`data: ${JSON.stringify({ current, total, activityName })}\n\n`);
+    };
+    
+    try {
+      // Start sync with progress callback
+      const result = await stravaService.syncActivitiesForUser(userId, maxActivities, onProgress);
+      
+      // Send completion event
+      res.write(`data: ${JSON.stringify({ 
+        type: 'complete', 
+        syncedCount: result.syncedCount,
+        totalActivities: result.totalActivities 
+      })}\n\n`);
+      
+      // Auto-generate AI insights after sync
+      try {
+        res.write(`data: ${JSON.stringify({ type: 'insights', message: 'Generating AI insights...' })}\n\n`);
+        await aiService.generateInsights(userId);
+        res.write(`data: ${JSON.stringify({ type: 'insights_complete', message: 'AI insights generated' })}\n\n`);
+      } catch (insightError) {
+        console.error('AI insight generation failed after sync:', insightError);
+      }
+      
+      res.end();
+    } catch (error: any) {
+      console.error('Sync error:', error);
+      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message || 'Failed to sync activities' })}\n\n`);
+      res.end();
+    }
+  });
+
+  // Sync activities from Strava (legacy endpoint)
   app.post("/api/strava/sync/:userId", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
