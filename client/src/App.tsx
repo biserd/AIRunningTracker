@@ -20,6 +20,7 @@ import FAQPage from "@/pages/faq";
 import ReleaseNotesPage from "@/pages/release-notes";
 import RunnerScorePage from "@/pages/runner-score";
 import AdminPage from "@/pages/admin";
+import AdminPerformanceLogsPage from "@/pages/admin-performance-logs";
 import AboutPage from "@/pages/about";
 import TermsPage from "@/pages/terms";
 import FeaturesPage from "@/pages/features";
@@ -100,6 +101,9 @@ function Router() {
       </Route>
       <Route path="/admin">
         <ProtectedRoute component={AdminPage} />
+      </Route>
+      <Route path="/admin/performance-logs">
+        <ProtectedRoute component={AdminPerformanceLogsPage} />
       </Route>
       
       <Route component={NotFound} />
