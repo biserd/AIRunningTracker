@@ -133,10 +133,21 @@ export default function RouteMap({ polyline, startLat, startLng, endLat, endLng,
                 const displayWidth = rect.width;
                 const displayHeight = rect.height;
                 
-                // Convert GPS coordinates to canvas coordinates
+                // Use Web Mercator projection to match OpenStreetMap
+                const latToMercatorY = (lat: number) => {
+                  const latRad = lat * Math.PI / 180;
+                  return Math.log(Math.tan(Math.PI / 4 + latRad / 2));
+                };
+                
+                // Calculate mercator bounds
+                const minMercatorY = latToMercatorY(minLat - latPadding);
+                const maxMercatorY = latToMercatorY(maxLat + latPadding);
+                
+                // Convert GPS coordinates to canvas coordinates using Mercator
                 const canvasCoords = coordinates.map(([lat, lng]) => {
                   const x = ((lng - (minLng - lngPadding)) / ((maxLng + lngPadding) - (minLng - lngPadding))) * displayWidth;
-                  const y = displayHeight - ((lat - (minLat - latPadding)) / ((maxLat + latPadding) - (minLat - latPadding))) * displayHeight;
+                  const mercatorY = latToMercatorY(lat);
+                  const y = displayHeight - ((mercatorY - minMercatorY) / (maxMercatorY - minMercatorY)) * displayHeight;
                   return [x, y];
                 });
 
