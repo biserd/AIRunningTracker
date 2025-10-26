@@ -90,8 +90,6 @@ export default function RouteMap({ polyline, startLat, startLng, endLat, endLng,
               
               <!-- Route overlay using canvas -->
               <canvas id="routeCanvas" 
-                      width="400" 
-                      height="300" 
                       class="absolute inset-0 w-full h-full pointer-events-none"
                       style="mix-blend-mode: multiply;">
               </canvas>
