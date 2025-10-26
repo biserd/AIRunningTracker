@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { decode } from '@googlemaps/polyline-codec';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 interface RouteMapProps {
   polyline?: string;
@@ -12,9 +14,16 @@ interface RouteMapProps {
 
 export default function RouteMap({ polyline, startLat, startLng, endLat, endLng, className = '' }: RouteMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
+  const leafletMapRef = useRef<L.Map | null>(null);
 
   useEffect(() => {
     if (!mapRef.current) return;
+
+    // Clean up previous map instance
+    if (leafletMapRef.current) {
+      leafletMapRef.current.remove();
+      leafletMapRef.current = null;
+    }
 
     // If we have polyline data, decode it and create a detailed map
     if (polyline) {
@@ -22,61 +31,66 @@ export default function RouteMap({ polyline, startLat, startLng, endLat, endLng,
         const coordinates = decode(polyline);
         
         if (coordinates.length > 0) {
-          // Calculate bounds for the route
-          let minLat = coordinates[0][0], maxLat = coordinates[0][0];
-          let minLng = coordinates[0][1], maxLng = coordinates[0][1];
-          
-          coordinates.forEach(([lat, lng]) => {
-            minLat = Math.min(minLat, lat);
-            maxLat = Math.max(maxLat, lat);
-            minLng = Math.min(minLng, lng);
-            maxLng = Math.max(maxLng, lng);
-          });
-
-          // Add padding to bounds
-          const latPadding = (maxLat - minLat) * 0.1;
-          const lngPadding = (maxLng - minLng) * 0.1;
-          
-          // Create an SVG visualization of the route
-          const svgWidth = 400;
-          const svgHeight = 300;
-          
-          // Convert coordinates to SVG space
-          const svgCoordinates = coordinates.map(([lat, lng]) => {
-            const x = ((lng - (minLng - lngPadding)) / ((maxLng + lngPadding) - (minLng - lngPadding))) * svgWidth;
-            const y = svgHeight - ((lat - (minLat - latPadding)) / ((maxLat + latPadding) - (minLat - latPadding))) * svgHeight;
-            return [x, y];
+          // Initialize Leaflet map
+          const map = L.map(mapRef.current, {
+            zoomControl: true,
+            attributionControl: true,
           });
           
-          // Create SVG path
-          const pathData = svgCoordinates.map(([x, y], index) => 
-            `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`
-          ).join(' ');
-          
-          // Create encoded polyline URL for Strava-style map
-          const encodedPolyline = encodeURIComponent(polyline);
-          const centerLat = (minLat + maxLat) / 2;
-          const centerLng = (minLng + maxLng) / 2;
-          
-          // Calculate bbox for OpenStreetMap
-          const bbox = [
-            minLng - lngPadding,
-            minLat - latPadding,
-            maxLng + lngPadding,
-            maxLat + latPadding
-          ].join(',');
+          leafletMapRef.current = map;
 
-          // Use simple iframe with bbox (no canvas overlay)
-          mapRef.current.innerHTML = `
-            <div class="relative w-full h-full rounded-lg overflow-hidden bg-gray-100">
-              <iframe 
-                src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${centerLat},${centerLng}"
-                class="w-full h-full"
-                style="border: none;"
-                title="Running Route Map">
-              </iframe>
-              
-              <div class="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
+          // Add OpenStreetMap tiles
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19,
+          }).addTo(map);
+
+          // Convert coordinates to Leaflet LatLng format
+          const latLngs: L.LatLngExpression[] = coordinates.map(([lat, lng]) => [lat, lng]);
+
+          // Draw the route polyline
+          const polylineLayer = L.polyline(latLngs, {
+            color: '#ff6b35',
+            weight: 4,
+            opacity: 0.8,
+            lineJoin: 'round',
+            lineCap: 'round',
+          }).addTo(map);
+
+          // Add start marker (green)
+          const startIcon = L.divIcon({
+            className: 'custom-marker',
+            html: '<div style="background-color: #22c55e; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+            iconSize: [16, 16],
+            iconAnchor: [8, 8],
+          });
+          
+          L.marker([coordinates[0][0], coordinates[0][1]], { icon: startIcon })
+            .addTo(map);
+
+          // Add end marker (red)
+          const endIcon = L.divIcon({
+            className: 'custom-marker',
+            html: '<div style="background-color: #ef4444; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+            iconSize: [16, 16],
+            iconAnchor: [8, 8],
+          });
+          
+          const lastCoord = coordinates[coordinates.length - 1];
+          L.marker([lastCoord[0], lastCoord[1]], { icon: endIcon })
+            .addTo(map);
+
+          // Fit map to show entire route with some padding
+          map.fitBounds(polylineLayer.getBounds(), { padding: [30, 30] });
+
+          // Add custom legend using custom control
+          const LegendControl = L.Control.extend({
+            options: {
+              position: 'bottomleft'
+            },
+            onAdd: function() {
+              const div = L.DomUtil.create('div', 'bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg');
+              div.innerHTML = `
                 <div class="flex items-center space-x-4 text-sm">
                   <div class="flex items-center space-x-1">
                     <div class="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -87,12 +101,14 @@ export default function RouteMap({ polyline, startLat, startLng, endLat, endLng,
                     <span class="text-gray-700 font-medium">Finish</span>
                   </div>
                 </div>
-                <div class="text-xs text-gray-600 mt-1">
-                  ${coordinates.length} GPS points • View on Strava for route
+                <div class="text-xs text-green-600 mt-1 font-medium">
+                  ✓ GPS route (${coordinates.length} points)
                 </div>
-              </div>
-            </div>
-          `;
+              `;
+              return div;
+            }
+          });
+          new LegendControl().addTo(map);
         }
       } catch (error) {
         console.error('Error decoding polyline:', error);
@@ -105,43 +121,54 @@ export default function RouteMap({ polyline, startLat, startLng, endLat, endLng,
     }
 
     function renderFallbackMap() {
-      if (!startLat || !startLng) return;
+      if (!startLat || !startLng || !mapRef.current) return;
       
       const endLatFinal = endLat || startLat;
       const endLngFinal = endLng || startLng;
       
-      const embedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${startLng - 0.01},${startLat - 0.01},${endLngFinal + 0.01},${endLatFinal + 0.01}&layer=mapnik&marker=${startLat},${startLng}`;
+      const map = L.map(mapRef.current, {
+        center: [startLat, startLng],
+        zoom: 14,
+        zoomControl: true,
+        attributionControl: true,
+      });
       
-      mapRef.current!.innerHTML = `
-        <div class="relative w-full h-full">
-          <iframe 
-            src="${embedUrl}" 
-            class="w-full h-full rounded-lg border-0"
-            title="Activity Route Map">
-          </iframe>
-          <div class="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
-            <div class="flex items-center space-x-4 text-sm">
-              <div class="flex items-center space-x-1">
-                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span class="text-gray-700 font-medium">Start</span>
-              </div>
-              ${endLat && endLng ? `
-                <div class="flex items-center space-x-1">
-                  <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span class="text-gray-700 font-medium">Finish</span>
-                </div>
-              ` : ''}
-            </div>
-            <div class="text-xs text-gray-600 mt-1">
-              ${startLat.toFixed(4)}, ${startLng.toFixed(4)}
-            </div>
-          </div>
-        </div>
-      `;
+      leafletMapRef.current = map;
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19,
+      }).addTo(map);
+
+      // Add start marker
+      const startIcon = L.divIcon({
+        className: 'custom-marker',
+        html: '<div style="background-color: #22c55e; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+      });
+      
+      L.marker([startLat, startLng], { icon: startIcon }).addTo(map);
+
+      // Add end marker if different from start
+      if (endLat && endLng && (endLat !== startLat || endLng !== startLng)) {
+        const endIcon = L.divIcon({
+          className: 'custom-marker',
+          html: '<div style="background-color: #ef4444; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+          iconSize: [16, 16],
+          iconAnchor: [8, 8],
+        });
+        
+        L.marker([endLat, endLng], { icon: endIcon }).addTo(map);
+        
+        // Fit bounds to show both markers
+        map.fitBounds([[startLat, startLng], [endLat, endLng]], { padding: [50, 50] });
+      }
     }
 
     function renderNoGpsMessage() {
-      mapRef.current!.innerHTML = `
+      if (!mapRef.current) return;
+      mapRef.current.innerHTML = `
         <div class="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
           <div class="text-center text-gray-500">
             <svg class="h-8 w-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -154,7 +181,15 @@ export default function RouteMap({ polyline, startLat, startLng, endLat, endLng,
         </div>
       `;
     }
+
+    // Cleanup on unmount
+    return () => {
+      if (leafletMapRef.current) {
+        leafletMapRef.current.remove();
+        leafletMapRef.current = null;
+      }
+    };
   }, [polyline, startLat, startLng, endLat, endLng]);
 
-  return <div ref={mapRef} className={`aspect-video ${className}`} />;
+  return <div ref={mapRef} className={`aspect-video rounded-lg overflow-hidden ${className}`} />;
 }
