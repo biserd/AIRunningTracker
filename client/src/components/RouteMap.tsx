@@ -118,15 +118,25 @@ export default function RouteMap({ polyline, startLat, startLng, endLat, endLng,
             if (canvas) {
               const ctx = canvas.getContext('2d');
               if (ctx) {
-                // Set canvas size to match container
+                // Get CSS display size
                 const rect = canvas.getBoundingClientRect();
-                canvas.width = rect.width;
-                canvas.height = rect.height;
+                const dpr = window.devicePixelRatio || 1;
+                
+                // Set canvas internal resolution (accounting for device pixel ratio)
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                
+                // Scale context to match device pixel ratio
+                ctx.scale(dpr, dpr);
+                
+                // Use CSS size for coordinate calculations (not internal canvas size)
+                const displayWidth = rect.width;
+                const displayHeight = rect.height;
                 
                 // Convert GPS coordinates to canvas coordinates
                 const canvasCoords = coordinates.map(([lat, lng]) => {
-                  const x = ((lng - (minLng - lngPadding)) / ((maxLng + lngPadding) - (minLng - lngPadding))) * canvas.width;
-                  const y = canvas.height - ((lat - (minLat - latPadding)) / ((maxLat + latPadding) - (minLat - latPadding))) * canvas.height;
+                  const x = ((lng - (minLng - lngPadding)) / ((maxLng + lngPadding) - (minLng - lngPadding))) * displayWidth;
+                  const y = displayHeight - ((lat - (minLat - latPadding)) / ((maxLat + latPadding) - (minLat - latPadding))) * displayHeight;
                   return [x, y];
                 });
 
