@@ -58,18 +58,7 @@ export default function RouteMap({ polyline, startLat, startLng, endLat, endLng,
           const centerLat = (minLat + maxLat) / 2;
           const centerLng = (minLng + maxLng) / 2;
           
-          // Calculate appropriate zoom level based on bounds
-          const latDelta = maxLat - minLat;
-          const lngDelta = maxLng - minLng;
-          const maxDelta = Math.max(latDelta, lngDelta);
-          
-          let zoom = 15;
-          if (maxDelta > 0.1) zoom = 11;
-          else if (maxDelta > 0.05) zoom = 12;
-          else if (maxDelta > 0.02) zoom = 13;
-          else if (maxDelta > 0.01) zoom = 14;
-
-          // Create Google Static Maps URL with polyline
+          // Calculate bbox for OpenStreetMap
           const bbox = [
             minLng - lngPadding,
             minLat - latPadding,
@@ -77,22 +66,15 @@ export default function RouteMap({ polyline, startLat, startLng, endLat, endLng,
             maxLat + latPadding
           ].join(',');
 
-          // Create Leaflet-based map with the route
+          // Use simple iframe with bbox (no canvas overlay)
           mapRef.current.innerHTML = `
-            <div class="relative w-full h-full rounded-lg overflow-hidden">
-              <!-- OpenStreetMap iframe as base -->
+            <div class="relative w-full h-full rounded-lg overflow-hidden bg-gray-100">
               <iframe 
                 src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${centerLat},${centerLng}"
-                class="w-full h-full absolute inset-0"
+                class="w-full h-full"
                 style="border: none;"
                 title="Running Route Map">
               </iframe>
-              
-              <!-- Route overlay using canvas -->
-              <canvas id="routeCanvas" 
-                      class="absolute inset-0 w-full h-full pointer-events-none"
-                      style="mix-blend-mode: multiply;">
-              </canvas>
               
               <div class="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
                 <div class="flex items-center space-x-4 text-sm">
@@ -105,92 +87,12 @@ export default function RouteMap({ polyline, startLat, startLng, endLat, endLng,
                     <span class="text-gray-700 font-medium">Finish</span>
                   </div>
                 </div>
-                <div class="text-xs text-green-600 mt-1 font-medium">
-                  ✓ GPS route (${coordinates.length} points)
+                <div class="text-xs text-gray-600 mt-1">
+                  ${coordinates.length} GPS points • View on Strava for route
                 </div>
               </div>
             </div>
           `;
-
-          // Draw the route on canvas after iframe loads
-          setTimeout(() => {
-            const canvas = document.getElementById('routeCanvas') as HTMLCanvasElement;
-            if (canvas) {
-              const ctx = canvas.getContext('2d');
-              if (ctx) {
-                // Get CSS display size
-                const rect = canvas.getBoundingClientRect();
-                const dpr = window.devicePixelRatio || 1;
-                
-                // Set canvas internal resolution (accounting for device pixel ratio)
-                canvas.width = rect.width * dpr;
-                canvas.height = rect.height * dpr;
-                
-                // Scale context to match device pixel ratio
-                ctx.scale(dpr, dpr);
-                
-                // Use CSS size for coordinate calculations (not internal canvas size)
-                const displayWidth = rect.width;
-                const displayHeight = rect.height;
-                
-                // Use Web Mercator projection to match OpenStreetMap
-                const latToMercatorY = (lat: number) => {
-                  const latRad = lat * Math.PI / 180;
-                  return Math.log(Math.tan(Math.PI / 4 + latRad / 2));
-                };
-                
-                // Calculate mercator bounds
-                const minMercatorY = latToMercatorY(minLat - latPadding);
-                const maxMercatorY = latToMercatorY(maxLat + latPadding);
-                
-                // Convert GPS coordinates to canvas coordinates using Mercator
-                const canvasCoords = coordinates.map(([lat, lng]) => {
-                  const x = ((lng - (minLng - lngPadding)) / ((maxLng + lngPadding) - (minLng - lngPadding))) * displayWidth;
-                  const mercatorY = latToMercatorY(lat);
-                  const y = displayHeight - ((mercatorY - minMercatorY) / (maxMercatorY - minMercatorY)) * displayHeight;
-                  return [x, y];
-                });
-
-                // Draw route path
-                ctx.strokeStyle = '#ff6b35';
-                ctx.lineWidth = 4;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                ctx.globalAlpha = 0.8;
-                
-                ctx.beginPath();
-                canvasCoords.forEach(([x, y], index) => {
-                  if (index === 0) {
-                    ctx.moveTo(x, y);
-                  } else {
-                    ctx.lineTo(x, y);
-                  }
-                });
-                ctx.stroke();
-
-                // Draw start marker
-                const [startX, startY] = canvasCoords[0];
-                ctx.globalAlpha = 1;
-                ctx.fillStyle = '#22c55e';
-                ctx.beginPath();
-                ctx.arc(startX, startY, 8, 0, 2 * Math.PI);
-                ctx.fill();
-                ctx.strokeStyle = 'white';
-                ctx.lineWidth = 3;
-                ctx.stroke();
-
-                // Draw end marker
-                const [endX, endY] = canvasCoords[canvasCoords.length - 1];
-                ctx.fillStyle = '#ef4444';
-                ctx.beginPath();
-                ctx.arc(endX, endY, 8, 0, 2 * Math.PI);
-                ctx.fill();
-                ctx.strokeStyle = 'white';
-                ctx.lineWidth = 3;
-                ctx.stroke();
-              }
-            }
-          }, 1000);
         }
       } catch (error) {
         console.error('Error decoding polyline:', error);
