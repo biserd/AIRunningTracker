@@ -9,7 +9,7 @@ import DashboardScreen from '../screens/DashboardScreen';
 import RunnerScoreScreen from '../screens/RunnerScoreScreen';
 import RacePredictionsScreen from '../screens/RacePredictionsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
-import ActivityDetailScreen from '../screens/ActivityDetailScreen';
+import ActivityDetailsScreen from '../screens/ActivityDetailsScreen';
 import MLInsightsScreen from '../screens/MLInsightsScreen';
 import PerformanceScreen from '../screens/PerformanceScreen';
 
@@ -71,7 +71,9 @@ export default function AppNavigator({ isAuthenticated, onLogin, onLogout, user,
           <Stack.Screen name="MainTabs">
             {props => <MainTabs {...props} user={user} token={token} onLogout={onLogout} />}
           </Stack.Screen>
-          <Stack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
+          <Stack.Screen name="ActivityDetails">
+            {props => <ActivityDetailsScreen {...props} user={user} token={token} />}
+          </Stack.Screen>
           <Stack.Screen name="MLInsights" component={MLInsightsScreen} />
           <Stack.Screen name="Performance" component={PerformanceScreen} />
         </>

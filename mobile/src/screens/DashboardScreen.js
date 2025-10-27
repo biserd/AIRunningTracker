@@ -453,6 +453,7 @@ export default function DashboardScreen({ navigation, user, token, onLogout }) {
                       <TouchableOpacity 
                         key={index} 
                         style={styles.activityRow}
+                        onPress={() => navigation.navigate('ActivityDetails', { activityId: activity.id })}
                         data-testid={`activity-${activity.id}`}
                       >
                         <View style={[styles.activityIcon, { backgroundColor: iconStyle.bg }]}>
