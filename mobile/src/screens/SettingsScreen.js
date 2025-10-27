@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, StatusBar, ActivityIndicator } from 'react-native';
+import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
+import * as Crypto from 'expo-crypto';
 
 const API_BASE_URL = 'https://8569cb03-f268-4195-b845-f9a7784a2141-00-5cx90hqzmtzl.riker.replit.dev';
 
@@ -21,14 +24,48 @@ const colors = {
   destructive: '#EF4444',
 };
 
-export default function SettingsScreen({ navigation, user, token, dashboardData }) {
+WebBrowser.maybeCompleteAuthSession();
+
+const STRAVA_CLIENT_ID = '145066';
+
+export default function SettingsScreen({ navigation, user, token, onLogout }) {
   const [unitPreference, setUnitPreference] = useState('km');
+  const [connectingStrava, setConnectingStrava] = useState(false);
+  const [isStravaConnected, setIsStravaConnected] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const redirectUri = AuthSession.makeRedirectUri({
+    scheme: 'com.runanalytics.app',
+    path: 'strava-callback'
+  });
 
   useEffect(() => {
-    if (dashboardData?.user?.unitPreference) {
-      setUnitPreference(dashboardData.user.unitPreference);
+    fetchUserData();
+  }, []);
+
+  const fetchUserData = async () => {
+    if (!user || !token) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/dashboard/${user.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.user) {
+          setUnitPreference(data.user.unitPreference || 'km');
+          setIsStravaConnected(data.user.stravaConnected || false);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch user data:', error);
+    } finally {
+      setLoading(false);
     }
-  }, [dashboardData]);
+  };
 
   const updateSettings = async () => {
     if (!user || !token) return;
@@ -51,6 +88,95 @@ export default function SettingsScreen({ navigation, user, token, dashboardData 
     } catch (error) {
       Alert.alert('Error', 'Network error updating settings');
     }
+  };
+
+  const handleConnectStrava = async () => {
+    setConnectingStrava(true);
+    
+    try {
+      const nonce = await Crypto.randomUUID();
+      const stateValue = `${user.id}_${nonce}`;
+      
+      const authUrl = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&approval_prompt=force&scope=read,activity:read_all&state=${stateValue}`;
+      
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+      
+      if (result.type === 'success') {
+        const url = result.url;
+        const urlParams = new URL(url).searchParams;
+        const code = urlParams.get('code');
+        const returnedState = urlParams.get('state');
+        
+        if (!code || !returnedState) {
+          Alert.alert('Error', 'Invalid OAuth response');
+          return;
+        }
+        
+        if (returnedState !== stateValue) {
+          Alert.alert('Security Error', 'OAuth state mismatch. Please try again.');
+          return;
+        }
+        
+        const response = await fetch(`${API_BASE_URL}/api/strava/connect`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ code })
+        });
+
+        if (response.ok) {
+          setIsStravaConnected(true);
+          fetchUserData();
+          Alert.alert('Success', 'Strava connected successfully! Your activities will be synced automatically.');
+        } else {
+          const errorData = await response.json();
+          Alert.alert('Connection Failed', errorData.message || 'Failed to connect to Strava');
+        }
+      } else if (result.type === 'cancel') {
+        Alert.alert('Cancelled', 'Strava connection was cancelled');
+      }
+    } catch (error) {
+      console.error('Strava OAuth error:', error);
+      Alert.alert('Error', 'Failed to connect to Strava');
+    } finally {
+      setConnectingStrava(false);
+    }
+  };
+
+  const handleDisconnectStrava = async () => {
+    Alert.alert(
+      'Disconnect Strava',
+      'Are you sure you want to disconnect your Strava account? Your existing activities will remain, but new activities will not be synced.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Disconnect',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await fetch(`${API_BASE_URL}/api/strava/disconnect/${user.id}`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                }
+              });
+
+              if (response.ok) {
+                setIsStravaConnected(false);
+                fetchUserData();
+                Alert.alert('Success', 'Strava disconnected successfully');
+              } else {
+                Alert.alert('Error', 'Failed to disconnect Strava');
+              }
+            } catch (error) {
+              Alert.alert('Error', 'Network error disconnecting Strava');
+            }
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -102,13 +228,59 @@ export default function SettingsScreen({ navigation, user, token, dashboardData 
               <View style={styles.accountRow}>
                 <Text style={styles.accountLabel}>Strava Status</Text>
                 <Text style={[styles.accountValue, { 
-                  color: dashboardData?.user?.stravaConnected ? colors.achievementGreen : colors.mutedForeground 
+                  color: isStravaConnected ? colors.achievementGreen : colors.mutedForeground 
                 }]}>
-                  {dashboardData?.user?.stravaConnected ? '✓ Connected' : 'Not connected'}
+                  {isStravaConnected ? '✓ Connected' : 'Not connected'}
                 </Text>
               </View>
             </View>
           </View>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Strava Integration</Text>
+            </View>
+            <View style={styles.cardContent}>
+              {!isStravaConnected ? (
+                <>
+                  <Text style={styles.integrationDescription}>
+                    Connect your Strava account to automatically sync your running activities and get AI-powered insights.
+                  </Text>
+                  <TouchableOpacity 
+                    style={[styles.primaryButton, connectingStrava && styles.buttonDisabled]} 
+                    onPress={handleConnectStrava}
+                    disabled={connectingStrava}
+                  >
+                    {connectingStrava ? (
+                      <ActivityIndicator color={colors.primaryForeground} />
+                    ) : (
+                      <Text style={styles.primaryButtonText}>Connect Strava</Text>
+                    )}
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.integrationDescription}>
+                    Your Strava account is connected. Your activities are automatically synced.
+                  </Text>
+                  <TouchableOpacity 
+                    style={styles.disconnectButton} 
+                    onPress={handleDisconnectStrava}
+                  >
+                    <Text style={styles.disconnectButtonText}>Disconnect Strava</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
+            <Text style={styles.logoutButtonText}>Logout</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
@@ -218,5 +390,49 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.cardForeground,
     fontWeight: '600',
+  },
+  integrationDescription: {
+    fontSize: 14,
+    color: colors.mutedForeground,
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  primaryButton: {
+    backgroundColor: colors.primary,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  primaryButtonText: {
+    color: colors.primaryForeground,
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  disconnectButton: {
+    backgroundColor: colors.destructive,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  disconnectButtonText: {
+    color: colors.primaryForeground,
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  logoutButton: {
+    backgroundColor: colors.card,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.destructive,
+  },
+  logoutButtonText: {
+    color: colors.destructive,
+    fontWeight: '600',
+    fontSize: 16,
   },
 });

@@ -3,6 +3,7 @@
     "name": "RunAnalytics",
     "slug": "runanalytics",
     "version": "1.0.0",
+    "scheme": "com.runanalytics.app",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",

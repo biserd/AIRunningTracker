@@ -139,10 +139,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Strava OAuth
   app.post("/api/strava/connect", authenticateJWT, async (req: any, res) => {
     try {
-      const { code, userId } = req.body;
+      const { code } = req.body;
+      const userId = req.user?.id;
       
-      if (!code || !userId) {
-        return res.status(400).json({ message: "Code and userId are required" });
+      if (!code) {
+        return res.status(400).json({ message: "Authorization code is required" });
+      }
+
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
       }
 
       const tokenData = await stravaService.exchangeCodeForTokens(code);
