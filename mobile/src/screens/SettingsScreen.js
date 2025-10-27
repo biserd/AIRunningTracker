@@ -4,7 +4,7 @@ import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import * as Crypto from 'expo-crypto';
 
-const API_BASE_URL = 'https://8569cb03-f268-4195-b845-f9a7784a2141-00-5cx90hqzmtzl.riker.replit.dev';
+const API_BASE_URL = 'https://aitracker.run';
 
 const colors = {
   primary: '#FC4C02',

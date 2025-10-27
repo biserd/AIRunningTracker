@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert, StatusBar } from 'react-native';
 
-const API_BASE_URL = 'https://8569cb03-f268-4195-b845-f9a7784a2141-00-5cx90hqzmtzl.riker.replit.dev';
+const API_BASE_URL = 'https://aitracker.run';
 
 const colors = {
   primary: '#FC4C02',

@@ -4,7 +4,7 @@ import MapView, { Polyline, Marker } from 'react-native-maps';
 import { decode } from '@googlemaps/polyline-codec';
 import { LineChart } from 'react-native-chart-kit';
 
-const API_BASE_URL = 'https://8569cb03-f268-4195-b845-f9a7784a2141-00-5cx90hqzmtzl.riker.replit.dev';
+const API_BASE_URL = 'https://aitracker.run';
 
 const colors = {
   primary: '#FC4C02',
