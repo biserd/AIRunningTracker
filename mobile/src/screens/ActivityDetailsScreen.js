@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Dimensions } from 'react-native';
-import MapView, { Polyline, Marker } from 'react-native-maps';
-import { decode } from '@googlemaps/polyline-codec';
 import { LineChart } from 'react-native-chart-kit';
 
 const API_BASE_URL = 'https://aitracker.run';
@@ -54,36 +52,6 @@ export default function ActivityDetailsScreen({ route, navigation, token }) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const decodePolyline = (polyline) => {
-    if (!polyline) return [];
-    try {
-      const decoded = decode(polyline);
-      return decoded.map(([lat, lng]) => ({ latitude: lat, longitude: lng }));
-    } catch (e) {
-      console.error('Error decoding polyline:', e);
-      return [];
-    }
-  };
-
-  const getMapRegion = (coordinates) => {
-    if (!coordinates || coordinates.length === 0) return null;
-    
-    const lats = coordinates.map(c => c.latitude);
-    const lngs = coordinates.map(c => c.longitude);
-    
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-    const minLng = Math.min(...lngs);
-    const maxLng = Math.max(...lngs);
-    
-    return {
-      latitude: (minLat + maxLat) / 2,
-      longitude: (minLng + maxLng) / 2,
-      latitudeDelta: (maxLat - minLat) * 1.5,
-      longitudeDelta: (maxLng - minLng) * 1.5,
-    };
   };
 
   const formatLapTime = (seconds) => {
@@ -164,8 +132,6 @@ export default function ActivityDetailsScreen({ route, navigation, token }) {
   }
 
   const { activity, laps, streams } = activityData;
-  const routeCoordinates = decodePolyline(activity.polyline);
-  const mapRegion = getMapRegion(routeCoordinates);
 
   return (
     <ScrollView style={styles.container}>
@@ -186,43 +152,6 @@ export default function ActivityDetailsScreen({ route, navigation, token }) {
       </View>
 
       {/* Route Map */}
-      {routeCoordinates.length > 0 && mapRegion && (
-        <View style={styles.mapContainer}>
-          <Text style={styles.sectionTitle}>Route</Text>
-          <MapView
-            style={styles.map}
-            initialRegion={mapRegion}
-            data-testid="map-route"
-          >
-            <Polyline
-              coordinates={routeCoordinates}
-              strokeColor={colors.primary}
-              strokeWidth={3}
-            />
-            {activity.startLatitude && activity.startLongitude && (
-              <Marker
-                coordinate={{
-                  latitude: activity.startLatitude,
-                  longitude: activity.startLongitude
-                }}
-                title="Start"
-                pinColor={colors.achievementGreen}
-              />
-            )}
-            {activity.endLatitude && activity.endLongitude && (
-              <Marker
-                coordinate={{
-                  latitude: activity.endLatitude,
-                  longitude: activity.endLongitude
-                }}
-                title="Finish"
-                pinColor={colors.destructive}
-              />
-            )}
-          </MapView>
-        </View>
-      )}
-
       {/* Primary Metrics */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Activity Overview</Text>
