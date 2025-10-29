@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, StatusBar, ActivityIndicator } from 'react-native';
-import * as AuthSession from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
-import * as Crypto from 'expo-crypto';
 
 const API_BASE_URL = 'https://aitracker.run';
 
@@ -24,20 +21,9 @@ const colors = {
   destructive: '#EF4444',
 };
 
-WebBrowser.maybeCompleteAuthSession();
-
-const STRAVA_CLIENT_ID = '145066';
-
 export default function SettingsScreen({ navigation, user, token, onLogout }) {
   const [unitPreference, setUnitPreference] = useState('km');
-  const [connectingStrava, setConnectingStrava] = useState(false);
-  const [isStravaConnected, setIsStravaConnected] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  const redirectUri = AuthSession.makeRedirectUri({
-    scheme: 'com.runanalytics.app',
-    path: 'strava-callback'
-  });
 
   useEffect(() => {
     fetchUserData();
@@ -57,7 +43,6 @@ export default function SettingsScreen({ navigation, user, token, onLogout }) {
         const data = await response.json();
         if (data.user) {
           setUnitPreference(data.user.unitPreference || 'km');
-          setIsStravaConnected(data.user.stravaConnected || false);
         }
       }
     } catch (error) {
@@ -88,95 +73,6 @@ export default function SettingsScreen({ navigation, user, token, onLogout }) {
     } catch (error) {
       Alert.alert('Error', 'Network error updating settings');
     }
-  };
-
-  const handleConnectStrava = async () => {
-    setConnectingStrava(true);
-    
-    try {
-      const nonce = await Crypto.randomUUID();
-      const stateValue = `${user.id}_${nonce}`;
-      
-      const authUrl = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&approval_prompt=force&scope=read,activity:read_all&state=${stateValue}`;
-      
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
-      
-      if (result.type === 'success') {
-        const url = result.url;
-        const urlParams = new URL(url).searchParams;
-        const code = urlParams.get('code');
-        const returnedState = urlParams.get('state');
-        
-        if (!code || !returnedState) {
-          Alert.alert('Error', 'Invalid OAuth response');
-          return;
-        }
-        
-        if (returnedState !== stateValue) {
-          Alert.alert('Security Error', 'OAuth state mismatch. Please try again.');
-          return;
-        }
-        
-        const response = await fetch(`${API_BASE_URL}/api/strava/connect`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ code })
-        });
-
-        if (response.ok) {
-          setIsStravaConnected(true);
-          fetchUserData();
-          Alert.alert('Success', 'Strava connected successfully! Your activities will be synced automatically.');
-        } else {
-          const errorData = await response.json();
-          Alert.alert('Connection Failed', errorData.message || 'Failed to connect to Strava');
-        }
-      } else if (result.type === 'cancel') {
-        Alert.alert('Cancelled', 'Strava connection was cancelled');
-      }
-    } catch (error) {
-      console.error('Strava OAuth error:', error);
-      Alert.alert('Error', 'Failed to connect to Strava');
-    } finally {
-      setConnectingStrava(false);
-    }
-  };
-
-  const handleDisconnectStrava = async () => {
-    Alert.alert(
-      'Disconnect Strava',
-      'Are you sure you want to disconnect your Strava account? Your existing activities will remain, but new activities will not be synced.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Disconnect',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const response = await fetch(`${API_BASE_URL}/api/strava/disconnect/${user.id}`, {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                }
-              });
-
-              if (response.ok) {
-                setIsStravaConnected(false);
-                fetchUserData();
-                Alert.alert('Success', 'Strava disconnected successfully');
-              } else {
-                Alert.alert('Error', 'Failed to disconnect Strava');
-              }
-            } catch (error) {
-              Alert.alert('Error', 'Network error disconnecting Strava');
-            }
-          }
-        }
-      ]
-    );
   };
 
   return (
@@ -225,54 +121,6 @@ export default function SettingsScreen({ navigation, user, token, onLogout }) {
                 <Text style={styles.accountLabel}>Email</Text>
                 <Text style={styles.accountValue}>{user?.email}</Text>
               </View>
-              <View style={styles.accountRow}>
-                <Text style={styles.accountLabel}>Strava Status</Text>
-                <Text style={[styles.accountValue, { 
-                  color: isStravaConnected ? colors.achievementGreen : colors.mutedForeground 
-                }]}>
-                  {isStravaConnected ? '✓ Connected' : 'Not connected'}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>Strava Integration</Text>
-            </View>
-            <View style={styles.cardContent}>
-              {!isStravaConnected ? (
-                <>
-                  <Text style={styles.integrationDescription}>
-                    Connect your Strava account to automatically sync your running activities and get AI-powered insights.
-                  </Text>
-                  <TouchableOpacity 
-                    style={[styles.primaryButton, connectingStrava && styles.buttonDisabled]} 
-                    onPress={handleConnectStrava}
-                    disabled={connectingStrava}
-                  >
-                    {connectingStrava ? (
-                      <ActivityIndicator color={colors.primaryForeground} />
-                    ) : (
-                      <Text style={styles.primaryButtonText}>Connect Strava</Text>
-                    )}
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <>
-                  <Text style={styles.integrationDescription}>
-                    Your Strava account is connected. Your activities are automatically synced.
-                  </Text>
-                  <TouchableOpacity 
-                    style={styles.disconnectButton} 
-                    onPress={handleDisconnectStrava}
-                  >
-                    <Text style={styles.disconnectButtonText}>Disconnect Strava</Text>
-                  </TouchableOpacity>
-                </>
-              )}
             </View>
           </View>
         </View>
