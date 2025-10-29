@@ -36,9 +36,6 @@
         "projectId": "your-project-id-here"
       }
     },
-    "privacy": "public",
-    "plugins": [
-      "expo-web-browser"
-    ]
+    "privacy": "public"
   }
 }
