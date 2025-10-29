@@ -1,36 +1,31 @@
-import React, { useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import AppNavigator from './src/navigation/AppNavigator';
+import { StatusBar } from 'expo-status-bar';
+import { StyleSheet, Text, View } from 'react-native';
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
-
-  const handleLogin = (userData, authToken) => {
-    setUser(userData);
-    setToken(authToken);
-    setIsAuthenticated(true);
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    setToken(null);
-    setIsAuthenticated(false);
-  };
-
   return (
-    <SafeAreaProvider>
-      <NavigationContainer>
-        <AppNavigator 
-          isAuthenticated={isAuthenticated} 
-          onLogin={handleLogin}
-          onLogout={handleLogout}
-          user={user}
-          token={token}
-        />
-      </NavigationContainer>
-    </SafeAreaProvider>
+    <View style={styles.container}>
+      <Text style={styles.title}>🏃‍♂️ RunAnalytics</Text>
+      <Text style={styles.subtitle}>Mobile App Test</Text>
+      <StatusBar style="auto" />
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#FC4C02',
+    marginBottom: 10,
+  },
+  subtitle: {
+    fontSize: 18,
+    color: '#64748B',
+  },
+});
