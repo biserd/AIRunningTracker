@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Dimensions } from 'react-native';
-import { LineChart } from 'react-native-chart-kit';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 
 const API_BASE_URL = 'https://aitracker.run';
 
@@ -66,49 +65,6 @@ export default function ActivityDetailsScreen({ route, navigation, token }) {
     const mins = Math.floor(minPerKm);
     const secs = Math.round((minPerKm - mins) * 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const prepareChartData = (streamData, label) => {
-    if (!streamData || !streamData.data || streamData.data.length === 0) {
-      return null;
-    }
-
-    // Sample data points to max 50 for readability
-    const rawData = streamData.data;
-    const sampleRate = Math.max(1, Math.ceil(rawData.length / 50));
-    
-    // Sample and filter in one pass, keeping arrays aligned
-    const sampledPairs = [];
-    for (let i = 0; i < rawData.length; i += sampleRate) {
-      const value = rawData[i];
-      if (value !== null && value !== undefined && !isNaN(value)) {
-        sampledPairs.push({
-          index: i,
-          value: value
-        });
-      }
-    }
-
-    // If no valid data, return null
-    if (sampledPairs.length === 0) {
-      return null;
-    }
-
-    // Create aligned labels and data arrays
-    const labels = sampledPairs.map((_, i) => 
-      i % 10 === 0 ? `${Math.round(sampledPairs[i].index / 60)}` : ''
-    );
-    const dataValues = sampledPairs.map(p => p.value);
-
-    return {
-      labels: labels,
-      datasets: [{
-        data: dataValues,
-        color: (opacity = 1) => `rgba(${label === 'Heart Rate' ? '239, 68, 68' : label === 'Cadence' ? '168, 85, 247' : '234, 179, 8'}, ${opacity})`,
-        strokeWidth: 2
-      }],
-      legend: [label]
-    };
   };
 
   if (loading) {
@@ -359,126 +315,6 @@ export default function ActivityDetailsScreen({ route, navigation, token }) {
         )}
       </View>
 
-      {/* Performance Charts */}
-      {streams && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Performance Charts</Text>
-          
-          {/* Heart Rate Chart */}
-          {streams.heartrate && prepareChartData(streams.heartrate, 'Heart Rate') && (
-            <View style={styles.chartContainer}>
-              <View style={styles.chartHeader}>
-                <Text style={styles.chartTitle}>❤️ Heart Rate Analysis</Text>
-                <View style={styles.chartBadge}>
-                  <Text style={styles.chartBadgeText}>Real Data</Text>
-                </View>
-              </View>
-              <LineChart
-                data={prepareChartData(streams.heartrate, 'Heart Rate')}
-                width={Dimensions.get('window').width - 40}
-                height={220}
-                chartConfig={{
-                  backgroundColor: colors.card,
-                  backgroundGradientFrom: colors.card,
-                  backgroundGradientTo: colors.card,
-                  decimalPlaces: 0,
-                  color: (opacity = 1) => `rgba(239, 68, 68, ${opacity})`,
-                  labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-                  style: { borderRadius: 16 },
-                  propsForDots: {
-                    r: '0',
-                  }
-                }}
-                bezier
-                style={styles.chart}
-                withInnerLines={false}
-                withOuterLines={true}
-                withVerticalLines={false}
-                withHorizontalLines={true}
-                fromZero={false}
-                yAxisSuffix=" bpm"
-              />
-              <Text style={styles.chartXLabel}>Time (minutes)</Text>
-            </View>
-          )}
-
-          {/* Cadence Chart */}
-          {streams.cadence && prepareChartData(streams.cadence, 'Cadence') && (
-            <View style={styles.chartContainer}>
-              <View style={styles.chartHeader}>
-                <Text style={styles.chartTitle}>👟 Cadence Analysis</Text>
-                <View style={styles.chartBadge}>
-                  <Text style={styles.chartBadgeText}>Real Data</Text>
-                </View>
-              </View>
-              <LineChart
-                data={prepareChartData(streams.cadence, 'Cadence')}
-                width={Dimensions.get('window').width - 40}
-                height={220}
-                chartConfig={{
-                  backgroundColor: colors.card,
-                  backgroundGradientFrom: colors.card,
-                  backgroundGradientTo: colors.card,
-                  decimalPlaces: 0,
-                  color: (opacity = 1) => `rgba(168, 85, 247, ${opacity})`,
-                  labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-                  style: { borderRadius: 16 },
-                  propsForDots: {
-                    r: '0',
-                  }
-                }}
-                bezier
-                style={styles.chart}
-                withInnerLines={false}
-                withOuterLines={true}
-                withVerticalLines={false}
-                withHorizontalLines={true}
-                fromZero={false}
-                yAxisSuffix=" spm"
-              />
-              <Text style={styles.chartXLabel}>Time (minutes)</Text>
-            </View>
-          )}
-
-          {/* Power Chart */}
-          {streams.watts && prepareChartData(streams.watts, 'Power') && (
-            <View style={styles.chartContainer}>
-              <View style={styles.chartHeader}>
-                <Text style={styles.chartTitle}>⚡ Power Analysis</Text>
-                <View style={styles.chartBadge}>
-                  <Text style={styles.chartBadgeText}>Real Data</Text>
-                </View>
-              </View>
-              <LineChart
-                data={prepareChartData(streams.watts, 'Power')}
-                width={Dimensions.get('window').width - 40}
-                height={220}
-                chartConfig={{
-                  backgroundColor: colors.card,
-                  backgroundGradientFrom: colors.card,
-                  backgroundGradientTo: colors.card,
-                  decimalPlaces: 0,
-                  color: (opacity = 1) => `rgba(234, 179, 8, ${opacity})`,
-                  labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-                  style: { borderRadius: 16 },
-                  propsForDots: {
-                    r: '0',
-                  }
-                }}
-                bezier
-                style={styles.chart}
-                withInnerLines={false}
-                withOuterLines={true}
-                withVerticalLines={false}
-                withHorizontalLines={true}
-                fromZero={false}
-                yAxisSuffix="W"
-              />
-              <Text style={styles.chartXLabel}>Time (minutes)</Text>
-            </View>
-          )}
-        </View>
-      )}
     </ScrollView>
   );
 }
