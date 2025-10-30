@@ -147,6 +147,25 @@ export default function AppHeader() {
               </Link>
             );
           })}
+          
+          {/* Admin Link - only show for admin users */}
+          {user?.isAdmin && (
+            <Link href="/admin">
+              <Button
+                variant={location === "/admin" ? "default" : "ghost"}
+                size="sm"
+                className={`flex items-center space-x-2 whitespace-nowrap ${
+                  location === "/admin"
+                    ? "bg-strava-orange text-white" 
+                    : "text-gray-600"
+                }`}
+                data-testid="mobile-nav-admin"
+              >
+                <Shield size={14} />
+                <span>Admin</span>
+              </Button>
+            </Link>
+          )}
         </nav>
       </div>
 

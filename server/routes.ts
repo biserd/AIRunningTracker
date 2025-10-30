@@ -69,6 +69,73 @@ const authenticateAdmin = async (req: any, res: Response, next: NextFunction) =>
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // SEO: robots.txt
+  app.get("/robots.txt", (req, res) => {
+    const baseUrl = process.env.REPL_SLUG 
+      ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+      : "https://aitracker.run";
+    
+    const robotsTxt = `User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /admin/
+Disallow: /settings
+Disallow: /billing
+Disallow: /activities
+Disallow: /activity/
+Disallow: /performance
+Disallow: /ml-insights
+
+Sitemap: ${baseUrl}/sitemap.xml`;
+
+    res.header("Content-Type", "text/plain");
+    res.send(robotsTxt);
+  });
+
+  // SEO: Sitemap
+  app.get("/sitemap.xml", (req, res) => {
+    const baseUrl = process.env.REPL_SLUG 
+      ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+      : "https://aitracker.run";
+    
+    const pages = [
+      { url: "/", changefreq: "daily", priority: "1.0" },
+      { url: "/auth", changefreq: "monthly", priority: "0.8" },
+      { url: "/forgot-password", changefreq: "yearly", priority: "0.4" },
+      { url: "/reset-password", changefreq: "yearly", priority: "0.3" },
+      { url: "/about", changefreq: "monthly", priority: "0.7" },
+      { url: "/features", changefreq: "monthly", priority: "0.8" },
+      { url: "/pricing", changefreq: "weekly", priority: "0.9" },
+      { url: "/subscribe", changefreq: "weekly", priority: "0.8" },
+      { url: "/tools", changefreq: "weekly", priority: "0.9" },
+      { url: "/tools/aerobic-decoupling-calculator", changefreq: "weekly", priority: "0.8" },
+      { url: "/tools/training-split-analyzer", changefreq: "weekly", priority: "0.8" },
+      { url: "/tools/marathon-fueling", changefreq: "weekly", priority: "0.8" },
+      { url: "/tools/race-predictor", changefreq: "weekly", priority: "0.8" },
+      { url: "/tools/cadence-analyzer", changefreq: "weekly", priority: "0.8" },
+      { url: "/runner-score", changefreq: "weekly", priority: "0.7" },
+      { url: "/faq", changefreq: "monthly", priority: "0.6" },
+      { url: "/contact", changefreq: "monthly", priority: "0.5" },
+      { url: "/privacy", changefreq: "yearly", priority: "0.3" },
+      { url: "/terms", changefreq: "yearly", priority: "0.3" },
+      { url: "/release-notes", changefreq: "weekly", priority: "0.7" },
+    ];
+
+    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${pages.map(page => `  <url>
+    <loc>${baseUrl}${page.url}</loc>
+    <changefreq>${page.changefreq}</changefreq>
+    <priority>${page.priority}</priority>
+  </url>`).join('\n')}
+</urlset>`;
+
+    res.header("Content-Type", "application/xml");
+    res.send(sitemap);
+  });
+  
   // Authentication routes
   app.post("/api/auth/register", async (req, res) => {
     try {
