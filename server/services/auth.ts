@@ -105,10 +105,6 @@ export class AuthService {
     );
   }
 
-  async addToWaitlist(email: string): Promise<void> {
-    await storage.addToEmailWaitlist(email);
-  }
-
   async generatePasswordResetToken(email: string): Promise<string | null> {
     // Find user by email
     const user = await storage.getUserByEmail(email);

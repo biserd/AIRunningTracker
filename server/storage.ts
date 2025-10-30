@@ -1,4 +1,4 @@
-import { users, activities, aiInsights, emailWaitlist, trainingPlans, feedback, goals, performanceLogs, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type InsertEmailWaitlist, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog } from "@shared/schema";
+import { users, activities, aiInsights, trainingPlans, feedback, goals, performanceLogs, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, inArray, gte, gt, lt } from "drizzle-orm";
 import bcrypt from "bcrypt";
@@ -49,8 +49,6 @@ export interface IStorage {
   
   createTrainingPlan(plan: InsertTrainingPlan): Promise<TrainingPlan>;
   getLatestTrainingPlan(userId: number): Promise<TrainingPlan | undefined>;
-  
-  addToEmailWaitlist(email: string): Promise<void>;
   
   createFeedback(feedback: InsertFeedback): Promise<Feedback>;
   
@@ -119,9 +117,9 @@ export interface IStorage {
     };
     recentErrors: Array<{
       timestamp: string;
-      type: string;
-      message: string;
-      endpoint?: string;
+      statusCode: number;
+      endpoint: string;
+      method: string;
     }>;
     performanceTrend: Array<{
       timestamp: string;
@@ -426,10 +424,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(activities.id, activityId))
       .returning();
     return activity || undefined;
-  }
-
-  async addToEmailWaitlist(email: string): Promise<void> {
-    await db.insert(emailWaitlist).values({ email });
   }
 
   async createFeedback(insertFeedback: InsertFeedback): Promise<Feedback> {
@@ -806,9 +800,9 @@ export class DatabaseStorage implements IStorage {
     };
     recentErrors: Array<{
       timestamp: string;
-      type: string;
-      message: string;
-      endpoint?: string;
+      statusCode: number;
+      endpoint: string;
+      method: string;
     }>;
     performanceTrend: Array<{
       timestamp: string;

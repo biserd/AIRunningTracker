@@ -9,7 +9,7 @@ import { authService } from "./services/auth";
 import { emailService } from "./services/email";
 import { runnerScoreService } from "./services/runnerScore";
 import goalsService from "./services/goals";
-import { insertUserSchema, loginSchema, registerSchema, insertEmailWaitlistSchema, insertFeedbackSchema, insertGoalSchema, type Activity } from "@shared/schema";
+import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, type Activity } from "@shared/schema";
 import { z } from "zod";
 import Stripe from "stripe";
 
@@ -171,26 +171,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Reset password error:', error);
       res.status(400).json({ message: error.message || "Failed to reset password" });
-    }
-  });
-
-  // Email waitlist endpoint
-  app.post("/api/waitlist", async (req, res) => {
-    try {
-      const { email } = insertEmailWaitlistSchema.parse(req.body);
-      await authService.addToWaitlist(email);
-      
-      // Send notification email
-      await emailService.sendWaitlistNotification(email);
-      
-      res.json({ message: "Successfully added to waitlist" });
-    } catch (error: any) {
-      console.error('Waitlist error:', error);
-      if (error.message?.includes('duplicate key')) {
-        res.status(400).json({ message: "Email already on waitlist" });
-      } else {
-        res.status(500).json({ message: "Failed to add email to waitlist" });
-      }
     }
   });
 
