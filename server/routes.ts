@@ -190,6 +190,35 @@ ${pages.map(page => `  <url>
     }
   });
 
+  // Delete user account (GDPR compliance)
+  app.delete("/api/user", authenticateJWT, async (req: any, res) => {
+    try {
+      // Get user email before deletion for confirmation email
+      const user = await storage.getUser(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const userEmail = user.email;
+
+      // Delete all user data
+      await storage.deleteAccount(req.user.id);
+
+      // Send confirmation email
+      await emailService.sendAccountDeletionConfirmation(userEmail);
+
+      console.log(`[API DELETE /api/user] Account deleted for user ID: ${req.user.id}, email: ${userEmail}`);
+      
+      res.json({ 
+        success: true, 
+        message: "Your account and all associated data have been permanently deleted. A confirmation email has been sent." 
+      });
+    } catch (error: any) {
+      console.error('Delete account error:', error);
+      res.status(500).json({ message: error.message || "Failed to delete account" });
+    }
+  });
+
   app.get("/api/logout", (req, res) => {
     // Clear any server-side session data if needed
     res.redirect("/");
