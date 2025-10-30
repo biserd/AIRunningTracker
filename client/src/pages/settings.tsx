@@ -1,5 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { queryClient, apiRequest, getQueryFn } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import type { DashboardData } from "@/lib/api";
@@ -8,12 +9,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Save, Unlink, RefreshCw } from "lucide-react";
+import { Settings, Save, Unlink, RefreshCw, Trash2 } from "lucide-react";
 
 function SettingsPageContent() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const { data: dashboardData } = useQuery<DashboardData>({
     queryKey: [`/api/dashboard/${user!.id}`],
@@ -84,6 +97,30 @@ function SettingsPageContent() {
       toast({
         title: "Sync failed",
         description: error.message || "Failed to sync activities",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest(`/api/user`, "DELETE");
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: "Account deleted",
+        description: data.message || "Your account has been permanently deleted. A confirmation email has been sent.",
+      });
+      // Clear local storage and redirect to home
+      localStorage.removeItem("token");
+      setTimeout(() => {
+        setLocation("/");
+      }, 2000);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Delete failed",
+        description: error.message || "Failed to delete account",
         variant: "destructive",
       });
     },
@@ -232,6 +269,76 @@ function SettingsPageContent() {
             </CardContent>
           </Card>
         )}
+
+        <Card className="border-red-200">
+          <CardHeader>
+            <CardTitle className="text-red-600 flex items-center gap-2">
+              <Trash2 className="h-5 w-5" />
+              Delete Account
+            </CardTitle>
+            <CardDescription>
+              Permanently delete your account and all associated data
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <h4 className="font-semibold text-red-800 mb-2">⚠️ Warning: This action cannot be undone</h4>
+              <p className="text-sm text-red-700 mb-3">
+                Deleting your account will permanently remove:
+              </p>
+              <ul className="text-sm text-red-700 space-y-1 list-disc list-inside ml-2">
+                <li>Your user profile and account information</li>
+                <li>All Strava activity data and connections</li>
+                <li>AI-generated insights and training plans</li>
+                <li>Goals and progress tracking</li>
+                <li>All other personal data</li>
+              </ul>
+              <p className="text-sm text-red-700 mt-3 font-medium">
+                This deletion complies with GDPR regulations. You will receive a confirmation email once your data is deleted.
+              </p>
+            </div>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="destructive" 
+                  className="flex items-center gap-2"
+                  disabled={deleteAccountMutation.isPending}
+                  data-testid="button-delete-account"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {deleteAccountMutation.isPending ? "Deleting Account..." : "Delete My Account"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription className="space-y-3">
+                    <p>
+                      This action <strong className="text-red-600">cannot be undone</strong>. This will permanently delete your account and remove all your data from our servers.
+                    </p>
+                    <p>
+                      All your running activities, insights, training plans, and goals will be lost forever.
+                    </p>
+                    <p className="font-medium">
+                      Are you sure you want to proceed with deleting your account?
+                    </p>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => deleteAccountMutation.mutate()}
+                    className="bg-red-600 hover:bg-red-700"
+                    data-testid="button-confirm-delete"
+                  >
+                    Yes, Delete My Account
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </CardContent>
+        </Card>
       </div>
       </main>
     </div>
