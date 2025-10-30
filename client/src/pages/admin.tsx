@@ -4,18 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, Activity, Mail, TrendingUp, Calendar, Shield, Database, BarChart3, Clock, Target, Signal, Server, Cpu, HardDrive, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Users, Activity, TrendingUp, Calendar, Shield, Database, BarChart3, Clock, Target, Signal, Server, Cpu, HardDrive, AlertTriangle, CheckCircle, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface AdminStats {
   totalUsers: number;
   connectedUsers: number;
   totalActivities: number;
-  totalWaitlistEmails: number;
   recentUsers: {
     id: number;
     email: string;
@@ -44,12 +44,6 @@ interface User {
   isAdmin: boolean;
   createdAt: string;
   lastSyncAt?: string;
-}
-
-interface WaitlistEmail {
-  id: number;
-  email: string;
-  createdAt: string;
 }
 
 interface UserAnalytics {
@@ -88,9 +82,9 @@ interface SystemPerformance {
   };
   recentErrors: Array<{
     timestamp: string;
-    type: string;
-    message: string;
-    endpoint?: string;
+    statusCode: number;
+    endpoint: string;
+    method: string;
   }>;
   performanceTrend: Array<{
     timestamp: string;
@@ -104,19 +98,16 @@ export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const { data: stats, isLoading: statsLoading } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
     enabled: !!user,
   });
 
-  const { data: users, isLoading: usersLoading } = useQuery<User[]>({
-    queryKey: ["/api/admin/users"],
-    enabled: !!user,
-  });
-
-  const { data: waitlistEmails, isLoading: waitlistLoading } = useQuery<WaitlistEmail[]>({
-    queryKey: ["/api/admin/waitlist"],
+  const { data: usersData, isLoading: usersLoading } = useQuery<{ users: User[], total: number }>({
+    queryKey: ["/api/admin/users", page, pageSize],
     enabled: !!user,
   });
 
@@ -245,7 +236,7 @@ export default function AdminPage() {
 
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -268,19 +259,6 @@ export default function AdminPage() {
               <div className="text-2xl font-bold">{statsLoading ? "-" : stats?.totalActivities}</div>
               <p className="text-xs text-muted-foreground">
                 Synced from Strava
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Waitlist Emails</CardTitle>
-              <Mail className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{statsLoading ? "-" : stats?.totalWaitlistEmails}</div>
-              <p className="text-xs text-muted-foreground">
-                Signed up for updates
               </p>
             </CardContent>
           </Card>
@@ -847,10 +825,51 @@ export default function AdminPage() {
         {/* Users Table */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              All Users
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                All Users {usersData && `(${usersData.total})`}
+              </CardTitle>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Show:</span>
+                  <Select value={pageSize.toString()} onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}>
+                    <SelectTrigger className="w-20" data-testid="select-page-size">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    data-testid="button-prev-page"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm text-gray-600">
+                    Page {page} of {usersData ? Math.ceil(usersData.total / pageSize) : 1}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => p + 1)}
+                    disabled={!usersData || page >= Math.ceil(usersData.total / pageSize)}
+                    data-testid="button-next-page"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {usersLoading ? (
@@ -872,7 +891,7 @@ export default function AdminPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users?.map((user) => (
+                  {usersData?.users.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">
                         {user.firstName && user.lastName 
@@ -901,48 +920,6 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        {/* Waitlist Emails */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              Waitlist Emails
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {waitlistLoading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange mx-auto mb-4"></div>
-                <p>Loading waitlist...</p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Signed Up</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {waitlistEmails?.length ? (
-                    waitlistEmails.map((email) => (
-                      <TableRow key={email.id}>
-                        <TableCell className="font-medium">{email.email}</TableCell>
-                        <TableCell>{formatDate(email.createdAt)}</TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={2} className="text-center text-gray-500 py-8">
-                        No waitlist emails yet
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
 
         {/* Recent Activities */}
         <Card>
