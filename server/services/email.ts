@@ -275,6 +275,78 @@ The RunAnalytics Team
       text
     });
   }
+
+  async sendAccountDeletionConfirmation(email: string): Promise<void> {
+    const subject = 'Your RunAnalytics Account Has Been Deleted';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #e74c3c; margin: 0;">🏃‍♂️ RunAnalytics</h1>
+          <p style="color: #666; margin: 5px 0;">Account Deletion Confirmation</p>
+        </div>
+        
+        <h2 style="color: #2c3e50;">Your Data Has Been Successfully Deleted</h2>
+        
+        <p>This email confirms that your RunAnalytics account and all associated data have been permanently deleted from our systems in compliance with GDPR regulations.</p>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="color: #e74c3c; margin-top: 0;">🗑️ What Was Deleted:</h3>
+          <ul style="color: #2c3e50; line-height: 1.6;">
+            <li>Your user profile and account information</li>
+            <li>All Strava activity data and connections</li>
+            <li>AI-generated insights and training plans</li>
+            <li>Goals and progress tracking</li>
+            <li>Feedback submissions</li>
+            <li>All other personal data</li>
+          </ul>
+        </div>
+        
+        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+          <p style="margin: 0; color: #856404;"><strong>⚠️ This action is permanent and cannot be undone</strong></p>
+        </div>
+        
+        <p>If you deleted your account by mistake or change your mind, you're welcome to create a new account at any time. However, your previous data cannot be recovered.</p>
+        
+        <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; color: #666; font-size: 14px;">
+          <p>Thank you for using RunAnalytics. We're sorry to see you go, but we respect your decision and your right to data privacy.</p>
+          <p>If you have any questions about this deletion, please reply to this email.</p>
+          <p>Wishing you the best in your running journey!<br>The RunAnalytics Team</p>
+        </div>
+      </div>
+    `;
+    
+    const text = `
+Your RunAnalytics Account Has Been Deleted
+
+This email confirms that your RunAnalytics account and all associated data have been permanently deleted from our systems in compliance with GDPR regulations.
+
+What Was Deleted:
+• Your user profile and account information
+• All Strava activity data and connections
+• AI-generated insights and training plans
+• Goals and progress tracking
+• Feedback submissions
+• All other personal data
+
+⚠️ This action is permanent and cannot be undone.
+
+If you deleted your account by mistake or change your mind, you're welcome to create a new account at any time. However, your previous data cannot be recovered.
+
+Thank you for using RunAnalytics. We're sorry to see you go, but we respect your decision and your right to data privacy.
+
+If you have any questions about this deletion, please reply to this email.
+
+Wishing you the best in your running journey!
+The RunAnalytics Team
+    `;
+    
+    await this.sendEmail({
+      to: email,
+      subject,
+      html,
+      text
+    });
+  }
 }
 
 export const emailService = new EmailService();
