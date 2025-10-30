@@ -71,9 +71,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // SEO: robots.txt
   app.get("/robots.txt", (req, res) => {
-    const baseUrl = process.env.REPL_SLUG 
-      ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
-      : "https://aitracker.run";
+    const baseUrl = "https://aitracker.run";
     
     const robotsTxt = `User-agent: *
 Allow: /
@@ -96,9 +94,7 @@ Sitemap: ${baseUrl}/sitemap.xml`;
 
   // SEO: Sitemap
   app.get("/sitemap.xml", (req, res) => {
-    const baseUrl = process.env.REPL_SLUG 
-      ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
-      : "https://aitracker.run";
+    const baseUrl = "https://aitracker.run";
     
     const pages = [
       { url: "/", changefreq: "daily", priority: "1.0" },
