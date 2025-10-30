@@ -2436,8 +2436,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin/users", authenticateAdmin, async (req, res) => {
     try {
-      const limit = parseInt(req.query.limit as string) || 100;
-      const users = await storage.getAllUsers(limit);
+      const page = parseInt(req.query.page as string) || 1;
+      const pageSize = parseInt(req.query.pageSize as string) || 25;
+      const offset = (page - 1) * pageSize;
+      
+      const allUsers = await storage.getAllUsers(1000); // Get all users
+      const total = allUsers.length;
+      const users = allUsers.slice(offset, offset + pageSize);
       
       // Remove sensitive data
       const sanitizedUsers = users.map(user => ({
@@ -2452,23 +2457,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastSyncAt: user.lastSyncAt
       }));
       
-      res.json(sanitizedUsers);
+      res.json({
+        users: sanitizedUsers,
+        total,
+        page,
+        pageSize
+      });
     } catch (error: any) {
       console.error('Admin users error:', error);
       res.status(500).json({ message: error.message || "Failed to get users" });
     }
   });
 
-  app.get("/api/admin/waitlist", authenticateAdmin, async (req, res) => {
-    try {
-      const limit = parseInt(req.query.limit as string) || 100;
-      const waitlistEmails = await storage.getWaitlistEmails(limit);
-      res.json(waitlistEmails);
-    } catch (error: any) {
-      console.error('Admin waitlist error:', error);
-      res.status(500).json({ message: error.message || "Failed to get waitlist emails" });
-    }
-  });
 
   app.get("/api/admin/analytics", authenticateAdmin, async (req, res) => {
     try {
