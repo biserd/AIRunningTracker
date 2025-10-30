@@ -73,6 +73,9 @@ export interface IStorage {
     endDate?: Date;
   }): Promise<PerformanceLog[]>;
   
+  // User account management
+  deleteAccount(userId: number): Promise<void>;
+  
   // Admin methods
   getAdminStats(): Promise<{
     totalUsers: number;
@@ -598,6 +601,32 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .orderBy(desc(users.createdAt))
       .limit(limit);
+  }
+
+  async deleteAccount(userId: number): Promise<void> {
+    // Delete all user data in the correct order (cascade deletion)
+    // Delete from tables with foreign keys first, then the user record
+    
+    // Delete activities
+    await db.delete(activities).where(eq(activities.userId, userId));
+    
+    // Delete AI insights
+    await db.delete(aiInsights).where(eq(aiInsights.userId, userId));
+    
+    // Delete training plans
+    await db.delete(trainingPlans).where(eq(trainingPlans.userId, userId));
+    
+    // Delete feedback (nullable userId, so check for match)
+    await db.delete(feedback).where(eq(feedback.userId, userId));
+    
+    // Delete goals
+    await db.delete(goals).where(eq(goals.userId, userId));
+    
+    // Delete performance logs (nullable userId, so check for match)
+    await db.delete(performanceLogs).where(eq(performanceLogs.userId, userId));
+    
+    // Finally, delete the user record
+    await db.delete(users).where(eq(users.id, userId));
   }
 
   async getUserAnalytics(): Promise<{
