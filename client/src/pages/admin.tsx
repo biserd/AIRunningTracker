@@ -792,18 +792,17 @@ export default function AdminPage() {
                       <XCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-red-800" data-testid={`error-type-${index}`}>
-                            {error.type}
+                          <Badge 
+                            variant={error.statusCode >= 500 ? "destructive" : "outline"} 
+                            className="font-medium"
+                            data-testid={`error-status-${index}`}
+                          >
+                            {error.statusCode} {error.method}
+                          </Badge>
+                          <span className="text-sm text-gray-700 truncate">
+                            {error.endpoint}
                           </span>
-                          {error.endpoint && (
-                            <Badge variant="outline" className="text-xs">
-                              {error.endpoint}
-                            </Badge>
-                          )}
                         </div>
-                        <p className="text-sm text-red-700 mb-1" data-testid={`error-message-${index}`}>
-                          {error.message}
-                        </p>
                         <p className="text-xs text-red-600">
                           {new Date(error.timestamp).toLocaleString()}
                         </p>

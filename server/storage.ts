@@ -80,16 +80,10 @@ export interface IStorage {
     totalUsers: number;
     connectedUsers: number;
     totalActivities: number;
-    totalWaitlistEmails: number;
     recentUsers: User[];
     recentActivities: Activity[];
   }>;
   getAllUsers(limit?: number): Promise<User[]>;
-  getWaitlistEmails(limit?: number): Promise<{
-    id: number;
-    email: string;
-    createdAt: string;
-  }[]>;
   getUserAnalytics(): Promise<{
     dailyActiveUsers: number;
     weeklyActiveUsers: number;
@@ -576,14 +570,12 @@ export class DatabaseStorage implements IStorage {
     totalUsers: number;
     connectedUsers: number;
     totalActivities: number;
-    totalWaitlistEmails: number;
     recentUsers: User[];
     recentActivities: Activity[];
   }> {
     const [totalUsersResult] = await db.select({ count: sql<number>`count(*)` }).from(users);
     const [connectedUsersResult] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.stravaConnected, true));
     const [totalActivitiesResult] = await db.select({ count: sql<number>`count(*)` }).from(activities);
-    const [totalWaitlistResult] = await db.select({ count: sql<number>`count(*)` }).from(emailWaitlist);
 
     const recentUsers = await db
       .select()
@@ -601,7 +593,6 @@ export class DatabaseStorage implements IStorage {
       totalUsers: totalUsersResult.count,
       connectedUsers: connectedUsersResult.count,
       totalActivities: totalActivitiesResult.count,
-      totalWaitlistEmails: totalWaitlistResult.count,
       recentUsers,
       recentActivities
     };
@@ -613,24 +604,6 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .orderBy(desc(users.createdAt))
       .limit(limit);
-  }
-
-  async getWaitlistEmails(limit = 100): Promise<{
-    id: number;
-    email: string;
-    createdAt: string;
-  }[]> {
-    const waitlistEmails = await db
-      .select()
-      .from(emailWaitlist)
-      .orderBy(desc(emailWaitlist.createdAt))
-      .limit(limit);
-    
-    return waitlistEmails.map(item => ({
-      id: item.id,
-      email: item.email,
-      createdAt: item.createdAt?.toISOString() || new Date().toISOString()
-    }));
   }
 
   async getUserAnalytics(): Promise<{
@@ -904,24 +877,28 @@ export class DatabaseStorage implements IStorage {
       systemStatus = 'degraded';
     }
 
-    // Recent Errors (simulated based on error conditions)
-    const recentErrors = [];
-    if (connectionStatus === 'error') {
-      recentErrors.push({
-        timestamp: new Date(now.getTime() - 300000).toISOString(), // 5 minutes ago
-        type: 'Database Error',
-        message: 'Connection timeout to database',
-        endpoint: '/api/activities'
-      });
-    }
-    if (errorRate > 3) {
-      recentErrors.push({
-        timestamp: new Date(now.getTime() - 600000).toISOString(), // 10 minutes ago
-        type: 'API Error',
-        message: 'High error rate detected',
-        endpoint: '/api/admin/stats'
-      });
-    }
+    // Recent Errors - Query from performanceLogs table (statusCode >= 400)
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const errorLogs = await db
+      .select({
+        timestamp: performanceLogs.timestamp,
+        statusCode: performanceLogs.statusCode,
+        endpoint: performanceLogs.endpoint,
+        method: performanceLogs.method
+      })
+      .from(performanceLogs)
+      .where(
+        sql`${performanceLogs.statusCode} >= 400 AND ${performanceLogs.timestamp} >= ${twentyFourHoursAgo}`
+      )
+      .orderBy(sql`${performanceLogs.timestamp} DESC`)
+      .limit(10);
+
+    const recentErrors = errorLogs.map(log => ({
+      timestamp: log.timestamp.toISOString(),
+      statusCode: log.statusCode,
+      endpoint: log.endpoint,
+      method: log.method
+    }));
 
     // Performance Trend (last 6 hours, hourly data points)
     const performanceTrend = [];
@@ -1072,7 +1049,6 @@ class DatabaseStorageWithDemo extends DatabaseStorage {
     totalUsers: number;
     connectedUsers: number;
     totalActivities: number;
-    totalWaitlistEmails: number;
     recentUsers: User[];
     recentActivities: Activity[];
   }> {
