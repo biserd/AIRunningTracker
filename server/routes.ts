@@ -200,14 +200,18 @@ ${pages.map(page => `  <url>
       }
 
       const userEmail = user.email;
+      const userId = req.user.id;
 
       // Delete all user data
-      await storage.deleteAccount(req.user.id);
+      await storage.deleteAccount(userId);
 
-      // Send confirmation email
+      // Send confirmation email to user
       await emailService.sendAccountDeletionConfirmation(userEmail);
 
-      console.log(`[API DELETE /api/user] Account deleted for user ID: ${req.user.id}, email: ${userEmail}`);
+      // Send notification to admin
+      await emailService.sendAccountDeletionNotification(userEmail, userId);
+
+      console.log(`[API DELETE /api/user] Account deleted for user ID: ${userId}, email: ${userEmail}`);
       
       res.json({ 
         success: true, 

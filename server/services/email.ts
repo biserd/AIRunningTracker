@@ -347,6 +347,27 @@ The RunAnalytics Team
       text
     });
   }
+
+  async sendAccountDeletionNotification(email: string, userId: number): Promise<void> {
+    const subject = 'User Account Deleted - RunAnalytics';
+    const html = `
+      <h2>User Account Deleted</h2>
+      <p>A user has deleted their RunAnalytics account:</p>
+      <ul>
+        <li><strong>User ID:</strong> ${userId}</li>
+        <li><strong>Email:</strong> ${email}</li>
+        <li><strong>Date:</strong> ${new Date().toLocaleString()}</li>
+      </ul>
+      <p>All associated data has been permanently deleted from the system in compliance with GDPR.</p>
+    `;
+    
+    await this.sendEmail({
+      to: 'hello@bigappledigital.nyc',
+      subject,
+      html,
+      text: `User Account Deleted\n\nUser ID: ${userId}\nEmail: ${email}\nDate: ${new Date().toLocaleString()}\n\nAll associated data has been permanently deleted from the system in compliance with GDPR.`
+    });
+  }
 }
 
 export const emailService = new EmailService();
