@@ -68,6 +68,9 @@ const authenticateAdmin = async (req: any, res: Response, next: NextFunction) =>
 };
 
 // Simple in-memory cache for expensive endpoints (60 second TTL)
+// NOTE: This cache is reset on server restart/deployment. For production with multiple
+// instances, consider using Redis or similar shared cache layer for consistency.
+// Single-process deployments (like Replit) work fine with in-memory cache.
 interface CacheEntry {
   data: any;
   timestamp: number;
@@ -75,25 +78,44 @@ interface CacheEntry {
 
 const responseCache = new Map<string, CacheEntry>();
 const CACHE_TTL = 60 * 1000; // 60 seconds
+const ENABLE_CACHE_LOGGING = process.env.NODE_ENV !== 'production'; // Disable verbose logging in production
 
 function getCachedResponse(key: string): any | null {
   const entry = responseCache.get(key);
-  if (!entry) return null;
+  if (!entry) {
+    if (ENABLE_CACHE_LOGGING) {
+      console.log(`[CACHE] Key "${key}" not found in cache. Cache size: ${responseCache.size}`);
+    }
+    return null;
+  }
   
   const now = Date.now();
-  if (now - entry.timestamp > CACHE_TTL) {
+  const age = now - entry.timestamp;
+  if (age > CACHE_TTL) {
+    if (ENABLE_CACHE_LOGGING) {
+      console.log(`[CACHE] Key "${key}" expired (age: ${age}ms, TTL: ${CACHE_TTL}ms)`);
+    }
     responseCache.delete(key);
     return null;
   }
   
+  if (ENABLE_CACHE_LOGGING) {
+    console.log(`[CACHE] Key "${key}" found in cache (age: ${age}ms)`);
+  }
   return entry.data;
 }
 
 function setCachedResponse(key: string, data: any): void {
+  if (ENABLE_CACHE_LOGGING) {
+    console.log(`[CACHE] Setting cache for key "${key}". Cache size before: ${responseCache.size}`);
+  }
   responseCache.set(key, {
     data,
     timestamp: Date.now()
   });
+  if (ENABLE_CACHE_LOGGING) {
+    console.log(`[CACHE] Cache set. Cache size after: ${responseCache.size}`);
+  }
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -586,6 +608,9 @@ ${pages.map(page => `  <url>
       const cacheKey = `dashboard:${userId}`;
       const cachedData = getCachedResponse(cacheKey);
       if (cachedData) {
+        // Prevent browser caching with 304 responses
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+        res.set('Pragma', 'no-cache');
         return res.json(cachedData);
       }
 
@@ -820,6 +845,10 @@ ${pages.map(page => `  <url>
       // Cache the response
       setCachedResponse(cacheKey, dashboardData);
       
+      // Prevent browser caching with 304 responses
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+      res.set('Pragma', 'no-cache');
+      
       res.json(dashboardData);
     } catch (error) {
       console.error('Dashboard error:', error);
@@ -912,6 +941,9 @@ ${pages.map(page => `  <url>
       const cacheKey = `chart:${userId}:${timeRange}`;
       const cachedData = getCachedResponse(cacheKey);
       if (cachedData) {
+        // Prevent browser caching with 304 responses
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+        res.set('Pragma', 'no-cache');
         return res.json(cachedData);
       }
 
@@ -1044,6 +1076,10 @@ ${pages.map(page => `  <url>
       
       // Cache the response
       setCachedResponse(cacheKey, responseData);
+      
+      // Prevent browser caching with 304 responses
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+      res.set('Pragma', 'no-cache');
       
       res.json(responseData);
     } catch (error) {
