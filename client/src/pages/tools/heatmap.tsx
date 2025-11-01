@@ -50,13 +50,14 @@ export default function RunningHeatmapPage() {
   const distanceInKm = totalDistance / 1000;
   const unitPreference = user?.unitPreference || "miles";
 
-  // Initialize map once
+  // Initialize map once container is rendered
   useEffect(() => {
     console.log("[Heatmap] Map init useEffect running", { 
       hasContainer: !!mapContainerRef.current, 
-      hasMap: !!mapRef.current 
+      hasMap: !!mapRef.current,
+      isLoading 
     });
-    if (!mapContainerRef.current || mapRef.current) return;
+    if (!mapContainerRef.current || mapRef.current || isLoading) return;
 
     console.log("[Heatmap] Creating map instance");
     // Start with default center - will be updated when routes load
@@ -80,7 +81,7 @@ export default function RunningHeatmapPage() {
       map.remove();
       mapRef.current = null;
     };
-  }, []); // Only run once on mount
+  }, [isLoading]); // Run when loading finishes and container is rendered
 
   // Render routes on map
   useEffect(() => {
