@@ -121,7 +121,7 @@ export default function RunningHeatmapPage() {
         const polyline = L.polyline(latLngs, {
           color: "#2563EB", // Bright blue for all routes
           weight: 4,
-          opacity: 0.4, // Low opacity so overlaps create brighter areas
+          opacity: 0.6, // Low opacity so overlaps create brighter areas
           smoothFactor: 1,
         });
 
