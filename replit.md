@@ -34,7 +34,8 @@ Preferred communication style: Simple, everyday language.
 - **Strava Sync**: Optimized for 5x faster dashboard sync using batch processing with `Promise.all()` and real-time progress indicators via Server-Sent Events (SSE) with cryptographic nonces for security.
 - **AI Engine**: Upgraded to GPT-5 for enhanced training plan generation, improved AI insights, fixed pace calculations, and better context with comprehensive fitness data.
 - **Goals & Training Tracking**: Allows conversion of AI recommendations into trackable, actionable goals with progress monitoring, auto-completion, and smart criteria based on activity types.
-- **Free Tools Section**: Dedicated `/tools` section with SEO-optimized calculators and analyzers (Aerobic Decoupling, Training Split, Marathon Fueling) accessible to all users with dual-mode input (Strava auto-fetch or manual entry).
+- **Free Tools Section**: Dedicated `/tools` section with SEO-optimized calculators and analyzers (Aerobic Decoupling, Training Split, Marathon Fueling, Race Predictor, Cadence Analyzer, Running Heatmap) accessible to all users with dual-mode input (Strava auto-fetch or manual entry).
+- **Running Heatmap**: Interactive route visualization tool at `/tools/heatmap` that displays the last 30 activities on a single Leaflet map with semi-transparent overlays showing training patterns and favorite routes. Auth-required feature using Strava polyline data with automatic fallback to detailed polylines.
 
 ### System Design Choices
 - **Database Schema**: Users, Activities, AI Insights, Training Plans, Email Waitlist.
@@ -64,3 +65,5 @@ Preferred communication style: Simple, everyday language.
 - **Lucide React**: Icon system
 - **Recharts**: Data visualization
 - **React Hook Form**: Form management with Zod validation
+- **Leaflet**: Interactive mapping for route visualization
+- **Google Polyline Codec**: Decoding Strava polyline data for map rendering
