@@ -24,10 +24,12 @@ interface ActivityRoute {
 }
 
 export default function RunningHeatmapPage() {
+  console.log("[Heatmap] Component mounting");
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  console.log("[Heatmap] Auth state:", { user: user?.email, isAuthenticated, authLoading });
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -42,6 +44,7 @@ export default function RunningHeatmapPage() {
   });
 
   const routes = data?.routes || [];
+  console.log("[Heatmap] Routes data:", { routesCount: routes.length, isLoading, hasError: !!error });
   const totalDistance = routes.reduce((sum, route) => sum + route.distance, 0);
   const distanceInMiles = totalDistance / 1609.34;
   const distanceInKm = totalDistance / 1000;
@@ -49,21 +52,29 @@ export default function RunningHeatmapPage() {
 
   // Initialize map once
   useEffect(() => {
+    console.log("[Heatmap] Map init useEffect running", { 
+      hasContainer: !!mapContainerRef.current, 
+      hasMap: !!mapRef.current 
+    });
     if (!mapContainerRef.current || mapRef.current) return;
 
+    console.log("[Heatmap] Creating map instance");
     // Start with default center - will be updated when routes load
     const map = L.map(mapContainerRef.current, {
       center: [40.7749, -73.95], // Default to NYC
       zoom: 13,
       zoomControl: true,
     });
+    console.log("[Heatmap] Map created:", map);
 
+    console.log("[Heatmap] Adding tile layer");
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19,
     }).addTo(map);
 
     mapRef.current = map;
+    console.log("[Heatmap] Map initialization complete");
 
     return () => {
       map.remove();
