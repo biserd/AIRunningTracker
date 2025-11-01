@@ -587,22 +587,40 @@ ${pages.map(page => `  <url>
       
       const recentActivities = await storage.getActivitiesByUserId(userId, 200, threeMonthsAgo);
       
+      // FIX: Use the most recent activity date to determine "current month" instead of server time
+      // This prevents timezone issues where server is in UTC Nov 1 but user activities are Oct 31
+      let referenceDate = new Date();
+      if (recentActivities.length > 0) {
+        // Use the most recent activity's date as reference
+        const mostRecentActivity = recentActivities[0]; // Activities are sorted by date desc
+        referenceDate = new Date(mostRecentActivity.startDate);
+      }
+      
+      // Recalculate thisMonth and lastMonth based on the reference date
+      const adjustedThisMonth = new Date(referenceDate);
+      adjustedThisMonth.setDate(1);
+      adjustedThisMonth.setHours(0, 0, 0, 0);
+      
+      const adjustedLastMonth = new Date(adjustedThisMonth);
+      adjustedLastMonth.setMonth(adjustedLastMonth.getMonth() - 1);
+      
       console.log(`[Dashboard Debug] User ${userId}:`);
-      console.log(`  Today: ${new Date().toISOString()}`);
-      console.log(`  This Month starts: ${thisMonth.toISOString()}`);
-      console.log(`  Last Month: ${lastMonth.toISOString()} to ${thisMonth.toISOString()}`);
+      console.log(`  Server time: ${new Date().toISOString()}`);
+      console.log(`  Reference date (from most recent activity): ${referenceDate.toISOString()}`);
+      console.log(`  Adjusted This Month starts: ${adjustedThisMonth.toISOString()}`);
+      console.log(`  Adjusted Last Month: ${adjustedLastMonth.toISOString()} to ${adjustedThisMonth.toISOString()}`);
       console.log(`  Total recent activities fetched: ${recentActivities.length}`);
       if (recentActivities.length > 0) {
         console.log(`  Sample activity dates: ${recentActivities.slice(0, 3).map(a => new Date(a.startDate).toISOString()).join(', ')}`);
       }
       
-      // Filter activities by time periods (using recentActivities from last 3 months)
+      // Filter activities by time periods (using adjusted month boundaries)
       const thisMonthActivities = recentActivities.filter(a => 
-        new Date(a.startDate) >= thisMonth
+        new Date(a.startDate) >= adjustedThisMonth
       );
       
       const lastMonthActivities = recentActivities.filter(a => 
-        new Date(a.startDate) >= lastMonth && new Date(a.startDate) < thisMonth
+        new Date(a.startDate) >= adjustedLastMonth && new Date(a.startDate) < adjustedThisMonth
       );
       
       console.log(`  This month activities: ${thisMonthActivities.length}`);
