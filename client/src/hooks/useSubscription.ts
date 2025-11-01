@@ -12,10 +12,12 @@ export interface SubscriptionStatus {
 export function useSubscription() {
   const { isAuthenticated } = useAuth();
   
+  // OPTIMIZATION: Disabled subscription API calls since all features are free
+  // All users get Pro-tier features at no cost
   const { data: subscription, isLoading, error } = useQuery({
     queryKey: ["/api/subscription/status"],
     queryFn: () => apiRequest("/api/subscription/status", "GET") as Promise<SubscriptionStatus>,
-    enabled: isAuthenticated,
+    enabled: false, // Disabled - all features are free, no need to check subscription
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
