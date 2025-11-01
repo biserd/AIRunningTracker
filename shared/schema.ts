@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, real, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, real, timestamp, json, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -75,7 +75,11 @@ export const activities = pgTable("activities", {
   hasHeartrate: boolean("has_heartrate").default(false),
   deviceWatts: boolean("device_watts").default(false),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  userIdIdx: index("activities_user_id_idx").on(table.userId),
+  startDateIdx: index("activities_start_date_idx").on(table.startDate),
+  userIdStartDateIdx: index("activities_user_id_start_date_idx").on(table.userId, table.startDate),
+}));
 
 export const aiInsights = pgTable("ai_insights", {
   id: serial("id").primaryKey(),
@@ -85,7 +89,11 @@ export const aiInsights = pgTable("ai_insights", {
   content: text("content").notNull(),
   confidence: real("confidence").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  userIdIdx: index("ai_insights_user_id_idx").on(table.userId),
+  createdAtIdx: index("ai_insights_created_at_idx").on(table.createdAt),
+  userIdTypeIdx: index("ai_insights_user_id_type_idx").on(table.userId, table.type),
+}));
 
 export const trainingPlans = pgTable("training_plans", {
   id: serial("id").primaryKey(),
