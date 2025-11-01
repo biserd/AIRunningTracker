@@ -138,14 +138,23 @@ export default function RunningHeatmapPage() {
       }
     });
 
-    // Center on routes and keep zoomed in for street-level view
+    // Fit map to show all routes with intelligent zoom control
     if (allCoordinates.length > 0) {
       const bounds = L.latLngBounds(allCoordinates);
-      const center = bounds.getCenter();
       
-      // Don't use fitBounds - it zooms out too much with many routes
-      // Instead, center on the middle point and keep a close zoom
-      map.setView(center, 14);
+      // Fit to bounds to show all routes
+      map.fitBounds(bounds, { 
+        padding: [40, 40],
+        maxZoom: 15   // Don't zoom in too close
+      });
+      
+      // If it zoomed out too much (routes are spread out), enforce minimum zoom
+      setTimeout(() => {
+        const currentZoom = map.getZoom();
+        if (currentZoom < 11) {
+          map.setZoom(11); // Keep at least city-level zoom
+        }
+      }, 100);
     }
   }, [routes]);
 
