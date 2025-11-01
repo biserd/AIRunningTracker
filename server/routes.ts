@@ -15,7 +15,7 @@ import Stripe from "stripe";
 
 // Initialize Stripe with testing keys
 const stripe = new Stripe(process.env.TESTING_STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-06-20",
+  apiVersion: "2025-08-27.basil",
 });
 
 // Authentication middleware
@@ -422,7 +422,7 @@ ${pages.map(page => `  <url>
     sseNonces.set(nonce, { userId, maxActivities, expiresAt });
     
     // Clean up expired nonces
-    for (const [n, data] of sseNonces.entries()) {
+    for (const [n, data] of Array.from(sseNonces.entries())) {
       if (data.expiresAt < Date.now()) {
         sseNonces.delete(n);
       }
@@ -804,12 +804,21 @@ ${pages.map(page => `  <url>
       const historicalInsights = await storage.getHistoricalAIInsights(userId, 50);
       
       // Group insights by date for timeline display
-      const timelineData = historicalInsights.reduce((acc: any, insight) => {
-        const date = new Date(insight.createdAt).toISOString().split('T')[0]; // YYYY-MM-DD format
+      type InsightsGrouped = {
+        performance: any[];
+        pattern: any[];
+        recovery: any[];
+        motivation: any[];
+        technique: any[];
+        recommendation: any[];
+      };
+      
+      const timelineData = historicalInsights.reduce((acc: Record<string, { date: string; insights: InsightsGrouped }>, insight) => {
+        const dateStr = new Date(insight.createdAt || new Date()).toISOString().split('T')[0]; // YYYY-MM-DD format
         
-        if (!acc[date]) {
-          acc[date] = {
-            date,
+        if (!acc[dateStr]) {
+          acc[dateStr] = {
+            date: dateStr,
             insights: {
               performance: [],
               pattern: [],
@@ -821,7 +830,7 @@ ${pages.map(page => `  <url>
           };
         }
         
-        acc[date].insights[insight.type as keyof typeof acc[date].insights].push({
+        acc[dateStr].insights[insight.type as keyof InsightsGrouped].push({
           id: insight.id,
           title: insight.title,
           content: insight.content,
@@ -1245,8 +1254,8 @@ ${pages.map(page => `  <url>
         pageSize: 500, // Get all activities in period
         minDistance: undefined,
         maxDistance: undefined,
-        startDate: startDate,
-        endDate: endDate,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
       });
 
       // Filter for activities with HR data
@@ -1486,8 +1495,8 @@ ${pages.map(page => `  <url>
         pageSize: 100,
         minDistance: 3000, // At least 3km
         maxDistance: undefined,
-        startDate: startDate,
-        endDate: endDate,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
       });
 
       // Filter for race-effort candidates (fast paces)
@@ -1601,8 +1610,8 @@ ${pages.map(page => `  <url>
         pageSize: 100,
         minDistance: undefined,
         maxDistance: undefined,
-        startDate: startDate,
-        endDate: endDate,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
       });
 
       // Filter for cadence-suitable activities (45+ min with cadence data)
@@ -1815,7 +1824,7 @@ ${pages.map(page => `  <url>
       await storage.updateSubscriptionStatus(user.id, 'incomplete', 'pro');
 
       const invoice = subscription.latest_invoice as Stripe.Invoice;
-      const paymentIntent = invoice?.payment_intent as Stripe.PaymentIntent;
+      const paymentIntent = (invoice as any)?.payment_intent as Stripe.PaymentIntent;
 
       const response: any = {
         subscriptionId: subscription.id,
@@ -1855,7 +1864,7 @@ ${pages.map(page => `  <url>
       if (user.stripeSubscriptionId) {
         const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
         const invoice = subscription.latest_invoice as Stripe.Invoice;
-        const paymentIntent = invoice?.payment_intent as Stripe.PaymentIntent;
+        const paymentIntent = (invoice as any)?.payment_intent as Stripe.PaymentIntent;
 
         return res.json({
           subscriptionId: subscription.id,
@@ -1889,7 +1898,7 @@ ${pages.map(page => `  <url>
       await storage.updateStripeSubscriptionId(user.id, subscription.id);
 
       const invoice = subscription.latest_invoice as Stripe.Invoice;
-      const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
+      const paymentIntent = (invoice as any).payment_intent as Stripe.PaymentIntent;
 
       res.json({
         subscriptionId: subscription.id,
@@ -1944,8 +1953,8 @@ ${pages.map(page => `  <url>
       res.json({
         status: subscription.status,
         plan: user.subscriptionPlan || 'free',
-        currentPeriodEnd: subscription.current_period_end,
-        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+        currentPeriodEnd: (subscription as any).current_period_end,
+        cancelAtPeriodEnd: (subscription as any).cancel_at_period_end,
       });
     } catch (error: any) {
       console.error('Subscription status error:', error);
