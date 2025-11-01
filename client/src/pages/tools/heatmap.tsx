@@ -85,18 +85,24 @@ export default function RunningHeatmapPage() {
     });
 
     const allCoordinates: [number, number][] = [];
+    const recentCoordinates: [number, number][] = []; // For zoom calculation
 
     // Add each route to the map with heatmap effect
     // All routes use the same color but low opacity - overlapping routes will be brighter
-    routes.forEach((route) => {
+    routes.forEach((route, index) => {
       if (!route.polyline) return;
 
       try {
         const decodedPath = decode(route.polyline);
         const latLngs: [number, number][] = decodedPath.map(([lat, lng]) => [lat, lng]);
 
-        // Add to all coordinates for bounds calculation
+        // Add to all coordinates for rendering all routes
         allCoordinates.push(...latLngs);
+        
+        // Only use recent routes (first 10) for zoom bounds
+        if (index < 10) {
+          recentCoordinates.push(...latLngs);
+        }
 
         // True heatmap effect: all routes same color, low opacity
         // Where routes overlap, opacity stacks = brighter hotspots
@@ -123,26 +129,26 @@ export default function RunningHeatmapPage() {
       }
     });
 
-    // Fit map to show all routes with intelligent zoom control
-    if (allCoordinates.length > 0) {
-      const bounds = L.latLngBounds(allCoordinates);
-      console.log('[Heatmap] Total coordinates:', allCoordinates.length);
+    // Fit map to recent routes (not all routes) to avoid zooming out too far
+    // This focuses on where you're currently running, not old routes from other locations
+    const coordinatesForZoom = recentCoordinates.length > 0 ? recentCoordinates : allCoordinates;
+    
+    if (coordinatesForZoom.length > 0) {
+      const bounds = L.latLngBounds(coordinatesForZoom);
+      console.log('[Heatmap] Using', recentCoordinates.length > 0 ? 'recent' : 'all', 'routes for zoom');
+      console.log('[Heatmap] Total coordinates:', coordinatesForZoom.length);
       console.log('[Heatmap] Bounds:', bounds.getNorth(), bounds.getSouth(), bounds.getEast(), bounds.getWest());
       console.log('[Heatmap] Center:', bounds.getCenter());
       
-      // Fit to bounds to show all routes
+      // Fit to bounds to show recent routes
       map.fitBounds(bounds, { 
-        padding: [40, 40],
+        padding: [50, 50],
         maxZoom: 15   // Don't zoom in too close
       });
       
-      // If it zoomed out too much (routes are spread out), enforce minimum zoom
       setTimeout(() => {
         const currentZoom = map.getZoom();
         console.log('[Heatmap] Final zoom level:', currentZoom);
-        if (currentZoom < 11) {
-          map.setZoom(11); // Keep at least city-level zoom
-        }
       }, 100);
     }
   }, [routes]);
