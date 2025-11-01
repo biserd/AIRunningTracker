@@ -67,6 +67,35 @@ const authenticateAdmin = async (req: any, res: Response, next: NextFunction) =>
   }
 };
 
+// Simple in-memory cache for expensive endpoints (60 second TTL)
+interface CacheEntry {
+  data: any;
+  timestamp: number;
+}
+
+const responseCache = new Map<string, CacheEntry>();
+const CACHE_TTL = 60 * 1000; // 60 seconds
+
+function getCachedResponse(key: string): any | null {
+  const entry = responseCache.get(key);
+  if (!entry) return null;
+  
+  const now = Date.now();
+  if (now - entry.timestamp > CACHE_TTL) {
+    responseCache.delete(key);
+    return null;
+  }
+  
+  return entry.data;
+}
+
+function setCachedResponse(key: string, data: any): void {
+  responseCache.set(key, {
+    data,
+    timestamp: Date.now()
+  });
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   
   // SEO: robots.txt
@@ -553,6 +582,13 @@ ${pages.map(page => `  <url>
         return res.status(403).json({ message: "Access denied: cannot access another user's dashboard" });
       }
 
+      // Check cache first
+      const cacheKey = `dashboard:${userId}`;
+      const cachedData = getCachedResponse(cacheKey);
+      if (cachedData) {
+        return res.json(cachedData);
+      }
+
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -781,6 +817,9 @@ ${pages.map(page => `  <url>
         }),
       };
       
+      // Cache the response
+      setCachedResponse(cacheKey, dashboardData);
+      
       res.json(dashboardData);
     } catch (error) {
       console.error('Dashboard error:', error);
@@ -867,6 +906,13 @@ ${pages.map(page => `  <url>
       // Security check: ensure user can only access their own chart data
       if (req.user.id !== userId) {
         return res.status(403).json({ message: "Access denied: cannot access another user's chart data" });
+      }
+
+      // Check cache first (include timeRange in cache key)
+      const cacheKey = `chart:${userId}:${timeRange}`;
+      const cachedData = getCachedResponse(cacheKey);
+      if (cachedData) {
+        return res.json(cachedData);
       }
 
       const user = await storage.getUser(userId);
@@ -994,7 +1040,12 @@ ${pages.map(page => `  <url>
         })
         .slice(-activityLimit); // Limit to requested number of periods
       
-      res.json({ chartData });
+      const responseData = { chartData };
+      
+      // Cache the response
+      setCachedResponse(cacheKey, responseData);
+      
+      res.json(responseData);
     } catch (error) {
       console.error('Chart data error:', error);
       res.status(500).json({ message: "Failed to fetch chart data" });
