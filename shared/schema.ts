@@ -13,7 +13,7 @@ export const users = pgTable("users", {
   stravaRefreshToken: text("strava_refresh_token"),
   stravaAthleteId: text("strava_athlete_id"),
   stravaConnected: boolean("strava_connected").default(false),
-  unitPreference: text("unit_preference", { enum: ["km", "miles"] }).default("km"),
+  unitPreference: text("unit_preference", { enum: ["km", "miles"] }).default("miles"),
   isAdmin: boolean("is_admin").default(false),
   lastSyncAt: timestamp("last_sync_at"),
   // Password reset fields
