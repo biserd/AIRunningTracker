@@ -60,11 +60,27 @@ export default function RunningHeatmapPage() {
 
   // Initialize map
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) return;
+    if (!mapContainerRef.current || mapRef.current || routes.length === 0) return;
+
+    // Calculate center from first route if available
+    let initialCenter: [number, number] = [37.7749, -122.4194]; // Default to SF
+    let initialZoom = 12;
+
+    if (routes.length > 0 && routes[0].polyline) {
+      try {
+        const firstPath = decode(routes[0].polyline);
+        if (firstPath.length > 0) {
+          initialCenter = [firstPath[0][0], firstPath[0][1]];
+          initialZoom = 13;
+        }
+      } catch (e) {
+        console.error("Error decoding polyline for center:", e);
+      }
+    }
 
     const map = L.map(mapContainerRef.current, {
-      center: [37.7749, -122.4194], // Default to SF
-      zoom: 12,
+      center: initialCenter,
+      zoom: initialZoom,
       zoomControl: true,
     });
 
@@ -79,7 +95,7 @@ export default function RunningHeatmapPage() {
       map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [routes]);
 
   // Render routes on map
   useEffect(() => {
@@ -96,8 +112,9 @@ export default function RunningHeatmapPage() {
 
     const allCoordinates: [number, number][] = [];
 
-    // Add each route to the map
-    routes.forEach((route, index) => {
+    // Add each route to the map with heatmap effect
+    // All routes use the same color but low opacity - overlapping routes will be brighter
+    routes.forEach((route) => {
       if (!route.polyline) return;
 
       try {
@@ -107,15 +124,12 @@ export default function RunningHeatmapPage() {
         // Add to all coordinates for bounds calculation
         allCoordinates.push(...latLngs);
 
-        // Create polyline with semi-transparent color for heatmap effect
-        // Use varying opacity and colors based on recency
-        const opacity = Math.max(0.3, 1 - (index / routes.length) * 0.5);
-        const color = index < 10 ? "#FF4500" : "#FF6347"; // Recent runs are brighter
-
+        // True heatmap effect: all routes same color, low opacity
+        // Where routes overlap, opacity stacks = brighter hotspots
         const polyline = L.polyline(latLngs, {
-          color: color,
-          weight: 3,
-          opacity: opacity,
+          color: "#FF4500", // Bright orange-red for all routes
+          weight: 4,
+          opacity: 0.35, // Low opacity so overlaps create brighter areas
           smoothFactor: 1,
         });
 
@@ -135,10 +149,13 @@ export default function RunningHeatmapPage() {
       }
     });
 
-    // Fit map to show all routes
+    // Fit map to show all routes with good padding
     if (allCoordinates.length > 0) {
       const bounds = L.latLngBounds(allCoordinates);
-      map.fitBounds(bounds, { padding: [50, 50] });
+      map.fitBounds(bounds, { 
+        padding: [50, 50],
+        maxZoom: 14 // Don't zoom in too close
+      });
     }
   }, [routes]);
 
@@ -300,12 +317,15 @@ export default function RunningHeatmapPage() {
               <CardContent>
                 <div className="grid sm:grid-cols-3 gap-4">
                   <div className="flex items-center space-x-3">
-                    <div className="w-8 h-1 bg-[#FF4500]" />
-                    <span className="text-sm text-gray-700">Recent runs (last 10)</span>
+                    <div className="w-8 h-1 bg-[#FF4500] opacity-35" />
+                    <span className="text-sm text-gray-700">Single route</span>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <div className="w-8 h-1 bg-[#FF6347] opacity-70" />
-                    <span className="text-sm text-gray-700">Older runs</span>
+                    <div className="relative w-8 h-1">
+                      <div className="absolute w-8 h-1 bg-[#FF4500] opacity-35" />
+                      <div className="absolute w-8 h-1 bg-[#FF4500] opacity-35" />
+                    </div>
+                    <span className="text-sm text-gray-700">Frequently used routes (brighter)</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <Badge variant="outline" className="text-xs">Click route</Badge>
