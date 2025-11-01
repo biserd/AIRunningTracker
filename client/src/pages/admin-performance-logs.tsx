@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, Filter, RefreshCw, TrendingUp, TrendingDown, Activity } from "lucide-react";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
+import AppHeader from "@/components/AppHeader";
 
 interface PerformanceLog {
   id: number;
@@ -115,14 +116,17 @@ export default function AdminPerformanceLogsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Performance Logs</h1>
-            <p className="text-muted-foreground">Real-time API performance monitoring</p>
-          </div>
+    <div className="min-h-screen bg-background">
+      <AppHeader />
+      
+      <div className="p-8">
+        <div className="max-w-7xl mx-auto space-y-8">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">Performance Logs</h1>
+              <p className="text-muted-foreground">Real-time API performance monitoring</p>
+            </div>
           <Button onClick={() => refetch()} variant="outline" size="sm">
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
@@ -321,6 +325,7 @@ export default function AdminPerformanceLogsPage() {
           </CardContent>
         </Card>
       </div>
+    </div>
     </div>
   );
 }
