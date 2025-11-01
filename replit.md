@@ -2,7 +2,9 @@
 
 ## Overview
 
-RunAnalytics is a comprehensive running analytics platform that integrates with Strava to provide AI-powered insights, performance tracking, and training recommendations for runners. The application combines real-time activity data with machine learning algorithms to deliver personalized running analytics and coaching. The platform offers advanced features like a Race Predictor, Form Stability Analyzer, Aerobic Decoupling Calculator, Training Split Analyzer, and Marathon Fueling Planner, all accessible for free. Its business vision is to provide all users with Pro-tier features, focusing on SEO optimization, mobile optimization, and an improved onboarding experience to maximize user acquisition.
+RunAnalytics is a comprehensive running analytics platform that integrates with Strava to provide AI-powered insights, performance tracking, and training recommendations for runners. The application combines real-time activity data with machine learning algorithms to deliver personalized running analytics and coaching. The platform offers advanced features like a Race Predictor, Form Stability Analyzer, Aerobic Decoupling Calculator, Training Split Analyzer, Marathon Fueling Planner, and Running Heatmap, all accessible for free. Its business vision is to provide all users with Pro-tier features, focusing on SEO optimization, mobile optimization, and an improved onboarding experience to maximize user acquisition.
+
+**Current Version**: 2.7.4 (Released November 1, 2025)
 
 ## User Preferences
 
@@ -35,7 +37,7 @@ Preferred communication style: Simple, everyday language.
 - **AI Engine**: Upgraded to GPT-5 for enhanced training plan generation, improved AI insights, fixed pace calculations, and better context with comprehensive fitness data.
 - **Goals & Training Tracking**: Allows conversion of AI recommendations into trackable, actionable goals with progress monitoring, auto-completion, and smart criteria based on activity types.
 - **Free Tools Section**: Dedicated `/tools` section with SEO-optimized calculators and analyzers (Aerobic Decoupling, Training Split, Marathon Fueling, Race Predictor, Cadence Analyzer, Running Heatmap) accessible to all users with dual-mode input (Strava auto-fetch or manual entry).
-- **Running Heatmap**: Interactive route visualization tool at `/tools/heatmap` that displays the last 30 activities on a single Leaflet map with semi-transparent blue overlays. Overlapping routes create brighter hotspots showing frequently-used training areas. Features automatic zoom to routes, auth protection, and uses Strava polyline data with automatic fallback to detailed polylines.
+- **Running Heatmap**: Interactive route visualization tool at `/tools/heatmap` that displays the last 30 activities on a single Leaflet map with semi-transparent blue overlays (60% opacity). Overlapping routes create brighter hotspots showing frequently-used training areas. Features smart zoom optimization that focuses on the 10 most recent routes while displaying all 30, auth protection, interactive route popups with activity details, and uses Strava polyline data with automatic fallback to detailed polylines.
 
 ### System Design Choices
 - **Database Schema**: Users, Activities, AI Insights, Training Plans, Email Waitlist.

@@ -24,12 +24,10 @@ interface ActivityRoute {
 }
 
 export default function RunningHeatmapPage() {
-  console.log("[Heatmap] Component mounting");
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  console.log("[Heatmap] Auth state:", { user: user?.email, isAuthenticated, authLoading });
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -44,7 +42,6 @@ export default function RunningHeatmapPage() {
   });
 
   const routes = data?.routes || [];
-  console.log("[Heatmap] Routes data:", { routesCount: routes.length, isLoading, hasError: !!error });
   const totalDistance = routes.reduce((sum, route) => sum + route.distance, 0);
   const distanceInMiles = totalDistance / 1609.34;
   const distanceInKm = totalDistance / 1000;
@@ -52,30 +49,21 @@ export default function RunningHeatmapPage() {
 
   // Initialize map once container is rendered
   useEffect(() => {
-    console.log("[Heatmap] Map init useEffect running", { 
-      hasContainer: !!mapContainerRef.current, 
-      hasMap: !!mapRef.current,
-      isLoading 
-    });
     if (!mapContainerRef.current || mapRef.current || isLoading) return;
 
-    console.log("[Heatmap] Creating map instance");
     // Start with default center - will be updated when routes load
     const map = L.map(mapContainerRef.current, {
       center: [40.7749, -73.95], // Default to NYC
       zoom: 13,
       zoomControl: true,
     });
-    console.log("[Heatmap] Map created:", map);
 
-    console.log("[Heatmap] Adding tile layer");
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19,
     }).addTo(map);
 
     mapRef.current = map;
-    console.log("[Heatmap] Map initialization complete");
 
     return () => {
       map.remove();
@@ -147,21 +135,12 @@ export default function RunningHeatmapPage() {
     
     if (coordinatesForZoom.length > 0) {
       const bounds = L.latLngBounds(coordinatesForZoom);
-      console.log('[Heatmap] Using', recentCoordinates.length > 0 ? 'recent' : 'all', 'routes for zoom');
-      console.log('[Heatmap] Total coordinates:', coordinatesForZoom.length);
-      console.log('[Heatmap] Bounds:', bounds.getNorth(), bounds.getSouth(), bounds.getEast(), bounds.getWest());
-      console.log('[Heatmap] Center:', bounds.getCenter());
       
       // Fit to bounds to show recent routes
       map.fitBounds(bounds, { 
         padding: [50, 50],
         maxZoom: 14   // Don't zoom in too close
       });
-      
-      setTimeout(() => {
-        const currentZoom = map.getZoom();
-        console.log('[Heatmap] Final zoom level:', currentZoom);
-      }, 100);
     }
   }, [routes]);
 

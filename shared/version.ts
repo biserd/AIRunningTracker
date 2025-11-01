@@ -1,4 +1,4 @@
-export const VERSION = "2.7.3";
+export const VERSION = "2.7.4";
 
 export interface ReleaseNote {
   version: string;
@@ -12,6 +12,46 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "2.7.4",
+    date: "2025-11-01",
+    title: "Running Heatmap - Visualize Your Training Routes",
+    description: "New interactive Running Heatmap tool displays your last 30 activities on a beautiful map, showing where you run most frequently. Blue route overlays create natural heatmap effects where routes overlap, revealing your favorite training areas and patterns. The map automatically zooms to your recent routes for optimal viewing.",
+    changes: [
+      {
+        type: "feature",
+        description: "Running Heatmap tool at /tools/heatmap - visualize all your training routes on an interactive map"
+      },
+      {
+        type: "feature",
+        description: "Displays last 30 activities with GPS data using OpenStreetMap and Leaflet for smooth, responsive map interactions"
+      },
+      {
+        type: "feature",
+        description: "True heatmap effect with semi-transparent blue routes (60% opacity) - overlapping routes create brighter hotspots showing frequently-used training areas"
+      },
+      {
+        type: "feature",
+        description: "Smart zoom optimization - automatically focuses on your 10 most recent routes while displaying all 30 for complete history"
+      },
+      {
+        type: "feature",
+        description: "Interactive route popups - click any route to see activity name, date, and distance details"
+      },
+      {
+        type: "feature",
+        description: "Real-time statistics showing total routes displayed and cumulative distance covered"
+      },
+      {
+        type: "improvement",
+        description: "Automatic polyline decoding from Strava GPS data with fallback support for detailed polylines"
+      },
+      {
+        type: "improvement",
+        description: "Responsive map sizing - 500px on mobile, 600px on desktop for optimal viewing experience"
+      }
+    ]
+  },
   {
     version: "2.7.3",
     date: "2025-10-25",
