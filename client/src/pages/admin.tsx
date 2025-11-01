@@ -89,6 +89,8 @@ interface SystemPerformance {
     errorMessage?: string | null;
     errorDetails?: string | null;
     elapsedTime?: number | null;
+    requestBody?: string | null;
+    responseBody?: string | null;
   }>;
   performanceTrend: Array<{
     timestamp: string;
@@ -103,6 +105,8 @@ interface SystemPerformance {
     userId?: number | null;
     elapsedTime: number;
     statusCode: number;
+    requestBody?: string | null;
+    responseBody?: string | null;
   }>;
 }
 
@@ -833,10 +837,30 @@ export default function AdminPage() {
                         {error.errorDetails && (
                           <details className="mt-1">
                             <summary className="text-xs text-red-600 dark:text-red-500 cursor-pointer hover:underline">
-                              View details
+                              View error details
                             </summary>
                             <pre className="text-xs text-red-700 dark:text-red-400 mt-1 p-2 bg-red-100 dark:bg-red-900 rounded overflow-x-auto">
                               {error.errorDetails}
+                            </pre>
+                          </details>
+                        )}
+                        {error.requestBody && (
+                          <details className="mt-1">
+                            <summary className="text-xs text-red-600 dark:text-red-500 cursor-pointer hover:underline">
+                              View request
+                            </summary>
+                            <pre className="text-xs text-red-700 dark:text-red-400 mt-1 p-2 bg-red-100 dark:bg-red-900 rounded overflow-x-auto">
+                              {error.requestBody}
+                            </pre>
+                          </details>
+                        )}
+                        {error.responseBody && (
+                          <details className="mt-1">
+                            <summary className="text-xs text-red-600 dark:text-red-500 cursor-pointer hover:underline">
+                              View response
+                            </summary>
+                            <pre className="text-xs text-red-700 dark:text-red-400 mt-1 p-2 bg-red-100 dark:bg-red-900 rounded overflow-x-auto">
+                              {error.responseBody}
                             </pre>
                           </details>
                         )}
@@ -893,7 +917,27 @@ export default function AdminPage() {
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-orange-600 dark:text-orange-500">
+                        {request.requestBody && (
+                          <details className="mt-1">
+                            <summary className="text-xs text-orange-600 dark:text-orange-500 cursor-pointer hover:underline">
+                              View request
+                            </summary>
+                            <pre className="text-xs text-orange-700 dark:text-orange-400 mt-1 p-2 bg-orange-100 dark:bg-orange-900 rounded overflow-x-auto">
+                              {request.requestBody}
+                            </pre>
+                          </details>
+                        )}
+                        {request.responseBody && (
+                          <details className="mt-1">
+                            <summary className="text-xs text-orange-600 dark:text-orange-500 cursor-pointer hover:underline">
+                              View response
+                            </summary>
+                            <pre className="text-xs text-orange-700 dark:text-orange-400 mt-1 p-2 bg-orange-100 dark:bg-orange-900 rounded overflow-x-auto">
+                              {request.responseBody}
+                            </pre>
+                          </details>
+                        )}
+                        <p className="text-xs text-orange-600 dark:text-orange-500 mt-1">
                           {new Date(request.timestamp).toLocaleString()}
                         </p>
                       </div>

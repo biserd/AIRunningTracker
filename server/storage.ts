@@ -127,6 +127,8 @@ export interface IStorage {
       errorMessage?: string | null;
       errorDetails?: string | null;
       elapsedTime?: number | null;
+      requestBody?: string | null;
+      responseBody?: string | null;
     }>;
     performanceTrend: Array<{
       timestamp: string;
@@ -141,6 +143,8 @@ export interface IStorage {
       userId?: number | null;
       elapsedTime: number;
       statusCode: number;
+      requestBody?: string | null;
+      responseBody?: string | null;
     }>;
   }>;
 }
@@ -848,6 +852,8 @@ export class DatabaseStorage implements IStorage {
       errorMessage?: string | null;
       errorDetails?: string | null;
       elapsedTime?: number | null;
+      requestBody?: string | null;
+      responseBody?: string | null;
     }>;
     performanceTrend: Array<{
       timestamp: string;
@@ -862,6 +868,8 @@ export class DatabaseStorage implements IStorage {
       userId?: number | null;
       elapsedTime: number;
       statusCode: number;
+      requestBody?: string | null;
+      responseBody?: string | null;
     }>;
   }> {
     // Calculate system metrics (simulated based on current data and system state)
@@ -935,7 +943,9 @@ export class DatabaseStorage implements IStorage {
         userId: performanceLogs.userId,
         errorMessage: performanceLogs.errorMessage,
         errorDetails: performanceLogs.errorDetails,
-        elapsedTime: performanceLogs.elapsedTime
+        elapsedTime: performanceLogs.elapsedTime,
+        requestBody: performanceLogs.requestBody,
+        responseBody: performanceLogs.responseBody
       })
       .from(performanceLogs)
       .where(
@@ -952,7 +962,9 @@ export class DatabaseStorage implements IStorage {
       userId: log.userId,
       errorMessage: log.errorMessage,
       errorDetails: log.errorDetails,
-      elapsedTime: log.elapsedTime
+      elapsedTime: log.elapsedTime,
+      requestBody: log.requestBody,
+      responseBody: log.responseBody
     }));
 
     // Slow Requests - Query from performanceLogs table (elapsedTime > 10 seconds)
@@ -963,7 +975,9 @@ export class DatabaseStorage implements IStorage {
         method: performanceLogs.method,
         userId: performanceLogs.userId,
         elapsedTime: performanceLogs.elapsedTime,
-        statusCode: performanceLogs.statusCode
+        statusCode: performanceLogs.statusCode,
+        requestBody: performanceLogs.requestBody,
+        responseBody: performanceLogs.responseBody
       })
       .from(performanceLogs)
       .where(
@@ -981,7 +995,9 @@ export class DatabaseStorage implements IStorage {
       method: log.method,
       userId: log.userId,
       elapsedTime: log.elapsedTime!,
-      statusCode: log.statusCode
+      statusCode: log.statusCode,
+      requestBody: log.requestBody,
+      responseBody: log.responseBody
     }));
 
     // Performance Trend (last 6 hours, hourly data points)

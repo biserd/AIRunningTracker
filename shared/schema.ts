@@ -130,6 +130,8 @@ export const performanceLogs = pgTable("performance_logs", {
   userAgent: text("user_agent"), // Browser/client user agent string
   errorMessage: text("error_message"), // Error message if request failed
   errorDetails: text("error_details"), // Stack trace or additional error context
+  requestBody: text("request_body"), // Request body (POST/PUT data), truncated if >5KB
+  responseBody: text("response_body"), // Response body, truncated if >5KB
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
