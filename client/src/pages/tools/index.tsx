@@ -2,13 +2,28 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
-import { Activity, TrendingDown, Calculator, BarChart3, ArrowRight, Zap } from "lucide-react";
+import { Activity, TrendingDown, Calculator, BarChart3, ArrowRight, Zap, MapPin } from "lucide-react";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { Helmet } from "react-helmet";
 import AppHeader from "@/components/AppHeader";
 
 const tools = [
+  {
+    id: "running-heatmap",
+    title: "Running Heatmap",
+    description: "Visualize where you run most frequently with an interactive map showing your last 30 activities overlaid to reveal your favorite routes and training patterns.",
+    icon: MapPin,
+    url: "/tools/heatmap",
+    status: "available",
+    authRequired: true,
+    features: [
+      "Interactive route visualization",
+      "Last 30 activities",
+      "Training pattern analysis",
+      "Favorite routes discovery"
+    ]
+  },
   {
     id: "aerobic-decoupling-calculator",
     title: "Aerobic Decoupling Calculator",
@@ -161,6 +176,7 @@ export default function ToolsPage() {
             {tools.map((tool) => {
               const Icon = tool.icon;
               const isAvailable = tool.status === "available";
+              const requiresAuth = tool.authRequired;
               
               return (
                 <Card 
@@ -175,6 +191,11 @@ export default function ToolsPage() {
                   {!isAvailable && (
                     <div className="absolute top-4 right-4 z-10">
                       <Badge className="bg-gray-500 text-white">Coming Soon</Badge>
+                    </div>
+                  )}
+                  {isAvailable && requiresAuth && !isAuthenticated && (
+                    <div className="absolute top-4 right-4 z-10">
+                      <Badge className="bg-blue-500 text-white">Login Required</Badge>
                     </div>
                   )}
                   

@@ -288,13 +288,13 @@ export class DatabaseStorage implements IStorage {
       conditions.push(sql`${activities.distance} <= ${maxDistance}`);
     }
     if (startDate) {
-      conditions.push(gte(activities.startDate, startDate));
+      conditions.push(sql`${activities.startDate} >= ${startDate}`);
     }
     if (endDate) {
       // Add one day to endDate to include activities on that day
       const endDateTime = new Date(endDate);
       endDateTime.setDate(endDateTime.getDate() + 1);
-      conditions.push(lt(activities.startDate, endDateTime));
+      conditions.push(sql`${activities.startDate} < ${endDateTime.toISOString()}`);
     }
 
     // Get total count
@@ -347,6 +347,24 @@ export class DatabaseStorage implements IStorage {
       .from(activities)
       .where(and(eq(activities.stravaId, stravaId), eq(activities.userId, userId)));
     return activity || undefined;
+  }
+
+  async getActivitiesWithPolylines(userId: number, limit: number = 30): Promise<Activity[]> {
+    const userActivities = await db
+      .select({
+        id: activities.id,
+        name: activities.name,
+        distance: activities.distance,
+        startDate: activities.startDate,
+        polyline: activities.polyline,
+        detailedPolyline: activities.detailedPolyline,
+      })
+      .from(activities)
+      .where(eq(activities.userId, userId))
+      .orderBy(desc(activities.startDate))
+      .limit(limit);
+    
+    return userActivities as Activity[];
   }
 
   async createAIInsight(insertInsight: InsertAIInsight): Promise<AIInsight> {

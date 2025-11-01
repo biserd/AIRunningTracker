@@ -1687,6 +1687,36 @@ ${pages.map(page => `  <url>
     }
   });
 
+  // Get activities with polylines for heatmap visualization
+  app.get("/api/activities/routes", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      const limit = parseInt(req.query.limit as string) || 30;
+      
+      const routes = await storage.getActivitiesWithPolylines(userId, limit);
+      
+      // Filter out activities without polylines and format for frontend
+      // Use detailed polyline if summary polyline is not available
+      const routesWithPolylines = routes
+        .filter(route => route.polyline || route.detailedPolyline)
+        .map(route => ({
+          id: route.id,
+          name: route.name,
+          distance: route.distance,
+          startDate: route.startDate,
+          polyline: route.polyline || route.detailedPolyline,
+        }));
+      
+      res.json({ 
+        routes: routesWithPolylines,
+        count: routesWithPolylines.length 
+      });
+    } catch (error: any) {
+      console.error('Get routes error:', error);
+      res.status(500).json({ message: error.message || "Failed to fetch routes" });
+    }
+  });
+
   // Get activity details
   app.get("/api/activities/:activityId", async (req, res) => {
     try {

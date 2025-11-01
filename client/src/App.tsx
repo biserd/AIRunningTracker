@@ -33,6 +33,7 @@ import TrainingSplitAnalyzer from "@/pages/tools/training-split-analyzer";
 import MarathonFuelingPlanner from "@/pages/tools/marathon-fueling";
 import RacePredictor from "@/pages/tools/race-predictor";
 import CadenceAnalyzer from "@/pages/tools/cadence-analyzer";
+import RunningHeatmap from "@/pages/tools/heatmap";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -80,6 +81,11 @@ function Router() {
       <Route path="/tools/marathon-fueling" component={MarathonFuelingPlanner} />
       <Route path="/tools/race-predictor" component={RacePredictor} />
       <Route path="/tools/cadence-analyzer" component={CadenceAnalyzer} />
+      
+      {/* Protected Tool Routes */}
+      <Route path="/tools/heatmap">
+        <ProtectedRoute component={RunningHeatmap} />
+      </Route>
       
       {/* Protected Routes */}
       <Route path="/dashboard">
