@@ -587,6 +587,15 @@ ${pages.map(page => `  <url>
       
       const recentActivities = await storage.getActivitiesByUserId(userId, 200, threeMonthsAgo);
       
+      console.log(`[Dashboard Debug] User ${userId}:`);
+      console.log(`  Today: ${new Date().toISOString()}`);
+      console.log(`  This Month starts: ${thisMonth.toISOString()}`);
+      console.log(`  Last Month: ${lastMonth.toISOString()} to ${thisMonth.toISOString()}`);
+      console.log(`  Total recent activities fetched: ${recentActivities.length}`);
+      if (recentActivities.length > 0) {
+        console.log(`  Sample activity dates: ${recentActivities.slice(0, 3).map(a => new Date(a.startDate).toISOString()).join(', ')}`);
+      }
+      
       // Filter activities by time periods (using recentActivities from last 3 months)
       const thisMonthActivities = recentActivities.filter(a => 
         new Date(a.startDate) >= thisMonth
@@ -595,6 +604,9 @@ ${pages.map(page => `  <url>
       const lastMonthActivities = recentActivities.filter(a => 
         new Date(a.startDate) >= lastMonth && new Date(a.startDate) < thisMonth
       );
+      
+      console.log(`  This month activities: ${thisMonthActivities.length}`);
+      console.log(`  Last month activities: ${lastMonthActivities.length}`);
       
       const thisWeekActivities = recentActivities.filter(a => 
         new Date(a.startDate) >= thisWeek
