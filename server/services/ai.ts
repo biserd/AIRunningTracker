@@ -156,12 +156,22 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
       });
       
       console.log('[AI Service] Successfully generated insights from OpenAI');
+      console.log('[AI Service] Raw response content:', response.choices[0].message.content);
+      console.log('[AI Service] Response finish_reason:', response.choices[0].finish_reason);
 
-      const analysis: AIAnalysisResult = JSON.parse(response.choices[0].message.content || '{}');
+      const rawContent = response.choices[0].message.content || '{}';
+      
+      if (!rawContent || rawContent.trim() === '{}') {
+        console.error('[AI Service] OpenAI returned empty content!');
+        console.error('[AI Service] Full response:', JSON.stringify(response, null, 2));
+        throw new Error('OpenAI returned empty response');
+      }
+
+      const analysis: AIAnalysisResult = JSON.parse(rawContent);
 
       // Validate that we have required fields from AI response
       if (!analysis || typeof analysis !== 'object') {
-        console.error('Invalid AI response format:', response.choices[0].message.content);
+        console.error('Invalid AI response format:', rawContent);
         throw new Error('Invalid AI response format');
       }
 
