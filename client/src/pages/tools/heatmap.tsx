@@ -155,7 +155,7 @@ export default function RunningHeatmapPage() {
       // Fit to bounds to show recent routes
       map.fitBounds(bounds, { 
         padding: [50, 50],
-        maxZoom: 15   // Don't zoom in too close
+        maxZoom: 13   // Don't zoom in too close
       });
       
       setTimeout(() => {
