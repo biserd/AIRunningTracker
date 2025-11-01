@@ -140,7 +140,7 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
 
     try {
       const response = await openai.chat.completions.create({
-        model: "gpt-5-mini",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
@@ -154,6 +154,8 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
         response_format: { type: "json_object" },
         max_completion_tokens: 800,
       });
+      
+      console.log('[AI Service] Successfully generated insights from OpenAI');
 
       const analysis: AIAnalysisResult = JSON.parse(response.choices[0].message.content || '{}');
 
@@ -270,9 +272,13 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
       await storage.cleanupOldAIInsights(userId, 'technique', 10);
       await storage.cleanupOldAIInsights(userId, 'recommendation', 30); // Keep more recommendations for variety
 
-    } catch (error) {
-      console.error('Failed to generate AI insights:', error);
-      throw new Error('Failed to generate AI insights');
+    } catch (error: any) {
+      console.error('[AI Service] Failed to generate AI insights for user', userId);
+      console.error('[AI Service] Error details:', error.message || error);
+      if (error.response) {
+        console.error('[AI Service] OpenAI API error response:', error.response.data);
+      }
+      throw new Error(`Failed to generate AI insights: ${error.message || 'Unknown error'}`);
     }
   }
 }
