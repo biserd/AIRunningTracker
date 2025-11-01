@@ -123,12 +123,24 @@ export interface IStorage {
       statusCode: number;
       endpoint: string;
       method: string;
+      userId?: number | null;
+      errorMessage?: string | null;
+      errorDetails?: string | null;
+      elapsedTime?: number | null;
     }>;
     performanceTrend: Array<{
       timestamp: string;
       responseTime: number;
       requestCount: number;
       errorCount: number;
+    }>;
+    slowRequests: Array<{
+      timestamp: string;
+      endpoint: string;
+      method: string;
+      userId?: number | null;
+      elapsedTime: number;
+      statusCode: number;
     }>;
   }>;
 }
@@ -832,12 +844,24 @@ export class DatabaseStorage implements IStorage {
       statusCode: number;
       endpoint: string;
       method: string;
+      userId?: number | null;
+      errorMessage?: string | null;
+      errorDetails?: string | null;
+      elapsedTime?: number | null;
     }>;
     performanceTrend: Array<{
       timestamp: string;
       responseTime: number;
       requestCount: number;
       errorCount: number;
+    }>;
+    slowRequests: Array<{
+      timestamp: string;
+      endpoint: string;
+      method: string;
+      userId?: number | null;
+      elapsedTime: number;
+      statusCode: number;
     }>;
   }> {
     // Calculate system metrics (simulated based on current data and system state)
@@ -907,7 +931,11 @@ export class DatabaseStorage implements IStorage {
         timestamp: performanceLogs.timestamp,
         statusCode: performanceLogs.statusCode,
         endpoint: performanceLogs.endpoint,
-        method: performanceLogs.method
+        method: performanceLogs.method,
+        userId: performanceLogs.userId,
+        errorMessage: performanceLogs.errorMessage,
+        errorDetails: performanceLogs.errorDetails,
+        elapsedTime: performanceLogs.elapsedTime
       })
       .from(performanceLogs)
       .where(
@@ -920,7 +948,40 @@ export class DatabaseStorage implements IStorage {
       timestamp: log.timestamp.toISOString(),
       statusCode: log.statusCode,
       endpoint: log.endpoint,
-      method: log.method
+      method: log.method,
+      userId: log.userId,
+      errorMessage: log.errorMessage,
+      errorDetails: log.errorDetails,
+      elapsedTime: log.elapsedTime
+    }));
+
+    // Slow Requests - Query from performanceLogs table (elapsedTime > 10 seconds)
+    const slowRequestLogs = await db
+      .select({
+        timestamp: performanceLogs.timestamp,
+        endpoint: performanceLogs.endpoint,
+        method: performanceLogs.method,
+        userId: performanceLogs.userId,
+        elapsedTime: performanceLogs.elapsedTime,
+        statusCode: performanceLogs.statusCode
+      })
+      .from(performanceLogs)
+      .where(
+        and(
+          gt(performanceLogs.elapsedTime, 10000),
+          gte(performanceLogs.timestamp, twentyFourHoursAgo)
+        )
+      )
+      .orderBy(desc(performanceLogs.elapsedTime))
+      .limit(10);
+
+    const slowRequests = slowRequestLogs.map(log => ({
+      timestamp: log.timestamp.toISOString(),
+      endpoint: log.endpoint,
+      method: log.method,
+      userId: log.userId,
+      elapsedTime: log.elapsedTime!,
+      statusCode: log.statusCode
     }));
 
     // Performance Trend (last 6 hours, hourly data points)
@@ -960,7 +1021,8 @@ export class DatabaseStorage implements IStorage {
         status: systemStatus
       },
       recentErrors,
-      performanceTrend
+      performanceTrend,
+      slowRequests
     };
   }
 }

@@ -85,12 +85,24 @@ interface SystemPerformance {
     statusCode: number;
     endpoint: string;
     method: string;
+    userId?: number | null;
+    errorMessage?: string | null;
+    errorDetails?: string | null;
+    elapsedTime?: number | null;
   }>;
   performanceTrend: Array<{
     timestamp: string;
     responseTime: number;
     requestCount: number;
     errorCount: number;
+  }>;
+  slowRequests: Array<{
+    timestamp: string;
+    endpoint: string;
+    method: string;
+    userId?: number | null;
+    elapsedTime: number;
+    statusCode: number;
   }>;
 }
 
@@ -788,10 +800,10 @@ export default function AdminPage() {
               ) : performance?.recentErrors.length ? (
                 <div className="space-y-3">
                   {performance.recentErrors.map((error, index) => (
-                    <div key={index} className="flex items-start gap-3 p-3 bg-red-50 border border-red-100 rounded-lg">
+                    <div key={index} className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-950 border border-red-100 dark:border-red-900 rounded-lg">
                       <XCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <Badge 
                             variant={error.statusCode >= 500 ? "destructive" : "outline"} 
                             className="font-medium"
@@ -799,11 +811,36 @@ export default function AdminPage() {
                           >
                             {error.statusCode} {error.method}
                           </Badge>
-                          <span className="text-sm text-gray-700 truncate">
+                          <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
                             {error.endpoint}
                           </span>
+                          {error.userId && (
+                            <Badge variant="secondary" className="text-xs">
+                              User {error.userId}
+                            </Badge>
+                          )}
+                          {error.elapsedTime && error.elapsedTime > 10000 && (
+                            <Badge variant="destructive" className="text-xs">
+                              SLOW {(error.elapsedTime / 1000).toFixed(1)}s
+                            </Badge>
+                          )}
                         </div>
-                        <p className="text-xs text-red-600">
+                        {error.errorMessage && (
+                          <p className="text-sm font-medium text-red-700 dark:text-red-400 mt-1">
+                            {error.errorMessage}
+                          </p>
+                        )}
+                        {error.errorDetails && (
+                          <details className="mt-1">
+                            <summary className="text-xs text-red-600 dark:text-red-500 cursor-pointer hover:underline">
+                              View details
+                            </summary>
+                            <pre className="text-xs text-red-700 dark:text-red-400 mt-1 p-2 bg-red-100 dark:bg-red-900 rounded overflow-x-auto">
+                              {error.errorDetails}
+                            </pre>
+                          </details>
+                        )}
+                        <p className="text-xs text-red-600 dark:text-red-500 mt-1">
                           {new Date(error.timestamp).toLocaleString()}
                         </p>
                       </div>
@@ -815,6 +852,59 @@ export default function AdminPage() {
                   <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
                   <p>No recent errors detected</p>
                   <p className="text-xs text-gray-400 mt-1">System is running smoothly</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Slow Requests */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Slow Requests (&gt;10s)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {performanceLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange mx-auto mb-4"></div>
+                  <p>Loading slow requests...</p>
+                </div>
+              ) : performance?.slowRequests?.length ? (
+                <div className="space-y-3">
+                  {performance.slowRequests.map((request, index) => (
+                    <div key={index} className="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-950 border border-orange-100 dark:border-orange-900 rounded-lg">
+                      <Clock className="h-5 w-5 text-orange-500 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <Badge variant="destructive" className="font-medium" data-testid={`slow-request-time-${index}`}>
+                            {(request.elapsedTime / 1000).toFixed(1)}s
+                          </Badge>
+                          <Badge variant={request.statusCode >= 400 ? "destructive" : "outline"} className="text-xs">
+                            {request.statusCode} {request.method}
+                          </Badge>
+                          <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                            {request.endpoint}
+                          </span>
+                          {request.userId && (
+                            <Badge variant="secondary" className="text-xs">
+                              User {request.userId}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-orange-600 dark:text-orange-500">
+                          {new Date(request.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
+                  <p>No slow requests detected</p>
+                  <p className="text-xs text-gray-400 mt-1">All requests are performing well</p>
                 </div>
               )}
             </CardContent>

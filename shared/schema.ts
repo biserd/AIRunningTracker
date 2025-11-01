@@ -128,6 +128,8 @@ export const performanceLogs = pgTable("performance_logs", {
   statusCode: integer("status_code").notNull(), // 200, 400, 500, etc.
   elapsedTime: integer("elapsed_time").notNull(), // milliseconds
   userAgent: text("user_agent"), // Browser/client user agent string
+  errorMessage: text("error_message"), // Error message if request failed
+  errorDetails: text("error_details"), // Stack trace or additional error context
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
