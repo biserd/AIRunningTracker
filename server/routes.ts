@@ -579,13 +579,14 @@ ${pages.map(page => `  <url>
       const lastWeek = new Date(thisWeek);
       lastWeek.setDate(lastWeek.getDate() - 7);
       
-      // OPTIMIZATION: Only fetch activities from last 3 months instead of all 200
+      // OPTIMIZATION: Only fetch activities from last 3 months instead of all activities
       // This filters at the DATABASE level for maximum performance
       const threeMonthsAgo = new Date();
       threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
       threeMonthsAgo.setHours(0, 0, 0, 0);
       
-      const recentActivities = await storage.getActivitiesByUserId(userId, 200, threeMonthsAgo);
+      // Reduced from 200 to 100 for faster queries - 3 months of data is sufficient for stats
+      const recentActivities = await storage.getActivitiesByUserId(userId, 100, threeMonthsAgo);
       
       // FIX: Use the most recent activity date to determine "current month" instead of server time
       // This prevents timezone issues where server is in UTC Nov 1 but user activities are Oct 31
@@ -906,9 +907,8 @@ ${pages.map(page => `  <url>
           activityLimit = 6; // Group by week
       }
 
-      const activities = await storage.getActivitiesByUserId(userId, 100); // Get more activities for proper aggregation
-      
-      const filteredActivities = activities.filter(a => new Date(a.startDate) >= startDate);
+      // OPTIMIZATION: Filter at database level using startDate parameter
+      const filteredActivities = await storage.getActivitiesByUserId(userId, 100, startDate);
 
       // Group activities by week/month
       const groupedData = new Map();
