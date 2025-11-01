@@ -375,7 +375,7 @@ export class DatabaseStorage implements IStorage {
     return insight;
   }
 
-  async getAIInsightsByUserId(userId: number, type?: string): Promise<AIInsight[]> {
+  async getAIInsightsByUserId(userId: number, type?: string, limit: number = 50): Promise<AIInsight[]> {
     const conditions = [eq(aiInsights.userId, userId)];
     if (type) {
       conditions.push(eq(aiInsights.type, type));
@@ -385,7 +385,8 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(aiInsights)
       .where(and(...conditions))
-      .orderBy(desc(aiInsights.createdAt));
+      .orderBy(desc(aiInsights.createdAt))
+      .limit(limit);
     return userInsights;
   }
 
