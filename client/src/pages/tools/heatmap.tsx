@@ -36,10 +36,21 @@ export default function RunningHeatmapPage() {
     }
   }, [isAuthenticated, authLoading, setLocation]);
 
-  const { data, isLoading } = useQuery<{ routes: ActivityRoute[]; count: number }>({
+  const { data, isLoading, error } = useQuery<{ routes: ActivityRoute[]; count: number }>({
     queryKey: ["/api/activities/routes", user?.id],
     enabled: !!user && isAuthenticated,
   });
+
+  // Debug logging
+  useEffect(() => {
+    console.log('[Heatmap Debug] Auth state:', { 
+      user: user?.id, 
+      isAuthenticated, 
+      authLoading,
+      hasToken: !!localStorage.getItem('auth_token'),
+      error: error?.message
+    });
+  }, [user, isAuthenticated, authLoading, error]);
 
   const routes = data?.routes || [];
   const totalDistance = routes.reduce((sum, route) => sum + route.distance, 0);
@@ -236,6 +247,15 @@ export default function RunningHeatmapPage() {
               Click on any route to see details.
             </AlertDescription>
           </Alert>
+
+          {/* Error Display */}
+          {error && (
+            <Alert className="mb-6 border-red-200 bg-red-50">
+              <AlertDescription className="text-sm text-red-900">
+                Error loading routes: {error.message}
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Map Container */}
           <Card className="overflow-hidden">
