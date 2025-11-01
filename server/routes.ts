@@ -1694,7 +1694,6 @@ ${pages.map(page => `  <url>
       const limit = parseInt(req.query.limit as string) || 30;
       
       const routes = await storage.getActivitiesWithPolylines(userId, limit);
-      console.log(`[Heatmap Debug] Fetched ${routes.length} activities for user ${userId}`);
       
       // Filter out activities without polylines and format for frontend
       // Use detailed polyline if summary polyline is not available
@@ -1707,16 +1706,6 @@ ${pages.map(page => `  <url>
           startDate: route.startDate,
           polyline: route.polyline || route.detailedPolyline,
         }));
-      
-      console.log(`[Heatmap Debug] Returning ${routesWithPolylines.length} routes with polylines`);
-      if (routesWithPolylines.length > 0) {
-        console.log(`[Heatmap Debug] Sample route:`, {
-          id: routesWithPolylines[0].id,
-          name: routesWithPolylines[0].name,
-          hasPolyline: !!routesWithPolylines[0].polyline,
-          polylineLength: routesWithPolylines[0].polyline?.length || 0
-        });
-      }
       
       res.json({ 
         routes: routesWithPolylines,

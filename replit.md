@@ -35,7 +35,7 @@ Preferred communication style: Simple, everyday language.
 - **AI Engine**: Upgraded to GPT-5 for enhanced training plan generation, improved AI insights, fixed pace calculations, and better context with comprehensive fitness data.
 - **Goals & Training Tracking**: Allows conversion of AI recommendations into trackable, actionable goals with progress monitoring, auto-completion, and smart criteria based on activity types.
 - **Free Tools Section**: Dedicated `/tools` section with SEO-optimized calculators and analyzers (Aerobic Decoupling, Training Split, Marathon Fueling, Race Predictor, Cadence Analyzer, Running Heatmap) accessible to all users with dual-mode input (Strava auto-fetch or manual entry).
-- **Running Heatmap**: Interactive route visualization tool at `/tools/heatmap` that displays the last 30 activities on a single Leaflet map with semi-transparent overlays showing training patterns and favorite routes. Auth-required feature using Strava polyline data with automatic fallback to detailed polylines.
+- **Running Heatmap**: Interactive route visualization tool at `/tools/heatmap` that displays the last 30 activities on a single Leaflet map with semi-transparent blue overlays. Overlapping routes create brighter hotspots showing frequently-used training areas. Features automatic zoom to routes, auth protection, and uses Strava polyline data with automatic fallback to detailed polylines.
 
 ### System Design Choices
 - **Database Schema**: Users, Activities, AI Insights, Training Plans, Email Waitlist.

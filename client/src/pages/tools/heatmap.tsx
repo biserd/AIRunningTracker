@@ -41,17 +41,6 @@ export default function RunningHeatmapPage() {
     enabled: !!user && isAuthenticated,
   });
 
-  // Debug logging
-  useEffect(() => {
-    console.log('[Heatmap Debug] Auth state:', { 
-      user: user?.id, 
-      isAuthenticated, 
-      authLoading,
-      hasToken: !!localStorage.getItem('auth_token'),
-      error: error?.message
-    });
-  }, [user, isAuthenticated, authLoading, error]);
-
   const routes = data?.routes || [];
   const totalDistance = routes.reduce((sum, route) => sum + route.distance, 0);
   const distanceInMiles = totalDistance / 1609.34;
@@ -64,14 +53,14 @@ export default function RunningHeatmapPage() {
 
     // Calculate center from first route if available
     let initialCenter: [number, number] = [37.7749, -122.4194]; // Default to SF
-    let initialZoom = 12;
+    let initialZoom = 14;
 
     if (routes.length > 0 && routes[0].polyline) {
       try {
         const firstPath = decode(routes[0].polyline);
         if (firstPath.length > 0) {
           initialCenter = [firstPath[0][0], firstPath[0][1]];
-          initialZoom = 13;
+          initialZoom = 14;
         }
       } catch (e) {
         console.error("Error decoding polyline for center:", e);
@@ -127,15 +116,15 @@ export default function RunningHeatmapPage() {
         // True heatmap effect: all routes same color, low opacity
         // Where routes overlap, opacity stacks = brighter hotspots
         const polyline = L.polyline(latLngs, {
-          color: "#FF4500", // Bright orange-red for all routes
+          color: "#2563EB", // Bright blue for all routes
           weight: 4,
-          opacity: 0.35, // Low opacity so overlaps create brighter areas
+          opacity: 0.4, // Low opacity so overlaps create brighter areas
           smoothFactor: 1,
         });
 
         polyline.bindPopup(`
           <div style="font-family: sans-serif;">
-            <strong style="color: #FF4500;">${route.name}</strong><br/>
+            <strong style="color: #2563EB;">${route.name}</strong><br/>
             <span style="font-size: 12px; color: #666;">
               ${new Date(route.startDate).toLocaleDateString()}<br/>
               ${(route.distance / 1609.34).toFixed(2)} mi
@@ -149,12 +138,12 @@ export default function RunningHeatmapPage() {
       }
     });
 
-    // Fit map to show all routes with good padding
+    // Fit map to show all routes with minimal padding for closer zoom
     if (allCoordinates.length > 0) {
       const bounds = L.latLngBounds(allCoordinates);
       map.fitBounds(bounds, { 
-        padding: [50, 50],
-        maxZoom: 14 // Don't zoom in too close
+        padding: [30, 30],
+        maxZoom: 15 // Allow closer zoom to see routes better
       });
     }
   }, [routes]);
@@ -204,7 +193,7 @@ export default function RunningHeatmapPage() {
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center space-x-3 mb-2">
-                  <div className="w-12 h-12 rounded-lg bg-strava-orange text-white flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-lg bg-blue-600 text-white flex items-center justify-center">
                     <MapPin size={24} />
                   </div>
                   <div>
@@ -218,13 +207,13 @@ export default function RunningHeatmapPage() {
               <div className="hidden sm:flex items-center space-x-4">
                 <div className="text-right">
                   <p className="text-sm text-gray-600">Routes Shown</p>
-                  <p className="text-2xl font-bold text-strava-orange" data-testid="text-routes-count">
+                  <p className="text-2xl font-bold text-blue-600" data-testid="text-routes-count">
                     {routes.length}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-600">Total Distance</p>
-                  <p className="text-2xl font-bold text-strava-orange" data-testid="text-total-distance">
+                  <p className="text-2xl font-bold text-blue-600" data-testid="text-total-distance">
                     {unitPreference === "miles" 
                       ? `${distanceInMiles.toFixed(1)} mi`
                       : `${distanceInKm.toFixed(1)} km`
@@ -240,13 +229,13 @@ export default function RunningHeatmapPage() {
             <Card>
               <CardContent className="pt-4 text-center">
                 <p className="text-sm text-gray-600">Routes Shown</p>
-                <p className="text-xl font-bold text-strava-orange">{routes.length}</p>
+                <p className="text-xl font-bold text-blue-600">{routes.length}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4 text-center">
                 <p className="text-sm text-gray-600">Total Distance</p>
-                <p className="text-xl font-bold text-strava-orange">
+                <p className="text-xl font-bold text-blue-600">
                   {unitPreference === "miles" 
                     ? `${distanceInMiles.toFixed(1)} mi`
                     : `${distanceInKm.toFixed(1)} km`
@@ -290,7 +279,7 @@ export default function RunningHeatmapPage() {
                         }
                       </p>
                       <Link href="/settings">
-                        <Button className="bg-strava-orange text-white hover:bg-strava-orange/90" data-testid="button-go-settings">
+                        <Button className="bg-blue-600 text-white hover:bg-blue-700" data-testid="button-go-settings">
                           Go to Settings
                         </Button>
                       </Link>
@@ -317,13 +306,13 @@ export default function RunningHeatmapPage() {
               <CardContent>
                 <div className="grid sm:grid-cols-3 gap-4">
                   <div className="flex items-center space-x-3">
-                    <div className="w-8 h-1 bg-[#FF4500] opacity-35" />
+                    <div className="w-8 h-1 bg-[#2563EB] opacity-40" />
                     <span className="text-sm text-gray-700">Single route</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <div className="relative w-8 h-1">
-                      <div className="absolute w-8 h-1 bg-[#FF4500] opacity-35" />
-                      <div className="absolute w-8 h-1 bg-[#FF4500] opacity-35" />
+                      <div className="absolute w-8 h-1 bg-[#2563EB] opacity-40" />
+                      <div className="absolute w-8 h-1 bg-[#2563EB] opacity-40" />
                     </div>
                     <span className="text-sm text-gray-700">Frequently used routes (brighter)</span>
                   </div>
