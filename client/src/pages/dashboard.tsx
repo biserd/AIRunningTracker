@@ -354,9 +354,9 @@ export default function Dashboard() {
               hasViewedScore={true} // They're on the dashboard, so they've seen it
             />
             
-            <AIInsights insights={dashboardData?.insights || {}} />
+            <AIInsights insights={dashboardData?.insights || {}} userId={user?.id!} />
             <InsightHistory userId={user?.id!} />
-            <TrainingRecommendations recommendations={dashboardData?.insights?.recommendations || []} userId={user?.id} />
+            <TrainingRecommendations recommendations={dashboardData?.insights?.recommendations || []} userId={user?.id!} />
             <FitnessTrends chartData={dashboardData?.chartData || []} unitPreference={dashboardData?.user?.unitPreference} />
             <GoalProgress userId={user?.id!} unitPreference={dashboardData?.user?.unitPreference} />
           </div>

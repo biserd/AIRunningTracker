@@ -1,9 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Crown, Lock } from "lucide-react";
+import { Brain, Crown, Lock, RefreshCw } from "lucide-react";
 import { Link } from "wouter";
 import { useFeatureAccess } from "@/hooks/useSubscription";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface InsightData {
   title: string;
@@ -18,11 +21,34 @@ interface AIInsightsProps {
     motivation?: InsightData;
     technique?: InsightData;
   };
+  userId: number;
 }
 
-export default function AIInsights({ insights }: AIInsightsProps) {
+export default function AIInsights({ insights, userId }: AIInsightsProps) {
   const { canAccessAdvancedInsights } = useFeatureAccess();
   const hasInsights = insights.performance || insights.pattern || insights.recovery || insights.motivation || insights.technique;
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  
+  const regenerateInsights = useMutation({
+    mutationFn: async () => {
+      return await apiRequest(`/api/insights/generate/${userId}`, "POST", {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard', userId] });
+      toast({
+        title: "AI Insights Regenerated",
+        description: "Your insights have been updated with the latest data.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Regenerate Insights",
+        description: error.message || "Please try again later",
+        variant: "destructive",
+      });
+    },
+  });
 
   if (!hasInsights) {
     return (
@@ -35,19 +61,31 @@ export default function AIInsights({ insights }: AIInsightsProps) {
               </div>
               <CardTitle className="text-xl font-semibold text-charcoal">AI Insights</CardTitle>
             </div>
-            {!canAccessAdvancedInsights && (
-              <Badge variant="secondary" className="bg-strava-orange/10 text-strava-orange">
-                <Crown className="h-3 w-3 mr-1" />
-                Pro Feature
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => regenerateInsights.mutate()}
+                disabled={regenerateInsights.isPending}
+                size="sm"
+                variant="outline"
+                data-testid="button-regenerate-insights"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${regenerateInsights.isPending ? 'animate-spin' : ''}`} />
+                {regenerateInsights.isPending ? 'Generating...' : 'Generate'}
+              </Button>
+              {!canAccessAdvancedInsights && (
+                <Badge variant="secondary" className="bg-strava-orange/10 text-strava-orange">
+                  <Crown className="h-3 w-3 mr-1" />
+                  Pro Feature
+                </Badge>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
           <div className="text-center py-6">
             <Brain className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No insights yet</h3>
-            <p className="text-gray-500 text-sm">Generate AI insights to see performance analysis here.</p>
+            <p className="text-gray-500 text-sm">Click "Generate" to create AI insights from your running data.</p>
           </div>
         </CardContent>
       </Card>
@@ -130,6 +168,16 @@ export default function AIInsights({ insights }: AIInsightsProps) {
             </div>
             <CardTitle className="text-xl font-semibold text-charcoal">AI Insights</CardTitle>
           </div>
+          <Button
+            onClick={() => regenerateInsights.mutate()}
+            disabled={regenerateInsights.isPending}
+            size="sm"
+            variant="outline"
+            data-testid="button-regenerate-insights"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${regenerateInsights.isPending ? 'animate-spin' : ''}`} />
+            {regenerateInsights.isPending ? 'Regenerating...' : 'Regenerate'}
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
