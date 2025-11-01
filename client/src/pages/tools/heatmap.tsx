@@ -47,29 +47,14 @@ export default function RunningHeatmapPage() {
   const distanceInKm = totalDistance / 1000;
   const unitPreference = user?.unitPreference || "miles";
 
-  // Initialize map
+  // Initialize map once
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current || routes.length === 0) return;
+    if (!mapContainerRef.current || mapRef.current) return;
 
-    // Calculate center from first route if available
-    let initialCenter: [number, number] = [37.7749, -122.4194]; // Default to SF
-    let initialZoom = 14;
-
-    if (routes.length > 0 && routes[0].polyline) {
-      try {
-        const firstPath = decode(routes[0].polyline);
-        if (firstPath.length > 0) {
-          initialCenter = [firstPath[0][0], firstPath[0][1]];
-          initialZoom = 14;
-        }
-      } catch (e) {
-        console.error("Error decoding polyline for center:", e);
-      }
-    }
-
+    // Start with default center - will be updated when routes load
     const map = L.map(mapContainerRef.current, {
-      center: initialCenter,
-      zoom: initialZoom,
+      center: [40.7749, -73.95], // Default to NYC
+      zoom: 13,
       zoomControl: true,
     });
 
@@ -84,7 +69,7 @@ export default function RunningHeatmapPage() {
       map.remove();
       mapRef.current = null;
     };
-  }, [routes]);
+  }, []); // Only run once on mount
 
   // Render routes on map
   useEffect(() => {
@@ -141,6 +126,9 @@ export default function RunningHeatmapPage() {
     // Fit map to show all routes with intelligent zoom control
     if (allCoordinates.length > 0) {
       const bounds = L.latLngBounds(allCoordinates);
+      console.log('[Heatmap] Total coordinates:', allCoordinates.length);
+      console.log('[Heatmap] Bounds:', bounds.getNorth(), bounds.getSouth(), bounds.getEast(), bounds.getWest());
+      console.log('[Heatmap] Center:', bounds.getCenter());
       
       // Fit to bounds to show all routes
       map.fitBounds(bounds, { 
@@ -151,6 +139,7 @@ export default function RunningHeatmapPage() {
       // If it zoomed out too much (routes are spread out), enforce minimum zoom
       setTimeout(() => {
         const currentZoom = map.getZoom();
+        console.log('[Heatmap] Final zoom level:', currentZoom);
         if (currentZoom < 11) {
           map.setZoom(11); // Keep at least city-level zoom
         }
