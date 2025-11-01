@@ -2441,7 +2441,8 @@ ${pages.map(page => `  <url>
         return res.status(400).json({ message: "Invalid user ID" });
       }
 
-      const heartRateZones = performanceService.calculateHeartRateZones(
+      const heartRateZones = await performanceService.calculateHeartRateZones(
+        userId,
         maxHR ? parseInt(maxHR as string) : undefined,
         restingHR ? parseInt(restingHR as string) : undefined
       );

@@ -225,15 +225,52 @@ export class PerformanceAnalyticsService {
 
   /**
    * Calculate heart rate zones based on max HR and threshold data
+   * Can use actual activity data or manual overrides
    */
-  calculateHeartRateZones(maxHR?: number, restingHR?: number): HeartRateZones | null {
-    // Only return heart rate zones if we have actual data, not estimates
-    if (!maxHR || !restingHR) {
+  async calculateHeartRateZones(userId: number, maxHR?: number, restingHR?: number): Promise<HeartRateZones | null> {
+    let estimatedMaxHR = maxHR;
+    let estimatedRestingHR = restingHR;
+    
+    // If not provided manually, try to calculate from user's actual activity data
+    if (!estimatedMaxHR || !estimatedRestingHR) {
+      const activities = await storage.getActivitiesByUserId(userId, 100);
+      const activitiesWithHR = activities.filter(a => a.maxHeartrate && a.averageHeartrate);
+      
+      if (activitiesWithHR.length === 0) {
+        console.log(`[HR Zones] No heart rate data found for user ${userId}`);
+        return null;
+      }
+      
+      // Use the highest max HR from activities
+      if (!estimatedMaxHR) {
+        estimatedMaxHR = Math.max(...activitiesWithHR.map(a => a.maxHeartrate || 0));
+        console.log(`[HR Zones] Calculated max HR from activities: ${estimatedMaxHR}`);
+      }
+      
+      // Estimate resting HR from lowest average HR in easy runs
+      if (!estimatedRestingHR) {
+        // Get lowest 10% of average HRs as proxy for easy runs
+        const sortedAvgHR = activitiesWithHR
+          .map(a => a.averageHeartrate || 0)
+          .filter(hr => hr > 0)
+          .sort((a, b) => a - b);
+        
+        const lowestHRs = sortedAvgHR.slice(0, Math.ceil(sortedAvgHR.length * 0.1));
+        const avgLowestHR = lowestHRs.reduce((sum, hr) => sum + hr, 0) / lowestHRs.length;
+        
+        // Estimate resting HR is typically 20-30 BPM below easy run average
+        estimatedRestingHR = Math.round(avgLowestHR - 25);
+        
+        // Sanity check: resting HR should be between 40-90
+        estimatedRestingHR = Math.max(40, Math.min(90, estimatedRestingHR));
+        console.log(`[HR Zones] Estimated resting HR from easy runs: ${estimatedRestingHR}`);
+      }
+    }
+    
+    // Final check - need both values
+    if (!estimatedMaxHR || !estimatedRestingHR) {
       return null;
     }
-
-    const estimatedMaxHR = maxHR;
-    const estimatedRestingHR = restingHR;
     
     // Using Karvonen method for more accurate zones
     const heartRateReserve = estimatedMaxHR - estimatedRestingHR;
