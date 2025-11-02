@@ -147,6 +147,13 @@ export interface IStorage {
       responseBody?: string | null;
     }>;
   }>;
+
+  // Platform stats for landing page
+  getPlatformStats(): Promise<{
+    totalUsers: number;
+    totalActivities: number;
+    totalDistance: number;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1058,6 +1065,30 @@ export class DatabaseStorage implements IStorage {
       recentErrors,
       performanceTrend,
       slowRequests
+    };
+  }
+
+  async getPlatformStats(): Promise<{
+    totalUsers: number;
+    totalActivities: number;
+    totalDistance: number;
+  }> {
+    const [userCount] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(users);
+    
+    const [activityCount] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(activities);
+    
+    const [distanceSum] = await db
+      .select({ sum: sql<number>`COALESCE(sum(distance), 0)::numeric` })
+      .from(activities);
+
+    return {
+      totalUsers: userCount?.count || 0,
+      totalActivities: activityCount?.count || 0,
+      totalDistance: Number(distanceSum?.sum) || 0
     };
   }
 }

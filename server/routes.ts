@@ -176,6 +176,28 @@ ${pages.map(page => `  <url>
     res.header("Content-Type", "application/xml");
     res.send(sitemap);
   });
+
+  // Platform stats for landing page (public endpoint)
+  app.get("/api/platform-stats", async (req, res) => {
+    try {
+      const cacheKey = "platform-stats";
+      const cached = getCachedResponse(cacheKey);
+      
+      if (cached) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        return res.json(cached);
+      }
+
+      const stats = await storage.getPlatformStats();
+      
+      setCachedResponse(cacheKey, stats);
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.json(stats);
+    } catch (error: any) {
+      console.error('Platform stats error:', error);
+      res.status(500).json({ message: "Failed to get platform stats" });
+    }
+  });
   
   // Authentication routes
   app.post("/api/auth/register", async (req, res) => {
