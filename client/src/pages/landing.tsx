@@ -5,8 +5,19 @@ import { Activity, CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp
 import { VERSION } from "@shared/version";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
+import { AnimatedCounter } from "@/components/AnimatedCounter";
+import { FeatureCarousel } from "@/components/FeatureCarousel";
+import { useQuery } from "@tanstack/react-query";
 
 export default function LandingPage() {
+  const { data: stats } = useQuery<{
+    totalUsers: number;
+    totalActivities: number;
+    totalDistance: number;
+  }>({
+    queryKey: ['/api/platform-stats'],
+    staleTime: 60000,
+  });
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -84,12 +95,32 @@ export default function LandingPage() {
             Connect your Strava account and unlock your running potential.
           </p>
 
-          {/* Social Proof */}
-          <div className="flex items-center justify-center gap-2 mb-6 sm:mb-8 text-gray-700">
-            <Users className="h-5 w-5 text-strava-orange" />
-            <span className="text-sm sm:text-base font-medium">
-              Join 10,000+ runners improving their performance
-            </span>
+          {/* Social Proof with Real Stats */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 mb-6 sm:mb-8 text-gray-700">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-strava-orange" />
+              <span className="text-sm sm:text-base font-medium">
+                <AnimatedCounter end={stats?.totalUsers || 0} className="font-bold text-strava-orange" />
+                + runners
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-blue-600" />
+              <span className="text-sm sm:text-base font-medium">
+                <AnimatedCounter end={stats?.totalActivities || 0} className="font-bold text-blue-600" />
+                + activities tracked
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-green-600" />
+              <span className="text-sm sm:text-base font-medium">
+                <AnimatedCounter 
+                  end={Math.round((stats?.totalDistance || 0) / 1609.34)} 
+                  className="font-bold text-green-600" 
+                />
+                + miles run
+              </span>
+            </div>
           </div>
 
           {/* Action Buttons */}
@@ -128,6 +159,21 @@ export default function LandingPage() {
               <span>Connect with Strava</span>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Feature Carousel */}
+      <section className="py-12 sm:py-16 px-4 sm:px-6 bg-gradient-to-br from-gray-50 to-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-charcoal mb-3 sm:mb-4">
+              See It In Action
+            </h2>
+            <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
+              Real features, real results. Explore what makes RunAnalytics the complete running analytics platform.
+            </p>
+          </div>
+          <FeatureCarousel />
         </div>
       </section>
 
@@ -238,7 +284,7 @@ export default function LandingPage() {
 
           {/* Other Features Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 px-4">
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl">
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:shadow-purple-200/50">
               <div className="w-11 h-11 sm:w-12 sm:h-12 bg-purple-500 rounded-xl flex items-center justify-center mb-4">
                 <Brain className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
@@ -252,7 +298,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:shadow-blue-200/50">
               <div className="w-11 h-11 sm:w-12 sm:h-12 bg-blue-500 rounded-xl flex items-center justify-center mb-4">
                 <Target className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
@@ -276,7 +322,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl">
+            <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:shadow-green-200/50">
               <div className="w-11 h-11 sm:w-12 sm:h-12 bg-green-500 rounded-xl flex items-center justify-center mb-4">
                 <BarChart className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
@@ -300,7 +346,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl">
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:shadow-orange-200/50">
               <div className="w-11 h-11 sm:w-12 sm:h-12 bg-orange-500 rounded-xl flex items-center justify-center mb-4">
                 <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
@@ -318,7 +364,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-xl">
+            <div className="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:shadow-red-200/50">
               <div className="w-11 h-11 sm:w-12 sm:h-12 bg-red-500 rounded-xl flex items-center justify-center mb-4">
                 <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
@@ -335,7 +381,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-6 rounded-xl">
+            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-6 rounded-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:shadow-yellow-200/50">
               <div className="w-11 h-11 sm:w-12 sm:h-12 bg-yellow-500 rounded-xl flex items-center justify-center mb-4">
                 <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
@@ -374,7 +420,7 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 px-4">
             {/* Aerobic Decoupling Calculator */}
-            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mb-4">
                 <TrendingDown className="h-6 w-6 text-white" />
               </div>
@@ -408,7 +454,7 @@ export default function LandingPage() {
             </div>
 
             {/* Training Split Analyzer */}
-            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
               <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mb-4">
                 <Activity className="h-6 w-6 text-white" />
               </div>
@@ -442,7 +488,7 @@ export default function LandingPage() {
             </div>
 
             {/* Marathon Fueling Planner */}
-            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
               <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center mb-4">
                 <Zap className="h-6 w-6 text-white" />
               </div>
@@ -476,7 +522,7 @@ export default function LandingPage() {
             </div>
 
             {/* Race Predictor */}
-            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
               <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mb-4">
                 <TrendingUp className="h-6 w-6 text-white" />
               </div>
@@ -510,7 +556,7 @@ export default function LandingPage() {
             </div>
 
             {/* Cadence Analyzer */}
-            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
               <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center mb-4">
                 <Activity className="h-6 w-6 text-white" />
               </div>
