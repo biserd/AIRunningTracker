@@ -6,7 +6,6 @@ import { VERSION } from "@shared/version";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
-import { FeatureCarousel } from "@/components/FeatureCarousel";
 import { useQuery } from "@tanstack/react-query";
 
 export default function LandingPage() {
@@ -159,21 +158,6 @@ export default function LandingPage() {
               <span>Connect with Strava</span>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Feature Carousel */}
-      <section className="py-12 sm:py-16 px-4 sm:px-6 bg-gradient-to-br from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-charcoal mb-3 sm:mb-4">
-              See It In Action
-            </h2>
-            <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
-              Real features, real results. Explore what makes RunAnalytics the complete running analytics platform.
-            </p>
-          </div>
-          <FeatureCarousel />
         </div>
       </section>
 
