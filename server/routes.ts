@@ -112,6 +112,13 @@ function setCachedResponse(key: string, data: any): void {
   }
 }
 
+function deleteCachedResponse(key: string): void {
+  const deleted = responseCache.delete(key);
+  if (ENABLE_CACHE_LOGGING) {
+    console.log(`[CACHE] ${deleted ? 'Deleted' : 'Attempted to delete'} cache key "${key}". Cache size: ${responseCache.size}`);
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   
   // SEO: robots.txt
@@ -1247,6 +1254,11 @@ ${pages.map(page => `  <url>
       if (!updatedUser) {
         return res.status(404).json({ message: "User not found" });
       }
+
+      // Invalidate cached dashboard and chart data since they depend on unit preference
+      deleteCachedResponse(`dashboard:${userId}`);
+      deleteCachedResponse(`chart:${userId}:30days`);
+      console.log(`[Settings] Invalidated cache for user ${userId} after unit preference change to ${unitPreference}`);
 
       res.json({ success: true, user: updatedUser });
     } catch (error: any) {

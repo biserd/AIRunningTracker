@@ -47,6 +47,7 @@ function SettingsPageContent() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user!.id}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/chart', user!.id] });
       toast({
         title: "Settings updated",
         description: "Your preferences have been saved successfully",
