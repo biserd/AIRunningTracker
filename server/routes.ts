@@ -2023,8 +2023,23 @@ ${pages.map(page => `  <url>
         return res.status(400).json({ message: "Invalid user ID" });
       }
 
+      // Check cache first
+      const cacheKey = `predictions:${userId}`;
+      const cachedData = getCachedResponse(cacheKey);
+      if (cachedData) {
+        // Prevent browser caching with 304 responses
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+        res.set('Pragma', 'no-cache');
+        return res.json(cachedData);
+      }
+
       const predictions = await mlService.predictRacePerformance(userId);
-      res.json({ predictions });
+      const response = { predictions };
+      
+      // Cache the result
+      setCachedResponse(cacheKey, response);
+      
+      res.json(response);
     } catch (error: any) {
       console.error('Race prediction error:', error);
       res.status(500).json({ message: error.message || "Failed to generate race predictions" });
@@ -2284,7 +2299,21 @@ ${pages.map(page => `  <url>
         return res.status(400).json({ message: "Invalid user ID" });
       }
 
+      // Check cache first
+      const cacheKey = `injury-risk:${userId}`;
+      const cachedData = getCachedResponse(cacheKey);
+      if (cachedData) {
+        // Prevent browser caching with 304 responses
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+        res.set('Pragma', 'no-cache');
+        return res.json(cachedData);
+      }
+
       const riskAnalysis = await mlService.analyzeInjuryRisk(userId);
+      
+      // Cache the result
+      setCachedResponse(cacheKey, riskAnalysis);
+      
       res.json(riskAnalysis);
     } catch (error: any) {
       console.error('Injury risk analysis error:', error);
