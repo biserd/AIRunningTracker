@@ -2324,6 +2324,79 @@ ${pages.map(page => `  <url>
     }
   });
 
+  // Batch Analytics Endpoint - Combines all ML and performance calculations
+  app.get("/api/analytics/batch/:userId", async (req, res) => {
+    const startTime = Date.now();
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      // Check cache first
+      const cacheKey = `analytics-batch:${userId}`;
+      const cachedData = getCachedResponse(cacheKey);
+      if (cachedData) {
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+        res.set('Pragma', 'no-cache');
+        console.log(`[Batch Analytics] Returned cached data in ${Date.now() - startTime}ms`);
+        return res.json(cachedData);
+      }
+
+      console.log(`[Batch Analytics] Starting batch calculation for user ${userId}`);
+
+      // Execute all calculations in parallel
+      const [predictions, injuryRisk, trainingPlan, vo2Max, efficiency, hrZones] = await Promise.all([
+        mlService.predictRacePerformance(userId).catch(err => {
+          console.error('[Batch] Predictions error:', err.message);
+          return null;
+        }),
+        mlService.analyzeInjuryRisk(userId).catch(err => {
+          console.error('[Batch] Injury risk error:', err.message);
+          return null;
+        }),
+        storage.getLatestTrainingPlan(userId).catch(err => {
+          console.error('[Batch] Training plan error:', err.message);
+          return null;
+        }),
+        performanceService.calculateVO2Max(userId).catch(err => {
+          console.error('[Batch] VO2 Max error:', err.message);
+          return null;
+        }),
+        performanceService.analyzeRunningEfficiency(userId).catch(err => {
+          console.error('[Batch] Efficiency error:', err.message);
+          return null;
+        }),
+        performanceService.calculateHeartRateZones(userId).catch(err => {
+          console.error('[Batch] HR Zones error:', err.message);
+          return null;
+        })
+      ]);
+
+      const response = {
+        predictions: predictions || [],
+        injuryRisk,
+        trainingPlan,
+        vo2Max,
+        efficiency,
+        hrZones
+      };
+
+      // Cache the result
+      setCachedResponse(cacheKey, response);
+      
+      const totalTime = Date.now() - startTime;
+      console.log(`[Batch Analytics] Completed all calculations in ${totalTime}ms`);
+      
+      res.json(response);
+    } catch (error: any) {
+      const errorTime = Date.now() - startTime;
+      console.error(`[Batch Analytics] Error after ${errorTime}ms:`, error);
+      res.status(500).json({ message: error.message || "Failed to generate analytics" });
+    }
+  });
+
   // ML Features - Injury Risk Analysis
   app.get("/api/ml/injury-risk/:userId", async (req, res) => {
     try {

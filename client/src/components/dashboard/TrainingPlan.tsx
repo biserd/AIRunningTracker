@@ -26,6 +26,7 @@ interface TrainingWeek {
 
 interface TrainingPlanProps {
   userId: number;
+  batchData?: any;
 }
 
 interface TrainingPlanParams {
@@ -37,7 +38,7 @@ interface TrainingPlanParams {
   fitnessLevel: string;
 }
 
-export default function TrainingPlan({ userId }: TrainingPlanProps) {
+export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
   const [selectedWeeks, setSelectedWeeks] = useState(4);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -71,17 +72,19 @@ export default function TrainingPlan({ userId }: TrainingPlanProps) {
     queryFn: () => 
       fetch(`/api/ml/training-plan/${userId}`)
         .then(res => res.json()),
-    enabled: !!userId,
+    enabled: !!userId && (batchData === undefined ? false : !batchData),
   });
+  
+  const planData = batchData?.trainingPlan ?? savedPlan;
 
   // Update local state when saved plan is loaded
   useEffect(() => {
-    if (savedPlan?.trainingPlan) {
-      // Handle nested structure: savedPlan.trainingPlan.trainingPlan
-      const plan = savedPlan.trainingPlan.trainingPlan || savedPlan.trainingPlan;
+    if (planData?.trainingPlan) {
+      // Handle nested structure: planData.trainingPlan.trainingPlan
+      const plan = planData.trainingPlan.trainingPlan || planData.trainingPlan;
       setTrainingPlan(Array.isArray(plan) ? plan : []);
     }
-  }, [savedPlan]);
+  }, [planData]);
 
   const generatePlanMutation = useMutation({
     mutationFn: async (params: TrainingPlanParams) => {

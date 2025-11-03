@@ -21,13 +21,17 @@ interface RunningEfficiencyData {
 
 interface RunningEfficiencyProps {
   userId: number;
+  batchData?: any;
 }
 
-export default function RunningEfficiency({ userId }: RunningEfficiencyProps) {
-  const { data: efficiencyData, isLoading } = useQuery({
+export default function RunningEfficiency({ userId, batchData }: RunningEfficiencyProps) {
+  const { data: efficiencyDataResponse, isLoading } = useQuery({
     queryKey: ['/api/performance/efficiency', userId],
     queryFn: () => fetch(`/api/performance/efficiency/${userId}`).then(res => res.json()),
+    enabled: batchData === undefined ? false : !batchData,
   });
+  
+  const efficiencyData = batchData?.efficiency ?? efficiencyDataResponse;
 
   const getEfficiencyColor = (efficiency: number) => {
     if (efficiency >= 85) return "text-green-600";

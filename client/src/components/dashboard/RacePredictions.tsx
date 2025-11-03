@@ -12,12 +12,14 @@ interface RacePrediction {
 
 interface RacePredictionsProps {
   userId: number;
+  batchData?: any;
 }
 
-export default function RacePredictions({ userId }: RacePredictionsProps) {
+export default function RacePredictions({ userId, batchData }: RacePredictionsProps) {
   const { data: predictionsData, isLoading } = useQuery({
     queryKey: ['/api/ml/predictions', userId],
     queryFn: () => fetch(`/api/ml/predictions/${userId}`).then(res => res.json()),
+    enabled: batchData === undefined ? false : !batchData,
   });
 
   const getConfidenceColor = (confidence: number) => {
@@ -54,7 +56,7 @@ export default function RacePredictions({ userId }: RacePredictionsProps) {
     );
   }
 
-  const predictions = predictionsData?.predictions || [];
+  const predictions = batchData?.predictions ?? predictionsData?.predictions ?? [];
 
   return (
     <Card>

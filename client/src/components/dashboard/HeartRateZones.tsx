@@ -24,14 +24,15 @@ interface HeartRateZones {
 
 interface HeartRateZonesProps {
   userId: number;
+  batchData?: any;
 }
 
-export default function HeartRateZones({ userId }: HeartRateZonesProps) {
+export default function HeartRateZones({ userId, batchData }: HeartRateZonesProps) {
   const [maxHR, setMaxHR] = useState<string>("");
   const [restingHR, setRestingHR] = useState<string>("");
   const [showSettings, setShowSettings] = useState(false);
 
-  const { data: hrData, isLoading, refetch } = useQuery({
+  const { data: hrDataResponse, isLoading, refetch } = useQuery({
     queryKey: ['/api/performance/hr-zones', userId, maxHR, restingHR],
     queryFn: () => {
       let url = `/api/performance/hr-zones/${userId}`;
@@ -42,7 +43,10 @@ export default function HeartRateZones({ userId }: HeartRateZonesProps) {
       
       return fetch(url).then(res => res.json());
     },
+    enabled: (batchData === undefined ? false : !batchData) || !!maxHR || !!restingHR,
   });
+  
+  const hrData = (maxHR || restingHR) ? hrDataResponse : (batchData?.hrZones ?? hrDataResponse);
 
   const zoneColors = {
     zone1: "bg-green-100 border-green-300 text-green-800",

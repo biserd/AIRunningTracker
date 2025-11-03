@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Activity } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 import AppHeader from "@/components/AppHeader";
 import VO2MaxTracker from "@/components/dashboard/VO2MaxTracker";
 import HeartRateZones from "@/components/dashboard/HeartRateZones";
@@ -9,6 +10,14 @@ import RunningEfficiency from "@/components/dashboard/RunningEfficiency";
 
 export default function PerformancePage() {
   const { user, isLoading } = useAuth();
+  
+  // Prefetch batch analytics data for all performance components
+  const { data: batchData } = useQuery({
+    queryKey: ['/api/analytics/batch', user?.id],
+    queryFn: () => fetch(`/api/analytics/batch/${user!.id}`).then(res => res.json()),
+    enabled: !!user?.id,
+    staleTime: 60000,
+  });
   
   if (isLoading) {
     return (
@@ -44,17 +53,17 @@ export default function PerformancePage() {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {/* VO2 Max Tracker */}
           <div className="xl:col-span-1">
-            <VO2MaxTracker userId={user.id} />
+            <VO2MaxTracker userId={user.id} batchData={batchData} />
           </div>
 
           {/* Running Efficiency */}
           <div className="xl:col-span-1">
-            <RunningEfficiency userId={user.id} />
+            <RunningEfficiency userId={user.id} batchData={batchData} />
           </div>
 
           {/* Heart Rate Zones - Full Width */}
           <div className="xl:col-span-2">
-            <HeartRateZones userId={user.id} />
+            <HeartRateZones userId={user.id} batchData={batchData} />
           </div>
         </div>
 

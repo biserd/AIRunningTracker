@@ -12,13 +12,17 @@ interface InjuryRiskData {
 
 interface InjuryRiskAnalysisProps {
   userId: number;
+  batchData?: any;
 }
 
-export default function InjuryRiskAnalysis({ userId }: InjuryRiskAnalysisProps) {
-  const { data: riskData, isLoading } = useQuery({
+export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnalysisProps) {
+  const { data: riskDataResponse, isLoading } = useQuery({
     queryKey: ['/api/ml/injury-risk', userId],
     queryFn: () => fetch(`/api/ml/injury-risk/${userId}`).then(res => res.json()),
+    enabled: batchData === undefined ? false : !batchData,
   });
+  
+  const riskData = batchData?.injuryRisk ?? riskDataResponse;
 
   const getRiskColor = (level: string) => {
     switch (level) {

@@ -18,13 +18,17 @@ interface VO2MaxData {
 
 interface VO2MaxTrackerProps {
   userId: number;
+  batchData?: any;
 }
 
-export default function VO2MaxTracker({ userId }: VO2MaxTrackerProps) {
-  const { data: vo2Data, isLoading } = useQuery({
+export default function VO2MaxTracker({ userId, batchData }: VO2MaxTrackerProps) {
+  const { data: vo2DataResponse, isLoading } = useQuery({
     queryKey: ['/api/performance/vo2max', userId],
     queryFn: () => fetch(`/api/performance/vo2max/${userId}`).then(res => res.json()),
+    enabled: batchData === undefined ? false : !batchData,
   });
+  
+  const vo2Data = batchData?.vo2Max ?? vo2DataResponse;
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {

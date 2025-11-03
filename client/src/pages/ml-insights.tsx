@@ -1,5 +1,6 @@
 import { Brain } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 import AppHeader from "@/components/AppHeader";
 import RacePredictions from "@/components/dashboard/RacePredictions";
 import TrainingPlan from "@/components/dashboard/TrainingPlan";
@@ -7,6 +8,14 @@ import InjuryRiskAnalysis from "@/components/dashboard/InjuryRiskAnalysis";
 
 export default function MLInsightsPage() {
   const { user, isLoading } = useAuth();
+  
+  // Prefetch batch analytics data for all ML components
+  const { data: batchData } = useQuery({
+    queryKey: ['/api/analytics/batch', user?.id],
+    queryFn: () => fetch(`/api/analytics/batch/${user!.id}`).then(res => res.json()),
+    enabled: !!user?.id,
+    staleTime: 60000,
+  });
   
   if (isLoading) {
     return (
@@ -42,13 +51,13 @@ export default function MLInsightsPage() {
         
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           <div className="xl:col-span-1">
-            <RacePredictions userId={user.id} />
+            <RacePredictions userId={user.id} batchData={batchData} />
           </div>
           <div className="xl:col-span-1">
-            <InjuryRiskAnalysis userId={user.id} />
+            <InjuryRiskAnalysis userId={user.id} batchData={batchData} />
           </div>
           <div className="xl:col-span-2">
-            <TrainingPlan userId={user.id} />
+            <TrainingPlan userId={user.id} batchData={batchData} />
           </div>
         </div>
       </main>
