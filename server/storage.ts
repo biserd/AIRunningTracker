@@ -150,7 +150,7 @@ export interface IStorage {
 
   // Platform stats for landing page
   getPlatformStats(): Promise<{
-    totalUsers: number;
+    totalInsights: number;
     totalActivities: number;
     totalDistance: number;
   }>;
@@ -1069,13 +1069,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPlatformStats(): Promise<{
-    totalUsers: number;
+    totalInsights: number;
     totalActivities: number;
     totalDistance: number;
   }> {
-    const [userCount] = await db
+    const [insightsCount] = await db
       .select({ count: sql<number>`count(*)::int` })
-      .from(users);
+      .from(aiInsights);
     
     const [activityCount] = await db
       .select({ count: sql<number>`count(*)::int` })
@@ -1086,7 +1086,7 @@ export class DatabaseStorage implements IStorage {
       .from(activities);
 
     return {
-      totalUsers: userCount?.count || 0,
+      totalInsights: insightsCount?.count || 0,
       totalActivities: activityCount?.count || 0,
       totalDistance: Number(distanceSum?.sum) || 0
     };

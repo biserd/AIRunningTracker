@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 
 export default function LandingPage() {
   const { data: stats } = useQuery<{
-    totalUsers: number;
+    totalInsights: number;
     totalActivities: number;
     totalDistance: number;
   }>({
@@ -97,10 +97,10 @@ export default function LandingPage() {
           {/* Social Proof with Real Stats */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 mb-6 sm:mb-8 text-gray-700">
             <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-strava-orange" />
+              <Brain className="h-5 w-5 text-strava-orange" />
               <span className="text-sm sm:text-base font-medium">
-                <AnimatedCounter end={stats?.totalUsers || 0} className="font-bold text-strava-orange" />
-                + runners
+                <AnimatedCounter end={stats?.totalInsights || 0} className="font-bold text-strava-orange" />
+                + AI insights generated
               </span>
             </div>
             <div className="flex items-center gap-2">
