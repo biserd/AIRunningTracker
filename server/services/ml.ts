@@ -335,6 +335,7 @@ Remember: Create a realistic, achievable plan based on their ACTUAL current pace
           }
         ],
         response_format: { type: "json_object" },
+        // Note: reasoning effort parameter not yet available in current OpenAI SDK
       });
 
       const result = JSON.parse(response.choices[0].message.content || '{"weeks": []}');

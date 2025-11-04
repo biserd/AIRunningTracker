@@ -152,7 +152,8 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
           }
         ],
         response_format: { type: "json_object" },
-        max_completion_tokens: 2000, // Increased to account for reasoning tokens + actual response
+        max_completion_tokens: 2000,
+        // Note: reasoning effort parameter not yet available in current OpenAI SDK
       });
       
       console.log('[AI Service] Successfully generated insights from OpenAI');
