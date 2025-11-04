@@ -1,0 +1,72 @@
+Nice—almost there. A few tweaks will make this both faster and more reliable with a 2k cap.
+
+If you want to stay on chat.completions
+	•	Keep max_completion_tokens (that’s the right param for GPT-5* reasoning models on Chat Completions).  ￼
+	•	Stream tokens so the first bytes arrive immediately. Also tell the model explicitly to return JSON (or use a strict JSON Schema).  ￼
+
+const stream = await openai.chat.completions.create({
+  model: "gpt-5-mini",
+  messages, // include a system/user note like: "Respond ONLY with valid JSON."
+  response_format: {
+    type: "json_schema",            // more reliable than plain json_object
+    json_schema: {
+      name: "Result",
+      strict: true,                 // enforces keys/types; reduces rambling
+      schema: {
+        type: "object",
+        properties: { summary: { type: "string" }, items: { type: "array", items: { type: "string" } } },
+        required: ["summary","items"],
+        additionalProperties: false
+      }
+    }
+  },
+  max_completion_tokens: 2000,      // cap visible output tokens
+  temperature: 0.2,
+  stream: true,
+  tool_choice: "none"               // avoid tool/function round-trips unless needed
+});
+
+// consume the stream
+for await (const chunk of stream) {
+  const delta = chunk.choices?.[0]?.delta?.content ?? "";
+  process.stdout.write(delta);
+}
+
+Why this helps: streaming improves perceived latency; json_schema with strict: true keeps the model focused and often shortens outputs; tool_choice: "none" avoids extra latency from tool calls.  ￼
+
+Note: max_completion_tokens limits the generated text; hidden “reasoning” work can still affect latency—keep the model small (mini/nano) and avoid high-effort reasoning when you don’t need it.  ￼
+
+If you can switch to the Responses API (recommended for GPT-5*)
+
+You’ll generally get better behavior/controls with reasoning models. Use max_output_tokens (different name!) and you can set reasoning effort.  ￼
+
+const resp = await openai.responses.create({
+  model: "gpt-5-mini",
+  input: [
+    { role: "system", content: "Respond ONLY with valid JSON matching the schema." },
+    { role: "user", content: "Produce {summary, items[]} ..." }
+  ],
+  response_format: {
+    type: "json_schema",
+    json_schema: {
+      name: "Result",
+      strict: true,
+      schema: {
+        type: "object",
+        properties: { summary: { type: "string" }, items: { type: "array", items: { type: "string" } } },
+        required: ["summary","items"],
+        additionalProperties: false
+      }
+    }
+  },
+  max_output_tokens: 2000,
+  reasoning: { effort: "low" },   // keeps think time down
+  stream: true
+});
+for await (const event of resp) { /* handle streamed chunks */ }
+
+A couple more low-latency tips:
+	•	If your JSON is usually <1k tokens, lower the cap (e.g., 800–1200) and bump it only when needed. Fewer tokens = faster.  ￼
+	•	Reuse a big, constant system prompt with Prompt Caching (if enabled for your org) to cut input overhead.  ￼
+
+If you share a typical payload (avg input tokens and target JSON shape), I can suggest an exact cap and whether gpt-5-nano would hit your latency target.
