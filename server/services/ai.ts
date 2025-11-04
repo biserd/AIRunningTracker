@@ -183,6 +183,7 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
         },
         max_output_tokens: 1000,
         reasoning: { effort: "low" },
+        temperature: 0.2,
         stream: true
       });
 
