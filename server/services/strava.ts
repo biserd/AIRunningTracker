@@ -219,6 +219,8 @@ export class StravaService {
       
       let syncedCount = 0;
       const activityTypes = new Set();
+      let skippedExisting = 0;
+      let skippedNonRunning = 0;
       
       // Filter to only new running activities that need syncing
       const activitiesToProcess: any[] = [];
@@ -228,20 +230,27 @@ export class StravaService {
         
         // Check if activity already exists for this user (in-memory lookup)
         if (existingStravaIds.has(stravaActivity.id.toString())) {
-          console.log(`Activity already exists for user ${userId}: ${stravaActivity.name}`);
+          skippedExisting++;
           continue;
         }
 
         // Only sync running-related activities
         const runningTypes = ['Run', 'VirtualRun', 'Workout', 'TrailRun'];
         if (!runningTypes.includes(stravaActivity.type)) {
-          console.log(`Skipping non-running activity: ${stravaActivity.name} (${stravaActivity.type})`);
+          skippedNonRunning++;
           continue;
         }
 
         activitiesToProcess.push(stravaActivity);
       }
       
+      // Summary logs
+      if (skippedExisting > 0) {
+        console.log(`Skipped ${skippedExisting} existing activities (already synced)`);
+      }
+      if (skippedNonRunning > 0) {
+        console.log(`Skipped ${skippedNonRunning} non-running activities`);
+      }
       console.log(`Found ${activitiesToProcess.length} new running activities to sync`);
       
       // Process activities in batches of 5 for better performance
