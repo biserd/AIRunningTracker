@@ -574,6 +574,11 @@ ${pages.map(page => `  <url>
         } catch (insightError) {
           console.error('AI insight generation failed after sync:', insightError);
         }
+        
+        // Invalidate cache for user's dashboard and chart data since new data was synced
+        deleteCachedResponse(`dashboard:${userId}`);
+        deleteCachedResponse(`chart:${userId}:30days`);
+        console.log(`Cache invalidated for user ${userId} after SSE sync with ${result.syncedCount} new activities`);
       }
       
       cleanup();
@@ -596,14 +601,21 @@ ${pages.map(page => `  <url>
         return res.status(400).json({ message: "Invalid user ID" });
       }
 
-      await stravaService.syncActivitiesForUser(userId, maxActivities);
+      const result = await stravaService.syncActivitiesForUser(userId, maxActivities);
       
-      // Auto-generate AI insights after sync
-      try {
-        await aiService.generateInsights(userId);
-        console.log('AI insights generated after sync');
-      } catch (insightError) {
-        console.error('AI insight generation failed after sync:', insightError);
+      // Auto-generate AI insights after sync if new activities were synced
+      if (result.syncedCount > 0) {
+        try {
+          await aiService.generateInsights(userId);
+          console.log('AI insights generated after sync');
+        } catch (insightError) {
+          console.error('AI insight generation failed after sync:', insightError);
+        }
+        
+        // Invalidate cache for user's dashboard and chart data since new data was synced
+        deleteCachedResponse(`dashboard:${userId}`);
+        deleteCachedResponse(`chart:${userId}:30days`);
+        console.log(`Cache invalidated for user ${userId} after legacy sync with ${result.syncedCount} new activities`);
       }
       
       res.json({ success: true });
@@ -1970,6 +1982,11 @@ ${pages.map(page => `  <url>
         } catch (error) {
           console.error('Error checking goals after sync:', error);
         }
+        
+        // Invalidate cache for user's dashboard and chart data since new data was synced
+        deleteCachedResponse(`dashboard:${userId}`);
+        deleteCachedResponse(`chart:${userId}:30days`);
+        console.log(`Cache invalidated for user ${userId} after syncing ${result.syncedCount} new activities`);
       }
       
       res.json({
