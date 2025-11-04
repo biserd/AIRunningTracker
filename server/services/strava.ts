@@ -195,28 +195,6 @@ export class StravaService {
     }
 
     try {
-      console.log(`Checking for new activities for user ${userId}...`);
-      
-      // Quick check: Fetch just 1 most recent activity to see if there's anything new
-      const recentActivities = await this.getActivities(user.stravaAccessToken, 1, 1);
-      
-      if (recentActivities.length > 0) {
-        const mostRecentActivity = recentActivities[0];
-        
-        // Check if we already have this activity
-        const existingActivity = await storage.getActivityByStravaIdAndUser(
-          mostRecentActivity.id.toString(), 
-          userId
-        );
-        
-        if (existingActivity) {
-          console.log(`No new activities found - most recent activity already synced: ${mostRecentActivity.name}`);
-          return { syncedCount: 0, totalActivities: 0 };
-        }
-        
-        console.log(`New activity detected: ${mostRecentActivity.name} - proceeding with full sync`);
-      }
-      
       console.log(`Syncing up to ${maxActivities} activities for user ${userId}...`);
       
       // Fetch multiple pages to get more historical data
