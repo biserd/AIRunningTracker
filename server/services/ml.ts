@@ -322,25 +322,74 @@ Return a JSON array with this structure:
 Remember: Create a realistic, achievable plan based on their ACTUAL current paces and specific ${readableGoal} training goal, not idealized paces.`;
 
     try {
-      const response = await openai.chat.completions.create({
+      // Use streaming with strict JSON schema for faster perceived latency
+      const stream = await openai.chat.completions.create({
         model: "gpt-5-mini",
         messages: [
           {
             role: "system", 
-            content: `You are an expert running coach who creates goal-specific, personalized training plans. You tailor plans based on the runner's specific training goal (${readableGoal}), current fitness level (${fitnessLevel}), and desired training frequency (${daysPerWeek} days/week). You provide realistic, achievable pace recommendations that match their demonstrated capabilities, not idealized or aspirational paces. CRITICAL: You MUST use ${unit} for ALL distances and min/${unit} for ALL paces in the training plan. Never mix units or use any other measurement system. Always return valid JSON.`
+            content: `You are an expert running coach who creates goal-specific, personalized training plans. You tailor plans based on the runner's specific training goal (${readableGoal}), current fitness level (${fitnessLevel}), and desired training frequency (${daysPerWeek} days/week). You provide realistic, achievable pace recommendations that match their demonstrated capabilities, not idealized or aspirational paces. CRITICAL: You MUST use ${unit} for ALL distances and min/${unit} for ALL paces in the training plan. Never mix units or use any other measurement system. Respond ONLY with valid JSON matching the schema.`
           },
           {
             role: "user",
             content: prompt
           }
         ],
-        response_format: { type: "json_object" },
-        // Note: reasoning effort parameter not yet available in current OpenAI SDK
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "TrainingPlan",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                weeks: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      weekNumber: { type: "number" },
+                      totalMileage: { type: "number" },
+                      workouts: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            type: { type: "string" },
+                            distance: { type: "number" },
+                            pace: { type: "string" },
+                            description: { type: "string" }
+                          },
+                          required: ["type", "distance", "pace", "description"],
+                          additionalProperties: false
+                        }
+                      }
+                    },
+                    required: ["weekNumber", "totalMileage", "workouts"],
+                    additionalProperties: false
+                  }
+                }
+              },
+              required: ["weeks"],
+              additionalProperties: false
+            }
+          }
+        },
+        max_completion_tokens: 1500,
+        temperature: 0.2,
+        stream: true
       });
 
-      const result = JSON.parse(response.choices[0].message.content || '{"weeks": []}');
-      // GPT-5 may return different structures: {plan: []}, {weeks: []}, or direct array
-      return result.plan || result.weeks || result;
+      // Collect streamed response
+      let rawContent = '';
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content ?? "";
+        rawContent += delta;
+      }
+
+      const result = JSON.parse(rawContent || '{"weeks": []}');
+      // Return the weeks array directly
+      return result.weeks || result;
 
     } catch (error) {
       console.error('Training plan generation error:', error);

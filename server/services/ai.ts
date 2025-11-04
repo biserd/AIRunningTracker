@@ -139,32 +139,65 @@ Provide analysis in the following JSON format:
 IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all distance references in recommendations. Focus on actionable insights based on the data patterns.`;
 
     try {
-      const response = await openai.chat.completions.create({
+      // Use streaming with strict JSON schema for faster perceived latency
+      const stream = await openai.chat.completions.create({
         model: "gpt-5-mini",
         messages: [
           {
             role: "system",
-            content: "You are an expert running coach and sports scientist. Analyze running data and provide concise, actionable insights."
+            content: "You are an expert running coach and sports scientist. Analyze running data and provide concise, actionable insights. Respond ONLY with valid JSON matching the schema."
           },
           {
             role: "user",
             content: prompt
           }
         ],
-        response_format: { type: "json_object" },
-        max_completion_tokens: 2000,
-        // Note: reasoning effort parameter not yet available in current OpenAI SDK
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "RunningInsights",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                performance: { type: "string", description: "Performance analysis insight (max 150 chars)" },
+                pattern: { type: "string", description: "Training pattern insight (max 150 chars)" },
+                recovery: { type: "string", description: "Recovery insight (max 150 chars)" },
+                motivation: { type: "string", description: "Motivational insight (max 150 chars)" },
+                technique: { type: "string", description: "Running form/technique insight (max 150 chars)" },
+                recommendations: {
+                  type: "object",
+                  properties: {
+                    speed: { type: "string", description: "Speed work recommendation (max 100 chars)" },
+                    hills: { type: "string", description: "Hill training recommendation (max 100 chars)" },
+                    longRun: { type: "string", description: "Long run recommendation (max 100 chars)" }
+                  },
+                  required: ["speed", "hills", "longRun"],
+                  additionalProperties: false
+                }
+              },
+              required: ["performance", "pattern", "recovery", "motivation", "technique", "recommendations"],
+              additionalProperties: false
+            }
+          }
+        },
+        max_completion_tokens: 1000,
+        temperature: 0.2,
+        stream: true
       });
-      
-      console.log('[AI Service] Successfully generated insights from OpenAI');
-      console.log('[AI Service] Raw response content:', response.choices[0].message.content);
-      console.log('[AI Service] Response finish_reason:', response.choices[0].finish_reason);
 
-      const rawContent = response.choices[0].message.content || '{}';
+      // Collect streamed response
+      let rawContent = '';
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content ?? "";
+        rawContent += delta;
+      }
+      
+      console.log('[AI Service] Successfully generated insights from OpenAI (streaming with strict JSON schema)');
+      console.log('[AI Service] Raw response content:', rawContent);
       
       if (!rawContent || rawContent.trim() === '{}') {
         console.error('[AI Service] OpenAI returned empty content!');
-        console.error('[AI Service] Full response:', JSON.stringify(response, null, 2));
         throw new Error('OpenAI returned empty response');
       }
 
