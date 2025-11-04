@@ -377,7 +377,6 @@ Remember: Create a realistic, achievable plan based on their ACTUAL current pace
         },
         max_output_tokens: 1500,
         reasoning: { effort: "low" },
-        temperature: 0.2,
         stream: true
       });
 
