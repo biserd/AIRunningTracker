@@ -1952,22 +1952,24 @@ ${pages.map(page => `  <url>
 
       const result = await stravaService.syncActivitiesForUser(userId, maxActivities);
       
-      // Auto-generate AI insights after sync
-      try {
-        await aiService.generateInsights(userId);
-        console.log('AI insights regenerated after manual sync');
-      } catch (error) {
-        console.error('Error generating AI insights after sync:', error);
-      }
-      
-      // Check and auto-complete goals based on new activities
-      try {
-        const goalsResult = await goalsService.checkAndCompleteGoals(userId);
-        if (goalsResult.completedGoals > 0) {
-          console.log(`Auto-completed ${goalsResult.completedGoals} goals for user ${userId}`);
+      // Auto-generate AI insights only if new activities were synced
+      if (result.syncedCount > 0) {
+        try {
+          await aiService.generateInsights(userId);
+          console.log('AI insights regenerated after manual sync');
+        } catch (error) {
+          console.error('Error generating AI insights after sync:', error);
         }
-      } catch (error) {
-        console.error('Error checking goals after sync:', error);
+        
+        // Check and auto-complete goals based on new activities
+        try {
+          const goalsResult = await goalsService.checkAndCompleteGoals(userId);
+          if (goalsResult.completedGoals > 0) {
+            console.log(`Auto-completed ${goalsResult.completedGoals} goals for user ${userId}`);
+          }
+        } catch (error) {
+          console.error('Error checking goals after sync:', error);
+        }
       }
       
       res.json({
