@@ -322,22 +322,22 @@ Return a JSON array with this structure:
 Remember: Create a realistic, achievable plan based on their ACTUAL current paces and specific ${readableGoal} training goal, not idealized paces.`;
 
     try {
-      // Use streaming with strict JSON schema for faster perceived latency
-      const stream = await openai.chat.completions.create({
+      // Use Responses API with streaming and low reasoning effort for faster generation
+      const stream = await openai.responses.create({
         model: "gpt-5-mini",
-        messages: [
+        input: [
           {
             role: "system", 
-            content: `You are an expert running coach who creates goal-specific, personalized training plans. You tailor plans based on the runner's specific training goal (${readableGoal}), current fitness level (${fitnessLevel}), and desired training frequency (${daysPerWeek} days/week). You provide realistic, achievable pace recommendations that match their demonstrated capabilities, not idealized or aspirational paces. CRITICAL: You MUST use ${unit} for ALL distances and min/${unit} for ALL paces in the training plan. Never mix units or use any other measurement system. Respond ONLY with valid JSON matching the schema.`
+            content: `You are an expert running coach who creates goal-specific, personalized training plans. You tailor plans based on the runner's specific training goal (${readableGoal}), current fitness level (${fitnessLevel}), and desired training frequency (${daysPerWeek} days/week). You provide realistic, achievable pace recommendations that match their demonstrated capabilities, not idealized or aspirational paces. CRITICAL: You MUST use ${unit} for ALL distances and min/${unit} for ALL paces in the training plan. Never mix units or use any other measurement system.`
           },
           {
             role: "user",
             content: prompt
           }
         ],
-        response_format: {
-          type: "json_schema",
-          json_schema: {
+        text: {
+          format: {
+            type: "json_schema",
             name: "TrainingPlan",
             strict: true,
             schema: {
@@ -375,16 +375,19 @@ Remember: Create a realistic, achievable plan based on their ACTUAL current pace
             }
           }
         },
-        max_completion_tokens: 1500,
+        max_output_tokens: 1500,
+        reasoning: { effort: "low" },
         temperature: 0.2,
         stream: true
       });
 
-      // Collect streamed response
+      // Collect streamed response from Responses API
       let rawContent = '';
-      for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta?.content ?? "";
-        rawContent += delta;
+      for await (const event of stream) {
+        // Responses API streaming uses response.output_text.delta for text chunks
+        if (event.type === 'response.output_text.delta') {
+          rawContent += event.delta;
+        }
       }
 
       const result = JSON.parse(rawContent || '{"weeks": []}');

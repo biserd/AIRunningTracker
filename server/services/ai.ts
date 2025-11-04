@@ -139,22 +139,22 @@ Provide analysis in the following JSON format:
 IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all distance references in recommendations. Focus on actionable insights based on the data patterns.`;
 
     try {
-      // Use streaming with strict JSON schema for faster perceived latency
-      const stream = await openai.chat.completions.create({
+      // Use Responses API with streaming and low reasoning effort for 5-10 second generation
+      const stream = await openai.responses.create({
         model: "gpt-5-mini",
-        messages: [
+        input: [
           {
             role: "system",
-            content: "You are an expert running coach and sports scientist. Analyze running data and provide concise, actionable insights. Respond ONLY with valid JSON matching the schema."
+            content: "You are an expert running coach and sports scientist. Analyze running data and provide concise, actionable insights."
           },
           {
             role: "user",
             content: prompt
           }
         ],
-        response_format: {
-          type: "json_schema",
-          json_schema: {
+        text: {
+          format: {
+            type: "json_schema",
             name: "RunningInsights",
             strict: true,
             schema: {
@@ -181,19 +181,22 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
             }
           }
         },
-        max_completion_tokens: 1000,
+        max_output_tokens: 1000,
+        reasoning: { effort: "low" },
         temperature: 0.2,
         stream: true
       });
 
-      // Collect streamed response
+      // Collect streamed response from Responses API
       let rawContent = '';
-      for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta?.content ?? "";
-        rawContent += delta;
+      for await (const event of stream) {
+        // Responses API streaming uses response.output_text.delta for text chunks
+        if (event.type === 'response.output_text.delta') {
+          rawContent += event.delta;
+        }
       }
       
-      console.log('[AI Service] Successfully generated insights from OpenAI (streaming with strict JSON schema)');
+      console.log('[AI Service] Successfully generated insights from OpenAI Responses API (low reasoning effort)');
       console.log('[AI Service] Raw response content:', rawContent);
       
       if (!rawContent || rawContent.trim() === '{}') {
