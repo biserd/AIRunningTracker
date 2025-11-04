@@ -164,7 +164,7 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       },
       {
         type: "improvement",
-        description: "Settings page maintains full 200-activity sync for users who want complete history"
+        description: "Settings page syncs up to 100 activities for optimal performance"
       },
       {
         type: "improvement",
@@ -176,7 +176,7 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       },
       {
         type: "improvement",
-        description: "Added maxActivities bounds checking (1-200) to prevent abuse"
+        description: "Added maxActivities bounds checking (1-100) to prevent abuse"
       },
       {
         type: "fix",

@@ -83,7 +83,7 @@ function SettingsPageContent() {
   });
 
   const syncActivitiesMutation = useMutation({
-    mutationFn: async (maxActivities: number = 200) => {
+    mutationFn: async (maxActivities: number = 100) => {
       return apiRequest(`/api/strava/sync-activities`, "POST", { maxActivities });
     },
     onSuccess: (data: any) => {
@@ -138,7 +138,7 @@ function SettingsPageContent() {
   };
 
   const handleSyncActivities = () => {
-    syncActivitiesMutation.mutate(200);
+    syncActivitiesMutation.mutate(100);
   };
 
   return (
@@ -243,8 +243,8 @@ function SettingsPageContent() {
             <CardContent className="space-y-4">
               <div>
                 <p className="text-sm text-gray-600 mb-2">
-                  By default, we import your last 200 activities when you connect Strava. 
-                  Use this button to fetch more historical data if you want your complete running history.
+                  By default, we import your last 100 activities when you connect Strava. 
+                  Use this button to sync your latest activities and update your training data.
                 </p>
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
                   <p className="text-sm text-amber-800">

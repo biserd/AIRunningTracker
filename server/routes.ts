@@ -486,7 +486,7 @@ ${pages.map(page => `  <url>
     }
     
     // Clamp maxActivities to prevent abuse
-    maxActivities = Math.max(1, Math.min(200, maxActivities));
+    maxActivities = Math.max(1, Math.min(100, maxActivities));
     
     // Generate cryptographically random nonce (NOT a JWT)
     const crypto = await import('crypto');
@@ -1943,7 +1943,7 @@ ${pages.map(page => `  <url>
   app.post("/api/strava/sync-activities", authenticateJWT, async (req: any, res) => {
     try {
       const userId = req.user!.id;
-      const { maxActivities = 200 } = req.body;
+      const { maxActivities = 100 } = req.body;
 
       const user = await storage.getUser(userId);
       if (!user || !user.stravaConnected) {

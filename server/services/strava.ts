@@ -186,7 +186,7 @@ export class StravaService {
 
   async syncActivitiesForUser(
     userId: number, 
-    maxActivities: number = 200,
+    maxActivities: number = 100,
     onProgress?: (current: number, total: number, activityName: string) => void
   ): Promise<{ syncedCount: number; totalActivities: number }> {
     const user = await storage.getUser(userId);
