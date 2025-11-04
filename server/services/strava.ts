@@ -213,6 +213,10 @@ export class StravaService {
       const stravaActivities = allActivities.slice(0, maxActivities);
       console.log(`Fetched ${stravaActivities.length} activities from Strava API`);
       
+      // Batch lookup: Fetch all existing Strava IDs for this user in one query
+      const existingStravaIds = new Set(await storage.getUserStravaIds(userId));
+      console.log(`User has ${existingStravaIds.size} existing activities in database`);
+      
       let syncedCount = 0;
       const activityTypes = new Set();
       
@@ -222,9 +226,8 @@ export class StravaService {
       for (const stravaActivity of stravaActivities) {
         activityTypes.add(stravaActivity.type);
         
-        // Check if activity already exists for this user
-        const existingActivity = await storage.getActivityByStravaIdAndUser(stravaActivity.id.toString(), userId);
-        if (existingActivity) {
+        // Check if activity already exists for this user (in-memory lookup)
+        if (existingStravaIds.has(stravaActivity.id.toString())) {
           console.log(`Activity already exists for user ${userId}: ${stravaActivity.name}`);
           continue;
         }
