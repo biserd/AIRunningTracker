@@ -322,9 +322,9 @@ Return a JSON array with this structure:
 Remember: Create a realistic, achievable plan based on their ACTUAL current paces and specific ${readableGoal} training goal, not idealized paces.`;
 
     try {
-      // Use Responses API with streaming and low reasoning effort for faster generation
+      // Use Responses API with streaming and low reasoning effort for training plan generation
       const stream = await openai.responses.create({
-        model: "gpt-5-mini",
+        model: "gpt-5.1",
         input: [
           {
             role: "system", 

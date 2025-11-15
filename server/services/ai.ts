@@ -139,9 +139,9 @@ Provide analysis in the following JSON format:
 IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all distance references in recommendations. Focus on actionable insights based on the data patterns.`;
 
     try {
-      // Use Responses API with streaming and low reasoning effort for 5-10 second generation
+      // Use Responses API with streaming and no reasoning parameter for maximum speed (fast path)
       const stream = await openai.responses.create({
-        model: "gpt-5-mini",
+        model: "gpt-5.1",
         input: [
           {
             role: "system",
@@ -182,7 +182,6 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
           }
         },
         max_output_tokens: 1000,
-        reasoning: { effort: "low" },
         stream: true
       });
 
