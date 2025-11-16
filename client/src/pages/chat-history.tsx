@@ -6,7 +6,7 @@ import { useLocation } from "wouter";
 import AppHeader from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, getQueryFn } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { SEO } from "@/components/SEO";
 
@@ -25,14 +25,8 @@ export default function ChatHistory() {
   const { toast } = useToast();
 
   const { data: conversations, isLoading } = useQuery<ConversationSummary[]>({
-    queryKey: ['/api/chat/summaries'],
-    queryFn: async ({ queryKey }) => {
-      const res = await fetch(`${queryKey[0]}?limit=50`, {
-        credentials: 'include',
-      });
-      if (!res.ok) throw new Error('Failed to fetch conversations');
-      return res.json();
-    },
+    queryKey: ['/api/chat/summaries?limit=50'],
+    queryFn: getQueryFn({ on401: "throw" }),
   });
 
   const deleteMutation = useMutation({

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { getQueryFn } from "@/lib/queryClient";
 import { MessageCircle, ArrowRight, Calendar, MessageSquare } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -19,14 +20,8 @@ interface RecentConversationsProps {
 
 export default function RecentConversations({ onOpenConversation }: RecentConversationsProps) {
   const { data: conversations, isLoading } = useQuery<ConversationSummary[]>({
-    queryKey: ['/api/chat/summaries'],
-    queryFn: async ({ queryKey }) => {
-      const res = await fetch(`${queryKey[0]}?limit=3`, {
-        credentials: 'include',
-      });
-      if (!res.ok) throw new Error('Failed to fetch conversations');
-      return res.json();
-    },
+    queryKey: ['/api/chat/summaries?limit=3'],
+    queryFn: getQueryFn({ on401: "throw" }),
     staleTime: 60000, // Cache for 1 minute
   });
 

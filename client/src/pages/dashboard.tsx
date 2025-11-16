@@ -1,7 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, getQueryFn } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import AppHeader from "@/components/AppHeader";
 import QuickStats from "@/components/dashboard/QuickStats";
@@ -56,14 +56,8 @@ export default function Dashboard() {
 
   // Check if user has chatted (for checklist)
   const { data: conversationSummaries } = useQuery<Array<{ id: number }>>({
-    queryKey: ['/api/chat/summaries'],
-    queryFn: async ({ queryKey }) => {
-      const res = await fetch(`${queryKey[0]}?limit=1`, {
-        credentials: 'include',
-      });
-      if (!res.ok) return [];
-      return res.json();
-    },
+    queryKey: ['/api/chat/summaries?limit=1'],
+    queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
   if (authLoading) {
