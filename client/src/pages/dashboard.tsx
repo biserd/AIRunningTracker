@@ -313,27 +313,25 @@ export default function Dashboard() {
         isStravaConnected={dashboardData?.user?.stravaConnected || false}
       />
 
-      {/* AI Coach Chat Floating Button - Enhanced */}
+      {/* AI Coach Chat Floating Button */}
       <button
         onClick={() => setIsChatOpen(!isChatOpen)}
-        className="group fixed bottom-6 right-6 z-50 bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600 hover:from-purple-700 hover:via-purple-600 hover:to-indigo-700 text-white rounded-full shadow-2xl transition-all duration-300 hover:scale-105 flex items-center gap-3 px-6 py-4 animate-pulse hover:animate-none"
+        className="group fixed bottom-6 right-6 z-50 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-full shadow-lg transition-all duration-200 hover:shadow-xl flex items-center gap-3 px-6 py-4"
         data-testid="button-toggle-chat"
         aria-label="Toggle AI Chat"
         title="AI Running Coach Chat"
       >
         {isChatOpen ? (
           <>
-            <X className="w-7 h-7" />
-            <span className="font-semibold text-lg hidden sm:inline">Close Chat</span>
+            <X className="w-6 h-6" />
+            <span className="font-medium hidden sm:inline">Close Chat</span>
           </>
         ) : (
           <>
-            <MessageCircle className="w-7 h-7" />
-            <span className="font-semibold text-lg hidden sm:inline">AI Coach</span>
+            <MessageCircle className="w-6 h-6" />
+            <span className="font-medium hidden sm:inline">AI Coach</span>
           </>
         )}
-        <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white animate-ping"></div>
-        <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
       </button>
 
       {/* AI Chat Sidebar */}
