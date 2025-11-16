@@ -1,0 +1,195 @@
+import OpenAI from "openai";
+import { storage } from "../storage";
+import type { Activity, AIMessage } from "@shared/schema";
+import { PerformanceAnalyticsService } from "./performance";
+import { RunnerScoreService } from "./runnerScore";
+import { MLService } from "./ml";
+
+const openai = new OpenAI({ 
+  apiKey: process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY || "default_key" 
+});
+
+export class ChatService {
+  private async assembleUserContext(userId: number): Promise<string> {
+    const user = await storage.getUser(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const isMetric = user.unitPreference !== "miles";
+    const unit = isMetric ? "km" : "mi";
+    
+    // Get recent activities (last 30 days)
+    const activities = await storage.getActivitiesByUserId(userId, 30);
+    
+    if (activities.length === 0) {
+      return `You are helping ${user.firstName || "a runner"} who has not synced any activities yet. Encourage them to connect their Strava account to get personalized insights.`;
+    }
+
+    // Calculate basic stats
+    const totalDistance = activities.reduce((sum, a) => sum + a.distance, 0);
+    const totalTime = activities.reduce((sum, a) => sum + a.movingTime, 0);
+    const avgPace = totalDistance > 0 ? (totalTime / 60) / (totalDistance / 1000) : 0;
+    
+    const totalDistanceConverted = isMetric 
+      ? (totalDistance / 1000).toFixed(1) 
+      : ((totalDistance / 1000) * 0.621371).toFixed(1);
+    
+    const avgPaceConverted = isMetric 
+      ? avgPace.toFixed(2) 
+      : (avgPace / 0.621371).toFixed(2);
+
+    // Get performance metrics
+    let vo2Data = null;
+    let runnerScore = null;
+    try {
+      const performanceService = new PerformanceAnalyticsService();
+      const runnerScoreService = new RunnerScoreService();
+      vo2Data = await performanceService.calculateVO2Max(userId);
+      runnerScore = await runnerScoreService.calculateRunnerScore(userId);
+    } catch (error) {
+      console.log('Could not fetch performance metrics:', error);
+    }
+
+    // Get race predictions
+    let racePredictions: any[] = [];
+    try {
+      const mlService = new MLService();
+      racePredictions = await mlService.predictRacePerformance(userId);
+    } catch (error) {
+      console.log('Could not fetch race predictions:', error);
+    }
+
+    // Format recent activities
+    const recentActivities = activities.slice(0, 5).map(activity => {
+      const distanceInKm = activity.distance / 1000;
+      const pacePerKm = activity.distance > 0 ? (activity.movingTime / 60) / distanceInKm : 0;
+      
+      if (isMetric) {
+        return `${activity.name}: ${distanceInKm.toFixed(1)}km, ${pacePerKm.toFixed(2)} min/km, ${activity.totalElevationGain}m elevation, ${activity.startDate.toDateString()}`;
+      } else {
+        const distanceInMiles = distanceInKm * 0.621371;
+        const pacePerMile = pacePerKm / 0.621371;
+        const elevationFt = activity.totalElevationGain * 3.28084;
+        return `${activity.name}: ${distanceInMiles.toFixed(1)}mi, ${pacePerMile.toFixed(2)} min/mi, ${elevationFt.toFixed(0)}ft elevation, ${activity.startDate.toDateString()}`;
+      }
+    }).join('\n');
+
+    // Assemble context
+    let context = `You are an AI running coach helping ${user.firstName || "a runner"}.
+
+Runner Profile:
+- Name: ${user.firstName} ${user.lastName}
+- Unit preference: ${isMetric ? 'kilometers' : 'miles'}
+- Activities in last 30 days: ${activities.length}
+- Total distance: ${totalDistanceConverted} ${unit}
+- Average pace: ${avgPaceConverted} min/${unit}
+
+Recent Activities (last 5):
+${recentActivities}
+`;
+
+    if (vo2Data) {
+      context += `\nPerformance Metrics:
+- Race VO2 Max: ${vo2Data.raceVO2Max?.toFixed(1)} (${vo2Data.raceComparison})
+- Training VO2 Max: ${vo2Data.trainingVO2Max?.toFixed(1)} (${vo2Data.trainingComparison})
+- Fitness trend: ${vo2Data.trend}
+`;
+    }
+
+    if (runnerScore) {
+      context += `\nRunner Score: ${runnerScore.totalScore}/100 (Grade ${runnerScore.grade})
+- Percentile: ${runnerScore.percentile}th among runners
+- Volume score: ${runnerScore.components.volume}/25
+- Performance score: ${runnerScore.components.performance}/25
+- Consistency score: ${runnerScore.components.consistency}/25
+- Improvement score: ${runnerScore.components.improvement}/25
+`;
+    }
+
+    if (racePredictions.length > 0) {
+      context += `\nRace Predictions (based on current fitness):
+${racePredictions.map(p => `- ${p.distance}: ${p.predictedTime} (${p.confidence}% confidence)`).join('\n')}
+`;
+    }
+
+    return context;
+  }
+
+  async chat(
+    userId: number,
+    conversationId: number,
+    userMessage: string,
+    onStream: (chunk: string) => void
+  ): Promise<string> {
+    // Get conversation history
+    const messages = await storage.getMessagesByConversationId(conversationId);
+    
+    // Assemble user context
+    const userContext = await this.assembleUserContext(userId);
+    
+    // Build conversation history for GPT
+    const conversationHistory = messages.map(msg => ({
+      role: msg.role as "user" | "assistant",
+      content: msg.content
+    }));
+
+    // Add current user message
+    conversationHistory.push({
+      role: "user" as const,
+      content: userMessage
+    });
+
+    try {
+      // Use Responses API with streaming and low reasoning effort for chat
+      const stream = await openai.responses.create({
+        model: "gpt-5.1",
+        input: [
+          {
+            role: "system",
+            content: `You are an expert AI running coach. You provide personalized, data-driven insights and recommendations based on the runner's actual performance data. Be conversational, supportive, and focus on actionable advice.
+
+${userContext}
+
+Guidelines:
+- Use the runner's preferred units (${conversationHistory.length > 0 ? 'mentioned above' : 'km or miles'})
+- Reference specific activities and metrics when relevant
+- Be encouraging but realistic
+- Provide actionable recommendations
+- Keep responses concise (under 200 words unless asked for detail)
+- If asked about specific workouts or dates, use the activity data provided
+- Always consider their current fitness level when making suggestions`
+          },
+          ...conversationHistory.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          }))
+        ],
+        text: {
+          format: {
+            type: "text" as const
+          }
+        },
+        max_output_tokens: 800,
+        reasoning: { effort: "low" },
+        stream: true
+      });
+
+      // Collect streamed response
+      let fullResponse = '';
+      for await (const event of stream) {
+        if (event.type === 'response.output_text.delta') {
+          fullResponse += event.delta;
+          onStream(event.delta);
+        }
+      }
+
+      console.log('[Chat Service] Successfully generated chat response from GPT-5.1');
+      
+      return fullResponse;
+    } catch (error: any) {
+      console.error('Chat error:', error);
+      throw new Error(`Failed to generate chat response: ${error.message}`);
+    }
+  }
+}
