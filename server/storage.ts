@@ -1,4 +1,4 @@
-import { users, activities, aiInsights, trainingPlans, feedback, goals, performanceLogs, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog } from "@shared/schema";
+import { users, activities, aiInsights, trainingPlans, feedback, goals, performanceLogs, aiConversations, aiMessages, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, inArray, gte, gt, lt } from "drizzle-orm";
 import bcrypt from "bcrypt";
@@ -73,6 +73,15 @@ export interface IStorage {
     startDate?: Date;
     endDate?: Date;
   }): Promise<PerformanceLog[]>;
+  
+  // AI Chat methods
+  createConversation(conversation: InsertAIConversation): Promise<AIConversation>;
+  getConversation(conversationId: number): Promise<AIConversation | undefined>;
+  getConversationsByUserId(userId: number, limit?: number): Promise<AIConversation[]>;
+  updateConversationTimestamp(conversationId: number): Promise<void>;
+  deleteConversation(conversationId: number): Promise<void>;
+  addMessage(message: InsertAIMessage): Promise<AIMessage>;
+  getMessagesByConversationId(conversationId: number, limit?: number): Promise<AIMessage[]>;
   
   // User account management
   deleteAccount(userId: number): Promise<void>;
@@ -613,6 +622,63 @@ export class DatabaseStorage implements IStorage {
     return await query;
   }
 
+  // AI Chat methods
+  async createConversation(conversation: InsertAIConversation): Promise<AIConversation> {
+    const [newConversation] = await db
+      .insert(aiConversations)
+      .values(conversation)
+      .returning();
+    return newConversation;
+  }
+
+  async getConversation(conversationId: number): Promise<AIConversation | undefined> {
+    const [conversation] = await db
+      .select()
+      .from(aiConversations)
+      .where(eq(aiConversations.id, conversationId));
+    return conversation || undefined;
+  }
+
+  async getConversationsByUserId(userId: number, limit = 20): Promise<AIConversation[]> {
+    return await db
+      .select()
+      .from(aiConversations)
+      .where(eq(aiConversations.userId, userId))
+      .orderBy(desc(aiConversations.updatedAt))
+      .limit(limit);
+  }
+
+  async updateConversationTimestamp(conversationId: number): Promise<void> {
+    await db
+      .update(aiConversations)
+      .set({ updatedAt: new Date() })
+      .where(eq(aiConversations.id, conversationId));
+  }
+
+  async deleteConversation(conversationId: number): Promise<void> {
+    // Delete messages first (foreign key constraint)
+    await db.delete(aiMessages).where(eq(aiMessages.conversationId, conversationId));
+    // Then delete conversation
+    await db.delete(aiConversations).where(eq(aiConversations.id, conversationId));
+  }
+
+  async addMessage(message: InsertAIMessage): Promise<AIMessage> {
+    const [newMessage] = await db
+      .insert(aiMessages)
+      .values(message)
+      .returning();
+    return newMessage;
+  }
+
+  async getMessagesByConversationId(conversationId: number, limit = 50): Promise<AIMessage[]> {
+    return await db
+      .select()
+      .from(aiMessages)
+      .where(eq(aiMessages.conversationId, conversationId))
+      .orderBy(aiMessages.createdAt)
+      .limit(limit);
+  }
+
   // Admin methods
   async getAdminStats(): Promise<{
     totalUsers: number;
@@ -675,6 +741,17 @@ export class DatabaseStorage implements IStorage {
     
     // Delete performance logs (nullable userId, so check for match)
     await db.delete(performanceLogs).where(eq(performanceLogs.userId, userId));
+    
+    // Delete AI chat conversations and messages
+    const userConversations = await db
+      .select({ id: aiConversations.id })
+      .from(aiConversations)
+      .where(eq(aiConversations.userId, userId));
+    
+    for (const conversation of userConversations) {
+      await db.delete(aiMessages).where(eq(aiMessages.conversationId, conversation.id));
+    }
+    await db.delete(aiConversations).where(eq(aiConversations.userId, userId));
     
     // Finally, delete the user record
     await db.delete(users).where(eq(users.id, userId));
