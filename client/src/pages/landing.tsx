@@ -123,24 +123,38 @@ export default function LandingPage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-6 sm:mb-8 px-4">
-            <Link href="/auth" className="w-full sm:w-auto">
+          <div className="flex flex-col gap-3 sm:gap-4 justify-center mb-6 sm:mb-8 px-4">
+            {/* Primary CTA - AI Coach */}
+            <Link href="/auth" className="w-full sm:w-auto mx-auto">
               <Button
-                className="w-full sm:w-auto bg-strava-orange text-white hover:bg-strava-orange/90 h-14 sm:h-12 px-8 sm:px-10 text-base sm:text-lg font-bold shadow-lg hover:shadow-xl transition-shadow"
-                data-testid="hero-cta-getstarted"
+                className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-indigo-600 text-white hover:from-purple-600 hover:to-indigo-700 h-14 sm:h-14 px-8 sm:px-12 text-base sm:text-lg font-bold shadow-xl hover:shadow-2xl transition-all"
+                data-testid="hero-cta-aicoach"
               >
-                Get Started Free
+                <MessageCircle className="h-5 w-5 mr-2" />
+                Chat with AI Coach
               </Button>
             </Link>
-            <Link href="/auth" className="w-full sm:w-auto">
-              <Button
-                variant="outline"
-                className="w-full sm:w-auto border-2 border-gray-300 text-charcoal hover:bg-gray-50 h-14 sm:h-12 px-8 sm:px-10 text-base sm:text-lg font-semibold"
-                data-testid="hero-cta-signin"
-              >
-                Sign In
-              </Button>
-            </Link>
+            
+            {/* Secondary CTAs */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+              <Link href="/auth" className="w-full sm:w-auto">
+                <Button
+                  className="w-full sm:w-auto bg-strava-orange text-white hover:bg-strava-orange/90 h-12 px-8 sm:px-10 text-base font-semibold shadow-lg hover:shadow-xl transition-shadow"
+                  data-testid="hero-cta-getstarted"
+                >
+                  Get Started Free
+                </Button>
+              </Link>
+              <Link href="/auth" className="w-full sm:w-auto">
+                <Button
+                  variant="outline"
+                  className="w-full sm:w-auto border-2 border-gray-300 text-charcoal hover:bg-gray-50 h-12 px-8 sm:px-10 text-base font-semibold"
+                  data-testid="hero-cta-signin"
+                >
+                  Sign In
+                </Button>
+              </Link>
+            </div>
           </div>
 
           {/* Trust Indicators */}
