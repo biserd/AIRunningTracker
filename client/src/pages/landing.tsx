@@ -54,9 +54,9 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
       <SEO
-        title="RunAnalytics - AI-Powered Running Analytics & Performance Insights"
-        description="Get your personal Runner Score (0-100), AI-powered insights, race predictions, and comprehensive performance analytics. Free with Strava integration. Transform your running today."
-        keywords="running analytics, AI running coach, Strava analytics, runner score, race predictions, VO2 max, running performance, training insights, running app, marathon training"
+        title="RunAnalytics - AI Running Coach & Performance Analytics"
+        description="Chat with your personal AI Running Coach powered by GPT-5.1. Get instant training advice, race predictions, Runner Score (0-100), and comprehensive performance analytics. Free with Strava integration."
+        keywords="AI running coach, running analytics, Strava analytics, runner score, race predictions, VO2 max, running performance, training insights, running app, marathon training, AI coach chat"
         structuredData={structuredData}
       />
       {/* Header */}
