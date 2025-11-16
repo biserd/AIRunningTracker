@@ -19,7 +19,6 @@ const navigationItems = [
   { path: "/dashboard", label: "Dashboard", icon: Home },
   { path: "/ml-insights", label: "AI Insights", icon: Brain },
   { path: "/performance", label: "Performance", icon: BarChart3 },
-  { path: "/chat-history", label: "Chat History", icon: MessageCircle },
   { path: "/tools", label: "Tools", icon: Calculator },
 ];
 
@@ -110,6 +109,12 @@ export default function AppHeader() {
                   <Link href="/settings" className="flex items-center space-x-2 cursor-pointer">
                     <Settings size={16} />
                     <span>Settings</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/chat-history" className="flex items-center space-x-2 cursor-pointer">
+                    <MessageCircle size={16} />
+                    <span>Chat History</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
