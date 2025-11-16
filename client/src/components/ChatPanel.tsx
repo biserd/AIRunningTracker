@@ -228,7 +228,25 @@ export function ChatPanel({ userId, onClose, initialConversationId }: ChatPanelP
       <ScrollArea className="flex-1 p-4">
         {showExamples ? (
           <div className="space-y-4">
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+            {/* AI Disclaimer */}
+            <Card className="p-4 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200 dark:border-amber-800">
+              <div className="flex gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
+                <div className="space-y-2 text-xs text-amber-900 dark:text-amber-200">
+                  <p className="font-semibold">Welcome! I'm your AI Running Coach</p>
+                  <p>
+                    I'm an automated assistant powered by AI, not a human coach. I provide general running tips and suggestions, 
+                    but I can make mistakes. Please verify important advice with qualified professionals and use at your own risk.
+                  </p>
+                  <p>
+                    Your conversations are recorded to improve our service. By continuing, you agree to our{" "}
+                    <a href="/terms" target="_blank" className="underline font-medium">Terms of Service</a>.
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <p className="text-sm text-slate-600 dark:text-slate-400">
               Ask me anything about your running performance, training, or goals:
             </p>
             {examplePrompts.map((prompt, index) => (
