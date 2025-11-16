@@ -78,7 +78,16 @@ export interface IStorage {
   createConversation(conversation: InsertAIConversation): Promise<AIConversation>;
   getConversation(conversationId: number): Promise<AIConversation | undefined>;
   getConversationsByUserId(userId: number, limit?: number): Promise<AIConversation[]>;
+  getConversationSummaries(userId: number, limit?: number): Promise<Array<{
+    id: number;
+    title: string | null;
+    messageCount: number;
+    firstMessage: string | null;
+    lastMessageAt: Date;
+    createdAt: Date;
+  }>>;
   updateConversationTimestamp(conversationId: number): Promise<void>;
+  updateConversationTitle(conversationId: number, title: string): Promise<AIConversation | undefined>;
   deleteConversation(conversationId: number): Promise<void>;
   addMessage(message: InsertAIMessage): Promise<AIMessage>;
   getMessagesByConversationId(conversationId: number, limit?: number): Promise<AIMessage[]>;
@@ -648,11 +657,56 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
 
+  async getConversationSummaries(userId: number, limit = 20): Promise<Array<{
+    id: number;
+    title: string | null;
+    messageCount: number;
+    firstMessage: string | null;
+    lastMessageAt: Date;
+    createdAt: Date;
+  }>> {
+    const conversations = await this.getConversationsByUserId(userId, limit);
+    
+    const summaries = await Promise.all(
+      conversations.map(async (conv) => {
+        const messages = await db
+          .select()
+          .from(aiMessages)
+          .where(eq(aiMessages.conversationId, conv.id))
+          .orderBy(aiMessages.createdAt);
+
+        const messageCount = messages.length;
+        const firstUserMessage = messages.find(m => m.role === 'user');
+        const lastMessage = messages[messages.length - 1];
+
+        return {
+          id: conv.id,
+          title: conv.title,
+          messageCount,
+          firstMessage: firstUserMessage?.content || null,
+          lastMessageAt: lastMessage?.createdAt || conv.createdAt || new Date(),
+          createdAt: conv.createdAt || new Date()
+        };
+      })
+    );
+
+    return summaries;
+  }
+
   async updateConversationTimestamp(conversationId: number): Promise<void> {
     await db
       .update(aiConversations)
       .set({ updatedAt: new Date() })
       .where(eq(aiConversations.id, conversationId));
+  }
+
+  async updateConversationTitle(conversationId: number, title: string): Promise<AIConversation | undefined> {
+    const [updated] = await db
+      .update(aiConversations)
+      .set({ title, updatedAt: new Date() })
+      .where(eq(aiConversations.id, conversationId))
+      .returning();
+    return updated || undefined;
   }
 
   async deleteConversation(conversationId: number): Promise<void> {

@@ -1295,6 +1295,46 @@ ${pages.map(page => `  <url>
     }
   });
 
+  // Get conversation summaries with message counts
+  app.get("/api/chat/summaries", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const limit = parseInt(req.query.limit as string) || 20;
+      
+      const summaries = await storage.getConversationSummaries(userId, limit);
+      res.json(summaries);
+    } catch (error: any) {
+      console.error('Get conversation summaries error:', error);
+      res.status(500).json({ message: error.message || "Failed to fetch conversation summaries" });
+    }
+  });
+
+  // Update conversation title
+  app.patch("/api/chat/conversations/:conversationId", authenticateJWT, async (req: any, res) => {
+    try {
+      const conversationId = parseInt(req.params.conversationId);
+      const { title } = req.body;
+      
+      if (isNaN(conversationId)) {
+        return res.status(400).json({ message: "Invalid conversation ID" });
+      }
+
+      if (!title || typeof title !== 'string') {
+        return res.status(400).json({ message: "Title is required" });
+      }
+
+      const updated = await storage.updateConversationTitle(conversationId, title);
+      if (!updated) {
+        return res.status(404).json({ message: "Conversation not found" });
+      }
+
+      res.json(updated);
+    } catch (error: any) {
+      console.error('Update conversation title error:', error);
+      res.status(500).json({ message: error.message || "Failed to update conversation title" });
+    }
+  });
+
   // Delete a conversation
   app.delete("/api/chat/conversations/:conversationId", authenticateJWT, async (req: any, res) => {
     try {
