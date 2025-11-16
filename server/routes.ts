@@ -9,6 +9,7 @@ import { authService } from "./services/auth";
 import { emailService } from "./services/email";
 import { runnerScoreService } from "./services/runnerScore";
 import goalsService from "./services/goals";
+import { ChatService } from "./services/chat";
 import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, type Activity } from "@shared/schema";
 import { z } from "zod";
 
@@ -1159,6 +1160,155 @@ ${pages.map(page => `  <url>
     } catch (error: any) {
       console.error('Insights generation error:', error);
       res.status(500).json({ message: error.message || "Failed to generate insights" });
+    }
+  });
+
+  // ===== AI Running Coach Chat Endpoints =====
+  
+  // Create a new conversation
+  app.post("/api/chat/conversations", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { title } = req.body;
+      
+      const conversation = await storage.createConversation({
+        userId,
+        title: title || "New Conversation"
+      });
+      
+      res.json(conversation);
+    } catch (error: any) {
+      console.error('Create conversation error:', error);
+      res.status(500).json({ message: error.message || "Failed to create conversation" });
+    }
+  });
+
+  // Get user's conversations
+  app.get("/api/chat/conversations/:userId", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      // Verify the user owns this resource
+      if (req.user.id !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const conversations = await storage.getConversationsByUserId(userId);
+      res.json(conversations);
+    } catch (error: any) {
+      console.error('Get conversations error:', error);
+      res.status(500).json({ message: error.message || "Failed to get conversations" });
+    }
+  });
+
+  // Get conversation messages
+  app.get("/api/chat/:conversationId/messages", authenticateJWT, async (req: any, res) => {
+    try {
+      const conversationId = parseInt(req.params.conversationId);
+      
+      if (isNaN(conversationId)) {
+        return res.status(400).json({ message: "Invalid conversation ID" });
+      }
+
+      const messages = await storage.getMessagesByConversationId(conversationId);
+      res.json(messages);
+    } catch (error: any) {
+      console.error('Get messages error:', error);
+      res.status(500).json({ message: error.message || "Failed to get messages" });
+    }
+  });
+
+  // Send a chat message with streaming response
+  app.post("/api/chat/:conversationId/messages", authenticateJWT, async (req: any, res) => {
+    try {
+      const conversationId = parseInt(req.params.conversationId);
+      const { message } = req.body;
+      
+      if (isNaN(conversationId)) {
+        return res.status(400).json({ message: "Invalid conversation ID" });
+      }
+
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({ message: "Message is required" });
+      }
+
+      const userId = req.user.id;
+
+      // Save user message
+      const userMessage = await storage.addMessage({
+        conversationId,
+        role: "user",
+        content: message
+      });
+
+      // Set up SSE
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+      
+      // Send initial connection confirmation
+      res.write(': connected\n\n');
+
+      const chatService = new ChatService();
+      
+      // Stream AI response
+      let fullResponse = '';
+      const onStream = (chunk: string) => {
+        fullResponse += chunk;
+        res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
+      };
+
+      try {
+        const aiResponse = await chatService.chat(userId, conversationId, message, onStream);
+        
+        // Save AI message
+        await storage.addMessage({
+          conversationId,
+          role: "assistant",
+          content: aiResponse
+        });
+
+        // Send completion event
+        res.write(`data: ${JSON.stringify({ type: 'complete', messageId: userMessage.id })}\n\n`);
+        res.end();
+      } catch (error: any) {
+        console.error('Chat error:', error);
+        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message || 'Failed to generate response' })}\n\n`);
+        res.end();
+      }
+    } catch (error: any) {
+      console.error('Chat message error:', error);
+      
+      // If headers not sent yet, send JSON error
+      if (!res.headersSent) {
+        res.status(500).json({ message: error.message || "Failed to send message" });
+      } else {
+        // If streaming already started, send SSE error
+        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message || 'Failed to send message' })}\n\n`);
+        res.end();
+      }
+    }
+  });
+
+  // Delete a conversation
+  app.delete("/api/chat/conversations/:conversationId", authenticateJWT, async (req: any, res) => {
+    try {
+      const conversationId = parseInt(req.params.conversationId);
+      
+      if (isNaN(conversationId)) {
+        return res.status(400).json({ message: "Invalid conversation ID" });
+      }
+
+      await storage.deleteConversation(conversationId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Delete conversation error:', error);
+      res.status(500).json({ message: error.message || "Failed to delete conversation" });
     }
   });
 
