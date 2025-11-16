@@ -102,22 +102,31 @@ export function ChatPanel({ userId, onClose }: ChatPanelProps) {
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
+      let streamCompleted = false;
+      let buffer = ""; // Buffer for incomplete lines
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n");
+        // Append to buffer
+        buffer += decoder.decode(value, { stream: true });
+        
+        // Process complete lines from buffer
+        const lines = buffer.split("\n");
+        // Keep the last incomplete line in buffer
+        buffer = lines.pop() || "";
 
         for (const line of lines) {
-          if (line.startsWith("data: ")) {
+          if (line.trim().startsWith("data: ")) {
             try {
-              const data = JSON.parse(line.slice(6));
+              const jsonStr = line.slice(line.indexOf("data: ") + 6);
+              const data = JSON.parse(jsonStr);
               
               if (data.type === "chunk") {
                 setStreamingMessage((prev) => prev + data.content);
               } else if (data.type === "complete") {
+                streamCompleted = true;
                 // Refresh messages
                 queryClient.invalidateQueries({ queryKey: [`/api/chat/${conversationId}/messages`] });
                 setStreamingMessage("");
@@ -128,10 +137,22 @@ export function ChatPanel({ userId, onClose }: ChatPanelProps) {
                 setStreamingMessage("");
               }
             } catch (e) {
-              // Ignore parse errors for keep-alive messages
+              // Only log actual parse errors, ignore keep-alive
+              if (line.length > 2) {
+                console.warn("SSE parse error:", e, "Line:", line);
+              }
             }
           }
         }
+      }
+
+      // Ensure state is reset even if complete event wasn't received
+      if (!streamCompleted) {
+        console.log("Stream ended without complete event, resetting state");
+        setStreamingMessage("");
+        setIsStreaming(false);
+        // Refresh messages anyway
+        queryClient.invalidateQueries({ queryKey: [`/api/chat/${conversationId}/messages`] });
       }
     } catch (error) {
       console.error("Failed to send message:", error);

@@ -307,10 +307,9 @@ export default function Dashboard() {
         className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-white dark:bg-slate-900 shadow-2xl z-50 transition-transform duration-300 ${
           isChatOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
+        aria-hidden={!isChatOpen}
       >
-        {isChatOpen && (
-          <ChatPanel userId={user.id} onClose={() => setIsChatOpen(false)} />
-        )}
+        <ChatPanel userId={user.id} onClose={() => setIsChatOpen(false)} />
       </div>
 
       {/* Overlay for mobile */}
