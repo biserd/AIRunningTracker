@@ -90,7 +90,7 @@ export default function LandingPage() {
           </h1>
           
           <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
-            Get your personal Runner Score, AI-powered insights, race predictions, and comprehensive performance analytics. 
+            Chat with your AI Running Coach, get your personal Runner Score, race predictions, and comprehensive performance analytics. 
             Connect your Strava account and unlock your running potential.
           </p>
 
@@ -156,6 +156,128 @@ export default function LandingPage() {
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
               <span>Connect with Strava</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* AI Running Coach Showcase */}
+      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center">
+            <div className="px-4 order-2 lg:order-1">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                  <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                </div>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-charcoal">AI Running Coach</h2>
+              </div>
+              <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6">
+                Your personal AI running coach analyzes your training data and provides instant, personalized advice through natural conversation. 
+                Ask anything about your performance, training, or goals.
+              </p>
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <span className="text-sm sm:text-base text-gray-700">Real-time conversational AI coaching</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <span className="text-sm sm:text-base text-gray-700">Personalized insights from your Strava data</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <span className="text-sm sm:text-base text-gray-700">Training advice and race readiness analysis</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <span className="text-sm sm:text-base text-gray-700">Powered by GPT-5.1 with running expertise</span>
+                </div>
+              </div>
+              <Link href="/auth">
+                <Button
+                  className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-indigo-600 text-white hover:from-purple-600 hover:to-indigo-700 h-12 px-8 text-base font-semibold shadow-md"
+                  data-testid="aicoach-cta-getstarted"
+                >
+                  <MessageCircle className="h-5 w-5 mr-2" />
+                  Chat with AI Coach
+                </Button>
+              </Link>
+            </div>
+            
+            <div className="px-4 order-1 lg:order-2">
+              <div className="bg-white rounded-2xl shadow-2xl p-6 border border-gray-200">
+                {/* Chat Interface Mockup */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-3 border-b border-gray-200">
+                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
+                      <MessageCircle className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-sm text-charcoal">AI Running Coach</div>
+                      <div className="text-xs text-green-600 flex items-center gap-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        Online
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Sample Messages */}
+                  <div className="space-y-3 max-h-[300px] overflow-hidden">
+                    {/* User Message */}
+                    <div className="flex justify-end">
+                      <div className="bg-blue-500 text-white px-4 py-2 rounded-2xl rounded-tr-sm max-w-[80%] text-sm">
+                        How has my training been this month?
+                      </div>
+                    </div>
+                    
+                    {/* AI Response */}
+                    <div className="flex justify-start">
+                      <div className="bg-gray-100 text-gray-800 px-4 py-3 rounded-2xl rounded-tl-sm max-w-[85%] text-sm leading-relaxed">
+                        <p className="mb-2">Great question! Looking at your October data:</p>
+                        <ul className="space-y-1 text-xs">
+                          <li>• <span className="font-semibold text-green-600">92 miles</span> total - up 15% from last month</li>
+                          <li>• Average pace improved by <span className="font-semibold text-blue-600">18 sec/mile</span></li>
+                          <li>• Consistency is strong with 4-5 runs/week</li>
+                        </ul>
+                        <p className="mt-2 text-purple-700 font-medium">Your training is trending very well! 🎯</p>
+                      </div>
+                    </div>
+                    
+                    {/* User Message */}
+                    <div className="flex justify-end">
+                      <div className="bg-blue-500 text-white px-4 py-2 rounded-2xl rounded-tr-sm max-w-[80%] text-sm">
+                        Am I ready for a half marathon?
+                      </div>
+                    </div>
+                    
+                    {/* AI Response */}
+                    <div className="flex justify-start">
+                      <div className="bg-gray-100 text-gray-800 px-4 py-3 rounded-2xl rounded-tl-sm max-w-[85%] text-sm">
+                        Based on your training volume and recent long runs, you're in good shape! I'd predict a <span className="font-semibold text-blue-600">1:42-1:45</span> finish time...
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Input Area */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
+                    <div className="flex-1 bg-gray-50 rounded-full px-4 py-2 text-sm text-gray-400">
+                      Ask me anything...
+                    </div>
+                    <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                      <ArrowRight className="h-4 w-4 text-white" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Trust Badge */}
+              <div className="mt-4 text-center">
+                <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm text-xs text-gray-600">
+                  <Shield className="h-4 w-4 text-green-600" />
+                  <span>AI-powered • Personalized • Free to use</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
