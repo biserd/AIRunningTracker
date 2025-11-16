@@ -117,6 +117,13 @@ export default function AppHeader() {
                     <span>Chat History</span>
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setFeedbackOpen(true)}
+                  className="flex items-center space-x-2 cursor-pointer"
+                >
+                  <MessageCircle size={16} />
+                  <span>Send Feedback</span>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   onClick={handleLogout}
@@ -174,16 +181,6 @@ export default function AppHeader() {
           )}
         </nav>
       </div>
-
-      {/* Floating Feedback Button */}
-      <Button
-        onClick={() => setFeedbackOpen(true)}
-        className="fixed bottom-6 right-6 z-50 h-14 px-6 bg-strava-orange hover:bg-strava-orange/90 text-white shadow-lg rounded-full flex items-center gap-2"
-        data-testid="button-feedback"
-      >
-        <MessageCircle size={20} />
-        <span className="font-medium">Feedback</span>
-      </Button>
 
       {/* Feedback Dialog */}
       <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
