@@ -31,7 +31,7 @@ export default function PrivacyPage() {
         <div className="prose prose-lg max-w-none">
           <div className="mb-8">
             <p className="text-gray-600 text-lg">
-              <strong>Last Updated:</strong> September 2025
+              <strong>Last Updated:</strong> November 2025
             </p>
             <p className="text-gray-600">
               At RunAnalytics, we are committed to protecting your privacy and ensuring the security of your personal information. 
@@ -83,6 +83,44 @@ export default function PrivacyPage() {
                     <li>Performance analytics requests and results</li>
                     <li>Training plan preferences and feedback</li>
                   </ul>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-charcoal mb-2">AI Running Coach Conversations</h3>
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-2">
+                    <p className="text-sm font-medium text-purple-900 mb-1">AI Chatbot Data Collection</p>
+                    <p className="text-sm text-purple-800 mb-3">
+                      When you use our AI Running Coach feature, all conversations are recorded and stored to provide 
+                      personalized responses and improve our service quality.
+                    </p>
+                    <p className="text-sm font-semibold text-purple-900 mb-2">What We Collect:</p>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-purple-800 ml-2">
+                      <li>Complete conversation history (your questions and AI responses)</li>
+                      <li>Conversation timestamps and duration</li>
+                      <li>AI-generated insights and recommendations provided to you</li>
+                      <li>Chat interaction patterns and feature usage</li>
+                    </ul>
+                    <p className="text-sm font-semibold text-purple-900 mb-2 mt-3">How We Use This Data:</p>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-purple-800 ml-2">
+                      <li>Generate personalized running insights based on your fitness data</li>
+                      <li>Improve AI accuracy and response quality over time</li>
+                      <li>Train and optimize our AI models for better coaching</li>
+                      <li>Monitor service quality and identify areas for improvement</li>
+                      <li>Provide customer support when you request assistance</li>
+                    </ul>
+                    <p className="text-sm font-semibold text-purple-900 mb-2 mt-3">Your Control:</p>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-purple-800 ml-2">
+                      <li>You can view your complete conversation history at any time</li>
+                      <li>You can delete individual conversations or your entire chat history</li>
+                      <li>Deleted conversations are permanently removed within 30 days</li>
+                      <li>We never share your individual conversations with third parties</li>
+                    </ul>
+                    <p className="text-sm text-purple-700 mt-3">
+                      <strong>Important:</strong> By using the AI Running Coach, you consent to the collection and use of 
+                      your conversation data as described above. If you have concerns about data collection, you can 
+                      choose not to use the AI Coach feature while still accessing all other RunAnalytics features.
+                    </p>
+                  </div>
                 </div>
               </div>
             </section>
