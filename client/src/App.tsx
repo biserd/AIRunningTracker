@@ -34,6 +34,7 @@ import MarathonFuelingPlanner from "@/pages/tools/marathon-fueling";
 import RacePredictor from "@/pages/tools/race-predictor";
 import CadenceAnalyzer from "@/pages/tools/cadence-analyzer";
 import RunningHeatmap from "@/pages/tools/heatmap";
+import ChatHistory from "@/pages/chat-history";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -88,6 +89,9 @@ function Router() {
       </Route>
       
       {/* Protected Routes */}
+      <Route path="/chat-history">
+        <ProtectedRoute component={ChatHistory} />
+      </Route>
       <Route path="/dashboard">
         <ProtectedRoute component={Dashboard} />
       </Route>

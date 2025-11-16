@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import { Loader2, Send, Sparkles, TrendingUp, AlertCircle, Activity } from "lucide-react";
+import { Loader2, Send, Sparkles, TrendingUp, AlertCircle, Activity, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 
 interface Message {
   id: number;
@@ -27,10 +28,11 @@ interface Conversation {
 interface ChatPanelProps {
   userId: number;
   onClose?: () => void;
+  initialConversationId?: number;
 }
 
-export function ChatPanel({ userId, onClose }: ChatPanelProps) {
-  const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
+export function ChatPanel({ userId, onClose, initialConversationId }: ChatPanelProps) {
+  const [currentConversationId, setCurrentConversationId] = useState<number | null>(initialConversationId || null);
   const [inputMessage, setInputMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState("");
@@ -62,6 +64,22 @@ export function ChatPanel({ userId, onClose }: ChatPanelProps) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamingMessage]);
+
+  // Set conversation ID from props
+  useEffect(() => {
+    if (initialConversationId) {
+      setCurrentConversationId(initialConversationId);
+    }
+  }, [initialConversationId]);
+
+  // Get current conversation details
+  const currentConversation = conversations.find(c => c.id === currentConversationId);
+
+  const handleNewChat = () => {
+    setCurrentConversationId(null);
+    setInputMessage("");
+    setStreamingMessage("");
+  };
 
   // Example prompts
   const examplePrompts = [
@@ -172,15 +190,38 @@ export function ChatPanel({ userId, onClose }: ChatPanelProps) {
     <div className="flex flex-col h-full bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-purple-500" />
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">AI Running Coach</h2>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-purple-500 flex-shrink-0" />
+            <div className="min-w-0">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">AI Running Coach</h2>
+              {currentConversation && (
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                  {currentConversation.title || "Conversation"} • {format(new Date(currentConversation.createdAt), 'MMM d')}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
-        {onClose && (
-          <Button variant="ghost" size="sm" onClick={onClose} data-testid="button-close-chat">
-            ✕
-          </Button>
-        )}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {currentConversationId && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleNewChat}
+              className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950"
+              data-testid="button-new-chat"
+            >
+              <PlusCircle className="w-4 h-4 mr-1" />
+              New Chat
+            </Button>
+          )}
+          {onClose && (
+            <Button variant="ghost" size="sm" onClick={onClose} data-testid="button-close-chat">
+              ✕
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Messages */}

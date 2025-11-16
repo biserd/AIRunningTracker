@@ -5,18 +5,20 @@ interface ProgressChecklistProps {
   isStravaConnected: boolean;
   hasActivities: boolean;
   hasViewedScore: boolean;
+  hasChatted?: boolean;
 }
 
 export default function ProgressChecklist({ 
   isStravaConnected, 
   hasActivities,
-  hasViewedScore 
+  hasViewedScore,
+  hasChatted = false
 }: ProgressChecklistProps) {
   const checklistItems = [
     { label: "Account created", completed: true, icon: CheckCircle2 },
     { label: "Connect Strava", completed: isStravaConnected, icon: isStravaConnected ? CheckCircle2 : Circle },
     { label: "View your first insights", completed: hasActivities, icon: hasActivities ? CheckCircle2 : Circle },
-    { label: "Check your Runner Score", completed: hasViewedScore, icon: hasViewedScore ? CheckCircle2 : Circle },
+    { label: "Chat with AI Coach", completed: hasChatted, icon: hasChatted ? CheckCircle2 : Circle },
   ];
 
   const completedCount = checklistItems.filter(item => item.completed).length;

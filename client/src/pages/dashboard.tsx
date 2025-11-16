@@ -22,6 +22,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { StravaConnectButton, StravaPoweredBy } from "@/components/StravaConnect";
 import { ChatPanel } from "@/components/ChatPanel";
+import AnnouncementBanner from "@/components/AnnouncementBanner";
+import RecentConversations from "@/components/RecentConversations";
 import { MessageCircle, X } from "lucide-react";
 
 export default function Dashboard() {
@@ -29,6 +31,7 @@ export default function Dashboard() {
   const [chartTimeRange, setChartTimeRange] = useState<string>("30days");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [selectedConversationId, setSelectedConversationId] = useState<number | undefined>();
   const [syncProgress, setSyncProgress] = useState<{
     current: number;
     total: number;
@@ -38,6 +41,28 @@ export default function Dashboard() {
   } | null>(null);
   const { toast } = useToast();
   const [location] = useLocation();
+
+  // Check for openChat query parameter
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const chatId = params.get('openChat');
+    if (chatId) {
+      setSelectedConversationId(parseInt(chatId));
+      setIsChatOpen(true);
+      // Clean up URL
+      window.history.replaceState({}, '', '/dashboard');
+    }
+  }, []);
+
+  // Check if user has chatted (for checklist)
+  const { data: conversationSummaries } = useQuery<Array<{ id: number }>>({
+    queryKey: ['/api/chat/summaries'],
+    queryFn: async ({ queryKey }) => {
+      const res = await fetch(`${queryKey[0]}?limit=1`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+  });
 
   if (authLoading) {
     return (
@@ -310,7 +335,14 @@ export default function Dashboard() {
         }`}
         aria-hidden={!isChatOpen}
       >
-        <ChatPanel userId={user.id} onClose={() => setIsChatOpen(false)} />
+        <ChatPanel 
+          userId={user.id} 
+          onClose={() => {
+            setIsChatOpen(false);
+            setSelectedConversationId(undefined);
+          }}
+          initialConversationId={selectedConversationId}
+        />
       </div>
 
       {/* Overlay for mobile */}
@@ -323,6 +355,9 @@ export default function Dashboard() {
       )}
       
       <main className="max-w-7xl mx-auto px-6 py-8">
+        {/* AI Chat Announcement Banner */}
+        <AnnouncementBanner onOpenChat={() => setIsChatOpen(true)} />
+
         {/* Strava Sync Actions */}
         <div className="mb-8 flex flex-wrap gap-4">
           {!dashboardData?.user?.stravaConnected ? (
@@ -385,6 +420,15 @@ export default function Dashboard() {
               isStravaConnected={dashboardData?.user?.stravaConnected || false}
               hasActivities={(dashboardData?.activities?.length || 0) > 0}
               hasViewedScore={true} // They're on the dashboard, so they've seen it
+              hasChatted={(conversationSummaries?.length || 0) > 0}
+            />
+
+            {/* Recent Conversations */}
+            <RecentConversations 
+              onOpenConversation={(id) => {
+                setSelectedConversationId(id);
+                setIsChatOpen(true);
+              }}
             />
             
             <AIInsights insights={dashboardData?.insights || {}} userId={user?.id!} />

@@ -19,6 +19,7 @@ const navigationItems = [
   { path: "/dashboard", label: "Dashboard", icon: Home },
   { path: "/ml-insights", label: "AI Insights", icon: Brain },
   { path: "/performance", label: "Performance", icon: BarChart3 },
+  { path: "/chat-history", label: "Chat History", icon: MessageCircle },
   { path: "/tools", label: "Tools", icon: Calculator },
 ];
 
