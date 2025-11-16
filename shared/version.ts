@@ -1,4 +1,4 @@
-export const VERSION = "2.7.4";
+export const VERSION = "2.7.5";
 
 export interface ReleaseNote {
   version: string;
@@ -12,6 +12,54 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "2.7.5",
+    date: "2025-11-16",
+    title: "AI Running Coach Chat - Your Personal Running Assistant",
+    description: "Get instant, personalized running advice with the new AI Running Coach Chat. Ask questions about your training, get insights on demand, and have natural conversations about your running journey. The chat assistant analyzes your complete training history, performance metrics, and goals to provide context-aware coaching.",
+    changes: [
+      {
+        type: "feature",
+        description: "AI Running Coach Chat - Conversational AI assistant accessible from dashboard via floating purple chat button"
+      },
+      {
+        type: "feature",
+        description: "Streaming responses powered by GPT-5.1 with low reasoning effort for fast, contextual answers (typically 10-20 seconds)"
+      },
+      {
+        type: "feature",
+        description: "Comprehensive context assembly - AI has access to your recent activities, VO2 Max, Runner Score, race predictions, and training history"
+      },
+      {
+        type: "feature",
+        description: "Example prompts for quick starts including training analysis, focus areas, recovery status, and race readiness assessments"
+      },
+      {
+        type: "feature",
+        description: "Multi-turn conversations - Chat maintains context across multiple messages for natural, ongoing discussions"
+      },
+      {
+        type: "feature",
+        description: "Conversation persistence - Your chat history is saved and restored when you reopen the chat panel"
+      },
+      {
+        type: "feature",
+        description: "Mobile-responsive slide-out panel - Full-width on mobile, 384px sidebar on desktop with smooth animations"
+      },
+      {
+        type: "improvement",
+        description: "SSE buffering for reliable streaming - Handles fragmented network chunks without data loss"
+      },
+      {
+        type: "improvement",
+        description: "Accessibility enhancements - Proper aria-hidden attributes for screen reader support"
+      },
+      {
+        type: "fix",
+        description: "Chat button positioning updated to appear alongside feedback button with proper z-index (z-50)"
+      }
+    ]
+  },
   {
     version: "2.7.4",
     date: "2025-11-01",

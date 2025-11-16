@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Activity, CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp, Trophy, Users, TrendingDown, Calculator, ArrowRight } from "lucide-react";
+import { Activity, CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp, Trophy, Users, TrendingDown, Calculator, ArrowRight, MessageCircle } from "lucide-react";
 import { VERSION } from "@shared/version";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
@@ -344,6 +344,24 @@ export default function LandingPage() {
                   <div>• 3x Easy runs (5-6 miles)</div>
                   <div>• 1x Tempo run (4 miles)</div>
                   <div>• 1x Long run (12 miles)</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-purple-50 to-indigo-100 p-6 rounded-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:shadow-purple-200/50">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-4">
+                <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+              </div>
+              <h3 className="text-lg sm:text-xl font-semibold text-charcoal mb-3">AI Running Coach Chat</h3>
+              <p className="text-gray-600 mb-4">
+                Chat with your AI running coach for instant insights and personalized advice about your training.
+              </p>
+              <div className="bg-white p-3 rounded-lg text-sm">
+                <div className="font-medium text-purple-700 mb-1">Ask anything:</div>
+                <div className="space-y-1 text-gray-600 text-xs">
+                  <div>• "How's my training been?"</div>
+                  <div>• "What should I focus on?"</div>
+                  <div>• "Am I ready for a race?"</div>
                 </div>
               </div>
             </div>

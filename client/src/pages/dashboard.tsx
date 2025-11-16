@@ -295,9 +295,10 @@ export default function Dashboard() {
       {/* AI Chat Floating Button */}
       <button
         onClick={() => setIsChatOpen(!isChatOpen)}
-        className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-full p-4 shadow-lg transition-all duration-300 hover:scale-110"
+        className="fixed bottom-6 right-36 z-50 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-full p-4 shadow-lg transition-all duration-300 hover:scale-110"
         data-testid="button-toggle-chat"
         aria-label="Toggle AI Chat"
+        title="AI Running Coach"
       >
         {isChatOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </button>
