@@ -43,7 +43,7 @@ export function ChatPanel({ userId, onClose }: ChatPanelProps) {
 
   // Fetch messages for current conversation
   const { data: messages = [], isLoading: isLoadingMessages } = useQuery<Message[]>({
-    queryKey: ["/api/chat", currentConversationId, "messages"],
+    queryKey: [`/api/chat/${currentConversationId}/messages`],
     enabled: !!currentConversationId,
   });
 
@@ -119,7 +119,7 @@ export function ChatPanel({ userId, onClose }: ChatPanelProps) {
                 setStreamingMessage((prev) => prev + data.content);
               } else if (data.type === "complete") {
                 // Refresh messages
-                queryClient.invalidateQueries({ queryKey: ["/api/chat", conversationId, "messages"] });
+                queryClient.invalidateQueries({ queryKey: [`/api/chat/${conversationId}/messages`] });
                 setStreamingMessage("");
                 setIsStreaming(false);
               } else if (data.type === "error") {

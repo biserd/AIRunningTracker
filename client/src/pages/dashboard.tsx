@@ -21,11 +21,14 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { StravaConnectButton, StravaPoweredBy } from "@/components/StravaConnect";
+import { ChatPanel } from "@/components/ChatPanel";
+import { MessageCircle, X } from "lucide-react";
 
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const [chartTimeRange, setChartTimeRange] = useState<string>("30days");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [syncProgress, setSyncProgress] = useState<{
     current: number;
     total: number;
@@ -288,6 +291,36 @@ export default function Dashboard() {
         onStravaConnect={handleStravaConnect}
         isStravaConnected={dashboardData?.user?.stravaConnected || false}
       />
+
+      {/* AI Chat Floating Button */}
+      <button
+        onClick={() => setIsChatOpen(!isChatOpen)}
+        className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-full p-4 shadow-lg transition-all duration-300 hover:scale-110"
+        data-testid="button-toggle-chat"
+        aria-label="Toggle AI Chat"
+      >
+        {isChatOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
+      </button>
+
+      {/* AI Chat Sidebar */}
+      <div
+        className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-white dark:bg-slate-900 shadow-2xl z-50 transition-transform duration-300 ${
+          isChatOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        {isChatOpen && (
+          <ChatPanel userId={user.id} onClose={() => setIsChatOpen(false)} />
+        )}
+      </div>
+
+      {/* Overlay for mobile */}
+      {isChatOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 sm:hidden"
+          onClick={() => setIsChatOpen(false)}
+          data-testid="overlay-chat-mobile"
+        />
+      )}
       
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* Strava Sync Actions */}
