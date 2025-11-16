@@ -143,6 +143,28 @@ export const performanceLogs = pgTable("performance_logs", {
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
+export const aiConversations = pgTable("ai_conversations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  title: text("title"), // Auto-generated from first message or user-provided
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("ai_conversations_user_id_idx").on(table.userId),
+  updatedAtIdx: index("ai_conversations_updated_at_idx").on(table.updatedAt),
+}));
+
+export const aiMessages = pgTable("ai_messages", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull(),
+  role: text("role", { enum: ["user", "assistant"] }).notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  conversationIdIdx: index("ai_messages_conversation_id_idx").on(table.conversationId),
+  createdAtIdx: index("ai_messages_created_at_idx").on(table.createdAt),
+}));
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   stravaConnected: true,
@@ -187,6 +209,17 @@ export const insertPerformanceLogSchema = createInsertSchema(performanceLogs).om
   timestamp: true,
 });
 
+export const insertAIConversationSchema = createInsertSchema(aiConversations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAIMessageSchema = createInsertSchema(aiMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Login schema for authentication
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -217,5 +250,9 @@ export type InsertGoal = z.infer<typeof insertGoalSchema>;
 export type Goal = typeof goals.$inferSelect;
 export type InsertPerformanceLog = z.infer<typeof insertPerformanceLogSchema>;
 export type PerformanceLog = typeof performanceLogs.$inferSelect;
+export type InsertAIConversation = z.infer<typeof insertAIConversationSchema>;
+export type AIConversation = typeof aiConversations.$inferSelect;
+export type InsertAIMessage = z.infer<typeof insertAIMessageSchema>;
+export type AIMessage = typeof aiMessages.$inferSelect;
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;
