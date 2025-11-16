@@ -21,7 +21,9 @@ export default function RecentConversations({ onOpenConversation }: RecentConver
   const { data: conversations, isLoading } = useQuery<ConversationSummary[]>({
     queryKey: ['/api/chat/summaries'],
     queryFn: async ({ queryKey }) => {
-      const res = await fetch(`${queryKey[0]}?limit=3`);
+      const res = await fetch(`${queryKey[0]}?limit=3`, {
+        credentials: 'include',
+      });
       if (!res.ok) throw new Error('Failed to fetch conversations');
       return res.json();
     },

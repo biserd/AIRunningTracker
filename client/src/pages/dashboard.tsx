@@ -58,7 +58,9 @@ export default function Dashboard() {
   const { data: conversationSummaries } = useQuery<Array<{ id: number }>>({
     queryKey: ['/api/chat/summaries'],
     queryFn: async ({ queryKey }) => {
-      const res = await fetch(`${queryKey[0]}?limit=1`);
+      const res = await fetch(`${queryKey[0]}?limit=1`, {
+        credentials: 'include',
+      });
       if (!res.ok) return [];
       return res.json();
     },

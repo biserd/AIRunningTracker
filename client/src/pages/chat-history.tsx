@@ -27,7 +27,9 @@ export default function ChatHistory() {
   const { data: conversations, isLoading } = useQuery<ConversationSummary[]>({
     queryKey: ['/api/chat/summaries'],
     queryFn: async ({ queryKey }) => {
-      const res = await fetch(`${queryKey[0]}?limit=50`);
+      const res = await fetch(`${queryKey[0]}?limit=50`, {
+        credentials: 'include',
+      });
       if (!res.ok) throw new Error('Failed to fetch conversations');
       return res.json();
     },
