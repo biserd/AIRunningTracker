@@ -57,6 +57,8 @@ export default function BlogIndex() {
         title="Running Blog - Training Tips, AI Coaching & Analytics | RunAnalytics"
         description="Expert running advice, AI coaching insights, training strategies, and comprehensive analytics guides. Learn how to improve your running performance with data-driven insights."
         keywords="running blog, training tips, AI running coach, running analytics, marathon training, race preparation, running performance"
+        url="https://runanalytics.ai/blog"
+        type="website"
       />
       <AppHeader />
       

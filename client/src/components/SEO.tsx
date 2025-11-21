@@ -56,6 +56,15 @@ export function SEO({
     updateMeta('twitter:image', ogImage);
     updateMeta('twitter:url', url);
 
+    // Add or update canonical link
+    let canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+    if (!canonicalLink) {
+      canonicalLink = document.createElement('link');
+      canonicalLink.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonicalLink);
+    }
+    canonicalLink.setAttribute('href', url);
+
     // Add or update structured data
     if (structuredData) {
       let scriptElement = document.getElementById('structured-data') as HTMLScriptElement;

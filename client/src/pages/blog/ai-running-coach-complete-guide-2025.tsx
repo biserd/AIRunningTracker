@@ -29,6 +29,7 @@ export default function AIRunningCoachGuide() {
         title="AI Running Coach: Complete Guide 2025 | RunAnalytics"
         description="Discover everything about AI running coaches in 2025. Learn how AI-powered coaching works, benefits vs human coaches, and how to maximize your training with RunAnalytics AI Coach."
         keywords="AI running coach, artificial intelligence running, AI coaching, personalized running coach, virtual running coach, AI fitness coach, machine learning running"
+        url="https://runanalytics.ai/blog/ai-running-coach-complete-guide-2025"
         type="article"
       />
       <AppHeader />
@@ -240,6 +241,14 @@ export default function AIRunningCoachGuide() {
                 </CardContent>
               </Card>
             </div>
+
+            <Card className="mt-8 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+              <CardContent className="pt-6">
+                <p className="text-gray-800 dark:text-gray-200 text-lg">
+                  <strong>Ready to experience AI-powered insights?</strong> Try our free <Link href="/tools/race-predictor" className="text-blue-600 dark:text-blue-400 hover:underline font-semibold" data-testid="link-inline-race-predictor">Race Predictor</Link> to see how AI can help predict your times based on your training data.
+                </p>
+              </CardContent>
+            </Card>
           </section>
 
           <section id="vs-human" className="mb-12">

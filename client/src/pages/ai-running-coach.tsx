@@ -34,6 +34,8 @@ export default function AICoachLanding() {
         title="AI Running Coach - Free Personalized Training | RunAnalytics"
         description="Get a free AI-powered running coach that analyzes your Strava data and provides personalized training advice, race predictions, and performance insights. Available 24/7 with expert guidance based on your actual running history."
         keywords="AI running coach, free running coach, AI fitness coach, personalized running training, virtual running coach, Strava AI coach, running performance analysis"
+        url="https://runanalytics.ai/ai-running-coach"
+        type="website"
       />
       <AppHeader />
       

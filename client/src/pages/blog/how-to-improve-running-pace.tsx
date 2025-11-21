@@ -31,6 +31,7 @@ export default function ImproveRunningPace() {
         title="How to Improve Running Pace: Complete Guide 2025 | RunAnalytics"
         description="Discover proven strategies to improve your running pace. Learn about interval training, tempo runs, strength training, proper pacing strategies, and common mistakes to avoid. Backed by science and tested by elite coaches."
         keywords="improve running pace, run faster, speed training, interval training, tempo runs, running performance, increase running speed, pace training"
+        url="https://runanalytics.ai/blog/how-to-improve-running-pace"
         type="article"
       />
       <AppHeader />
@@ -550,7 +551,7 @@ export default function ImproveRunningPace() {
                     <strong>The Problem:</strong> Poor running form wastes energy and increases injury risk, no matter how hard you train.
                   </p>
                   <p className="text-gray-700 dark:text-gray-300">
-                    <strong>The Fix:</strong> Focus on quick cadence (170-180 steps per minute), landing under your center of mass, and relaxed shoulders. Consider video analysis or working with a coach.
+                    <strong>The Fix:</strong> Focus on quick cadence (170-180 steps per minute), landing under your center of mass, and relaxed shoulders. Use our <Link href="/tools/cadence-analyzer" className="text-blue-600 dark:text-blue-400 hover:underline" data-testid="link-inline-cadence">Cadence Analyzer</Link> to track your step rate patterns. Consider video analysis or working with a coach.
                   </p>
                 </CardContent>
               </Card>
@@ -687,6 +688,9 @@ export default function ImproveRunningPace() {
                     <li>• <strong>Hydrate:</strong> 16-20 oz water 2 hours before</li>
                     <li>• <strong>Avoid:</strong> High fiber and fatty foods before hard workouts</li>
                   </ul>
+                  <p className="mt-4 text-sm">
+                    For marathon-specific nutrition planning, check out our <Link href="/tools/marathon-fueling" className="text-blue-600 dark:text-blue-400 hover:underline" data-testid="link-inline-marathon-fueling">Marathon Fueling Calculator</Link>.
+                  </p>
                 </CardContent>
               </Card>
 
