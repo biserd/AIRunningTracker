@@ -35,6 +35,11 @@ import RacePredictor from "@/pages/tools/race-predictor";
 import CadenceAnalyzer from "@/pages/tools/cadence-analyzer";
 import RunningHeatmap from "@/pages/tools/heatmap";
 import ChatHistory from "@/pages/chat-history";
+import BlogIndex from "@/pages/blog/index";
+import AIRunningCoachGuide from "@/pages/blog/ai-running-coach-complete-guide-2025";
+import BestStravaTools from "@/pages/blog/best-strava-analytics-tools-2025";
+import ImproveRunningPace from "@/pages/blog/how-to-improve-running-pace";
+import AICoachLanding from "@/pages/ai-running-coach";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -82,6 +87,13 @@ function Router() {
       <Route path="/tools/marathon-fueling" component={MarathonFuelingPlanner} />
       <Route path="/tools/race-predictor" component={RacePredictor} />
       <Route path="/tools/cadence-analyzer" component={CadenceAnalyzer} />
+      
+      {/* Blog Routes */}
+      <Route path="/blog" component={BlogIndex} />
+      <Route path="/blog/ai-running-coach-complete-guide-2025" component={AIRunningCoachGuide} />
+      <Route path="/blog/best-strava-analytics-tools-2025" component={BestStravaTools} />
+      <Route path="/blog/how-to-improve-running-pace" component={ImproveRunningPace} />
+      <Route path="/ai-running-coach" component={AICoachLanding} />
       
       {/* Protected Tool Routes */}
       <Route path="/tools/heatmap">
