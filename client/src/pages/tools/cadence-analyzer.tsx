@@ -14,6 +14,8 @@ import { Loader2 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { CadenceAnalysisResult, formatDrift, getScoreColor } from "@shared/cadenceAnalysis";
 import { apiRequest } from "@/lib/queryClient";
+import { FAQSchema } from "@/components/FAQSchema";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface SuitableActivity {
   id: number;
@@ -29,6 +31,33 @@ interface SuitableActivity {
 interface SuitableActivitiesResponse {
   activities: SuitableActivity[];
 }
+
+const CADENCE_ANALYZER_FAQS = [
+  {
+    question: "What is cadence drift and why does it matter?",
+    answer: "Cadence drift is the tendency for your running cadence (steps per minute) to decrease as you fatigue during a long run. It's a key indicator of form breakdown and neuromuscular fatigue. As you tire, each stride becomes less efficient - longer ground contact time, reduced leg turnover, and compensatory movements. Monitoring drift helps identify when fatigue is affecting your running economy, which can predict form-related injury risk and help you adjust training intensity."
+  },
+  {
+    question: "What is a good Form Stability Score?",
+    answer: "The Form Stability Score (0-100) combines multiple factors: cadence consistency, minimal drift rate, and stable form throughout the run. A score above 80 is excellent - indicating strong neuromuscular endurance and consistent form. Scores of 60-80 are good, showing moderate stability with some late-run fade. Below 60 indicates significant form breakdown, suggesting you may need to adjust training volume, improve running economy, or focus on neuromuscular strength. Elite runners often score 85+ even on very long runs."
+  },
+  {
+    question: "What causes cadence to drop during long runs?",
+    answer: "Cadence drops due to neuromuscular fatigue - your nervous system's ability to fire muscle fibers rapidly decreases as glycogen depletes and metabolic waste accumulates. Central fatigue (brain and spinal cord) reduces neural drive to muscles, while peripheral fatigue (muscles themselves) slows contraction speed. Insufficient aerobic base, inadequate fueling, or running too fast early in the run all accelerate these processes. Runners with poor running economy or weak hip/core stability often show earlier, more severe drift."
+  },
+  {
+    question: "How can I improve my cadence stability?",
+    answer: "Build aerobic endurance through consistent easy long runs - this improves your muscles' ability to use fat for fuel, sparing glycogen. Practice proper fueling on runs over 90 minutes to prevent energy depletion. Include neuromuscular work: short hill sprints, strides, and plyometrics maintain leg spring and neural efficiency. Focus on running economy drills like high knees, butt kicks, and bounds. Strengthen hip flexors, glutes, and core to maintain form when fatigued. Most importantly, don't start long runs too fast - even-pacing or negative splits preserve form better."
+  },
+  {
+    question: "Is a higher or lower cadence better?",
+    answer: "Optimal cadence is individual, but most efficient runners land around 170-180 steps per minute. Higher cadence (shorter, quicker steps) generally reduces impact forces and injury risk by minimizing overstriding. However, forcing an unnaturally high cadence can increase energy cost. Focus less on hitting a specific number and more on minimizing cadence drift during runs. If your cadence drops from 175 to 165 over a long run, that 6% drop signals significant form breakdown regardless of your starting cadence."
+  },
+  {
+    question: "Can I use this tool for race preparation?",
+    answer: "Yes! Analyze cadence stability on your long training runs to predict race-day form durability. If you show minimal drift (<3%) on 20-mile training runs, you're likely ready for marathon-pace efforts. Significant drift (>5%) suggests you need more aerobic base or are running too fast. Use the tool throughout your training block to track improvements in neuromuscular endurance. Before key races, confirm your cadence stays stable on race-pace long runs - this validates your fitness and pacing strategy."
+  }
+];
 
 export default function CadenceAnalyzer() {
   const { isAuthenticated } = useAuth();
@@ -107,6 +136,7 @@ export default function CadenceAnalyzer() {
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://aitracker.run/tools/cadence-analyzer" />
       </Helmet>
+      <FAQSchema faqs={CADENCE_ANALYZER_FAQS} />
 
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
         {/* Header */}
@@ -562,6 +592,30 @@ export default function CadenceAnalyzer() {
               </CardContent>
             </Card>
           )}
+
+          {/* FAQ Section */}
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle className="text-2xl">Frequently Asked Questions</CardTitle>
+              <CardDescription>
+                Understanding cadence drift, form stability, and how to improve your running efficiency
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="single" collapsible className="w-full">
+                {CADENCE_ANALYZER_FAQS.map((faq, index) => (
+                  <AccordionItem key={index} value={`item-${index}`}>
+                    <AccordionTrigger className="text-left">
+                      {faq.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-gray-700 dark:text-gray-300">
+                      {faq.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </CardContent>
+          </Card>
         </div>
 
         <Footer />

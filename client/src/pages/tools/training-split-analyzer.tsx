@@ -20,6 +20,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, Legend, Cell } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FAQSchema } from "@/components/FAQSchema";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const manualInputSchema = z.object({
   periodDays: z.coerce.number().min(28, "Minimum 28 days").max(42, "Maximum 42 days"),
@@ -56,6 +58,29 @@ interface ZoneDistribution {
     rationale: string;
   }>;
 }
+
+const TRAINING_SPLIT_FAQS = [
+  {
+    question: "What is polarized vs pyramidal training?",
+    answer: "Polarized training emphasizes a clear split: 70-80% easy/recovery runs (Zone 1), minimal moderate intensity (10-20% Zone 2), and 10-20% high-intensity (Zone 3). This minimizes time in the 'grey zone' that can lead to fatigue without enough stimulus. Pyramidal training has a gradual distribution with most time easy (60-70% Zone 1), moderate Zone 2 work (20-30%), and smaller amounts of high intensity (5-15% Zone 3). Both are effective - polarized is popular for elite endurance athletes, while pyramidal works well for many recreational runners."
+  },
+  {
+    question: "How do I calculate my heart rate training zones?",
+    answer: "The most accurate zones use lactate threshold testing, but you can estimate: Zone 1 (Easy/Recovery) is below your first lactate threshold (LT1), typically 60-75% max HR or conversational pace. Zone 2 (Tempo/Threshold) is between LT1 and second lactate threshold (LT2), roughly 75-85% max HR - comfortably hard but sustainable for 30-60 minutes. Zone 3 (VO2max/High Intensity) is above LT2, typically 85%+ max HR - hard efforts you can sustain for 5-15 minutes. This tool uses these thresholds to classify your training distribution."
+  },
+  {
+    question: "Why is too much Zone 2 training problematic?",
+    answer: "Spending 25%+ of training time in Zone 2 (tempo/threshold zone) is 'threshold-heavy' and can lead to chronic fatigue and inadequate recovery. Zone 2 is too hard to recover from quickly but not intense enough to provide the same fitness stimulus as true high-intensity Zone 3 work. This leads to accumulated fatigue without proportional gains. Most successful endurance programs keep Zone 2 work limited (10-20% of total volume) and emphasize either easy aerobic base building (Zone 1) or targeted high-intensity work (Zone 3)."
+  },
+  {
+    question: "How can I improve my training distribution?",
+    answer: "If you're threshold-heavy, reduce Zone 2 work and add more true easy running (Zone 1) and dedicated hard sessions (Zone 3). Make easy days truly easy - conversational pace where you could maintain a full conversation. Make hard days count - Zone 3 sessions should be structured intervals or tempo runs at significantly higher intensity. Avoid moderate-intensity 'junk miles' that fall between easy and hard. Aim for 70-80% easy, 10-20% moderate, 10-20% hard depending on your experience level and goals."
+  },
+  {
+    question: "Should I use max HR or lactate thresholds for zone calculation?",
+    answer: "Lactate thresholds (LT1 and LT2) are more accurate for defining training zones than simple max HR percentages. The tool allows both: if you know your threshold heart rates from testing, use those for precise zones. If not, the tool will estimate zones from max HR. LT1 typically occurs around 70-75% max HR (where breathing becomes noticeably harder), and LT2 around 85-90% max HR (sustainable hard effort for 30-60 min). Lab testing or field tests can determine your specific thresholds."
+  }
+];
 
 export default function TrainingSplitAnalyzer() {
   const { isAuthenticated } = useAuth();
@@ -232,6 +257,7 @@ export default function TrainingSplitAnalyzer() {
         <meta property="og:title" content="Polarized vs Pyramidal Training Split Analyzer - RunAnalytics" />
         <meta property="og:description" content="Free tool to analyze training intensity distribution and classify your training approach (polarized, pyramidal, threshold-heavy) with personalized recommendations." />
       </Helmet>
+      <FAQSchema faqs={TRAINING_SPLIT_FAQS} />
 
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
         {isAuthenticated ? (
@@ -738,6 +764,30 @@ export default function TrainingSplitAnalyzer() {
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
+            </CardContent>
+          </Card>
+
+          {/* FAQ Section */}
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle className="text-2xl">Frequently Asked Questions</CardTitle>
+              <CardDescription>
+                Learn about polarized vs pyramidal training and how to optimize your intensity distribution
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="single" collapsible className="w-full">
+                {TRAINING_SPLIT_FAQS.map((faq, index) => (
+                  <AccordionItem key={index} value={`item-${index}`}>
+                    <AccordionTrigger className="text-left">
+                      {faq.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-gray-700 dark:text-gray-300">
+                      {faq.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
             </CardContent>
           </Card>
         </div>

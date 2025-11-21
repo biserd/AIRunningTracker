@@ -19,6 +19,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
+import { FAQSchema } from "@/components/FAQSchema";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 // Validation schema for manual input
 const manualInputSchema = z.object({
@@ -40,6 +42,33 @@ interface DecouplingResult {
   firstHalfPaHR: number;
   secondHalfPaHR: number;
 }
+
+const AEROBIC_DECOUPLING_FAQS = [
+  {
+    question: "What is aerobic decoupling and why does it matter?",
+    answer: "Aerobic decoupling measures how your pace-to-heart-rate ratio changes between the first and second half of a long run. It's a key indicator of aerobic fitness and endurance. Low decoupling (under 5%) shows strong aerobic capacity - you can maintain pace without increasing effort. High decoupling (over 5%) suggests you need more aerobic base training or started the run too fast."
+  },
+  {
+    question: "How is aerobic decoupling calculated?",
+    answer: "We calculate the Pa:HR (pace-to-heart-rate) ratio for each half of your run by dividing speed by heart rate. Then we compare the two halves: Decoupling = ((2nd Half Pa:HR / 1st Half Pa:HR) - 1) × 100. A negative percentage means your efficiency decreased (you slowed down or heart rate increased disproportionately), while positive means you improved in the second half."
+  },
+  {
+    question: "What's a good aerobic decoupling percentage?",
+    answer: "Less than 5% is excellent and indicates strong aerobic fitness. 5-8% is moderate decoupling - acceptable but suggests room for improvement. Above 8% indicates significant aerobic fade and suggests you may need more base training or started too fast. Elite endurance athletes typically show decoupling under 3% on aerobic base runs."
+  },
+  {
+    question: "What type of runs should I analyze for decoupling?",
+    answer: "Use long, steady aerobic runs of 60+ minutes at a comfortable pace (conversational effort). The run should be continuous without intervals or major hills. Tempo runs, interval workouts, or hilly terrain will distort the results. Ideal runs are flat, steady long runs at your typical easy or marathon pace."
+  },
+  {
+    question: "How can I improve my aerobic decoupling?",
+    answer: "Build your aerobic base with more easy-paced long runs (60-90+ minutes) at conversational pace. Be patient - start runs slower than you think you should. Increase weekly volume gradually. Focus on consistency rather than intensity. Consider if you're starting long runs too fast - even 10-15 seconds per mile too fast can cause significant decoupling."
+  },
+  {
+    question: "Can I use this tool with my Strava data?",
+    answer: "Yes! If you're logged in and have connected Strava, you can import runs directly from your activity history. The tool will automatically analyze runs that are 60+ minutes long and have heart rate data, calculating decoupling from the actual pace and heart rate streams throughout your run."
+  }
+];
 
 export default function AerobicDecouplingCalculator() {
   const { isAuthenticated, user } = useAuth();
@@ -214,6 +243,7 @@ export default function AerobicDecouplingCalculator() {
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://aitracker.run/tools/aerobic-decoupling-calculator" />
       </Helmet>
+      <FAQSchema faqs={AEROBIC_DECOUPLING_FAQS} />
 
       <div className="min-h-screen bg-light-grey">
         {/* Header */}
@@ -658,6 +688,32 @@ export default function AerobicDecouplingCalculator() {
                   <strong>Best use:</strong> Use this metric on steady, long runs (60+ minutes) at moderate effort. 
                   Avoid using on interval workouts or tempo runs where intentional pace variations occur.
                 </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* FAQ Section */}
+          <div className="mt-12">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl">Frequently Asked Questions</CardTitle>
+                <CardDescription>
+                  Common questions about aerobic decoupling and how to use this tool
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Accordion type="single" collapsible className="w-full">
+                  {AEROBIC_DECOUPLING_FAQS.map((faq, index) => (
+                    <AccordionItem key={index} value={`item-${index}`}>
+                      <AccordionTrigger className="text-left">
+                        {faq.question}
+                      </AccordionTrigger>
+                      <AccordionContent className="text-gray-700">
+                        {faq.answer}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
               </CardContent>
             </Card>
           </div>

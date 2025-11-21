@@ -24,6 +24,36 @@ import {
   type FuelingPlan,
   type GelProduct
 } from '@/lib/fuelingCalculator';
+import Footer from '@/components/Footer';
+import { FAQSchema } from "@/components/FAQSchema";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
+const MARATHON_FUELING_FAQS = [
+  {
+    question: "How many grams of carbs should I consume per hour during a marathon?",
+    answer: "Current research suggests 60-90g of carbs per hour for most marathoners, with well-trained guts tolerating up to 120g/hour using multiple transportable carbs (glucose + fructose mix). Beginners should start at 60g/hour and gradually increase through training. Faster runners (sub-3 hour) often target 80-100g/hour, while runners over 4 hours may do fine with 60-80g/hour. The key is training your gut to tolerate your race-day fueling plan through practice on long runs."
+  },
+  {
+    question: "When should I take my first gel during a marathon?",
+    answer: "Take your first gel 30-45 minutes into the race. Starting too early wastes your body's existing glycogen stores, while waiting too long means you'll already be depleted. The 30-45 minute window ensures you're topped up before glycogen depletion starts (around 60-90 minutes) and establishes a consistent fueling rhythm. If you have a nervous stomach, you can start at 45 minutes. Some runners also take a gel 10-15 minutes before the race start."
+  },
+  {
+    question: "What's the difference between regular gels and isotonic gels?",
+    answer: "Regular gels are concentrated carbohydrate solutions that need water to digest properly - always take them with water to avoid GI distress. Isotonic gels are pre-diluted to the same concentration as your blood, so they can be absorbed without additional water. While convenient, isotonic gels deliver less carbs per serving (20-25g vs 20-30g in regular gels), so you may need more of them. They're useful at crowded aid stations where getting water is difficult."
+  },
+  {
+    question: "How much sodium do I need during a marathon?",
+    answer: "Most runners need 400-800mg of sodium per hour, depending on sweat rate, heat, and individual sodium loss. Higher sweat rates, hot conditions, and salty sweaters (white residue on clothes) need toward the upper end. Sodium helps maintain fluid balance and prevents hyponatremia (dangerously low blood sodium). Many gels contain 50-100mg sodium, so supplement with electrolyte drinks or salt tablets to hit your hourly target. Practice your sodium strategy during training - too little causes cramps, too much causes GI issues."
+  },
+  {
+    question: "Should I use caffeine gels during my marathon?",
+    answer: "Caffeine can improve performance and reduce perceived effort, with effective doses around 3-6mg per kg of body weight spread throughout the race. A typical caffeine gel has 25-50mg. For a 70kg runner, that's 210-420mg total - roughly 4-8 gels if they're all caffeinated. Use caffeinated gels strategically in the last 90 minutes when fatigue sets in. Start with non-caffeinated gels, then switch to caffeinated in the second half. Too much caffeine causes jitters, GI distress, and may lead to a crash."
+  },
+  {
+    question: "How do I avoid GI issues with my fueling plan?",
+    answer: "Train your gut: practice your exact race-day fueling plan on long runs at race pace. Start conservatively (60g carbs/hour) and gradually increase. Always take gels with water to dilute them. Avoid high-fiber, high-fat foods before and during the race. Use gels with multiple carb sources (glucose + fructose) to maximize absorption. Don't experiment on race day - only use products you've successfully tested in training. If prone to GI issues, consider isotonic gels, lower carb targets, or spreading intake across more frequent, smaller doses."
+  }
+];
 
 export default function MarathonFuelingPlanner() {
   const { isAuthenticated } = useAuth();
@@ -137,6 +167,7 @@ export default function MarathonFuelingPlanner() {
         <meta property="og:description" content="Calculate optimal race fueling strategy. Plan gel timing, carb targets, and sodium intake for marathon success. Free tool for all runners." />
         <meta property="og:type" content="website" />
       </Helmet>
+      <FAQSchema faqs={MARATHON_FUELING_FAQS} />
 
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
         {isAuthenticated && <AppHeader />}
@@ -649,7 +680,33 @@ export default function MarathonFuelingPlanner() {
               <p><strong>5-hour marathoner (60g/h target)</strong>: Mix 25g and 40g gels every 30 min = 9-10 gels = 300g carbs. Higher sodium in drinks.</p>
             </CardContent>
           </Card>
+
+          {/* FAQ Section */}
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle className="text-2xl">Frequently Asked Questions</CardTitle>
+              <CardDescription>
+                Expert guidance on marathon fueling, gel timing, and race nutrition strategy
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="single" collapsible className="w-full">
+                {MARATHON_FUELING_FAQS.map((faq, index) => (
+                  <AccordionItem key={index} value={`item-${index}`}>
+                    <AccordionTrigger className="text-left">
+                      {faq.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-gray-700">
+                      {faq.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </CardContent>
+          </Card>
         </div>
+
+        <Footer />
       </div>
     </>
   );

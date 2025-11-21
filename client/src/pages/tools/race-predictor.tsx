@@ -30,6 +30,8 @@ import {
 } from "@shared/racePrediction";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { FAQSchema } from "@/components/FAQSchema";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const manualInputSchema = z.object({
   baseDistance: z.coerce.number().min(1000, "Minimum 1000m").max(50000, "Maximum 50km"),
@@ -48,6 +50,33 @@ const RACE_DISTANCES = [
   { label: "10K", value: 10000 },
   { label: "Half Marathon", value: 21097 },
   { label: "Marathon", value: 42195 },
+];
+
+const RACE_PREDICTOR_FAQS = [
+  {
+    question: "How accurate is the race time predictor?",
+    answer: "Our race time predictor uses the scientifically-validated Riegel formula with personalized adjustments for training volume and consistency. For runners with consistent training, predictions are typically within 2-5% of actual race performance. Accuracy improves when your base effort is recent (within 6-8 weeks) and at a similar distance to your target race."
+  },
+  {
+    question: "What is the Riegel formula and how does it work?",
+    answer: "The Riegel formula is a mathematical model that predicts race times across different distances based on a recent performance. It uses the equation: T2 = T1 × (D2/D1)^k, where T is time, D is distance, and k is the fatigue exponent (typically 1.06). We personalize this exponent based on your training volume and consistency to provide more accurate predictions tailored to your fitness level."
+  },
+  {
+    question: "What base race distance should I use for prediction?",
+    answer: "For best accuracy, use a recent race or hard effort that's within one distance category of your target. For marathon predictions, use a half marathon, 10K, or tempo run. For 5K predictions, use a recent 5K or 10K. The base effort should represent your current fitness - ideally from the past 4-8 weeks and run at race effort."
+  },
+  {
+    question: "How do training volume and consistency affect predictions?",
+    answer: "Higher weekly mileage and consistent training improve your endurance, allowing you to maintain pace better over longer distances. We adjust the fatigue exponent based on these factors: runners with 60+ km/week and high consistency get a lower exponent (less slowdown), while those with lower volume get a higher exponent. This makes marathon predictions more accurate for your specific training background."
+  },
+  {
+    question: "When should I adjust for course difficulty and weather?",
+    answer: "Add course adjustment time for hilly or challenging terrain (30-120 seconds for moderate hills, 120-300+ for significant elevation). Add weather adjustment for heat above 15°C/59°F (add 30-60 seconds per 5°C above this), strong headwinds (60-180 seconds), or difficult conditions. For ideal conditions on flat courses, leave adjustments at zero."
+  },
+  {
+    question: "Can I use this tool with Strava activities?",
+    answer: "Yes! If you're signed in and connected to Strava, you can import recent race efforts directly from your Strava activities. The tool will automatically detect suitable race-pace efforts between 5K and marathon distance, making it easy to base predictions on your actual training data without manual input."
+  }
 ];
 
 export default function RacePredictor() {
@@ -172,6 +201,7 @@ export default function RacePredictor() {
         <meta property="og:description" content="Science-based race time predictions with personalized Riegel exponent, confidence bands, and pace tables. Free tool for all runners." />
         <meta property="og:type" content="website" />
       </Helmet>
+      <FAQSchema faqs={RACE_PREDICTOR_FAQS} />
 
       <div className="min-h-screen bg-light-grey">
         {isAuthenticated ? (
@@ -711,6 +741,32 @@ export default function RacePredictor() {
                   )}
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* FAQ Section */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-2xl">Frequently Asked Questions</CardTitle>
+              <CardDescription>
+                Everything you need to know about using the race time predictor
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="single" collapsible className="w-full">
+                {RACE_PREDICTOR_FAQS.map((faq, index) => (
+                  <AccordionItem key={index} value={`item-${index}`}>
+                    <AccordionTrigger className="text-left">
+                      {faq.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-gray-700">
+                      {faq.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
             </CardContent>
           </Card>
         </div>

@@ -14,6 +14,8 @@ import Footer from "@/components/Footer";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { decode } from "@googlemaps/polyline-codec";
+import { FAQSchema } from "@/components/FAQSchema";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface ActivityRoute {
   id: number;
@@ -22,6 +24,33 @@ interface ActivityRoute {
   startDate: string;
   polyline: string | null;
 }
+
+const HEATMAP_FAQS = [
+  {
+    question: "How does the running heatmap work?",
+    answer: "The heatmap visualizes all your Strava running routes overlaid on a single map. Routes are rendered with semi-transparent blue lines - where you run frequently, multiple routes overlap and create brighter hotspots. This instantly reveals your most-used routes, favorite neighborhoods, and training patterns. The map uses your actual GPS data from Strava activities to create an accurate visualization of your running territory."
+  },
+  {
+    question: "Why do some areas appear brighter than others?",
+    answer: "Brighter areas indicate route overlap - places you've run multiple times. When semi-transparent route lines stack on top of each other, their opacity adds up, creating the 'heat' effect. Your most frequently run routes, like regular loops from home or favorite park circuits, will glow brighter. Dimmer areas are routes you've only run once or twice. This helps you identify training patterns and discover whether you're varying your routes enough."
+  },
+  {
+    question: "How many activities does the heatmap show?",
+    answer: "The heatmap displays all your Strava running activities that have GPS data (up to your account's total). Activities without GPS tracks (treadmill runs, manually entered activities) won't appear since they have no route to visualize. The map automatically centers and zooms to show your recent running territory based on your last 10 activities, but all routes are rendered to show your complete running history."
+  },
+  {
+    question: "Can I use the heatmap to plan new routes?",
+    answer: "Yes! The heatmap helps you discover gaps in your running territory - streets or areas you haven't explored yet. Look for dim or blank areas near your common routes to find new options. You can also identify connector routes between your favorite running spots. The map uses OpenStreetMap, so you can zoom in to see street names and plan routes that add variety to your training. Varying routes reduces overuse injury risk and keeps training mentally fresh."
+  },
+  {
+    question: "Does the heatmap update automatically when I add new runs?",
+    answer: "No, the heatmap shows activities synced from your Strava account at the time you load the page. To see your latest runs, simply refresh the page after you've completed and synced a new activity to Strava. The app fetches your current activity data each time you visit the heatmap tool, ensuring you see up-to-date routes. There's no need to manually trigger a sync - just reload the page."
+  },
+  {
+    question: "Why are some of my routes missing from the heatmap?",
+    answer: "Routes may be missing if: (1) The activity has no GPS data (treadmill runs, manually entered activities), (2) The activity was marked as private in Strava and our app doesn't have permission to access it, (3) The GPS track was corrupted or incomplete during recording, or (4) The activity hasn't synced yet from your watch to Strava. Make sure activities are set to 'Followers' or 'Everyone' in Strava privacy settings, and verify they have valid GPS tracks."
+  }
+];
 
 export default function RunningHeatmapPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -172,6 +201,7 @@ export default function RunningHeatmapPage() {
         <meta property="og:title" content="Running Heatmap | RunAnalytics" />
         <meta property="og:description" content="Visualize your running routes with an interactive heatmap showing where you train most frequently." />
       </Helmet>
+      <FAQSchema faqs={HEATMAP_FAQS} />
 
       <div className="min-h-screen bg-light-grey">
         <AppHeader />
@@ -320,6 +350,30 @@ export default function RunningHeatmapPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* FAQ Section */}
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle className="text-2xl">Frequently Asked Questions</CardTitle>
+              <CardDescription>
+                Learn how to use and interpret your running heatmap
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="single" collapsible className="w-full">
+                {HEATMAP_FAQS.map((faq, index) => (
+                  <AccordionItem key={index} value={`item-${index}`}>
+                    <AccordionTrigger className="text-left">
+                      {faq.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-gray-700">
+                      {faq.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </CardContent>
+          </Card>
         </div>
 
         <Footer />
