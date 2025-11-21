@@ -196,10 +196,11 @@ export default function RunningHeatmapPage() {
   return (
     <>
       <Helmet>
-        <title>Running Heatmap - Visualize Your Training Routes | RunAnalytics</title>
-        <meta name="description" content="See where you run most frequently with an interactive heatmap of your last 30 activities. Discover your favorite routes and training patterns." />
-        <meta property="og:title" content="Running Heatmap | RunAnalytics" />
-        <meta property="og:description" content="Visualize your running routes with an interactive heatmap showing where you train most frequently." />
+        <title>Running Heatmap - Visualize Your Strava Routes | RunAnalytics</title>
+        <meta name="description" content="Create an interactive heatmap of your running routes. Visualize all your Strava activities on one map to discover training patterns and favorite routes." />
+        <meta name="keywords" content="running heatmap, Strava heatmap, route visualization, running routes map, activity heatmap" />
+        <meta property="og:title" content="Running Heatmap - Visualize Your Strava Routes | RunAnalytics" />
+        <meta property="og:description" content="Create an interactive heatmap of your running routes. Visualize all your Strava activities on one map to discover training patterns and favorite routes." />
       </Helmet>
       <FAQSchema faqs={HEATMAP_FAQS} />
 
@@ -224,7 +225,8 @@ export default function RunningHeatmapPage() {
                   </div>
                   <div>
                     <h1 className="text-3xl font-bold text-charcoal">Running Heatmap</h1>
-                    <p className="text-gray-600">Visualize where you run most frequently</p>
+                    <p className="text-gray-600">Visualize where you run most frequently. 
+                    Discover more <Link href="/blog/best-strava-analytics-tools-2025" className="text-blue-600 hover:text-blue-800 underline">Strava analytics tools</Link>.</p>
                   </div>
                 </div>
               </div>

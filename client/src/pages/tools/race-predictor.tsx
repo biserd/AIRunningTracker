@@ -195,10 +195,11 @@ export default function RacePredictor() {
   return (
     <>
       <Helmet>
-        <title>Race Time Predictor - Free Running Calculator | RunAnalytics</title>
-        <meta name="description" content="Free race time prediction calculator using Riegel formula. Predict marathon, half marathon, 10K, and 5K finish times based on recent race efforts. Import from Strava or enter manually." />
-        <meta property="og:title" content="Race Time Predictor - Calculate Your Goal Pace | RunAnalytics" />
-        <meta property="og:description" content="Science-based race time predictions with personalized Riegel exponent, confidence bands, and pace tables. Free tool for all runners." />
+        <title>Race Time Predictor Calculator - Free 5K, 10K, Marathon Predictions | RunAnalytics</title>
+        <meta name="description" content="Free AI-powered race time predictor. Calculate your 5K, 10K, half marathon, and marathon times based on your training data. Accurate predictions using Riegel formula." />
+        <meta name="keywords" content="race time predictor, race calculator, marathon time predictor, 5K time calculator, running race predictor" />
+        <meta property="og:title" content="Race Time Predictor Calculator - Free 5K, 10K, Marathon Predictions | RunAnalytics" />
+        <meta property="og:description" content="Free AI-powered race time predictor. Calculate your 5K, 10K, half marathon, and marathon times based on your training data. Accurate predictions using Riegel formula." />
         <meta property="og:type" content="website" />
       </Helmet>
       <FAQSchema faqs={RACE_PREDICTOR_FAQS} />
@@ -242,7 +243,8 @@ export default function RacePredictor() {
             <Info className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-sm text-gray-700 ml-2">
               <strong>Race Prediction</strong> uses the Riegel formula with personalized adjustments based on your training volume, 
-              consistency, and race-specific factors. Predictions include confidence bands to account for variability in performance.
+              consistency, and race-specific factors. Predictions include confidence bands to account for variability in performance. 
+              Want to run faster? Learn how to <Link href="/blog/how-to-improve-running-pace" className="text-blue-600 hover:text-blue-800 underline">improve your running pace</Link>.
             </AlertDescription>
           </Alert>
 

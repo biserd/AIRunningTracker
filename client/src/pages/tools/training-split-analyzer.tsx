@@ -252,10 +252,11 @@ export default function TrainingSplitAnalyzer() {
   return (
     <>
       <Helmet>
-        <title>Polarized vs Pyramidal Training Split Analyzer - Free Running Tool | RunAnalytics</title>
-        <meta name="description" content="Analyze your training intensity distribution. Discover if you're following polarized, pyramidal, or threshold-heavy training. Get personalized zone recommendations based on heart rate data from Strava or manual input." />
-        <meta property="og:title" content="Polarized vs Pyramidal Training Split Analyzer - RunAnalytics" />
-        <meta property="og:description" content="Free tool to analyze training intensity distribution and classify your training approach (polarized, pyramidal, threshold-heavy) with personalized recommendations." />
+        <title>Training Split Analyzer - Free HR Zone Distribution Tool | RunAnalytics</title>
+        <meta name="description" content="Analyze your training intensity distribution. Free tool to check if your training follows polarized or pyramidal model. Optimize your heart rate zones." />
+        <meta name="keywords" content="training split analyzer, polarized training, pyramidal training, heart rate zones, training intensity" />
+        <meta property="og:title" content="Training Split Analyzer - Free HR Zone Distribution Tool | RunAnalytics" />
+        <meta property="og:description" content="Analyze your training intensity distribution. Free tool to check if your training follows polarized or pyramidal model. Optimize your heart rate zones." />
       </Helmet>
       <FAQSchema faqs={TRAINING_SPLIT_FAQS} />
 
@@ -293,7 +294,8 @@ export default function TrainingSplitAnalyzer() {
               Polarized vs Pyramidal Training Split Analyzer
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-              Analyze your training intensity distribution and discover if you're following a polarized, pyramidal, or threshold-heavy approach
+              Analyze your training intensity distribution and discover if you're following a polarized, pyramidal, or threshold-heavy approach. 
+              Explore more <Link href="/blog/best-strava-analytics-tools-2025" className="text-blue-600 hover:text-blue-800 underline">Strava analytics tools</Link>.
             </p>
           </div>
 

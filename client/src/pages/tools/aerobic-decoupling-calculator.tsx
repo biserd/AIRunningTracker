@@ -236,10 +236,11 @@ export default function AerobicDecouplingCalculator() {
   return (
     <>
       <Helmet>
-        <title>Aerobic Decoupling Calculator - Free Running Tool | RunAnalytics</title>
-        <meta name="description" content="Free aerobic decoupling calculator for runners. Measure late-run aerobic fade by analyzing pace-to-heart-rate drift on long runs. Works with manual input or Strava data." />
-        <meta property="og:title" content="Aerobic Decoupling Calculator | RunAnalytics" />
-        <meta property="og:description" content="Quantify aerobic efficiency on your long runs. Free tool for all runners." />
+        <title>Aerobic Decoupling Calculator - Free Running Efficiency Analysis | RunAnalytics</title>
+        <meta name="description" content="Measure cardiovascular drift and aerobic efficiency with our free aerobic decoupling calculator. Analyze your long runs and improve endurance training." />
+        <meta name="keywords" content="aerobic decoupling calculator, cardiovascular drift, running efficiency, endurance training, aerobic fitness" />
+        <meta property="og:title" content="Aerobic Decoupling Calculator - Free Running Efficiency Analysis | RunAnalytics" />
+        <meta property="og:description" content="Measure cardiovascular drift and aerobic efficiency with our free aerobic decoupling calculator. Analyze your long runs and improve endurance training." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://aitracker.run/tools/aerobic-decoupling-calculator" />
       </Helmet>
@@ -287,7 +288,8 @@ export default function AerobicDecouplingCalculator() {
             <Info className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-sm text-gray-700 ml-2">
               <strong>Aerobic Decoupling</strong> measures how your pace-to-heart-rate relationship changes during a long run. 
-              A low decoupling (&lt;5%) indicates strong aerobic fitness. Higher values suggest you need more aerobic base training or started too fast.
+              A low decoupling (&lt;5%) indicates strong aerobic fitness. Higher values suggest you need more aerobic base training or started too fast. 
+              Need personalized training guidance? Try our <Link href="/ai-running-coach" className="text-blue-600 hover:text-blue-800 underline">AI Running Coach</Link>.
             </AlertDescription>
           </Alert>
 

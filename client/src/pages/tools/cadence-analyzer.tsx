@@ -129,10 +129,11 @@ export default function CadenceAnalyzer() {
   return (
     <>
       <Helmet>
-        <title>Cadence Drift & Form Stability Analyzer - Free Running Tool | RunAnalytics</title>
-        <meta name="description" content="Analyze your running form stability through cadence drift analysis. Detect form fade on long runs with our free cadence analyzer. Get your Form Stability Score (0-100) from Strava activities." />
-        <meta property="og:title" content="Cadence Drift & Form Stability Analyzer | RunAnalytics" />
-        <meta property="og:description" content="Free tool to analyze running form stability and cadence consistency. Identify form fade patterns on long runs." />
+        <title>Running Cadence Analyzer - Free Form Stability Calculator | RunAnalytics</title>
+        <meta name="description" content="Analyze running cadence drift and form stability. Free tool to measure cadence consistency and improve running efficiency throughout your runs." />
+        <meta name="keywords" content="cadence analyzer, running cadence, form stability, cadence drift, running form analysis" />
+        <meta property="og:title" content="Running Cadence Analyzer - Free Form Stability Calculator | RunAnalytics" />
+        <meta property="og:description" content="Analyze running cadence drift and form stability. Free tool to measure cadence consistency and improve running efficiency throughout your runs." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://aitracker.run/tools/cadence-analyzer" />
       </Helmet>
@@ -180,7 +181,8 @@ export default function CadenceAnalyzer() {
             <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             <AlertDescription className="text-sm text-gray-700 dark:text-gray-300 ml-2">
               <strong>Cadence Drift Analysis</strong> measures how your running cadence changes during a run, detecting form fade and fatigue. 
-              A stable cadence indicates good form endurance. Significant drift suggests you may need to work on strength and running economy.
+              A stable cadence indicates good form endurance. Significant drift suggests you may need to work on strength and running economy. 
+              Learn more about <Link href="/blog/how-to-improve-running-pace" className="text-blue-600 hover:text-blue-800 underline">improving running pace</Link>.
             </AlertDescription>
           </Alert>
 

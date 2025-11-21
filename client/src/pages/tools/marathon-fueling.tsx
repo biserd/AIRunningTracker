@@ -161,10 +161,11 @@ export default function MarathonFuelingPlanner() {
   return (
     <>
       <Helmet>
-        <title>Marathon Fueling Planner - Calculate Your Race Nutrition Strategy | RunAnalytics</title>
-        <meta name="description" content="Free marathon fueling calculator. Plan your race nutrition strategy with optimal gel timing, carb intake, and electrolyte balance. Get personalized feeding schedules based on your finish time and gut capacity." />
-        <meta property="og:title" content="Marathon Fueling Planner - Race Nutrition Calculator" />
-        <meta property="og:description" content="Calculate optimal race fueling strategy. Plan gel timing, carb targets, and sodium intake for marathon success. Free tool for all runners." />
+        <title>Marathon Fueling Calculator - Free Race Nutrition Planner | RunAnalytics</title>
+        <meta name="description" content="Plan your marathon nutrition strategy with our free fueling calculator. Calculate carb intake, gel timing, hydration, and sodium needs for race day success." />
+        <meta name="keywords" content="marathon fueling calculator, race nutrition planner, marathon nutrition, gel calculator, hydration calculator" />
+        <meta property="og:title" content="Marathon Fueling Calculator - Free Race Nutrition Planner | RunAnalytics" />
+        <meta property="og:description" content="Plan your marathon nutrition strategy with our free fueling calculator. Calculate carb intake, gel timing, hydration, and sodium needs for race day success." />
         <meta property="og:type" content="website" />
       </Helmet>
       <FAQSchema faqs={MARATHON_FUELING_FAQS} />
@@ -187,7 +188,8 @@ export default function MarathonFuelingPlanner() {
           <div className="mb-8">
             <h1 className="text-4xl font-bold mb-3" data-testid="text-page-title">Marathon Fueling Planner</h1>
             <p className="text-xl text-muted-foreground" data-testid="text-page-description">
-              Calculate your optimal race nutrition strategy with precise gel timing and fueling targets
+              Calculate your optimal race nutrition strategy with precise gel timing and fueling targets. 
+              Check your <Link href="/tools/race-predictor" className="text-blue-600 hover:text-blue-800 underline">race time predictions</Link> to plan accurate fueling.
             </p>
           </div>
 
