@@ -124,7 +124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // SEO: robots.txt
   app.get("/robots.txt", (req, res) => {
-    const baseUrl = "https://aitracker.run";
+    const baseUrl = "https://runanalytics.ai";
     
     const robotsTxt = `User-agent: *
 Allow: /
@@ -147,7 +147,7 @@ Sitemap: ${baseUrl}/sitemap.xml`;
 
   // SEO: Sitemap
   app.get("/sitemap.xml", (req, res) => {
-    const baseUrl = "https://aitracker.run";
+    const baseUrl = "https://runanalytics.ai";
     
     const pages = [
       { url: "/", changefreq: "daily", priority: "1.0" },
@@ -158,12 +158,24 @@ Sitemap: ${baseUrl}/sitemap.xml`;
       { url: "/features", changefreq: "monthly", priority: "0.8" },
       { url: "/pricing", changefreq: "weekly", priority: "0.9" },
       { url: "/subscribe", changefreq: "weekly", priority: "0.8" },
+      
+      // Blog & Content Marketing
+      { url: "/blog", changefreq: "weekly", priority: "0.9" },
+      { url: "/blog/ai-running-coach-complete-guide-2025", changefreq: "monthly", priority: "0.9" },
+      { url: "/blog/best-strava-analytics-tools-2025", changefreq: "monthly", priority: "0.9" },
+      { url: "/blog/how-to-improve-running-pace", changefreq: "monthly", priority: "0.9" },
+      { url: "/ai-running-coach", changefreq: "weekly", priority: "0.9" },
+      
+      // Free Tools
       { url: "/tools", changefreq: "weekly", priority: "0.9" },
       { url: "/tools/aerobic-decoupling-calculator", changefreq: "weekly", priority: "0.8" },
       { url: "/tools/training-split-analyzer", changefreq: "weekly", priority: "0.8" },
       { url: "/tools/marathon-fueling", changefreq: "weekly", priority: "0.8" },
       { url: "/tools/race-predictor", changefreq: "weekly", priority: "0.8" },
       { url: "/tools/cadence-analyzer", changefreq: "weekly", priority: "0.8" },
+      { url: "/tools/heatmap", changefreq: "weekly", priority: "0.7" },
+      
+      // Other Pages
       { url: "/runner-score", changefreq: "weekly", priority: "0.7" },
       { url: "/faq", changefreq: "monthly", priority: "0.6" },
       { url: "/contact", changefreq: "monthly", priority: "0.5" },
