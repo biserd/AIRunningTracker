@@ -1,6 +1,9 @@
 import { storage } from "../storage";
 import { Activity } from "@shared/schema";
 
+// Running activity types based on Strava's sport_type field
+const RUNNING_TYPES = ['Run', 'TrailRun', 'VirtualRun'];
+
 interface RunnerScoreComponents {
   consistency: number; // 0-25 points
   performance: number; // 0-25 points  
@@ -34,7 +37,8 @@ export class RunnerScoreService {
    * Calculate comprehensive runner score based on multiple factors
    */
   async calculateRunnerScore(userId: number): Promise<RunnerScoreData> {
-    const activities = await storage.getActivitiesByUserId(userId, 100);
+    const allActivities = await storage.getActivitiesByUserId(userId, 100);
+    const activities = allActivities.filter(a => RUNNING_TYPES.includes(a.type));
     
     if (activities.length === 0) {
       return this.getDefaultScore();
