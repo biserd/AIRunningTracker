@@ -1,6 +1,7 @@
 import { Shield, Eye, Lock, Database, Activity } from "lucide-react";
 import { Link } from "wouter";
 import PublicHeader from "@/components/PublicHeader";
+import Footer from "@/components/Footer";
 
 export default function PrivacyPage() {
   return (
@@ -304,6 +305,7 @@ export default function PrivacyPage() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

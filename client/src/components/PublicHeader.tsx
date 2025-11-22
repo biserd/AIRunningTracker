@@ -16,7 +16,10 @@ export default function PublicHeader() {
             </div>
           </Link>
           <Link href="/auth">
-            <Button variant="outline" data-testid="header-sign-in">
+            <Button 
+              className="bg-strava-orange text-white hover:bg-strava-orange/90"
+              data-testid="header-sign-in"
+            >
               Sign In
             </Button>
           </Link>

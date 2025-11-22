@@ -11,6 +11,7 @@ import { Link } from "wouter";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import PublicHeader from "@/components/PublicHeader";
+import Footer from "@/components/Footer";
 
 const contactSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -243,6 +244,7 @@ export default function ContactPage() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }
