@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Activity, Calendar, Star, Bug, Wrench, AlertTriangle, ChevronLeft, ChevronRight, Menu, X } from "lucide-react";
+import { Activity, Calendar, Star, Bug, Wrench, AlertTriangle, ChevronLeft, ChevronRight, Menu, X } from "lucide-react";
 import { Link } from "wouter";
 import { RELEASE_NOTES, VERSION } from "@shared/version";
+import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 import { useState, useEffect } from "react";
@@ -93,42 +94,7 @@ export default function ReleaseNotesPage() {
         ogImage="https://aitracker.run/og-image.jpg"
         structuredData={articleSchema}
       />
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <Link href="/">
-                <Button variant="ghost" size="sm" className="px-2 sm:px-4" data-testid="button-back-home">
-                  <ArrowLeft className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Back to Home</span>
-                </Button>
-              </Link>
-              <div className="flex items-center space-x-2 sm:space-x-3">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-strava-orange rounded-lg flex items-center justify-center">
-                  <Activity className="text-white" size={16} />
-                </div>
-                <div>
-                  <h1 className="text-lg sm:text-2xl font-bold text-charcoal">Release Notes</h1>
-                  <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Track new features, improvements, and fixes</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Mobile Menu Toggle */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="lg:hidden"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              data-testid="button-toggle-sidebar"
-            >
-              {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-              <span className="ml-2">Versions</span>
-            </Button>
-          </div>
-        </div>
-      </div>
+      <PublicHeader />
 
       <div className="flex max-w-7xl mx-auto relative">
         {/* Sidebar - Hidden on mobile, overlay on mobile when open */}
