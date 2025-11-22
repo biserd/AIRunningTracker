@@ -281,12 +281,17 @@ ${pages.map(page => `  <url>
   // Get fitness metrics (CTL/ATL/TSB chart data)
   app.get("/api/fitness/:userId", authenticateJWT, async (req: any, res) => {
     try {
-      const userId = parseInt(req.params.userId);
-      const days = parseInt(req.query.days || "90");
+      // Validate request parameters using Zod
+      const paramsSchema = z.object({
+        userId: z.coerce.number().int().positive(),
+      });
       
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
+      const querySchema = z.object({
+        days: z.enum(["30", "90", "180"]).default("90").transform((val) => parseInt(val)),
+      });
+      
+      const { userId } = paramsSchema.parse(req.params);
+      const { days } = querySchema.parse(req.query);
       
       // Ensure user can only access their own data
       if (req.user.id !== userId) {
@@ -318,6 +323,15 @@ ${pages.map(page => `  <url>
       res.json(response);
     } catch (error: any) {
       console.error('Get fitness metrics error:', error);
+      
+      // Handle Zod validation errors
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: "Invalid request parameters", 
+          errors: error.errors 
+        });
+      }
+      
       res.status(500).json({ message: "Failed to get fitness metrics" });
     }
   });
