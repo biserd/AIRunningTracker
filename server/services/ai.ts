@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { storage } from "../storage";
 import type { Activity } from "@shared/schema";
+import { fitnessService } from "./fitness";
 
 // Using GPT-5 (released August 2025) for enhanced AI insights generation
 const openai = new OpenAI({ 
@@ -129,6 +130,11 @@ export class AIService {
       `${runningStats.totalElevation.toFixed(0)}m` : 
       `${(runningStats.totalElevation * 3.28084).toFixed(0)}ft`;
 
+    // Calculate current Form (TSB) from Fitness/Fatigue/Form chart
+    const fitnessMetrics = await fitnessService.calculateFitnessMetrics(allActivities, 90);
+    const currentTSB = fitnessMetrics.length > 0 ? fitnessMetrics[fitnessMetrics.length - 1].tsb : null;
+    const formInterpretation = currentTSB !== null ? fitnessService.getFormInterpretation(currentTSB) : null;
+
     const prompt = hasRunning ? `
 Analyze this runner's recent activity data and provide insights:
 
@@ -149,7 +155,15 @@ Training Context (Holistic Assessment):
   - Note: Cross-training contributes to overall training load and recovery needs!` : ''}
 - Unit preference: ${isMetric ? 'kilometers' : 'miles'}
 
-IMPORTANT: When providing recovery insights, consider TOTAL training load (${(totalStats.totalTime / 3600).toFixed(1)} hours across all activities), not just running volume.
+Form Score (Training Stress Balance - TSB):${currentTSB !== null ? `
+- Current Form (TSB): ${currentTSB.toFixed(1)} (${formInterpretation!.status})
+- Interpretation: ${formInterpretation!.description}
+- TSB Guide: Positive (>10) = Fresh/Race Ready, -10 to +10 = Neutral, -10 to -30 = Building Fitness, <-30 = High Fatigue` : `
+- Current Form (TSB): Not available (need more activity data)`}
+
+IMPORTANT: When providing recovery insights, consider:
+1. TOTAL training load (${(totalStats.totalTime / 3600).toFixed(1)} hours across all activities), not just running volume
+2. Current Form Score (TSB): ${currentTSB !== null ? `${currentTSB.toFixed(1)} - ${formInterpretation!.status}` : 'Data insufficient'} - Reference this in recovery recommendations!
 
 Recent Running Activities:
 ${runningActivitiesText}
