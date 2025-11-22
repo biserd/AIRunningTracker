@@ -17,6 +17,7 @@ import InsightHistory from "@/components/dashboard/InsightHistory";
 import ProgressChecklist from "@/components/dashboard/ProgressChecklist";
 import Onboarding from "@/components/Onboarding";
 import { SyncProgress } from "@/components/SyncProgress";
+import { FitnessChart } from "@/components/FitnessChart";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -415,6 +416,7 @@ export default function Dashboard() {
               onTimeRangeChange={handleTimeRangeChange}
               currentTimeRange={chartTimeRange}
             />
+            <FitnessChart userId={user?.id!} />
             <RunnerScoreRadar />
             <HistoricalRunnerScore />
             <RecentActivities activities={dashboardData?.activities || []} unitPreference={dashboardData?.user?.unitPreference} />
