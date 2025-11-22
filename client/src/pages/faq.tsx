@@ -1,32 +1,13 @@
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Activity, HelpCircle, Zap, Target, BarChart, Shield, Clock } from "lucide-react";
+import { HelpCircle, Zap, Target, BarChart, Shield, Clock } from "lucide-react";
 import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
+import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
 
 export default function FAQPage() {
   return (
     <div className="min-h-screen bg-light-grey">
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <div className="flex items-center space-x-4">
-            <Link href="/">
-              <Button variant="ghost" size="sm" data-testid="button-back-home">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Home
-              </Button>
-            </Link>
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-strava-orange rounded-lg flex items-center justify-center">
-                <Activity className="text-white" size={20} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-charcoal">Frequently Asked Questions</h1>
-                <p className="text-gray-600">Get answers to common questions about RunAnalytics</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PublicHeader />
 
       <main className="max-w-4xl mx-auto px-6 py-12">
         <div className="prose prose-lg max-w-none">

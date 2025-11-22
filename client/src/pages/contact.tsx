@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Activity, Mail, Phone, MapPin, Send, MessageSquare } from "lucide-react";
+import { Mail, Phone, MapPin, Send, MessageSquare } from "lucide-react";
 import { Link } from "wouter";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
+import PublicHeader from "@/components/PublicHeader";
 
 const contactSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -47,27 +48,7 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-light-grey">
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center space-x-4">
-            <Link href="/">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Home
-              </Button>
-            </Link>
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-strava-orange rounded-lg flex items-center justify-center">
-                <Activity className="text-white" size={20} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-charcoal">Contact Us</h1>
-                <p className="text-gray-600">Get in touch with our team</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PublicHeader />
 
       <main className="max-w-6xl mx-auto px-6 py-12">
         <div className="grid lg:grid-cols-2 gap-12">
