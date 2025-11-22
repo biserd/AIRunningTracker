@@ -10,6 +10,7 @@ import { emailService } from "./services/email";
 import { runnerScoreService } from "./services/runnerScore";
 import goalsService from "./services/goals";
 import { ChatService } from "./services/chat";
+import { fitnessService } from "./services/fitness";
 import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, type Activity } from "@shared/schema";
 import { z } from "zod";
 
@@ -274,6 +275,50 @@ ${pages.map(page => `  <url>
     } catch (error: any) {
       console.error('Get user error:', error);
       res.status(500).json({ message: "Failed to get user" });
+    }
+  });
+
+  // Get fitness metrics (CTL/ATL/TSB chart data)
+  app.get("/api/fitness/:userId", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const days = parseInt(req.query.days || "90");
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Ensure user can only access their own data
+      if (req.user.id !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      // Check cache first
+      const cacheKey = `fitness:${userId}:${days}`;
+      const cached = getCachedResponse(cacheKey);
+      if (cached) {
+        return res.json(cached);
+      }
+      
+      // Get all activities for the specified time period
+      const activities = await storage.getActivitiesByUserId(userId, days * 2); // Get more to have historical context
+      const metrics = await fitnessService.calculateFitnessMetrics(activities, days);
+      
+      const response = {
+        metrics,
+        currentForm: metrics.length > 0 ? metrics[metrics.length - 1] : null,
+        interpretation: metrics.length > 0 
+          ? fitnessService.getFormInterpretation(metrics[metrics.length - 1].tsb)
+          : null
+      };
+      
+      // Cache for 5 minutes
+      setCachedResponse(cacheKey, response);
+      
+      res.json(response);
+    } catch (error: any) {
+      console.error('Get fitness metrics error:', error);
+      res.status(500).json({ message: "Failed to get fitness metrics" });
     }
   });
 
