@@ -219,14 +219,15 @@ export class StravaService {
       
       let syncedCount = 0;
       const activityTypes = new Set();
+      const sportTypes = new Set();
       let skippedExisting = 0;
-      let skippedNonRunning = 0;
       
-      // Filter to only new running activities that need syncing
+      // Filter to only new activities that need syncing (accept ALL activity types)
       const activitiesToProcess: any[] = [];
       
       for (const stravaActivity of stravaActivities) {
         activityTypes.add(stravaActivity.type);
+        sportTypes.add(stravaActivity.sport_type || stravaActivity.type);
         
         // Check if activity already exists for this user (in-memory lookup)
         if (existingStravaIds.has(stravaActivity.id.toString())) {
@@ -234,13 +235,7 @@ export class StravaService {
           continue;
         }
 
-        // Only sync running-related activities
-        const runningTypes = ['Run', 'VirtualRun', 'Workout', 'TrailRun'];
-        if (!runningTypes.includes(stravaActivity.type)) {
-          skippedNonRunning++;
-          continue;
-        }
-
+        // Accept all activity types (running, cross-training, cycling, etc.)
         activitiesToProcess.push(stravaActivity);
       }
       
@@ -248,10 +243,7 @@ export class StravaService {
       if (skippedExisting > 0) {
         console.log(`Skipped ${skippedExisting} existing activities (already synced)`);
       }
-      if (skippedNonRunning > 0) {
-        console.log(`Skipped ${skippedNonRunning} non-running activities`);
-      }
-      console.log(`Found ${activitiesToProcess.length} new running activities to sync`);
+      console.log(`Found ${activitiesToProcess.length} new activities to sync (all types)`);
       
       // Process activities in batches of 5 for better performance
       const batchSize = 5;
@@ -294,7 +286,7 @@ export class StravaService {
               averageHeartrate: stravaActivity.average_heartrate || null,
               maxHeartrate: stravaActivity.max_heartrate || null,
               startDate: new Date(stravaActivity.start_date),
-              type: stravaActivity.type,
+              type: stravaActivity.sport_type || stravaActivity.type,
               calories: stravaActivity.calories || null,
               averageCadence: stravaActivity.average_cadence ? stravaActivity.average_cadence * 2 : null,
               maxCadence: stravaActivity.max_cadence ? stravaActivity.max_cadence * 2 : null,
@@ -325,7 +317,8 @@ export class StravaService {
       }
 
       console.log(`Activity types found: ${Array.from(activityTypes).join(', ')}`);
-      console.log(`Successfully synced ${syncedCount} running activities for user ${userId}`);
+      console.log(`Sport types found: ${Array.from(sportTypes).join(', ')}`);
+      console.log(`Successfully synced ${syncedCount} activities for user ${userId}`);
       
       // Update last sync timestamp
       await storage.updateUser(userId, {
