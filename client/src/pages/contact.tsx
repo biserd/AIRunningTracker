@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, Phone, MapPin, Send, MessageSquare } from "lucide-react";
+import { Mail, Send, MessageSquare, HelpCircle } from "lucide-react";
 import { Link } from "wouter";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
@@ -163,7 +163,8 @@ export default function ContactPage() {
               </p>
             </div>
 
-            <div className="space-y-6">
+            {/* Email Contact */}
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
               <div className="flex items-start space-x-4">
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                   <Mail className="h-6 w-6 text-blue-600" />
@@ -173,62 +174,29 @@ export default function ContactPage() {
                   <p className="text-gray-600 mb-2">
                     For general inquiries and support
                   </p>
-                  <a href="mailto:support@runanalytics.com" className="text-strava-orange hover:underline">
-                    support@runanalytics.com
+                  <a href="mailto:hello@bigappledigital.nyc" className="text-strava-orange hover:underline font-medium">
+                    hello@bigappledigital.nyc
                   </a>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Phone className="h-6 w-6 text-green-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-charcoal mb-1">Phone Support</h3>
-                  <p className="text-gray-600 mb-2">
-                    Available Monday - Friday, 9 AM - 5 PM PST
-                  </p>
-                  <a href="tel:+1-555-RUN-DATA" className="text-strava-orange hover:underline">
-                    +1 (555) RUN-DATA
-                  </a>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <MapPin className="h-6 w-6 text-purple-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-charcoal mb-1">Office Location</h3>
-                  <p className="text-gray-600">
-                    San Francisco, CA<br />
-                    United States
-                  </p>
                 </div>
               </div>
             </div>
 
-            {/* FAQ Section */}
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <h3 className="font-semibold text-charcoal mb-4">Frequently Asked Questions</h3>
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-medium text-charcoal mb-1">How do I connect my Strava account?</h4>
-                  <p className="text-sm text-gray-600">
-                    After creating an account, go to your dashboard and click "Connect Strava" to authorize data access.
-                  </p>
+            {/* FAQ Link */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-100">
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
+                  <HelpCircle className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <h4 className="font-medium text-charcoal mb-1">Is my data secure?</h4>
-                  <p className="text-sm text-gray-600">
-                    Yes, we use industry-standard encryption and security measures to protect your personal information.
+                  <h3 className="font-semibold text-charcoal mb-1">Have Questions?</h3>
+                  <p className="text-gray-600 mb-3">
+                    Check out our comprehensive FAQ page for quick answers to common questions.
                   </p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-charcoal mb-1">How accurate are the AI predictions?</h4>
-                  <p className="text-sm text-gray-600">
-                    Our AI models are trained on extensive running data and provide highly accurate predictions based on your training history.
-                  </p>
+                  <Link href="/faq">
+                    <a className="inline-flex items-center text-strava-orange hover:underline font-medium">
+                      Visit FAQ Page →
+                    </a>
+                  </Link>
                 </div>
               </div>
             </div>
