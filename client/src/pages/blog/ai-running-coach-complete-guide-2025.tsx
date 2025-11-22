@@ -23,6 +23,33 @@ import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 
 export default function AIRunningCoachGuide() {
+  const blogPostingSchema = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "AI Running Coach: Complete Guide 2025",
+    "description": "Discover everything about AI running coaches in 2025. Learn how AI-powered coaching works, benefits vs human coaches, and how to maximize your training with RunAnalytics AI Coach.",
+    "image": "https://aitracker.run/og-image.jpg",
+    "author": {
+      "@type": "Organization",
+      "name": "RunAnalytics"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "RunAnalytics",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://aitracker.run/og-image.jpg"
+      }
+    },
+    "datePublished": "2025-11-21",
+    "dateModified": "2025-11-21",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://aitracker.run/blog/ai-running-coach-complete-guide-2025"
+    },
+    "keywords": "AI running coach, artificial intelligence running, AI coaching, personalized running coach, virtual running coach, AI fitness coach, machine learning running"
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <SEO
@@ -31,6 +58,7 @@ export default function AIRunningCoachGuide() {
         keywords="AI running coach, artificial intelligence running, AI coaching, personalized running coach, virtual running coach, AI fitness coach, machine learning running"
         url="https://aitracker.run/blog/ai-running-coach-complete-guide-2025"
         type="article"
+        structuredData={blogPostingSchema}
       />
       <AppHeader />
       

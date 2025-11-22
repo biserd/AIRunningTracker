@@ -25,6 +25,33 @@ import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 
 export default function ImproveRunningPace() {
+  const blogPostingSchema = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "How to Improve Running Pace: Complete Guide",
+    "description": "Discover proven strategies to improve your running pace. Learn about interval training, tempo runs, strength training, proper pacing strategies, and common mistakes to avoid. Backed by science and tested by elite coaches.",
+    "image": "https://aitracker.run/og-image.jpg",
+    "author": {
+      "@type": "Organization",
+      "name": "RunAnalytics"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "RunAnalytics",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://aitracker.run/og-image.jpg"
+      }
+    },
+    "datePublished": "2025-11-21",
+    "dateModified": "2025-11-21",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://aitracker.run/blog/how-to-improve-running-pace"
+    },
+    "keywords": "improve running pace, run faster, speed training, interval training, tempo runs, running performance, increase running speed, pace training"
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <SEO
@@ -33,6 +60,7 @@ export default function ImproveRunningPace() {
         keywords="improve running pace, run faster, speed training, interval training, tempo runs, running performance, increase running speed, pace training"
         url="https://aitracker.run/blog/how-to-improve-running-pace"
         type="article"
+        structuredData={blogPostingSchema}
       />
       <AppHeader />
       

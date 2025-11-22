@@ -4,7 +4,8 @@ import { ArrowLeft, Activity, Calendar, Star, Bug, Wrench, AlertTriangle, Chevro
 import { Link } from "wouter";
 import { RELEASE_NOTES, VERSION } from "@shared/version";
 import Footer from "@/components/Footer";
-import { useState } from "react";
+import { SEO } from "@/components/SEO";
+import { useState, useEffect } from "react";
 
 const changeTypeIcons = {
   feature: Star,
@@ -34,7 +35,7 @@ export default function ReleaseNotesPage() {
 
   const navigateToVersion = (index: number) => {
     setSelectedVersionIndex(index);
-    setSidebarOpen(false); // Close sidebar on mobile after selection
+    setSidebarOpen(false);
   };
 
   const navigatePrevious = () => {
@@ -49,8 +50,49 @@ export default function ReleaseNotesPage() {
     }
   };
 
+  const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": `RunAnalytics v${currentRelease.version} Release Notes - ${currentRelease.title}`,
+    "description": `${currentRelease.description} Released ${new Date(currentRelease.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}.`,
+    "image": "https://aitracker.run/og-image.jpg",
+    "author": {
+      "@type": "Organization",
+      "name": "RunAnalytics"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "RunAnalytics",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://aitracker.run/og-image.jpg"
+      }
+    },
+    "datePublished": currentRelease.date,
+    "dateModified": currentRelease.date,
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": `https://aitracker.run/release-notes#v${currentRelease.version}`
+    },
+    "about": {
+      "@type": "SoftwareApplication",
+      "name": "RunAnalytics",
+      "applicationCategory": "HealthApplication",
+      "operatingSystem": "Web"
+    }
+  };
+
   return (
     <div className="min-h-screen bg-light-grey">
+      <SEO
+        title={`RunAnalytics v${currentRelease.version} Release Notes - ${currentRelease.title}`}
+        description={`${currentRelease.description} Released ${new Date(currentRelease.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}.`}
+        keywords="RunAnalytics updates, running analytics changelog, new features, Strava analytics updates, AI running coach updates"
+        url={`https://aitracker.run/release-notes#v${currentRelease.version}`}
+        type="article"
+        ogImage="https://aitracker.run/og-image.jpg"
+        structuredData={articleSchema}
+      />
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
