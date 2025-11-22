@@ -18,7 +18,7 @@ import {
   Smartphone,
   BarChart3
 } from "lucide-react";
-import AppHeader from "@/components/AppHeader";
+import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 
@@ -60,7 +60,7 @@ export default function AIRunningCoachGuide() {
         type="article"
         structuredData={blogPostingSchema}
       />
-      <AppHeader />
+      <PublicHeader />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         {/* Article Header */}

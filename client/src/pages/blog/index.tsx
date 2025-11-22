@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, ArrowRight, Brain, TrendingUp, BarChart } from "lucide-react";
-import AppHeader from "@/components/AppHeader";
+import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 
@@ -60,7 +60,7 @@ export default function BlogIndex() {
         url="https://aitracker.run/blog"
         type="website"
       />
-      <AppHeader />
+      <PublicHeader />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         {/* Header */}

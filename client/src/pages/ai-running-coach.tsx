@@ -23,7 +23,7 @@ import {
   Sparkles,
   Calendar
 } from "lucide-react";
-import AppHeader from "@/components/AppHeader";
+import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 
@@ -37,7 +37,7 @@ export default function AICoachLanding() {
         url="https://aitracker.run/ai-running-coach"
         type="website"
       />
-      <AppHeader />
+      <PublicHeader />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Hero Section */}
