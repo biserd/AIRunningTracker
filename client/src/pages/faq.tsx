@@ -116,6 +116,60 @@ export default function FAQPage() {
 
             <section className="bg-white rounded-lg p-6 border border-gray-200">
               <div className="flex items-center space-x-3 mb-4">
+                <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                  <BarChart className="h-4 w-4 text-yellow-600" />
+                </div>
+                <h2 className="text-xl font-semibold text-charcoal">Fitness, Fatigue & Form Chart</h2>
+              </div>
+              
+              <div className="space-y-6 text-gray-700">
+                <div>
+                  <h3 className="font-semibold text-charcoal mb-2">What do CTL, ATL, and TSB mean?</h3>
+                  <p className="mb-2">
+                    These are industry-standard metrics used by serious runners and coaches to track training load and recovery:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 ml-4">
+                    <li><strong>CTL (Chronic Training Load)</strong> is your "Fitness" - a 42-day rolling average showing your long-term training buildup</li>
+                    <li><strong>ATL (Acute Training Load)</strong> is your "Fatigue" - a 7-day rolling average showing your recent training stress</li>
+                    <li><strong>TSB (Training Stress Balance)</strong> is your "Form" - calculated as CTL minus ATL, showing your race readiness</li>
+                  </ul>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-charcoal mb-2">How do I use the Fitness/Fatigue/Form chart?</h3>
+                  <p className="mb-2">
+                    The chart helps you understand your training status and plan your races:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 ml-4">
+                    <li><strong>Building fitness:</strong> TSB is negative (-10 to -30) as you train hard and accumulate fatigue</li>
+                    <li><strong>Tapering:</strong> TSB rises toward positive as you reduce training volume before a race</li>
+                    <li><strong>Race ready:</strong> TSB is positive (+5 to +15) when you're fresh and ready to perform</li>
+                    <li><strong>Recovery:</strong> After hard training, watch TSB increase as you recover</li>
+                  </ul>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-charcoal mb-2">What's a good Form (TSB) score?</h3>
+                  <p>
+                    There's no single "good" score - it depends on your training phase. During hard training blocks, TSB of 
+                    -15 to -30 is normal (you're building fitness). Before a race, aim for TSB of +5 to +15 (fresh and ready). 
+                    Very negative scores (below -30) may indicate you're at risk of overtraining and should consider rest.
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-charcoal mb-2">When should I pay attention to this chart?</h3>
+                  <p>
+                    Check it regularly if you're training for a specific race or goal. The chart helps you avoid overtraining, 
+                    plan your taper correctly, and ensure you're fresh on race day. If your TSB drops below -30 for extended 
+                    periods, it's a sign you may need a recovery week.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section className="bg-white rounded-lg p-6 border border-gray-200">
+              <div className="flex items-center space-x-3 mb-4">
                 <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
                   <Target className="h-4 w-4 text-purple-600" />
                 </div>
