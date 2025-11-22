@@ -1,4 +1,4 @@
-export const VERSION = "2.7.5";
+export const VERSION = "2.7.6";
 
 export interface ReleaseNote {
   version: string;
@@ -12,6 +12,54 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "2.7.6",
+    date: "2025-11-22",
+    title: "Fitness, Fatigue & Form Chart - CTL/ATL/TSB Tracking",
+    description: "Industry-standard fitness tracking comes to RunAnalytics with the new Fitness/Fatigue/Form chart. Monitor your training load with CTL (Chronic Training Load - 42-day fitness), ATL (Acute Training Load - 7-day fatigue), and TSB (Training Stress Balance - your form/race readiness). Used by serious runners and coaches worldwide, these metrics help you avoid overtraining, plan your taper correctly, and arrive fresh on race day.",
+    changes: [
+      {
+        type: "feature",
+        description: "Fitness/Fatigue/Form chart on dashboard - visualize CTL (Fitness), ATL (Fatigue), and TSB (Form) over time with interactive Recharts visualization"
+      },
+      {
+        type: "feature",
+        description: "CTL (Chronic Training Load) - 42-day exponential weighted moving average showing long-term fitness buildup"
+      },
+      {
+        type: "feature",
+        description: "ATL (Acute Training Load) - 7-day exponential weighted moving average showing recent training stress and fatigue"
+      },
+      {
+        type: "feature",
+        description: "TSB (Training Stress Balance) - Form score calculated as CTL minus ATL, indicating race readiness (positive = fresh, negative = building fitness)"
+      },
+      {
+        type: "feature",
+        description: "Time range selector - view 30, 90, or 180 days of fitness metrics to track training cycles and tapering phases"
+      },
+      {
+        type: "feature",
+        description: "Beginner-friendly tooltips - hover over any point to see detailed metrics with plain-language explanations of what each value means"
+      },
+      {
+        type: "feature",
+        description: "Expandable 'About this chart' section - comprehensive guide explaining CTL/ATL/TSB concepts, usage examples for building fitness, tapering, and race preparation"
+      },
+      {
+        type: "feature",
+        description: "FAQ section on Fitness/Fatigue/Form - dedicated help content explaining what good TSB scores are, when to pay attention, and how to avoid overtraining"
+      },
+      {
+        type: "improvement",
+        description: "AI insights now reference Form score (TSB) - recovery recommendations include your current TSB status (Fresh, Neutral, Fatigued, Very Fatigued) for context-aware guidance"
+      },
+      {
+        type: "improvement",
+        description: "Training load calculations consider all activities - CTL/ATL/TSB account for running, cycling, and cross-training for holistic fitness assessment"
+      }
+    ]
+  },
   {
     version: "2.7.5",
     date: "2025-11-16",
