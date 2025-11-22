@@ -1,6 +1,9 @@
 import { storage } from "../storage";
 import type { Activity } from "@shared/schema";
 
+// Running activity types based on Strava's sport_type field
+const RUNNING_TYPES = ['Run', 'TrailRun', 'VirtualRun'];
+
 interface PerformanceMetrics {
   vo2Max: number;
   runningEfficiency: number;
@@ -53,7 +56,9 @@ export class PerformanceAnalyticsService {
     }
 
     const activities = await storage.getActivitiesByUserId(userId, 50);
-    const runningActivities = activities.filter(a => a.distance > 1000); // At least 1km runs
+    const runningActivities = activities.filter(a => 
+      RUNNING_TYPES.includes(a.type) && a.distance > 1000
+    );
     
     console.log(`VO2 calculation for user ${userId}: ${activities.length} total activities, ${runningActivities.length} running activities > 1km`);
     
