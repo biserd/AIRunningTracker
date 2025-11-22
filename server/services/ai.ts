@@ -7,6 +7,9 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY || "default_key" 
 });
 
+// Running activity types based on Strava's sport_type field
+const RUNNING_TYPES = ['Run', 'TrailRun', 'VirtualRun'];
+
 interface RunningStats {
   totalDistance: number;
   totalTime: number;
@@ -83,44 +86,63 @@ export class AIService {
     const user = await storage.getUser(userId);
     if (!user) throw new Error('User not found');
     
-    const activities = await storage.getActivitiesByUserId(userId, 30);
-    console.log(`Generating insights for user ${userId} with ${activities.length} activities`);
+    const allActivities = await storage.getActivitiesByUserId(userId, 30);
+    console.log(`Generating insights for user ${userId} with ${allActivities.length} total activities`);
     
-    if (activities.length === 0) {
+    if (allActivities.length === 0) {
       console.log(`No activities found for user ${userId}, skipping insights generation`);
       return;
     }
 
-    const isMetric = user.unitPreference !== "miles";
-    const stats = this.calculateStats(activities);
-    const activitiesText = this.formatActivitiesForAI(activities, isMetric);
+    // Filter to running activities for pace/form analysis
+    const runningActivities = allActivities.filter(a => RUNNING_TYPES.includes(a.type));
+    console.log(`${runningActivities.length} running activities, ${allActivities.length - runningActivities.length} cross-training activities`);
+    
+    if (runningActivities.length === 0) {
+      console.log(`No running activities found for user ${userId}, skipping insights generation`);
+      return;
+    }
 
-    // Format statistics based on unit preference
+    const isMetric = user.unitPreference !== "miles";
+    
+    // Calculate running stats for pace/form insights
+    const runningStats = this.calculateStats(runningActivities);
+    const runningActivitiesText = this.formatActivitiesForAI(runningActivities, isMetric);
+    
+    // Calculate total training volume (all activities) for recovery context
+    const totalActivities = allActivities.length;
+    const crossTrainingCount = totalActivities - runningActivities.length;
+
+    // Format statistics based on unit preference (running only)
     const totalDistance = isMetric ? 
-      `${(stats.totalDistance / 1000).toFixed(1)}km` : 
-      `${((stats.totalDistance / 1000) * 0.621371).toFixed(1)}mi`;
+      `${(runningStats.totalDistance / 1000).toFixed(1)}km` : 
+      `${((runningStats.totalDistance / 1000) * 0.621371).toFixed(1)}mi`;
     
     const avgPace = isMetric ? 
-      `${stats.averagePace.toFixed(2)} min/km` : 
-      `${(stats.averagePace / 0.621371).toFixed(2)} min/mi`;
+      `${runningStats.averagePace.toFixed(2)} min/km` : 
+      `${(runningStats.averagePace / 0.621371).toFixed(2)} min/mi`;
     
     const elevation = isMetric ? 
-      `${stats.totalElevation.toFixed(0)}m` : 
-      `${(stats.totalElevation * 3.28084).toFixed(0)}ft`;
+      `${runningStats.totalElevation.toFixed(0)}m` : 
+      `${(runningStats.totalElevation * 3.28084).toFixed(0)}ft`;
 
     const prompt = `
 Analyze this runner's recent activity data and provide insights:
 
-Running Statistics:
-- Total distance: ${totalDistance}
-- Total activities: ${stats.activityCount}
-- Average pace: ${avgPace}
+Running Statistics (running activities only):
+- Total running distance: ${totalDistance}
+- Running activities: ${runningStats.activityCount}
+- Average running pace: ${avgPace}
 - Total elevation: ${elevation}
-- Average heart rate: ${stats.averageHeartRate?.toFixed(0) || 'N/A'} bpm
+- Average heart rate: ${runningStats.averageHeartRate?.toFixed(0) || 'N/A'} bpm
+
+Training Context:
+- Total activities (all types): ${totalActivities}
+- Cross-training activities: ${crossTrainingCount}${crossTrainingCount > 0 ? ' (good for recovery and injury prevention!)' : ''}
 - Unit preference: ${isMetric ? 'kilometers' : 'miles'}
 
-Recent Activities:
-${activitiesText}
+Recent Running Activities:
+${runningActivitiesText}
 
 Provide analysis in the following JSON format:
 {
