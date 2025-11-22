@@ -31,7 +31,7 @@ export default function BestStravaTools() {
         title="Best Strava Analytics Tools 2025: Comprehensive Comparison | RunAnalytics"
         description="Compare the top Strava analytics platforms in 2025. Detailed review of RunAnalytics, TrainingPeaks, Strava Summit, Final Surge, and Golden Cheetah. Find the perfect tool for your running data analysis."
         keywords="best Strava analytics, Strava tools, running analytics, Strava alternatives, training analysis, performance tracking, RunAnalytics vs TrainingPeaks"
-        url="https://runanalytics.ai/blog/best-strava-analytics-tools-2025"
+        url="https://aitracker.run/blog/best-strava-analytics-tools-2025"
         type="article"
       />
       <AppHeader />

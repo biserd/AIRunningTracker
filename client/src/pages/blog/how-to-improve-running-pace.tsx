@@ -31,7 +31,7 @@ export default function ImproveRunningPace() {
         title="How to Improve Running Pace: Complete Guide 2025 | RunAnalytics"
         description="Discover proven strategies to improve your running pace. Learn about interval training, tempo runs, strength training, proper pacing strategies, and common mistakes to avoid. Backed by science and tested by elite coaches."
         keywords="improve running pace, run faster, speed training, interval training, tempo runs, running performance, increase running speed, pace training"
-        url="https://runanalytics.ai/blog/how-to-improve-running-pace"
+        url="https://aitracker.run/blog/how-to-improve-running-pace"
         type="article"
       />
       <AppHeader />

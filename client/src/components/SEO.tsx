@@ -14,8 +14,8 @@ export function SEO({
   title,
   description,
   keywords,
-  ogImage = 'https://runanalytics.ai/og-image.jpg',
-  url = 'https://runanalytics.ai/',
+  ogImage = 'https://aitracker.run/og-image.jpg',
+  url = 'https://aitracker.run/',
   type = 'website',
   structuredData
 }: SEOProps) {

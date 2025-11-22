@@ -124,7 +124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // SEO: robots.txt
   app.get("/robots.txt", (req, res) => {
-    const baseUrl = "https://runanalytics.ai";
+    const baseUrl = "https://aitracker.run";
     
     const robotsTxt = `User-agent: *
 Allow: /
@@ -147,7 +147,7 @@ Sitemap: ${baseUrl}/sitemap.xml`;
 
   // SEO: Sitemap
   app.get("/sitemap.xml", (req, res) => {
-    const baseUrl = "https://runanalytics.ai";
+    const baseUrl = "https://aitracker.run";
     
     const pages = [
       { url: "/", changefreq: "daily", priority: "1.0" },

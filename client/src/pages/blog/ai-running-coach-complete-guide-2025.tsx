@@ -29,7 +29,7 @@ export default function AIRunningCoachGuide() {
         title="AI Running Coach: Complete Guide 2025 | RunAnalytics"
         description="Discover everything about AI running coaches in 2025. Learn how AI-powered coaching works, benefits vs human coaches, and how to maximize your training with RunAnalytics AI Coach."
         keywords="AI running coach, artificial intelligence running, AI coaching, personalized running coach, virtual running coach, AI fitness coach, machine learning running"
-        url="https://runanalytics.ai/blog/ai-running-coach-complete-guide-2025"
+        url="https://aitracker.run/blog/ai-running-coach-complete-guide-2025"
         type="article"
       />
       <AppHeader />

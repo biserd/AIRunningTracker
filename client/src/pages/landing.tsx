@@ -40,8 +40,8 @@ export default function LandingPage() {
       {
         "@type": "Organization",
         "name": "RunAnalytics",
-        "url": "https://runanalytics.ai",
-        "logo": "https://runanalytics.ai/logo.png",
+        "url": "https://aitracker.run",
+        "logo": "https://aitracker.run/logo.png",
         "description": "AI-powered running analytics and coaching platform",
         "sameAs": [
           "https://twitter.com/runanalytics",
