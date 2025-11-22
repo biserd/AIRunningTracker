@@ -44,7 +44,7 @@ Preferred communication style: Simple, everyday language.
 ### System Design Choices
 - **Database Schema**: Users, Activities, AI Insights, Training Plans, Email Waitlist, AI Conversations, AI Messages.
 - **Authentication**: JWT token-based, secure password hashing, protected routes, admin roles.
-- **Strava Integration**: OAuth, periodic activity fetching, real-time data, automatic refresh token management.
+- **Strava Integration**: OAuth, periodic activity fetching, real-time data, automatic refresh token management. Syncs ALL activity types (running, cross-training, cycling, etc.) but filters to running types (`Run`, `TrailRun`, `VirtualRun`) for running-specific metrics (VO2 max, Runner Score, race predictions, pace analysis). Training load and injury risk analysis use all activities for holistic assessment.
 - **AI Analytics Engine**: OpenAI GPT-5.1 integration for performance insights, ML-powered race predictions, injury risk analysis, personalized training plans, Runner Score calculation, and conversational coaching chat.
 - **Performance Analytics**: VO2 Max estimation, heart rate zone calculations, running efficiency, training load analysis, progress tracking.
 - **Version Management**: Centralized version configuration, structured changelog, dedicated release notes page, and automated tracking of changes.

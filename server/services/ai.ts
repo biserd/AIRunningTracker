@@ -96,22 +96,33 @@ export class AIService {
 
     // Filter to running activities for pace/form analysis
     const runningActivities = allActivities.filter(a => RUNNING_TYPES.includes(a.type));
-    console.log(`${runningActivities.length} running activities, ${allActivities.length - runningActivities.length} cross-training activities`);
+    const crossTrainingActivities = allActivities.filter(a => !RUNNING_TYPES.includes(a.type));
+    console.log(`${runningActivities.length} running activities, ${crossTrainingActivities.length} cross-training activities`);
     
-    if (runningActivities.length === 0) {
-      console.log(`No running activities found for user ${userId}, skipping insights generation`);
-      return;
-    }
-
     const isMetric = user.unitPreference !== "miles";
     
-    // Calculate running stats for pace/form insights
+    // Calculate stats for both running and cross-training
     const runningStats = this.calculateStats(runningActivities);
+    const crossTrainingStats = this.calculateStats(crossTrainingActivities);
+    const totalStats = this.calculateStats(allActivities);
+    
+    // If no running activities, provide cross-training only insights
+    if (runningActivities.length === 0 && crossTrainingActivities.length > 0) {
+      console.log(`No running activities found for user ${userId}, generating cross-training recovery insights`);
+      await this.generateCrossTrainingOnlyInsights(userId, crossTrainingActivities, crossTrainingStats, isMetric);
+      return;
+    }
+    
+    if (allActivities.length === 0) {
+      console.log(`No activities found for user ${userId}, skipping insights generation`);
+      return;
+    }
+    
     const runningActivitiesText = this.formatActivitiesForAI(runningActivities, isMetric);
     
     // Calculate total training volume (all activities) for recovery context
     const totalActivities = allActivities.length;
-    const crossTrainingCount = totalActivities - runningActivities.length;
+    const crossTrainingCount = crossTrainingActivities.length;
 
     // Format statistics based on unit preference (running only)
     const totalDistance = isMetric ? 
@@ -136,10 +147,17 @@ Running Statistics (running activities only):
 - Total elevation: ${elevation}
 - Average heart rate: ${runningStats.averageHeartRate?.toFixed(0) || 'N/A'} bpm
 
-Training Context:
+Training Context (Holistic Assessment):
 - Total activities (all types): ${totalActivities}
-- Cross-training activities: ${crossTrainingCount}${crossTrainingCount > 0 ? ' (good for recovery and injury prevention!)' : ''}
+- Total training distance (all activities): ${isMetric ? (totalStats.totalDistance / 1000).toFixed(1) + 'km' : ((totalStats.totalDistance / 1000) * 0.621371).toFixed(1) + 'mi'}
+- Total training time (all activities): ${(totalStats.totalTime / 3600).toFixed(1)} hours
+- Cross-training activities: ${crossTrainingCount}${crossTrainingCount > 0 ? `
+  - Cross-training distance: ${isMetric ? (crossTrainingStats.totalDistance / 1000).toFixed(1) + 'km' : ((crossTrainingStats.totalDistance / 1000) * 0.621371).toFixed(1) + 'mi'}
+  - Cross-training time: ${(crossTrainingStats.totalTime / 3600).toFixed(1)} hours
+  - Note: Cross-training contributes to overall training load and recovery needs!` : ''}
 - Unit preference: ${isMetric ? 'kilometers' : 'miles'}
+
+IMPORTANT: When providing recovery insights, consider TOTAL training load (${(totalStats.totalTime / 3600).toFixed(1)} hours across all activities), not just running volume.
 
 Recent Running Activities:
 ${runningActivitiesText}
@@ -348,6 +366,107 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
       }
       throw new Error(`Failed to generate AI insights: ${error.message || 'Unknown error'}`);
     }
+  }
+
+  /**
+   * Generate insights for users who only have cross-training activities (no running data)
+   */
+  private async generateCrossTrainingOnlyInsights(
+    userId: number,
+    activities: Activity[],
+    stats: RunningStats,
+    isMetric: boolean
+  ): Promise<void> {
+    const totalDistance = isMetric ?
+      `${(stats.totalDistance / 1000).toFixed(1)}km` :
+      `${((stats.totalDistance / 1000) * 0.621371).toFixed(1)}mi`;
+
+    const totalTime = `${(stats.totalTime / 3600).toFixed(1)} hours`;
+
+    // Generate complete set of insights for consistency with main path
+    
+    // Performance insight
+    await storage.createAIInsight({
+      userId,
+      type: 'performance',
+      title: 'Fitness Building',
+      content: `Building fitness through ${stats.activityCount} cross-training sessions (${totalDistance}, ${totalTime}). Great foundation for running!`,
+      confidence: 0.75,
+    });
+
+    // Pattern insight
+    await storage.createAIInsight({
+      userId,
+      type: 'pattern',
+      title: 'Training Pattern',
+      content: `Consistent cross-training routine established. Consider adding running to build sport-specific endurance.`,
+      confidence: 0.8,
+    });
+
+    // Recovery insight
+    await storage.createAIInsight({
+      userId,
+      type: 'recovery',
+      title: 'Recovery Status',
+      content: `Cross-training reduces injury risk while building aerobic base. Your body is ready to start running!`,
+      confidence: 0.8,
+    });
+
+    // Motivation insight
+    await storage.createAIInsight({
+      userId,
+      type: 'motivation',
+      title: 'Keep Going!',
+      content: `You're building a strong fitness foundation. Time to add some running and see your progress accelerate!`,
+      confidence: 0.85,
+    });
+
+    // Technique insight
+    await storage.createAIInsight({
+      userId,
+      type: 'technique',
+      title: 'Starting Tips',
+      content: `When you start running: focus on easy conversational pace, land midfoot, keep cadence around 170-180 steps/min.`,
+      confidence: 0.8,
+    });
+
+    // Recommendations
+    const unit = isMetric ? 'km' : 'mi';
+    const shortDistance = isMetric ? '2-3km' : '1-2mi';
+    
+    await storage.createAIInsight({
+      userId,
+      type: 'recommendation',
+      title: 'Getting Started',
+      content: `Start with 2-3 easy runs per week (${shortDistance} each) at conversational pace.`,
+      confidence: 0.9,
+    });
+
+    await storage.createAIInsight({
+      userId,
+      type: 'recommendation',
+      title: 'Run-Walk Method',
+      content: `Try run-walk intervals: 2min run, 1min walk. Gradually reduce walk breaks as fitness improves.`,
+      confidence: 0.9,
+    });
+
+    await storage.createAIInsight({
+      userId,
+      type: 'recommendation',
+      title: 'Balance Training',
+      content: `Keep 1-2 cross-training sessions per week while building running base for balanced fitness.`,
+      confidence: 0.85,
+    });
+
+    // Cleanup old insights to match main path
+    await storage.cleanupOldAIInsights(userId, 'performance', 10);
+    await storage.cleanupOldAIInsights(userId, 'pattern', 10);
+    await storage.cleanupOldAIInsights(userId, 'recovery', 10);
+    await storage.cleanupOldAIInsights(userId, 'motivation', 10);
+    await storage.cleanupOldAIInsights(userId, 'technique', 10);
+    await storage.cleanupOldAIInsights(userId, 'recommendation', 30);
+
+    console.log('Generated complete cross-training insights for user', userId);
   }
 }
 
