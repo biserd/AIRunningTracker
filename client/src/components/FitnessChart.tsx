@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -52,13 +53,7 @@ export function FitnessChart({ userId }: FitnessChartProps) {
 
   const { data, isLoading, error } = useQuery<FitnessData>({
     queryKey: [`/api/fitness/${userId}`, { days: timeRange }],
-    queryFn: async () => {
-      const response = await fetch(`/api/fitness/${userId}?days=${timeRange}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch fitness data');
-      }
-      return response.json();
-    },
+    queryFn: () => apiRequest(`/api/fitness/${userId}?days=${timeRange}`, "GET"),
     enabled: !!userId,
   });
 
