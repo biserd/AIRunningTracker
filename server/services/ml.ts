@@ -6,6 +6,9 @@ import { RunnerScoreService } from "./runnerScore";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Running activity types based on Strava's sport_type field
+const RUNNING_TYPES = ['Run', 'TrailRun', 'VirtualRun'];
+
 interface TrainingMetrics {
   weeklyMileage: number[];
   avgPaces: number[];
@@ -104,7 +107,8 @@ export class MLService {
     const user = await storage.getUser(userId);
     if (!user) throw new Error('User not found');
 
-    const activities = await storage.getActivitiesByUserId(userId, 50);
+    const allActivities = await storage.getActivitiesByUserId(userId, 50);
+    const activities = allActivities.filter(a => RUNNING_TYPES.includes(a.type));
     if (activities.length < 5) {
       return [{
         distance: "5K",
@@ -192,7 +196,8 @@ export class MLService {
       fitnessLevel = 'intermediate'
     } = params;
 
-    const activities = await storage.getActivitiesByUserId(userId, 50);
+    const allActivities = await storage.getActivitiesByUserId(userId, 50);
+    const activities = allActivities.filter(a => RUNNING_TYPES.includes(a.type));
     const metrics = this.analyzeTrainingData(activities);
     
     const isMetric = user.unitPreference !== "miles";
