@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Activity, Calendar, Star, Bug, Wrench, AlertTriangle, ChevronLeft, ChevronRight, Menu, X } from "lucide-react";
+import { Activity, Calendar, Star, Bug, Wrench, AlertTriangle, ChevronLeft, ChevronRight, Menu, X, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { RELEASE_NOTES, VERSION } from "@shared/version";
 import PublicHeader from "@/components/PublicHeader";
@@ -97,6 +97,32 @@ export default function ReleaseNotesPage() {
       <PublicHeader />
 
       <div className="flex max-w-7xl mx-auto relative">
+        {/* Page Controls - Mobile only toggle + Back button */}
+        <div className="absolute top-4 left-4 z-30 flex items-center gap-2 lg:left-6">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            asChild
+            data-testid="button-back-home"
+          >
+            <Link href="/">
+              <ArrowLeft className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Back</span>
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="lg:hidden"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-expanded={sidebarOpen}
+            aria-label="Toggle version history sidebar"
+            data-testid="button-toggle-sidebar"
+          >
+            <Menu className="h-4 w-4" />
+            <span className="ml-2">Versions</span>
+          </Button>
+        </div>
         {/* Sidebar - Hidden on mobile, overlay on mobile when open */}
         <div className={`
           fixed lg:sticky lg:block top-0 left-0 z-50 h-screen
