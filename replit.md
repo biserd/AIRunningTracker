@@ -4,7 +4,7 @@
 
 RunAnalytics is a comprehensive running analytics platform that integrates with Strava to provide AI-powered insights, performance tracking, and training recommendations for runners. The application combines real-time activity data with machine learning algorithms to deliver personalized running analytics and coaching. The platform offers advanced features like a Race Predictor, Form Stability Analyzer, Aerobic Decoupling Calculator, Training Split Analyzer, Marathon Fueling Planner, Running Heatmap, and AI Running Coach Chat, all accessible for free. Its business vision is to provide all users with Pro-tier features, focusing on SEO optimization, mobile optimization, and an improved onboarding experience to maximize user acquisition.
 
-**Current Version**: 2.7.6 (Released November 22, 2025)
+**Current Version**: 2.7.7 (Released November 28, 2025)
 
 ## User Preferences
 
