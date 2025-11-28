@@ -13,6 +13,7 @@ import { ChatService } from "./services/chat";
 import { fitnessService } from "./services/fitness";
 import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, type Activity, type RunningShoe } from "@shared/schema";
 import { shoeData } from "./shoe-data";
+import { validateAllShoes, getPipelineStats, findDuplicates, getShoeDataWithMetadata, getShoesWithMetadataFromStorage } from "./shoe-pipeline";
 import { z } from "zod";
 
 // Authentication middleware
@@ -3152,6 +3153,65 @@ ${pages.map(page => `  <url>
     } catch (error: any) {
       console.error('Seed shoes error:', error);
       res.status(500).json({ message: error.message || "Failed to seed shoes" });
+    }
+  });
+
+  // Get pipeline stats from database (admin only)
+  app.get("/api/shoes/pipeline/stats", authenticateAdmin, async (req: any, res) => {
+    try {
+      // Fetch shoes from database (live data)
+      const dbShoes = await storage.getShoes({});
+      const shoes = getShoesWithMetadataFromStorage(dbShoes as any);
+      const stats = getPipelineStats(shoes);
+      const duplicates = findDuplicates(shoes);
+      
+      res.json({
+        stats,
+        duplicates,
+        databaseCount: dbShoes.length,
+        seedDataCount: shoeData.length
+      });
+    } catch (error: any) {
+      console.error('Pipeline stats error:', error);
+      res.status(500).json({ message: error.message || "Failed to get pipeline stats" });
+    }
+  });
+
+  // Validate all shoe data from database (admin only)
+  app.get("/api/shoes/pipeline/validate", authenticateAdmin, async (req: any, res) => {
+    try {
+      // Fetch shoes from database for validation
+      const dbShoes = await storage.getShoes({});
+      const shoes = getShoesWithMetadataFromStorage(dbShoes as any);
+      
+      const valid: typeof shoes = [];
+      const invalid: { shoe: typeof shoes[0]; errors: string[] }[] = [];
+      
+      const { validateShoeData } = await import("./shoe-pipeline");
+      
+      shoes.forEach(shoe => {
+        const validation = validateShoeData(shoe);
+        if (validation.valid) {
+          valid.push(shoe);
+        } else {
+          invalid.push({ shoe, errors: validation.errors });
+        }
+      });
+      
+      res.json({
+        totalShoes: valid.length + invalid.length,
+        validShoes: valid.length,
+        invalidShoes: invalid.length,
+        stats: getPipelineStats(shoes),
+        errors: invalid.map(i => ({
+          brand: i.shoe.brand,
+          model: i.shoe.model,
+          errors: i.errors
+        }))
+      });
+    } catch (error: any) {
+      console.error('Pipeline validation error:', error);
+      res.status(500).json({ message: error.message || "Failed to validate shoes" });
     }
   });
 

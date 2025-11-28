@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Activity, TrendingUp, Calendar, Shield, Database, BarChart3, Clock, Target, Signal, Server, Cpu, HardDrive, AlertTriangle, CheckCircle, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, Activity, TrendingUp, Calendar, Shield, Database, BarChart3, Clock, Target, Signal, Server, Cpu, HardDrive, AlertTriangle, CheckCircle, XCircle, ChevronLeft, ChevronRight, ShoppingBag } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -240,15 +240,26 @@ export default function AdminPage() {
               </div>
               <p className="text-gray-600 mt-2">Platform overview and user management</p>
             </div>
-            <Button 
-              onClick={() => setLocation('/admin/performance-logs')}
-              variant="outline"
-              className="flex items-center gap-2"
-              data-testid="button-performance-logs"
-            >
-              <Server className="h-4 w-4" />
-              Performance Logs
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setLocation('/admin/shoes')}
+                variant="outline"
+                className="flex items-center gap-2"
+                data-testid="button-shoes-admin"
+              >
+                <ShoppingBag className="h-4 w-4" />
+                Shoe Database
+              </Button>
+              <Button 
+                onClick={() => setLocation('/admin/performance-logs')}
+                variant="outline"
+                className="flex items-center gap-2"
+                data-testid="button-performance-logs"
+              >
+                <Server className="h-4 w-4" />
+                Performance Logs
+              </Button>
+            </div>
           </div>
         </div>
       </div>
