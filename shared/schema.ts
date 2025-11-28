@@ -194,6 +194,12 @@ export const runningShoes = pgTable("running_shoes", {
   releaseYear: integer("release_year").notNull(),
   imageUrl: text("image_url"),
   description: text("description"),
+  // Data sourcing metadata for tracking data freshness and accuracy
+  sourceUrl: text("source_url"), // URL of the source (manufacturer website, RunRepeat, etc.)
+  dataSource: text("data_source", {
+    enum: ["manufacturer", "runrepeat", "doctors_of_running", "running_warehouse", "user_submitted", "curated"]
+  }).default("curated"), // Where the data came from
+  lastVerified: timestamp("last_verified"), // When the data was last verified against sources
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
   brandIdx: index("running_shoes_brand_idx").on(table.brand),
