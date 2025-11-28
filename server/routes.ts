@@ -3121,13 +3121,21 @@ ${pages.map(page => `  <url>
   // Seed shoes database (public for initial setup, can be made admin-only later)
   app.post("/api/shoes/seed", async (req, res) => {
     try {
+      const force = req.query.force === 'true';
+      
       // Check if shoes already exist
       const existingShoes = await storage.getShoes({});
-      if (existingShoes.length > 0) {
+      
+      if (existingShoes.length > 0 && !force) {
         return res.json({ 
-          message: `Database already has ${existingShoes.length} shoes`,
+          message: `Database already has ${existingShoes.length} shoes. Use ?force=true to reseed.`,
           count: existingShoes.length 
         });
+      }
+
+      // If force, clear existing shoes first
+      if (force && existingShoes.length > 0) {
+        await storage.clearAllShoes();
       }
 
       // Seed the database with shoe data
@@ -3138,7 +3146,7 @@ ${pages.map(page => `  <url>
       }
 
       res.json({ 
-        message: `Successfully seeded ${seededCount} shoes`,
+        message: `Successfully seeded ${seededCount} shoes${force ? ' (force reseed)' : ''}`,
         count: seededCount 
       });
     } catch (error: any) {

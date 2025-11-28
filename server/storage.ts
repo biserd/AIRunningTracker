@@ -185,6 +185,7 @@ export interface IStorage {
   }): Promise<RunningShoe[]>;
   getShoeById(shoeId: number): Promise<RunningShoe | undefined>;
   createShoe(shoe: InsertRunningShoe): Promise<RunningShoe>;
+  clearAllShoes(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1292,6 +1293,10 @@ export class DatabaseStorage implements IStorage {
       .values(shoe)
       .returning();
     return newShoe;
+  }
+
+  async clearAllShoes(): Promise<void> {
+    await db.delete(runningShoes);
   }
 }
 
