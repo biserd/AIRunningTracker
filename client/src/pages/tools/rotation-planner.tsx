@@ -76,12 +76,14 @@ export default function RotationPlannerPage() {
   return (
     <>
       <Helmet>
-        <title>Shoe Rotation Planner - Build Your Perfect Training Setup | RunAnalytics</title>
-        <meta name="description" content="Build the optimal running shoe rotation for your training. Get personalized recommendations for daily trainers, speed work, long runs, racing, and recovery." />
-        <meta property="og:title" content="Shoe Rotation Planner | RunAnalytics" />
-        <meta property="og:description" content="Build a complete shoe rotation tailored to your weight and mileage. Recommendations for every type of run." />
+        <title>Running Shoe Rotation Planner - Build Your Perfect Training Setup | RunAnalytics</title>
+        <meta name="description" content="Build the optimal running shoe rotation for your training. Get personalized recommendations from 100+ verified shoes for daily trainers, speed work, long runs, racing, and recovery." />
+        <meta name="keywords" content="shoe rotation planner, running shoe rotation, training shoe setup, best shoes for daily training, racing shoes vs training shoes" />
+        <meta property="og:title" content="Running Shoe Rotation Planner | RunAnalytics" />
+        <meta property="og:description" content="Build a complete shoe rotation tailored to your weight and mileage. Expert recommendations for every type of run from 100+ verified shoes." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://aitracker.run/tools/rotation-planner" />
+        <link rel="canonical" href="https://aitracker.run/tools/rotation-planner" />
       </Helmet>
 
       <div className="min-h-screen bg-light-grey">

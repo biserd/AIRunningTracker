@@ -75,12 +75,14 @@ export default function ShoeFinderPage() {
   return (
     <>
       <Helmet>
-        <title>Personalized Shoe Finder - Find Your Perfect Running Shoe | RunAnalytics</title>
-        <meta name="description" content="Get personalized running shoe recommendations based on your weight, running goals, and foot type. Find the perfect match from 35+ popular shoes." />
-        <meta property="og:title" content="Personalized Shoe Finder | RunAnalytics" />
-        <meta property="og:description" content="Answer a few questions and get AI-powered running shoe recommendations tailored to your running style." />
+        <title>Personalized Running Shoe Finder - Get Custom Recommendations | RunAnalytics</title>
+        <meta name="description" content="Get personalized running shoe recommendations based on your weight, running goals, and foot type. Find your perfect match from 100+ verified shoes across 16 top brands." />
+        <meta name="keywords" content="running shoe finder, personalized shoe recommendations, best running shoes for me, running shoe quiz, shoe matching tool" />
+        <meta property="og:title" content="Personalized Running Shoe Finder | RunAnalytics" />
+        <meta property="og:description" content="Answer three simple questions and get AI-powered running shoe recommendations tailored to your body and running goals." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://aitracker.run/tools/shoe-finder" />
+        <link rel="canonical" href="https://aitracker.run/tools/shoe-finder" />
       </Helmet>
 
       <div className="min-h-screen bg-light-grey">

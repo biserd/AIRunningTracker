@@ -153,12 +153,14 @@ export default function ShoeDatabasePage() {
   return (
     <>
       <Helmet>
-        <title>Running Shoe Database - 35+ Popular Shoes | RunAnalytics</title>
-        <meta name="description" content="Browse our comprehensive running shoe database with 35+ popular shoes from Nike, Brooks, Hoka, Asics, New Balance, Saucony, On, and Altra. Compare specs, cushioning, and find your perfect shoe." />
-        <meta property="og:title" content="Running Shoe Database | RunAnalytics" />
-        <meta property="og:description" content="Browse 35+ popular running shoes with detailed specs. Filter by brand, category, and features to find your perfect shoe." />
+        <title>Running Shoe Database - 100+ Verified Shoes from 16 Brands | RunAnalytics</title>
+        <meta name="description" content="Browse our comprehensive running shoe database with 100+ verified shoes from Nike, Brooks, Hoka, Asics, New Balance, Saucony, On, Altra, Adidas, Puma, Mizuno, Salomon, and more. Compare specs, cushioning, stability, and find your perfect running shoe." />
+        <meta name="keywords" content="running shoes database, best running shoes 2025, running shoe comparison, Nike running shoes, Hoka running shoes, Brooks running shoes, trail running shoes, racing flats" />
+        <meta property="og:title" content="Running Shoe Database - 100+ Verified Running Shoes | RunAnalytics" />
+        <meta property="og:description" content="Browse 100+ verified running shoes from 16 top brands. Filter by category, stability, and features to find your perfect shoe." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://aitracker.run/tools/shoes" />
+        <link rel="canonical" href="https://aitracker.run/tools/shoes" />
       </Helmet>
 
       <div className="min-h-screen bg-light-grey">
@@ -197,7 +199,7 @@ export default function ShoeDatabasePage() {
               </h1>
               
               <p className="text-lg text-gray-600 mb-6">
-                Browse {shoes?.length || 35}+ popular running shoes from 8 major brands. 
+                Browse {shoes?.length || 100}+ verified running shoes from 16 major brands. 
                 Compare specs, cushioning, and stability features to find the right shoe for your running style.
               </p>
 

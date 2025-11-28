@@ -97,13 +97,13 @@ const tools = [
   {
     id: "shoe-database",
     title: "Running Shoe Database",
-    description: "Browse 35+ popular running shoes from top brands with detailed specs including cushioning, weight, stack heights, and best use cases.",
+    description: "Browse 100+ verified running shoes from 16 top brands with detailed specs including cushioning, weight, stack heights, and best use cases.",
     icon: ShoppingBag,
     url: "/tools/shoes",
     status: "available",
     features: [
-      "35+ shoes from 8 brands",
-      "Detailed specifications",
+      "100+ shoes from 16 brands",
+      "Verified specifications",
       "Filter by category",
       "Compare side-by-side"
     ]
@@ -144,12 +144,14 @@ export default function ToolsPage() {
   return (
     <>
       <Helmet>
-        <title>Free Running Analysis Tools | RunAnalytics</title>
-        <meta name="description" content="Free running analysis tools for every runner. Calculate aerobic decoupling, predict race times, analyze training zones, and monitor form stability. Works with or without Strava." />
+        <title>Free Running Tools - Shoe Finder, Race Predictor, Training Analyzer | RunAnalytics</title>
+        <meta name="description" content="Free running analysis tools for every runner. Find your perfect shoe from 100+ verified options, predict race times, analyze training zones, and monitor form stability. Works with or without Strava." />
+        <meta name="keywords" content="running tools, running shoe finder, race time predictor, training analyzer, aerobic decoupling calculator, running heatmap" />
         <meta property="og:title" content="Free Running Analysis Tools | RunAnalytics" />
-        <meta property="og:description" content="Professional running analysis tools accessible to everyone. Aerobic decoupling, race prediction, training analysis, and more." />
+        <meta property="og:description" content="Professional running analysis tools accessible to everyone. Shoe finder, race prediction, training analysis, and more." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://aitracker.run/tools" />
+        <link rel="canonical" href="https://aitracker.run/tools" />
       </Helmet>
 
       <div className="min-h-screen bg-light-grey">
