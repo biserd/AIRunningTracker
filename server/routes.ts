@@ -3119,8 +3119,8 @@ ${pages.map(page => `  <url>
     }
   });
 
-  // Seed shoes database (public for initial setup, can be made admin-only later)
-  app.post("/api/shoes/seed", async (req, res) => {
+  // Seed shoes database (admin only for security)
+  app.post("/api/shoes/seed", authenticateAdmin, async (req: any, res) => {
     try {
       const force = req.query.force === 'true';
       
