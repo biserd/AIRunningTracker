@@ -1,4 +1,4 @@
-export const VERSION = "2.7.6";
+export const VERSION = "2.7.7";
 
 export interface ReleaseNote {
   version: string;
@@ -12,6 +12,46 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "2.7.7",
+    date: "2025-11-28",
+    title: "Running Shoe Database Expansion - 100+ Verified Shoes",
+    description: "Major expansion of the Running Shoe Database from 35 to 101 verified shoes across 16 major brands. All shoe data has been verified against manufacturer specifications, RunRepeat, and Doctors of Running. New admin tools for data management and improved SEO across all shoe tools.",
+    changes: [
+      {
+        type: "feature",
+        description: "Expanded shoe database to 101 verified running shoes across 16 brands including Nike, Brooks, Hoka, Asics, New Balance, Saucony, On, Altra, Adidas, Puma, Mizuno, Salomon, Reebok, Under Armour, La Sportiva, and 361°"
+      },
+      {
+        type: "feature",
+        description: "Complete coverage across 6 categories: Daily trainer (33), Trail (20), Racing (20), Speed training (15), Long run (7), Recovery (6)"
+      },
+      {
+        type: "feature",
+        description: "Data sourcing metadata system with sourceUrl, dataSource, and lastVerified fields for tracking data freshness and verification status"
+      },
+      {
+        type: "feature",
+        description: "Modular data pipeline with validation, statistics, normalization, and duplicate detection for maintaining data quality"
+      },
+      {
+        type: "feature",
+        description: "Admin interface at /admin/shoes for shoe management with filtering, search, pipeline statistics, and validation reports"
+      },
+      {
+        type: "improvement",
+        description: "All 101 shoes verified against manufacturer specs, RunRepeat reviews, and Doctors of Running for accuracy"
+      },
+      {
+        type: "improvement",
+        description: "Enhanced SEO on all shoe tools with keywords, canonical URLs, and improved meta descriptions referencing 100+ verified shoes"
+      },
+      {
+        type: "improvement",
+        description: "Admin-protected pipeline endpoints for secure database reseeding and validation operations"
+      }
+    ]
+  },
   {
     version: "2.7.6",
     date: "2025-11-22",
