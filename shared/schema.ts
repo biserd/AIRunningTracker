@@ -165,6 +165,41 @@ export const aiMessages = pgTable("ai_messages", {
   createdAtIdx: index("ai_messages_created_at_idx").on(table.createdAt),
 }));
 
+export const runningShoes = pgTable("running_shoes", {
+  id: serial("id").primaryKey(),
+  brand: text("brand").notNull(), // Nike, Brooks, Hoka, Asics, New Balance, Saucony, On, Altra
+  model: text("model").notNull(), // Pegasus 41, Glycerin 21, Bondi 8, etc.
+  category: text("category", { 
+    enum: ["daily_trainer", "racing", "long_run", "recovery", "speed_training", "trail"] 
+  }).notNull(),
+  weight: real("weight").notNull(), // weight in ounces
+  heelStackHeight: real("heel_stack_height").notNull(), // heel stack in mm
+  forefootStackHeight: real("forefoot_stack_height").notNull(), // forefoot stack in mm
+  heelToToeDrop: real("heel_to_toe_drop").notNull(), // drop in mm
+  cushioningLevel: text("cushioning_level", { 
+    enum: ["soft", "medium", "firm"] 
+  }).notNull(),
+  stability: text("stability", { 
+    enum: ["neutral", "mild_stability", "motion_control"] 
+  }).notNull(),
+  hasCarbonPlate: boolean("has_carbon_plate").default(false),
+  hasSuperFoam: boolean("has_super_foam").default(false), // ZoomX, PEBA, FF Turbo, etc.
+  price: real("price").notNull(), // MSRP in USD
+  bestFor: text("best_for").array().notNull(), // ["speed_work", "racing", "long_runs", "easy_runs", "tempo"]
+  minRunnerWeight: integer("min_runner_weight"), // min recommended weight in lbs
+  maxRunnerWeight: integer("max_runner_weight"), // max recommended weight in lbs
+  durabilityRating: real("durability_rating").notNull(), // 1-5 scale
+  responsivenessRating: real("responsiveness_rating").notNull(), // 1-5 scale
+  comfortRating: real("comfort_rating").notNull(), // 1-5 scale
+  releaseYear: integer("release_year").notNull(),
+  imageUrl: text("image_url"),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  brandIdx: index("running_shoes_brand_idx").on(table.brand),
+  categoryIdx: index("running_shoes_category_idx").on(table.category),
+}));
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   stravaConnected: true,
@@ -220,6 +255,11 @@ export const insertAIMessageSchema = createInsertSchema(aiMessages).omit({
   createdAt: true,
 });
 
+export const insertRunningShoeSchema = createInsertSchema(runningShoes).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Login schema for authentication
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -254,5 +294,7 @@ export type InsertAIConversation = z.infer<typeof insertAIConversationSchema>;
 export type AIConversation = typeof aiConversations.$inferSelect;
 export type InsertAIMessage = z.infer<typeof insertAIMessageSchema>;
 export type AIMessage = typeof aiMessages.$inferSelect;
+export type InsertRunningShoe = z.infer<typeof insertRunningShoeSchema>;
+export type RunningShoe = typeof runningShoes.$inferSelect;
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;

@@ -34,6 +34,9 @@ import MarathonFuelingPlanner from "@/pages/tools/marathon-fueling";
 import RacePredictor from "@/pages/tools/race-predictor";
 import CadenceAnalyzer from "@/pages/tools/cadence-analyzer";
 import RunningHeatmap from "@/pages/tools/heatmap";
+import ShoeDatabase from "@/pages/tools/shoes";
+import ShoeFinder from "@/pages/tools/shoe-finder";
+import RotationPlanner from "@/pages/tools/rotation-planner";
 import ChatHistory from "@/pages/chat-history";
 import BlogIndex from "@/pages/blog/index";
 import AIRunningCoachGuide from "@/pages/blog/ai-running-coach-complete-guide-2025";
@@ -87,6 +90,9 @@ function Router() {
       <Route path="/tools/marathon-fueling" component={MarathonFuelingPlanner} />
       <Route path="/tools/race-predictor" component={RacePredictor} />
       <Route path="/tools/cadence-analyzer" component={CadenceAnalyzer} />
+      <Route path="/tools/shoes" component={ShoeDatabase} />
+      <Route path="/tools/shoe-finder" component={ShoeFinder} />
+      <Route path="/tools/rotation-planner" component={RotationPlanner} />
       
       {/* Blog Routes */}
       <Route path="/blog" component={BlogIndex} />

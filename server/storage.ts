@@ -1,4 +1,4 @@
-import { users, activities, aiInsights, trainingPlans, feedback, goals, performanceLogs, aiConversations, aiMessages, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage } from "@shared/schema";
+import { users, activities, aiInsights, trainingPlans, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, inArray, gte, gt, lt } from "drizzle-orm";
 import bcrypt from "bcrypt";
@@ -173,6 +173,18 @@ export interface IStorage {
     totalActivities: number;
     totalDistance: number;
   }>;
+  
+  // Running Shoe methods
+  getShoes(filters: {
+    brand?: string;
+    category?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    hasCarbonPlate?: boolean;
+    stability?: string;
+  }): Promise<RunningShoe[]>;
+  getShoeById(shoeId: number): Promise<RunningShoe | undefined>;
+  createShoe(shoe: InsertRunningShoe): Promise<RunningShoe>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1230,6 +1242,56 @@ export class DatabaseStorage implements IStorage {
       totalActivities: activityCount?.count || 0,
       totalDistance: Number(distanceSum?.sum) || 0
     };
+  }
+
+  // Running Shoe methods
+  async getShoes(filters: {
+    brand?: string;
+    category?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    hasCarbonPlate?: boolean;
+    stability?: string;
+  }): Promise<RunningShoe[]> {
+    const conditions = [];
+    
+    if (filters.brand) {
+      conditions.push(eq(runningShoes.brand, filters.brand));
+    }
+    if (filters.category) {
+      conditions.push(eq(runningShoes.category, filters.category as any));
+    }
+    if (filters.stability) {
+      conditions.push(eq(runningShoes.stability, filters.stability as any));
+    }
+    if (filters.hasCarbonPlate !== undefined) {
+      conditions.push(eq(runningShoes.hasCarbonPlate, filters.hasCarbonPlate));
+    }
+    if (filters.minPrice !== undefined) {
+      conditions.push(gte(runningShoes.price, filters.minPrice));
+    }
+    if (filters.maxPrice !== undefined) {
+      conditions.push(sql`${runningShoes.price} <= ${filters.maxPrice}`);
+    }
+    
+    if (conditions.length > 0) {
+      return db.select().from(runningShoes).where(and(...conditions)).orderBy(runningShoes.brand, runningShoes.model);
+    }
+    
+    return db.select().from(runningShoes).orderBy(runningShoes.brand, runningShoes.model);
+  }
+
+  async getShoeById(shoeId: number): Promise<RunningShoe | undefined> {
+    const [shoe] = await db.select().from(runningShoes).where(eq(runningShoes.id, shoeId));
+    return shoe || undefined;
+  }
+
+  async createShoe(shoe: InsertRunningShoe): Promise<RunningShoe> {
+    const [newShoe] = await db
+      .insert(runningShoes)
+      .values(shoe)
+      .returning();
+    return newShoe;
   }
 }
 

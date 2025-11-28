@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
-import { Activity, TrendingDown, Calculator, BarChart3, ArrowRight, Zap, MapPin } from "lucide-react";
+import { Activity, TrendingDown, Calculator, BarChart3, ArrowRight, Zap, MapPin, ShoppingBag, Target, RefreshCw } from "lucide-react";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { Helmet } from "react-helmet";
@@ -92,6 +92,48 @@ const tools = [
       "Cadence drift tracking",
       "Stride analysis",
       "Weekly trends"
+    ]
+  },
+  {
+    id: "shoe-database",
+    title: "Running Shoe Database",
+    description: "Browse 35+ popular running shoes from top brands with detailed specs including cushioning, weight, stack heights, and best use cases.",
+    icon: ShoppingBag,
+    url: "/tools/shoes",
+    status: "available",
+    features: [
+      "35+ shoes from 8 brands",
+      "Detailed specifications",
+      "Filter by category",
+      "Compare side-by-side"
+    ]
+  },
+  {
+    id: "shoe-finder",
+    title: "Personalized Shoe Finder",
+    description: "Get shoe recommendations tailored to your weight, running goals, and foot type. Find the perfect shoe match for your running style.",
+    icon: Target,
+    url: "/tools/shoe-finder",
+    status: "available",
+    features: [
+      "Weight-based matching",
+      "Goal-specific suggestions",
+      "Stability recommendations",
+      "Match scoring"
+    ]
+  },
+  {
+    id: "rotation-planner",
+    title: "Shoe Rotation Planner",
+    description: "Build the optimal shoe rotation for your training with personalized recommendations for daily training, speed work, long runs, and racing.",
+    icon: RefreshCw,
+    url: "/tools/rotation-planner",
+    status: "available",
+    features: [
+      "Complete rotation setup",
+      "Role-based recommendations",
+      "Runner-weight optimized",
+      "Usage guidelines"
     ]
   }
 ];

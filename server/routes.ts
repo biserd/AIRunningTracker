@@ -11,7 +11,8 @@ import { runnerScoreService } from "./services/runnerScore";
 import goalsService from "./services/goals";
 import { ChatService } from "./services/chat";
 import { fitnessService } from "./services/fitness";
-import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, type Activity } from "@shared/schema";
+import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, type Activity, type RunningShoe } from "@shared/schema";
+import { shoeData } from "./shoe-data";
 import { z } from "zod";
 
 // Authentication middleware
@@ -2908,6 +2909,241 @@ ${pages.map(page => `  <url>
     } catch (error: any) {
       console.error('Admin performance error:', error);
       res.status(500).json({ message: error.message || "Failed to get system performance" });
+    }
+  });
+
+  // ================== RUNNING SHOES API ==================
+
+  // Get all shoes with optional filtering
+  app.get("/api/shoes", async (req, res) => {
+    try {
+      const { brand, category, minPrice, maxPrice, hasCarbonPlate, stability } = req.query;
+      
+      const filters: any = {};
+      if (brand) filters.brand = brand as string;
+      if (category) filters.category = category as string;
+      if (minPrice) filters.minPrice = parseFloat(minPrice as string);
+      if (maxPrice) filters.maxPrice = parseFloat(maxPrice as string);
+      if (hasCarbonPlate !== undefined) filters.hasCarbonPlate = hasCarbonPlate === 'true';
+      if (stability) filters.stability = stability as string;
+
+      const shoes = await storage.getShoes(filters);
+      res.json(shoes);
+    } catch (error: any) {
+      console.error('Get shoes error:', error);
+      res.status(500).json({ message: error.message || "Failed to get shoes" });
+    }
+  });
+
+  // Get unique brands for filtering
+  app.get("/api/shoes/brands", async (req, res) => {
+    try {
+      const shoes = await storage.getShoes({});
+      const brands = [...new Set(shoes.map(s => s.brand))].sort();
+      res.json(brands);
+    } catch (error: any) {
+      console.error('Get shoe brands error:', error);
+      res.status(500).json({ message: error.message || "Failed to get brands" });
+    }
+  });
+
+  // Get personalized shoe recommendations based on user profile
+  app.get("/api/shoes/recommend", async (req, res) => {
+    try {
+      const { weight, height, weeklyMileage, goal, footType } = req.query;
+      
+      const userWeight = weight ? parseInt(weight as string) : 160;
+      const userGoal = (goal as string) || 'general';
+      const userFootType = (footType as string) || 'neutral';
+      
+      const allShoes = await storage.getShoes({});
+      
+      // Filter and score shoes based on user profile
+      const recommendations = allShoes
+        .map(shoe => {
+          let score = 0;
+          
+          // Weight compatibility (higher score if within recommended range)
+          if (shoe.minRunnerWeight && shoe.maxRunnerWeight) {
+            if (userWeight >= shoe.minRunnerWeight && userWeight <= shoe.maxRunnerWeight) {
+              score += 30;
+            } else if (userWeight > shoe.maxRunnerWeight) {
+              // Heavier runners need more cushion/durability
+              if (shoe.cushioningLevel === 'soft' || shoe.durabilityRating >= 4) {
+                score += 15;
+              }
+            }
+          } else {
+            score += 10; // No weight restriction
+          }
+          
+          // Goal matching
+          if (userGoal === 'racing' && shoe.category === 'racing') {
+            score += 25;
+          } else if (userGoal === 'marathon' && (shoe.category === 'long_run' || shoe.category === 'racing')) {
+            score += 25;
+          } else if (userGoal === 'speed' && (shoe.category === 'speed_training' || shoe.category === 'racing')) {
+            score += 25;
+          } else if (userGoal === 'recovery' && shoe.category === 'recovery') {
+            score += 25;
+          } else if (userGoal === 'daily' && shoe.category === 'daily_trainer') {
+            score += 25;
+          } else if (userGoal === 'general') {
+            score += 15;
+          }
+          
+          // Foot type / stability matching
+          if (userFootType === 'neutral' && shoe.stability === 'neutral') {
+            score += 20;
+          } else if (userFootType === 'overpronator' && shoe.stability !== 'neutral') {
+            score += 20;
+          } else if (userFootType === 'supinator' && shoe.stability === 'neutral') {
+            score += 15;
+          }
+          
+          // Quality ratings bonus
+          score += shoe.comfortRating * 2;
+          score += shoe.durabilityRating * 1.5;
+          score += shoe.responsivenessRating * 1.5;
+          
+          return { shoe, score };
+        })
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10)
+        .map(r => ({ ...r.shoe, matchScore: Math.round(r.score) }));
+      
+      res.json(recommendations);
+    } catch (error: any) {
+      console.error('Shoe recommendations error:', error);
+      res.status(500).json({ message: error.message || "Failed to get recommendations" });
+    }
+  });
+
+  // Get shoe rotation recommendation based on user profile
+  app.get("/api/shoes/rotation", async (req, res) => {
+    try {
+      const { weight, weeklyMileage } = req.query;
+      const userWeight = weight ? parseInt(weight as string) : 160;
+      const mileage = weeklyMileage ? parseInt(weeklyMileage as string) : 30;
+      
+      const allShoes = await storage.getShoes({});
+      
+      // Helper function to find best shoe for category
+      const findBestForCategory = (category: string, preference: 'cushion' | 'responsive' | 'balanced') => {
+        return allShoes
+          .filter(s => s.category === category)
+          .filter(s => {
+            // For heavier runners, prefer more durable/cushioned options
+            if (userWeight > 180) {
+              return s.durabilityRating >= 3.5 || s.cushioningLevel === 'soft';
+            }
+            return true;
+          })
+          .sort((a, b) => {
+            if (preference === 'cushion') {
+              return b.comfortRating - a.comfortRating;
+            } else if (preference === 'responsive') {
+              return b.responsivenessRating - a.responsivenessRating;
+            }
+            return (b.comfortRating + b.responsivenessRating + b.durabilityRating) - 
+                   (a.comfortRating + a.responsivenessRating + a.durabilityRating);
+          })[0];
+      };
+      
+      const rotation: { role: string; shoe: RunningShoe | null; usage: string; description: string }[] = [
+        {
+          role: "Daily Trainer",
+          shoe: findBestForCategory('daily_trainer', 'balanced'),
+          usage: "60-70% of runs",
+          description: "Your go-to shoe for most training runs. Versatile and durable."
+        },
+        {
+          role: "Long Run",
+          shoe: findBestForCategory('long_run', 'cushion') || findBestForCategory('recovery', 'cushion'),
+          usage: "Weekly long runs",
+          description: "Extra cushioning for those longer efforts when your legs need protection."
+        },
+        {
+          role: "Speed Work",
+          shoe: findBestForCategory('speed_training', 'responsive'),
+          usage: "Tempo runs & intervals",
+          description: "Lighter and more responsive for faster workouts and track sessions."
+        },
+        {
+          role: "Race Day",
+          shoe: findBestForCategory('racing', 'responsive'),
+          usage: "Races & time trials",
+          description: "Maximum performance for when it counts. Save these for race day."
+        },
+        {
+          role: "Recovery",
+          shoe: findBestForCategory('recovery', 'cushion'),
+          usage: "Easy/recovery days",
+          description: "Ultra-cushioned for recovery runs when your legs need a break."
+        }
+      ];
+      
+      // Filter out null shoes
+      const validRotation = rotation.filter(r => r.shoe !== null);
+      
+      res.json({
+        rotation: validRotation,
+        userProfile: { weight: userWeight, weeklyMileage: mileage },
+        tip: userWeight > 200 
+          ? "As a heavier runner, prioritize cushioning and durability in your rotation."
+          : userWeight < 140
+          ? "As a lighter runner, you can benefit from responsive, lighter shoes."
+          : "Focus on a balanced rotation that covers all your training needs."
+      });
+    } catch (error: any) {
+      console.error('Shoe rotation error:', error);
+      res.status(500).json({ message: error.message || "Failed to get rotation" });
+    }
+  });
+
+  // Get a single shoe by ID (must be after specific routes like /recommend and /rotation)
+  app.get("/api/shoes/:id", async (req, res) => {
+    try {
+      const shoeId = parseInt(req.params.id);
+      const shoe = await storage.getShoeById(shoeId);
+      
+      if (!shoe) {
+        return res.status(404).json({ message: "Shoe not found" });
+      }
+      
+      res.json(shoe);
+    } catch (error: any) {
+      console.error('Get shoe error:', error);
+      res.status(500).json({ message: error.message || "Failed to get shoe" });
+    }
+  });
+
+  // Seed shoes database (public for initial setup, can be made admin-only later)
+  app.post("/api/shoes/seed", async (req, res) => {
+    try {
+      // Check if shoes already exist
+      const existingShoes = await storage.getShoes({});
+      if (existingShoes.length > 0) {
+        return res.json({ 
+          message: `Database already has ${existingShoes.length} shoes`,
+          count: existingShoes.length 
+        });
+      }
+
+      // Seed the database with shoe data
+      let seededCount = 0;
+      for (const shoe of shoeData) {
+        await storage.createShoe(shoe);
+        seededCount++;
+      }
+
+      res.json({ 
+        message: `Successfully seeded ${seededCount} shoes`,
+        count: seededCount 
+      });
+    } catch (error: any) {
+      console.error('Seed shoes error:', error);
+      res.status(500).json({ message: error.message || "Failed to seed shoes" });
     }
   });
 
