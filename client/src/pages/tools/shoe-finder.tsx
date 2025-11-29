@@ -304,6 +304,15 @@ export default function ShoeFinderPage() {
                             </Badge>
                           ))}
                         </div>
+
+                        <div className="mt-4 pt-4 border-t border-gray-100">
+                          <Link href={`/tools/shoes/${shoe.slug}`}>
+                            <Button variant="outline" className="w-full hover:bg-strava-orange hover:text-white hover:border-strava-orange" data-testid={`button-view-shoe-${shoe.id}`}>
+                              View Full Details
+                              <ArrowRight className="h-4 w-4 ml-2" />
+                            </Button>
+                          </Link>
+                        </div>
                       </CardContent>
                     </Card>
                   ))}

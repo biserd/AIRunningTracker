@@ -286,6 +286,15 @@ export default function RotationPlannerPage() {
                                       <Badge className="bg-blue-100 text-blue-700 text-xs">Super Foam</Badge>
                                     )}
                                   </div>
+
+                                  <div className="mt-4">
+                                    <Link href={`/tools/shoes/${item.shoe.slug}`}>
+                                      <Button variant="outline" size="sm" className="w-full hover:bg-strava-orange hover:text-white hover:border-strava-orange" data-testid={`button-view-shoe-${item.shoe.id}`}>
+                                        View Full Details
+                                        <ArrowRight className="h-4 w-4 ml-2" />
+                                      </Button>
+                                    </Link>
+                                  </div>
                                 </div>
                               </CardContent>
                             )}
