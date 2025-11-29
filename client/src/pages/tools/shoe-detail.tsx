@@ -382,7 +382,7 @@ export default function ShoeDetailPage() {
     seriesShoes: RunningShoe[];
     hasSeriesData: boolean;
   }>({
-    queryKey: ["/api/shoes/by-slug", slug],
+    queryKey: [`/api/shoes/by-slug/${slug}`],
     enabled: !!slug,
   });
 
