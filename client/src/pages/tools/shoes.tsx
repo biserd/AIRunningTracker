@@ -36,77 +36,85 @@ const cushioningLabels: Record<string, string> = {
 
 function ShoeCard({ shoe }: { shoe: RunningShoe }) {
   return (
-    <Card className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col" data-testid={`card-shoe-${shoe.id}`}>
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="text-sm font-medium text-strava-orange">{shoe.brand}</p>
-            <CardTitle className="text-lg mt-1">{shoe.model}</CardTitle>
+    <Link href={`/tools/shoes/${shoe.slug}`} className="block h-full">
+      <Card className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col cursor-pointer hover:border-strava-orange/50" data-testid={`card-shoe-${shoe.id}`}>
+        <CardHeader className="pb-3">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm font-medium text-strava-orange">{shoe.brand}</p>
+              <CardTitle className="text-lg mt-1">{shoe.model}</CardTitle>
+            </div>
+            <Badge variant="secondary" className="bg-gray-100">
+              {categoryLabels[shoe.category] || shoe.category}
+            </Badge>
           </div>
-          <Badge variant="secondary" className="bg-gray-100">
-            {categoryLabels[shoe.category] || shoe.category}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col">
-        <p className="text-sm text-gray-600 mb-4 line-clamp-2">{shoe.description}</p>
-        
-        <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
-          <div className="flex items-center gap-2">
-            <Scale className="h-4 w-4 text-gray-400" />
-            <span>{shoe.weight} oz</span>
+        </CardHeader>
+        <CardContent className="flex-1 flex flex-col">
+          <p className="text-sm text-gray-600 mb-4 line-clamp-2">{shoe.description}</p>
+          
+          <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
+            <div className="flex items-center gap-2">
+              <Scale className="h-4 w-4 text-gray-400" />
+              <span>{shoe.weight} oz</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Ruler className="h-4 w-4 text-gray-400" />
+              <span>{shoe.heelToToeDrop}mm drop</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-gray-400" />
+              <span>${shoe.price}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-gray-400" />
+              <span>{cushioningLabels[shoe.cushioningLevel]}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Ruler className="h-4 w-4 text-gray-400" />
-            <span>{shoe.heelToToeDrop}mm drop</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-gray-400" />
-            <span>${shoe.price}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-gray-400" />
-            <span>{cushioningLabels[shoe.cushioningLevel]}</span>
-          </div>
-        </div>
 
-        <div className="flex flex-wrap gap-1 mb-4">
-          {shoe.hasCarbonPlate && (
-            <Badge className="bg-purple-100 text-purple-700 text-xs">Carbon Plate</Badge>
-          )}
-          {shoe.hasSuperFoam && (
-            <Badge className="bg-blue-100 text-blue-700 text-xs">Super Foam</Badge>
-          )}
-          <Badge className="bg-gray-100 text-gray-600 text-xs">
-            {stabilityLabels[shoe.stability]}
-          </Badge>
-        </div>
+          <div className="flex flex-wrap gap-1 mb-4">
+            {shoe.hasCarbonPlate && (
+              <Badge className="bg-purple-100 text-purple-700 text-xs">Carbon Plate</Badge>
+            )}
+            {shoe.hasSuperFoam && (
+              <Badge className="bg-blue-100 text-blue-700 text-xs">Super Foam</Badge>
+            )}
+            <Badge className="bg-gray-100 text-gray-600 text-xs">
+              {stabilityLabels[shoe.stability]}
+            </Badge>
+          </div>
 
-        <div className="mt-auto grid grid-cols-3 gap-2 pt-3 border-t border-gray-100">
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-0.5">
-              <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-              <span className="text-sm font-medium">{shoe.comfortRating}</span>
+          <div className="mt-auto">
+            <div className="grid grid-cols-3 gap-2 pt-3 border-t border-gray-100">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-0.5">
+                  <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                  <span className="text-sm font-medium">{shoe.comfortRating}</span>
+                </div>
+                <p className="text-xs text-gray-500">Comfort</p>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-0.5">
+                  <Star className="h-3 w-3 text-green-500 fill-green-500" />
+                  <span className="text-sm font-medium">{shoe.durabilityRating}</span>
+                </div>
+                <p className="text-xs text-gray-500">Durability</p>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-0.5">
+                  <Star className="h-3 w-3 text-orange-500 fill-orange-500" />
+                  <span className="text-sm font-medium">{shoe.responsivenessRating}</span>
+                </div>
+                <p className="text-xs text-gray-500">Response</p>
+              </div>
             </div>
-            <p className="text-xs text-gray-500">Comfort</p>
-          </div>
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-0.5">
-              <Star className="h-3 w-3 text-green-500 fill-green-500" />
-              <span className="text-sm font-medium">{shoe.durabilityRating}</span>
+            <div className="mt-3 flex items-center justify-center text-strava-orange text-sm font-medium">
+              <span>View Details</span>
+              <ArrowRight className="h-4 w-4 ml-1" />
             </div>
-            <p className="text-xs text-gray-500">Durability</p>
           </div>
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-0.5">
-              <Star className="h-3 w-3 text-orange-500 fill-orange-500" />
-              <span className="text-sm font-medium">{shoe.responsivenessRating}</span>
-            </div>
-            <p className="text-xs text-gray-500">Response</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 
