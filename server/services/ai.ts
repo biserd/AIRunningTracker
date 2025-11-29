@@ -30,6 +30,7 @@ interface AIAnalysisResult {
     speed: string;
     hills: string;
     longRun: string;
+    gear: string;
   };
 }
 
@@ -117,6 +118,15 @@ export class AIService {
     const totalActivities = allActivities.length;
     const crossTrainingCount = crossTrainingActivities.length;
 
+    // Calculate cumulative mileage for gear recommendations (running shoes last ~300-500 miles)
+    // Get more activities for cumulative mileage estimation
+    const allRunningActivities = await storage.getActivitiesByUserId(userId, 90);
+    const cumulativeRunningDistance = allRunningActivities
+      .filter(a => RUNNING_TYPES.includes(a.type))
+      .reduce((sum, a) => sum + a.distance, 0);
+    const cumulativeMiles = (cumulativeRunningDistance / 1000) * 0.621371;
+    const cumulativeKm = cumulativeRunningDistance / 1000;
+
     // Format statistics based on unit preference (running only)
     const totalDistance = isMetric ? 
       `${(runningStats.totalDistance / 1000).toFixed(1)}km` : 
@@ -165,6 +175,11 @@ IMPORTANT: When providing recovery insights, consider:
 1. TOTAL training load (${(totalStats.totalTime / 3600).toFixed(1)} hours across all activities), not just running volume
 2. Current Form Score (TSB): ${currentTSB !== null ? `${currentTSB.toFixed(1)} - ${formInterpretation!.status}` : 'Data insufficient'} - Reference this in recovery recommendations!
 
+Gear Context (for shoe recommendation):
+- Cumulative running distance (last 90 days): ${isMetric ? cumulativeKm.toFixed(1) + 'km' : cumulativeMiles.toFixed(1) + 'mi'}
+- Running shoes typically last 300-500 miles (480-800km). Consider mileage patterns when recommending gear.
+- If high mileage detected, suggest using our Shoe Finder tool; if low mileage, suggest exploring our shoe database for future planning.
+
 Recent Running Activities:
 ${runningActivitiesText}
 
@@ -190,6 +205,7 @@ INSTRUCTIONS FOR CROSS-TRAINING-ONLY USERS:
 - Motivation: Encourage starting running with confidence based on current fitness
 - Technique: Provide beginner running tips (easy pace, midfoot landing, 170-180 cadence)
 - Recommendations: Suggest gentle running introduction (${isMetric ? '2-3km' : '1-2mi'} easy runs 2-3x/week, run-walk method, balance with cross-training)
+- Gear: Suggest exploring shoe options for starting their running journey
 
 Provide analysis in the following JSON format:
 {
@@ -201,7 +217,8 @@ Provide analysis in the following JSON format:
   "recommendations": {
     "speed": "Speed work recommendation using ${isMetric ? 'km/meters' : 'miles/feet'} units (max 100 chars)",
     "hills": "Hill training recommendation using ${isMetric ? 'km/meters' : 'miles/feet'} units (max 100 chars)",
-    "longRun": "Long run recommendation using ${isMetric ? 'km/meters' : 'miles/feet'} units (max 100 chars)"
+    "longRun": "Long run recommendation using ${isMetric ? 'km/meters' : 'miles/feet'} units (max 100 chars)",
+    "gear": "Shoe/gear recommendation based on mileage and training needs (max 100 chars)"
   }
 }
 
@@ -239,9 +256,10 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
                   properties: {
                     speed: { type: "string", description: "Speed work recommendation (max 100 chars)" },
                     hills: { type: "string", description: "Hill training recommendation (max 100 chars)" },
-                    longRun: { type: "string", description: "Long run recommendation (max 100 chars)" }
+                    longRun: { type: "string", description: "Long run recommendation (max 100 chars)" },
+                    gear: { type: "string", description: "Shoe/gear recommendation based on mileage (max 100 chars)" }
                   },
-                  required: ["speed", "hills", "longRun"],
+                  required: ["speed", "hills", "longRun", "gear"],
                   additionalProperties: false
                 }
               },
@@ -376,6 +394,16 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
           title: 'Long Run',
           content: analysis.recommendations.longRun,
           confidence: 0.9,
+        });
+      }
+
+      if (analysis.recommendations?.gear && analysis.recommendations.gear.trim()) {
+        await storage.createAIInsight({
+          userId,
+          type: 'recommendation',
+          title: 'Gear & Shoes',
+          content: analysis.recommendations.gear,
+          confidence: 0.85,
         });
       }
 
