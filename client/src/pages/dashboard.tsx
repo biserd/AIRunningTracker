@@ -15,6 +15,7 @@ import RunnerScoreRadar from "@/components/dashboard/RunnerScoreRadar";
 import HistoricalRunnerScore from "@/components/dashboard/HistoricalRunnerScore";
 import InsightHistory from "@/components/dashboard/InsightHistory";
 import ProgressChecklist from "@/components/dashboard/ProgressChecklist";
+import ShoeHub from "@/components/dashboard/ShoeHub";
 import Onboarding from "@/components/Onboarding";
 import { SyncProgress } from "@/components/SyncProgress";
 import { FitnessChart } from "@/components/FitnessChart";
@@ -442,6 +443,7 @@ export default function Dashboard() {
             <AIInsights insights={dashboardData?.insights || {}} userId={user?.id!} />
             <InsightHistory userId={user?.id!} />
             <TrainingRecommendations recommendations={dashboardData?.insights?.recommendations || []} userId={user?.id!} />
+            <ShoeHub />
             <FitnessTrends chartData={dashboardData?.chartData || []} unitPreference={dashboardData?.user?.unitPreference} />
             <GoalProgress userId={user?.id!} unitPreference={dashboardData?.user?.unitPreference} />
           </div>
