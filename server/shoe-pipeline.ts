@@ -14,8 +14,39 @@ export function generateSlug(brand: string, model: string): string {
 // Parse series name and version number from model name
 // e.g., "Pegasus 41" -> { seriesName: "Pegasus", versionNumber: 41 }
 // e.g., "Alphafly 3" -> { seriesName: "Alphafly", versionNumber: 3 }
+// e.g., "Alphafly NEXT%" -> { seriesName: "Alphafly", versionNumber: 1 }
+// e.g., "Vaporfly Next% 2" -> { seriesName: "Vaporfly", versionNumber: 2 }
+// e.g., "Metaspeed Sky+" -> { seriesName: "Metaspeed Sky", versionNumber: 2 }
+// e.g., "Metaspeed Sky Paris" -> { seriesName: "Metaspeed Sky", versionNumber: 3 }
 // e.g., "Ultraboost Light" -> { seriesName: "Ultraboost Light", versionNumber: null }
 export function parseSeriesFromModel(model: string): { seriesName: string; versionNumber: number | null } {
+  // Special handling for Nike NEXT% naming conventions
+  // "Alphafly NEXT%" is version 1, "Vaporfly Next% 2" is version 2
+  const nextPercentMatch = model.match(/^(.+?)\s*(?:NEXT%|Next%)\s*(\d*)$/i);
+  if (nextPercentMatch) {
+    const version = nextPercentMatch[2] ? parseInt(nextPercentMatch[2], 10) : 1;
+    return {
+      seriesName: nextPercentMatch[1].trim(),
+      versionNumber: version
+    };
+  }
+  
+  // Special handling for Asics Metaspeed naming (Sky+, Sky Paris, Edge+, Edge Paris, Edge Tokyo)
+  // Sky/Edge = 1, Sky+/Edge+ = 2, Sky Paris/Edge Paris = 3, Edge Tokyo = 4
+  const metaspeedMatch = model.match(/^(Metaspeed\s+(?:Sky|Edge))(\+|\s+Paris|\s+Tokyo)?$/i);
+  if (metaspeedMatch) {
+    const baseName = metaspeedMatch[1].trim();
+    const suffix = metaspeedMatch[2]?.trim();
+    let version = 1;
+    if (suffix === '+') version = 2;
+    else if (suffix?.toLowerCase() === 'paris') version = 3;
+    else if (suffix?.toLowerCase() === 'tokyo') version = 4;
+    return {
+      seriesName: baseName,
+      versionNumber: version
+    };
+  }
+  
   // Match trailing number at end of model name
   const match = model.match(/^(.+?)\s*(\d+)$/);
   if (match) {
@@ -24,6 +55,7 @@ export function parseSeriesFromModel(model: string): { seriesName: string; versi
       versionNumber: parseInt(match[2], 10)
     };
   }
+  
   // No version number found
   return {
     seriesName: model.trim(),
