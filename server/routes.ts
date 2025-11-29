@@ -13,7 +13,7 @@ import { ChatService } from "./services/chat";
 import { fitnessService } from "./services/fitness";
 import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, type Activity, type RunningShoe } from "@shared/schema";
 import { shoeData } from "./shoe-data";
-import { validateAllShoes, getPipelineStats, findDuplicates, getShoeDataWithMetadata, getShoesWithMetadataFromStorage } from "./shoe-pipeline";
+import { validateAllShoes, getPipelineStats, findDuplicates, getShoeDataWithMetadata, getShoesWithMetadataFromStorage, getEnrichedShoeData, enrichShoeWithAIData } from "./shoe-pipeline";
 import { z } from "zod";
 
 // Authentication middleware
@@ -3102,6 +3102,40 @@ ${pages.map(page => `  <url>
     }
   });
 
+  // Get a single shoe by slug (for SEO-friendly URLs)
+  app.get("/api/shoes/by-slug/:slug", async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const shoe = await storage.getShoeBySlug(slug);
+      
+      if (!shoe) {
+        return res.status(404).json({ message: "Shoe not found" });
+      }
+      
+      // Get related shoes in the same series for comparison charts
+      let seriesShoes: RunningShoe[] = [];
+      if (shoe.seriesName) {
+        const allSeriesShoes = await storage.getShoesBySeries(shoe.brand, shoe.seriesName);
+        // Sort by version number (or release year as fallback)
+        seriesShoes = allSeriesShoes.sort((a, b) => {
+          if (a.versionNumber && b.versionNumber) {
+            return a.versionNumber - b.versionNumber;
+          }
+          return (a.releaseYear || 0) - (b.releaseYear || 0);
+        });
+      }
+      
+      res.json({
+        shoe,
+        seriesShoes,
+        hasSeriesData: seriesShoes.length > 1
+      });
+    } catch (error: any) {
+      console.error('Get shoe by slug error:', error);
+      res.status(500).json({ message: error.message || "Failed to get shoe" });
+    }
+  });
+
   // Get a single shoe by ID (must be after specific routes like /recommend and /rotation)
   app.get("/api/shoes/:id", async (req, res) => {
     try {
@@ -3139,15 +3173,16 @@ ${pages.map(page => `  <url>
         await storage.clearAllShoes();
       }
 
-      // Seed the database with shoe data
+      // Seed the database with enriched shoe data (including AI fields)
+      const enrichedShoes = getEnrichedShoeData();
       let seededCount = 0;
-      for (const shoe of shoeData) {
+      for (const shoe of enrichedShoes) {
         await storage.createShoe(shoe);
         seededCount++;
       }
 
       res.json({ 
-        message: `Successfully seeded ${seededCount} shoes${force ? ' (force reseed)' : ''}`,
+        message: `Successfully seeded ${seededCount} shoes with AI data${force ? ' (force reseed)' : ''}`,
         count: seededCount 
       });
     } catch (error: any) {

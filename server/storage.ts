@@ -184,6 +184,8 @@ export interface IStorage {
     stability?: string;
   }): Promise<RunningShoe[]>;
   getShoeById(shoeId: number): Promise<RunningShoe | undefined>;
+  getShoeBySlug(slug: string): Promise<RunningShoe | undefined>;
+  getShoesBySeries(brand: string, seriesName: string): Promise<RunningShoe[]>;
   createShoe(shoe: InsertRunningShoe): Promise<RunningShoe>;
   clearAllShoes(): Promise<void>;
 }
@@ -1285,6 +1287,20 @@ export class DatabaseStorage implements IStorage {
   async getShoeById(shoeId: number): Promise<RunningShoe | undefined> {
     const [shoe] = await db.select().from(runningShoes).where(eq(runningShoes.id, shoeId));
     return shoe || undefined;
+  }
+
+  async getShoeBySlug(slug: string): Promise<RunningShoe | undefined> {
+    const [shoe] = await db.select().from(runningShoes).where(eq(runningShoes.slug, slug));
+    return shoe || undefined;
+  }
+
+  async getShoesBySeries(brand: string, seriesName: string): Promise<RunningShoe[]> {
+    return db.select().from(runningShoes)
+      .where(and(
+        eq(runningShoes.brand, brand),
+        eq(runningShoes.seriesName, seriesName)
+      ))
+      .orderBy(runningShoes.releaseYear);
   }
 
   async createShoe(shoe: InsertRunningShoe): Promise<RunningShoe> {

@@ -1,7 +1,284 @@
-import type { InsertRunningShoe } from "@shared/schema";
+import type { InsertRunningShoe, RunningShoe } from "@shared/schema";
 import { shoeData } from "./shoe-data";
 
 type DataSource = "manufacturer" | "runrepeat" | "doctors_of_running" | "running_warehouse" | "user_submitted" | "curated";
+
+// Helper to generate URL-friendly slug from brand and model
+export function generateSlug(brand: string, model: string): string {
+  return `${brand}-${model}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+// Parse series name and version number from model name
+// e.g., "Pegasus 41" -> { seriesName: "Pegasus", versionNumber: 41 }
+// e.g., "Alphafly 3" -> { seriesName: "Alphafly", versionNumber: 3 }
+// e.g., "Ultraboost Light" -> { seriesName: "Ultraboost Light", versionNumber: null }
+export function parseSeriesFromModel(model: string): { seriesName: string; versionNumber: number | null } {
+  // Match trailing number at end of model name
+  const match = model.match(/^(.+?)\s*(\d+)$/);
+  if (match) {
+    return {
+      seriesName: match[1].trim(),
+      versionNumber: parseInt(match[2], 10)
+    };
+  }
+  // No version number found
+  return {
+    seriesName: model.trim(),
+    versionNumber: null
+  };
+}
+
+// Calculate AI resilience score (1-100) based on durability, materials, and construction
+export function calculateResilienceScore(shoe: Partial<InsertRunningShoe>): number {
+  let score = 0;
+  
+  // Base score from durability rating (1-5 scale, contributes up to 50 points)
+  const durability = shoe.durabilityRating || 3;
+  score += durability * 10;
+  
+  // Super foam typically reduces durability (-5 points)
+  if (shoe.hasSuperFoam) {
+    score -= 5;
+  }
+  
+  // Higher stack heights generally mean more cushion to wear (-2 points per 10mm above 30mm)
+  const avgStack = ((shoe.heelStackHeight || 30) + (shoe.forefootStackHeight || 20)) / 2;
+  if (avgStack > 30) {
+    score -= Math.floor((avgStack - 30) / 10) * 2;
+  }
+  
+  // Recovery and daily trainer shoes typically last longer (+10 points)
+  if (shoe.category === "recovery" || shoe.category === "daily_trainer") {
+    score += 10;
+  }
+  
+  // Racing shoes typically wear faster (-10 points)
+  if (shoe.category === "racing") {
+    score -= 10;
+  }
+  
+  // Firm cushioning lasts longer than soft (+5 points for firm, -5 for soft)
+  if (shoe.cushioningLevel === "firm") {
+    score += 5;
+  } else if (shoe.cushioningLevel === "soft") {
+    score -= 5;
+  }
+  
+  // Normalize to 1-100 range
+  return Math.max(1, Math.min(100, Math.round(score + 50)));
+}
+
+// Generate AI mileage estimate based on durability and shoe type
+export function generateMileageEstimate(shoe: Partial<InsertRunningShoe>): string {
+  const durability = shoe.durabilityRating || 3;
+  
+  // Base mileage ranges by durability
+  let minMiles: number;
+  let maxMiles: number;
+  
+  if (durability >= 4.5) {
+    minMiles = 450;
+    maxMiles = 600;
+  } else if (durability >= 4) {
+    minMiles = 400;
+    maxMiles = 500;
+  } else if (durability >= 3.5) {
+    minMiles = 350;
+    maxMiles = 450;
+  } else if (durability >= 3) {
+    minMiles = 300;
+    maxMiles = 400;
+  } else {
+    minMiles = 200;
+    maxMiles = 300;
+  }
+  
+  // Adjust for shoe category
+  if (shoe.category === "racing") {
+    minMiles = Math.round(minMiles * 0.6);
+    maxMiles = Math.round(maxMiles * 0.6);
+  } else if (shoe.category === "recovery" || shoe.category === "daily_trainer") {
+    minMiles = Math.round(minMiles * 1.1);
+    maxMiles = Math.round(maxMiles * 1.1);
+  }
+  
+  // Round to nearest 25
+  minMiles = Math.round(minMiles / 25) * 25;
+  maxMiles = Math.round(maxMiles / 25) * 25;
+  
+  return `${minMiles}-${maxMiles} miles`;
+}
+
+// Generate AI target usage description
+export function generateTargetUsage(shoe: Partial<InsertRunningShoe>): string {
+  const bestFor = shoe.bestFor || [];
+  const category = shoe.category || "daily_trainer";
+  
+  const usageMap: Record<string, string> = {
+    "speed_work": "speed workouts",
+    "racing": "race day",
+    "long_runs": "long runs",
+    "easy_runs": "easy runs",
+    "tempo": "tempo runs",
+    "recovery": "recovery runs",
+    "trails": "trail running"
+  };
+  
+  const categoryDescriptions: Record<string, string> = {
+    "daily_trainer": "Ideal for daily training",
+    "racing": "Built for race day performance",
+    "long_run": "Designed for long distance runs",
+    "recovery": "Perfect for recovery days",
+    "speed_training": "Optimized for speed work",
+    "trail": "Engineered for trail running"
+  };
+  
+  const usages = bestFor.map(b => usageMap[b]).filter(Boolean);
+  const categoryDesc = categoryDescriptions[category] || "Versatile running shoe";
+  
+  if (usages.length === 0) {
+    return categoryDesc;
+  }
+  
+  if (usages.length === 1) {
+    return `${categoryDesc} and ${usages[0]}`;
+  }
+  
+  const lastUsage = usages.pop();
+  return `${categoryDesc}, ${usages.join(", ")}, and ${lastUsage}`;
+}
+
+// Generate detailed AI narrative for SEO
+export function generateAINarrative(shoe: Partial<InsertRunningShoe>): string {
+  const brand = shoe.brand || "This";
+  const model = shoe.model || "shoe";
+  const category = shoe.category || "daily_trainer";
+  const weight = shoe.weight || 10;
+  const drop = shoe.heelToToeDrop || 10;
+  const cushioning = shoe.cushioningLevel || "medium";
+  const stability = shoe.stability || "neutral";
+  
+  const categoryNames: Record<string, string> = {
+    "daily_trainer": "daily trainer",
+    "racing": "racing flat",
+    "long_run": "long run shoe",
+    "recovery": "recovery shoe",
+    "speed_training": "speed trainer",
+    "trail": "trail runner"
+  };
+  
+  const cushioningDesc: Record<string, string> = {
+    "soft": "plush, soft cushioning for maximum comfort",
+    "medium": "balanced cushioning for versatility",
+    "firm": "responsive, firm cushioning for efficient energy return"
+  };
+  
+  const stabilityDesc: Record<string, string> = {
+    "neutral": "neutral design for runners with normal pronation",
+    "mild_stability": "mild stability features for light overpronators",
+    "motion_control": "motion control technology for moderate to severe overpronators"
+  };
+  
+  const catName = categoryNames[category];
+  const cushDesc = cushioningDesc[cushioning];
+  const stabDesc = stabilityDesc[stability];
+  
+  let narrative = `The ${brand} ${model} is a ${catName} featuring ${cushDesc}. `;
+  narrative += `With a ${drop}mm heel-to-toe drop and ${stabDesc}, `;
+  narrative += `it weighs ${weight} oz (${Math.round(weight * 28.35)}g) per shoe. `;
+  
+  if (shoe.hasCarbonPlate) {
+    narrative += "It features a carbon fiber plate for enhanced propulsion. ";
+  }
+  if (shoe.hasSuperFoam) {
+    narrative += "The midsole uses premium super foam technology for superior energy return. ";
+  }
+  
+  const bestFor = shoe.bestFor || [];
+  if (bestFor.length > 0) {
+    const usageMap: Record<string, string> = {
+      "speed_work": "speed sessions",
+      "racing": "race day",
+      "long_runs": "marathon training",
+      "easy_runs": "daily easy miles",
+      "tempo": "threshold workouts",
+      "recovery": "recovery jogs",
+      "trails": "off-road adventures"
+    };
+    const usages = bestFor.map(b => usageMap[b]).filter(Boolean);
+    if (usages.length > 0) {
+      narrative += `Best suited for ${usages.join(", ")}.`;
+    }
+  }
+  
+  return narrative;
+}
+
+// Generate FAQ Q&A pairs for SEO schema markup
+export function generateFAQ(shoe: Partial<InsertRunningShoe>): string {
+  const brand = shoe.brand || "This";
+  const model = shoe.model || "shoe";
+  const mileage = generateMileageEstimate(shoe);
+  const weight = shoe.weight || 10;
+  const drop = shoe.heelToToeDrop || 10;
+  
+  const faqs = [
+    {
+      question: `How long does the ${brand} ${model} last?`,
+      answer: `The ${brand} ${model} typically lasts ${mileage} depending on running style, terrain, and runner weight. Heavier runners or those running on rough surfaces may experience faster wear.`
+    },
+    {
+      question: `Is the ${brand} ${model} good for beginners?`,
+      answer: shoe.category === "daily_trainer" || shoe.category === "recovery"
+        ? `Yes, the ${brand} ${model} is excellent for beginners due to its forgiving cushioning and versatile design.`
+        : `The ${brand} ${model} is designed for experienced runners. Beginners may want to start with a daily trainer before transitioning to this shoe.`
+    },
+    {
+      question: `What is the weight of the ${brand} ${model}?`,
+      answer: `The ${brand} ${model} weighs ${weight} ounces (${Math.round(weight * 28.35)} grams) per shoe in men's US size 9.`
+    },
+    {
+      question: `What is the heel drop of the ${brand} ${model}?`,
+      answer: `The ${brand} ${model} has a ${drop}mm heel-to-toe drop, which ${drop >= 10 ? "provides a traditional running feel" : drop >= 6 ? "offers a balanced running experience" : "promotes a more natural, forefoot-oriented stride"}.`
+    }
+  ];
+  
+  return JSON.stringify(faqs);
+}
+
+// Enrich shoe with all AI-generated fields
+export function enrichShoeWithAIData(shoe: InsertRunningShoe): InsertRunningShoe & {
+  slug: string;
+  seriesName: string;
+  versionNumber: number | null;
+  aiResilienceScore: number;
+  aiMileageEstimate: string;
+  aiTargetUsage: string;
+  aiNarrative: string;
+  aiFaq: string;
+} {
+  const { seriesName, versionNumber } = parseSeriesFromModel(shoe.model);
+  
+  return {
+    ...shoe,
+    slug: generateSlug(shoe.brand, shoe.model),
+    seriesName,
+    versionNumber,
+    aiResilienceScore: calculateResilienceScore(shoe),
+    aiMileageEstimate: generateMileageEstimate(shoe),
+    aiTargetUsage: generateTargetUsage(shoe),
+    aiNarrative: generateAINarrative(shoe),
+    aiFaq: generateFAQ(shoe)
+  };
+}
+
+// Get all shoes enriched with AI data
+export function getEnrichedShoeData(): ReturnType<typeof enrichShoeWithAIData>[] {
+  return shoeData.map(shoe => enrichShoeWithAIData(shoe));
+}
 
 interface ShoeValidationResult {
   valid: boolean;

@@ -169,6 +169,9 @@ export const runningShoes = pgTable("running_shoes", {
   id: serial("id").primaryKey(),
   brand: text("brand").notNull(), // Nike, Brooks, Hoka, Asics, New Balance, Saucony, On, Altra
   model: text("model").notNull(), // Pegasus 41, Glycerin 21, Bondi 8, etc.
+  slug: text("slug").unique(), // URL-friendly identifier: nike-pegasus-41
+  seriesName: text("series_name"), // Shoe family: "Pegasus", "Bondi", "Ghost"
+  versionNumber: integer("version_number"), // Iteration: 41, 21, 8
   category: text("category", { 
     enum: ["daily_trainer", "racing", "long_run", "recovery", "speed_training", "trail"] 
   }).notNull(),
@@ -194,6 +197,12 @@ export const runningShoes = pgTable("running_shoes", {
   releaseYear: integer("release_year").notNull(),
   imageUrl: text("image_url"),
   description: text("description"),
+  // AI-generated content for SEO and user insights
+  aiResilienceScore: real("ai_resilience_score"), // 1-100 score based on durability + materials
+  aiMileageEstimate: text("ai_mileage_estimate"), // e.g., "300-400 miles"
+  aiTargetUsage: text("ai_target_usage"), // e.g., "Daily training and easy runs"
+  aiNarrative: text("ai_narrative"), // Detailed AI-written description for SEO
+  aiFaq: text("ai_faq"), // JSON string of FAQ Q&A pairs for schema markup
   // Data sourcing metadata for tracking data freshness and accuracy
   sourceUrl: text("source_url"), // URL of the source (manufacturer website, RunRepeat, etc.)
   dataSource: text("data_source", {
@@ -204,6 +213,8 @@ export const runningShoes = pgTable("running_shoes", {
 }, (table) => ({
   brandIdx: index("running_shoes_brand_idx").on(table.brand),
   categoryIdx: index("running_shoes_category_idx").on(table.category),
+  slugIdx: index("running_shoes_slug_idx").on(table.slug),
+  seriesIdx: index("running_shoes_series_idx").on(table.seriesName),
 }));
 
 export const insertUserSchema = createInsertSchema(users).omit({
