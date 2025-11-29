@@ -17,6 +17,7 @@ const tools = [
     url: "/tools/heatmap",
     status: "available",
     authRequired: true,
+    ctaLabel: "View Heatmap",
     features: [
       "Interactive route visualization",
       "Last 30 activities",
@@ -31,6 +32,7 @@ const tools = [
     icon: TrendingDown,
     url: "/tools/aerobic-decoupling-calculator",
     status: "available",
+    ctaLabel: "Open Calculator",
     features: [
       "Split-halves analysis",
       "Drift visualization",
@@ -45,6 +47,7 @@ const tools = [
     icon: Activity,
     url: "/tools/training-split-analyzer",
     status: "available",
+    ctaLabel: "Analyze Training",
     features: [
       "Zone distribution analysis",
       "Weekly trends",
@@ -59,6 +62,7 @@ const tools = [
     icon: Zap,
     url: "/tools/marathon-fueling",
     status: "available",
+    ctaLabel: "Plan Fueling",
     features: [
       "Feeding schedule",
       "Carb & sodium tracking",
@@ -73,6 +77,7 @@ const tools = [
     icon: BarChart3,
     url: "/tools/race-predictor",
     status: "available",
+    ctaLabel: "Predict Times",
     features: [
       "Confidence intervals",
       "Pace tables",
@@ -87,6 +92,7 @@ const tools = [
     icon: Calculator,
     url: "/tools/cadence-analyzer",
     status: "available",
+    ctaLabel: "Analyze Form",
     features: [
       "Form stability score",
       "Cadence drift tracking",
@@ -101,6 +107,7 @@ const tools = [
     icon: ShoppingBag,
     url: "/tools/shoes",
     status: "available",
+    ctaLabel: "Browse Shoes",
     features: [
       "100+ shoes from 16 brands",
       "Verified specifications",
@@ -115,6 +122,7 @@ const tools = [
     icon: Target,
     url: "/tools/shoe-finder",
     status: "available",
+    ctaLabel: "Find Your Shoe",
     features: [
       "Weight-based matching",
       "Goal-specific suggestions",
@@ -129,6 +137,7 @@ const tools = [
     icon: RefreshCw,
     url: "/tools/rotation-planner",
     status: "available",
+    ctaLabel: "Build Rotation",
     features: [
       "Complete rotation setup",
       "Role-based recommendations",
@@ -278,7 +287,7 @@ export default function ToolsPage() {
                             className="w-full bg-strava-orange text-white hover:bg-strava-orange/90 mt-2"
                             data-testid={`button-open-${tool.id}`}
                           >
-                            Open Calculator
+                            {tool.ctaLabel || "Open Tool"}
                             <ArrowRight className="ml-2 h-4 w-4" />
                           </Button>
                         </Link>
