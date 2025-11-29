@@ -148,56 +148,76 @@ Sitemap: ${baseUrl}/sitemap.xml`;
     res.send(robotsTxt);
   });
 
-  // SEO: Sitemap
-  app.get("/sitemap.xml", (req, res) => {
-    const baseUrl = "https://aitracker.run";
-    
-    const pages = [
-      { url: "/", changefreq: "daily", priority: "1.0" },
-      { url: "/auth", changefreq: "monthly", priority: "0.8" },
-      { url: "/forgot-password", changefreq: "yearly", priority: "0.4" },
-      { url: "/reset-password", changefreq: "yearly", priority: "0.3" },
-      { url: "/about", changefreq: "monthly", priority: "0.7" },
-      { url: "/features", changefreq: "monthly", priority: "0.8" },
-      { url: "/pricing", changefreq: "weekly", priority: "0.9" },
-      { url: "/subscribe", changefreq: "weekly", priority: "0.8" },
+  // SEO: Sitemap (dynamic with shoe pages)
+  app.get("/sitemap.xml", async (req, res) => {
+    try {
+      const baseUrl = "https://aitracker.run";
       
-      // Blog & Content Marketing
-      { url: "/blog", changefreq: "weekly", priority: "0.9" },
-      { url: "/blog/ai-running-coach-complete-guide-2025", changefreq: "monthly", priority: "0.9" },
-      { url: "/blog/best-strava-analytics-tools-2025", changefreq: "monthly", priority: "0.9" },
-      { url: "/blog/how-to-improve-running-pace", changefreq: "monthly", priority: "0.9" },
-      { url: "/ai-running-coach", changefreq: "weekly", priority: "0.9" },
-      
-      // Free Tools
-      { url: "/tools", changefreq: "weekly", priority: "0.9" },
-      { url: "/tools/aerobic-decoupling-calculator", changefreq: "weekly", priority: "0.8" },
-      { url: "/tools/training-split-analyzer", changefreq: "weekly", priority: "0.8" },
-      { url: "/tools/marathon-fueling", changefreq: "weekly", priority: "0.8" },
-      { url: "/tools/race-predictor", changefreq: "weekly", priority: "0.8" },
-      { url: "/tools/cadence-analyzer", changefreq: "weekly", priority: "0.8" },
-      { url: "/tools/heatmap", changefreq: "weekly", priority: "0.7" },
-      
-      // Other Pages
-      { url: "/runner-score", changefreq: "weekly", priority: "0.7" },
-      { url: "/faq", changefreq: "monthly", priority: "0.6" },
-      { url: "/contact", changefreq: "monthly", priority: "0.5" },
-      { url: "/privacy", changefreq: "yearly", priority: "0.3" },
-      { url: "/terms", changefreq: "yearly", priority: "0.3" },
-      { url: "/release-notes", changefreq: "weekly", priority: "0.7" },
-    ];
+      const staticPages = [
+        { url: "/", changefreq: "daily", priority: "1.0" },
+        { url: "/auth", changefreq: "monthly", priority: "0.8" },
+        { url: "/forgot-password", changefreq: "yearly", priority: "0.4" },
+        { url: "/reset-password", changefreq: "yearly", priority: "0.3" },
+        { url: "/about", changefreq: "monthly", priority: "0.7" },
+        { url: "/features", changefreq: "monthly", priority: "0.8" },
+        { url: "/pricing", changefreq: "weekly", priority: "0.9" },
+        { url: "/subscribe", changefreq: "weekly", priority: "0.8" },
+        
+        // Blog & Content Marketing
+        { url: "/blog", changefreq: "weekly", priority: "0.9" },
+        { url: "/blog/ai-running-coach-complete-guide-2025", changefreq: "monthly", priority: "0.9" },
+        { url: "/blog/best-strava-analytics-tools-2025", changefreq: "monthly", priority: "0.9" },
+        { url: "/blog/how-to-improve-running-pace", changefreq: "monthly", priority: "0.9" },
+        { url: "/ai-running-coach", changefreq: "weekly", priority: "0.9" },
+        
+        // Free Tools
+        { url: "/tools", changefreq: "weekly", priority: "0.9" },
+        { url: "/tools/aerobic-decoupling-calculator", changefreq: "weekly", priority: "0.8" },
+        { url: "/tools/training-split-analyzer", changefreq: "weekly", priority: "0.8" },
+        { url: "/tools/marathon-fueling", changefreq: "weekly", priority: "0.8" },
+        { url: "/tools/race-predictor", changefreq: "weekly", priority: "0.8" },
+        { url: "/tools/cadence-analyzer", changefreq: "weekly", priority: "0.8" },
+        { url: "/tools/heatmap", changefreq: "weekly", priority: "0.7" },
+        
+        // Running Shoe Hub
+        { url: "/tools/shoes", changefreq: "weekly", priority: "0.9" },
+        { url: "/tools/shoe-finder", changefreq: "weekly", priority: "0.8" },
+        { url: "/tools/rotation-planner", changefreq: "weekly", priority: "0.8" },
+        
+        // Other Pages
+        { url: "/runner-score", changefreq: "weekly", priority: "0.7" },
+        { url: "/faq", changefreq: "monthly", priority: "0.6" },
+        { url: "/contact", changefreq: "monthly", priority: "0.5" },
+        { url: "/privacy", changefreq: "yearly", priority: "0.3" },
+        { url: "/terms", changefreq: "yearly", priority: "0.3" },
+        { url: "/release-notes", changefreq: "weekly", priority: "0.7" },
+      ];
 
-    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+      // Fetch all shoes for individual shoe pages
+      const shoes = await storage.getShoes({});
+      const shoePages = shoes.map(shoe => ({
+        url: `/tools/shoes/${shoe.slug}`,
+        changefreq: "monthly",
+        priority: "0.7"
+      }));
+
+      const allPages = [...staticPages, ...shoePages];
+
+      const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${pages.map(page => `  <url>
+${allPages.map(page => `  <url>
     <loc>${baseUrl}${page.url}</loc>
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
   </url>`).join('\n')}
 </urlset>`;
 
-    res.header("Content-Type", "application/xml");
-    res.send(sitemap);
+      res.header("Content-Type", "application/xml");
+      res.send(sitemap);
+    } catch (error: any) {
+      console.error('Sitemap generation error:', error);
+      res.status(500).send("Error generating sitemap");
+    }
   });
 
   // Platform stats for landing page (public endpoint)
