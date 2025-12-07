@@ -47,6 +47,7 @@ import ImproveRunningPace from "@/pages/blog/how-to-improve-running-pace";
 import AICoachLanding from "@/pages/ai-running-coach";
 import DevelopersPage from "@/pages/developers";
 import ApiDocsPage from "@/pages/developers/api-docs";
+import Wrapped2025 from "@/pages/wrapped-2025";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -148,6 +149,9 @@ function Router() {
       </Route>
       <Route path="/admin/shoes">
         <ProtectedRoute component={AdminShoesPage} />
+      </Route>
+      <Route path="/wrapped">
+        <ProtectedRoute component={Wrapped2025} />
       </Route>
       
       <Route component={NotFound} />
