@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { SEO } from "@/components/SEO";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
+import { useToast } from "@/hooks/use-toast";
+import { toPng } from "html-to-image";
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -18,7 +20,8 @@ import {
   Zap,
   MapPin,
   TrendingUp,
-  ArrowLeft
+  ArrowLeft,
+  Loader2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -79,7 +82,10 @@ const slideVariants = {
 export default function Wrapped2025Page() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const slideRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   const { data, isLoading, error } = useQuery<WrappedStats>({
     queryKey: ['/api/wrapped/2025'],
@@ -96,6 +102,69 @@ export default function Wrapped2025Page() {
     if (data?.hasData) {
       setDirection(-1);
       setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!slideRef.current) return;
+    
+    setIsSaving(true);
+    try {
+      const dataUrl = await toPng(slideRef.current, {
+        quality: 1,
+        pixelRatio: 2,
+      });
+      
+      const link = document.createElement('a');
+      link.download = `runanalytics-wrapped-2025.png`;
+      link.href = dataUrl;
+      link.click();
+      
+      toast({
+        title: "Image saved!",
+        description: "Your Running Wrapped has been downloaded.",
+      });
+    } catch (err) {
+      console.error('Failed to save image:', err);
+      toast({
+        title: "Failed to save",
+        description: "There was an error saving the image.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!slideRef.current) return;
+    
+    setIsSaving(true);
+    try {
+      const dataUrl = await toPng(slideRef.current, {
+        quality: 1,
+        pixelRatio: 2,
+      });
+      
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], 'runanalytics-wrapped-2025.png', { type: 'image/png' });
+      
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'My 2025 Running Wrapped',
+          text: 'Check out my 2025 running year in review from RunAnalytics!',
+        });
+      } else {
+        await handleDownload();
+      }
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        console.error('Failed to share:', err);
+        await handleDownload();
+      }
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -325,19 +394,34 @@ export default function Wrapped2025Page() {
             <Button 
               className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-8 py-3"
               data-testid="wrapped-share-button"
+              onClick={handleShare}
+              disabled={isSaving}
             >
-              <Share2 className="h-5 w-5 mr-2" />
-              Share
+              {isSaving ? (
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+              ) : (
+                <Share2 className="h-5 w-5 mr-2" />
+              )}
+              {isSaving ? 'Saving...' : 'Share'}
             </Button>
-            <Link href="/dashboard">
-              <Button 
-                variant="outline" 
-                className="border-white/30 text-white hover:bg-white/10 font-bold px-8 py-3"
-              >
-                Back to Dashboard
-              </Button>
-            </Link>
+            <Button 
+              className="bg-white/10 hover:bg-white/20 text-white font-bold px-8 py-3"
+              data-testid="wrapped-download-button"
+              onClick={handleDownload}
+              disabled={isSaving}
+            >
+              <Download className="h-5 w-5 mr-2" />
+              Download
+            </Button>
           </div>
+          <Link href="/dashboard" className="mt-4">
+            <Button 
+              variant="outline" 
+              className="border-white/30 text-white hover:bg-white/10 font-bold px-8 py-3"
+            >
+              Back to Dashboard
+            </Button>
+          </Link>
         </div>
       )
     }
@@ -363,6 +447,7 @@ export default function Wrapped2025Page() {
         <div className="w-full max-w-lg mx-auto relative">
           <AnimatePresence initial={false} custom={direction} mode="wait">
             <motion.div
+              ref={slideRef}
               key={currentSlide}
               custom={direction}
               variants={slideVariants}
