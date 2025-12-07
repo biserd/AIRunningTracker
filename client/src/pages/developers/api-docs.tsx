@@ -248,7 +248,7 @@ export default function ApiDocsPage() {
         <meta name="description" content="Complete API documentation for RunAnalytics. Learn how to authenticate, access endpoints for activities, AI insights, training plans, and goals." />
         <meta property="og:title" content="API Documentation - RunAnalytics" />
         <meta property="og:description" content="Complete developer documentation for the RunAnalytics API" />
-        <link rel="canonical" href="https://runanalytics.io/developers/api" />
+        <link rel="canonical" href="https://aitracker.run/developers/api" />
       </Helmet>
       
       <AppHeader />
@@ -336,7 +336,7 @@ export default function ApiDocsPage() {
               </CardHeader>
               <CardContent>
                 <div className="bg-gray-900 text-white rounded-lg p-4">
-                  <code className="text-sm">https://runanalytics.io/api/v1</code>
+                  <code className="text-sm">https://aitracker.run/api/v1</code>
                 </div>
               </CardContent>
             </Card>

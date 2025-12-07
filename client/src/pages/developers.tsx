@@ -15,7 +15,7 @@ export default function DevelopersPage() {
         <meta property="og:title" content="Developer API - RunAnalytics" />
         <meta property="og:description" content="Access your running data programmatically with the RunAnalytics API" />
         <meta property="og:type" content="website" />
-        <link rel="canonical" href="https://runanalytics.io/developers" />
+        <link rel="canonical" href="https://aitracker.run/developers" />
       </Helmet>
       
       <AppHeader />
@@ -139,7 +139,7 @@ export default function DevelopersPage() {
               </CardHeader>
               <CardContent>
                 <pre className="overflow-x-auto text-sm">
-                  <code>{`curl -X GET "https://runanalytics.io/api/v1/activities" \\
+                  <code>{`curl -X GET "https://aitracker.run/api/v1/activities" \\
   -H "Authorization: Bearer ra_your_api_key_here" \\
   -H "Content-Type: application/json"
 
