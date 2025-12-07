@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp, Trophy, Users, TrendingDown, Calculator, ArrowRight, MessageCircle, Activity } from "lucide-react";
+import { CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp, Trophy, Users, TrendingDown, Calculator, ArrowRight, MessageCircle, Activity, Map, Footprints, RotateCcw } from "lucide-react";
 import { VERSION } from "@shared/version";
 import Footer from "@/components/Footer";
 import PublicHeader from "@/components/PublicHeader";
@@ -105,25 +105,26 @@ export default function LandingPage() {
 
           {/* Action Buttons */}
           <div className="flex flex-col gap-3 sm:gap-4 justify-center mb-6 sm:mb-8 px-4">
-            {/* Primary CTA - AI Coach */}
+            {/* Primary CTA */}
             <Link href="/auth" className="w-full sm:w-auto mx-auto">
               <Button
-                className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-indigo-600 text-white hover:from-purple-600 hover:to-indigo-700 h-14 sm:h-14 px-8 sm:px-12 text-base sm:text-lg font-bold shadow-xl hover:shadow-2xl transition-all"
-                data-testid="hero-cta-aicoach"
+                className="w-full sm:w-auto bg-strava-orange text-white hover:bg-strava-orange/90 h-14 sm:h-14 px-8 sm:px-12 text-base sm:text-lg font-bold shadow-xl hover:shadow-2xl transition-all"
+                data-testid="hero-cta-getstarted"
               >
-                <MessageCircle className="h-5 w-5 mr-2" />
-                Chat with AI Coach
+                Get Started Free
               </Button>
             </Link>
             
             {/* Secondary CTAs */}
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-              <Link href="/auth" className="w-full sm:w-auto">
+              <Link href="/tools" className="w-full sm:w-auto">
                 <Button
-                  className="w-full sm:w-auto bg-strava-orange text-white hover:bg-strava-orange/90 h-12 px-8 sm:px-10 text-base font-semibold shadow-lg hover:shadow-xl transition-shadow"
-                  data-testid="hero-cta-getstarted"
+                  variant="outline"
+                  className="w-full sm:w-auto border-2 border-strava-orange text-strava-orange hover:bg-strava-orange/10 h-12 px-8 sm:px-10 text-base font-semibold"
+                  data-testid="hero-cta-tools"
                 >
-                  Get Started Free
+                  <Calculator className="h-4 w-4 mr-2" />
+                  Explore Free Tools
                 </Button>
               </Link>
               <Link href="/auth" className="w-full sm:w-auto">
@@ -157,12 +158,12 @@ export default function LandingPage() {
       </section>
 
       {/* AI Running Coach Showcase */}
-      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50">
+      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-gradient-to-br from-blue-50 via-white to-orange-50">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center">
             <div className="px-4 order-2 lg:order-1">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                <div className="w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-r from-strava-orange to-red-500 rounded-xl flex items-center justify-center">
                   <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-charcoal">AI Running Coach</h2>
@@ -186,16 +187,16 @@ export default function LandingPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                  <span className="text-sm sm:text-base text-gray-700">Powered by GPT-5.1 with running expertise</span>
+                  <span className="text-sm sm:text-base text-gray-700">Powered by advanced AI with running expertise</span>
                 </div>
               </div>
               <Link href="/auth">
                 <Button
-                  className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-indigo-600 text-white hover:from-purple-600 hover:to-indigo-700 h-12 px-8 text-base font-semibold shadow-md"
+                  className="w-full sm:w-auto bg-strava-orange text-white hover:bg-strava-orange/90 h-12 px-8 text-base font-semibold shadow-md"
                   data-testid="aicoach-cta-getstarted"
                 >
                   <MessageCircle className="h-5 w-5 mr-2" />
-                  Chat with AI Coach
+                  Try AI Coach Free
                 </Button>
               </Link>
             </div>
@@ -205,7 +206,7 @@ export default function LandingPage() {
                 {/* Chat Interface Mockup */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 pb-3 border-b border-gray-200">
-                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 bg-gradient-to-r from-strava-orange to-red-500 rounded-full flex items-center justify-center">
                       <MessageCircle className="h-4 w-4 text-white" />
                     </div>
                     <div>
@@ -221,7 +222,7 @@ export default function LandingPage() {
                   <div className="space-y-3 max-h-[300px] overflow-hidden">
                     {/* User Message */}
                     <div className="flex justify-end">
-                      <div className="bg-blue-500 text-white px-4 py-2 rounded-2xl rounded-tr-sm max-w-[80%] text-sm">
+                      <div className="bg-strava-orange text-white px-4 py-2 rounded-2xl rounded-tr-sm max-w-[80%] text-sm">
                         How has my training been this month?
                       </div>
                     </div>
@@ -235,13 +236,13 @@ export default function LandingPage() {
                           <li>• Average pace improved by <span className="font-semibold text-blue-600">18 sec/mile</span></li>
                           <li>• Consistency is strong with 4-5 runs/week</li>
                         </ul>
-                        <p className="mt-2 text-purple-700 font-medium">Your training is trending very well! 🎯</p>
+                        <p className="mt-2 text-strava-orange font-medium">Your training is trending very well!</p>
                       </div>
                     </div>
                     
                     {/* User Message */}
                     <div className="flex justify-end">
-                      <div className="bg-blue-500 text-white px-4 py-2 rounded-2xl rounded-tr-sm max-w-[80%] text-sm">
+                      <div className="bg-strava-orange text-white px-4 py-2 rounded-2xl rounded-tr-sm max-w-[80%] text-sm">
                         Am I ready for a half marathon?
                       </div>
                     </div>
@@ -259,7 +260,7 @@ export default function LandingPage() {
                     <div className="flex-1 bg-gray-50 rounded-full px-4 py-2 text-sm text-gray-400">
                       Ask me anything...
                     </div>
-                    <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 bg-strava-orange rounded-full flex items-center justify-center">
                       <ArrowRight className="h-4 w-4 text-white" />
                     </div>
                   </div>
@@ -270,7 +271,7 @@ export default function LandingPage() {
               <div className="mt-4 text-center">
                 <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm text-xs text-gray-600">
                   <Shield className="h-4 w-4 text-green-600" />
-                  <span>AI-powered • Personalized • Free to use</span>
+                  <span>Smart coaching • Personalized • Free to use</span>
                 </div>
               </div>
             </div>
@@ -294,7 +295,7 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 mb-12 sm:mb-20 items-center">
             <div className="px-4">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <div className="w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
                   <Trophy className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
                 <h3 className="text-xl sm:text-2xl font-bold text-charcoal">Runner Score</h3>
@@ -324,14 +325,14 @@ export default function LandingPage() {
               {/* Secondary CTA */}
               <Link href="/auth">
                 <Button
-                  className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 h-12 px-8 text-base font-semibold shadow-md mt-4"
+                  className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 h-12 px-8 text-base font-semibold shadow-md mt-4"
                   data-testid="runnerscore-cta-getstarted"
                 >
                   Get Your Runner Score
                 </Button>
               </Link>
             </div>
-            <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 sm:p-8 rounded-2xl mx-4 lg:mx-0">
+            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-6 sm:p-8 rounded-2xl mx-4 lg:mx-0">
               {/* Sample Runner Score Visual */}
               <div className="text-center space-y-4">
                 <div className="text-5xl sm:text-6xl font-bold text-blue-600">87</div>
@@ -358,7 +359,7 @@ export default function LandingPage() {
                   <use href="#radar"/>
                   <circle cx="100" cy="20" r="3" fill="#3B82F6"/>
                   <circle cx="150" cy="75" r="3" fill="#10B981"/>
-                  <circle cx="120" cy="150" r="3" fill="#8B5CF6"/>
+                  <circle cx="120" cy="150" r="3" fill="#0891B2"/>
                   <circle cx="50" cy="75" r="3" fill="#EAB308"/>
                 </svg>
                 <div className="grid grid-cols-2 gap-2 text-sm">
@@ -371,7 +372,7 @@ export default function LandingPage() {
                     <span>Performance 88%</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-cyan-600 rounded-full"></div>
                     <span>Volume 85%</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -385,16 +386,16 @@ export default function LandingPage() {
 
           {/* Other Features Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 px-4">
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:shadow-purple-200/50">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 bg-purple-500 rounded-xl flex items-center justify-center mb-4">
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:shadow-orange-200/50">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 bg-strava-orange rounded-xl flex items-center justify-center mb-4">
                 <Brain className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-charcoal mb-3">AI Performance Insights</h3>
+              <h3 className="text-lg sm:text-xl font-semibold text-charcoal mb-3">Smart Performance Insights</h3>
               <p className="text-gray-600 mb-4">
                 Get personalized insights about your performance patterns, recovery needs, and training recommendations.
               </p>
               <div className="bg-white p-3 rounded-lg text-sm">
-                <div className="font-medium text-purple-700">Sample Insight:</div>
+                <div className="font-medium text-strava-orange">Sample Insight:</div>
                 <div className="text-gray-600">"Your pace has improved 12% over the last month. Consider adding interval training to break through your current plateau."</div>
               </div>
             </div>
@@ -465,16 +466,16 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-50 to-indigo-100 p-6 rounded-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:shadow-purple-200/50">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-4">
+            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-6 rounded-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:shadow-teal-200/50">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-r from-teal-500 to-teal-600 rounded-xl flex items-center justify-center mb-4">
                 <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-charcoal mb-3">AI Running Coach Chat</h3>
+              <h3 className="text-lg sm:text-xl font-semibold text-charcoal mb-3">Running Coach Chat</h3>
               <p className="text-gray-600 mb-4">
-                Chat with your AI running coach for instant insights and personalized advice about your training.
+                Chat with your running coach for instant insights and personalized advice about your training.
               </p>
               <div className="bg-white p-3 rounded-lg text-sm">
-                <div className="font-medium text-purple-700 mb-1">Ask anything:</div>
+                <div className="font-medium text-teal-700 mb-1">Ask anything:</div>
                 <div className="space-y-1 text-gray-600 text-xs">
                   <div>• "How's my training been?"</div>
                   <div>• "What should I focus on?"</div>
@@ -522,7 +523,7 @@ export default function LandingPage() {
       </section>
 
       {/* Free Running Tools Section */}
-      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-gradient-to-br from-indigo-50 via-white to-blue-50">
+      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-gradient-to-br from-gray-50 via-white to-orange-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12 sm:mb-16">
             <div className="inline-flex items-center space-x-2 bg-strava-orange/10 text-strava-orange px-4 py-2 rounded-full mb-6">
@@ -540,7 +541,7 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 px-4">
             {/* Aerobic Decoupling Calculator */}
             <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center mb-4">
                 <TrendingDown className="h-6 w-6 text-white" />
               </div>
               <h3 className="text-xl font-semibold text-charcoal mb-3">Aerobic Decoupling</h3>
@@ -563,7 +564,7 @@ export default function LandingPage() {
               </div>
               <Link href="/tools/aerobic-decoupling-calculator">
                 <Button 
-                  className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700"
+                  className="w-full bg-gradient-to-r from-blue-500 to-blue-700 text-white hover:from-blue-600 hover:to-blue-800"
                   data-testid="tool-cta-aerobic-decoupling"
                 >
                   Try Calculator
@@ -574,7 +575,7 @@ export default function LandingPage() {
 
             {/* Training Split Analyzer */}
             <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-rose-500 to-pink-600 rounded-xl flex items-center justify-center mb-4">
                 <Activity className="h-6 w-6 text-white" />
               </div>
               <h3 className="text-xl font-semibold text-charcoal mb-3">Training Split Analyzer</h3>
@@ -583,21 +584,21 @@ export default function LandingPage() {
               </p>
               <div className="space-y-2 mb-4">
                 <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                   <span>Zone distribution analysis</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                   <span>Weekly trends</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                   <span>Training prescription</span>
                 </div>
               </div>
               <Link href="/tools/training-split-analyzer">
                 <Button 
-                  className="w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:from-purple-600 hover:to-pink-700"
+                  className="w-full bg-gradient-to-r from-rose-500 to-pink-600 text-white hover:from-rose-600 hover:to-pink-700"
                   data-testid="tool-cta-training-split"
                 >
                   Analyze Training
@@ -703,6 +704,142 @@ export default function LandingPage() {
                   data-testid="tool-cta-cadence-analyzer"
                 >
                   Analyze Form
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+
+            {/* Running Shoe Hub */}
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center mb-4">
+                <Footprints className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-charcoal mb-3">Running Shoe Hub</h3>
+              <p className="text-gray-600 mb-4 text-sm">
+                Browse 100+ verified running shoes with detailed specs, ratings, and AI-powered recommendations.
+              </p>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  <span>16 major brands</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  <span>Verified specifications</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  <span>Detailed shoe pages</span>
+                </div>
+              </div>
+              <Link href="/tools/shoes">
+                <Button 
+                  className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700"
+                  data-testid="tool-cta-shoe-hub"
+                >
+                  Browse Shoes
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+
+            {/* Shoe Finder */}
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center mb-4">
+                <Target className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-charcoal mb-3">Personalized Shoe Finder</h3>
+              <p className="text-gray-600 mb-4 text-sm">
+                Find your perfect running shoes based on weight, goals, foot type, and training preferences.
+              </p>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Weight-based matching</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Goal-specific suggestions</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Foot type recommendations</span>
+                </div>
+              </div>
+              <Link href="/tools/shoe-finder">
+                <Button 
+                  className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700"
+                  data-testid="tool-cta-shoe-finder"
+                >
+                  Find My Shoes
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+
+            {/* Rotation Planner */}
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+              <div className="w-12 h-12 bg-gradient-to-br from-sky-500 to-blue-600 rounded-xl flex items-center justify-center mb-4">
+                <RotateCcw className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-charcoal mb-3">Shoe Rotation Planner</h3>
+              <p className="text-gray-600 mb-4 text-sm">
+                Build a complete training rotation with role-based shoe recommendations for all workout types.
+              </p>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                  <span>Daily trainer picks</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                  <span>Speed & race day shoes</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                  <span>Recovery options</span>
+                </div>
+              </div>
+              <Link href="/tools/rotation-planner">
+                <Button 
+                  className="w-full bg-gradient-to-r from-sky-500 to-blue-600 text-white hover:from-sky-600 hover:to-blue-700"
+                  data-testid="tool-cta-rotation-planner"
+                >
+                  Plan Rotation
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+
+            {/* Running Heatmap */}
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+              <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl flex items-center justify-center mb-4">
+                <Map className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-charcoal mb-3">Running Heatmap</h3>
+              <p className="text-gray-600 mb-4 text-sm">
+                Visualize your running routes on an interactive map showing your most-used training areas.
+              </p>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                  <span>Last 30 activities</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                  <span>Route overlap visualization</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                  <span>Interactive popups</span>
+                </div>
+              </div>
+              <Link href="/tools/heatmap">
+                <Button 
+                  className="w-full bg-gradient-to-r from-red-500 to-rose-600 text-white hover:from-red-600 hover:to-rose-700"
+                  data-testid="tool-cta-heatmap"
+                >
+                  View Heatmap
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
