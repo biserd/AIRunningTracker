@@ -2382,6 +2382,18 @@ ${allPages.map(page => `  <url>
       const userMiles = totalDistanceMeters / 1609.34;
       const percentile = Math.min(99, Math.round((userMiles / Math.max(avgMilesPerUser * 2, 1)) * 50));
 
+      // Fetch top AI insights for the user
+      const allInsights = await storage.getAIInsightsByUserId(userId);
+      const topInsights = allInsights
+        .filter(i => ['performance', 'recommendation', 'pattern'].includes(i.type))
+        .sort((a, b) => b.confidence - a.confidence)
+        .slice(0, 2)
+        .map(i => ({
+          type: i.type,
+          title: i.title,
+          content: i.content.length > 100 ? i.content.substring(0, 100) + '...' : i.content
+        }));
+
       // Unit conversions
       const unitPref = user.unitPreference || 'km';
       const distanceMultiplier = unitPref === 'miles' ? 0.000621371 : 0.001;
@@ -2422,7 +2434,8 @@ ${allPages.map(page => `  <url>
           percentile,
           unitPreference: unitPref
         },
-        userName: user.firstName || user.username || 'Runner'
+        userName: user.firstName || user.username || 'Runner',
+        aiInsights: topInsights
       });
     } catch (error: any) {
       console.error('Wrapped 2025 error:', error);

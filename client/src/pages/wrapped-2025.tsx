@@ -18,8 +18,16 @@ import {
   ArrowLeft,
   Loader2,
   Footprints,
-  Zap
+  Zap,
+  Brain,
+  Sparkles
 } from "lucide-react";
+
+interface AIInsight {
+  type: string;
+  title: string;
+  content: string;
+}
 
 interface WrappedStats {
   hasData: boolean;
@@ -55,6 +63,7 @@ interface WrappedStats {
     unitPreference: string;
   };
   userName: string;
+  aiInsights?: AIInsight[];
 }
 
 export default function Wrapped2025Page() {
@@ -303,6 +312,29 @@ export default function Wrapped2025Page() {
             <div className="text-4xl font-black text-white">{stats.percentile}%</div>
             <div className="text-white/90 text-sm">of runners on RunAnalytics</div>
           </div>
+
+          {/* AI Insights */}
+          {data.aiInsights && data.aiInsights.length > 0 && (
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="h-4 w-4 text-yellow-300" />
+                <span className="text-white/80 text-xs uppercase tracking-wide font-medium">AI Insights</span>
+              </div>
+              <div className="space-y-2">
+                {data.aiInsights.map((insight, index) => (
+                  <div key={index} className="bg-white/10 backdrop-blur rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                      <Brain className="h-4 w-4 text-cyan-300 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <div className="text-white font-semibold text-sm">{insight.title}</div>
+                        <div className="text-white/70 text-xs mt-1">{insight.content}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Branding */}
           <div className="text-center">
