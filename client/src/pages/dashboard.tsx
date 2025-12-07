@@ -26,7 +26,8 @@ import { StravaConnectButton, StravaPoweredBy } from "@/components/StravaConnect
 import { ChatPanel } from "@/components/ChatPanel";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import RecentConversations from "@/components/RecentConversations";
-import { MessageCircle, X } from "lucide-react";
+import { MessageCircle, X, Gift, ChevronRight } from "lucide-react";
+import { Link } from "wouter";
 
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
@@ -365,6 +366,27 @@ export default function Dashboard() {
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* AI Chat Announcement Banner */}
         <AnnouncementBanner onOpenChat={() => setIsChatOpen(true)} />
+
+        {/* 2025 Running Wrapped Banner */}
+        <Link href="/wrapped-2025">
+          <div 
+            className="mb-6 p-4 rounded-xl bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 cursor-pointer hover:shadow-lg hover:scale-[1.01] transition-all duration-200 group"
+            data-testid="banner-wrapped-2025"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 rounded-full p-2">
+                  <Gift className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-white font-bold text-lg">Your 2025 Running Wrapped is ready!</h3>
+                  <p className="text-white/80 text-sm">See your year in review and share your stats</p>
+                </div>
+              </div>
+              <ChevronRight className="h-6 w-6 text-white group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+        </Link>
 
         {/* Strava Sync Actions */}
         <div className="mb-8 flex flex-wrap gap-4">

@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp, Trophy, Users, TrendingDown, Calculator, ArrowRight, MessageCircle, Activity, Map, Footprints, RotateCcw } from "lucide-react";
+import { CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp, Trophy, Users, TrendingDown, Calculator, ArrowRight, MessageCircle, Activity, Map, Footprints, RotateCcw, Gift, Sparkles } from "lucide-react";
 import { VERSION } from "@shared/version";
 import Footer from "@/components/Footer";
 import PublicHeader from "@/components/PublicHeader";
@@ -167,6 +167,36 @@ export default function LandingPage() {
               <span>Connect with Strava</span>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* 2025 Running Wrapped Promo */}
+      <section className="py-8 sm:py-12 px-4 sm:px-6 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600">
+        <div className="max-w-4xl mx-auto">
+          <Link href="/auth">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 cursor-pointer group" data-testid="banner-wrapped-promo">
+              <div className="flex items-center gap-4">
+                <div className="bg-white/20 rounded-full p-3">
+                  <Gift className="h-8 w-8 text-white" />
+                </div>
+                <div className="text-center sm:text-left">
+                  <div className="flex items-center gap-2 justify-center sm:justify-start">
+                    <Sparkles className="h-4 w-4 text-yellow-300" />
+                    <span className="text-yellow-300 text-sm font-bold uppercase tracking-wide">New Feature</span>
+                  </div>
+                  <h3 className="text-white font-bold text-xl sm:text-2xl">2025 Running Wrapped</h3>
+                  <p className="text-white/80 text-sm sm:text-base">See your year in review & share your running stats</p>
+                </div>
+              </div>
+              <Button 
+                className="bg-white text-purple-600 hover:bg-white/90 font-bold px-8 py-3 shadow-lg group-hover:scale-105 transition-transform"
+                data-testid="button-wrapped-cta"
+              >
+                View Your Wrapped
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
+          </Link>
         </div>
       </section>
 
