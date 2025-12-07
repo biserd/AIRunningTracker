@@ -43,8 +43,8 @@ export function useSubscription() {
 export function useCheckout() {
   return useMutation({
     mutationFn: async (priceId: string) => {
-      const response = await apiRequest("/api/stripe/create-checkout-session", "POST", { priceId });
-      return response.json();
+      const data = await apiRequest("/api/stripe/create-checkout-session", "POST", { priceId });
+      return data as { url: string };
     },
     onSuccess: (data) => {
       if (data.url) {
@@ -57,8 +57,8 @@ export function useCheckout() {
 export function useManageSubscription() {
   return useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("/api/stripe/create-portal-session", "POST");
-      return response.json();
+      const data = await apiRequest("/api/stripe/create-portal-session", "POST");
+      return data as { url: string };
     },
     onSuccess: (data) => {
       if (data.url) {
