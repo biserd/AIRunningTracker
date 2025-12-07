@@ -2300,6 +2300,136 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // 2025 Running Wrapped - Year in Review stats
+  app.get("/api/wrapped/2025", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Get all activities for 2025
+      const activities = await storage.getActivitiesByUserId(userId);
+      const runningTypes = ['Run', 'TrailRun', 'VirtualRun'];
+      
+      // Filter to 2025 running activities only
+      const activities2025 = activities.filter(a => {
+        const activityDate = new Date(a.startDate);
+        return activityDate.getFullYear() === 2025 && runningTypes.includes(a.type);
+      });
+
+      if (activities2025.length === 0) {
+        return res.json({
+          hasData: false,
+          message: "No running activities found for 2025"
+        });
+      }
+
+      // Calculate stats
+      const totalDistanceMeters = activities2025.reduce((sum, a) => sum + (a.distance || 0), 0);
+      const totalTimeSeconds = activities2025.reduce((sum, a) => sum + (a.movingTime || 0), 0);
+      const totalRuns = activities2025.length;
+      
+      // Longest run
+      const longestRun = activities2025.reduce((max, a) => 
+        (a.distance || 0) > (max.distance || 0) ? a : max, activities2025[0]);
+      
+      // Fastest pace (lowest min/km for runs over 1km)
+      const runsOver1km = activities2025.filter(a => (a.distance || 0) >= 1000);
+      let fastestPace = null;
+      let fastestPaceActivity = null;
+      if (runsOver1km.length > 0) {
+        fastestPaceActivity = runsOver1km.reduce((fastest, a) => {
+          const paceA = a.movingTime / (a.distance / 1000);
+          const paceFastest = fastest.movingTime / (fastest.distance / 1000);
+          return paceA < paceFastest ? a : fastest;
+        }, runsOver1km[0]);
+        fastestPace = fastestPaceActivity.movingTime / (fastestPaceActivity.distance / 1000);
+      }
+
+      // Most active month
+      const monthCounts: Record<number, number> = {};
+      activities2025.forEach(a => {
+        const month = new Date(a.startDate).getMonth();
+        monthCounts[month] = (monthCounts[month] || 0) + 1;
+      });
+      const mostActiveMonth = Object.entries(monthCounts).reduce((max, [month, count]) => 
+        count > max.count ? { month: parseInt(month), count } : max, { month: 0, count: 0 });
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                          'July', 'August', 'September', 'October', 'November', 'December'];
+
+      // Favorite day of week
+      const dayCounts: Record<number, number> = {};
+      activities2025.forEach(a => {
+        const day = new Date(a.startDate).getDay();
+        dayCounts[day] = (dayCounts[day] || 0) + 1;
+      });
+      const favoriteDay = Object.entries(dayCounts).reduce((max, [day, count]) => 
+        count > max.count ? { day: parseInt(day), count } : max, { day: 0, count: 0 });
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+      // Average distance per run
+      const avgDistanceMeters = totalDistanceMeters / totalRuns;
+
+      // Total elevation gain
+      const totalElevationGain = activities2025.reduce((sum, a) => sum + (a.totalElevationGain || 0), 0);
+
+      // Calculate percentile compared to all platform users (simplified)
+      const platformStats = await storage.getPlatformStats();
+      const avgMilesPerUser = platformStats.totalDistance / 1609.34 / Math.max(platformStats.totalUsers, 1);
+      const userMiles = totalDistanceMeters / 1609.34;
+      const percentile = Math.min(99, Math.round((userMiles / Math.max(avgMilesPerUser * 2, 1)) * 50));
+
+      // Unit conversions
+      const unitPref = user.unitPreference || 'km';
+      const distanceMultiplier = unitPref === 'miles' ? 0.000621371 : 0.001;
+      const distanceUnit = unitPref === 'miles' ? 'mi' : 'km';
+      const elevationUnit = unitPref === 'miles' ? 'ft' : 'm';
+      const elevationMultiplier = unitPref === 'miles' ? 3.28084 : 1;
+
+      res.json({
+        hasData: true,
+        year: 2025,
+        stats: {
+          totalDistance: Math.round(totalDistanceMeters * distanceMultiplier * 10) / 10,
+          totalDistanceUnit: distanceUnit,
+          totalHours: Math.round(totalTimeSeconds / 3600 * 10) / 10,
+          totalRuns,
+          longestRun: {
+            distance: Math.round((longestRun.distance || 0) * distanceMultiplier * 10) / 10,
+            name: longestRun.name,
+            date: longestRun.startDate
+          },
+          fastestPace: fastestPace ? {
+            paceMinutes: Math.floor(fastestPace / 60),
+            paceSeconds: Math.round(fastestPace % 60),
+            activityName: fastestPaceActivity?.name,
+            date: fastestPaceActivity?.startDate
+          } : null,
+          mostActiveMonth: {
+            name: monthNames[mostActiveMonth.month],
+            runCount: mostActiveMonth.count
+          },
+          favoriteDay: {
+            name: dayNames[favoriteDay.day],
+            runCount: favoriteDay.count
+          },
+          avgDistancePerRun: Math.round(avgDistanceMeters * distanceMultiplier * 10) / 10,
+          totalElevationGain: Math.round(totalElevationGain * elevationMultiplier),
+          elevationUnit,
+          percentile,
+          unitPreference: unitPref
+        },
+        userName: user.firstName || user.username || 'Runner'
+      });
+    } catch (error: any) {
+      console.error('Wrapped 2025 error:', error);
+      res.status(500).json({ message: error.message || "Failed to generate wrapped stats" });
+    }
+  });
+
   // Get activity details
   app.get("/api/activities/:activityId", async (req, res) => {
     try {
