@@ -236,8 +236,8 @@ export default function APIDocs() {
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                   <Badge className="bg-green-500 text-white">GET</Badge>
-                  <code className="text-sm font-mono flex-1">/api/insights/:userId</code>
-                  <span className="text-sm text-gray-600">AI insights</span>
+                  <code className="text-sm font-mono flex-1">/api/insights/history/:userId</code>
+                  <span className="text-sm text-gray-600">AI insights history</span>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                   <Badge className="bg-green-500 text-white">GET</Badge>
