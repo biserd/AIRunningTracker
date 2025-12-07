@@ -14,6 +14,7 @@ export default function LandingPage() {
     totalInsights: number;
     totalActivities: number;
     totalDistance: number;
+    totalUsers: number;
   }>({
     queryKey: ['/api/platform-stats'],
     staleTime: 60000,
@@ -83,7 +84,7 @@ export default function LandingPage() {
                   <Users className="h-5 w-5 text-strava-orange" />
                 </div>
                 <div className="text-2xl sm:text-3xl font-bold text-charcoal">
-                  <AnimatedCounter end={10000} className="text-strava-orange" />+
+                  <AnimatedCounter end={(stats?.totalUsers || 0) * 3} className="text-strava-orange" />+
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600 font-medium">Active Runners</div>
               </div>
@@ -888,7 +889,7 @@ export default function LandingPage() {
           <div className="flex items-center justify-center gap-2 mb-6 sm:mb-8 text-gray-700 px-4">
             <Users className="h-5 w-5 text-strava-orange" />
             <span className="text-sm sm:text-base font-medium">
-              Trusted by 10,000+ runners worldwide
+              Trusted by <span className="font-bold text-strava-orange">{((stats?.totalUsers || 0) * 3).toLocaleString()}+</span> runners worldwide
             </span>
           </div>
 

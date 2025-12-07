@@ -173,6 +173,7 @@ export interface IStorage {
     totalInsights: number;
     totalActivities: number;
     totalDistance: number;
+    totalUsers: number;
   }>;
   
   // Running Shoe methods
@@ -1243,6 +1244,7 @@ export class DatabaseStorage implements IStorage {
     totalInsights: number;
     totalActivities: number;
     totalDistance: number;
+    totalUsers: number;
   }> {
     const [insightsCount] = await db
       .select({ count: sql<number>`count(*)::int` })
@@ -1255,11 +1257,16 @@ export class DatabaseStorage implements IStorage {
     const [distanceSum] = await db
       .select({ sum: sql<number>`COALESCE(sum(distance), 0)::numeric` })
       .from(activities);
+    
+    const [userCount] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(users);
 
     return {
       totalInsights: insightsCount?.count || 0,
       totalActivities: activityCount?.count || 0,
-      totalDistance: Number(distanceSum?.sum) || 0
+      totalDistance: Number(distanceSum?.sum) || 0,
+      totalUsers: userCount?.count || 0
     };
   }
 
