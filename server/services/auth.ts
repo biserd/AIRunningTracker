@@ -94,7 +94,7 @@ export class AuthService {
     }
   }
 
-  private generateToken(user: User): string {
+  generateToken(user: User): string {
     return jwt.sign(
       { 
         userId: user.id,

@@ -515,6 +515,175 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // =============================================
+  // Mobile Auth Endpoints (for iOS/Android apps)
+  // =============================================
+
+  // Mobile login - returns access token and refresh token
+  app.post("/api/mobile/login", async (req, res) => {
+    try {
+      const { email, password, deviceName, deviceId } = z.object({
+        email: z.string().email(),
+        password: z.string().min(6),
+        deviceName: z.string().optional(),
+        deviceId: z.string().optional(),
+      }).parse(req.body);
+      
+      // Verify credentials using existing auth service
+      const result = await authService.login({ email, password });
+      
+      // Get full user data from storage for complete mobile response
+      const fullUser = await storage.getUser(result.user.id);
+      if (!fullUser) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      // Create refresh token for mobile session
+      const refreshTokenData = await storage.createRefreshToken(
+        result.user.id,
+        deviceName,
+        deviceId
+      );
+      
+      res.json({
+        accessToken: result.token,
+        refreshToken: refreshTokenData.rawToken,
+        expiresIn: 900, // 15 minutes in seconds
+        refreshExpiresAt: refreshTokenData.expiresAt.toISOString(),
+        user: {
+          id: fullUser.id,
+          email: fullUser.email,
+          firstName: fullUser.firstName,
+          lastName: fullUser.lastName,
+          username: fullUser.username,
+          unitPreference: fullUser.unitPreference,
+          stravaConnected: fullUser.stravaConnected,
+        }
+      });
+    } catch (error: any) {
+      console.error('Mobile login error:', error);
+      res.status(401).json({ message: error.message || "Invalid credentials" });
+    }
+  });
+
+  // Mobile token refresh - exchange refresh token for new access token
+  app.post("/api/mobile/refresh", async (req, res) => {
+    try {
+      const { refreshToken } = z.object({
+        refreshToken: z.string(),
+      }).parse(req.body);
+      
+      // Validate refresh token
+      const validation = await storage.validateRefreshToken(refreshToken);
+      
+      if (!validation.valid || !validation.userId || !validation.tokenId) {
+        return res.status(401).json({ message: "Invalid or expired refresh token" });
+      }
+      
+      // Get user and generate new access token
+      const user = await storage.getUser(validation.userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      // Generate new access token
+      const newAccessToken = await authService.generateToken(user);
+      
+      // Update refresh token last used timestamp
+      await storage.updateRefreshTokenLastUsed(validation.tokenId);
+      
+      res.json({
+        accessToken: newAccessToken,
+        expiresIn: 900, // 15 minutes in seconds
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          username: user.username,
+          unitPreference: user.unitPreference,
+          stravaConnected: user.stravaConnected,
+        }
+      });
+    } catch (error: any) {
+      console.error('Mobile refresh error:', error);
+      res.status(401).json({ message: "Failed to refresh token" });
+    }
+  });
+
+  // Mobile logout - revoke refresh token
+  app.post("/api/mobile/logout", async (req, res) => {
+    try {
+      const { refreshToken } = z.object({
+        refreshToken: z.string(),
+      }).parse(req.body);
+      
+      // Validate and get token ID
+      const validation = await storage.validateRefreshToken(refreshToken);
+      
+      if (validation.valid && validation.tokenId) {
+        await storage.revokeRefreshToken(validation.tokenId);
+      }
+      
+      // Always return success (don't reveal if token was valid)
+      res.json({ success: true, message: "Logged out successfully" });
+    } catch (error: any) {
+      console.error('Mobile logout error:', error);
+      res.json({ success: true, message: "Logged out successfully" });
+    }
+  });
+
+  // Get current user profile and settings (mobile-optimized)
+  app.get("/api/me", authenticateJWT, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Return user profile without sensitive data
+      res.json({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        username: user.username,
+        unitPreference: user.unitPreference,
+        stravaConnected: user.stravaConnected,
+        stravaAthleteId: user.stravaAthleteId,
+        subscriptionPlan: user.subscriptionPlan,
+        subscriptionStatus: user.subscriptionStatus,
+        lastSyncAt: user.lastSyncAt,
+        createdAt: user.createdAt,
+      });
+    } catch (error: any) {
+      console.error('Get /api/me error:', error);
+      res.status(500).json({ message: "Failed to get user profile" });
+    }
+  });
+
+  // Get active mobile sessions for current user
+  app.get("/api/mobile/sessions", authenticateJWT, async (req: any, res) => {
+    try {
+      const sessions = await storage.getActiveRefreshTokens(req.user.id);
+      res.json(sessions);
+    } catch (error: any) {
+      console.error('Get sessions error:', error);
+      res.status(500).json({ message: "Failed to get sessions" });
+    }
+  });
+
+  // Revoke all mobile sessions (logout everywhere)
+  app.post("/api/mobile/logout-all", authenticateJWT, async (req: any, res) => {
+    try {
+      await storage.revokeAllUserRefreshTokens(req.user.id);
+      res.json({ success: true, message: "All sessions logged out" });
+    } catch (error: any) {
+      console.error('Logout all error:', error);
+      res.status(500).json({ message: "Failed to logout all sessions" });
+    }
+  });
+
   // Feedback endpoint
   app.post("/api/feedback", authenticateJWT, async (req: any, res) => {
     try {
