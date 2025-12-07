@@ -21,7 +21,30 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Save, Unlink, RefreshCw, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Settings, Save, Unlink, RefreshCw, Trash2, Key, Plus, Copy, ExternalLink, Eye, EyeOff } from "lucide-react";
+
+interface ApiKeyData {
+  id: number;
+  name: string;
+  scopes: string[];
+  keyHint: string;
+  isActive: boolean;
+  lastUsedAt: string | null;
+  createdAt: string;
+}
+
+interface NewApiKeyResponse {
+  id: number;
+  name: string;
+  scopes: string[];
+  keyHint: string;
+  key: string;
+  createdAt: string;
+  message: string;
+}
 
 function SettingsPageContent() {
   const { user } = useAuth();
@@ -34,12 +57,22 @@ function SettingsPageContent() {
   });
 
   const [unitPreference, setUnitPreference] = useState("km");
+  const [newKeyName, setNewKeyName] = useState("");
+  const [selectedScopes, setSelectedScopes] = useState<string[]>(["activities"]);
+  const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
+  const [showNewKey, setShowNewKey] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   useEffect(() => {
     if (dashboardData?.user?.unitPreference) {
       setUnitPreference(dashboardData.user.unitPreference);
     }
   }, [dashboardData]);
+
+  const { data: apiKeys, isLoading: apiKeysLoading } = useQuery<ApiKeyData[]>({
+    queryKey: ['/api/keys'],
+    queryFn: getQueryFn({ on401: "throw" }),
+  });
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (settings: { unitPreference: string }) => {
@@ -126,6 +159,77 @@ function SettingsPageContent() {
       });
     },
   });
+
+  const createApiKeyMutation = useMutation({
+    mutationFn: async (data: { name: string; scopes: string[] }) => {
+      return apiRequest('/api/keys', 'POST', data);
+    },
+    onSuccess: (data: NewApiKeyResponse) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/keys'] });
+      setNewlyCreatedKey(data.key);
+      setShowNewKey(true);
+      setNewKeyName("");
+      setSelectedScopes(["activities"]);
+      toast({
+        title: "API Key Created",
+        description: "Copy your new API key now - you won't be able to see it again!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to create API key",
+        description: error.message || "Please try again",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteApiKeyMutation = useMutation({
+    mutationFn: async (keyId: number) => {
+      return apiRequest(`/api/keys/${keyId}`, 'DELETE');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/keys'] });
+      toast({
+        title: "API Key Deleted",
+        description: "The API key has been permanently revoked",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to delete API key",
+        description: error.message || "Please try again",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCreateApiKey = () => {
+    if (!newKeyName.trim()) {
+      toast({ title: "Error", description: "Please enter a name for your API key", variant: "destructive" });
+      return;
+    }
+    if (selectedScopes.length === 0) {
+      toast({ title: "Error", description: "Please select at least one scope", variant: "destructive" });
+      return;
+    }
+    createApiKeyMutation.mutate({ name: newKeyName.trim(), scopes: selectedScopes });
+  };
+
+  const handleCopyKey = () => {
+    if (newlyCreatedKey) {
+      navigator.clipboard.writeText(newlyCreatedKey);
+      toast({ title: "Copied!", description: "API key copied to clipboard" });
+    }
+  };
+
+  const toggleScope = (scope: string) => {
+    setSelectedScopes(prev => 
+      prev.includes(scope) 
+        ? prev.filter(s => s !== scope)
+        : [...prev, scope]
+    );
+  };
 
   const handleSave = () => {
     updateSettingsMutation.mutate({ unitPreference });
@@ -270,6 +374,223 @@ function SettingsPageContent() {
             </CardContent>
           </Card>
         )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5" />
+              API Keys
+            </CardTitle>
+            <CardDescription>
+              Create API keys to access your data programmatically
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">
+                  API keys allow external applications to access your running data.
+                </p>
+                <a 
+                  href="/developers/api" 
+                  className="text-sm text-strava-orange hover:underline flex items-center gap-1 mt-1"
+                  data-testid="link-api-docs"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  View API Documentation
+                </a>
+              </div>
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    size="sm" 
+                    className="flex items-center gap-2"
+                    disabled={(apiKeys?.length || 0) >= 5}
+                    data-testid="button-create-api-key"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create API Key
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create New API Key</DialogTitle>
+                    <DialogDescription>
+                      Give your key a name and select what data it can access.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="key-name">Key Name</Label>
+                      <Input
+                        id="key-name"
+                        placeholder="e.g., My Training App"
+                        value={newKeyName}
+                        onChange={(e) => setNewKeyName(e.target.value)}
+                        data-testid="input-api-key-name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Scopes (What this key can access)</Label>
+                      <div className="space-y-2">
+                        {[
+                          { id: "activities", label: "Activities", desc: "Read your running activities" },
+                          { id: "insights", label: "AI Insights", desc: "Read AI-generated insights" },
+                          { id: "training_plans", label: "Training Plans", desc: "Read training plans" },
+                          { id: "goals", label: "Goals", desc: "Read your goals and progress" },
+                        ].map((scope) => (
+                          <div key={scope.id} className="flex items-start space-x-2">
+                            <Checkbox
+                              id={scope.id}
+                              checked={selectedScopes.includes(scope.id)}
+                              onCheckedChange={() => toggleScope(scope.id)}
+                              data-testid={`checkbox-scope-${scope.id}`}
+                            />
+                            <div className="grid gap-0.5 leading-none">
+                              <label
+                                htmlFor={scope.id}
+                                className="text-sm font-medium leading-none cursor-pointer"
+                              >
+                                {scope.label}
+                              </label>
+                              <p className="text-xs text-muted-foreground">{scope.desc}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button variant="outline" data-testid="button-cancel-create-key">Cancel</Button>
+                    </DialogClose>
+                    <Button 
+                      onClick={handleCreateApiKey}
+                      disabled={createApiKeyMutation.isPending}
+                      data-testid="button-confirm-create-key"
+                    >
+                      {createApiKeyMutation.isPending ? "Creating..." : "Create Key"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {newlyCreatedKey && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 className="font-semibold text-green-800 mb-2 flex items-center gap-2">
+                  <Key className="h-4 w-4" />
+                  Your New API Key
+                </h4>
+                <p className="text-sm text-green-700 mb-3">
+                  Copy this key now - you won't be able to see it again!
+                </p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-white border rounded px-3 py-2 text-sm font-mono break-all">
+                    {showNewKey ? newlyCreatedKey : "••••••••••••••••••••••••••••••••"}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowNewKey(!showNewKey)}
+                    data-testid="button-toggle-key-visibility"
+                  >
+                    {showNewKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleCopyKey}
+                    data-testid="button-copy-api-key"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2 text-green-700"
+                  onClick={() => {
+                    setNewlyCreatedKey(null);
+                    setIsCreateDialogOpen(false);
+                  }}
+                  data-testid="button-dismiss-new-key"
+                >
+                  I've copied my key
+                </Button>
+              </div>
+            )}
+
+            {apiKeysLoading ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-strava-orange mx-auto" />
+              </div>
+            ) : apiKeys && apiKeys.length > 0 ? (
+              <div className="space-y-3">
+                <Label className="text-base font-medium">Your API Keys</Label>
+                {apiKeys.map((key) => (
+                  <div 
+                    key={key.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                    data-testid={`api-key-item-${key.id}`}
+                  >
+                    <div>
+                      <p className="font-medium">{key.name}</p>
+                      <p className="text-xs text-gray-500">
+                        Key ending in ...{key.keyHint} • Created {new Date(key.createdAt).toLocaleDateString()}
+                        {key.lastUsedAt && ` • Last used ${new Date(key.lastUsedAt).toLocaleDateString()}`}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Scopes: {key.scopes.join(", ")}
+                      </p>
+                    </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          data-testid={`button-delete-key-${key.id}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete API Key?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently revoke the API key "{key.name}". Any applications using this key will stop working immediately.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deleteApiKeyMutation.mutate(key.id)}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Delete Key
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-gray-500">
+                <Key className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>No API keys yet</p>
+                <p className="text-sm">Create a key to start using the API</p>
+              </div>
+            )}
+
+            {(apiKeys?.length || 0) >= 5 && (
+              <p className="text-sm text-amber-600">
+                You've reached the maximum of 5 API keys. Delete an existing key to create a new one.
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
         <Card className="border-red-200">
           <CardHeader>
