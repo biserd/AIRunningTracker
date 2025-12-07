@@ -76,30 +76,44 @@ export default function LandingPage() {
           </p>
 
           {/* Social Proof with Real Stats */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 mb-6 sm:mb-8 text-gray-700">
-            <div className="flex items-center gap-2">
-              <Brain className="h-5 w-5 text-strava-orange" />
-              <span className="text-sm sm:text-base font-medium">
-                <AnimatedCounter end={stats?.totalInsights || 0} className="font-bold text-strava-orange" />
-                + AI insights generated
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-blue-600" />
-              <span className="text-sm sm:text-base font-medium">
-                <AnimatedCounter end={stats?.totalActivities || 0} className="font-bold text-blue-600" />
-                + activities tracked
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-green-600" />
-              <span className="text-sm sm:text-base font-medium">
-                <AnimatedCounter 
-                  end={Math.round((stats?.totalDistance || 0) / 1609.34)} 
-                  className="font-bold text-green-600" 
-                />
-                + miles run
-              </span>
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 mb-6 sm:mb-8 mx-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Users className="h-5 w-5 text-strava-orange" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-bold text-charcoal">
+                  <AnimatedCounter end={10000} className="text-strava-orange" />+
+                </div>
+                <div className="text-xs sm:text-sm text-gray-600 font-medium">Active Runners</div>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Brain className="h-5 w-5 text-blue-600" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-bold text-charcoal">
+                  <AnimatedCounter end={stats?.totalInsights || 0} className="text-blue-600" />+
+                </div>
+                <div className="text-xs sm:text-sm text-gray-600 font-medium">AI Insights</div>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Activity className="h-5 w-5 text-green-600" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-bold text-charcoal">
+                  <AnimatedCounter end={stats?.totalActivities || 0} className="text-green-600" />+
+                </div>
+                <div className="text-xs sm:text-sm text-gray-600 font-medium">Activities Tracked</div>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <TrendingUp className="h-5 w-5 text-cyan-600" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-bold text-charcoal">
+                  <AnimatedCounter end={Math.round((stats?.totalDistance || 0) / 1609.34)} className="text-cyan-600" />+
+                </div>
+                <div className="text-xs sm:text-sm text-gray-600 font-medium">Miles Analyzed</div>
+              </div>
             </div>
           </div>
 
@@ -108,7 +122,7 @@ export default function LandingPage() {
             {/* Primary CTA */}
             <Link href="/auth" className="w-full sm:w-auto mx-auto">
               <Button
-                className="w-full sm:w-auto bg-strava-orange text-white hover:bg-strava-orange/90 h-14 sm:h-14 px-8 sm:px-12 text-base sm:text-lg font-bold shadow-xl hover:shadow-2xl transition-all"
+                className="w-full sm:w-auto bg-gradient-to-r from-strava-orange via-orange-500 to-red-500 text-white hover:from-orange-600 hover:via-orange-500 hover:to-red-600 h-14 sm:h-14 px-8 sm:px-12 text-base sm:text-lg font-bold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-200 ring-2 ring-orange-300/50"
                 data-testid="hero-cta-getstarted"
               >
                 Get Started Free
@@ -119,8 +133,7 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
               <Link href="/tools" className="w-full sm:w-auto">
                 <Button
-                  variant="outline"
-                  className="w-full sm:w-auto border-2 border-strava-orange text-strava-orange hover:bg-strava-orange/10 h-12 px-8 sm:px-10 text-base font-semibold"
+                  className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 h-12 px-8 sm:px-10 text-base font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
                   data-testid="hero-cta-tools"
                 >
                   <Calculator className="h-4 w-4 mr-2" />
@@ -129,8 +142,7 @@ export default function LandingPage() {
               </Link>
               <Link href="/auth" className="w-full sm:w-auto">
                 <Button
-                  variant="outline"
-                  className="w-full sm:w-auto border-2 border-gray-300 text-charcoal hover:bg-gray-50 h-12 px-8 sm:px-10 text-base font-semibold"
+                  className="w-full sm:w-auto bg-charcoal text-white hover:bg-gray-800 h-12 px-8 sm:px-10 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                   data-testid="hero-cta-signin"
                 >
                   Sign In
@@ -192,7 +204,7 @@ export default function LandingPage() {
               </div>
               <Link href="/auth">
                 <Button
-                  className="w-full sm:w-auto bg-strava-orange text-white hover:bg-strava-orange/90 h-12 px-8 text-base font-semibold shadow-md"
+                  className="w-full sm:w-auto bg-gradient-to-r from-strava-orange via-orange-500 to-red-500 text-white hover:from-orange-600 hover:via-orange-500 hover:to-red-600 h-12 px-8 text-base font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
                   data-testid="aicoach-cta-getstarted"
                 >
                   <MessageCircle className="h-5 w-5 mr-2" />
@@ -325,7 +337,7 @@ export default function LandingPage() {
               {/* Secondary CTA */}
               <Link href="/auth">
                 <Button
-                  className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 h-12 px-8 text-base font-semibold shadow-md mt-4"
+                  className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-700 h-12 px-8 text-base font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200 mt-4"
                   data-testid="runnerscore-cta-getstarted"
                 >
                   Get Your Runner Score
@@ -850,9 +862,8 @@ export default function LandingPage() {
           <div className="text-center mt-8">
             <Link href="/tools">
               <Button 
-                variant="outline" 
                 size="lg"
-                className="border-2 border-strava-orange text-strava-orange hover:bg-strava-orange/10"
+                className="bg-gradient-to-r from-strava-orange via-orange-500 to-red-500 text-white hover:from-orange-600 hover:via-orange-500 hover:to-red-600 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
                 data-testid="button-view-all-tools"
               >
                 View All Tools
@@ -884,7 +895,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
             <Link href="/auth" className="w-full sm:w-auto">
               <Button
-                className="w-full sm:w-auto bg-strava-orange text-white hover:bg-strava-orange/90 h-14 sm:h-12 px-8 sm:px-10 text-base sm:text-lg font-bold shadow-lg hover:shadow-xl transition-shadow"
+                className="w-full sm:w-auto bg-gradient-to-r from-strava-orange via-orange-500 to-red-500 text-white hover:from-orange-600 hover:via-orange-500 hover:to-red-600 h-14 sm:h-12 px-8 sm:px-10 text-base sm:text-lg font-bold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-200 ring-2 ring-orange-300/50"
                 data-testid="bottom-cta-getstarted"
               >
                 Create Free Account
@@ -892,8 +903,7 @@ export default function LandingPage() {
             </Link>
             <Link href="/auth" className="w-full sm:w-auto">
               <Button
-                variant="outline"
-                className="w-full sm:w-auto border-2 border-gray-300 text-charcoal hover:bg-white h-14 sm:h-12 px-8 sm:px-10 text-base sm:text-lg font-semibold"
+                className="w-full sm:w-auto bg-charcoal text-white hover:bg-gray-800 h-14 sm:h-12 px-8 sm:px-10 text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                 data-testid="bottom-cta-signin"
               >
                 Sign In
