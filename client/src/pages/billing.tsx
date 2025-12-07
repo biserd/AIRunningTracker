@@ -1,70 +1,40 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
-import { useSubscription } from "@/hooks/useSubscription";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useSubscription, useManageSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Link, Redirect, useSearch } from "wouter";
+import { ArrowLeft, CreditCard, Crown, Star, Zap, Check, ExternalLink, Loader2, Calendar, CheckCircle } from "lucide-react";
+import { SEO } from "@/components/SEO";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  CreditCard, 
-  Crown, 
-  Calendar, 
-  AlertTriangle, 
-  CheckCircle,
-  XCircle,
-  ArrowLeft
-} from "lucide-react";
-import { Link } from "wouter";
+import { useEffect } from "react";
 import AppHeader from "@/components/AppHeader";
 
 export default function BillingPage() {
-  const { user } = useAuth();
-  const { subscription, isLoading: subscriptionLoading } = useSubscription();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { subscription, plan, status, isPro, isPremium, isLoading } = useSubscription();
+  const manageSubscription = useManageSubscription();
   const { toast } = useToast();
+  const searchString = useSearch();
+  const params = new URLSearchParams(searchString);
 
-  const cancelMutation = useMutation({
-    mutationFn: () => apiRequest("/api/cancel-subscription", "POST"),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
+  useEffect(() => {
+    if (params.get('success') === 'true') {
       toast({
-        title: "Subscription Canceled",
-        description: "Your subscription will end at the current billing period.",
+        title: "Subscription Activated!",
+        description: "Thank you for subscribing. Your account has been upgraded.",
       });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Cancellation Failed",
-        description: error.message || "Failed to cancel subscription",
-        variant: "destructive",
-      });
-    },
-  });
+    }
+  }, []);
 
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center">
-            <h2 className="text-xl font-semibold mb-4">Sign In Required</h2>
-            <p className="text-gray-600 mb-6">Please sign in to access billing information.</p>
-            <Link href="/auth">
-              <Button className="w-full">Sign In</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (subscriptionLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <AppHeader />
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange mx-auto mb-4"></div>
+            <Loader2 className="h-8 w-8 animate-spin text-strava-orange mx-auto mb-4" />
             <p>Loading billing information...</p>
           </div>
         </div>
@@ -72,47 +42,63 @@ export default function BillingPage() {
     );
   }
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+  if (!isAuthenticated || !user) {
+    return <Redirect to="/auth" />;
+  }
+
+  const getPlanIcon = () => {
+    if (isPremium) return <Crown className="h-6 w-6 text-yellow-500" />;
+    if (isPro) return <Star className="h-6 w-6 text-strava-orange" />;
+    return <Zap className="h-6 w-6 text-gray-500" />;
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'canceled':
-        return <XCircle className="h-5 w-5 text-red-500" />;
-      case 'past_due':
-        return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
-      default:
-        return <CreditCard className="h-5 w-5 text-gray-500" />;
-    }
+  const getPlanName = () => {
+    if (isPremium) return 'Premium';
+    if (isPro) return 'Pro';
+    return 'Free';
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
-      case 'canceled':
-        return <Badge variant="destructive">Canceled</Badge>;
-      case 'past_due':
-        return <Badge className="bg-yellow-100 text-yellow-800">Past Due</Badge>;
-      case 'free':
-        return <Badge variant="secondary">Free Plan</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
+  const getPlanColor = () => {
+    if (isPremium) return 'text-yellow-600';
+    if (isPro) return 'text-strava-orange';
+    return 'text-gray-600';
+  };
+
+  const getStatusBadge = () => {
+    const statusColors: Record<string, string> = {
+      active: 'bg-green-100 text-green-800',
+      trialing: 'bg-blue-100 text-blue-800',
+      past_due: 'bg-red-100 text-red-800',
+      canceled: 'bg-gray-100 text-gray-800',
+      unpaid: 'bg-red-100 text-red-800',
+      free: 'bg-gray-100 text-gray-600',
+    };
+
+    const statusLabels: Record<string, string> = {
+      active: 'Active',
+      trialing: 'Trial',
+      past_due: 'Past Due',
+      canceled: 'Canceled',
+      unpaid: 'Unpaid',
+      free: 'Free Plan',
+    };
+
+    return (
+      <Badge className={statusColors[status] || statusColors.free}>
+        {statusLabels[status] || 'Free Plan'}
+      </Badge>
+    );
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <SEO 
+        title="Billing & Subscription | RunAnalytics"
+        description="Manage your RunAnalytics subscription, view billing history, and update payment methods."
+      />
       <AppHeader />
+      
       <div className="max-w-4xl mx-auto px-6 py-8">
-        {/* Header */}
         <div className="flex items-center mb-8">
           <Link href="/dashboard">
             <Button variant="ghost" size="sm" className="mr-4" data-testid="button-back-dashboard">
@@ -127,234 +113,240 @@ export default function BillingPage() {
           <p className="text-gray-600">Manage your RunAnalytics subscription and billing information.</p>
         </div>
 
-        {/* Current Plan */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <CreditCard className="h-5 w-5 mr-2" />
-              Current Plan
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-start justify-between">
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  {subscription?.plan === 'pro' ? (
-                    <Crown className="h-6 w-6 text-strava-orange" />
-                  ) : (
-                    <div className="w-6 h-6 rounded bg-gray-200" />
-                  )}
-                  <div>
-                    <h3 className="text-xl font-semibold">
-                      {subscription?.plan === 'pro' ? 'RunAnalytics Pro' : 'RunAnalytics Free'}
+        <div className="grid gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <CreditCard className="h-5 w-5" />
+                Current Plan
+              </CardTitle>
+              <CardDescription>Your subscription details</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    {getPlanIcon()}
+                    <h3 className={`text-2xl font-bold ${getPlanColor()}`}>
+                      RunAnalytics {getPlanName()}
                     </h3>
-                    <div className="flex items-center space-x-2 mt-1">
-                      {getStatusIcon(subscription?.status || 'free')}
-                      {getStatusBadge(subscription?.status || 'free')}
-                    </div>
+                    {getStatusBadge()}
                   </div>
-                </div>
-
-                {subscription?.plan === 'pro' && (
-                  <div className="space-y-2">
-                    <div className="flex items-center text-sm text-gray-600">
+                  
+                  {subscription?.subscriptionEndsAt && (
+                    <div className="flex items-center text-sm text-gray-600 mt-2">
                       <Calendar className="h-4 w-4 mr-2" />
                       <span>
-                        {subscription.cancelAtPeriodEnd 
-                          ? `Ends on ${formatDate(subscription.currentPeriodEnd!)}`
-                          : `Renews on ${formatDate(subscription.currentPeriodEnd!)}`
-                        }
+                        {status === 'canceled' ? 'Access until: ' : 'Renews on: '}
+                        {new Date(subscription.subscriptionEndsAt).toLocaleDateString()}
                       </span>
                     </div>
-                    <div className="text-2xl font-bold">$9.99/month</div>
-                  </div>
-                )}
+                  )}
+                  
+                  {subscription?.trialEndsAt && status === 'trialing' && (
+                    <p className="text-sm text-blue-600 mt-1">
+                      Trial ends: {new Date(subscription.trialEndsAt).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
 
-                {subscription?.plan === 'free' && (
-                  <div className="text-2xl font-bold">$0/month</div>
-                )}
-              </div>
-
-              <div className="text-right">
-                {subscription?.plan === 'free' ? (
-                  <Link href="/subscribe">
-                    <Button className="bg-strava-orange hover:bg-strava-orange/90" data-testid="button-upgrade-billing">
-                      <Crown className="h-4 w-4 mr-2" />
-                      Upgrade to Pro
+                <div className="flex gap-3">
+                  {subscription?.stripeSubscriptionId ? (
+                    <Button 
+                      onClick={() => manageSubscription.mutate()}
+                      disabled={manageSubscription.isPending}
+                      variant="outline"
+                      data-testid="manage-subscription"
+                    >
+                      {manageSubscription.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <CreditCard className="h-4 w-4 mr-2" />
+                      )}
+                      Manage Subscription
                     </Button>
-                  </Link>
-                ) : subscription?.status === 'active' && !subscription?.cancelAtPeriodEnd ? (
-                  <Button 
-                    variant="outline" 
-                    onClick={() => cancelMutation.mutate()}
-                    disabled={cancelMutation.isPending}
-                    data-testid="button-cancel-subscription"
-                  >
-                    {cancelMutation.isPending ? "Canceling..." : "Cancel Subscription"}
-                  </Button>
-                ) : subscription?.cancelAtPeriodEnd ? (
-                  <div className="text-sm text-gray-600">
-                    <p>Subscription will end on</p>
-                    <p className="font-semibold">{formatDate(subscription.currentPeriodEnd!)}</p>
-                  </div>
-                ) : null}
+                  ) : (
+                    <Link href="/pricing">
+                      <Button className="bg-strava-orange hover:bg-strava-orange/90" data-testid="button-upgrade-billing">
+                        <Crown className="h-4 w-4 mr-2" />
+                        Upgrade Plan
+                      </Button>
+                    </Link>
+                  )}
+                </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            {subscription?.cancelAtPeriodEnd && (
-              <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <div className="flex items-start">
-                  <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 mr-3" />
+          {plan === 'free' && (
+            <Card className="border-2 border-strava-orange">
+              <CardHeader>
+                <CardTitle className="text-strava-orange">Upgrade to Pro or Premium</CardTitle>
+                <CardDescription>Unlock advanced features and AI-powered insights</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="grid md:grid-cols-2 gap-3 mb-6">
+                  <li className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    Unlimited AI Performance Insights
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    AI-Generated Training Plans
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    Race Time Predictions
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    Unlimited Activity History
+                  </li>
+                </ul>
+                
+                <Link href="/pricing">
+                  <Button className="w-full bg-strava-orange hover:bg-strava-orange/90" data-testid="view-plans">
+                    View Plans
+                    <ExternalLink className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Plan Includes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3">
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-green-500" />
+                    Strava Integration
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-green-500" />
+                    Basic Performance Analytics
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-green-500" />
+                    Runner Score Calculation
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-green-500" />
+                    Free Calculator Tools
+                  </li>
+                  
+                  {(isPro || isPremium) && (
+                    <>
+                      <li className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-strava-orange" />
+                        <span className="text-strava-orange font-medium">Unlimited AI Insights</span>
+                      </li>
+                      <li className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-strava-orange" />
+                        <span className="text-strava-orange font-medium">AI Training Plans</span>
+                      </li>
+                      <li className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-strava-orange" />
+                        <span className="text-strava-orange font-medium">Race Predictions</span>
+                      </li>
+                    </>
+                  )}
+                  
+                  {isPremium && (
+                    <>
+                      <li className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-yellow-500" />
+                        <span className="text-yellow-600 font-medium">AI Running Coach Chat</span>
+                      </li>
+                      <li className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-yellow-500" />
+                        <span className="text-yellow-600 font-medium">Priority Support</span>
+                      </li>
+                    </>
+                  )}
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Need Help?</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
                   <div>
-                    <h4 className="font-semibold text-yellow-800">Subscription Ending</h4>
-                    <p className="text-sm text-yellow-700 mt-1">
-                      Your Pro subscription will end on {formatDate(subscription.currentPeriodEnd!)}. 
-                      You'll still have access to Pro features until then.
+                    <h4 className="font-semibold mb-2">Questions about billing?</h4>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Our support team is here to help with any billing questions or concerns.
+                    </p>
+                    <Link href="/contact">
+                      <Button variant="outline" size="sm">
+                        Contact Support
+                      </Button>
+                    </Link>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">Money-back guarantee</h4>
+                    <p className="text-sm text-gray-600">
+                      Not satisfied? Cancel within 7 days for a full refund, no questions asked.
                     </p>
                   </div>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Plan Features */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* Current Plan Features */}
           <Card>
             <CardHeader>
-              <CardTitle>Your Plan Includes</CardTitle>
+              <CardTitle>Billing FAQ</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {subscription?.plan === 'pro' ? (
-                  <>
-                    <div className="flex items-center text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      Advanced AI insights & recommendations
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      Personalized training plans
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      Race time predictions
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      Injury risk analysis
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      Unlimited data history
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      Priority customer support
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      Basic performance analytics
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      Strava integration
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      Runner Score calculation
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      Basic AI insights
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      Last 30 days of data
-                    </div>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Support */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Need Help?</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div>
-                  <h4 className="font-semibold mb-2">Questions about billing?</h4>
-                  <p className="text-sm text-gray-600 mb-3">
-                    Our support team is here to help with any billing questions or concerns.
-                  </p>
-                  <Link href="/contact">
-                    <Button variant="outline" size="sm">
-                      Contact Support
-                    </Button>
-                  </Link>
-                </div>
-                
-                <Separator />
-                
-                <div>
-                  <h4 className="font-semibold mb-2">Money-back guarantee</h4>
+                  <h4 className="font-semibold mb-2">When will I be charged?</h4>
                   <p className="text-sm text-gray-600">
-                    Not satisfied? Cancel within 30 days for a full refund, no questions asked.
+                    Subscriptions are billed on the same day you originally subscribed. 
+                    Annual plans are billed once per year.
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold mb-2">Can I change my plan?</h4>
+                  <p className="text-sm text-gray-600">
+                    You can upgrade, downgrade, or cancel your subscription anytime through 
+                    the Manage Subscription button above.
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold mb-2">What happens when I cancel?</h4>
+                  <p className="text-sm text-gray-600">
+                    You'll continue to have access until the end of your current billing period. 
+                    After that, your account will switch to the free plan.
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold mb-2">Is my payment information secure?</h4>
+                  <p className="text-sm text-gray-600">
+                    Yes! All payments are processed securely through Stripe. 
+                    We never store your credit card information on our servers.
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
-        </div>
 
-        {/* FAQ */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Billing FAQ</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div>
-                <h4 className="font-semibold mb-2">When will I be charged?</h4>
-                <p className="text-sm text-gray-600">
-                  Pro subscriptions are billed monthly on the same day you originally subscribed. 
-                  You can see your next billing date above.
-                </p>
-              </div>
-              
-              <div>
-                <h4 className="font-semibold mb-2">Can I change my plan?</h4>
-                <p className="text-sm text-gray-600">
-                  You can upgrade to Pro anytime or cancel your Pro subscription. 
-                  Changes take effect at your next billing cycle.
-                </p>
-              </div>
-              
-              <div>
-                <h4 className="font-semibold mb-2">What happens when I cancel?</h4>
-                <p className="text-sm text-gray-600">
-                  You'll continue to have Pro access until the end of your current billing period. 
-                  After that, your account will switch to the free plan.
-                </p>
-              </div>
-              
-              <div>
-                <h4 className="font-semibold mb-2">Is my payment information secure?</h4>
-                <p className="text-sm text-gray-600">
-                  Yes! All payments are processed securely through Stripe, a leading payment processor. 
-                  We never store your credit card information on our servers.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          <div className="text-center text-sm text-gray-500">
+            <p>Need help? <Link href="/contact" className="text-strava-orange hover:underline">Contact Support</Link></p>
+          </div>
+        </div>
       </div>
     </div>
   );

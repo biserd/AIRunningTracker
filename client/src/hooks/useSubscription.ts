@@ -1,64 +1,93 @@
-import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "./useAuth";
 
 export interface SubscriptionStatus {
-  status: 'free' | 'active' | 'canceled' | 'past_due' | 'trialing';
-  plan: 'free' | 'pro';
-  currentPeriodEnd?: number;
-  cancelAtPeriodEnd?: boolean;
+  subscriptionStatus: 'free' | 'active' | 'canceled' | 'past_due' | 'trialing' | 'unpaid';
+  subscriptionPlan: 'free' | 'pro' | 'premium';
+  stripeSubscriptionId?: string;
+  trialEndsAt?: string;
+  subscriptionEndsAt?: string;
 }
 
 export function useSubscription() {
   const { isAuthenticated } = useAuth();
   
-  // OPTIMIZATION: Disabled subscription API calls since all features are free
-  // All users get Pro-tier features at no cost
-  const { data: subscription, isLoading, error } = useQuery({
-    queryKey: ["/api/subscription/status"],
-    queryFn: () => apiRequest("/api/subscription/status", "GET") as Promise<SubscriptionStatus>,
-    enabled: false, // Disabled - all features are free, no need to check subscription
-    retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+  const { data: subscription, isLoading, error } = useQuery<SubscriptionStatus>({
+    queryKey: ["/api/stripe/subscription"],
+    enabled: isAuthenticated,
+    retry: 1,
+    staleTime: 60 * 1000,
   });
 
-  // All features are now free - everyone gets Pro access
-  const isPro = true;
-  const isFree = false;
+  const plan = subscription?.subscriptionPlan || 'free';
+  const status = subscription?.subscriptionStatus || 'free';
+
+  const isPremium = plan === 'premium' && (status === 'active' || status === 'trialing');
+  const isPro = (plan === 'pro' || plan === 'premium') && (status === 'active' || status === 'trialing');
+  const isFree = plan === 'free' || status === 'canceled' || status === 'past_due';
 
   return {
     subscription,
     isLoading,
     error,
+    plan,
+    status,
+    isPremium,
     isPro,
     isFree,
-    hasActiveSubscription: true,
+    hasActiveSubscription: isPro || isPremium,
   };
 }
 
-// Feature gating functions
+export function useCheckout() {
+  return useMutation({
+    mutationFn: async (priceId: string) => {
+      const response = await apiRequest("/api/stripe/create-checkout-session", "POST", { priceId });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+  });
+}
+
+export function useManageSubscription() {
+  return useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("/api/stripe/create-portal-session", "POST");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+  });
+}
+
 export function useFeatureAccess() {
-  const { isPro } = useSubscription();
+  const { isPro, isPremium, isFree } = useSubscription();
   
   return {
-    // AI Insights
-    canAccessAdvancedInsights: isPro,
-    canAccessInsightHistory: isPro,
+    canAccessBasicAnalytics: true,
+    canAccessStravaIntegration: true,
+    canAccessRunnerScore: true,
     
-    // Training Plans
-    canAccessTrainingPlans: isPro,
-    canAccessPersonalizedPlans: isPro,
+    canAccessAdvancedInsights: isPro || isPremium,
+    canAccessInsightHistory: isPro || isPremium,
+    canAccessTrainingPlans: isPro || isPremium,
+    canAccessRacePredictions: isPro || isPremium,
     
-    // Analytics
-    canAccessRacePredictions: isPro,
-    canAccessInjuryRiskAnalysis: isPro,
-    canAccessUnlimitedHistory: isPro,
+    canAccessAICoachChat: isPremium,
+    canAccessFormAnalysis: isPremium,
+    canAccessPrioritySupport: isPremium,
+    canAccessEarlyAccess: isPremium,
     
-    // Support
-    canAccessPrioritySupport: isPro,
-    
-    // Data limits
-    maxInsightsPerMonth: isPro ? Infinity : 10,
-    maxDataHistoryDays: isPro ? Infinity : 30,
+    canAccessUnlimitedHistory: isPro || isPremium,
+    maxInsightsPerMonth: isFree ? 3 : Infinity,
+    maxDataHistoryDays: isFree ? 30 : Infinity,
   };
 }
