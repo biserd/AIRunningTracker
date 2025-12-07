@@ -1,4 +1,4 @@
-import { users, activities, aiInsights, trainingPlans, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, apiKeys, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ApiKey, type InsertApiKey } from "@shared/schema";
+import { users, activities, aiInsights, trainingPlans, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, apiKeys, refreshTokens, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ApiKey, type InsertApiKey, type RefreshToken, type InsertRefreshToken } from "@shared/schema";
 import crypto from "crypto";
 import { db } from "./db";
 import { eq, desc, and, sql, inArray, gte, gt, lt } from "drizzle-orm";
@@ -196,6 +196,14 @@ export interface IStorage {
   deleteApiKey(keyId: number, userId: number): Promise<void>;
   validateApiKey(rawKey: string): Promise<{ valid: boolean; userId?: number; scopes?: string[]; keyId?: number }>;
   updateApiKeyLastUsed(keyId: number): Promise<void>;
+  
+  // Mobile auth / Refresh token methods
+  createRefreshToken(userId: number, deviceName?: string, deviceId?: string): Promise<{ tokenId: number; rawToken: string; expiresAt: Date }>;
+  validateRefreshToken(rawToken: string): Promise<{ valid: boolean; userId?: number; tokenId?: number }>;
+  revokeRefreshToken(tokenId: number): Promise<void>;
+  revokeAllUserRefreshTokens(userId: number): Promise<void>;
+  updateRefreshTokenLastUsed(tokenId: number): Promise<void>;
+  getActiveRefreshTokens(userId: number): Promise<Array<{ id: number; deviceName: string | null; deviceId: string | null; lastUsedAt: Date | null; createdAt: Date | null }>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1392,6 +1400,90 @@ export class DatabaseStorage implements IStorage {
     await db.update(apiKeys)
       .set({ lastUsedAt: new Date() })
       .where(eq(apiKeys.id, keyId));
+  }
+
+  // Mobile auth / Refresh token methods
+  async createRefreshToken(userId: number, deviceName?: string, deviceId?: string): Promise<{ tokenId: number; rawToken: string; expiresAt: Date }> {
+    const rawToken = `rt_${crypto.randomBytes(32).toString('hex')}`;
+    const tokenHash = await bcrypt.hash(rawToken, 10);
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+    
+    const [token] = await db.insert(refreshTokens)
+      .values({
+        userId,
+        tokenHash,
+        deviceName: deviceName || null,
+        deviceId: deviceId || null,
+        expiresAt,
+      })
+      .returning();
+    
+    return { tokenId: token.id, rawToken, expiresAt };
+  }
+
+  async validateRefreshToken(rawToken: string): Promise<{ valid: boolean; userId?: number; tokenId?: number }> {
+    if (!rawToken || !rawToken.startsWith('rt_')) {
+      return { valid: false };
+    }
+    
+    // Get all non-revoked, non-expired tokens
+    const tokens = await db.select()
+      .from(refreshTokens)
+      .where(
+        and(
+          eq(refreshTokens.isRevoked, false),
+          gt(refreshTokens.expiresAt, new Date())
+        )
+      );
+    
+    // Check each token's hash
+    for (const token of tokens) {
+      const isMatch = await bcrypt.compare(rawToken, token.tokenHash);
+      if (isMatch) {
+        return { valid: true, userId: token.userId, tokenId: token.id };
+      }
+    }
+    
+    return { valid: false };
+  }
+
+  async revokeRefreshToken(tokenId: number): Promise<void> {
+    await db.update(refreshTokens)
+      .set({ isRevoked: true })
+      .where(eq(refreshTokens.id, tokenId));
+  }
+
+  async revokeAllUserRefreshTokens(userId: number): Promise<void> {
+    await db.update(refreshTokens)
+      .set({ isRevoked: true })
+      .where(eq(refreshTokens.userId, userId));
+  }
+
+  async updateRefreshTokenLastUsed(tokenId: number): Promise<void> {
+    await db.update(refreshTokens)
+      .set({ lastUsedAt: new Date() })
+      .where(eq(refreshTokens.id, tokenId));
+  }
+
+  async getActiveRefreshTokens(userId: number): Promise<Array<{ id: number; deviceName: string | null; deviceId: string | null; lastUsedAt: Date | null; createdAt: Date | null }>> {
+    const tokens = await db.select({
+      id: refreshTokens.id,
+      deviceName: refreshTokens.deviceName,
+      deviceId: refreshTokens.deviceId,
+      lastUsedAt: refreshTokens.lastUsedAt,
+      createdAt: refreshTokens.createdAt,
+    })
+      .from(refreshTokens)
+      .where(
+        and(
+          eq(refreshTokens.userId, userId),
+          eq(refreshTokens.isRevoked, false),
+          gt(refreshTokens.expiresAt, new Date())
+        )
+      )
+      .orderBy(desc(refreshTokens.lastUsedAt));
+    
+    return tokens;
   }
 }
 

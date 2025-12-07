@@ -231,6 +231,21 @@ export const apiKeys = pgTable("api_keys", {
   userIdIdx: index("api_keys_user_id_idx").on(table.userId),
 }));
 
+export const refreshTokens = pgTable("refresh_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  tokenHash: text("token_hash").notNull(), // bcrypt hash of the refresh token
+  deviceName: text("device_name"), // e.g., "iPhone 15 Pro", "iPad Air"
+  deviceId: text("device_id"), // unique device identifier
+  expiresAt: timestamp("expires_at").notNull(),
+  isRevoked: boolean("is_revoked").default(false),
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("refresh_tokens_user_id_idx").on(table.userId),
+  tokenHashIdx: index("refresh_tokens_token_hash_idx").on(table.tokenHash),
+}));
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   stravaConnected: true,
@@ -298,6 +313,13 @@ export const insertApiKeySchema = createInsertSchema(apiKeys).omit({
   isActive: true,
 });
 
+export const insertRefreshTokenSchema = createInsertSchema(refreshTokens).omit({
+  id: true,
+  createdAt: true,
+  lastUsedAt: true,
+  isRevoked: true,
+});
+
 // Login schema for authentication
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -336,5 +358,7 @@ export type InsertRunningShoe = z.infer<typeof insertRunningShoeSchema>;
 export type RunningShoe = typeof runningShoes.$inferSelect;
 export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
 export type ApiKey = typeof apiKeys.$inferSelect;
+export type InsertRefreshToken = z.infer<typeof insertRefreshTokenSchema>;
+export type RefreshToken = typeof refreshTokens.$inferSelect;
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;
