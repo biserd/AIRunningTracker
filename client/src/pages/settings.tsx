@@ -1,13 +1,15 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { queryClient, apiRequest, getQueryFn } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription, useManageSubscription } from "@/hooks/useSubscription";
 import type { DashboardData } from "@/lib/api";
 import AppHeader from "@/components/AppHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   AlertDialog,
@@ -21,12 +23,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Save, Unlink, RefreshCw, Trash2 } from "lucide-react";
+import { Settings, Save, Unlink, RefreshCw, Trash2, Crown, Star, Zap, CreditCard, ExternalLink, Loader2 } from "lucide-react";
 
 function SettingsPageContent() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { subscription, plan, status, isPro, isPremium, isLoading: subscriptionLoading } = useSubscription();
+  const manageSubscription = useManageSubscription();
 
   const { data: dashboardData } = useQuery<DashboardData>({
     queryKey: [`/api/dashboard/${user!.id}`],
@@ -229,6 +233,109 @@ function SettingsPageContent() {
                 )}
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Subscription
+            </CardTitle>
+            <CardDescription>
+              Your current plan and billing management
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {subscriptionLoading ? (
+              <div className="flex items-center gap-2 text-gray-500">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading subscription info...
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {isPremium ? (
+                      <div className="p-2 bg-yellow-100 rounded-full">
+                        <Crown className="h-5 w-5 text-yellow-600" />
+                      </div>
+                    ) : isPro ? (
+                      <div className="p-2 bg-orange-100 rounded-full">
+                        <Star className="h-5 w-5 text-strava-orange" />
+                      </div>
+                    ) : (
+                      <div className="p-2 bg-gray-100 rounded-full">
+                        <Zap className="h-5 w-5 text-gray-600" />
+                      </div>
+                    )}
+                    <div>
+                      <h3 className={`font-semibold text-lg ${isPremium ? 'text-yellow-600' : isPro ? 'text-strava-orange' : 'text-gray-900'}`}>
+                        {isPremium ? 'Premium' : isPro ? 'Pro' : 'Free'} Plan
+                      </h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant={
+                          status === 'active' ? 'default' :
+                          status === 'trialing' ? 'secondary' :
+                          status === 'past_due' ? 'destructive' :
+                          'outline'
+                        }>
+                          {status === 'active' ? 'Active' :
+                           status === 'trialing' ? 'Trial' :
+                           status === 'canceled' ? 'Canceled' :
+                           status === 'past_due' ? 'Past Due' :
+                           'Free Plan'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {subscription?.subscriptionEndsAt && (
+                  <p className="text-sm text-gray-600">
+                    {status === 'canceled' ? 'Access until: ' : 'Renews on: '}
+                    {new Date(subscription.subscriptionEndsAt).toLocaleDateString()}
+                  </p>
+                )}
+
+                <div className="pt-2 flex flex-wrap gap-3">
+                  {subscription?.stripeSubscriptionId ? (
+                    <Button 
+                      onClick={() => manageSubscription.mutate()}
+                      disabled={manageSubscription.isPending}
+                      variant="outline"
+                      className="flex items-center gap-2"
+                      data-testid="button-manage-subscription"
+                    >
+                      {manageSubscription.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <CreditCard className="h-4 w-4" />
+                      )}
+                      Manage Subscription
+                    </Button>
+                  ) : (
+                    <Button 
+                      onClick={() => setLocation('/pricing')}
+                      className="bg-strava-orange hover:bg-strava-orange/90 flex items-center gap-2" 
+                      data-testid="button-upgrade-settings"
+                    >
+                      <Crown className="h-4 w-4" />
+                      Upgrade Plan
+                    </Button>
+                  )}
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setLocation('/billing')}
+                    className="flex items-center gap-2" 
+                    data-testid="button-view-billing"
+                  >
+                    View Billing Details
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
