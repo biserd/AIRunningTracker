@@ -1,0 +1,774 @@
+{
+  "info": {
+    "name": "RunAnalytics Mobile API",
+    "description": "Complete API collection for RunAnalytics mobile app integration. Includes authentication, activities, AI insights, goals, training plans, and performance metrics.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "runanalytics-mobile-api-v1"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://aitracker.run",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "description": "JWT-based authentication endpoints for mobile apps",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', response.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', response.refreshToken);",
+                  "    pm.collectionVariables.set('userId', response.user.id.toString());",
+                  "    console.log('Tokens saved successfully');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"yourpassword\",\n  \"deviceName\": \"Postman Testing\",\n  \"deviceId\": \"postman-test-device\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/mobile/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "mobile", "login"]
+            },
+            "description": "Authenticate with email and password to receive access and refresh tokens. Access tokens expire in 15 minutes, refresh tokens in 30 days."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"refreshToken\": \"rt_a1b2c3d4e5f6...\",\n  \"expiresIn\": 900,\n  \"refreshExpiresAt\": \"2026-01-06T15:30:00.000Z\",\n  \"user\": {\n    \"id\": 1,\n    \"email\": \"user@example.com\",\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"stravaConnected\": true\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', response.accessToken);",
+                  "    console.log('Access token refreshed');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/mobile/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "mobile", "refresh"]
+            },
+            "description": "Exchange a valid refresh token for a new access token."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"expiresIn\": 900,\n  \"user\": {\n    \"id\": 1,\n    \"email\": \"user@example.com\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Logout (Single Device)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/mobile/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "mobile", "logout"]
+            },
+            "description": "Revoke the refresh token for a single device."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Logged out successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Logout All Devices",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/mobile/logout-all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "mobile", "logout-all"]
+            },
+            "description": "Revoke all refresh tokens for the authenticated user (all devices)."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Logged out from all devices\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Active Sessions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/mobile/sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "mobile", "sessions"]
+            },
+            "description": "List all active mobile sessions for the authenticated user."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"sessions\": [\n    {\n      \"id\": 1,\n      \"deviceName\": \"iPhone 15 Pro\",\n      \"deviceId\": \"abc123\",\n      \"lastUsed\": \"2025-12-07T10:30:00Z\",\n      \"createdAt\": \"2025-11-01T08:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "User & Profile",
+      "description": "User profile and dashboard endpoints",
+      "item": [
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "me"]
+            },
+            "description": "Get the authenticated user's profile information."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"email\": \"user@example.com\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"username\": \"johndoe\",\n  \"stravaConnected\": true,\n  \"stravaAthleteId\": \"12345678\",\n  \"unitPreference\": \"km\",\n  \"createdAt\": \"2025-01-01T00:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Dashboard Data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dashboard", "{{userId}}"]
+            },
+            "description": "Get comprehensive dashboard data including recent activities, stats, and summaries."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"user\": {\n    \"id\": 1,\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\"\n  },\n  \"stats\": {\n    \"totalDistance\": 856.4,\n    \"totalRuns\": 142,\n    \"avgPace\": \"5:32\",\n    \"totalTime\": 4526400\n  },\n  \"recentActivities\": [\n    {\n      \"id\": 12345,\n      \"name\": \"Morning Run\",\n      \"distance\": 8.2,\n      \"movingTime\": 2520,\n      \"startDate\": \"2025-12-07T07:00:00Z\"\n    }\n  ],\n  \"weeklyMileage\": 45.2\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Activities",
+      "description": "Activity listing and details",
+      "item": [
+        {
+          "name": "List All Activities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/activities?limit=20&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "activities"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "List all activities for the authenticated user. Supports pagination with limit and offset parameters."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"activities\": [\n    {\n      \"id\": 12345,\n      \"stravaId\": \"9876543210\",\n      \"name\": \"Morning Run\",\n      \"type\": \"Run\",\n      \"distance\": 8200,\n      \"movingTime\": 2520,\n      \"elapsedTime\": 2650,\n      \"startDate\": \"2025-12-07T07:00:00Z\",\n      \"averageSpeed\": 3.25,\n      \"maxSpeed\": 4.1,\n      \"averageHeartrate\": 152,\n      \"maxHeartrate\": 178,\n      \"totalElevationGain\": 85,\n      \"averageCadence\": 176\n    }\n  ],\n  \"total\": 142,\n  \"hasMore\": true\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Single Activity",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/activities/12345",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "activities", "12345"]
+            },
+            "description": "Get detailed information for a single activity."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 12345,\n  \"stravaId\": \"9876543210\",\n  \"name\": \"Morning Run\",\n  \"description\": \"Easy recovery run\",\n  \"type\": \"Run\",\n  \"distance\": 8200,\n  \"movingTime\": 2520,\n  \"elapsedTime\": 2650,\n  \"startDate\": \"2025-12-07T07:00:00Z\",\n  \"startLatlng\": [40.7128, -74.0060],\n  \"endLatlng\": [40.7580, -73.9855],\n  \"averageSpeed\": 3.25,\n  \"maxSpeed\": 4.1,\n  \"averageHeartrate\": 152,\n  \"maxHeartrate\": 178,\n  \"totalElevationGain\": 85,\n  \"averageCadence\": 176,\n  \"calories\": 520,\n  \"polyline\": \"encoded_polyline_string...\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Activity Performance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/activities/12345/performance",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "activities", "12345", "performance"]
+            },
+            "description": "Get performance metrics for a specific activity."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"activityId\": 12345,\n  \"paceAnalysis\": {\n    \"averagePace\": \"5:08\",\n    \"splits\": [\"5:15\", \"5:05\", \"4:58\", \"5:12\", \"5:02\"],\n    \"consistency\": 0.92,\n    \"negativeSplit\": true\n  },\n  \"heartRateZones\": {\n    \"zone1\": 120,\n    \"zone2\": 840,\n    \"zone3\": 960,\n    \"zone4\": 480,\n    \"zone5\": 120\n  },\n  \"cadenceAnalysis\": {\n    \"average\": 176,\n    \"optimal\": true\n  },\n  \"elevationImpact\": {\n    \"gain\": 85,\n    \"loss\": 78,\n    \"gradeAdjustedPace\": \"5:02\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AI Insights",
+      "description": "AI-generated insights and analysis",
+      "item": [
+        {
+          "name": "Get Insights History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/insights/history/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "insights", "history", "{{userId}}"]
+            },
+            "description": "Get the history of AI-generated insights for a user."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"insights\": [\n    {\n      \"id\": 1,\n      \"userId\": 1,\n      \"type\": \"weekly_analysis\",\n      \"content\": {\n        \"summary\": \"Great week of training with 45km covered\",\n        \"highlights\": [\n          \"Improved pace consistency by 8%\",\n          \"Heart rate efficiency improved\"\n        ],\n        \"recommendations\": [\n          \"Consider adding hill repeats\",\n          \"Include more recovery runs\"\n        ]\n      },\n      \"createdAt\": \"2025-12-07T00:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Generate New Insights",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"weekly_analysis\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/insights/generate/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "insights", "generate", "{{userId}}"]
+            },
+            "description": "Generate new AI insights based on recent activity data. This may take 10-20 seconds."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 2,\n  \"userId\": 1,\n  \"type\": \"weekly_analysis\",\n  \"content\": {\n    \"summary\": \"Your training load is well-balanced this week\",\n    \"performanceTrend\": \"improving\",\n    \"insights\": [\n      {\n        \"category\": \"endurance\",\n        \"message\": \"Your aerobic base is developing well\",\n        \"score\": 78\n      }\n    ],\n    \"recommendations\": [\n      \"Add one tempo run per week\",\n      \"Maintain current long run distance\"\n    ]\n  },\n  \"createdAt\": \"2025-12-07T12:00:00Z\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Goals",
+      "description": "Goal management CRUD operations",
+      "item": [
+        {
+          "name": "List Goals",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/goals/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "goals", "{{userId}}"]
+            },
+            "description": "List all goals for a user."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"goals\": [\n    {\n      \"id\": 1,\n      \"userId\": 1,\n      \"title\": \"Run 100km this month\",\n      \"description\": \"Build base mileage\",\n      \"targetValue\": 100,\n      \"currentValue\": 67.5,\n      \"unit\": \"km\",\n      \"type\": \"distance\",\n      \"status\": \"in_progress\",\n      \"deadline\": \"2025-12-31T23:59:59Z\",\n      \"createdAt\": \"2025-12-01T00:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Goal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Complete a half marathon\",\n  \"description\": \"Train for spring race\",\n  \"targetValue\": 21.1,\n  \"unit\": \"km\",\n  \"type\": \"race\",\n  \"deadline\": \"2026-04-15T00:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/goals",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "goals"]
+            },
+            "description": "Create a new goal."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"id\": 2,\n  \"userId\": 1,\n  \"title\": \"Complete a half marathon\",\n  \"description\": \"Train for spring race\",\n  \"targetValue\": 21.1,\n  \"currentValue\": 0,\n  \"unit\": \"km\",\n  \"type\": \"race\",\n  \"status\": \"in_progress\",\n  \"deadline\": \"2026-04-15T00:00:00Z\",\n  \"createdAt\": \"2025-12-07T12:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Complete Goal",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/goals/1/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "goals", "1", "complete"]
+            },
+            "description": "Mark a goal as completed."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"status\": \"completed\",\n  \"completedAt\": \"2025-12-07T12:00:00Z\",\n  \"message\": \"Congratulations on completing your goal!\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Goal",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/goals/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "goals", "1"]
+            },
+            "description": "Delete a goal."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Goal deleted successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Runner Score & Fitness",
+      "description": "Runner score and fitness metrics",
+      "item": [
+        {
+          "name": "Get Runner Score",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/runner-score/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "runner-score", "{{userId}}"]
+            },
+            "description": "Get the current Runner Score (0-100) based on overall fitness."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"score\": 72,\n  \"level\": \"Intermediate\",\n  \"breakdown\": {\n    \"endurance\": 75,\n    \"speed\": 68,\n    \"consistency\": 80,\n    \"recovery\": 65\n  },\n  \"trend\": \"improving\",\n  \"percentile\": 68,\n  \"lastUpdated\": \"2025-12-07T00:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Runner Score History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/runner-score/{{userId}}/history?days=30",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "runner-score", "{{userId}}", "history"],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30"
+                }
+              ]
+            },
+            "description": "Get Runner Score history over time."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"history\": [\n    { \"date\": \"2025-12-07\", \"score\": 72 },\n    { \"date\": \"2025-12-06\", \"score\": 71 },\n    { \"date\": \"2025-12-05\", \"score\": 70 }\n  ],\n  \"improvement\": 3,\n  \"averageScore\": 70.5\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Fitness Metrics (CTL/ATL/TSB)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/fitness/{{userId}}?days=90",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fitness", "{{userId}}"],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "90"
+                }
+              ]
+            },
+            "description": "Get fitness metrics including CTL (Chronic Training Load), ATL (Acute Training Load), and TSB (Training Stress Balance)."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"current\": {\n    \"ctl\": 65.2,\n    \"atl\": 72.8,\n    \"tsb\": -7.6,\n    \"formStatus\": \"Fatigued\"\n  },\n  \"history\": [\n    {\n      \"date\": \"2025-12-07\",\n      \"ctl\": 65.2,\n      \"atl\": 72.8,\n      \"tsb\": -7.6\n    }\n  ],\n  \"recommendation\": \"Consider a recovery day to improve form before racing\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Training Plans & Predictions",
+      "description": "AI-generated training plans and race predictions",
+      "item": [
+        {
+          "name": "Get Training Plan",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ml/training-plan/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ml", "training-plan", "{{userId}}"]
+            },
+            "description": "Get the user's current AI-generated training plan."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"userId\": 1,\n  \"goal\": \"Half Marathon PR\",\n  \"targetRace\": \"2026-04-15\",\n  \"weeks\": [\n    {\n      \"weekNumber\": 1,\n      \"focus\": \"Base Building\",\n      \"totalDistance\": 40,\n      \"workouts\": [\n        {\n          \"day\": \"Monday\",\n          \"type\": \"easy_run\",\n          \"distance\": 6,\n          \"description\": \"Easy recovery pace\"\n        },\n        {\n          \"day\": \"Wednesday\",\n          \"type\": \"tempo\",\n          \"distance\": 8,\n          \"description\": \"20 min tempo at half marathon pace\"\n        }\n      ]\n    }\n  ],\n  \"createdAt\": \"2025-12-01T00:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Generate Training Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"goal\": \"Half Marathon PR\",\n  \"targetRaceDate\": \"2026-04-15\",\n  \"targetTime\": \"1:45:00\",\n  \"daysPerWeek\": 5,\n  \"longRunDay\": \"Sunday\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ml/training-plan/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ml", "training-plan", "{{userId}}"]
+            },
+            "description": "Generate a new personalized training plan. Takes 15-30 seconds."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"id\": 2,\n  \"message\": \"Training plan generated successfully\",\n  \"summary\": {\n    \"totalWeeks\": 16,\n    \"peakMileage\": 55,\n    \"taperWeeks\": 2\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Race Predictions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ml/predictions/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ml", "predictions", "{{userId}}"]
+            },
+            "description": "Get AI-powered race time predictions based on training data."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"predictions\": {\n    \"5k\": \"22:15\",\n    \"10k\": \"46:30\",\n    \"halfMarathon\": \"1:42:45\",\n    \"marathon\": \"3:35:00\"\n  },\n  \"confidence\": 0.85,\n  \"basedOn\": {\n    \"recentRaces\": 2,\n    \"trainingRuns\": 45,\n    \"vo2maxEstimate\": 52.3\n  },\n  \"lastUpdated\": \"2025-12-07T00:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Injury Risk Analysis",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ml/injury-risk/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ml", "injury-risk", "{{userId}}"]
+            },
+            "description": "Get injury risk analysis based on training patterns."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"riskLevel\": \"moderate\",\n  \"riskScore\": 45,\n  \"factors\": [\n    {\n      \"factor\": \"Mileage increase\",\n      \"impact\": \"high\",\n      \"detail\": \"15% increase in last 2 weeks\"\n    },\n    {\n      \"factor\": \"Recovery time\",\n      \"impact\": \"medium\",\n      \"detail\": \"Below optimal rest between hard sessions\"\n    }\n  ],\n  \"recommendations\": [\n    \"Reduce weekly mileage by 10% next week\",\n    \"Add an extra rest day\"\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Performance Metrics",
+      "description": "VO2 Max, heart rate zones, and efficiency metrics",
+      "item": [
+        {
+          "name": "Get VO2 Max",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/performance/vo2max/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "performance", "vo2max", "{{userId}}"]
+            },
+            "description": "Get estimated VO2 Max based on running data."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"vo2max\": 52.3,\n  \"category\": \"Good\",\n  \"percentileForAge\": 75,\n  \"trend\": \"improving\",\n  \"history\": [\n    { \"date\": \"2025-12-01\", \"value\": 51.8 },\n    { \"date\": \"2025-11-01\", \"value\": 50.5 }\n  ],\n  \"estimatedFrom\": \"heart_rate_and_pace\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Heart Rate Zones",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/performance/hr-zones/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "performance", "hr-zones", "{{userId}}"]
+            },
+            "description": "Get personalized heart rate training zones."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"maxHR\": 185,\n  \"restingHR\": 52,\n  \"zones\": {\n    \"zone1\": { \"name\": \"Recovery\", \"min\": 104, \"max\": 122 },\n    \"zone2\": { \"name\": \"Aerobic\", \"min\": 122, \"max\": 141 },\n    \"zone3\": { \"name\": \"Tempo\", \"min\": 141, \"max\": 159 },\n    \"zone4\": { \"name\": \"Threshold\", \"min\": 159, \"max\": 172 },\n    \"zone5\": { \"name\": \"VO2 Max\", \"min\": 172, \"max\": 185 }\n  },\n  \"method\": \"heart_rate_reserve\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Running Efficiency",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/performance/efficiency/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "performance", "efficiency", "{{userId}}"]
+            },
+            "description": "Get running efficiency metrics."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"efficiencyIndex\": 1.05,\n  \"category\": \"Good\",\n  \"metrics\": {\n    \"cadence\": {\n      \"average\": 176,\n      \"optimal\": true\n    },\n    \"groundContactTime\": 235,\n    \"verticalOscillation\": 8.2,\n    \"strideLength\": 1.15\n  },\n  \"improvements\": [\n    \"Cadence is optimal for your pace\",\n    \"Consider working on reducing vertical oscillation\"\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get All Performance Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/performance/metrics/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "performance", "metrics", "{{userId}}"]
+            },
+            "description": "Get all performance metrics in a single request."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"vo2max\": {\n    \"value\": 52.3,\n    \"category\": \"Good\"\n  },\n  \"runnerScore\": {\n    \"score\": 72,\n    \"level\": \"Intermediate\"\n  },\n  \"efficiency\": {\n    \"index\": 1.05,\n    \"category\": \"Good\"\n  },\n  \"fitness\": {\n    \"ctl\": 65.2,\n    \"atl\": 72.8,\n    \"tsb\": -7.6\n  },\n  \"predictions\": {\n    \"5k\": \"22:15\",\n    \"10k\": \"46:30\",\n    \"halfMarathon\": \"1:42:45\"\n  },\n  \"lastUpdated\": \"2025-12-07T00:00:00Z\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
