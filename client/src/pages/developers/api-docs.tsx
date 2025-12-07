@@ -223,38 +223,166 @@ export default function APIDocs() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <Badge className="bg-green-500 text-white">GET</Badge>
-                  <code className="text-sm font-mono flex-1">/api/me</code>
-                  <span className="text-sm text-gray-600">User profile</span>
+              <ScrollArea className="h-[600px]">
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="font-semibold text-sm mb-3 text-gray-700">User & Profile</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-green-500 text-white">GET</Badge>
+                        <code className="text-sm font-mono flex-1">/api/me</code>
+                        <span className="text-sm text-gray-600">User profile</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-green-500 text-white">GET</Badge>
+                        <code className="text-sm font-mono flex-1">/api/dashboard/:userId</code>
+                        <span className="text-sm text-gray-600">Dashboard data</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-green-500 text-white">GET</Badge>
+                        <code className="text-sm font-mono flex-1">/api/mobile/sessions</code>
+                        <span className="text-sm text-gray-600">Active sessions</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-sm mb-3 text-gray-700">Activities</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-green-500 text-white">GET</Badge>
+                        <code className="text-sm font-mono flex-1">/api/activities</code>
+                        <span className="text-sm text-gray-600">List all activities</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-green-500 text-white">GET</Badge>
+                        <code className="text-sm font-mono flex-1">/api/activities/:activityId</code>
+                        <span className="text-sm text-gray-600">Single activity</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-green-500 text-white">GET</Badge>
+                        <code className="text-sm font-mono flex-1">/api/activities/:activityId/performance</code>
+                        <span className="text-sm text-gray-600">Activity performance</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-sm mb-3 text-gray-700">AI Insights</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-green-500 text-white">GET</Badge>
+                        <code className="text-sm font-mono flex-1">/api/insights/history/:userId</code>
+                        <span className="text-sm text-gray-600">AI insights history</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-blue-500 text-white">POST</Badge>
+                        <code className="text-sm font-mono flex-1">/api/insights/generate/:userId</code>
+                        <span className="text-sm text-gray-600">Generate new insights</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-sm mb-3 text-gray-700">Goals</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-green-500 text-white">GET</Badge>
+                        <code className="text-sm font-mono flex-1">/api/goals/:userId</code>
+                        <span className="text-sm text-gray-600">List user goals</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-blue-500 text-white">POST</Badge>
+                        <code className="text-sm font-mono flex-1">/api/goals</code>
+                        <span className="text-sm text-gray-600">Create goal</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-yellow-500 text-white">PATCH</Badge>
+                        <code className="text-sm font-mono flex-1">/api/goals/:id/complete</code>
+                        <span className="text-sm text-gray-600">Mark goal complete</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-red-500 text-white">DELETE</Badge>
+                        <code className="text-sm font-mono flex-1">/api/goals/:id</code>
+                        <span className="text-sm text-gray-600">Delete goal</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-sm mb-3 text-gray-700">Runner Score & Fitness</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-green-500 text-white">GET</Badge>
+                        <code className="text-sm font-mono flex-1">/api/runner-score/:userId</code>
+                        <span className="text-sm text-gray-600">Current Runner Score</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-green-500 text-white">GET</Badge>
+                        <code className="text-sm font-mono flex-1">/api/runner-score/:userId/history</code>
+                        <span className="text-sm text-gray-600">Runner Score history</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-green-500 text-white">GET</Badge>
+                        <code className="text-sm font-mono flex-1">/api/fitness/:userId</code>
+                        <span className="text-sm text-gray-600">Fitness metrics (CTL/ATL/TSB)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-sm mb-3 text-gray-700">Training Plans & Predictions</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-green-500 text-white">GET</Badge>
+                        <code className="text-sm font-mono flex-1">/api/ml/training-plan/:userId</code>
+                        <span className="text-sm text-gray-600">Get training plan</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-blue-500 text-white">POST</Badge>
+                        <code className="text-sm font-mono flex-1">/api/ml/training-plan/:userId</code>
+                        <span className="text-sm text-gray-600">Generate training plan</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-green-500 text-white">GET</Badge>
+                        <code className="text-sm font-mono flex-1">/api/ml/predictions/:userId</code>
+                        <span className="text-sm text-gray-600">Race predictions</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-green-500 text-white">GET</Badge>
+                        <code className="text-sm font-mono flex-1">/api/ml/injury-risk/:userId</code>
+                        <span className="text-sm text-gray-600">Injury risk analysis</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-sm mb-3 text-gray-700">Performance Metrics</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-green-500 text-white">GET</Badge>
+                        <code className="text-sm font-mono flex-1">/api/performance/vo2max/:userId</code>
+                        <span className="text-sm text-gray-600">VO2 Max estimate</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-green-500 text-white">GET</Badge>
+                        <code className="text-sm font-mono flex-1">/api/performance/hr-zones/:userId</code>
+                        <span className="text-sm text-gray-600">Heart rate zones</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-green-500 text-white">GET</Badge>
+                        <code className="text-sm font-mono flex-1">/api/performance/efficiency/:userId</code>
+                        <span className="text-sm text-gray-600">Running efficiency</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Badge className="bg-green-500 text-white">GET</Badge>
+                        <code className="text-sm font-mono flex-1">/api/performance/metrics/:userId</code>
+                        <span className="text-sm text-gray-600">All performance metrics</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <Badge className="bg-green-500 text-white">GET</Badge>
-                  <code className="text-sm font-mono flex-1">/api/activities</code>
-                  <span className="text-sm text-gray-600">List activities</span>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <Badge className="bg-green-500 text-white">GET</Badge>
-                  <code className="text-sm font-mono flex-1">/api/insights/history/:userId</code>
-                  <span className="text-sm text-gray-600">AI insights history</span>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <Badge className="bg-green-500 text-white">GET</Badge>
-                  <code className="text-sm font-mono flex-1">/api/goals/:userId</code>
-                  <span className="text-sm text-gray-600">User goals</span>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <Badge className="bg-green-500 text-white">GET</Badge>
-                  <code className="text-sm font-mono flex-1">/api/dashboard/:userId</code>
-                  <span className="text-sm text-gray-600">Dashboard data</span>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <Badge className="bg-green-500 text-white">GET</Badge>
-                  <code className="text-sm font-mono flex-1">/api/mobile/sessions</code>
-                  <span className="text-sm text-gray-600">Active sessions</span>
-                </div>
-              </div>
+              </ScrollArea>
             </CardContent>
           </Card>
 
