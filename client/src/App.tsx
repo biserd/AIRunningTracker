@@ -45,6 +45,8 @@ import AIRunningCoachGuide from "@/pages/blog/ai-running-coach-complete-guide-20
 import BestStravaTools from "@/pages/blog/best-strava-analytics-tools-2025";
 import ImproveRunningPace from "@/pages/blog/how-to-improve-running-pace";
 import AICoachLanding from "@/pages/ai-running-coach";
+import DevelopersPage from "@/pages/developers";
+import ApiDocsPage from "@/pages/developers/api-docs";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -103,6 +105,10 @@ function Router() {
       <Route path="/blog/best-strava-analytics-tools-2025" component={BestStravaTools} />
       <Route path="/blog/how-to-improve-running-pace" component={ImproveRunningPace} />
       <Route path="/ai-running-coach" component={AICoachLanding} />
+      
+      {/* Developer Routes */}
+      <Route path="/developers" component={DevelopersPage} />
+      <Route path="/developers/api" component={ApiDocsPage} />
       
       {/* Protected Tool Routes */}
       <Route path="/tools/heatmap">
