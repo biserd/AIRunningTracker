@@ -360,6 +360,113 @@ export default function ApiDocsPage() {
               </CardContent>
             </Card>
 
+            <Card className="border-2 border-blue-200 bg-blue-50/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+                  Mobile App Authentication
+                </CardTitle>
+                <CardDescription>
+                  For iOS and Android applications using email/password login
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <p className="text-sm text-gray-600">
+                  Mobile apps use a different authentication flow with refresh tokens for better security and user experience.
+                </p>
+
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">1. Login</h4>
+                    <div className="bg-gray-900 text-white rounded-lg p-4 overflow-x-auto">
+                      <pre className="text-sm">
+                        <code>{`POST /api/mobile/login
+
+{
+  "email": "user@example.com",
+  "password": "yourpassword",
+  "deviceName": "iPhone 15 Pro",  // optional
+  "deviceId": "unique-device-id"  // optional
+}
+
+// Response:
+{
+  "accessToken": "eyJhbG...",      // Use for API calls (15 min expiry)
+  "refreshToken": "rt_abc123...",  // Store securely (30 day expiry)
+  "expiresIn": 900,
+  "user": { "id": 1, "email": "...", ... }
+}`}</code>
+                      </pre>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">2. Refresh Token</h4>
+                    <p className="text-xs text-gray-500 mb-2">When access token expires, get a new one:</p>
+                    <div className="bg-gray-900 text-white rounded-lg p-4 overflow-x-auto">
+                      <pre className="text-sm">
+                        <code>{`POST /api/mobile/refresh
+
+{
+  "refreshToken": "rt_abc123..."
+}
+
+// Response:
+{
+  "accessToken": "eyJhbG...",  // New access token
+  "expiresIn": 900,
+  "user": { ... }
+}`}</code>
+                      </pre>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">3. Making API Calls</h4>
+                    <div className="bg-gray-900 text-white rounded-lg p-4 overflow-x-auto">
+                      <pre className="text-sm">
+                        <code>{`GET /api/me
+Authorization: Bearer <accessToken>
+
+// Returns user profile and settings`}</code>
+                      </pre>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">4. Logout</h4>
+                    <div className="bg-gray-900 text-white rounded-lg p-4 overflow-x-auto">
+                      <pre className="text-sm">
+                        <code>{`POST /api/mobile/logout
+
+{
+  "refreshToken": "rt_abc123..."
+}`}</code>
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-100 border border-blue-300 rounded-lg p-4">
+                  <p className="text-sm text-blue-800">
+                    <strong>Security Tips:</strong> Store refresh tokens in iOS Keychain or Android Keystore. Never store tokens in plain text or UserDefaults/SharedPreferences.
+                  </p>
+                </div>
+
+                <div className="text-sm text-gray-600">
+                  <h4 className="font-semibold mb-2">Available Endpoints</h4>
+                  <ul className="space-y-1 list-disc list-inside">
+                    <li><code className="text-xs bg-gray-100 px-1 rounded">GET /api/me</code> - Get current user profile</li>
+                    <li><code className="text-xs bg-gray-100 px-1 rounded">GET /api/activities</code> - List user activities</li>
+                    <li><code className="text-xs bg-gray-100 px-1 rounded">GET /api/insights</code> - Get AI insights</li>
+                    <li><code className="text-xs bg-gray-100 px-1 rounded">GET /api/goals/:userId</code> - List user goals</li>
+                    <li><code className="text-xs bg-gray-100 px-1 rounded">GET /api/mobile/sessions</code> - List active sessions</li>
+                    <li><code className="text-xs bg-gray-100 px-1 rounded">POST /api/mobile/logout-all</code> - Logout from all devices</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+
             {endpoints
               .filter((ep) => ep.id === selectedEndpoint)
               .map((category) => (
