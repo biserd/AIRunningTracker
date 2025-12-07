@@ -391,6 +391,78 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // API Key Management Routes
+  app.post("/api/keys", authenticateJWT, async (req: any, res) => {
+    try {
+      const { name, scopes } = z.object({
+        name: z.string().min(1, "Name is required").max(50, "Name must be 50 characters or less"),
+        scopes: z.array(z.enum(["activities", "insights", "training_plans", "goals"])).min(1, "At least one scope is required")
+      }).parse(req.body);
+
+      const userId = req.user.id;
+      
+      // Check if user already has 5 API keys (limit to prevent abuse)
+      const existingKeys = await storage.getApiKeysByUserId(userId);
+      if (existingKeys.length >= 5) {
+        return res.status(400).json({ message: "Maximum of 5 API keys allowed per account" });
+      }
+
+      const { apiKey, rawKey } = await storage.createApiKey(userId, name, scopes);
+      
+      // Return the full key only once - user must save it
+      res.json({
+        id: apiKey.id,
+        name: apiKey.name,
+        scopes: apiKey.scopes,
+        keyHint: apiKey.keyHint,
+        key: rawKey, // Only returned at creation time!
+        createdAt: apiKey.createdAt,
+        message: "Save this API key now - you won't be able to see it again!"
+      });
+    } catch (error: any) {
+      console.error('Create API key error:', error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: error.errors[0]?.message || "Invalid request data" });
+      }
+      res.status(500).json({ message: error.message || "Failed to create API key" });
+    }
+  });
+
+  app.get("/api/keys", authenticateJWT, async (req: any, res) => {
+    try {
+      const keys = await storage.getApiKeysByUserId(req.user.id);
+      
+      // Return keys without the hash - only hint and metadata
+      res.json(keys.map(key => ({
+        id: key.id,
+        name: key.name,
+        scopes: key.scopes,
+        keyHint: key.keyHint,
+        isActive: key.isActive,
+        lastUsedAt: key.lastUsedAt,
+        createdAt: key.createdAt
+      })));
+    } catch (error: any) {
+      console.error('Get API keys error:', error);
+      res.status(500).json({ message: error.message || "Failed to get API keys" });
+    }
+  });
+
+  app.delete("/api/keys/:id", authenticateJWT, async (req: any, res) => {
+    try {
+      const keyId = parseInt(req.params.id);
+      if (isNaN(keyId)) {
+        return res.status(400).json({ message: "Invalid key ID" });
+      }
+
+      await storage.deleteApiKey(keyId, req.user.id);
+      res.json({ success: true, message: "API key deleted successfully" });
+    } catch (error: any) {
+      console.error('Delete API key error:', error);
+      res.status(500).json({ message: error.message || "Failed to delete API key" });
+    }
+  });
+
   app.get("/api/logout", (req, res) => {
     // Clear any server-side session data if needed
     res.redirect("/");
