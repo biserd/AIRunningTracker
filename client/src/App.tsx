@@ -150,7 +150,7 @@ function Router() {
       <Route path="/admin/shoes">
         <ProtectedRoute component={AdminShoesPage} />
       </Route>
-      <Route path="/wrapped">
+      <Route path="/wrapped-2025">
         <ProtectedRoute component={Wrapped2025} />
       </Route>
       
