@@ -217,6 +217,20 @@ export const runningShoes = pgTable("running_shoes", {
   seriesIdx: index("running_shoes_series_idx").on(table.seriesName),
 }));
 
+export const apiKeys = pgTable("api_keys", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  keyHash: text("key_hash").notNull(), // bcrypt hash of the API key
+  keyHint: text("key_hint").notNull(), // last 4 chars for identification (e.g., "...a1b2")
+  name: text("name").notNull(),
+  scopes: text("scopes").array().notNull(), // ["activities", "insights", "training_plans", "goals"]
+  isActive: boolean("is_active").default(true),
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("api_keys_user_id_idx").on(table.userId),
+}));
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   stravaConnected: true,
@@ -277,6 +291,13 @@ export const insertRunningShoeSchema = createInsertSchema(runningShoes).omit({
   createdAt: true,
 });
 
+export const insertApiKeySchema = createInsertSchema(apiKeys).omit({
+  id: true,
+  createdAt: true,
+  lastUsedAt: true,
+  isActive: true,
+});
+
 // Login schema for authentication
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -313,5 +334,7 @@ export type InsertAIMessage = z.infer<typeof insertAIMessageSchema>;
 export type AIMessage = typeof aiMessages.$inferSelect;
 export type InsertRunningShoe = z.infer<typeof insertRunningShoeSchema>;
 export type RunningShoe = typeof runningShoes.$inferSelect;
+export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
+export type ApiKey = typeof apiKeys.$inferSelect;
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;

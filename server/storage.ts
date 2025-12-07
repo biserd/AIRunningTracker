@@ -1,4 +1,5 @@
-import { users, activities, aiInsights, trainingPlans, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe } from "@shared/schema";
+import { users, activities, aiInsights, trainingPlans, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, apiKeys, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ApiKey, type InsertApiKey } from "@shared/schema";
+import crypto from "crypto";
 import { db } from "./db";
 import { eq, desc, and, sql, inArray, gte, gt, lt } from "drizzle-orm";
 import bcrypt from "bcrypt";
@@ -188,6 +189,13 @@ export interface IStorage {
   getShoesBySeries(brand: string, seriesName: string): Promise<RunningShoe[]>;
   createShoe(shoe: InsertRunningShoe): Promise<RunningShoe>;
   clearAllShoes(): Promise<void>;
+  
+  // API Key methods
+  createApiKey(userId: number, name: string, scopes: string[]): Promise<{ apiKey: ApiKey; rawKey: string }>;
+  getApiKeysByUserId(userId: number): Promise<ApiKey[]>;
+  deleteApiKey(keyId: number, userId: number): Promise<void>;
+  validateApiKey(rawKey: string): Promise<{ valid: boolean; userId?: number; scopes?: string[]; keyId?: number }>;
+  updateApiKeyLastUsed(keyId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1313,6 +1321,77 @@ export class DatabaseStorage implements IStorage {
 
   async clearAllShoes(): Promise<void> {
     await db.delete(runningShoes);
+  }
+
+  // API Key methods
+  async createApiKey(userId: number, name: string, scopes: string[]): Promise<{ apiKey: ApiKey; rawKey: string }> {
+    // Generate a secure random API key: ra_ prefix + 32 random bytes as hex
+    const rawKey = `ra_${crypto.randomBytes(32).toString('hex')}`;
+    
+    // Hash the key using bcrypt for secure storage
+    const keyHash = await bcrypt.hash(rawKey, 10);
+    
+    // Store only last 4 chars as hint for identification
+    const keyHint = rawKey.slice(-4);
+    
+    const [apiKey] = await db
+      .insert(apiKeys)
+      .values({
+        userId,
+        keyHash,
+        keyHint,
+        name,
+        scopes,
+      })
+      .returning();
+    
+    return { apiKey, rawKey };
+  }
+
+  async getApiKeysByUserId(userId: number): Promise<ApiKey[]> {
+    return db.select().from(apiKeys)
+      .where(eq(apiKeys.userId, userId))
+      .orderBy(desc(apiKeys.createdAt));
+  }
+
+  async deleteApiKey(keyId: number, userId: number): Promise<void> {
+    await db.delete(apiKeys)
+      .where(and(
+        eq(apiKeys.id, keyId),
+        eq(apiKeys.userId, userId)
+      ));
+  }
+
+  async validateApiKey(rawKey: string): Promise<{ valid: boolean; userId?: number; scopes?: string[]; keyId?: number }> {
+    // Check if key has correct prefix
+    if (!rawKey.startsWith('ra_')) {
+      return { valid: false };
+    }
+    
+    // Get all active API keys (we need to check each one since we store hashes)
+    const allKeys = await db.select().from(apiKeys)
+      .where(eq(apiKeys.isActive, true));
+    
+    // Check each key - bcrypt compare handles the salt automatically
+    for (const key of allKeys) {
+      const matches = await bcrypt.compare(rawKey, key.keyHash);
+      if (matches) {
+        return {
+          valid: true,
+          userId: key.userId,
+          scopes: key.scopes,
+          keyId: key.id
+        };
+      }
+    }
+    
+    return { valid: false };
+  }
+
+  async updateApiKeyLastUsed(keyId: number): Promise<void> {
+    await db.update(apiKeys)
+      .set({ lastUsedAt: new Date() })
+      .where(eq(apiKeys.id, keyId));
   }
 }
 
