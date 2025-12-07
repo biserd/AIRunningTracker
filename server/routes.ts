@@ -185,6 +185,10 @@ Sitemap: ${baseUrl}/sitemap.xml`;
         { url: "/tools/shoe-finder", changefreq: "weekly", priority: "0.8" },
         { url: "/tools/rotation-planner", changefreq: "weekly", priority: "0.8" },
         
+        // Developer API
+        { url: "/developers", changefreq: "weekly", priority: "0.8" },
+        { url: "/developers/api", changefreq: "weekly", priority: "0.8" },
+        
         // Other Pages
         { url: "/runner-score", changefreq: "weekly", priority: "0.7" },
         { url: "/faq", changefreq: "monthly", priority: "0.6" },
