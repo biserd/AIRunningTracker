@@ -223,7 +223,6 @@ export default function APIDocs() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[600px]">
                 <div className="space-y-6">
                   <div>
                     <h4 className="font-semibold text-sm mb-3 text-gray-700">User & Profile</h4>
@@ -382,7 +381,6 @@ export default function APIDocs() {
                     </div>
                   </div>
                 </div>
-              </ScrollArea>
             </CardContent>
           </Card>
 
