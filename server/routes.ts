@@ -15,6 +15,9 @@ import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, in
 import { shoeData } from "./shoe-data";
 import { validateAllShoes, getPipelineStats, findDuplicates, getShoeDataWithMetadata, getShoesWithMetadataFromStorage, getEnrichedShoeData, enrichShoeWithAIData } from "./shoe-pipeline";
 import { z } from "zod";
+import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 
 // Authentication middleware
 const authenticateJWT = async (req: any, res: Response, next: NextFunction) => {
@@ -243,6 +246,162 @@ ${allPages.map(page => `  <url>
     } catch (error: any) {
       console.error('Platform stats error:', error);
       res.status(500).json({ message: "Failed to get platform stats" });
+    }
+  });
+
+  // =====================
+  // Stripe Payment Routes
+  // =====================
+
+  // Get Stripe publishable key for client
+  app.get("/api/stripe/config", async (req, res) => {
+    try {
+      const publishableKey = await getStripePublishableKey();
+      res.json({ publishableKey });
+    } catch (error: any) {
+      console.error('Stripe config error:', error);
+      res.status(500).json({ message: "Stripe not configured" });
+    }
+  });
+
+  // Get subscription products and prices
+  app.get("/api/stripe/products", async (req, res) => {
+    try {
+      const result = await db.execute(sql`
+        SELECT 
+          p.id as product_id,
+          p.name as product_name,
+          p.description as product_description,
+          p.metadata as product_metadata,
+          pr.id as price_id,
+          pr.unit_amount,
+          pr.currency,
+          pr.recurring,
+          pr.metadata as price_metadata
+        FROM stripe.products p
+        LEFT JOIN stripe.prices pr ON pr.product = p.id AND pr.active = true
+        WHERE p.active = true
+        ORDER BY pr.unit_amount ASC
+      `);
+      
+      // Group by product
+      const productsMap = new Map();
+      for (const row of result.rows as any[]) {
+        if (!productsMap.has(row.product_id)) {
+          productsMap.set(row.product_id, {
+            id: row.product_id,
+            name: row.product_name,
+            description: row.product_description,
+            metadata: row.product_metadata,
+            prices: []
+          });
+        }
+        if (row.price_id) {
+          productsMap.get(row.product_id).prices.push({
+            id: row.price_id,
+            unit_amount: row.unit_amount,
+            currency: row.currency,
+            recurring: row.recurring,
+            metadata: row.price_metadata
+          });
+        }
+      }
+      
+      res.json({ products: Array.from(productsMap.values()) });
+    } catch (error: any) {
+      console.error('Stripe products error:', error);
+      res.status(500).json({ message: "Failed to fetch products" });
+    }
+  });
+
+  // Create checkout session
+  app.post("/api/stripe/create-checkout-session", authenticateJWT, async (req: any, res) => {
+    try {
+      const { priceId } = req.body;
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const stripe = await getUncachableStripeClient();
+
+      // Create or get Stripe customer
+      let customerId = user.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: user.email,
+          metadata: { userId: String(userId) }
+        });
+        await storage.updateStripeCustomerId(userId, customer.id);
+        customerId = customer.id;
+      }
+
+      // Get the domain
+      const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
+      const protocol = domain.includes('localhost') ? 'http' : 'https';
+
+      // Create checkout session
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+        line_items: [{ price: priceId, quantity: 1 }],
+        mode: 'subscription',
+        success_url: `${protocol}://${domain}/billing?success=true`,
+        cancel_url: `${protocol}://${domain}/pricing?canceled=true`,
+        metadata: { userId: String(userId) }
+      });
+
+      res.json({ url: session.url });
+    } catch (error: any) {
+      console.error('Checkout session error:', error);
+      res.status(500).json({ message: error.message || "Failed to create checkout session" });
+    }
+  });
+
+  // Get user subscription status
+  app.get("/api/stripe/subscription", authenticateJWT, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({
+        subscriptionStatus: user.subscriptionStatus || 'free',
+        subscriptionPlan: user.subscriptionPlan || 'free',
+        stripeSubscriptionId: user.stripeSubscriptionId,
+        trialEndsAt: user.trialEndsAt,
+        subscriptionEndsAt: user.subscriptionEndsAt
+      });
+    } catch (error: any) {
+      console.error('Subscription status error:', error);
+      res.status(500).json({ message: "Failed to get subscription status" });
+    }
+  });
+
+  // Create customer portal session
+  app.post("/api/stripe/create-portal-session", authenticateJWT, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user?.stripeCustomerId) {
+        return res.status(400).json({ message: "No active subscription" });
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
+      const protocol = domain.includes('localhost') ? 'http' : 'https';
+
+      const session = await stripe.billingPortal.sessions.create({
+        customer: user.stripeCustomerId,
+        return_url: `${protocol}://${domain}/billing`
+      });
+
+      res.json({ url: session.url });
+    } catch (error: any) {
+      console.error('Portal session error:', error);
+      res.status(500).json({ message: "Failed to create portal session" });
     }
   });
   
