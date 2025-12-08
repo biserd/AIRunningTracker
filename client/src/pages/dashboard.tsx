@@ -26,11 +26,13 @@ import { StravaConnectButton, StravaPoweredBy } from "@/components/StravaConnect
 import { ChatPanel } from "@/components/ChatPanel";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import RecentConversations from "@/components/RecentConversations";
-import { MessageCircle, X, Gift, ChevronRight } from "lucide-react";
+import { MessageCircle, X, Gift, ChevronRight, Crown, Lock } from "lucide-react";
 import { Link } from "wouter";
+import { useFeatureAccess } from "@/hooks/useSubscription";
 
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
+  const { canAccessAICoachChat, insightsUsed, insightsLimit, maxInsightsPerMonth } = useFeatureAccess();
   const [chartTimeRange, setChartTimeRange] = useState<string>("30days");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -317,55 +319,77 @@ export default function Dashboard() {
       />
 
       {/* AI Coach Chat Floating Button */}
-      <button
-        onClick={() => setIsChatOpen(!isChatOpen)}
-        className="group fixed bottom-6 right-6 z-50 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-full shadow-lg transition-all duration-200 hover:shadow-xl flex items-center gap-3 px-6 py-4"
-        data-testid="button-toggle-chat"
-        aria-label="Toggle AI Chat"
-        title="AI Running Coach Chat"
-      >
-        {isChatOpen ? (
-          <>
-            <X className="w-6 h-6" />
-            <span className="font-medium hidden sm:inline">Close Chat</span>
-          </>
-        ) : (
-          <>
+      {canAccessAICoachChat ? (
+        <button
+          onClick={() => setIsChatOpen(!isChatOpen)}
+          className="group fixed bottom-6 right-6 z-50 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-full shadow-lg transition-all duration-200 hover:shadow-xl flex items-center gap-3 px-6 py-4"
+          data-testid="button-toggle-chat"
+          aria-label="Toggle AI Chat"
+          title="AI Running Coach Chat"
+        >
+          {isChatOpen ? (
+            <>
+              <X className="w-6 h-6" />
+              <span className="font-medium hidden sm:inline">Close Chat</span>
+            </>
+          ) : (
+            <>
+              <MessageCircle className="w-6 h-6" />
+              <span className="font-medium hidden sm:inline">AI Coach</span>
+            </>
+          )}
+        </button>
+      ) : (
+        <Link href="/pricing">
+          <button
+            className="group fixed bottom-6 right-6 z-50 bg-gradient-to-r from-gray-400 to-gray-500 hover:from-strava-orange hover:to-orange-600 text-white rounded-full shadow-lg transition-all duration-200 hover:shadow-xl flex items-center gap-3 px-6 py-4"
+            data-testid="button-upgrade-chat"
+            aria-label="Upgrade to Premium for AI Chat"
+            title="AI Coach Chat - Premium Feature"
+          >
+            <Lock className="w-5 h-5" />
             <MessageCircle className="w-6 h-6" />
             <span className="font-medium hidden sm:inline">AI Coach</span>
-          </>
-        )}
-      </button>
+            <Crown className="w-4 h-4 text-yellow-300" />
+          </button>
+        </Link>
+      )}
 
-      {/* AI Chat Sidebar */}
-      <div
-        className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-white dark:bg-slate-900 shadow-2xl z-50 transition-transform duration-300 ${
-          isChatOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-        aria-hidden={!isChatOpen}
-      >
-        <ChatPanel 
-          userId={user.id} 
-          onClose={() => {
-            setIsChatOpen(false);
-            setSelectedConversationId(undefined);
-          }}
-          initialConversationId={selectedConversationId}
-        />
-      </div>
+      {/* AI Chat Sidebar - Premium Only */}
+      {canAccessAICoachChat && (
+        <>
+          <div
+            className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-white dark:bg-slate-900 shadow-2xl z-50 transition-transform duration-300 ${
+              isChatOpen ? 'translate-x-0' : 'translate-x-full'
+            }`}
+            aria-hidden={!isChatOpen}
+          >
+            <ChatPanel 
+              userId={user.id} 
+              onClose={() => {
+                setIsChatOpen(false);
+                setSelectedConversationId(undefined);
+              }}
+              initialConversationId={selectedConversationId}
+            />
+          </div>
 
-      {/* Overlay for mobile */}
-      {isChatOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 sm:hidden"
-          onClick={() => setIsChatOpen(false)}
-          data-testid="overlay-chat-mobile"
-        />
+          {/* Overlay for mobile */}
+          {isChatOpen && (
+            <div
+              className="fixed inset-0 bg-black bg-opacity-50 z-40 sm:hidden"
+              onClick={() => setIsChatOpen(false)}
+              data-testid="overlay-chat-mobile"
+            />
+          )}
+        </>
       )}
       
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* AI Chat Announcement Banner */}
-        <AnnouncementBanner onOpenChat={() => setIsChatOpen(true)} />
+        {/* AI Chat Announcement Banner - Only for Premium Users */}
+        {canAccessAICoachChat && (
+          <AnnouncementBanner onOpenChat={() => setIsChatOpen(true)} />
+        )}
 
         {/* 2025 Running Wrapped Banner */}
         <Link href="/wrapped-2025">
@@ -454,13 +478,15 @@ export default function Dashboard() {
               hasChatted={(conversationSummaries?.length || 0) > 0}
             />
 
-            {/* Recent Conversations */}
-            <RecentConversations 
-              onOpenConversation={(id) => {
-                setSelectedConversationId(id);
-                setIsChatOpen(true);
-              }}
-            />
+            {/* Recent Conversations - Premium Only */}
+            {canAccessAICoachChat && (
+              <RecentConversations 
+                onOpenConversation={(id) => {
+                  setSelectedConversationId(id);
+                  setIsChatOpen(true);
+                }}
+              />
+            )}
             
             <AIInsights insights={dashboardData?.insights || {}} userId={user?.id!} />
             <InsightHistory userId={user?.id!} />
