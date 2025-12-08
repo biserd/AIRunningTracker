@@ -314,14 +314,14 @@ function SettingsPageContent() {
                       )}
                       Manage Subscription
                     </Button>
-                  ) : (
+                  ) : !isPremium && (
                     <Button 
                       onClick={() => setLocation('/pricing')}
                       className="bg-strava-orange hover:bg-strava-orange/90 flex items-center gap-2" 
                       data-testid="button-upgrade-settings"
                     >
                       <Crown className="h-4 w-4" />
-                      Upgrade Plan
+                      {isPro ? 'Upgrade to Premium' : 'Upgrade Plan'}
                     </Button>
                   )}
                   <Button 
