@@ -2801,6 +2801,16 @@ ${allPages.map(page => `  <url>
         return res.status(400).json({ message: "Strava not connected" });
       }
 
+      // Pro/Premium subscription required for extended sync
+      const isPro = user.subscriptionPlan === 'pro' && user.subscriptionStatus === 'active';
+      const isPremium = user.subscriptionPlan === 'premium' && user.subscriptionStatus === 'active';
+      if (!isPro && !isPremium) {
+        return res.status(403).json({ 
+          message: "Syncing 100 activities requires a Pro or Premium subscription",
+          upgradeRequired: true
+        });
+      }
+
       const result = await stravaService.syncActivitiesForUser(userId, maxActivities);
       
       // Auto-generate AI insights only if new activities were synced

@@ -32,6 +32,7 @@ const features: PlanFeature[] = [
   { name: "Runner Score", free: true, pro: true, premium: true },
   { name: "Free Calculator Tools", free: true, pro: true, premium: true },
   { name: "Activity History", free: "30 days", pro: "Unlimited", premium: "Unlimited" },
+  { name: "Sync 100 Strava Activities", free: false, pro: true, premium: true },
   { name: "AI Performance Insights", free: "3/month", pro: "Unlimited", premium: "Unlimited" },
   { name: "AI Training Plans", free: false, pro: true, premium: true },
   { name: "Race Predictions", free: false, pro: true, premium: true },

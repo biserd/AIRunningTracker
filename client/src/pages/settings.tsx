@@ -342,38 +342,66 @@ function SettingsPageContent() {
         {dashboardData?.user?.stravaConnected && (
           <Card>
             <CardHeader>
-              <CardTitle>Strava Activity Sync</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                Strava Activity Sync
+                {!(isPro || isPremium) && (
+                  <Badge variant="secondary" className="bg-orange-100 text-strava-orange">
+                    <Star className="h-3 w-3 mr-1" />
+                    Pro
+                  </Badge>
+                )}
+              </CardTitle>
               <CardDescription>
-                Manually sync more activities from your Strava account
+                Manually sync up to 100 activities from your Strava account
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-600 mb-2">
-                  By default, we import your last 100 activities when you connect Strava. 
-                  Use this button to sync your latest activities and update your training data.
-                </p>
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
-                  <p className="text-sm text-amber-800">
-                    ⏱️ <strong>Please be patient:</strong> Syncing activities can take over a minute, especially if you have many activities. 
-                    The page will update automatically when complete.
+              {isPro || isPremium ? (
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">
+                    By default, we import your last 100 activities when you connect Strava. 
+                    Use this button to sync your latest activities and update your training data.
                   </p>
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                    <p className="text-sm text-amber-800">
+                      ⏱️ <strong>Please be patient:</strong> Syncing activities can take over a minute, especially if you have many activities. 
+                      The page will update automatically when complete.
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={handleSyncActivities}
+                    disabled={syncActivitiesMutation.isPending}
+                    className="flex items-center gap-2"
+                    data-testid="button-sync-activities"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${syncActivitiesMutation.isPending ? 'animate-spin' : ''}`} />
+                    {syncActivitiesMutation.isPending ? "Syncing Activities..." : "Sync 100 Activities"}
+                  </Button>
+                  {dashboardData?.user?.lastSyncAt && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      Last synced: {new Date(dashboardData.user.lastSyncAt).toLocaleString()}
+                    </p>
+                  )}
                 </div>
-                <Button 
-                  onClick={handleSyncActivities}
-                  disabled={syncActivitiesMutation.isPending}
-                  className="flex items-center gap-2"
-                  data-testid="button-sync-activities"
-                >
-                  <RefreshCw className={`h-4 w-4 ${syncActivitiesMutation.isPending ? 'animate-spin' : ''}`} />
-                  {syncActivitiesMutation.isPending ? "Syncing Activities..." : "Sync More Activities"}
-                </Button>
-                {dashboardData?.user?.lastSyncAt && (
-                  <p className="text-xs text-gray-500 mt-2">
-                    Last synced: {new Date(dashboardData.user.lastSyncAt).toLocaleString()}
+              ) : (
+                <div className="text-center py-4">
+                  <div className="p-3 bg-orange-100 rounded-full w-fit mx-auto mb-4">
+                    <Star className="h-6 w-6 text-strava-orange" />
+                  </div>
+                  <h3 className="font-semibold text-lg mb-2">Pro Feature</h3>
+                  <p className="text-sm text-gray-600 mb-4 max-w-md mx-auto">
+                    Sync up to 100 Strava activities at once to get comprehensive training history and more accurate AI insights.
                   </p>
-                )}
-              </div>
+                  <Button 
+                    onClick={() => setLocation('/pricing')}
+                    className="bg-strava-orange hover:bg-strava-orange/90"
+                    data-testid="button-upgrade-sync"
+                  >
+                    <Crown className="h-4 w-4 mr-2" />
+                    Upgrade to Pro
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
