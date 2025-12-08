@@ -356,8 +356,20 @@ ${allPages.map(page => `  <url>
 
       res.json({ url: session.url });
     } catch (error: any) {
-      console.error('Checkout session error:', error);
-      res.status(500).json({ message: error.message || "Failed to create checkout session" });
+      console.error('Checkout session error details:', {
+        message: error.message,
+        type: error.type,
+        code: error.code,
+        statusCode: error.statusCode,
+        raw: error.raw,
+        requestId: error.requestId,
+        stack: error.stack
+      });
+      res.status(500).json({ 
+        message: error.message || "Failed to create checkout session",
+        code: error.code,
+        type: error.type
+      });
     }
   });
 
