@@ -30,6 +30,9 @@ export const users = pgTable("users", {
   }).default("pro"),
   trialEndsAt: timestamp("trial_ends_at"),
   subscriptionEndsAt: timestamp("subscription_ends_at"),
+  // Usage tracking for rate limits
+  monthlyInsightCount: integer("monthly_insight_count").default(0),
+  insightCountResetAt: timestamp("insight_count_reset_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

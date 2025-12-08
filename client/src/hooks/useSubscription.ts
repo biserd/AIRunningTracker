@@ -2,12 +2,21 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "./useAuth";
 
+export interface UsageStats {
+  insightsUsed: number;
+  insightsLimit: number;
+  insightsRemaining: number;
+  resetAt: string | null;
+  isPremiumUser: boolean;
+}
+
 export interface SubscriptionStatus {
   subscriptionStatus: 'free' | 'active' | 'canceled' | 'past_due' | 'trialing' | 'unpaid';
   subscriptionPlan: 'free' | 'pro' | 'premium';
   stripeSubscriptionId?: string;
   trialEndsAt?: string;
   subscriptionEndsAt?: string;
+  usage?: UsageStats;
 }
 
 export function useSubscription() {
@@ -27,6 +36,8 @@ export function useSubscription() {
   const isPro = (plan === 'pro' || plan === 'premium') && (status === 'active' || status === 'trialing');
   const isFree = plan === 'free' || status === 'canceled' || status === 'past_due';
 
+  const usage = subscription?.usage;
+
   return {
     subscription,
     isLoading,
@@ -37,6 +48,7 @@ export function useSubscription() {
     isPro,
     isFree,
     hasActiveSubscription: isPro || isPremium,
+    usage,
   };
 }
 
@@ -69,7 +81,7 @@ export function useManageSubscription() {
 }
 
 export function useFeatureAccess() {
-  const { isPro, isPremium, isFree } = useSubscription();
+  const { isPro, isPremium, isFree, usage } = useSubscription();
   
   return {
     canAccessBasicAnalytics: true,
@@ -89,5 +101,11 @@ export function useFeatureAccess() {
     canAccessUnlimitedHistory: isPro || isPremium,
     maxInsightsPerMonth: isFree ? 3 : Infinity,
     maxDataHistoryDays: isFree ? 30 : Infinity,
+    
+    // Usage stats
+    insightsUsed: usage?.insightsUsed ?? 0,
+    insightsRemaining: usage?.insightsRemaining ?? 3,
+    insightsLimit: usage?.insightsLimit ?? 3,
+    usageResetAt: usage?.resetAt ? new Date(usage.resetAt) : null,
   };
 }

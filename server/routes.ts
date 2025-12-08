@@ -18,6 +18,7 @@ import { z } from "zod";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
+import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getActivityHistoryLimit, RATE_LIMITS } from "./rateLimits";
 
 // Authentication middleware
 const authenticateJWT = async (req: any, res: Response, next: NextFunction) => {
@@ -368,12 +369,16 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
 
+      // Get usage stats for rate limit display
+      const usageStats = await getUserUsageStats(req.user.id);
+
       res.json({
         subscriptionStatus: user.subscriptionStatus || 'free',
         subscriptionPlan: user.subscriptionPlan || 'free',
         stripeSubscriptionId: user.stripeSubscriptionId,
         trialEndsAt: user.trialEndsAt,
-        subscriptionEndsAt: user.subscriptionEndsAt
+        subscriptionEndsAt: user.subscriptionEndsAt,
+        usage: usageStats
       });
     } catch (error: any) {
       console.error('Subscription status error:', error);
@@ -1080,7 +1085,20 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
 
-      const activities = await storage.getActivitiesByUserId(userId, 10);
+      // Get activity history limit based on subscription
+      const historyLimitDays = getActivityHistoryLimit(user.subscriptionPlan, user.subscriptionStatus);
+      let historyLimitDate: Date | undefined;
+      if (historyLimitDays !== null) {
+        historyLimitDate = new Date();
+        historyLimitDate.setDate(historyLimitDate.getDate() - historyLimitDays);
+        historyLimitDate.setHours(0, 0, 0, 0);
+      }
+
+      // Get activities (filtered by date for free users)
+      let activities = await storage.getActivitiesByUserId(userId, 10);
+      if (historyLimitDate) {
+        activities = activities.filter(a => new Date(a.startDate) >= historyLimitDate!);
+      }
       
       const insights = await storage.getAIInsightsByUserId(userId);
       
@@ -1197,13 +1215,20 @@ ${allPages.map(page => `  <url>
       const weeklyActivitiesChange = lastWeekActivitiesCount > 0 ? 
         ((thisWeekActivitiesCount - lastWeekActivitiesCount) / lastWeekActivitiesCount) * 100 : null;
       
+      // Get usage stats for the response
+      const usageStats = await getUserUsageStats(userId);
+      
       const dashboardData = {
         user: {
           name: user.username,
           stravaConnected: user.stravaConnected,
           unitPreference: user.unitPreference || "km",
           lastSyncAt: user.lastSyncAt,
+          subscriptionPlan: user.subscriptionPlan || 'free',
+          subscriptionStatus: user.subscriptionStatus || 'free',
+          activityHistoryLimitDays: historyLimitDays,
         },
+        usage: usageStats,
         stats: {
           // Monthly totals (current behavior)
           monthlyTotalDistance: user.unitPreference === "miles" ? 
@@ -1549,8 +1574,8 @@ ${allPages.map(page => `  <url>
     }
   });
 
-  // Generate AI insights
-  app.post("/api/ai/insights/:userId", async (req, res) => {
+  // Generate AI insights (with rate limiting)
+  app.post("/api/ai/insights/:userId", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
       
@@ -1558,15 +1583,35 @@ ${allPages.map(page => `  <url>
         return res.status(400).json({ message: "Invalid user ID" });
       }
 
+      // Verify the user owns this resource
+      if (req.user.id !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Check rate limit for free users
+      const rateLimit = await checkInsightRateLimit(userId);
+      if (!rateLimit.allowed) {
+        return res.status(429).json({ 
+          message: rateLimit.message,
+          remaining: rateLimit.remaining,
+          limit: rateLimit.limit,
+          resetAt: rateLimit.resetAt
+        });
+      }
+
       await aiService.generateInsights(userId);
-      res.json({ success: true });
+      
+      // Increment usage count after successful generation
+      await incrementInsightCount(userId);
+      
+      res.json({ success: true, remaining: rateLimit.remaining - 1 });
     } catch (error: any) {
       console.error('AI insights error:', error);
       res.status(500).json({ message: error.message || "Failed to generate insights" });
     }
   });
 
-  // Generate AI insights
+  // Generate AI insights (with rate limiting)
   app.post("/api/insights/generate/:userId", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
@@ -1580,11 +1625,47 @@ ${allPages.map(page => `  <url>
         return res.status(403).json({ message: "Access denied" });
       }
 
+      // Check rate limit for free users
+      const rateLimit = await checkInsightRateLimit(userId);
+      if (!rateLimit.allowed) {
+        return res.status(429).json({ 
+          message: rateLimit.message,
+          remaining: rateLimit.remaining,
+          limit: rateLimit.limit,
+          resetAt: rateLimit.resetAt
+        });
+      }
+
       await aiService.generateInsights(userId);
-      res.json({ success: true, message: "Insights generated successfully" });
+      
+      // Increment usage count after successful generation
+      await incrementInsightCount(userId);
+      
+      res.json({ success: true, message: "Insights generated successfully", remaining: rateLimit.remaining - 1 });
     } catch (error: any) {
       console.error('Insights generation error:', error);
       res.status(500).json({ message: error.message || "Failed to generate insights" });
+    }
+  });
+
+  // Get user usage stats
+  app.get("/api/usage/:userId", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      if (req.user.id !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const usage = await getUserUsageStats(userId);
+      res.json(usage);
+    } catch (error: any) {
+      console.error('Usage stats error:', error);
+      res.status(500).json({ message: error.message || "Failed to get usage stats" });
     }
   });
 
