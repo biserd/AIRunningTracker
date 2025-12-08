@@ -9,12 +9,12 @@ import PublicHeader from "@/components/PublicHeader";
 
 const PRICE_IDS = {
   pro: {
-    monthly: "price_1Sbr5VDfI9wxczZNhkB8n9Zk",
-    annual: "price_1Sbr5WDfI9wxczZN72UwiOAX"
+    monthly: "price_1SbtceRwvWaTf8xfu0bS2gc3",
+    annual: "price_1SbtceRwvWaTf8xfoPfgZI1z"
   },
   premium: {
-    monthly: "price_1Sbr5WDfI9wxczZNEbTKSR12",
-    annual: "price_1Sbr5WDfI9wxczZNeEmIzlKQ"
+    monthly: "price_1SbtcfRwvWaTf8xfSEO4iKnc",
+    annual: "price_1SbtcfRwvWaTf8xfwcVnrRf8"
   }
 };
 
