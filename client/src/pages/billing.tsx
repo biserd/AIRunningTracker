@@ -165,11 +165,11 @@ export default function BillingPage() {
                       )}
                       Manage Subscription
                     </Button>
-                  ) : (
+                  ) : !isPremium && (
                     <Link href="/pricing">
                       <Button className="bg-strava-orange hover:bg-strava-orange/90" data-testid="button-upgrade-billing">
                         <Crown className="h-4 w-4 mr-2" />
-                        Upgrade Plan
+                        {isPro ? 'Upgrade to Premium' : 'Upgrade Plan'}
                       </Button>
                     </Link>
                   )}
