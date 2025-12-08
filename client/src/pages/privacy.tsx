@@ -290,7 +290,7 @@ export default function PrivacyPage() {
                 </p>
                 <div className="bg-gray-50 rounded-lg p-4">
                   <ul className="space-y-2">
-                    <li><strong>Email:</strong> privacy@runanalytics.com</li>
+                    <li><strong>Email:</strong> hello@aitracker.run</li>
                     <li><strong>Address:</strong> RunAnalytics Privacy Team</li>
                     <li><strong>Response Time:</strong> We aim to respond within 5 business days</li>
                   </ul>

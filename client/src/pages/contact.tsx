@@ -174,8 +174,8 @@ export default function ContactPage() {
                   <p className="text-gray-600 mb-2">
                     For general inquiries and support
                   </p>
-                  <a href="mailto:hello@bigappledigital.nyc" className="text-strava-orange hover:underline font-medium">
-                    hello@bigappledigital.nyc
+                  <a href="mailto:hello@aitracker.run" className="text-strava-orange hover:underline font-medium">
+                    hello@aitracker.run
                   </a>
                 </div>
               </div>
