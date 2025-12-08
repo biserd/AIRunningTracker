@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Brain, Crown, Lock } from "lucide-react";
 import { Link } from "wouter";
 import { useFeatureAccess } from "@/hooks/useSubscription";
