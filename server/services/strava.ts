@@ -1,4 +1,5 @@
 import { storage } from "../storage";
+import { runnerScoreService } from "./runnerScore";
 
 interface StravaActivity {
   id: number;
@@ -187,8 +188,9 @@ export class StravaService {
   generateBrandingText(template: string, runnerScore?: number, insight?: string): string {
     let text = template || "🏃 Analyzed with AITracker.run";
     
-    // Replace placeholders
-    text = text.replace('{score}', runnerScore ? runnerScore.toString() : 'N/A');
+    // Replace placeholders (check for valid finite number to allow score of 0)
+    const validScore = runnerScore !== undefined && Number.isFinite(runnerScore);
+    text = text.replace('{score}', validScore ? runnerScore.toString() : 'N/A');
     text = text.replace('{insight}', insight || 'Keep up the great work!');
     
     return text;
@@ -404,7 +406,36 @@ export class StravaService {
       if (syncedCount > 0 && user.stravaHasWriteScope && user.stravaBrandingEnabled) {
         console.log(`[Branding] Applying branding to ${syncedCount} newly synced activities`);
         const brandingTemplate = user.stravaBrandingTemplate || "🏃 Analyzed with AITracker.run";
-        const brandingText = this.generateBrandingText(brandingTemplate);
+        
+        // Calculate Runner Score for branding
+        let runnerScore: number | undefined;
+        let insight: string | undefined;
+        
+        try {
+          const scoreData = await runnerScoreService.calculateRunnerScore(userId);
+          runnerScore = scoreData.totalScore;
+          console.log(`[Branding] Calculated Runner Score: ${runnerScore}`);
+        } catch (scoreError) {
+          console.error(`[Branding] Failed to calculate Runner Score:`, scoreError);
+        }
+        
+        // Fetch most recent AI insight for branding
+        try {
+          const recentInsights = await storage.getAIInsightsByUserId(userId, undefined, 1);
+          if (recentInsights.length > 0 && recentInsights[0].content?.trim()) {
+            // Extract a short insight (first sentence or first 100 chars)
+            const fullInsight = recentInsights[0].content.trim();
+            const firstSentence = fullInsight.split(/[.!?]/)[0]?.trim();
+            if (firstSentence) {
+              insight = firstSentence.length > 100 ? firstSentence.substring(0, 97) + '...' : firstSentence;
+              console.log(`[Branding] Using insight: ${insight}`);
+            }
+          }
+        } catch (insightError) {
+          console.error(`[Branding] Failed to fetch AI insight:`, insightError);
+        }
+        
+        const brandingText = this.generateBrandingText(brandingTemplate, runnerScore, insight);
         
         // Apply branding to each newly synced activity (limit to avoid rate limiting)
         const brandingLimit = Math.min(syncedCount, 10);

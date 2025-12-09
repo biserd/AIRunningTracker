@@ -45,7 +45,7 @@ export interface IStorage {
   updateActivity(activityId: number, updates: Partial<Activity>): Promise<Activity | undefined>;
   
   createAIInsight(insight: InsertAIInsight): Promise<AIInsight>;
-  getAIInsightsByUserId(userId: number, type?: string): Promise<AIInsight[]>;
+  getAIInsightsByUserId(userId: number, type?: string, limit?: number): Promise<AIInsight[]>;
   deleteOldAIInsights(userId: number, type: string): Promise<void>;
   cleanupOldAIInsights(userId: number, type: string, keepCount?: number): Promise<void>;
   getHistoricalAIInsights(userId: number, limit?: number): Promise<AIInsight[]>;
