@@ -184,6 +184,39 @@ export class StravaService {
     return response.json();
   }
 
+  generateBrandingText(template: string, runnerScore?: number, insight?: string): string {
+    let text = template || "🏃 Analyzed with AITracker.run";
+    
+    // Replace placeholders
+    text = text.replace('{score}', runnerScore ? runnerScore.toString() : 'N/A');
+    text = text.replace('{insight}', insight || 'Keep up the great work!');
+    
+    return text;
+  }
+
+  async applyBrandingToActivity(
+    accessToken: string, 
+    activityId: number, 
+    existingDescription: string | null,
+    brandingText: string
+  ): Promise<boolean> {
+    // Don't add branding if it's already there (check for exact branding text or AITracker.run marker)
+    if (existingDescription) {
+      // Check for the exact branding text or the AITracker.run marker
+      if (existingDescription.includes(brandingText.trim()) || existingDescription.includes('AITracker.run')) {
+        console.log(`[Branding] Activity ${activityId} already has branding, skipping`);
+        return true;
+      }
+    }
+    
+    // Append branding to existing description with clean formatting
+    const newDescription = existingDescription?.trim()
+      ? `${existingDescription.trim()}\n\n${brandingText.trim()}`
+      : brandingText.trim();
+    
+    return this.updateActivityDescription(accessToken, activityId, newDescription);
+  }
+
   async updateActivityDescription(accessToken: string, activityId: number, description: string): Promise<boolean> {
     const response = await fetch(
       `https://www.strava.com/api/v3/activities/${activityId}`,
@@ -366,6 +399,38 @@ export class StravaService {
       console.log(`Activity types found: ${Array.from(activityTypes).join(', ')}`);
       console.log(`Sport types found: ${Array.from(sportTypes).join(', ')}`);
       console.log(`Successfully synced ${syncedCount} activities for user ${userId}`);
+      
+      // Apply branding to newly synced activities if enabled
+      if (syncedCount > 0 && user.stravaHasWriteScope && user.stravaBrandingEnabled) {
+        console.log(`[Branding] Applying branding to ${syncedCount} newly synced activities`);
+        const brandingTemplate = user.stravaBrandingTemplate || "🏃 Analyzed with AITracker.run";
+        const brandingText = this.generateBrandingText(brandingTemplate);
+        
+        // Apply branding to each newly synced activity (limit to avoid rate limiting)
+        const brandingLimit = Math.min(syncedCount, 10);
+        let brandedCount = 0;
+        
+        for (const stravaActivity of activitiesToProcess.slice(0, brandingLimit)) {
+          try {
+            // Get the activity details to check existing description
+            const detailedActivity = await this.getActivityById(user.stravaAccessToken!, stravaActivity.id);
+            if (detailedActivity) {
+              const success = await this.applyBrandingToActivity(
+                user.stravaAccessToken!,
+                stravaActivity.id,
+                detailedActivity.description || null,
+                brandingText
+              );
+              if (success) brandedCount++;
+            }
+            // Small delay to avoid Strava rate limiting
+            await new Promise(resolve => setTimeout(resolve, 200));
+          } catch (brandingError) {
+            console.error(`[Branding] Failed to brand activity ${stravaActivity.id}:`, brandingError);
+          }
+        }
+        console.log(`[Branding] Applied branding to ${brandedCount}/${brandingLimit} activities`);
+      }
       
       // Update last sync timestamp
       await storage.updateUser(userId, {
