@@ -339,8 +339,9 @@ ${allPages.map(page => `  <url>
         customerId = customer.id;
       }
 
-      // Get the domain
-      const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
+      // Get the domain - use custom domain in production
+      const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
+      const domain = isProduction ? 'aitracker.run' : (process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000');
       const protocol = domain.includes('localhost') ? 'http' : 'https';
 
       // Create checkout session
@@ -407,7 +408,8 @@ ${allPages.map(page => `  <url>
       }
 
       const stripe = await getUncachableStripeClient();
-      const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
+      const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
+      const domain = isProduction ? 'aitracker.run' : (process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000');
       const protocol = domain.includes('localhost') ? 'http' : 'https';
 
       const session = await stripe.billingPortal.sessions.create({
