@@ -1236,6 +1236,9 @@ ${allPages.map(page => `  <url>
         user: {
           name: user.username,
           stravaConnected: user.stravaConnected,
+          stravaHasWriteScope: user.stravaHasWriteScope || false,
+          stravaBrandingEnabled: user.stravaBrandingEnabled || false,
+          stravaBrandingTemplate: user.stravaBrandingTemplate || "🏃 Runner Score: {score} | {insight} — Analyzed with AITracker.run",
           unitPreference: user.unitPreference || "km",
           lastSyncAt: user.lastSyncAt,
           subscriptionPlan: user.subscriptionPlan || 'free',
@@ -1986,6 +1989,41 @@ ${allPages.map(page => `  <url>
     } catch (error: any) {
       console.error('Settings update error:', error);
       res.status(500).json({ message: error.message || "Failed to update settings" });
+    }
+  });
+
+  // Update user branding settings
+  app.patch("/api/users/:userId/branding", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { stravaBrandingEnabled, stravaBrandingTemplate } = req.body;
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      // Verify the user owns this resource
+      if (req.user.id !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const updatedUser = await storage.updateUser(userId, { 
+        stravaBrandingEnabled,
+        stravaBrandingTemplate
+      });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Invalidate cached dashboard
+      deleteCachedResponse(`dashboard:${userId}`);
+      console.log(`[Branding] Updated branding settings for user ${userId}: enabled=${stravaBrandingEnabled}`);
+
+      res.json({ success: true, user: updatedUser });
+    } catch (error: any) {
+      console.error('Branding settings update error:', error);
+      res.status(500).json({ message: error.message || "Failed to update branding settings" });
     }
   });
 
@@ -2795,6 +2833,7 @@ ${allPages.map(page => `  <url>
         stravaRefreshToken: tokenData.refresh_token,
         stravaAthleteId: tokenData.athlete.id.toString(),
         stravaConnected: true,
+        stravaHasWriteScope: true,
       });
 
       res.redirect("/dashboard?connected=true");

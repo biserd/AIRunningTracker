@@ -4,8 +4,14 @@ export interface DashboardData {
   user: {
     name: string;
     stravaConnected: boolean;
+    stravaHasWriteScope?: boolean;
+    stravaBrandingEnabled?: boolean;
+    stravaBrandingTemplate?: string;
     unitPreference?: string;
     lastSyncAt?: string;
+    subscriptionPlan?: string;
+    subscriptionStatus?: string;
+    activityHistoryLimitDays?: number | null;
   };
   stats: {
     totalDistance: string;

@@ -184,6 +184,53 @@ export class StravaService {
     return response.json();
   }
 
+  async updateActivityDescription(accessToken: string, activityId: number, description: string): Promise<boolean> {
+    const response = await fetch(
+      `https://www.strava.com/api/v3/activities/${activityId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ description }),
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Unauthorized - token may be expired or lacks write scope');
+      }
+      if (response.status === 403) {
+        throw new Error('Forbidden - activity:write scope not granted');
+      }
+      console.error(`Failed to update activity ${activityId}:`, response.status, response.statusText);
+      return false;
+    }
+
+    return true;
+  }
+
+  async getActivityById(accessToken: string, activityId: number): Promise<any> {
+    const response = await fetch(
+      `https://www.strava.com/api/v3/activities/${activityId}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Unauthorized - token may be expired');
+      }
+      return null;
+    }
+
+    return response.json();
+  }
+
   async syncActivitiesForUser(
     userId: number, 
     maxActivities: number = 100,

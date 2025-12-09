@@ -158,7 +158,7 @@ export default function Dashboard() {
   const handleStravaConnect = () => {
     const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID || "default_client_id";
     const redirectUri = `${window.location.origin}/strava/callback`;
-    const scope = "read,activity:read_all";
+    const scope = "read,activity:read_all,activity:write";
     
     const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&approval_prompt=force&scope=${scope}&state=${user.id}`;
     

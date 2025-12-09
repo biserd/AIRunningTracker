@@ -23,7 +23,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Save, Unlink, RefreshCw, Trash2, Crown, Star, Zap, CreditCard, ExternalLink, Loader2 } from "lucide-react";
+import { Settings, Save, Unlink, RefreshCw, Trash2, Crown, Star, Zap, CreditCard, ExternalLink, Loader2, Share2, Check, AlertTriangle } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 
 function SettingsPageContent() {
   const { user } = useAuth();
@@ -38,10 +40,18 @@ function SettingsPageContent() {
   });
 
   const [unitPreference, setUnitPreference] = useState("km");
+  const [stravaBrandingEnabled, setStravaBrandingEnabled] = useState(false);
+  const [stravaBrandingTemplate, setStravaBrandingTemplate] = useState("🏃 Runner Score: {score} | {insight} — Analyzed with AITracker.run");
 
   useEffect(() => {
     if (dashboardData?.user?.unitPreference) {
       setUnitPreference(dashboardData.user.unitPreference);
+    }
+    if (dashboardData?.user?.stravaBrandingEnabled !== undefined) {
+      setStravaBrandingEnabled(dashboardData.user.stravaBrandingEnabled);
+    }
+    if (dashboardData?.user?.stravaBrandingTemplate) {
+      setStravaBrandingTemplate(dashboardData.user.stravaBrandingTemplate);
     }
   }, [dashboardData]);
 
@@ -102,6 +112,28 @@ function SettingsPageContent() {
       toast({
         title: "Sync failed",
         description: error.message || "Failed to sync activities",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateBrandingMutation = useMutation({
+    mutationFn: async (settings: { stravaBrandingEnabled: boolean; stravaBrandingTemplate: string }) => {
+      return apiRequest(`/api/users/${user!.id}/branding`, "PATCH", settings);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user!.id}`] });
+      toast({
+        title: "Branding settings updated",
+        description: stravaBrandingEnabled 
+          ? "Your Strava activities will now include AITracker insights" 
+          : "Strava branding has been disabled",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update failed",
+        description: error.message || "Failed to update branding settings",
         variant: "destructive",
       });
     },
@@ -399,6 +431,112 @@ function SettingsPageContent() {
                   >
                     <Crown className="h-4 w-4 mr-2" />
                     Upgrade to Pro
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {dashboardData?.user?.stravaConnected && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Share2 className="h-5 w-5" />
+                Strava Activity Branding
+                <Badge variant="secondary" className="bg-green-100 text-green-700">
+                  Growth Feature
+                </Badge>
+              </CardTitle>
+              <CardDescription>
+                Automatically add your Runner Score and AI insights to your Strava activity descriptions
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {dashboardData?.user?.stravaHasWriteScope ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="branding-toggle" className="text-base font-medium">
+                        Enable Activity Branding
+                      </Label>
+                      <p className="text-sm text-gray-500">
+                        Add AITracker insights to your Strava posts
+                      </p>
+                    </div>
+                    <Switch
+                      id="branding-toggle"
+                      checked={stravaBrandingEnabled}
+                      onCheckedChange={setStravaBrandingEnabled}
+                      data-testid="switch-branding-toggle"
+                    />
+                  </div>
+
+                  {stravaBrandingEnabled && (
+                    <div className="space-y-3 pt-2 border-t">
+                      <Label htmlFor="branding-template" className="text-sm font-medium">
+                        Message Template
+                      </Label>
+                      <Input
+                        id="branding-template"
+                        value={stravaBrandingTemplate}
+                        onChange={(e) => setStravaBrandingTemplate(e.target.value)}
+                        placeholder="🏃 Runner Score: {score} | {insight} — Analyzed with AITracker.run"
+                        data-testid="input-branding-template"
+                      />
+                      <p className="text-xs text-gray-500">
+                        Use <code className="bg-gray-100 px-1 rounded">{"{score}"}</code> for your Runner Score and <code className="bg-gray-100 px-1 rounded">{"{insight}"}</code> for a quick AI insight
+                      </p>
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
+                        <p className="text-sm text-blue-800">
+                          <strong>Preview:</strong> {stravaBrandingTemplate
+                            .replace("{score}", "85")
+                            .replace("{insight}", "Great pacing consistency!")}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={() => updateBrandingMutation.mutate({ 
+                      stravaBrandingEnabled, 
+                      stravaBrandingTemplate 
+                    })}
+                    disabled={updateBrandingMutation.isPending}
+                    className="flex items-center gap-2"
+                    data-testid="button-save-branding"
+                  >
+                    {updateBrandingMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Check className="h-4 w-4" />
+                    )}
+                    {updateBrandingMutation.isPending ? "Saving..." : "Save Branding Settings"}
+                  </Button>
+                </>
+              ) : (
+                <div className="text-center py-4">
+                  <div className="p-3 bg-amber-100 rounded-full w-fit mx-auto mb-4">
+                    <AlertTriangle className="h-6 w-6 text-amber-600" />
+                  </div>
+                  <h3 className="font-semibold text-lg mb-2">Additional Permission Required</h3>
+                  <p className="text-sm text-gray-600 mb-4 max-w-md mx-auto">
+                    To add insights to your Strava activities, you need to grant write permission. 
+                    This is a one-time authorization.
+                  </p>
+                  <Button 
+                    onClick={() => {
+                      const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID || "default_client_id";
+                      const redirectUri = `${window.location.origin}/strava/callback`;
+                      const scope = "read,activity:read_all,activity:write";
+                      const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&approval_prompt=force&scope=${scope}&state=${user!.id}`;
+                      window.location.href = stravaAuthUrl;
+                    }}
+                    className="bg-[#FC5200] hover:bg-[#e04900]"
+                    data-testid="button-reauth-strava"
+                  >
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Grant Write Permission
                   </Button>
                 </div>
               )}
