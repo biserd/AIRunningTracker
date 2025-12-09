@@ -3741,6 +3741,44 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Get multiple shoes by slugs (for comparison page)
+  app.get("/api/shoes/compare", async (req, res) => {
+    try {
+      const { slugs } = req.query;
+      
+      if (!slugs || typeof slugs !== 'string') {
+        return res.status(400).json({ message: "slugs query parameter is required" });
+      }
+      
+      const slugList = slugs.split(',').map(s => s.trim()).filter(s => s.length > 0);
+      
+      if (slugList.length === 0) {
+        return res.status(400).json({ message: "No valid slugs provided" });
+      }
+      
+      if (slugList.length > 10) {
+        return res.status(400).json({ message: "Maximum 10 shoes can be compared at once" });
+      }
+      
+      // Fetch all shoes by their slugs
+      const shoes = await Promise.all(
+        slugList.map(slug => storage.getShoeBySlug(slug))
+      );
+      
+      // Filter out nulls (invalid slugs)
+      const validShoes = shoes.filter((shoe): shoe is RunningShoe => shoe !== null);
+      
+      res.json({
+        shoes: validShoes,
+        requestedCount: slugList.length,
+        foundCount: validShoes.length
+      });
+    } catch (error: any) {
+      console.error('Shoe comparison error:', error);
+      res.status(500).json({ message: error.message || "Failed to get shoes for comparison" });
+    }
+  });
+
   // Get a single shoe by slug (for SEO-friendly URLs)
   app.get("/api/shoes/by-slug/:slug", async (req, res) => {
     try {
