@@ -1,5 +1,6 @@
 import Footer from "@/components/Footer";
 import PublicHeader from "@/components/PublicHeader";
+import AppHeader from "@/components/AppHeader";
 import { Check, X, Star, Zap, Crown } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -76,7 +77,7 @@ export default function PricingPage() {
         title="Pricing | RunAnalytics"
         description="Choose the perfect plan for your running journey. Free, Pro, and Premium tiers with AI insights, training plans, and advanced analytics."
       />
-      <PublicHeader />
+      {isAuthenticated ? <AppHeader /> : <PublicHeader />}
 
       <section className="py-16 px-6">
         <div className="max-w-6xl mx-auto">

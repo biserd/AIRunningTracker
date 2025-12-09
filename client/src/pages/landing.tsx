@@ -130,8 +130,8 @@ export default function LandingPage() {
               </Button>
             </Link>
             
-            {/* Secondary CTAs */}
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+            {/* Secondary CTA */}
+            <div className="flex justify-center">
               <Link href="/tools" className="w-full sm:w-auto">
                 <Button
                   className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 h-12 px-8 sm:px-10 text-base font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
@@ -139,14 +139,6 @@ export default function LandingPage() {
                 >
                   <Calculator className="h-4 w-4 mr-2" />
                   Explore Free Tools
-                </Button>
-              </Link>
-              <Link href="/auth" className="w-full sm:w-auto">
-                <Button
-                  className="w-full sm:w-auto bg-charcoal text-white hover:bg-gray-800 h-12 px-8 sm:px-10 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-                  data-testid="hero-cta-signin"
-                >
-                  Sign In
                 </Button>
               </Link>
             </div>
