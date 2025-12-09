@@ -30,7 +30,7 @@ export const users = pgTable("users", {
   }).default("active"),
   subscriptionPlan: text("subscription_plan", { 
     enum: ["free", "pro", "premium"] 
-  }).default("pro"),
+  }).default("free"),
   trialEndsAt: timestamp("trial_ends_at"),
   subscriptionEndsAt: timestamp("subscription_ends_at"),
   // Usage tracking for rate limits
