@@ -2,9 +2,7 @@
 
 ## Overview
 
-RunAnalytics is a comprehensive running analytics platform that integrates with Strava to provide AI-powered insights, performance tracking, and training recommendations for runners. The application combines real-time activity data with machine learning algorithms to deliver personalized running analytics and coaching. The platform offers advanced features like a Race Predictor, Form Stability Analyzer, Aerobic Decoupling Calculator, Training Split Analyzer, Marathon Fueling Planner, Running Heatmap, and AI Running Coach Chat. The platform now operates on a freemium model with three subscription tiers: Free, Pro ($3.99/mo or $39.99/yr), and Premium ($7.99/mo or $79.99/yr). All existing users have been gifted lifetime Premium access.
-
-**Current Version**: 2.9.0 (Released December 7, 2025)
+RunAnalytics is an AI-powered platform for runners that integrates with Strava to offer personalized insights, performance tracking, and training recommendations. It features tools like a Race Predictor, Form Stability Analyzer, Aerobic Decoupling Calculator, Training Split Analyzer, Marathon Fueling Planner, Running Heatmap, and an AI Running Coach Chat. The platform operates on a freemium model with Free, Pro, and Premium subscription tiers. The business vision is to provide comprehensive, AI-driven running analytics to a broad market, helping runners of all levels improve performance and prevent injuries.
 
 ## User Preferences
 
@@ -12,48 +10,41 @@ Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Frontend Architecture
+### Frontend
 - **Framework**: React with TypeScript
-- **Styling**: Tailwind CSS with shadcn/ui components
-- **State Management**: TanStack Query for server state
-- **Routing**: Wouter for client-side routing
+- **Styling**: Tailwind CSS with shadcn/ui
+- **State Management**: TanStack Query
+- **Routing**: Wouter
 - **Build Tool**: Vite
+- **UI/UX**: Intuitive design with simplified UI, interactive Recharts visualizations (trend lines, gauge charts, stacked area, ternary bar charts), gradient-themed cards, and comprehensive user support.
 
-### Backend Architecture
+### Backend
 - **Runtime**: Node.js with Express
 - **Database**: PostgreSQL with Drizzle ORM
-- **Authentication**: JWT-based with bcrypt password hashing
-- **API Integration**: Strava API for activity synchronization
-- **AI Services**: OpenAI GPT-5.1 for insights, training plan generation, and conversational chat
-
-### UI/UX Decisions
-- Intuitive and simplified UI, for example, single "Action" button for detailed rationale modals.
-- Interactive visualizations using Recharts for data like trend lines, gauge charts, stacked area charts, and ternary bar charts.
-- Gradient-themed cards for tools and features.
-- Comprehensive FAQ, Release Notes, and Contact Support for user assistance.
+- **Authentication**: JWT-based with bcrypt hashing
+- **API Integration**: Strava API
+- **AI Services**: OpenAI GPT-5.1 for insights, training plans, and conversational AI.
 
 ### Technical Implementations
-- **Strava Sync**: Optimized for 5x faster dashboard sync using batch processing with `Promise.all()` and real-time progress indicators via Server-Sent Events (SSE) with cryptographic nonces for security.
-- **AI Engine**: Upgraded to GPT-5.1 with OpenAI Responses API for enhanced training plan generation and improved AI insights. Uses optimized reasoning configuration (no reasoning parameter for insights, low effort for training plans) achieving 5.8 second AI insights generation (20% faster) and 19.9 second training plans (27% faster). Features strict JSON schema enforcement via text.format parameter, streaming with response.output_text.delta events, and optimized token limits (1000 for insights, 1500 for training plans). Provides fixed pace calculations and better context with comprehensive fitness data.
-- **Goals & Training Tracking**: Allows conversion of AI recommendations into trackable, actionable goals with progress monitoring, auto-completion, and smart criteria based on activity types.
-- **Free Tools Section**: Dedicated `/tools` section with SEO-optimized calculators and analyzers (Aerobic Decoupling, Training Split, Marathon Fueling, Race Predictor, Cadence Analyzer, Running Heatmap, Running Shoe Hub) accessible to all users with dual-mode input (Strava auto-fetch or manual entry).
-- **Running Shoe Hub**: Comprehensive running shoe database and recommendation system at `/tools/shoes`, `/tools/shoe-finder`, and `/tools/rotation-planner`. Features 101 verified shoes from 16 major brands (Nike, Brooks, Hoka, Asics, New Balance, Saucony, On, Altra, Adidas, Puma, Mizuno, Salomon, Reebok, Under Armour, La Sportiva, 361°) across 6 categories (daily_trainer: 33, trail: 20, racing: 20, speed_training: 15, long_run: 7, recovery: 6). Each shoe has detailed specifications including weight, stack heights, drop, cushioning level, stability, carbon plate status, and ratings for comfort, durability, and responsiveness—all verified against manufacturer specs, RunRepeat, and Doctors of Running. Includes Personalized Shoe Finder with weight-based matching, goal-specific suggestions, and foot-type recommendations. The Shoe Rotation Planner builds complete training rotations with role-based recommendations for daily trainers, long runs, speed work, racing, and recovery. All shoe data stored in PostgreSQL with filter support for brand, category, stability, price range, and carbon plate. Features modular data pipeline (`server/shoe-pipeline.ts`) with validation, statistics, normalization, and duplicate detection. Admin interface at `/admin/shoes` for shoe management with filtering, search, and pipeline monitoring—protected with admin authentication.
-- **Individual Shoe Pages**: SEO-optimized individual pages for each of the 101+ shoes at `/tools/shoes/:slug` (e.g., `/tools/shoes/nike-pegasus-41`). Features AI-generated insights including Resilience Score (calculated from durability rating), estimated mileage lifespan (300-550 miles based on construction), and target usage recommendations. Includes Series Evolution charts showing how specifications (weight, stack height, price) changed across shoe versions (e.g., Pegasus 39→40→41). Comprehensive SEO implementation with Product JSON-LD schema, BreadcrumbList schema, meta tags, Open Graph, and Twitter Cards for optimal search visibility. Related shoes sidebar shows other versions in the same series. URL-friendly slugs auto-generated from brand and model names (e.g., `brooks-ghost-16`, `hoka-clifton-9`).
-- **Running Heatmap**: Interactive route visualization tool at `/tools/heatmap` that displays the last 30 activities on a single Leaflet map with semi-transparent blue overlays (60% opacity). Overlapping routes create brighter hotspots showing frequently-used training areas. Features smart zoom optimization that focuses on the 10 most recent routes while displaying all 30, auth protection, interactive route popups with activity details, and uses Strava polyline data with automatic fallback to detailed polylines.
-- **AI Running Coach Chat**: Real-time conversational chat interface accessible from the dashboard via a floating button. Enables on-demand, contextual analysis of running data through natural language conversations. Uses GPT-5.1 with low reasoning effort for fast responses (typically 10-20 seconds), Server-Sent Events (SSE) for streaming responses character-by-character, and assembles comprehensive user context including recent activities, VO2 Max, Runner Score, and race predictions. Features example prompts for quick starts, conversation persistence across sessions, and mobile-responsive slide-out panel design.
-- **Fitness/Fatigue/Form Chart (CTL/ATL/TSB)**: Industry-standard training load metrics displayed on the dashboard via interactive Recharts visualization. Calculates CTL (Chronic Training Load - 42-day exponential weighted moving average representing long-term fitness), ATL (Acute Training Load - 7-day average representing recent fatigue), and TSB (Training Stress Balance - form score calculated as CTL minus ATL indicating race readiness). Features time range selector (30/90/180 days), beginner-friendly tooltips explaining each metric, expandable "About this chart" educational section with usage examples for building fitness and tapering, and dedicated FAQ section. Training load formula considers distance and pace intensity across all activity types (running, cycling, cross-training) for holistic assessment. AI insights now reference current TSB status (Fresh/Neutral/Fatigued/Very Fatigued) in recovery recommendations. Implemented via FitnessService with daily metric calculations and form interpretation logic.
-- **SEO & Content Marketing Infrastructure**: Comprehensive organic traffic strategy with blog system at `/blog`, dedicated `/ai-running-coach` landing page, and SEO-optimized content targeting high-value keywords (3,600-9,900 searches/month). Features FAQ schemas (JSON-LD) on all 6 calculator pages for Google rich snippets, keyword-optimized titles/meta descriptions, canonical URLs, Open Graph/Twitter Card tags for social sharing, and strategic internal linking between blog posts and tools. Blog navigation integrated into AppHeader and Footer. **Note**: Current implementation uses client-side SEO (JavaScript-injected meta tags via useEffect). For production deployment, consider implementing server-side rendering (SSR), static site generation (SSG), or pre-rendering to ensure search engine crawlers receive SEO meta tags in initial HTML response.
-- **Mobile Authentication**: Native iOS/Android app support via JWT-based authentication with refresh tokens. This is the single authentication approach for the platform—focused on mobile app security rather than third-party API access. Features: POST `/api/mobile/login` (email/password auth with device tracking), POST `/api/mobile/refresh` (exchange refresh token for new access token), POST `/api/mobile/logout` (revoke single session), POST `/api/mobile/logout-all` (revoke all sessions), GET `/api/mobile/sessions` (list active sessions), GET `/api/me` (authenticated user profile). Security: 15-minute JWT access tokens, 30-day refresh tokens with `rt_` prefix, bcrypt-hashed token storage (10 rounds), device name/ID tracking for session management. Developer landing page at `/developers` and comprehensive mobile API documentation at `/developers/api`.
-- **Stripe Subscription System**: Full freemium subscription management with three tiers (Free, Pro, Premium). Uses Stripe for payment processing with automatic webhook handling via `stripe-replit-sync`. Features: checkout sessions for new subscriptions, Stripe Customer Portal for self-service management (upgrade/downgrade/cancel), real-time subscription status via webhooks. Price IDs: Pro monthly `price_1Sbr5VDfI9wxczZNhkB8n9Zk`, Pro annual `price_1Sbr5WDfI9wxczZN72UwiOAX`, Premium monthly `price_1Sbr5WDfI9wxczZNEbTKSR12`, Premium annual `price_1Sbr5WDfI9wxczZNeEmIzlKQ`. Frontend hooks: `useSubscription` (subscription status), `useCheckout` (Stripe checkout redirect), `useManageSubscription` (Stripe portal redirect), `useFeatureAccess` (feature gating). Pages: `/pricing` (public comparison), `/billing` (authenticated management).
-- **Strava Activity Branding**: Viral growth feature that appends customizable branding text to Strava activity descriptions after sync. Requires Strava OAuth with `activity:write` scope (requested automatically for new users; existing users re-authorize via Strava reconnect). User-controlled opt-in via Settings page with customizable message templates supporting `{score}` and `{insight}` placeholders. Implementation includes: database fields (`stravaHasWriteScope`, `stravaBrandingEnabled`, `stravaBrandingTemplate`), branding endpoint (`PATCH /api/users/:userId/branding`), and StravaService helpers for template rendering and duplicate detection. Applies branding to up to 10 newly synced activities per sync with 200ms delays to avoid Strava rate limiting. Smart duplicate detection checks for both rendered branding text and "AITracker.run" marker to prevent re-branding on subsequent syncs.
+- **Strava Sync**: Optimized batch processing with `Promise.all()` and Server-Sent Events (SSE) for real-time progress.
+- **AI Engine**: Utilizes GPT-5.1 with OpenAI Responses API for enhanced training plan generation and insights, featuring strict JSON schema enforcement, streaming responses, and optimized token limits.
+- **Goals & Training Tracking**: Allows conversion of AI recommendations into trackable goals.
+- **Free Tools Section**: Dedicated `/tools` section with SEO-optimized calculators and analyzers, supporting Strava auto-fetch or manual entry.
+- **Running Shoe Hub**: Comprehensive database and recommendation system with personalized shoe finder, rotation planner, and comparison tool. Includes detailed shoe specifications, AI-generated insights (Resilience Score, estimated lifespan, target usage), and Series Evolution charts.
+- **Running Heatmap**: Interactive Leaflet map visualizing recent Strava activities, highlighting frequently used routes.
+- **AI Running Coach Chat**: Real-time conversational interface using GPT-5.1 with SSE for streaming responses, providing contextual data analysis.
+- **Fitness/Fatigue/Form Chart (CTL/ATL/TSB)**: Dashboard visualization of training load metrics, with detailed explanations and time range selection.
+- **SEO & Content Marketing**: Blog system, dedicated landing pages, and SEO-optimized content with JSON-LD schemas and meta tags.
+- **Mobile Authentication**: JWT-based authentication for native mobile apps, including refresh tokens and session management.
+- **Stripe Subscription System**: Full freemium model management with Stripe for payments, checkout sessions, and customer portal integration.
+- **Strava Activity Branding**: Feature to append customizable branding text to Strava activity descriptions post-sync, with user opt-in and template support.
 
 ### System Design Choices
 - **Database Schema**: Users, Activities, AI Insights, Training Plans, Email Waitlist, AI Conversations, AI Messages, Running Shoes, Refresh Tokens.
 - **Authentication**: JWT token-based, secure password hashing, protected routes, admin roles.
-- **Strava Integration**: OAuth, periodic activity fetching, real-time data, automatic refresh token management. Syncs ALL activity types (running, cross-training, cycling, etc.) but filters to running types (`Run`, `TrailRun`, `VirtualRun`) for running-specific metrics (VO2 max, Runner Score, race predictions, pace analysis). Training load and injury risk analysis use all activities for holistic assessment.
-- **AI Analytics Engine**: OpenAI GPT-5.1 integration for performance insights, ML-powered race predictions, injury risk analysis, personalized training plans, Runner Score calculation, conversational coaching chat, and gear recommendations. Uses unified AI pipeline with conditional prompts: runners receive pace/form analysis, cross-training-only users receive "running readiness" guidance based on their fitness foundation. All users get the same five insight types plus four recommendations (speed, hills, long run, gear/shoes) through the AI pipeline. Gear recommendations analyze cumulative mileage (300-500 mile shoe replacement threshold) and training patterns to suggest shoe replacements or new shoe exploration.
+- **Strava Integration**: OAuth, periodic activity fetching, real-time data, automatic refresh token management. Syncs all activity types, filtering for running-specific metrics where applicable.
+- **AI Analytics Engine**: OpenAI GPT-5.1 integration for performance insights, ML-powered race predictions, injury risk analysis, personalized training plans, Runner Score, conversational coaching, and gear recommendations.
 - **Performance Analytics**: VO2 Max estimation, heart rate zone calculations, running efficiency, training load analysis, progress tracking.
-- **Version Management**: Centralized version configuration, structured changelog, dedicated release notes page, and automated tracking of changes.
 - **Deployment Strategy**: Replit-optimized development, Vite/ESBuild for production, Neon for PostgreSQL, request logging, error tracking, and performance monitoring.
 
 ## External Dependencies
@@ -62,18 +53,17 @@ Preferred communication style: Simple, everyday language.
 - **Neon Database**: PostgreSQL hosting
 - **OpenAI API**: GPT-5
 - **Strava API**: Activity data synchronization
-- **Email Services**: SMTP (Gmail, Outlook, Yahoo)
+- **Stripe**: Payment processing
+- **SMTP (Gmail, Outlook, Yahoo)**: Email services
 
 ### Development Tools
 - **Drizzle Kit**: Database migrations
 - **TypeScript**: Type safety
-- **ESBuild**: Production bundling
-- **Replit Integration**: Development environment
 
 ### UI Libraries
 - **Radix UI**: Accessible component primitives
 - **Lucide React**: Icon system
 - **Recharts**: Data visualization
 - **React Hook Form**: Form management with Zod validation
-- **Leaflet**: Interactive mapping for route visualization
-- **Google Polyline Codec**: Decoding Strava polyline data for map rendering
+- **Leaflet**: Interactive mapping
+- **Google Polyline Codec**: Decoding Strava polyline data
