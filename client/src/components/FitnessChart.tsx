@@ -4,6 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import {
   LineChart,
   Line,
@@ -17,13 +18,15 @@ import {
   ResponsiveContainer,
   ComposedChart,
 } from "recharts";
-import { Info, ChevronDown, ChevronUp } from "lucide-react";
+import { Info, ChevronDown, ChevronUp, Lock, Crown, Activity } from "lucide-react";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useFeatureAccess } from "@/hooks/useSubscription";
+import { Link } from "wouter";
 
 interface FitnessMetric {
   date: string;
@@ -48,8 +51,44 @@ interface FitnessChartProps {
 }
 
 export function FitnessChart({ userId }: FitnessChartProps) {
+  const { canAccessAdvancedInsights } = useFeatureAccess();
   const [timeRange, setTimeRange] = useState<30 | 90 | 180>(90);
   const [showAbout, setShowAbout] = useState(false);
+
+  // Show upgrade prompt for Free users
+  if (!canAccessAdvancedInsights) {
+    return (
+      <Card data-testid="fitness-chart-upgrade">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-strava-orange" />
+            Fitness, Fatigue & Form
+            <Badge className="ml-2 bg-gradient-to-r from-strava-orange to-orange-500 text-white text-xs">
+              <Crown className="h-3 w-3 mr-1" />
+              Pro
+            </Badge>
+          </CardTitle>
+          <CardDescription>Track your training load and recovery status</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-orange-100 flex items-center justify-center">
+              <Lock className="h-8 w-8 text-strava-orange" />
+            </div>
+            <h3 className="text-lg font-semibold text-charcoal mb-2">Unlock Fitness/Fatigue/Form Charts</h3>
+            <p className="text-gray-500 mb-4 max-w-sm mx-auto">
+              Track your CTL (fitness), ATL (fatigue), and TSB (form) to optimize training and recovery timing.
+            </p>
+            <Link href="/pricing">
+              <Button className="bg-gradient-to-r from-strava-orange to-orange-500 hover:from-orange-600 hover:to-orange-600">
+                Upgrade to Pro
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const { data, isLoading, error } = useQuery<FitnessData>({
     queryKey: [`/api/fitness/${userId}`, { days: timeRange }],

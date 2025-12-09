@@ -1,7 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Target, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Trophy, Target, Clock, Lock, Crown } from "lucide-react";
+import { useFeatureAccess } from "@/hooks/useSubscription";
+import { Link } from "wouter";
 
 interface RacePrediction {
   distance: string;
@@ -16,6 +19,42 @@ interface RacePredictionsProps {
 }
 
 export default function RacePredictions({ userId, batchData }: RacePredictionsProps) {
+  const { canAccessRacePredictions } = useFeatureAccess();
+  
+  // Show upgrade prompt for Free users
+  if (!canAccessRacePredictions) {
+    return (
+      <Card data-testid="race-predictions-upgrade">
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold text-charcoal flex items-center">
+            <Trophy className="mr-2 h-5 w-5 text-strava-orange" />
+            Race Predictions
+            <Badge className="ml-2 bg-gradient-to-r from-strava-orange to-orange-500 text-white text-xs">
+              <Crown className="h-3 w-3 mr-1" />
+              Pro
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-orange-100 flex items-center justify-center">
+              <Lock className="h-8 w-8 text-strava-orange" />
+            </div>
+            <h3 className="text-lg font-semibold text-charcoal mb-2">Unlock Race Predictions</h3>
+            <p className="text-gray-500 mb-4 max-w-sm mx-auto">
+              Get AI-powered race time predictions for 5K, 10K, Half Marathon, and Marathon distances.
+            </p>
+            <Link href="/pricing">
+              <Button className="bg-gradient-to-r from-strava-orange to-orange-500 hover:from-orange-600 hover:to-orange-600">
+                Upgrade to Pro
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const { data: predictionsData, isLoading } = useQuery({
     queryKey: ['/api/ml/predictions', userId],
     queryFn: () => fetch(`/api/ml/predictions/${userId}`).then(res => res.json()),

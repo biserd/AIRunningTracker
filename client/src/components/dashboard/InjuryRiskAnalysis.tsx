@@ -2,7 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Shield, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Shield, AlertTriangle, CheckCircle, XCircle, Lock, Crown } from "lucide-react";
+import { useFeatureAccess } from "@/hooks/useSubscription";
+import { Link } from "wouter";
 
 interface InjuryRiskData {
   riskLevel: 'Low' | 'Medium' | 'High';
@@ -16,6 +19,42 @@ interface InjuryRiskAnalysisProps {
 }
 
 export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnalysisProps) {
+  const { canAccessAdvancedInsights } = useFeatureAccess();
+  
+  // Show upgrade prompt for Free users
+  if (!canAccessAdvancedInsights) {
+    return (
+      <Card data-testid="injury-risk-upgrade">
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold text-charcoal flex items-center">
+            <Shield className="mr-2 h-5 w-5 text-strava-orange" />
+            Injury Risk Analysis
+            <Badge className="ml-2 bg-gradient-to-r from-strava-orange to-orange-500 text-white text-xs">
+              <Crown className="h-3 w-3 mr-1" />
+              Pro
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-orange-100 flex items-center justify-center">
+              <Lock className="h-8 w-8 text-strava-orange" />
+            </div>
+            <h3 className="text-lg font-semibold text-charcoal mb-2">Unlock Injury Risk Analysis</h3>
+            <p className="text-gray-500 mb-4 max-w-sm mx-auto">
+              Get AI-powered injury risk assessments based on your training patterns and intensity.
+            </p>
+            <Link href="/pricing">
+              <Button className="bg-gradient-to-r from-strava-orange to-orange-500 hover:from-orange-600 hover:to-orange-600">
+                Upgrade to Pro
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const { data: riskDataResponse, isLoading } = useQuery({
     queryKey: ['/api/ml/injury-risk', userId],
     queryFn: () => fetch(`/api/ml/injury-risk/${userId}`).then(res => res.json()),
