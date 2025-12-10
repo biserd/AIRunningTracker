@@ -378,7 +378,7 @@ Remember: Create a realistic, achievable plan based on their ACTUAL current pace
             }
           }
         },
-        max_output_tokens: 3000
+        max_output_tokens: 8000
       });
 
       // Extract text from response using output_text (the direct accessor for JSON schema responses)

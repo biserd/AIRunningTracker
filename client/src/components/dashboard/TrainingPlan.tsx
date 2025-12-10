@@ -156,7 +156,7 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
     mutationFn: async (params: TrainingPlanParams) => {
       startTimer();
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout (faster with gpt-5-mini)
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second timeout for longer plans
       
       try {
         const response = await fetch(`/api/ml/training-plan/${userId}`, {
