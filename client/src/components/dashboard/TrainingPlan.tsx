@@ -181,11 +181,8 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
         throw error;
       }
     },
-    onSuccess: async (data) => {
+    onSuccess: (data) => {
       stopTimer();
-      
-      // Invalidate the query cache to force a refetch
-      await queryClient.invalidateQueries({ queryKey: ['training-plan', userId] });
       
       // Handle both nested and flat response structures
       const plan = data.trainingPlan?.trainingPlan || data.trainingPlan || data;
@@ -201,24 +198,28 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
         return;
       }
       
+      // Close dialog and show success FIRST (don't wait for cache invalidation)
       setTrainingPlan(planArray);
       setDialogOpen(false);
       toast({
         title: "Training plan generated",
-        description: `Your ${selectedWeeks}-week personalized training plan is ready (${elapsedTime}s)`,
+        description: `Your ${selectedWeeks}-week personalized training plan is ready`,
       });
-    },
-    onError: async (error: any) => {
-      stopTimer();
       
-      // Even if there's a timeout error, the plan might have been generated
-      await queryClient.invalidateQueries({ queryKey: ['training-plan', userId] });
+      // Invalidate cache in background (don't block UI)
+      queryClient.invalidateQueries({ queryKey: ['training-plan', userId] });
+    },
+    onError: (error: any) => {
+      stopTimer();
       
       toast({
         title: "Generation failed",
         description: error.message || "Please try again with simpler settings.",
         variant: "destructive",
       });
+      
+      // Invalidate cache in background in case plan was saved anyway
+      queryClient.invalidateQueries({ queryKey: ['training-plan', userId] });
     },
   });
 
