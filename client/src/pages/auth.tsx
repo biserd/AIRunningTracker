@@ -145,10 +145,8 @@ export default function AuthPage() {
                     <p className="text-sm text-red-500">{loginForm.formState.errors.password.message}</p>
                   )}
                   <div className="text-right">
-                    <Link href="/forgot-password">
-                      <a className="text-sm text-strava-orange hover:underline" data-testid="link-forgot-password">
-                        Forgot password?
-                      </a>
+                    <Link href="/forgot-password" className="text-sm text-strava-orange hover:underline" data-testid="link-forgot-password">
+                      Forgot password?
                     </Link>
                   </div>
                 </div>
@@ -249,10 +247,10 @@ export default function AuthPage() {
             </div>
 
             <div className="text-center">
-              <Link href="/">
-                <Button variant="ghost" className="text-sm">
+              <Link href="/" className="inline-block">
+                <span className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
                   ← Back to Home
-                </Button>
+                </span>
               </Link>
             </div>
           </CardContent>
