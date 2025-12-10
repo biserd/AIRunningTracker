@@ -3044,6 +3044,10 @@ ${allPages.map(page => `  <url>
       });
       console.log(`[Training Plan] Plan saved successfully`);
       
+      // Invalidate batch analytics cache so it includes the new plan
+      deleteCachedResponse(`analytics-batch:${userId}`);
+      console.log(`[Training Plan] Invalidated batch cache for user ${userId}`);
+      
       res.json({ trainingPlan });
     } catch (error: any) {
       const errorTime = Date.now() - startTime;

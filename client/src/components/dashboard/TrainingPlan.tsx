@@ -208,8 +208,9 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
         description: `Your ${selectedWeeks}-week personalized training plan is ready`,
       });
       
-      // Invalidate cache in background (don't block UI)
+      // Invalidate caches in background (don't block UI)
       queryClient.invalidateQueries({ queryKey: ['training-plan', userId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/batch', userId] });
     },
     onError: (error: any) => {
       stopTimer();
@@ -239,6 +240,7 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
     onSuccess: () => {
       setTrainingPlan([]);
       queryClient.invalidateQueries({ queryKey: ['training-plan', userId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/batch', userId] });
       toast({
         title: "Training plan deleted",
         description: "You can generate a new plan anytime.",
