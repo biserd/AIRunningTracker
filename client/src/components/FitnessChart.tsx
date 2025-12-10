@@ -55,6 +55,13 @@ export function FitnessChart({ userId }: FitnessChartProps) {
   const [timeRange, setTimeRange] = useState<30 | 90 | 180>(90);
   const [showAbout, setShowAbout] = useState(false);
 
+  // All hooks must be called before any conditional returns
+  const { data, isLoading, error } = useQuery<FitnessData>({
+    queryKey: [`/api/fitness/${userId}`, { days: timeRange }],
+    queryFn: () => apiRequest(`/api/fitness/${userId}?days=${timeRange}`, "GET"),
+    enabled: canAccessAdvancedInsights && !!userId,
+  });
+
   // Show upgrade prompt for Free users
   if (!canAccessAdvancedInsights) {
     return (
@@ -89,12 +96,6 @@ export function FitnessChart({ userId }: FitnessChartProps) {
       </Card>
     );
   }
-
-  const { data, isLoading, error } = useQuery<FitnessData>({
-    queryKey: [`/api/fitness/${userId}`, { days: timeRange }],
-    queryFn: () => apiRequest(`/api/fitness/${userId}?days=${timeRange}`, "GET"),
-    enabled: !!userId,
-  });
 
   // Format date for display
   const formatDate = (dateString: string) => {

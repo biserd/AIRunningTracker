@@ -21,6 +21,13 @@ interface RacePredictionsProps {
 export default function RacePredictions({ userId, batchData }: RacePredictionsProps) {
   const { canAccessRacePredictions } = useFeatureAccess();
   
+  // All hooks must be called before any conditional returns
+  const { data: predictionsData, isLoading } = useQuery({
+    queryKey: ['/api/ml/predictions', userId],
+    queryFn: () => fetch(`/api/ml/predictions/${userId}`).then(res => res.json()),
+    enabled: canAccessRacePredictions && (batchData === undefined ? false : !batchData),
+  });
+  
   // Show upgrade prompt for Free users
   if (!canAccessRacePredictions) {
     return (
@@ -54,12 +61,6 @@ export default function RacePredictions({ userId, batchData }: RacePredictionsPr
       </Card>
     );
   }
-
-  const { data: predictionsData, isLoading } = useQuery({
-    queryKey: ['/api/ml/predictions', userId],
-    queryFn: () => fetch(`/api/ml/predictions/${userId}`).then(res => res.json()),
-    enabled: batchData === undefined ? false : !batchData,
-  });
 
   const getConfidenceColor = (confidence: number) => {
     if (confidence >= 80) return "bg-green-100 text-green-800 border-green-200";

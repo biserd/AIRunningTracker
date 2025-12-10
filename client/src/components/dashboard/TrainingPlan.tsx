@@ -54,40 +54,7 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
   const [raceDate, setRaceDate] = useState("");
   const [fitnessLevel, setFitnessLevel] = useState("intermediate");
 
-  // Show upgrade prompt for Free users
-  if (!canAccessTrainingPlans) {
-    return (
-      <Card data-testid="training-plan-upgrade">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold text-charcoal flex items-center">
-            <CalendarDays className="mr-2 h-5 w-5 text-strava-orange" />
-            AI Training Plans
-            <Badge className="ml-2 bg-gradient-to-r from-strava-orange to-orange-500 text-white text-xs">
-              <Crown className="h-3 w-3 mr-1" />
-              Pro
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-orange-100 flex items-center justify-center">
-              <Lock className="h-8 w-8 text-strava-orange" />
-            </div>
-            <h3 className="text-lg font-semibold text-charcoal mb-2">Unlock AI Training Plans</h3>
-            <p className="text-gray-500 mb-4 max-w-sm mx-auto">
-              Get personalized training plans powered by AI that adapt to your goals and fitness level.
-            </p>
-            <Link href="/pricing">
-              <Button className="bg-gradient-to-r from-strava-orange to-orange-500 hover:from-orange-600 hover:to-orange-600">
-                Upgrade to Pro
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
+  // All hooks must be called before any conditional returns
   // Get user's unit preference
   const { data: userData } = useQuery({
     queryKey: ['user', userId],
@@ -98,7 +65,7 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
           'Content-Type': 'application/json',
         },
       }).then(res => res.json()),
-    enabled: !!userId,
+    enabled: canAccessTrainingPlans && !!userId,
   });
   
   const distanceUnit = userData?.unitPreference === 'miles' ? 'mi' : 'km';
@@ -109,7 +76,7 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
     queryFn: () => 
       fetch(`/api/ml/training-plan/${userId}`)
         .then(res => res.json()),
-    enabled: !!userId && (batchData === undefined ? false : !batchData),
+    enabled: canAccessTrainingPlans && !!userId && (batchData === undefined ? false : !batchData),
   });
   
   const planData = batchData?.trainingPlan ?? savedPlan;
@@ -177,6 +144,40 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
       });
     },
   });
+
+  // Show upgrade prompt for Free users
+  if (!canAccessTrainingPlans) {
+    return (
+      <Card data-testid="training-plan-upgrade">
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold text-charcoal flex items-center">
+            <CalendarDays className="mr-2 h-5 w-5 text-strava-orange" />
+            AI Training Plans
+            <Badge className="ml-2 bg-gradient-to-r from-strava-orange to-orange-500 text-white text-xs">
+              <Crown className="h-3 w-3 mr-1" />
+              Pro
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-orange-100 flex items-center justify-center">
+              <Lock className="h-8 w-8 text-strava-orange" />
+            </div>
+            <h3 className="text-lg font-semibold text-charcoal mb-2">Unlock AI Training Plans</h3>
+            <p className="text-gray-500 mb-4 max-w-sm mx-auto">
+              Get personalized training plans powered by AI that adapt to your goals and fitness level.
+            </p>
+            <Link href="/pricing">
+              <Button className="bg-gradient-to-r from-strava-orange to-orange-500 hover:from-orange-600 hover:to-orange-600">
+                Upgrade to Pro
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const getWorkoutTypeColor = (type: string) => {
     switch (type.toLowerCase()) {

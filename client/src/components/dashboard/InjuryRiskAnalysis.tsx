@@ -21,6 +21,13 @@ interface InjuryRiskAnalysisProps {
 export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnalysisProps) {
   const { canAccessAdvancedInsights } = useFeatureAccess();
   
+  // All hooks must be called before any conditional returns
+  const { data: riskDataResponse, isLoading } = useQuery({
+    queryKey: ['/api/ml/injury-risk', userId],
+    queryFn: () => fetch(`/api/ml/injury-risk/${userId}`).then(res => res.json()),
+    enabled: canAccessAdvancedInsights && (batchData === undefined ? false : !batchData),
+  });
+  
   // Show upgrade prompt for Free users
   if (!canAccessAdvancedInsights) {
     return (
@@ -54,12 +61,6 @@ export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnal
       </Card>
     );
   }
-
-  const { data: riskDataResponse, isLoading } = useQuery({
-    queryKey: ['/api/ml/injury-risk', userId],
-    queryFn: () => fetch(`/api/ml/injury-risk/${userId}`).then(res => res.json()),
-    enabled: batchData === undefined ? false : !batchData,
-  });
   
   const riskData = batchData?.injuryRisk ?? riskDataResponse;
 
