@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -517,17 +518,37 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
                   <RefreshCw className="mr-1 h-4 w-4" />
                   Regenerate
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => deletePlanMutation.mutate()}
-                  disabled={deletePlanMutation.isPending || generatePlanMutation.isPending}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  data-testid="button-delete-plan"
-                >
-                  <Trash2 className="mr-1 h-4 w-4" />
-                  {deletePlanMutation.isPending ? "Deleting..." : "Delete"}
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      disabled={deletePlanMutation.isPending || generatePlanMutation.isPending}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      data-testid="button-delete-plan"
+                    >
+                      <Trash2 className="mr-1 h-4 w-4" />
+                      {deletePlanMutation.isPending ? "Deleting..." : "Delete"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Training Plan?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete your training plan? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={() => deletePlanMutation.mutate()}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
 
