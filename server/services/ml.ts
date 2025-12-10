@@ -326,19 +326,17 @@ Return a JSON array with this structure:
 
 Remember: Create a realistic, achievable plan based on their ACTUAL current paces and specific ${readableGoal} training goal, not idealized paces.`;
 
-    try {
-      // Use Responses API with streaming and low reasoning effort for training plan generation
-      const stream = await openai.responses.create({
-        model: "gpt-5.1",
+    // Helper function to attempt plan generation
+    const attemptGeneration = async (attempt: number): Promise<TrainingPlan[]> => {
+      const systemPrompt = `You are an expert running coach creating a ${weeks}-week training plan. Use ${unit} for distances and min/${unit} for paces. Be concise.`;
+      
+      console.log(`[Training Plan] Attempt ${attempt} - calling gpt-5-mini...`);
+      
+      const response = await openai.responses.create({
+        model: "gpt-5-mini",
         input: [
-          {
-            role: "system", 
-            content: `You are an expert running coach who creates goal-specific, personalized training plans. You tailor plans based on the runner's specific training goal (${readableGoal}), current fitness level (${fitnessLevel}), and desired training frequency (${daysPerWeek} days/week). You provide realistic, achievable pace recommendations that match their demonstrated capabilities, not idealized or aspirational paces. CRITICAL: You MUST use ${unit} for ALL distances and min/${unit} for ALL paces in the training plan. Never mix units or use any other measurement system.`
-          },
-          {
-            role: "user",
-            content: prompt
-          }
+          { role: "system", content: systemPrompt },
+          { role: "user", content: prompt }
         ],
         text: {
           format: {
@@ -380,28 +378,150 @@ Remember: Create a realistic, achievable plan based on their ACTUAL current pace
             }
           }
         },
-        max_output_tokens: 1500,
-        reasoning: { effort: "low" },
-        stream: true
+        max_output_tokens: 3000
       });
 
-      // Collect streamed response from Responses API
+      // Extract text from response using output_text (the direct accessor for JSON schema responses)
       let rawContent = '';
-      for await (const event of stream) {
-        // Responses API streaming uses response.output_text.delta for text chunks
-        if (event.type === 'response.output_text.delta') {
-          rawContent += event.delta;
+      
+      // Primary method: use output_text array which contains the JSON schema response
+      if (response.output_text && Array.isArray(response.output_text)) {
+        rawContent = response.output_text.join('');
+      }
+      
+      // Fallback: walk the output array structure
+      if (!rawContent && response.output && Array.isArray(response.output)) {
+        for (const item of response.output) {
+          if (item.type === 'message' && item.content) {
+            for (const contentItem of item.content) {
+              if (contentItem.type === 'output_text') {
+                rawContent += contentItem.text || '';
+              }
+            }
+          }
         }
       }
 
-      const result = JSON.parse(rawContent || '{"weeks": []}');
-      // Return the weeks array directly
-      return result.weeks || result;
+      console.log(`[Training Plan] Attempt ${attempt} - raw content length: ${rawContent.length}`);
+      console.log(`[Training Plan] Attempt ${attempt} - raw content preview: ${rawContent.substring(0, 200)}...`);
+      
+      if (!rawContent || rawContent.trim() === '') {
+        console.error(`[Training Plan] Empty response. Full response object:`, JSON.stringify(response, null, 2).substring(0, 500));
+        throw new Error('Empty response from AI');
+      }
 
-    } catch (error) {
-      console.error('Training plan generation error:', error);
-      // Fallback plan - use converted values
-      return this.generateFallbackPlan(weeklyMileageConverted, avgPace, weeks, isMetric);
+      const result = JSON.parse(rawContent);
+      const weeksData = result.weeks || result;
+      
+      if (!Array.isArray(weeksData) || weeksData.length === 0) {
+        console.error(`[Training Plan] Invalid weeks data:`, weeksData);
+        throw new Error('Invalid or empty training plan returned');
+      }
+      
+      console.log(`[Training Plan] Attempt ${attempt} - successfully generated ${weeksData.length} weeks`);
+      return weeksData;
+    };
+
+    // Simplified prompt for retry attempt
+    const simplePrompt = `Create a ${weeks}-week ${readableGoal} training plan for a runner.
+
+Runner data:
+- Weekly mileage: ${weeklyMileageConverted.toFixed(1)} ${unit}
+- Average pace: ${avgPace.toFixed(2)} min/${unit}
+- Training days: ${daysPerWeek}/week
+- Fitness level: ${fitnessLevel}
+
+Create ${daysPerWeek} workouts per week with progressive mileage. Use ${unit} for all distances.`;
+
+    try {
+      // First attempt with full prompt
+      return await attemptGeneration(1);
+    } catch (firstError: any) {
+      console.error(`[Training Plan] First attempt failed:`, firstError.message);
+      
+      // Retry with simplified prompt
+      try {
+        console.log(`[Training Plan] Retrying with simplified prompt...`);
+        
+        const simpleResponse = await openai.responses.create({
+          model: "gpt-5-mini",
+          input: [
+            { role: "system", content: `You are a running coach. Create training plans in JSON format. Use ${unit} for distances.` },
+            { role: "user", content: simplePrompt }
+          ],
+          text: {
+            format: {
+              type: "json_schema",
+              name: "TrainingPlan",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  weeks: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        weekNumber: { type: "number" },
+                        totalMileage: { type: "number" },
+                        workouts: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              type: { type: "string" },
+                              distance: { type: "number" },
+                              pace: { type: "string" },
+                              description: { type: "string" }
+                            },
+                            required: ["type", "distance", "pace", "description"],
+                            additionalProperties: false
+                          }
+                        }
+                      },
+                      required: ["weekNumber", "totalMileage", "workouts"],
+                      additionalProperties: false
+                    }
+                  }
+                },
+                required: ["weeks"],
+                additionalProperties: false
+              }
+            }
+          },
+          max_output_tokens: 3000
+        });
+        
+        let rawContent = '';
+        if (simpleResponse.output_text && Array.isArray(simpleResponse.output_text)) {
+          rawContent = simpleResponse.output_text.join('');
+        }
+        
+        if (!rawContent || rawContent.trim() === '') {
+          throw new Error('Empty response from simplified prompt');
+        }
+        
+        const result = JSON.parse(rawContent);
+        const weeksData = result.weeks || result;
+        
+        if (!Array.isArray(weeksData) || weeksData.length === 0) {
+          throw new Error('Invalid training plan from simplified prompt');
+        }
+        
+        console.log(`[Training Plan] Simplified prompt succeeded with ${weeksData.length} weeks`);
+        return weeksData;
+        
+      } catch (secondError: any) {
+        console.error(`[Training Plan] Second attempt failed:`, secondError.message);
+        
+        // Return fallback plan with error indication
+        console.log(`[Training Plan] Using fallback plan`);
+        const fallback = this.generateFallbackPlan(weeklyMileageConverted, avgPace, weeks, isMetric);
+        if (fallback.length === 0) {
+          throw new Error('Failed to generate training plan after multiple attempts. Please try again.');
+        }
+        return fallback;
+      }
     }
   }
 

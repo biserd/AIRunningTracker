@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { CalendarDays, PlayCircle, Clock, MapPin, Target, Lock, Crown } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { CalendarDays, PlayCircle, Clock, MapPin, Target, Lock, Crown, Loader2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useFeatureAccess } from "@/hooks/useSubscription";
 import { Link } from "wouter";
@@ -53,6 +54,20 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
   const [targetDistance, setTargetDistance] = useState("");
   const [raceDate, setRaceDate] = useState("");
   const [fitnessLevel, setFitnessLevel] = useState("intermediate");
+  
+  // Progress tracking state
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [statusMessage, setStatusMessage] = useState("");
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Status messages that rotate during generation
+  const statusMessages = [
+    "Analyzing your training history...",
+    "Calculating optimal pace zones...",
+    "Building weekly workout schedule...",
+    "Optimizing progression...",
+    "Finalizing your plan..."
+  ];
 
   // All hooks must be called before any conditional returns
   // Get user's unit preference
@@ -89,11 +104,59 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
       setTrainingPlan(Array.isArray(plan) ? plan : []);
     }
   }, [planData]);
+  
+  // Cleanup timer on unmount or dialog close
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
+  
+  // Also cleanup when dialog closes
+  useEffect(() => {
+    if (!dialogOpen && timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, [dialogOpen]);
+
+  // Start timer when mutation begins
+  const startTimer = () => {
+    // Clear any existing interval first to prevent multiple timers
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    
+    setElapsedTime(0);
+    setStatusMessage(statusMessages[0]);
+    
+    timerRef.current = setInterval(() => {
+      setElapsedTime(prev => {
+        const newTime = prev + 1;
+        // Rotate status messages every 3 seconds
+        const messageIndex = Math.min(Math.floor(newTime / 3), statusMessages.length - 1);
+        setStatusMessage(statusMessages[messageIndex]);
+        return newTime;
+      });
+    }, 1000);
+  };
+  
+  // Stop timer
+  const stopTimer = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  };
 
   const generatePlanMutation = useMutation({
     mutationFn: async (params: TrainingPlanParams) => {
+      startTimer();
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout for GPT-5 Mini
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout (faster with gpt-5-mini)
       
       try {
         const response = await fetch(`/api/ml/training-plan/${userId}`, {
@@ -105,41 +168,55 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
         clearTimeout(timeoutId);
         
         if (!response.ok) {
-          throw new Error(`Server error: ${response.status}`);
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || `Server error: ${response.status}`);
         }
         
         return await response.json();
       } catch (error: any) {
         clearTimeout(timeoutId);
         if (error.name === 'AbortError') {
-          throw new Error('Request timeout - GPT-5 is taking too long. Please try again.');
+          throw new Error('Request timeout - please try again with fewer weeks or a simpler goal.');
         }
         throw error;
       }
     },
     onSuccess: async (data) => {
+      stopTimer();
+      
       // Invalidate the query cache to force a refetch
       await queryClient.invalidateQueries({ queryKey: ['training-plan', userId] });
       
       // Handle both nested and flat response structures
       const plan = data.trainingPlan?.trainingPlan || data.trainingPlan || data;
-      setTrainingPlan(Array.isArray(plan) ? plan : []);
+      const planArray = Array.isArray(plan) ? plan : [];
+      
+      // Check if plan is empty
+      if (planArray.length === 0) {
+        toast({
+          title: "Generation incomplete",
+          description: "The AI returned an empty plan. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setTrainingPlan(planArray);
       setDialogOpen(false);
       toast({
         title: "Training plan generated",
-        description: `Your ${selectedWeeks}-week personalized training plan is ready`,
+        description: `Your ${selectedWeeks}-week personalized training plan is ready (${elapsedTime}s)`,
       });
     },
     onError: async (error: any) => {
-      setDialogOpen(false);
+      stopTimer();
       
       // Even if there's a timeout error, the plan might have been generated
-      // Try to refetch the plan in case it was created in the background
       await queryClient.invalidateQueries({ queryKey: ['training-plan', userId] });
       
       toast({
-        title: "Generation may have timed out",
-        description: "The plan might still be ready. Refreshing...",
+        title: "Generation failed",
+        description: error.message || "Please try again with simpler settings.",
         variant: "destructive",
       });
     },
@@ -317,23 +394,39 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
             </div>
           </div>
 
-          <div className="flex justify-end space-x-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setDialogOpen(false)}
-              data-testid="button-cancel"
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleGeneratePlan}
-              disabled={generatePlanMutation.isPending}
-              className="bg-strava-orange hover:bg-strava-orange/90"
-              data-testid="button-submit-plan"
-            >
-              {generatePlanMutation.isPending ? 'Generating...' : 'Generate Plan'}
-            </Button>
-          </div>
+          {generatePlanMutation.isPending ? (
+            <div className="space-y-4 py-4" data-testid="generation-progress">
+              <div className="flex items-center justify-center space-x-3">
+                <Loader2 className="h-6 w-6 text-strava-orange animate-spin" />
+                <div className="text-center">
+                  <p className="text-sm font-medium text-charcoal">{statusMessage}</p>
+                  <p className="text-xs text-gray-500">{elapsedTime}s elapsed</p>
+                </div>
+              </div>
+              <Progress value={Math.min((elapsedTime / 20) * 100, 95)} className="h-2" />
+              <p className="text-xs text-center text-gray-400">
+                Typically takes 8-15 seconds
+              </p>
+            </div>
+          ) : (
+            <div className="flex justify-end space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setDialogOpen(false)}
+                data-testid="button-cancel"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleGeneratePlan}
+                disabled={generatePlanMutation.isPending}
+                className="bg-strava-orange hover:bg-strava-orange/90"
+                data-testid="button-submit-plan"
+              >
+                Generate Plan
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
