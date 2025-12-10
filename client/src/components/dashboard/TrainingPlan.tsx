@@ -95,14 +95,15 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
     enabled: canAccessTrainingPlans && !!userId && !batchData?.trainingPlan,
   });
   
-  const planData = batchData?.trainingPlan ?? savedPlan;
+  // Both sources now return the array directly:
+  // - batchData.trainingPlan is the array (from batch endpoint)
+  // - savedPlan.trainingPlan is the array (from dedicated endpoint)
+  const planData = batchData?.trainingPlan ?? savedPlan?.trainingPlan;
 
   // Update local state when saved plan is loaded
   useEffect(() => {
-    if (planData?.trainingPlan) {
-      // Handle nested structure: planData.trainingPlan.trainingPlan
-      const plan = planData.trainingPlan.trainingPlan || planData.trainingPlan;
-      setTrainingPlan(Array.isArray(plan) ? plan : []);
+    if (planData && Array.isArray(planData)) {
+      setTrainingPlan(planData);
     }
   }, [planData]);
   

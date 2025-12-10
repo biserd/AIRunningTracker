@@ -3315,7 +3315,7 @@ ${allPages.map(page => `  <url>
       const response = {
         predictions: predictions || [],
         injuryRisk,
-        trainingPlan,
+        trainingPlan: trainingPlan?.planData || null,
         vo2Max,
         efficiency,
         hrZones
