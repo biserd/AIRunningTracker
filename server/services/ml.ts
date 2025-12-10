@@ -296,32 +296,55 @@ Guidelines:
 - Plan MUST have exactly ${daysPerWeek} running days per week${targetDistance ? ` and build toward ${targetDistance} ${unit} weekly volume` : ''}
 - Structure the plan specifically for ${readableGoal} training
 - Increase weekly mileage by 10% each week maximum
-- Include easy runs (80%), tempo runs (15%), and speed work (5%)
+- MANDATORY WORKOUT DISTRIBUTION each week:
+  * 1 LONG RUN (longest run of the week, typically 25-30% of weekly mileage)
+  * 1 TEMPO or SPEED workout
+  * Remaining days: Easy runs
 - Schedule rest days appropriately (${7 - daysPerWeek} rest days per week)
 - Adjust intensity based on ${fitnessLevel} fitness level
 - ALL pace targets must be achievable based on their current fitness level shown above
 - Focus on gradual progression and injury prevention
 - Consider their current fitness indicators (VO2 max, runner score) when setting difficulty${raceDate ? `\n- Taper appropriately in final weeks before race date` : ''}
 
-Return a JSON array with this structure:
+CRITICAL UNIT REQUIREMENT:
+- ALL distances MUST be in ${unit} (${isMetric ? 'kilometers' : 'miles'})
+- ALL paces MUST be in min/${unit}
+- The totalMileage field is in ${unit}
+- Each workout distance is in ${unit}
+- DO NOT USE ${isMetric ? 'miles' : 'kilometers'} anywhere in this plan
+
+Return a JSON array with this structure (example using ${unit}):
 [{
   "weekNumber": 1,
-  "totalMileage": 25,
+  "totalMileage": ${isMetric ? '40' : '25'},
   "workouts": [
     {
+      "type": "Long Run",
+      "distance": ${isMetric ? '16' : '10'},
+      "pace": "${isMetric ? '5:30' : '8:50'}",
+      "description": "Weekly long run at easy pace"
+    },
+    {
       "type": "Easy Run",
-      "distance": 5,
-      "pace": "5:30",
-      "description": "Conversational pace run"
+      "distance": ${isMetric ? '8' : '5'},
+      "pace": "${isMetric ? '5:20' : '8:35'}",
+      "description": "Recovery run"
     }
   ]
 }]
 
-Remember: Create a realistic, achievable plan based on their ACTUAL current paces and specific ${readableGoal} training goal, not idealized paces.`;
+Remember: 
+1. Use ONLY ${unit} for all distances - this is critical
+2. Include exactly ONE long run per week
+3. Base paces on the runner's ACTUAL current paces shown above`;
 
     // Helper function to attempt plan generation
     const attemptGeneration = async (attempt: number): Promise<TrainingPlan[]> => {
-      const systemPrompt = `You are an expert running coach creating a ${weeks}-week training plan. Use ${unit} for distances and min/${unit} for paces. Be concise.`;
+      const systemPrompt = `You are an expert running coach. CRITICAL RULES:
+1. Use ${unit} (${isMetric ? 'kilometers' : 'miles'}) for ALL distances - NEVER use ${isMetric ? 'miles' : 'km'}
+2. Use min/${unit} for ALL paces
+3. Include exactly ONE long run per week (the longest workout)
+4. Be concise and realistic with pace targets.`;
       
       console.log(`[Training Plan] Attempt ${attempt} - calling gpt-4.1-mini...`);
       
@@ -424,7 +447,10 @@ Runner data:
 - Training days: ${daysPerWeek}/week
 - Fitness level: ${fitnessLevel}
 
-Create ${daysPerWeek} workouts per week with progressive mileage. Use ${unit} for all distances.`;
+CRITICAL REQUIREMENTS:
+- Use ONLY ${unit} (${isMetric ? 'kilometers' : 'miles'}) for ALL distances - NEVER use ${isMetric ? 'miles' : 'km'}
+- Include exactly 1 Long Run per week (the longest workout, 25-30% of weekly mileage)
+- Create ${daysPerWeek} workouts per week with progressive mileage`;
 
     try {
       // First attempt with full prompt
@@ -439,7 +465,7 @@ Create ${daysPerWeek} workouts per week with progressive mileage. Use ${unit} fo
         const simpleResponse = await openai.responses.create({
           model: "gpt-4.1-mini",
           input: [
-            { role: "system", content: `You are a running coach. Create training plans in JSON format. Use ${unit} for distances.` },
+            { role: "system", content: `You are a running coach. CRITICAL: Use ${unit} (${isMetric ? 'kilometers' : 'miles'}) for ALL distances. Include 1 Long Run per week.` },
             { role: "user", content: simplePrompt }
           ],
           text: {
