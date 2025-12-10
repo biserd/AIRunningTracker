@@ -184,9 +184,6 @@ export class MLService {
     raceDate?: string;
     fitnessLevel?: string;
   }): Promise<TrainingPlan[]> {
-    const user = await storage.getUser(userId);
-    if (!user) throw new Error('User not found');
-
     const {
       weeks = 4,
       goal = 'general',
@@ -196,7 +193,20 @@ export class MLService {
       fitnessLevel = 'intermediate'
     } = params;
 
-    const allActivities = await storage.getActivitiesByUserId(userId, 50);
+    // Parallelize all independent data fetches for speed
+    const performanceService = new PerformanceAnalyticsService();
+    const runnerScoreService = new RunnerScoreService();
+    
+    const [user, allActivities, racePredictions, vo2Data, runnerScore] = await Promise.all([
+      storage.getUser(userId),
+      storage.getActivitiesByUserId(userId, 50),
+      this.predictRacePerformance(userId).catch(() => []),
+      performanceService.calculateVO2Max(userId).catch(() => null),
+      runnerScoreService.calculateRunnerScore(userId).catch(() => null)
+    ]);
+    
+    if (!user) throw new Error('User not found');
+
     const activities = allActivities.filter(a => RUNNING_TYPES.includes(a.type));
     const metrics = this.analyzeTrainingData(activities);
     
@@ -223,9 +233,6 @@ export class MLService {
     const avgPace = avgPaceValid 
       ? (isMetric ? avgPaceKm : avgPaceKm / 0.621371)
       : (isMetric ? 6.0 : 9.65); // Default to 6:00/km or 9:39/mi if invalid
-
-    // Get race predictions for realistic pace targets
-    const racePredictions = await this.predictRacePerformance(userId);
     
     // Calculate pace distribution from recent runs in user's preferred unit
     const recentPaces = activities.slice(0, 20).map(a => {
@@ -246,20 +253,6 @@ export class MLService {
     const tempoPaceMax = avgPace; // At average
     const speedPaceMin = fastestPace * 0.95; // 5% faster than fastest
     const speedPaceMax = fastestPace; // At fastest
-    
-    // Instantiate performance and runner score services
-    const performanceService = new PerformanceAnalyticsService();
-    const runnerScoreService = new RunnerScoreService();
-    
-    // Get VO2 max and runner score data
-    let vo2Data: any = null;
-    let runnerScore: any = null;
-    try {
-      vo2Data = await performanceService.calculateVO2Max(userId);
-      runnerScore = await runnerScoreService.calculateRunnerScore(userId);
-    } catch (error) {
-      console.log('Could not fetch additional metrics:', error);
-    }
 
     const prompt = `
 Create a ${weeks}-week progressive training plan for a runner with these specific goals and characteristics:
@@ -330,10 +323,10 @@ Remember: Create a realistic, achievable plan based on their ACTUAL current pace
     const attemptGeneration = async (attempt: number): Promise<TrainingPlan[]> => {
       const systemPrompt = `You are an expert running coach creating a ${weeks}-week training plan. Use ${unit} for distances and min/${unit} for paces. Be concise.`;
       
-      console.log(`[Training Plan] Attempt ${attempt} - calling gpt-5-mini...`);
+      console.log(`[Training Plan] Attempt ${attempt} - calling gpt-4.1-mini...`);
       
       const response = await openai.responses.create({
-        model: "gpt-5-mini",
+        model: "gpt-4.1-mini",
         input: [
           { role: "system", content: systemPrompt },
           { role: "user", content: prompt }
@@ -378,7 +371,7 @@ Remember: Create a realistic, achievable plan based on their ACTUAL current pace
             }
           }
         },
-        max_output_tokens: 8000
+        max_output_tokens: 4000
       });
 
       // Extract text from response using output_text (the direct accessor for JSON schema responses)
@@ -444,7 +437,7 @@ Create ${daysPerWeek} workouts per week with progressive mileage. Use ${unit} fo
         console.log(`[Training Plan] Retrying with simplified prompt...`);
         
         const simpleResponse = await openai.responses.create({
-          model: "gpt-5-mini",
+          model: "gpt-4.1-mini",
           input: [
             { role: "system", content: `You are a running coach. Create training plans in JSON format. Use ${unit} for distances.` },
             { role: "user", content: simplePrompt }
