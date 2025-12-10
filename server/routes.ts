@@ -3288,8 +3288,12 @@ ${allPages.map(page => `  <url>
 
       console.log(`[Batch Analytics] Starting batch calculation for user ${userId}`);
 
-      // Execute all calculations in parallel
-      const [predictions, injuryRisk, trainingPlan, vo2Max, efficiency, hrZones] = await Promise.all([
+      // Execute all calculations in parallel (include user for unit preference)
+      const [user, predictions, injuryRisk, trainingPlan, vo2Max, efficiency, hrZones] = await Promise.all([
+        storage.getUser(userId).catch(err => {
+          console.error('[Batch] User error:', err.message);
+          return null;
+        }),
         mlService.predictRacePerformance(userId).catch(err => {
           console.error('[Batch] Predictions error:', err.message);
           return null;
@@ -3322,7 +3326,8 @@ ${allPages.map(page => `  <url>
         trainingPlan: trainingPlan?.planData || null,
         vo2Max,
         efficiency,
-        hrZones
+        hrZones,
+        unitPreference: user?.unitPreference || 'miles'
       };
 
       // Cache the result

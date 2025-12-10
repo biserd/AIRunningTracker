@@ -70,8 +70,7 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
     "Finalizing your plan..."
   ];
 
-  // All hooks must be called before any conditional returns
-  // Get user's unit preference (always fetch for authenticated users)
+  // Get unit preference from batchData (included in batch response) or fetch separately as fallback
   const { data: userData } = useQuery({
     queryKey: ['user', userId],
     queryFn: () => 
@@ -81,11 +80,13 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
           'Content-Type': 'application/json',
         },
       }).then(res => res.json()),
-    enabled: !!userId,
+    enabled: !!userId && !batchData?.unitPreference,
+    staleTime: 0,
   });
   
-  // Support both "miles" and "mi" for robustness
-  const distanceUnit = (userData?.unitPreference === 'miles' || userData?.unitPreference === 'mi') ? 'mi' : 'km';
+  // Use unit preference from batchData (preferred) or userData (fallback)
+  const unitPref = batchData?.unitPreference || userData?.unitPreference;
+  const distanceUnit = (unitPref === 'miles' || unitPref === 'mi') ? 'mi' : 'km';
 
   // Load existing training plan (only if batchData doesn't already have it)
   const { data: savedPlan } = useQuery({
