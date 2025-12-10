@@ -405,7 +405,7 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
               </div>
               <Progress value={Math.min((elapsedTime / 20) * 100, 95)} className="h-2" />
               <p className="text-xs text-center text-gray-400">
-                Typically takes 8-15 seconds
+                Typically takes 15-45 seconds depending on plan length
               </p>
             </div>
           ) : (
