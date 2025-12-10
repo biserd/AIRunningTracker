@@ -52,6 +52,7 @@ export interface IStorage {
   
   createTrainingPlan(plan: InsertTrainingPlan): Promise<TrainingPlan>;
   getLatestTrainingPlan(userId: number): Promise<TrainingPlan | undefined>;
+  deleteTrainingPlans(userId: number): Promise<void>;
   
   createFeedback(feedback: InsertFeedback): Promise<Feedback>;
   
@@ -525,6 +526,10 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(trainingPlans.createdAt))
       .limit(1);
     return plan || undefined;
+  }
+
+  async deleteTrainingPlans(userId: number): Promise<void> {
+    await db.delete(trainingPlans).where(eq(trainingPlans.userId, userId));
   }
 
   async updateActivity(activityId: number, updates: Partial<Activity>): Promise<Activity | undefined> {

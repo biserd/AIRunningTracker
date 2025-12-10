@@ -3074,6 +3074,23 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Delete training plans
+  app.delete("/api/ml/training-plan/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      await storage.deleteTrainingPlans(userId);
+      res.json({ success: true, message: "Training plan deleted" });
+    } catch (error: any) {
+      console.error('Error deleting training plan:', error);
+      res.status(500).json({ message: error.message || "Failed to delete training plan" });
+    }
+  });
+
   // Goals Progress Tracking
   app.get("/api/goals/progress/:userId", async (req, res) => {
     try {

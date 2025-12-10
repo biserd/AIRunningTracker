@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { CalendarDays, PlayCircle, Clock, MapPin, Target, Lock, Crown, Loader2, RefreshCw } from "lucide-react";
+import { CalendarDays, PlayCircle, Clock, MapPin, Target, Lock, Crown, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useFeatureAccess } from "@/hooks/useSubscription";
 import { Link } from "wouter";
@@ -220,6 +220,34 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
       
       // Invalidate cache in background in case plan was saved anyway
       queryClient.invalidateQueries({ queryKey: ['training-plan', userId] });
+    },
+  });
+
+  // Delete training plan mutation
+  const deletePlanMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/ml/training-plan/${userId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete training plan');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      setTrainingPlan([]);
+      queryClient.invalidateQueries({ queryKey: ['training-plan', userId] });
+      toast({
+        title: "Training plan deleted",
+        description: "You can generate a new plan anytime.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Delete failed",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -478,15 +506,29 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
               <h3 className="text-lg font-semibold text-charcoal">
                 Your {trainingPlan.length}-Week Training Plan
               </h3>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleOpenDialog}
-                disabled={generatePlanMutation.isPending}
-                data-testid="button-regenerate-plan"
-              >
-                Regenerate
-              </Button>
+              <div className="flex items-center space-x-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleOpenDialog}
+                  disabled={generatePlanMutation.isPending || deletePlanMutation.isPending}
+                  data-testid="button-regenerate-plan"
+                >
+                  <RefreshCw className="mr-1 h-4 w-4" />
+                  Regenerate
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => deletePlanMutation.mutate()}
+                  disabled={deletePlanMutation.isPending || generatePlanMutation.isPending}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  data-testid="button-delete-plan"
+                >
+                  <Trash2 className="mr-1 h-4 w-4" />
+                  {deletePlanMutation.isPending ? "Deleting..." : "Delete"}
+                </Button>
+              </div>
             </div>
 
             <div className="grid gap-4">
