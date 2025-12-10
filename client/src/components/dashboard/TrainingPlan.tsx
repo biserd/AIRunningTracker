@@ -85,13 +85,13 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
   
   const distanceUnit = userData?.unitPreference === 'miles' ? 'mi' : 'km';
 
-  // Load existing training plan
+  // Load existing training plan (only if batchData doesn't already have it)
   const { data: savedPlan } = useQuery({
     queryKey: ['training-plan', userId],
     queryFn: () => 
       fetch(`/api/ml/training-plan/${userId}`)
         .then(res => res.json()),
-    enabled: canAccessTrainingPlans && !!userId && (batchData === undefined ? false : !batchData),
+    enabled: canAccessTrainingPlans && !!userId && !batchData?.trainingPlan,
   });
   
   const planData = batchData?.trainingPlan ?? savedPlan;
