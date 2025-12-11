@@ -356,39 +356,65 @@ export async function generateYearEndImage(
   // AI insight highlight
   const insightHighlight = aiInsights.length > 0 ? aiInsights[0] : null;
 
+  // Build advanced fitness metrics section
+  const fitnessMetrics: string[] = [];
+  if (stats.estimatedVO2Max) fitnessMetrics.push(`VO2 Max: ${stats.estimatedVO2Max} ml/kg/min`);
+  if (stats.averageCadence) fitnessMetrics.push(`Avg Cadence: ${stats.averageCadence} steps/min`);
+  if (stats.zone2Hours && stats.zone2Hours > 0) fitnessMetrics.push(`Zone 2 Training: ${stats.zone2Hours}h aerobic base`);
+  if (stats.averageHeartrate) fitnessMetrics.push(`Avg Heart Rate: ${Math.round(stats.averageHeartrate)} bpm`);
+  if (stats.maxHeartrateAchieved) fitnessMetrics.push(`Max Heart Rate: ${Math.round(stats.maxHeartrateAchieved)} bpm`);
+
+  // Training distribution
+  let trainingDistribution = '';
+  if (stats.trainingDistribution) {
+    const { easy, moderate, hard } = stats.trainingDistribution;
+    if (easy > 0 || moderate > 0 || hard > 0) {
+      trainingDistribution = `Training Mix: Easy ${easy}%, Moderate ${moderate}%, Hard ${hard}%`;
+    }
+  }
+
+  const fitnessSection = fitnessMetrics.length > 0 
+    ? `CHAPTER 4 - THE BODY (Performance Metrics):
+${fitnessMetrics.join('\n')}
+${trainingDistribution ? trainingDistribution : ''}`
+    : '';
+
   const prompt = `Create a vertical infographic poster (9:16 format) telling the precise story of ${userName}'s ${year} running year.
 
 LOCATION THEME:
 ${locationTheme}
 The entire visual style, colors, and backdrop should feel like running in ${locationName}.
 
-THE YEAR'S STORY (use ONLY these facts):
+THE YEAR'S STORY (use ONLY these exact facts - do not change any numbers):
 
 CHAPTER 1 - THE COMMITMENT:
 ${userName} laced up ${stats.totalRuns} times in ${year}, averaging about ${avgRunsPerMonth} runs per month.
 
 CHAPTER 2 - THE DISTANCE:
-${stats.totalDistanceMiles.toFixed(0)} total miles covered across the year.
+${stats.totalDistanceMiles.toFixed(0)} total miles covered.
 ${stats.totalElevationFeet.toFixed(0)} feet of elevation gained.
-${hoursSpent} hours spent on the road/trail.
+${hoursSpent} hours spent running.
 
 CHAPTER 3 - THE PEAK:
 ${peakMonthStory}.
-${stats.longestRunMiles > 0 ? `Longest run achievement: ${stats.longestRunMiles.toFixed(1)} miles.` : ''}
-${stats.streakDays > 1 ? `Maintained a ${stats.streakDays}-day running streak.` : ''}
+${stats.longestRunMiles > 0 ? `Longest run: ${stats.longestRunMiles.toFixed(1)} miles.` : ''}
+${stats.streakDays > 1 ? `Best streak: ${stats.streakDays} consecutive days.` : ''}
 
-${insightHighlight ? `HIGHLIGHT: "${insightHighlight}"` : ''}
+${fitnessSection}
+
+${insightHighlight ? `PERSONAL INSIGHT: "${insightHighlight}"` : ''}
 
 DESIGN REQUIREMENTS:
 - Vertical 9:16 portrait format (Instagram Stories/TikTok)
 - Background: scenic view inspired by ${locationName} with local landmarks/terrain
 - Clean, modern infographic style with the story flowing top to bottom
-- Use large typography for the hero number (${stats.totalDistanceMiles.toFixed(0)} MILES)
-- Include ${userName.toUpperCase()} and ${year} prominently at top
+- Hero number: "${stats.totalDistanceMiles.toFixed(0)} MILES" displayed prominently
+- Header: "${userName.toUpperCase()}" and "${year}" at top
+- ALL performance metrics (VO2 Max, Cadence, Zone 2, Heart Rate, Training Distribution) MUST be displayed
 - Warm, inspiring color palette matching the location's typical scenery
 - Small "RunAnalytics" watermark at bottom
 
-CRITICAL: Only display the exact numbers provided above. Do not invent or modify any statistics. This is a factual recap of the year.`;
+CRITICAL: Display ALL the exact numbers provided above including the fitness metrics. Do not invent, modify, or omit any statistics. This is a factual recap.`;
 
   try {
     const response = await ai.models.generateContent({
