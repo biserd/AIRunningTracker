@@ -327,54 +327,68 @@ export async function generateYearEndImage(
   year: number,
   aiInsights: string[] = []
 ): Promise<string> {
-  // Create meaningful comparisons for storytelling
-  const milesComparison = stats.totalDistanceMiles > 500 
-    ? `That's like running across a small country!` 
-    : stats.totalDistanceMiles > 100 
-      ? `Enough to run a few marathons and then some.`
-      : `Every mile was a victory.`;
+  // Location-based theming
+  const locationName = stats.mostRunLocation?.name || "your favorite trails";
+  const locationTheme = stats.mostRunLocation?.name 
+    ? `The visual theme should reflect ${stats.mostRunLocation.name} - incorporate recognizable local landmarks, terrain, weather patterns, and atmosphere typical of this area.`
+    : "Use a beautiful scenic running backdrop with trails and nature.";
 
+  // Build the year's story with seasonal narrative
   const hoursSpent = Math.floor(stats.totalTimeSeconds / 3600);
-  const timeStory = hoursSpent > 100 
-    ? `${hoursSpent} hours of pure dedication` 
-    : `${hoursSpent} hours chasing your goals`;
+  const avgRunsPerMonth = Math.round(stats.totalRuns / 12);
+  
+  // Peak month achievement
+  const peakMonthStory = `${stats.mostActiveMonth} was your peak month - when you ran the most`;
+  
+  // Milestone achievements
+  const milestones: string[] = [];
+  milestones.push(`Completed ${stats.totalRuns} runs total`);
+  milestones.push(`Covered ${stats.totalDistanceMiles.toFixed(0)} miles`);
+  milestones.push(`Spent ${hoursSpent} hours running`);
+  milestones.push(`Climbed ${stats.totalElevationFeet.toFixed(0)} feet of elevation`);
+  if (stats.longestRunMiles > 0) {
+    milestones.push(`Longest single run: ${stats.longestRunMiles.toFixed(1)} miles`);
+  }
+  if (stats.streakDays > 1) {
+    milestones.push(`Best streak: ${stats.streakDays} consecutive days`);
+  }
 
-  // Pick the most impactful insight if available
-  const heroInsight = aiInsights.length > 0 ? aiInsights[0] : null;
+  // AI insight highlight
+  const insightHighlight = aiInsights.length > 0 ? aiInsights[0] : null;
 
-  // Build the narrative around key moments
-  const longestRunStory = stats.longestRunMiles > 13.1 
-    ? `Your longest run was ${stats.longestRunMiles.toFixed(1)} miles - beyond a half marathon!`
-    : `Your longest adventure: ${stats.longestRunMiles.toFixed(1)} miles`;
+  const prompt = `Create a vertical infographic poster (9:16 format) telling the precise story of ${userName}'s ${year} running year.
 
-  const streakStory = stats.streakDays > 7 
-    ? `${stats.streakDays} days of unstoppable momentum` 
-    : null;
+LOCATION THEME:
+${locationTheme}
+The entire visual style, colors, and backdrop should feel like running in ${locationName}.
 
-  const prompt = `Create an artistic, cinematic vertical poster (9:16 portrait format) celebrating a runner's year.
+THE YEAR'S STORY (use ONLY these facts):
 
-STORY TO TELL:
-${userName}'s ${year} running journey - a story of dedication, growth, and ${stats.totalRuns} runs that added up to something incredible.
+CHAPTER 1 - THE COMMITMENT:
+${userName} laced up ${stats.totalRuns} times in ${year}, averaging about ${avgRunsPerMonth} runs per month.
 
-THE HERO MOMENT:
-${stats.totalDistanceMiles.toFixed(0)} miles covered this year. ${milesComparison}
+CHAPTER 2 - THE DISTANCE:
+${stats.totalDistanceMiles.toFixed(0)} total miles covered across the year.
+${stats.totalElevationFeet.toFixed(0)} feet of elevation gained.
+${hoursSpent} hours spent on the road/trail.
 
-THE JOURNEY:
-- ${timeStory}
-- ${longestRunStory}
-${streakStory ? `- ${streakStory}` : ''}
-${heroInsight ? `- "${heroInsight}"` : ''}
+CHAPTER 3 - THE PEAK:
+${peakMonthStory}.
+${stats.longestRunMiles > 0 ? `Longest run achievement: ${stats.longestRunMiles.toFixed(1)} miles.` : ''}
+${stats.streakDays > 1 ? `Maintained a ${stats.streakDays}-day running streak.` : ''}
 
-VISUAL STYLE:
-Create a dramatic, artistic image of a runner's silhouette against a stunning backdrop - think golden hour light, misty morning trail, or city skyline at dawn. The runner should embody determination and triumph.
+${insightHighlight ? `HIGHLIGHT: "${insightHighlight}"` : ''}
 
-Overlay the key number "${stats.totalDistanceMiles.toFixed(0)} MILES" in large, elegant typography. Include "${userName.toUpperCase()}" and "${year}" prominently.
+DESIGN REQUIREMENTS:
+- Vertical 9:16 portrait format (Instagram Stories/TikTok)
+- Background: scenic view inspired by ${locationName} with local landmarks/terrain
+- Clean, modern infographic style with the story flowing top to bottom
+- Use large typography for the hero number (${stats.totalDistanceMiles.toFixed(0)} MILES)
+- Include ${userName.toUpperCase()} and ${year} prominently at top
+- Warm, inspiring color palette matching the location's typical scenery
+- Small "RunAnalytics" watermark at bottom
 
-The mood should be inspirational and celebratory - like a movie poster for an athlete's documentary. Use warm golden tones mixed with cool blues. Add subtle motion blur or light rays to suggest movement and energy.
-
-Small "RunAnalytics" watermark in the corner.
-
-IMPORTANT: This should feel like ART, not a data dashboard. Focus on emotion and the human story of running, with the distance as the hero number. Vertical 9:16 format for social media stories.`;
+CRITICAL: Only display the exact numbers provided above. Do not invent or modify any statistics. This is a factual recap of the year.`;
 
   try {
     const response = await ai.models.generateContent({
