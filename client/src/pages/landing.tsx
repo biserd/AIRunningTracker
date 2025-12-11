@@ -75,11 +75,11 @@ export default function LandingPage() {
             <span className="text-strava-orange"> for Strava</span>
           </h1>
           
-          <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
+          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4 mb-3">
             Strava tracks your miles. We tell you how to run them faster and stay healthy.
           </p>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
-            Don't just log your runs—learn from them. Sync your history instantly to unlock the AI coaching, race predictions, and deep insights that your dashboard is missing.
+            Don't just log your runs, learn from them. Sync your history instantly to unlock the AI coaching, race predictions, and deep insights that your dashboard is missing.
           </p>
 
           {/* Social Proof with Real Stats */}
