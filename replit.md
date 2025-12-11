@@ -39,6 +39,7 @@ Preferred communication style: Simple, everyday language.
 - **Stripe Subscription System**: Full freemium model management with Stripe for payments, checkout sessions, and customer portal integration.
 - **Reverse Trial System**: 7-day Pro access for new users without credit card. Automatically downgrades to Free tier after trial. Includes trial badge UI component, email notifications (welcome, day 5 reminder, expiry CTA), and admin endpoints for email processing.
 - **Strava Activity Branding**: Feature to append customizable branding text to Strava activity descriptions post-sync, with user opt-in and template support.
+- **Year End Recap**: Personalized yearly running summary with AI-generated infographics using Nano Banana (Gemini 2.5 Flash Image). Analyzes GPS data to find user's most-run location, calculates comprehensive yearly stats, and generates themed infographic images for social sharing.
 
 ### System Design Choices
 - **Database Schema**: Users, Activities, AI Insights, Training Plans, Email Waitlist, AI Conversations, AI Messages, Running Shoes, Refresh Tokens.
