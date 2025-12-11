@@ -199,7 +199,7 @@ export default function Dashboard() {
     
     try {
       // First, get a short-lived SSE nonce (cryptographic random, NOT a JWT)
-      const nonceResponse = await apiRequest(`/api/strava/sync/${user.id}/start-stream`, "POST", { maxActivities: 50 });
+      const nonceResponse = await apiRequest(`/api/strava/sync/${user.id}/start-stream`, "POST", { maxActivities: 200 });
       const nonce = nonceResponse.sseNonce;
       
       // Use EventSource with secure nonce (cannot be used for other API calls)

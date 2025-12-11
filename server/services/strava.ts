@@ -102,15 +102,18 @@ export class StravaService {
     return response.json();
   }
 
-  async getActivities(accessToken: string, page = 1, perPage = 30): Promise<StravaActivity[]> {
-    const response = await fetch(
-      `https://www.strava.com/api/v3/athlete/activities?page=${page}&per_page=${perPage}`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
+  async getActivities(accessToken: string, page = 1, perPage = 30, after?: number): Promise<StravaActivity[]> {
+    // Build URL with optional 'after' parameter for incremental sync
+    let url = `https://www.strava.com/api/v3/athlete/activities?page=${page}&per_page=${perPage}`;
+    if (after) {
+      url += `&after=${after}`;
+    }
+    
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error');
@@ -278,7 +281,7 @@ export class StravaService {
 
   async syncActivitiesForUser(
     userId: number, 
-    maxActivities: number = 100,
+    maxActivities: number = 200,
     onProgress?: (current: number, total: number, activityName: string) => void
   ): Promise<{ syncedCount: number; totalActivities: number }> {
     const user = await storage.getUser(userId);
@@ -287,19 +290,39 @@ export class StravaService {
     }
 
     try {
-      console.log(`Syncing up to ${maxActivities} activities for user ${userId}...`);
+      // For incremental sync, use the most recent activity's start date (not sync time)
+      // The Strava 'after' parameter filters by activity start_date, not upload time
+      const mostRecentActivity = await storage.getMostRecentActivityByUserId(userId);
+      let afterTimestamp: number | undefined;
       
-      // Fetch multiple pages to get more historical data
+      if (mostRecentActivity?.startDate) {
+        // Use most recent activity's start date minus 1 hour buffer (in case of timezone issues)
+        const recentStartDate = new Date(mostRecentActivity.startDate);
+        afterTimestamp = Math.floor(recentStartDate.getTime() / 1000) - 3600;
+        console.log(`Incremental sync for user ${userId} - fetching activities after ${recentStartDate.toISOString()}`);
+      } else {
+        console.log(`First sync for user ${userId} - fetching up to ${maxActivities} activities`);
+      }
+      
+      // Fetch activities - use 'after' parameter for incremental sync
       const allActivities: any[] = [];
-      const perPage = 50; // Max allowed by Strava API
-      const totalPages = Math.ceil(maxActivities / perPage);
+      const perPage = 200; // Max allowed by Strava API for efficient fetching
       
-      for (let page = 1; page <= totalPages; page++) {
-        const activities = await this.getActivities(user.stravaAccessToken, page, perPage);
-        if (activities.length === 0) break; // No more activities
+      if (afterTimestamp) {
+        // Incremental sync: fetch all activities after lastSyncAt in one call
+        const activities = await this.getActivities(user.stravaAccessToken, 1, perPage, afterTimestamp);
         allActivities.push(...activities);
-        console.log(`Fetched page ${page}: ${activities.length} activities (total: ${allActivities.length})`);
-        if (activities.length < perPage) break; // Last page
+        console.log(`Fetched ${activities.length} new activities since last sync`);
+      } else {
+        // First sync: fetch multiple pages up to maxActivities
+        const totalPages = Math.ceil(maxActivities / 50);
+        for (let page = 1; page <= totalPages; page++) {
+          const activities = await this.getActivities(user.stravaAccessToken, page, 50);
+          if (activities.length === 0) break;
+          allActivities.push(...activities);
+          console.log(`Fetched page ${page}: ${activities.length} activities (total: ${allActivities.length})`);
+          if (activities.length < 50) break;
+        }
       }
       
       const stravaActivities = allActivities.slice(0, maxActivities);
@@ -357,15 +380,15 @@ export class StravaService {
           console.log(`[${currentIndex}/${totalToSync}] Syncing: ${activityName}`);
           
           try {
-            // Fetch detailed activity data and performance streams in parallel
-            const accessToken = user.stravaAccessToken!; // Already checked at function start
-            const [detailedActivity, streams, laps] = await Promise.all([
-              this.getDetailedActivity(accessToken, stravaActivity.id),
+            // Fetch performance streams and laps in parallel (no detailed activity call needed)
+            // Summary list already includes map.summary_polyline
+            const accessToken = user.stravaAccessToken!;
+            const [streams, laps] = await Promise.all([
               this.getActivityStreams(accessToken, stravaActivity.id),
               this.getActivityLaps(accessToken, stravaActivity.id)
             ]);
             
-            // Create activity in database
+            // Create activity in database - use polyline from summary list
             await storage.createActivity({
               userId,
               stravaId: stravaActivity.id.toString(),
@@ -392,8 +415,8 @@ export class StravaService {
               startLongitude: stravaActivity.start_latlng?.[1] || null,
               endLatitude: stravaActivity.end_latlng?.[0] || null,
               endLongitude: stravaActivity.end_latlng?.[1] || null,
-              polyline: detailedActivity.map?.summary_polyline || null,
-              detailedPolyline: detailedActivity.map?.polyline || null,
+              polyline: stravaActivity.map?.summary_polyline || null,
+              detailedPolyline: null, // No longer fetching detailed polyline
               streamsData: streams ? JSON.stringify(streams) : null,
               lapsData: laps && laps.length > 0 ? JSON.stringify(laps) : null,
               averageTemp: stravaActivity.average_temp || null,

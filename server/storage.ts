@@ -23,6 +23,7 @@ export interface IStorage {
   updateSubscriptionStatus(userId: number, status: string, plan?: string): Promise<User | undefined>;
   
   createActivity(activity: InsertActivity): Promise<Activity>;
+  getMostRecentActivityByUserId(userId: number): Promise<Activity | undefined>;
   getActivitiesByUserId(userId: number, limit?: number, startDate?: Date): Promise<Activity[]>;
   getActivitiesByUserIdPaginated(userId: number, options: {
     page: number;
@@ -310,6 +311,16 @@ export class DatabaseStorage implements IStorage {
       .insert(activities)
       .values(insertActivity)
       .returning();
+    return activity;
+  }
+
+  async getMostRecentActivityByUserId(userId: number): Promise<Activity | undefined> {
+    const [activity] = await db
+      .select()
+      .from(activities)
+      .where(eq(activities.userId, userId))
+      .orderBy(desc(activities.startDate))
+      .limit(1);
     return activity;
   }
 

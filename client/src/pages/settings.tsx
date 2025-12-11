@@ -179,7 +179,7 @@ function SettingsPageContent() {
     
     try {
       // Get SSE nonce for secure streaming
-      const nonceResponse = await apiRequest(`/api/strava/sync/${user.id}/start-stream`, "POST", { maxActivities: 100 });
+      const nonceResponse = await apiRequest(`/api/strava/sync/${user.id}/start-stream`, "POST", { maxActivities: 200 });
       const nonce = nonceResponse.sseNonce;
       
       const eventSource = new EventSource(
