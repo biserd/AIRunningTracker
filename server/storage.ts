@@ -24,6 +24,7 @@ export interface IStorage {
   
   createActivity(activity: InsertActivity): Promise<Activity>;
   getMostRecentActivityByUserId(userId: number): Promise<Activity | undefined>;
+  getActivitiesNeedingHydration(userId: number, limit?: number): Promise<Activity[]>;
   getActivitiesByUserId(userId: number, limit?: number, startDate?: Date): Promise<Activity[]>;
   getActivitiesByUserIdPaginated(userId: number, options: {
     page: number;
@@ -322,6 +323,23 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(activities.startDate))
       .limit(1);
     return activity;
+  }
+
+  async getActivitiesNeedingHydration(userId: number, limit = 500): Promise<Activity[]> {
+    const results = await db
+      .select()
+      .from(activities)
+      .where(and(
+        eq(activities.userId, userId),
+        sql`(
+          (${activities.streamsData} IS NULL AND ${activities.lapsData} IS NULL) OR
+          (${activities.streamsData} IS NULL AND ${activities.lapsData} NOT LIKE '%"status":"not_available"%') OR
+          (${activities.lapsData} IS NULL AND ${activities.streamsData} NOT LIKE '%"status":"not_available"%')
+        )`
+      ))
+      .orderBy(desc(activities.startDate))
+      .limit(limit);
+    return results;
   }
 
   async getActivitiesByUserId(userId: number, limit = 50, startDate?: Date): Promise<Activity[]> {

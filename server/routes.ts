@@ -2,6 +2,8 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stravaService } from "./services/strava";
+import { stravaClient } from "./services/stravaClient";
+import { jobQueue, createListActivitiesJob } from "./services/queue";
 import { aiService } from "./services/ai";
 import { mlService } from "./services/ml";
 import { performanceService } from "./services/performance";
@@ -2133,6 +2135,142 @@ ${allPages.map(page => `  <url>
     } catch (error: any) {
       console.error('Strava disconnect error:', error);
       res.status(500).json({ message: error.message || "Failed to disconnect Strava" });
+    }
+  });
+
+  // Strava queue status and rate limiter monitoring
+  app.get("/api/strava/queue/status", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      const queueStats = jobQueue.getStats();
+      const rateLimitState = stravaClient.getRateLimitState();
+      const userJobs = jobQueue.getJobsForUser(userId);
+      
+      res.json({
+        queue: queueStats,
+        rateLimit: {
+          shortTermUsage: rateLimitState.shortTermUsage,
+          shortTermLimit: rateLimitState.shortTermLimit,
+          longTermUsage: rateLimitState.longTermUsage,
+          longTermLimit: rateLimitState.longTermLimit,
+          isPaused: rateLimitState.isPaused,
+          pauseUntil: rateLimitState.pauseUntil,
+          lastUpdated: rateLimitState.lastUpdated,
+        },
+        userJobs: {
+          pending: userJobs.pending.length,
+          processing: userJobs.processing.length,
+          completed: userJobs.completed.length,
+          failed: userJobs.failed.length,
+        },
+      });
+    } catch (error: any) {
+      console.error('Queue status error:', error);
+      res.status(500).json({ message: error.message || "Failed to get queue status" });
+    }
+  });
+
+  // Repair endpoint to requeue activities missing hydration data
+  app.post("/api/strava/queue/repair/:userId", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const limit = parseInt(req.query?.limit as string) || 500;
+      
+      if (isNaN(userId) || req.user.id !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const activitiesNeedingHydration = await storage.getActivitiesNeedingHydration(userId, limit);
+      
+      if (activitiesNeedingHydration.length === 0) {
+        return res.json({ 
+          success: true, 
+          message: "All activities are fully hydrated", 
+          requeued: 0,
+        });
+      }
+      
+      const { createHydrateActivityJob } = await import("./services/queue/jobTypes");
+      
+      for (const activity of activitiesNeedingHydration) {
+        const needsStreams = !activity.streamsData || !activity.streamsData.includes('"status":"not_available"');
+        const needsLaps = !activity.lapsData || !activity.lapsData.includes('"status":"not_available"');
+        
+        if (needsStreams || needsLaps) {
+          jobQueue.addJob(createHydrateActivityJob(
+            userId,
+            activity.id,
+            activity.stravaId,
+            needsStreams,
+            needsLaps,
+            3
+          ));
+        }
+      }
+      
+      res.json({ 
+        success: true, 
+        message: `Requeued ${activitiesNeedingHydration.length} activities for hydration`,
+        requeued: activitiesNeedingHydration.length,
+      });
+    } catch (error: any) {
+      console.error('Queue repair error:', error);
+      res.status(500).json({ message: error.message || "Failed to repair queue" });
+    }
+  });
+
+  // Queue-based Strava sync (alternative to direct sync)
+  app.post("/api/strava/queue/sync/:userId", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      let maxActivities = parseInt(req.body?.maxActivities) || 200;
+      
+      if (isNaN(userId) || req.user.id !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user || !user.stravaAccessToken) {
+        return res.status(400).json({ message: "User not connected to Strava" });
+      }
+
+      // Check subscription for activity limit
+      const hasProPlan = user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'premium';
+      const hasActiveStatus = user.subscriptionStatus === 'active' || 
+                              user.subscriptionStatus === 'trialing' || 
+                              user.subscriptionStatus === 'past_due';
+      if (!hasProPlan || !hasActiveStatus) {
+        maxActivities = Math.min(maxActivities, 50);
+      }
+
+      // Get most recent activity for incremental sync
+      const mostRecentActivity = await storage.getMostRecentActivityByUserId(userId);
+      let afterTimestamp: number | undefined;
+      
+      if (mostRecentActivity?.startDate) {
+        const recentStartDate = new Date(mostRecentActivity.startDate);
+        afterTimestamp = Math.floor(recentStartDate.getTime() / 1000) - 3600;
+      }
+
+      // Add the initial LIST_ACTIVITIES job to the queue
+      const job = jobQueue.addJob(createListActivitiesJob(
+        userId,
+        1,
+        200,
+        maxActivities,
+        afterTimestamp,
+        1
+      ));
+
+      res.json({ 
+        success: true, 
+        message: "Sync job queued", 
+        jobId: job.id,
+        incremental: !!afterTimestamp,
+      });
+    } catch (error: any) {
+      console.error('Queue sync error:', error);
+      res.status(500).json({ message: error.message || "Failed to queue sync" });
     }
   });
 

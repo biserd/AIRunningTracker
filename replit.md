@@ -26,7 +26,8 @@ Preferred communication style: Simple, everyday language.
 - **AI Services**: OpenAI GPT-5.1 for insights, training plans, and conversational AI.
 
 ### Technical Implementations
-- **Strava Sync**: Optimized batch processing with `Promise.all()` and Server-Sent Events (SSE) for real-time progress.
+- **Strava Sync**: Optimized batch processing with incremental sync (uses most recent activity start date with `after` parameter). Features a centralized rate limiter and job queue system for controlled API access.
+- **Strava Rate Limiter & Queue** (`server/services/stravaClient.ts`, `server/services/queue/`): Global rate limiting tracking X-RateLimit headers, auto-pause at 80/100 threshold, in-memory job queue with 2 concurrent workers, delayed retry with exponential backoff for rate limit errors, and locked token refresh to prevent concurrent refresh failures. Endpoints: `GET /api/strava/queue/status` (monitoring), `POST /api/strava/queue/sync/:userId` (queue-based sync), `POST /api/strava/queue/repair/:userId` (repair missing hydration data).
 - **AI Engine**: Utilizes GPT-5.1 with OpenAI Responses API for enhanced training plan generation and insights, featuring strict JSON schema enforcement, streaming responses, and optimized token limits.
 - **Goals & Training Tracking**: Allows conversion of AI recommendations into trackable goals.
 - **Free Tools Section**: Dedicated `/tools` section with SEO-optimized calculators and analyzers, supporting Strava auto-fetch or manual entry.
