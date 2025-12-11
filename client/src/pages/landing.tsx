@@ -10,7 +10,7 @@ import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { useQuery } from "@tanstack/react-query";
 
 export default function LandingPage() {
-  const { data: stats } = useQuery<{
+  const { data: stats, isLoading: statsLoading } = useQuery<{
     totalInsights: number;
     totalActivities: number;
     totalDistance: number;
@@ -19,6 +19,10 @@ export default function LandingPage() {
     queryKey: ['/api/platform-stats'],
     staleTime: 60000,
   });
+
+  const StatSkeleton = () => (
+    <div className="h-8 w-16 bg-gray-200 rounded animate-pulse" />
+  );
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -83,8 +87,10 @@ export default function LandingPage() {
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <Users className="h-5 w-5 text-strava-orange" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-bold text-charcoal">
-                  <AnimatedCounter end={(stats?.totalUsers || 0) * 3} className="text-strava-orange" />+
+                <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center">
+                  {statsLoading ? <StatSkeleton /> : (
+                    <><AnimatedCounter end={(stats?.totalUsers || 0) * 3} className="text-strava-orange" />+</>
+                  )}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600 font-medium">Active Runners</div>
               </div>
@@ -92,8 +98,10 @@ export default function LandingPage() {
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <Brain className="h-5 w-5 text-blue-600" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-bold text-charcoal">
-                  <AnimatedCounter end={stats?.totalInsights || 0} className="text-blue-600" />+
+                <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center">
+                  {statsLoading ? <StatSkeleton /> : (
+                    <><AnimatedCounter end={stats?.totalInsights || 0} className="text-blue-600" />+</>
+                  )}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600 font-medium">AI Insights</div>
               </div>
@@ -101,8 +109,10 @@ export default function LandingPage() {
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <Activity className="h-5 w-5 text-green-600" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-bold text-charcoal">
-                  <AnimatedCounter end={stats?.totalActivities || 0} className="text-green-600" />+
+                <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center">
+                  {statsLoading ? <StatSkeleton /> : (
+                    <><AnimatedCounter end={stats?.totalActivities || 0} className="text-green-600" />+</>
+                  )}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600 font-medium">Activities Tracked</div>
               </div>
@@ -110,8 +120,10 @@ export default function LandingPage() {
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <TrendingUp className="h-5 w-5 text-cyan-600" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-bold text-charcoal">
-                  <AnimatedCounter end={Math.round((stats?.totalDistance || 0) / 1609.34)} className="text-cyan-600" />+
+                <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center">
+                  {statsLoading ? <StatSkeleton /> : (
+                    <><AnimatedCounter end={Math.round((stats?.totalDistance || 0) / 1609.34)} className="text-cyan-600" />+</>
+                  )}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600 font-medium">Miles Analyzed</div>
               </div>
@@ -911,7 +923,11 @@ export default function LandingPage() {
           <div className="flex items-center justify-center gap-2 mb-6 sm:mb-8 text-gray-700 px-4">
             <Users className="h-5 w-5 text-strava-orange" />
             <span className="text-sm sm:text-base font-medium">
-              Trusted by <span className="font-bold text-strava-orange">{((stats?.totalUsers || 0) * 3).toLocaleString()}+</span> runners worldwide
+              Trusted by {statsLoading ? (
+                <span className="inline-block h-5 w-12 bg-gray-200 rounded animate-pulse align-middle" />
+              ) : (
+                <span className="font-bold text-strava-orange">{((stats?.totalUsers || 0) * 3).toLocaleString()}+</span>
+              )} runners worldwide
             </span>
           </div>
 
