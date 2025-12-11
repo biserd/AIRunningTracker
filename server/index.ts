@@ -5,6 +5,8 @@ import { performanceLogger } from "./middleware/performance-logger";
 import { runMigrations } from 'stripe-replit-sync';
 import { getStripeSync } from './stripeClient';
 import { WebhookHandlers } from './webhookHandlers';
+import { storage } from './storage';
+import { emailService } from './services/email';
 
 const app = express();
 
@@ -99,6 +101,59 @@ process.on('unhandledRejection', (reason, promise) => {
   // Don't exit the process, just log the error
 });
 
+// Trial email scheduler - runs daily to send reminder and expiry emails
+async function processTrialEmails() {
+  console.log('[Trial Scheduler] Processing trial emails...');
+  try {
+    let remindersSent = 0;
+    let expiredSent = 0;
+
+    // 1. Send reminder emails (2 days before expiry)
+    const usersNearingExpiry = await storage.getUsersWithTrialEndingSoon(2);
+    for (const user of usersNearingExpiry) {
+      try {
+        await emailService.sendTrialReminderEmail(user.email, user.firstName || undefined, 2);
+        remindersSent++;
+        console.log(`[Trial Scheduler] Sent reminder to ${user.email}`);
+      } catch (err: any) {
+        console.error(`[Trial Scheduler] Failed to send reminder to ${user.email}:`, err.message);
+      }
+    }
+
+    // 2. Send expiry emails (trial just ended)
+    const usersWithExpiredTrials = await storage.getUsersWithExpiredTrials();
+    for (const user of usersWithExpiredTrials) {
+      try {
+        await emailService.sendTrialExpiredEmail(user.email, user.firstName || undefined);
+        expiredSent++;
+        console.log(`[Trial Scheduler] Sent expiry email to ${user.email}`);
+      } catch (err: any) {
+        console.error(`[Trial Scheduler] Failed to send expiry to ${user.email}:`, err.message);
+      }
+    }
+
+    console.log(`[Trial Scheduler] Complete - Reminders: ${remindersSent}, Expiry: ${expiredSent}`);
+  } catch (error) {
+    console.error('[Trial Scheduler] Error processing trial emails:', error);
+  }
+}
+
+function startTrialEmailScheduler() {
+  const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+  
+  // Run once shortly after startup (5 minutes delay to let server stabilize)
+  setTimeout(() => {
+    processTrialEmails();
+  }, 5 * 60 * 1000);
+  
+  // Then run every 24 hours
+  setInterval(() => {
+    processTrialEmails();
+  }, ONE_DAY_MS);
+  
+  console.log('[Trial Scheduler] Started - will process emails daily');
+}
+
 // Initialize Stripe schema and sync
 async function initStripe() {
   const databaseUrl = process.env.DATABASE_URL;
@@ -168,6 +223,9 @@ async function initStripe() {
     }, () => {
       log(`serving on port ${port}`);
       console.log(`🚀 RunAnalytics app is ready at http://localhost:${port}`);
+      
+      // Start the trial email scheduler
+      startTrialEmailScheduler();
     });
   } catch (error) {
     console.error('Failed to start server:', error);
