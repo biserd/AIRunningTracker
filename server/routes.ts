@@ -2172,6 +2172,39 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // User sync status endpoint - for frontend progress polling
+  app.get("/api/strava/sync-status", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      const syncState = await storage.getSyncState(userId);
+      
+      if (!syncState) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Also get current queue state for this user
+      const userJobs = jobQueue.getJobsForUser(userId);
+      
+      res.json({
+        syncStatus: syncState.syncStatus,
+        syncProgress: syncState.syncProgress,
+        syncTotal: syncState.syncTotal,
+        syncError: syncState.syncError,
+        lastSyncAt: syncState.lastSyncAt,
+        lastIncrementalSince: syncState.lastIncrementalSince,
+        queueState: {
+          pendingJobs: userJobs.pending.length,
+          processingJobs: userJobs.processing.length,
+          completedJobs: userJobs.completed.length,
+          failedJobs: userJobs.failed.length,
+        },
+      });
+    } catch (error: any) {
+      console.error('Sync status error:', error);
+      res.status(500).json({ message: error.message || "Failed to get sync status" });
+    }
+  });
+
   // Repair endpoint to requeue activities missing hydration data
   app.post("/api/strava/queue/repair/:userId", authenticateJWT, async (req: any, res) => {
     try {
