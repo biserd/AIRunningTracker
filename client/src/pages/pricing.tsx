@@ -128,7 +128,7 @@ export default function PricingPage() {
 
           <div className="grid md:grid-cols-3 gap-8 mb-16">
             <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200">
-              <div className="text-center mb-8">
+              <div className="text-center mb-6">
                 <div className="inline-flex items-center justify-center w-12 h-12 bg-gray-100 rounded-full mb-4">
                   <Zap className="h-6 w-6 text-gray-600" />
                 </div>
@@ -139,6 +139,21 @@ export default function PricingPage() {
                 </div>
                 <p className="text-gray-600 mt-2">Get started with basics</p>
               </div>
+
+              <ul className="space-y-3 mb-6 text-sm text-gray-600">
+                <li className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>Track your runs and progress</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>See your Runner Score</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>Get started in 60 seconds</span>
+                </li>
+              </ul>
 
               {plan === 'free' ? (
                 <Button className="w-full" variant="outline" disabled data-testid="current-plan-free">
@@ -160,7 +175,7 @@ export default function PricingPage() {
                 </span>
               </div>
               
-              <div className="text-center mb-8">
+              <div className="text-center mb-6">
                 <div className="inline-flex items-center justify-center w-12 h-12 bg-orange-100 rounded-full mb-4">
                   <Star className="h-6 w-6 text-strava-orange" />
                 </div>
@@ -187,6 +202,21 @@ export default function PricingPage() {
                 )}
               </div>
 
+              <ul className="space-y-3 mb-6 text-sm text-gray-600">
+                <li className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-strava-orange mt-0.5 flex-shrink-0" />
+                  <span>Predict your race times accurately</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-strava-orange mt-0.5 flex-shrink-0" />
+                  <span>Catch injury risks before they happen</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-strava-orange mt-0.5 flex-shrink-0" />
+                  <span>Train smarter with personalized plans</span>
+                </li>
+              </ul>
+
               {isPro && plan === 'pro' ? (
                 <Button className="w-full bg-strava-orange" disabled data-testid="current-plan-pro">
                   Current Plan
@@ -206,11 +236,11 @@ export default function PricingPage() {
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 shadow-xl text-white relative">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                 <span className="bg-yellow-400 text-gray-900 px-4 py-1 rounded-full text-sm font-bold">
-                  Best Value
+                  Coach-Grade
                 </span>
               </div>
               
-              <div className="text-center mb-8">
+              <div className="text-center mb-6">
                 <div className="inline-flex items-center justify-center w-12 h-12 bg-yellow-400 rounded-full mb-4">
                   <Crown className="h-6 w-6 text-gray-900" />
                 </div>
@@ -236,6 +266,21 @@ export default function PricingPage() {
                   </>
                 )}
               </div>
+
+              <ul className="space-y-3 mb-6 text-sm text-gray-300">
+                <li className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-yellow-400 mt-0.5 flex-shrink-0" />
+                  <span>Chat with your AI coach anytime</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-yellow-400 mt-0.5 flex-shrink-0" />
+                  <span>Analyze your running form in detail</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-yellow-400 mt-0.5 flex-shrink-0" />
+                  <span>Get priority help when you need it</span>
+                </li>
+              </ul>
 
               {isPremium ? (
                 <Button className="w-full bg-yellow-400 text-gray-900 hover:bg-yellow-300" disabled data-testid="current-plan-premium">
