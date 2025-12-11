@@ -11,13 +11,13 @@ import { runnerScoreService } from "./services/runnerScore";
 import goalsService from "./services/goals";
 import { ChatService } from "./services/chat";
 import { fitnessService } from "./services/fitness";
-import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, type Activity, type RunningShoe } from "@shared/schema";
+import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, emailWaitlist, type Activity, type RunningShoe } from "@shared/schema";
 import { shoeData } from "./shoe-data";
 import { validateAllShoes, getPipelineStats, findDuplicates, getShoeDataWithMetadata, getShoesWithMetadataFromStorage, getEnrichedShoeData, enrichShoeWithAIData } from "./shoe-pipeline";
 import { z } from "zod";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { db } from "./db";
-import { sql } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
 import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getActivityHistoryLimit, RATE_LIMITS } from "./rateLimits";
 
 // Authentication middleware
@@ -225,6 +225,28 @@ ${allPages.map(page => `  <url>
     } catch (error: any) {
       console.error('Sitemap generation error:', error);
       res.status(500).send("Error generating sitemap");
+    }
+  });
+
+  // Waitlist for email capture (public endpoint)
+  app.post("/api/waitlist", async (req, res) => {
+    try {
+      const { email } = z.object({ email: z.string().email() }).parse(req.body);
+      
+      // Check if email already exists
+      const existing = await db.select().from(emailWaitlist).where(eq(emailWaitlist.email, email)).limit(1);
+      if (existing.length > 0) {
+        return res.status(409).json({ message: "Email already registered" });
+      }
+      
+      await db.insert(emailWaitlist).values({ email });
+      res.json({ success: true, message: "You're on the list!" });
+    } catch (error: any) {
+      if (error.code === '23505') { // Unique constraint violation
+        return res.status(409).json({ message: "Email already registered" });
+      }
+      console.error('Waitlist error:', error);
+      res.status(500).json({ message: "Failed to join waitlist" });
     }
   });
 

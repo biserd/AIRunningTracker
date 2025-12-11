@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import MaintenancePage from "@/pages/maintenance";
 import Dashboard from "@/pages/dashboard";
 import SettingsPage from "@/pages/settings";
 import ActivityPage from "@/pages/activity";
@@ -162,6 +163,17 @@ function Router() {
 }
 
 function App() {
+  // Check for maintenance mode via environment variable
+  const isMaintenanceMode = import.meta.env.VITE_MAINTENANCE_MODE === 'true';
+
+  if (isMaintenanceMode) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <MaintenancePage />
+      </QueryClientProvider>
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
