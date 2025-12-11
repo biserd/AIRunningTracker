@@ -25,10 +25,23 @@ export interface YearlyStats {
   averagePaceMinPerKm: number;
   totalCalories: number;
   averageHeartrate: number | null;
+  maxHeartrateAchieved: number | null;
   mostActiveMonth: string;
   mostActiveMonthRuns: number;
   streakDays: number;
   mostRunLocation: LocationInfo | null;
+  // Advanced metrics
+  averageCadence: number | null;
+  zone2Hours: number | null;
+  estimatedVO2Max: number | null;
+  trainingDistribution: {
+    easy: number;
+    moderate: number;
+    hard: number;
+  };
+  totalSufferScore: number;
+  averageRunDistance: number;
+  averageRunTime: number;
 }
 
 export interface LocationInfo {
@@ -62,10 +75,18 @@ export function calculateYearlyStats(activities: Activity[], year: number): Year
       averagePaceMinPerKm: 0,
       totalCalories: 0,
       averageHeartrate: null,
+      maxHeartrateAchieved: null,
       mostActiveMonth: "",
       mostActiveMonthRuns: 0,
       streakDays: 0,
       mostRunLocation: null,
+      averageCadence: null,
+      zone2Hours: null,
+      estimatedVO2Max: null,
+      trainingDistribution: { easy: 0, moderate: 0, hard: 0 },
+      totalSufferScore: 0,
+      averageRunDistance: 0,
+      averageRunTime: 0,
     };
   }
 
@@ -87,6 +108,94 @@ export function calculateYearlyStats(activities: Activity[], year: number): Year
   const avgHR = activitiesWithHR.length > 0
     ? activitiesWithHR.reduce((sum, a) => sum + (a.averageHeartrate || 0), 0) / activitiesWithHR.length
     : null;
+
+  // Max heart rate achieved during the year
+  const maxHRActivity = yearActivities.filter(a => a.maxHeartrate).reduce((max, a) => 
+    (a.maxHeartrate || 0) > (max?.maxHeartrate || 0) ? a : max, 
+    yearActivities[0]
+  );
+  const maxHeartrateAchieved = maxHRActivity?.maxHeartrate || null;
+
+  // Average cadence
+  const activitiesWithCadence = yearActivities.filter(a => a.averageCadence && a.averageCadence > 0);
+  const avgCadence = activitiesWithCadence.length > 0
+    ? activitiesWithCadence.reduce((sum, a) => sum + (a.averageCadence || 0), 0) / activitiesWithCadence.length
+    : null;
+
+  // Zone 2 training hours estimation (HR between 60-70% of max)
+  // Using age-based max HR estimate if we have HR data
+  let zone2Hours: number | null = null;
+  if (activitiesWithHR.length > 0 && maxHeartrateAchieved) {
+    const zone2Upper = maxHeartrateAchieved * 0.75;
+    const zone2Lower = maxHeartrateAchieved * 0.60;
+    const zone2Activities = activitiesWithHR.filter(a => 
+      (a.averageHeartrate || 0) >= zone2Lower && (a.averageHeartrate || 0) <= zone2Upper
+    );
+    const zone2Seconds = zone2Activities.reduce((sum, a) => sum + a.movingTime, 0);
+    zone2Hours = zone2Seconds / 3600;
+  }
+
+  // Estimated VO2 Max using Jack Daniels formula from best 5K-ish effort
+  // VO2max = (0.8 + 0.1894393 * e^(-0.012778 * t) + 0.2989558 * e^(-0.1932605 * t)) * v
+  // where t = time in minutes, v = velocity in m/min
+  let estimatedVO2Max: number | null = null;
+  const fiveKRuns = yearActivities.filter(a => a.distance >= 4500 && a.distance <= 5500);
+  if (fiveKRuns.length > 0) {
+    const best5K = fiveKRuns.reduce((best, a) => {
+      const pace = a.movingTime / (a.distance / 1000);
+      const bestPace = best.movingTime / (best.distance / 1000);
+      return pace < bestPace ? a : best;
+    }, fiveKRuns[0]);
+    
+    const timeMinutes = best5K.movingTime / 60;
+    const velocityMetersPerMin = best5K.distance / timeMinutes;
+    const percentMax = 0.8 + 0.1894393 * Math.exp(-0.012778 * timeMinutes) + 0.2989558 * Math.exp(-0.1932605 * timeMinutes);
+    estimatedVO2Max = Math.round((velocityMetersPerMin / 1000 * 60 * 3.5) / percentMax);
+  } else if (yearActivities.length > 0) {
+    // Fallback: estimate from best effort run of any distance
+    const bestEffort = yearActivities.reduce((best, a) => {
+      const pace = a.movingTime / (a.distance / 1000);
+      const bestPace = best.movingTime / (best.distance / 1000);
+      return pace < bestPace ? a : best;
+    }, yearActivities[0]);
+    
+    const timeMinutes = bestEffort.movingTime / 60;
+    const velocityMetersPerMin = bestEffort.distance / timeMinutes;
+    // Simplified estimation
+    estimatedVO2Max = Math.round((velocityMetersPerMin / 1000) * 210);
+  }
+
+  // Training distribution based on heart rate or perceived effort
+  let trainingDistribution = { easy: 0, moderate: 0, hard: 0 };
+  if (activitiesWithHR.length > 0 && maxHeartrateAchieved) {
+    const easyThreshold = maxHeartrateAchieved * 0.70;
+    const hardThreshold = maxHeartrateAchieved * 0.85;
+    
+    let easyCount = 0, moderateCount = 0, hardCount = 0;
+    activitiesWithHR.forEach(a => {
+      const hr = a.averageHeartrate || 0;
+      if (hr < easyThreshold) {
+        easyCount++;
+      } else if (hr >= hardThreshold) {
+        hardCount++;
+      } else {
+        moderateCount++;
+      }
+    });
+    
+    // Convert to percentages only if we have data
+    const total = easyCount + moderateCount + hardCount;
+    if (total > 0) {
+      trainingDistribution = {
+        easy: Math.round((easyCount / total) * 100),
+        moderate: Math.round((moderateCount / total) * 100),
+        hard: Math.round((hardCount / total) * 100),
+      };
+    }
+  }
+
+  // Total suffer score (Strava's relative effort)
+  const totalSufferScore = yearActivities.reduce((sum, a) => sum + (a.sufferScore || 0), 0);
 
   const monthCounts: Record<string, number> = {};
   const monthNames = ["January", "February", "March", "April", "May", "June", 
@@ -117,10 +226,18 @@ export function calculateYearlyStats(activities: Activity[], year: number): Year
     averagePaceMinPerKm: (avgPaceSeconds / 60) / 1.60934,
     totalCalories,
     averageHeartrate: avgHR,
+    maxHeartrateAchieved,
     mostActiveMonth: mostActiveMonth[0],
     mostActiveMonthRuns: mostActiveMonth[1],
     streakDays,
     mostRunLocation,
+    averageCadence: avgCadence ? Math.round(avgCadence * 2) : null, // Convert to steps per minute (Strava gives half cadence)
+    zone2Hours: zone2Hours ? Math.round(zone2Hours * 10) / 10 : null,
+    estimatedVO2Max,
+    trainingDistribution,
+    totalSufferScore,
+    averageRunDistance: totalDistanceMeters / yearActivities.length,
+    averageRunTime: totalTimeSeconds / yearActivities.length,
   };
 }
 
@@ -228,33 +345,58 @@ export async function generateYearEndImage(
     return `${mins}m`;
   };
 
-  const prompt = `Create a stunning, modern Year in Running infographic poster for ${year}.
+  // Build advanced metrics section if available
+  const advancedMetrics: string[] = [];
+  if (stats.estimatedVO2Max) advancedMetrics.push(`VO2 Max: ${stats.estimatedVO2Max} ml/kg/min`);
+  if (stats.averageCadence) advancedMetrics.push(`Cadence: ${stats.averageCadence} spm`);
+  if (stats.zone2Hours && stats.zone2Hours > 0) advancedMetrics.push(`Zone 2: ${stats.zone2Hours}h aerobic base`);
+  if (stats.averageHeartrate) advancedMetrics.push(`Avg HR: ${Math.round(stats.averageHeartrate)} bpm`);
+  if (stats.totalSufferScore > 0) advancedMetrics.push(`Total Effort: ${stats.totalSufferScore.toLocaleString()}`);
 
-DESIGN REQUIREMENTS:
-- Vertical format optimized for social media sharing (Instagram story style)
-- Bold, energetic typography with clear hierarchy
-- Vibrant gradient color scheme (oranges, purples, blues - running/fitness themed)
+  const advancedSection = advancedMetrics.length > 0 
+    ? `\n\nADVANCED PERFORMANCE DATA (smaller section):\n${advancedMetrics.join('\n')}`
+    : '';
+
+  const prompt = `Create an EPIC, jaw-dropping Year in Running infographic poster for ${year}. This should look like a premium sports brand advertisement - the kind of image that makes people stop scrolling.
+
+CRITICAL DESIGN REQUIREMENTS:
+- LARGE vertical format (9:16 aspect ratio, Instagram story style)
+- MASSIVE, BOLD typography - think Nike/Adidas campaign level impact
+- Electric gradient color scheme: deep purples, hot oranges, electric blues, neon accents
+- High contrast with dark backgrounds and glowing text effects
 - ${locationTheme}
-- Professional sports magazine aesthetic with clean data visualization
+- Premium sports magazine aesthetic with dramatic lighting effects
+- Geometric patterns, speed lines, and dynamic visual elements
+- Numbers should be HUGE and impossible to miss
 
-CONTENT TO INCLUDE (display prominently):
-Title: "${userName}'s ${year} Running Year"
+LAYOUT STRUCTURE:
+1. TOP: Epic hero title "${userName.toUpperCase()}'S ${year}" with dramatic styling
+2. CENTER: The biggest stat as a massive hero number (total distance: ${stats.totalDistanceMiles.toFixed(0)} MILES)
+3. GRID: Key stats in bold cards with icons
 
-KEY STATS (use large, bold numbers):
-- Total Runs: ${stats.totalRuns}
-- Total Distance: ${stats.totalDistanceMiles.toFixed(1)} miles (${stats.totalDistanceKm.toFixed(0)} km)
-- Total Time: ${formatTime(stats.totalTimeSeconds)}
-- Elevation Gained: ${stats.totalElevationFeet.toFixed(0)} ft
-- Longest Run: ${stats.longestRunMiles.toFixed(1)} miles
-- Fastest Pace: ${formatPace(stats.fastestPaceMinPerMile)} /mile
-- Best Month: ${stats.mostActiveMonth} (${stats.mostActiveMonthRuns} runs)
-${stats.streakDays > 1 ? `- Longest Streak: ${stats.streakDays} days` : ''}
-${stats.totalCalories > 0 ? `- Calories Burned: ${stats.totalCalories.toLocaleString()}` : ''}
+HERO STATS (make these MASSIVE and bold):
+🏃 ${stats.totalRuns} RUNS
+📏 ${stats.totalDistanceMiles.toFixed(1)} MILES (${stats.totalDistanceKm.toFixed(0)} km)
+⏱️ ${formatTime(stats.totalTimeSeconds)} TOTAL TIME
+⛰️ ${stats.totalElevationFeet.toFixed(0)} FT CLIMBED
+🚀 ${formatPace(stats.fastestPaceMinPerMile)}/mi FASTEST PACE
+🏆 ${stats.longestRunMiles.toFixed(1)} mi LONGEST RUN
+📅 ${stats.mostActiveMonth.toUpperCase()} BEST MONTH
+${stats.streakDays > 1 ? `🔥 ${stats.streakDays} DAY STREAK` : ''}
+${stats.totalCalories > 0 ? `💪 ${stats.totalCalories.toLocaleString()} CALORIES` : ''}${advancedSection}
 
-Add subtle running-related visual elements like running shoe silhouettes, route lines, or medal icons as accents.
-Include a small "RunAnalytics" watermark in the corner.
+VISUAL ELEMENTS:
+- Glowing running shoe silhouettes
+- Abstract route/trail lines as design accents  
+- Medal or trophy graphics
+- Speed motion blur effects
+- Particle/energy effects around numbers
 
-Make it visually striking and something a runner would be proud to share on social media.`;
+BRANDING:
+- Small "RunAnalytics" logo watermark in bottom corner
+- Premium, polished finish
+
+Make this image SO impressive that every runner would be proud to share it. It should feel like a celebration of athletic achievement.`;
 
   try {
     const response = await ai.models.generateContent({

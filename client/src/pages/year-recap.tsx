@@ -19,7 +19,12 @@ import {
   Share2, 
   Sparkles,
   Trophy,
-  Zap
+  Zap,
+  Heart,
+  Footprints,
+  Gauge,
+  BarChart3,
+  Target
 } from "lucide-react";
 import { Helmet } from "react-helmet";
 
@@ -39,6 +44,7 @@ interface YearlyStats {
   averagePaceMinPerKm: number;
   totalCalories: number;
   averageHeartrate: number | null;
+  maxHeartrateAchieved: number | null;
   mostActiveMonth: string;
   mostActiveMonthRuns: number;
   streakDays: number;
@@ -49,6 +55,17 @@ interface YearlyStats {
     runCount: number;
     description: string;
   } | null;
+  averageCadence: number | null;
+  zone2Hours: number | null;
+  estimatedVO2Max: number | null;
+  trainingDistribution: {
+    easy: number;
+    moderate: number;
+    hard: number;
+  };
+  totalSufferScore: number;
+  averageRunDistance: number;
+  averageRunTime: number;
 }
 
 export default function YearRecapPage() {
@@ -360,6 +377,144 @@ export default function YearRecapPage() {
               )}
             </div>
 
+            {/* Advanced Metrics Section */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-purple-500" />
+                Advanced Metrics
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {stats.estimatedVO2Max && (
+                  <Card className="bg-gradient-to-br from-indigo-500/10 to-indigo-600/5 border-indigo-500/20">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3">
+                        <Gauge className="h-8 w-8 text-indigo-500" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Est. VO2 Max</p>
+                          <p className="text-2xl font-bold" data-testid="text-vo2max">
+                            {stats.estimatedVO2Max}
+                          </p>
+                          <p className="text-xs text-muted-foreground">ml/kg/min</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {stats.averageCadence && (
+                  <Card className="bg-gradient-to-br from-lime-500/10 to-lime-600/5 border-lime-500/20">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3">
+                        <Footprints className="h-8 w-8 text-lime-500" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Avg Cadence</p>
+                          <p className="text-2xl font-bold" data-testid="text-cadence">
+                            {stats.averageCadence}
+                          </p>
+                          <p className="text-xs text-muted-foreground">steps/min</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {stats.zone2Hours && stats.zone2Hours > 0 && (
+                  <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3">
+                        <Target className="h-8 w-8 text-emerald-500" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Zone 2 Training</p>
+                          <p className="text-2xl font-bold" data-testid="text-zone2">
+                            {stats.zone2Hours}h
+                          </p>
+                          <p className="text-xs text-muted-foreground">aerobic base</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {stats.averageHeartrate && (
+                  <Card className="bg-gradient-to-br from-rose-500/10 to-rose-600/5 border-rose-500/20">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3">
+                        <Heart className="h-8 w-8 text-rose-500" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Avg Heart Rate</p>
+                          <p className="text-2xl font-bold" data-testid="text-avg-hr">
+                            {Math.round(stats.averageHeartrate)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">bpm</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {stats.maxHeartrateAchieved && (
+                  <Card className="bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3">
+                        <Heart className="h-8 w-8 text-red-500" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Max Heart Rate</p>
+                          <p className="text-2xl font-bold" data-testid="text-max-hr">
+                            {Math.round(stats.maxHeartrateAchieved)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">bpm peak</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {stats.trainingDistribution && (stats.trainingDistribution.easy + stats.trainingDistribution.moderate + stats.trainingDistribution.hard) > 0 && (
+                  <Card className="bg-gradient-to-br from-violet-500/10 to-violet-600/5 border-violet-500/20 col-span-2">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3">
+                        <BarChart3 className="h-8 w-8 text-violet-500" />
+                        <div className="flex-1">
+                          <p className="text-sm text-muted-foreground mb-2">Training Distribution</p>
+                          <div className="flex gap-4 text-sm">
+                            <div className="flex items-center gap-1">
+                              <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                              <span>Easy {stats.trainingDistribution.easy}%</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                              <span>Moderate {stats.trainingDistribution.moderate}%</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                              <span>Hard {stats.trainingDistribution.hard}%</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {stats.totalSufferScore > 0 && (
+                  <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3">
+                        <Zap className="h-8 w-8 text-orange-500" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Total Effort</p>
+                          <p className="text-2xl font-bold" data-testid="text-suffer-score">
+                            {stats.totalSufferScore.toLocaleString()}
+                          </p>
+                          <p className="text-xs text-muted-foreground">relative effort</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+
             <Card className="mb-8">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -405,8 +560,8 @@ export default function YearRecapPage() {
                     )}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="max-w-md mx-auto border rounded-lg overflow-hidden shadow-lg">
+                  <div className="flex flex-col items-center gap-6">
+                    <div className="w-full max-w-2xl mx-auto border-4 border-gradient-to-r from-orange-500 to-purple-600 rounded-2xl overflow-hidden shadow-2xl">
                       <img 
                         src={generatedImage} 
                         alt={`${selectedYear} Running Year Infographic`}
