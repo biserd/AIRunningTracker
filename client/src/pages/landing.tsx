@@ -213,28 +213,36 @@ export default function LandingPage() {
                 <div className="w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-r from-strava-orange to-red-500 rounded-xl flex items-center justify-center">
                   <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-charcoal">AI Running Coach</h2>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-charcoal">Your 24/7 Running Strategist</h2>
               </div>
-              <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6">
-                Your personal AI running coach analyzes your training data and provides instant, personalized advice through natural conversation. 
-                Ask anything about your performance, training, or goals.
+              <p className="text-lg sm:text-xl md:text-2xl font-semibold text-charcoal mb-3">
+                Strava gives you charts. We give you answers.
               </p>
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                  <span className="text-sm sm:text-base text-gray-700">Real-time conversational AI coaching</span>
+              <p className="text-base sm:text-lg text-gray-600 mb-6">
+                Stop staring at graphs wondering if you're improving. Just ask. From "Am I overtraining?" to "What's my marathon pace?", get instant advice based on your actual history.
+              </p>
+              <div className="space-y-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm sm:text-base text-gray-700"><strong>Turn complex data into plain English.</strong></span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                  <span className="text-sm sm:text-base text-gray-700">Personalized insights from your Strava data</span>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm sm:text-base text-gray-700">
+                    <strong>100% Personal Context.</strong> Unlike generic chatbots, we analyze your last 12 months of Strava logs before answering.
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                  <span className="text-sm sm:text-base text-gray-700">Training advice and race readiness analysis</span>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm sm:text-base text-gray-700">
+                    <strong>Instant Race-Readiness Checks.</strong> Ask "Am I ready?" and get an honest prediction based on your recent long runs.
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                  <span className="text-sm sm:text-base text-gray-700">Powered by advanced AI with running expertise</span>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm sm:text-base text-gray-700">
+                    <strong>Spot Injury Risks Early.</strong> Identify volume spikes and fatigue trends before they sideline you.
+                  </div>
                 </div>
               </div>
               <Link href="/auth">
@@ -243,7 +251,7 @@ export default function LandingPage() {
                   data-testid="aicoach-cta-getstarted"
                 >
                   <MessageCircle className="h-5 w-5 mr-2" />
-                  Try AI Coach Free
+                  Ask My Coach a Question
                 </Button>
               </Link>
             </div>
