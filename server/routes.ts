@@ -2138,8 +2138,8 @@ ${allPages.map(page => `  <url>
     }
   });
 
-  // Strava queue status and rate limiter monitoring
-  app.get("/api/strava/queue/status", authenticateJWT, async (req: any, res) => {
+  // Strava queue status and rate limiter monitoring (admin only)
+  app.get("/api/strava/queue/status", authenticateAdmin, async (req: any, res) => {
     try {
       const userId = req.user!.id;
       const queueStats = jobQueue.getStats();

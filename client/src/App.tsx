@@ -23,6 +23,7 @@ import RunnerScorePage from "@/pages/runner-score";
 import AdminPage from "@/pages/admin";
 import AdminPerformanceLogsPage from "@/pages/admin-performance-logs";
 import AdminShoesPage from "@/pages/admin-shoes";
+import QueueDashboard from "@/pages/admin/queue-dashboard";
 import AboutPage from "@/pages/about";
 import TermsPage from "@/pages/terms";
 import FeaturesPage from "@/pages/features";
@@ -153,6 +154,9 @@ function Router() {
       </Route>
       <Route path="/admin/shoes">
         <ProtectedRoute component={AdminShoesPage} />
+      </Route>
+      <Route path="/admin/queue">
+        <ProtectedRoute component={QueueDashboard} />
       </Route>
       <Route path="/wrapped-2025">
         <ProtectedRoute component={Wrapped2025} />
