@@ -37,6 +37,7 @@ Preferred communication style: Simple, everyday language.
 - **SEO & Content Marketing**: Blog system, dedicated landing pages, and SEO-optimized content with JSON-LD schemas and meta tags.
 - **Mobile Authentication**: JWT-based authentication for native mobile apps, including refresh tokens and session management.
 - **Stripe Subscription System**: Full freemium model management with Stripe for payments, checkout sessions, and customer portal integration.
+- **Reverse Trial System**: 7-day Pro access for new users without credit card. Automatically downgrades to Free tier after trial. Includes trial badge UI component, email notifications (welcome, day 5 reminder, expiry CTA), and admin endpoints for email processing.
 - **Strava Activity Branding**: Feature to append customizable branding text to Strava activity descriptions post-sync, with user opt-in and template support.
 
 ### System Design Choices
