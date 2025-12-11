@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stravaService } from "./services/strava";
 import { stravaClient } from "./services/stravaClient";
-import { jobQueue, createListActivitiesJob } from "./services/queue";
+import { jobQueue, createListActivitiesJob, metrics } from "./services/queue";
 import { aiService } from "./services/ai";
 import { mlService } from "./services/ml";
 import { performanceService } from "./services/performance";
@@ -2145,6 +2145,7 @@ ${allPages.map(page => `  <url>
       const queueStats = jobQueue.getStats();
       const rateLimitState = stravaClient.getRateLimitState();
       const userJobs = jobQueue.getJobsForUser(userId);
+      const metricsSnapshot = metrics.getSnapshot();
       
       res.json({
         queue: queueStats,
@@ -2163,6 +2164,7 @@ ${allPages.map(page => `  <url>
           completed: userJobs.completed.length,
           failed: userJobs.failed.length,
         },
+        metrics: metricsSnapshot,
       });
     } catch (error: any) {
       console.error('Queue status error:', error);

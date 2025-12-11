@@ -9,6 +9,7 @@
  */
 
 import { storage } from "../storage";
+import { metrics } from "./queue/metrics";
 
 export interface RateLimitState {
   shortTermUsage: number;      // 15-minute window usage
@@ -68,6 +69,10 @@ class StravaClient {
       if (this.rateLimitState.pauseUntil && new Date() > this.rateLimitState.pauseUntil) {
         this.rateLimitState.isPaused = false;
         this.rateLimitState.pauseUntil = null;
+        metrics.recordRateLimitResume({
+          shortTerm: this.rateLimitState.shortTermUsage,
+          longTerm: this.rateLimitState.longTermUsage,
+        });
         console.log('[StravaClient] Rate limit pause expired, resuming requests');
         return false;
       }
@@ -101,9 +106,13 @@ class StravaClient {
     
     this.rateLimitState.lastUpdated = new Date();
     
-    if (this.shouldPauseRequests()) {
+    if (this.shouldPauseRequests() && !this.rateLimitState.isPaused) {
       this.rateLimitState.isPaused = true;
       this.rateLimitState.pauseUntil = new Date(Date.now() + this.PAUSE_DURATION_MS);
+      metrics.recordRateLimitPause({
+        shortTerm: this.rateLimitState.shortTermUsage,
+        longTerm: this.rateLimitState.longTermUsage,
+      });
       console.log(`[StravaClient] Rate limit threshold reached (${this.rateLimitState.shortTermUsage}/${this.rateLimitState.shortTermLimit}), pausing for ${this.PAUSE_DURATION_MS / 1000}s`);
     }
   }
@@ -154,6 +163,10 @@ class StravaClient {
       if (response.status === 429) {
         this.rateLimitState.isPaused = true;
         this.rateLimitState.pauseUntil = new Date(Date.now() + this.PAUSE_DURATION_MS);
+        metrics.recordRateLimitPause({
+          shortTerm: this.rateLimitState.shortTermUsage,
+          longTerm: this.rateLimitState.longTermUsage,
+        });
         throw new Error('RATE_LIMIT: Token refresh rate limited');
       }
       throw new Error(`Failed to refresh Strava token: ${response.status}`);

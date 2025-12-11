@@ -5,6 +5,7 @@
 import { Job, JobResult, createJobId } from './jobTypes';
 import { stravaClient, isRateLimitError } from '../stravaClient';
 import { storage } from '../../storage';
+import { metrics } from './metrics';
 
 export interface QueueStats {
   pending: number;
@@ -121,6 +122,7 @@ class JobQueue {
         job.status = 'completed';
         this.processing.delete(job.id);
         this.completed.push(job);
+        metrics.incrementJobsProcessed(job.type);
         this.notifyProgress(job.userId, `Completed ${job.type}`, result.data);
         
         if (result.newJobs && result.newJobs.length > 0) {
@@ -152,6 +154,7 @@ class JobQueue {
         job.status = 'failed';
         this.processing.delete(job.id);
         this.failed.push(job);
+        metrics.incrementJobsFailed(job.type, error.message);
         this.notifyProgress(job.userId, `Job ${job.type} failed after ${job.attempts} attempts`, { error: error.message });
         
         if (this.failed.length > 500) {

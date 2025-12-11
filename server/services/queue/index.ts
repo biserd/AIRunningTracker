@@ -9,3 +9,4 @@ export {
   createListActivitiesJob,
   createHydrateActivityJob,
 } from './jobTypes';
+export { metrics, type MetricsSnapshot, type MetricEvent } from './metrics';
