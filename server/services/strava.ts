@@ -108,10 +108,15 @@ export class StravaService {
     );
 
     if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.error(`Strava API error (${response.status}): ${errorText}`);
       if (response.status === 401) {
         throw new Error('Unauthorized - token may be expired');
       }
-      throw new Error('Failed to fetch activities from Strava');
+      if (response.status === 429) {
+        throw new Error('Strava rate limit exceeded. Please try again in a few minutes.');
+      }
+      throw new Error(`Failed to fetch activities from Strava (${response.status}): ${errorText}`);
     }
 
     return response.json();
