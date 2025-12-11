@@ -26,6 +26,7 @@ import { StravaConnectButton, StravaPoweredBy } from "@/components/StravaConnect
 import { ChatPanel } from "@/components/ChatPanel";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import RecentConversations from "@/components/RecentConversations";
+import TrialBadge from "@/components/TrialBadge";
 import { MessageCircle, X, Gift, ChevronRight, Crown, Lock } from "lucide-react";
 import { Link } from "wouter";
 import { useFeatureAccess } from "@/hooks/useSubscription";
@@ -390,6 +391,9 @@ export default function Dashboard() {
         {canAccessAICoachChat && (
           <AnnouncementBanner onOpenChat={() => setIsChatOpen(true)} />
         )}
+
+        {/* Trial Badge for reverse trial users */}
+        <TrialBadge />
 
         {/* 2025 Running Wrapped Banner */}
         <Link href="/wrapped-2025">

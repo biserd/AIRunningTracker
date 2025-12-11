@@ -178,6 +178,10 @@ export interface IStorage {
     totalUsers: number;
   }>;
   
+  // Reverse trial methods
+  getUsersWithTrialEndingSoon(daysRemaining: number): Promise<User[]>;
+  getUsersWithExpiredTrials(): Promise<User[]>;
+  
   // Running Shoe methods
   getShoes(filters: {
     brand?: string;
@@ -1279,6 +1283,51 @@ export class DatabaseStorage implements IStorage {
       totalDistance: Number(distanceSum?.sum) || 0,
       totalUsers: userCount?.count || 0
     };
+  }
+
+  // Reverse trial methods
+  async getUsersWithTrialEndingSoon(daysRemaining: number): Promise<User[]> {
+    const now = new Date();
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + daysRemaining);
+    
+    // Find users whose trial ends within daysRemaining days
+    // and who haven't subscribed yet
+    const result = await db
+      .select()
+      .from(users)
+      .where(
+        and(
+          gt(users.trialEndsAt, now),
+          lt(users.trialEndsAt, targetDate),
+          sql`${users.stripeSubscriptionId} IS NULL`,
+          eq(users.subscriptionPlan, 'free')
+        )
+      );
+    
+    return result;
+  }
+  
+  async getUsersWithExpiredTrials(): Promise<User[]> {
+    const now = new Date();
+    const oneDayAgo = new Date();
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+    
+    // Find users whose trial expired within the last 24 hours
+    // and who haven't subscribed yet
+    const result = await db
+      .select()
+      .from(users)
+      .where(
+        and(
+          lt(users.trialEndsAt, now),
+          gt(users.trialEndsAt, oneDayAgo),
+          sql`${users.stripeSubscriptionId} IS NULL`,
+          eq(users.subscriptionPlan, 'free')
+        )
+      );
+    
+    return result;
   }
 
   // Running Shoe methods

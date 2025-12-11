@@ -368,6 +368,253 @@ The RunAnalytics Team
       text: `User Account Deleted\n\nUser ID: ${userId}\nEmail: ${email}\nDate: ${new Date().toLocaleString()}\n\nAll associated data has been permanently deleted from the system in compliance with GDPR.`
     });
   }
+
+  // ============== REVERSE TRIAL EMAILS ==============
+
+  async sendTrialWelcomeEmail(email: string, firstName?: string): Promise<void> {
+    const name = firstName || 'there';
+    const subject = 'Your 7-Day Pro Trial Has Started! - RunAnalytics';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #e74c3c; margin: 0;">🏃‍♂️ RunAnalytics</h1>
+          <p style="color: #666; margin: 5px 0;">Your AI-Powered Running Coach</p>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+          <h2 style="margin: 0; font-size: 24px;">🎉 Your 7-Day Pro Trial is Active!</h2>
+          <p style="margin: 10px 0 0 0; opacity: 0.9;">No credit card required</p>
+        </div>
+        
+        <p>Hey ${name}!</p>
+        
+        <p>Welcome to RunAnalytics! For the next <strong>7 days</strong>, you have full access to all Pro features - absolutely free, no credit card needed.</p>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="color: #27ae60; margin-top: 0;">✨ What's Unlocked in Your Trial:</h3>
+          <ul style="color: #2c3e50; line-height: 1.8;">
+            <li><strong>Unlimited AI Insights</strong> - Get personalized coaching recommendations</li>
+            <li><strong>Race Predictions</strong> - See your predicted times for 5K, 10K, Half & Full Marathon</li>
+            <li><strong>Training Plans</strong> - AI-generated plans tailored to your goals</li>
+            <li><strong>Injury Risk Analysis</strong> - Stay healthy with proactive alerts</li>
+            <li><strong>Fitness/Fatigue Charts</strong> - Track your training load over time</li>
+            <li><strong>Unlimited Data History</strong> - Analyze all your Strava activities</li>
+          </ul>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="https://aitracker.run/dashboard" style="background: #e74c3c; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Explore Your Pro Features →</a>
+        </div>
+        
+        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+          <p style="margin: 0; color: #856404;"><strong>💡 Pro tip:</strong> Connect your Strava account first to unlock AI-powered insights based on your real running data!</p>
+        </div>
+        
+        <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; color: #666; font-size: 14px;">
+          <p>Your trial ends in 7 days. We'll remind you before it expires.</p>
+          <p>Happy running!<br>The RunAnalytics Team</p>
+        </div>
+      </div>
+    `;
+    
+    const text = `
+Your 7-Day Pro Trial Has Started! - RunAnalytics
+
+Hey ${name}!
+
+Welcome to RunAnalytics! For the next 7 days, you have full access to all Pro features - absolutely free, no credit card needed.
+
+What's Unlocked in Your Trial:
+• Unlimited AI Insights - Get personalized coaching recommendations
+• Race Predictions - See your predicted times for 5K, 10K, Half & Full Marathon
+• Training Plans - AI-generated plans tailored to your goals
+• Injury Risk Analysis - Stay healthy with proactive alerts
+• Fitness/Fatigue Charts - Track your training load over time
+• Unlimited Data History - Analyze all your Strava activities
+
+Start exploring: https://aitracker.run/dashboard
+
+Pro tip: Connect your Strava account first to unlock AI-powered insights based on your real running data!
+
+Your trial ends in 7 days. We'll remind you before it expires.
+
+Happy running!
+The RunAnalytics Team
+    `;
+    
+    await this.sendEmail({
+      to: email,
+      subject,
+      html,
+      text
+    });
+  }
+
+  async sendTrialReminderEmail(email: string, firstName?: string, daysRemaining: number = 2): Promise<void> {
+    const name = firstName || 'there';
+    const subject = `Only ${daysRemaining} Days Left on Your Pro Trial! - RunAnalytics`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #e74c3c; margin: 0;">🏃‍♂️ RunAnalytics</h1>
+          <p style="color: #666; margin: 5px 0;">Your AI-Powered Running Coach</p>
+        </div>
+        
+        <div style="background: #fff3cd; padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px; border-left: 4px solid #ffc107;">
+          <h2 style="margin: 0; color: #856404;">⏰ ${daysRemaining} Days Left on Your Pro Trial</h2>
+        </div>
+        
+        <p>Hey ${name}!</p>
+        
+        <p>Just a quick heads up - your Pro trial expires in <strong>${daysRemaining} days</strong>. After that, you'll be downgraded to the Free plan.</p>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="color: #e74c3c; margin-top: 0;">🔒 What You'll Lose:</h3>
+          <ul style="color: #2c3e50; line-height: 1.8;">
+            <li>Unlimited AI insights (Free: 3/month)</li>
+            <li>Race predictions and training plans</li>
+            <li>Injury risk analysis</li>
+            <li>Fitness/Fatigue charts</li>
+            <li>Unlimited data history (Free: 30 days only)</li>
+          </ul>
+        </div>
+        
+        <p>Don't lose your progress! Upgrade now to keep all your Pro features.</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="https://aitracker.run/pricing" style="background: #27ae60; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Upgrade to Pro - $3.99/mo →</a>
+        </div>
+        
+        <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; color: #666; font-size: 14px;">
+          <p>Questions? Just reply to this email - we're here to help!</p>
+          <p>Happy running!<br>The RunAnalytics Team</p>
+        </div>
+      </div>
+    `;
+    
+    const text = `
+Only ${daysRemaining} Days Left on Your Pro Trial! - RunAnalytics
+
+Hey ${name}!
+
+Just a quick heads up - your Pro trial expires in ${daysRemaining} days. After that, you'll be downgraded to the Free plan.
+
+What You'll Lose:
+• Unlimited AI insights (Free: 3/month)
+• Race predictions and training plans
+• Injury risk analysis
+• Fitness/Fatigue charts
+• Unlimited data history (Free: 30 days only)
+
+Don't lose your progress! Upgrade now: https://aitracker.run/pricing
+
+Upgrade to Pro - Just $3.99/mo
+
+Questions? Just reply to this email - we're here to help!
+
+Happy running!
+The RunAnalytics Team
+    `;
+    
+    await this.sendEmail({
+      to: email,
+      subject,
+      html,
+      text
+    });
+  }
+
+  async sendTrialExpiredEmail(email: string, firstName?: string): Promise<void> {
+    const name = firstName || 'there';
+    const subject = 'Your Pro Trial Has Ended - Upgrade to Keep Your Features! - RunAnalytics';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #e74c3c; margin: 0;">🏃‍♂️ RunAnalytics</h1>
+          <p style="color: #666; margin: 5px 0;">Your AI-Powered Running Coach</p>
+        </div>
+        
+        <div style="background: #f8d7da; padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px; border-left: 4px solid #dc3545;">
+          <h2 style="margin: 0; color: #721c24;">Your Pro Trial Has Ended</h2>
+          <p style="margin: 10px 0 0 0; color: #721c24;">You're now on the Free plan</p>
+        </div>
+        
+        <p>Hey ${name}!</p>
+        
+        <p>Your 7-day Pro trial has come to an end. Your account has been downgraded to the Free plan.</p>
+        
+        <div style="background: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="color: #27ae60; margin-top: 0;">🎯 What You Still Get (Free):</h3>
+          <ul style="color: #2c3e50; line-height: 1.6;">
+            <li>Runner Score calculation</li>
+            <li>Basic analytics dashboard</li>
+            <li>3 AI insights per month</li>
+            <li>30 days of data history</li>
+          </ul>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="color: #e74c3c; margin-top: 0;">🚀 Ready to Go Pro?</h3>
+          <p style="margin: 10px 0;">For just <strong>$3.99/month</strong>, you can unlock:</p>
+          <ul style="color: #2c3e50; line-height: 1.6;">
+            <li>Unlimited AI insights and coaching</li>
+            <li>Personalized training plans</li>
+            <li>Race time predictions</li>
+            <li>Injury risk analysis</li>
+            <li>Unlimited data history</li>
+          </ul>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="https://aitracker.run/pricing" style="background: #e74c3c; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Upgrade to Pro Now →</a>
+        </div>
+        
+        <p style="color: #666; font-size: 14px; text-align: center;">Or go Premium at $7.99/mo for AI Coach Chat and Form Analysis!</p>
+        
+        <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; color: #666; font-size: 14px;">
+          <p>We hope you enjoyed your trial! If you have any feedback, just reply to this email.</p>
+          <p>Keep running strong!<br>The RunAnalytics Team</p>
+        </div>
+      </div>
+    `;
+    
+    const text = `
+Your Pro Trial Has Ended - Upgrade to Keep Your Features!
+
+Hey ${name}!
+
+Your 7-day Pro trial has come to an end. Your account has been downgraded to the Free plan.
+
+What You Still Get (Free):
+• Runner Score calculation
+• Basic analytics dashboard
+• 3 AI insights per month
+• 30 days of data history
+
+Ready to Go Pro? For just $3.99/month, you can unlock:
+• Unlimited AI insights and coaching
+• Personalized training plans
+• Race time predictions
+• Injury risk analysis
+• Unlimited data history
+
+Upgrade now: https://aitracker.run/pricing
+
+Or go Premium at $7.99/mo for AI Coach Chat and Form Analysis!
+
+We hope you enjoyed your trial! If you have any feedback, just reply to this email.
+
+Keep running strong!
+The RunAnalytics Team
+    `;
+    
+    await this.sendEmail({
+      to: email,
+      subject,
+      html,
+      text
+    });
+  }
 }
 
 export const emailService = new EmailService();

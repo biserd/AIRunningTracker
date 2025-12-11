@@ -17,6 +17,9 @@ export interface SubscriptionStatus {
   trialEndsAt?: string;
   subscriptionEndsAt?: string;
   usage?: UsageStats;
+  // Reverse trial fields
+  isReverseTrial?: boolean;
+  trialDaysRemaining?: number;
 }
 
 export function useSubscription() {
@@ -37,6 +40,11 @@ export function useSubscription() {
   const isFree = plan === 'free' || status === 'canceled' || status === 'past_due';
 
   const usage = subscription?.usage;
+  
+  // Reverse trial specific data
+  const isReverseTrial = subscription?.isReverseTrial || false;
+  const trialDaysRemaining = subscription?.trialDaysRemaining || 0;
+  const trialEndsAt = subscription?.trialEndsAt ? new Date(subscription.trialEndsAt) : null;
 
   return {
     subscription,
@@ -49,6 +57,10 @@ export function useSubscription() {
     isFree,
     hasActiveSubscription: isPro || isPremium,
     usage,
+    // Reverse trial exports
+    isReverseTrial,
+    trialDaysRemaining,
+    trialEndsAt,
   };
 }
 
