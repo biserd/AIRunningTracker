@@ -49,7 +49,7 @@ export default function PricingPage() {
   const { isAuthenticated } = useAuth();
   const { plan, isPro, isPremium } = useSubscription();
   const checkout = useCheckout();
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [, navigate] = useLocation();
 
   const handleSubscribe = (tier: 'pro' | 'premium') => {
@@ -89,7 +89,7 @@ export default function PricingPage() {
             Choose the plan that fits your running goals. Upgrade anytime as you progress.
           </p>
 
-          <div className="flex justify-center mb-12">
+          <div className="flex flex-col items-center mb-12">
             <div className="bg-white rounded-full p-1 shadow-md inline-flex">
               <button
                 onClick={() => setBillingCycle('monthly')}
@@ -104,16 +104,26 @@ export default function PricingPage() {
               </button>
               <button
                 onClick={() => setBillingCycle('annual')}
-                className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`px-6 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
                   billingCycle === 'annual' 
                     ? 'bg-strava-orange text-white' 
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
                 data-testid="billing-annual"
               >
-                Annual <span className="text-xs ml-1">(Save 17%)</span>
+                Annual
+                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                  billingCycle === 'annual' 
+                    ? 'bg-white/20 text-white' 
+                    : 'bg-green-100 text-green-700'
+                }`}>
+                  Save 17%
+                </span>
               </button>
             </div>
+            <p className="text-sm text-gray-500 mt-3">
+              Cancel anytime · 30-day money-back guarantee
+            </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 mb-16">
@@ -155,16 +165,26 @@ export default function PricingPage() {
                   <Star className="h-6 w-6 text-strava-orange" />
                 </div>
                 <h2 className="text-2xl font-bold text-charcoal mb-2">Pro</h2>
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-4xl font-bold text-strava-orange">
-                    ${billingCycle === 'monthly' ? '3.99' : '39.99'}
-                  </span>
-                  <span className="text-gray-500">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
-                </div>
-                {billingCycle === 'annual' && (
-                  <p className="text-green-600 text-sm mt-1">Save $7.89/year</p>
+                {billingCycle === 'monthly' ? (
+                  <>
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className="text-4xl font-bold text-strava-orange">$3.99</span>
+                      <span className="text-gray-500">/mo</span>
+                    </div>
+                    <p className="text-gray-600 mt-2">For serious runners</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className="text-4xl font-bold text-strava-orange">$39.99</span>
+                      <span className="text-gray-500">/yr</span>
+                    </div>
+                    <p className="text-green-600 text-sm mt-1 font-medium">
+                      ≈ $3.33/mo — Save 17%
+                    </p>
+                    <p className="text-gray-600 mt-1">For serious runners</p>
+                  </>
                 )}
-                <p className="text-gray-600 mt-2">For serious runners</p>
               </div>
 
               {isPro && plan === 'pro' ? (
@@ -195,16 +215,26 @@ export default function PricingPage() {
                   <Crown className="h-6 w-6 text-gray-900" />
                 </div>
                 <h2 className="text-2xl font-bold mb-2">Premium</h2>
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-4xl font-bold text-yellow-400">
-                    ${billingCycle === 'monthly' ? '7.99' : '79.99'}
-                  </span>
-                  <span className="text-gray-400">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
-                </div>
-                {billingCycle === 'annual' && (
-                  <p className="text-green-400 text-sm mt-1">Save $15.89/year</p>
+                {billingCycle === 'monthly' ? (
+                  <>
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className="text-4xl font-bold text-yellow-400">$7.99</span>
+                      <span className="text-gray-400">/mo</span>
+                    </div>
+                    <p className="text-gray-400 mt-2">For elite performance</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className="text-4xl font-bold text-yellow-400">$79.99</span>
+                      <span className="text-gray-400">/yr</span>
+                    </div>
+                    <p className="text-green-400 text-sm mt-1 font-medium">
+                      ≈ $6.67/mo — Save 17%
+                    </p>
+                    <p className="text-gray-400 mt-1">For elite performance</p>
+                  </>
                 )}
-                <p className="text-gray-400 mt-2">For elite performance</p>
               </div>
 
               {isPremium ? (
@@ -254,11 +284,8 @@ export default function PricingPage() {
           </div>
 
           <div className="mt-12 text-center">
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 mb-2">
               Questions? <Link href="/contact" className="text-strava-orange hover:underline">Contact us</Link>
-            </p>
-            <p className="text-sm text-gray-500">
-              All plans include a 7-day money-back guarantee. Cancel anytime.
             </p>
           </div>
         </div>
