@@ -133,11 +133,11 @@ export default function LandingPage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col gap-3 sm:gap-4 justify-center mb-6 sm:mb-8 px-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mb-6 sm:mb-8 px-4">
             {/* Primary CTA */}
-            <Link href="/auth" className="w-full sm:w-auto mx-auto">
+            <Link href="/auth" className="w-full sm:w-auto">
               <Button
-                className="w-full sm:w-auto bg-gradient-to-r from-strava-orange via-orange-500 to-red-500 text-white hover:from-orange-600 hover:via-orange-500 hover:to-red-600 h-14 sm:h-14 px-8 sm:px-12 text-base sm:text-lg font-bold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-200 ring-2 ring-orange-300/50"
+                className="w-full sm:w-auto bg-gradient-to-r from-strava-orange via-orange-500 to-red-500 text-white hover:from-orange-600 hover:via-orange-500 hover:to-red-600 h-14 px-8 sm:px-12 text-base sm:text-lg font-bold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-200 ring-2 ring-orange-300/50"
                 data-testid="hero-cta-getstarted"
               >
                 Get Started Free
@@ -145,17 +145,15 @@ export default function LandingPage() {
             </Link>
             
             {/* Secondary CTA */}
-            <div className="flex justify-center">
-              <Link href="/tools" className="w-full sm:w-auto">
-                <Button
-                  className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 h-12 px-8 sm:px-10 text-base font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
-                  data-testid="hero-cta-tools"
-                >
-                  <Calculator className="h-4 w-4 mr-2" />
-                  Explore Free Tools
-                </Button>
-              </Link>
-            </div>
+            <Link href="/tools" className="w-full sm:w-auto">
+              <Button
+                className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 h-14 px-8 sm:px-10 text-base font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
+                data-testid="hero-cta-tools"
+              >
+                <Calculator className="h-4 w-4 mr-2" />
+                Explore Free Tools
+              </Button>
+            </Link>
           </div>
 
           {/* Trust Indicators */}
