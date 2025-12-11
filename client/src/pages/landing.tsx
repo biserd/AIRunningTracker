@@ -71,13 +71,15 @@ export default function LandingPage() {
       <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-charcoal mb-4 sm:mb-6 leading-tight">
-            AI-Powered Running
-            <span className="text-strava-orange"> Analytics</span>
+            The Missing Analytics Layer
+            <span className="text-strava-orange"> for Strava</span>
           </h1>
           
           <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
-            Chat with your AI Running Coach, get your personal Runner Score, race predictions, and comprehensive performance analytics. 
-            Connect your Strava account and unlock your running potential.
+            Strava tracks your miles. We tell you how to run them faster and stay healthy.
+          </p>
+          <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
+            Don't just log your runs—learn from them. Sync your history instantly to unlock the AI coaching, race predictions, and deep insights that your dashboard is missing.
           </p>
 
           {/* Social Proof with Real Stats */}
