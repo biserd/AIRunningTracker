@@ -18,7 +18,13 @@ export const users = pgTable("users", {
   stravaBrandingTemplate: text("strava_branding_template").default("🏃 Runner Score: {score} | {insight} — Analyzed with AITracker.run"),
   unitPreference: text("unit_preference", { enum: ["km", "miles"] }).default("miles"),
   isAdmin: boolean("is_admin").default(false),
+  // Strava sync state tracking
   lastSyncAt: timestamp("last_sync_at"),
+  syncStatus: text("sync_status", { enum: ["idle", "running", "error"] }).default("idle"),
+  syncProgress: integer("sync_progress").default(0),
+  syncTotal: integer("sync_total").default(0),
+  syncError: text("sync_error"),
+  lastIncrementalSince: timestamp("last_incremental_since"),
   // Password reset fields
   resetToken: text("reset_token"),
   resetTokenExpiry: timestamp("reset_token_expiry"),
