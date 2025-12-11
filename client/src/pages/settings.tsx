@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { queryClient, apiRequest, getQueryFn } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
-import { useSubscription, useManageSubscription } from "@/hooks/useSubscription";
+import { useSubscription, useManageSubscription, useFeatureAccess } from "@/hooks/useSubscription";
 import type { DashboardData } from "@/lib/api";
 import AppHeader from "@/components/AppHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,16 +23,27 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Save, Unlink, RefreshCw, Trash2, Crown, Star, Zap, CreditCard, ExternalLink, Loader2, Share2, Check, AlertTriangle } from "lucide-react";
+import { Settings, Save, Unlink, RefreshCw, Trash2, Crown, Star, Zap, CreditCard, ExternalLink, Loader2, Share2, Check, AlertTriangle, Activity } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+
+interface SyncProgress {
+  current: number;
+  total: number;
+  activityName: string;
+  status: 'syncing' | 'insights' | 'complete' | 'error';
+  errorMessage?: string;
+}
 
 function SettingsPageContent() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { subscription, plan, status, isPro, isPremium, isLoading: subscriptionLoading } = useSubscription();
+  const { subscription, plan, status, isPro, isPremium, isLoading: subscriptionLoading, isReverseTrial } = useSubscription();
+  const { canAccessUnlimitedHistory } = useFeatureAccess();
   const manageSubscription = useManageSubscription();
+  const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null);
 
   const { data: dashboardData } = useQuery<DashboardData>({
     queryKey: [`/api/dashboard/${user!.id}`],
@@ -96,27 +107,6 @@ function SettingsPageContent() {
     },
   });
 
-  const syncActivitiesMutation = useMutation({
-    mutationFn: async (maxActivities: number = 100) => {
-      return apiRequest(`/api/strava/sync-activities`, "POST", { maxActivities });
-    },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user!.id}`] });
-      queryClient.invalidateQueries({ queryKey: ['/api/activities'] });
-      toast({
-        title: "Activities synced",
-        description: data.message || `Synced ${data.syncedCount} new activities`,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Sync failed",
-        description: error.message || "Failed to sync activities",
-        variant: "destructive",
-      });
-    },
-  });
-
   const updateBrandingMutation = useMutation({
     mutationFn: async (settings: { stravaBrandingEnabled: boolean; stravaBrandingTemplate: string }) => {
       return apiRequest(`/api/users/${user!.id}/branding`, "PATCH", settings);
@@ -173,8 +163,132 @@ function SettingsPageContent() {
     }
   };
 
-  const handleSyncActivities = () => {
-    syncActivitiesMutation.mutate(100);
+  const handleSyncActivities = async () => {
+    if (!user) return;
+    
+    setSyncProgress({
+      current: 0,
+      total: 0,
+      activityName: 'Starting sync...',
+      status: 'syncing'
+    });
+    
+    try {
+      // Get SSE nonce for secure streaming
+      const nonceResponse = await apiRequest(`/api/strava/sync/${user.id}/start-stream`, "POST", { maxActivities: 100 });
+      const nonce = nonceResponse.sseNonce;
+      
+      const eventSource = new EventSource(
+        `/api/strava/sync/${user.id}/stream?nonce=${encodeURIComponent(nonce)}`
+      );
+      
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          if (data.type === 'progress') {
+            setSyncProgress({
+              current: data.current,
+              total: data.total,
+              activityName: data.activityName || `Activity ${data.current}/${data.total}`,
+              status: 'syncing'
+            });
+          } else if (data.type === 'complete') {
+            const syncedCount = data.syncedCount || 0;
+            if (syncedCount === 0) {
+              eventSource.close();
+              setSyncProgress({
+                current: 0,
+                total: 0,
+                activityName: 'Already up to date!',
+                status: 'complete'
+              });
+              queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user.id}`] });
+              toast({
+                title: "Already synced",
+                description: "Your activities are already up to date",
+              });
+              setTimeout(() => setSyncProgress(null), 3000);
+            } else {
+              setSyncProgress({
+                current: syncedCount,
+                total: data.totalActivities || syncedCount,
+                activityName: `Synced ${syncedCount} new activities - waiting for insights...`,
+                status: 'complete'
+              });
+              // Set a fallback timeout - if insights phase doesn't start in 15s, complete anyway
+              const fallbackTimeout = setTimeout(() => {
+                eventSource.close();
+                queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user.id}`] });
+                queryClient.invalidateQueries({ queryKey: ['/api/activities'] });
+                toast({
+                  title: "Sync complete",
+                  description: `Synced ${syncedCount} new activities`,
+                });
+                setSyncProgress(null);
+              }, 15000);
+              
+              // Store timeout reference to clear if insights phase starts
+              (eventSource as any)._fallbackTimeout = fallbackTimeout;
+            }
+          } else if (data.type === 'insights') {
+            // Clear fallback timeout since insights phase started
+            if ((eventSource as any)._fallbackTimeout) {
+              clearTimeout((eventSource as any)._fallbackTimeout);
+            }
+            setSyncProgress(prev => prev ? { ...prev, status: 'insights', activityName: 'Generating AI insights...' } : null);
+          } else if (data.type === 'insights_complete') {
+            // Clear any fallback timeout
+            if ((eventSource as any)._fallbackTimeout) {
+              clearTimeout((eventSource as any)._fallbackTimeout);
+            }
+            eventSource.close();
+            queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user.id}`] });
+            queryClient.invalidateQueries({ queryKey: ['/api/activities'] });
+            toast({
+              title: "Sync complete",
+              description: "Activities synced and AI insights generated",
+            });
+            setTimeout(() => setSyncProgress(null), 2000);
+          } else if (data.type === 'error') {
+            // Clear any fallback timeout
+            if ((eventSource as any)._fallbackTimeout) {
+              clearTimeout((eventSource as any)._fallbackTimeout);
+            }
+            eventSource.close();
+            setSyncProgress({
+              current: 0,
+              total: 0,
+              activityName: '',
+              status: 'error',
+              errorMessage: data.message || 'Sync failed'
+            });
+          }
+        } catch (parseError) {
+          console.error('Error parsing SSE data:', parseError);
+        }
+      };
+      
+      eventSource.onerror = () => {
+        eventSource.close();
+        setSyncProgress({
+          current: 0,
+          total: 0,
+          activityName: '',
+          status: 'error',
+          errorMessage: 'Connection lost during sync'
+        });
+      };
+    } catch (error: any) {
+      console.error('Sync error:', error);
+      setSyncProgress({
+        current: 0,
+        total: 0,
+        activityName: '',
+        status: 'error',
+        errorMessage: error.message || 'Failed to start sync'
+      });
+    }
   };
 
   return (
@@ -376,10 +490,15 @@ function SettingsPageContent() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 Strava Activity Sync
-                {!(isPro || isPremium) && (
+                {!canAccessUnlimitedHistory && (
                   <Badge variant="secondary" className="bg-orange-100 text-strava-orange">
                     <Star className="h-3 w-3 mr-1" />
                     Pro
+                  </Badge>
+                )}
+                {isReverseTrial && (
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                    Trial
                   </Badge>
                 )}
               </CardTitle>
@@ -388,28 +507,94 @@ function SettingsPageContent() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {isPro || isPremium ? (
+              {canAccessUnlimitedHistory ? (
                 <div>
                   <p className="text-sm text-gray-600 mb-2">
                     By default, we import your last 100 activities when you connect Strava. 
                     Use this button to sync your latest activities and update your training data.
                   </p>
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
-                    <p className="text-sm text-amber-800">
-                      ⏱️ <strong>Please be patient:</strong> Syncing activities can take over a minute, especially if you have many activities. 
-                      The page will update automatically when complete.
-                    </p>
-                  </div>
+                  
+                  {/* Sync Progress UI */}
+                  {syncProgress ? (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        {syncProgress.status === 'syncing' && (
+                          <RefreshCw className="h-5 w-5 text-strava-orange animate-spin" />
+                        )}
+                        {syncProgress.status === 'insights' && (
+                          <Activity className="h-5 w-5 text-blue-600 animate-pulse" />
+                        )}
+                        {syncProgress.status === 'complete' && (
+                          <Check className="h-5 w-5 text-green-600" />
+                        )}
+                        {syncProgress.status === 'error' && (
+                          <AlertTriangle className="h-5 w-5 text-red-600" />
+                        )}
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">
+                            {syncProgress.status === 'syncing' && 'Syncing Activities...'}
+                            {syncProgress.status === 'insights' && 'Generating AI Insights...'}
+                            {syncProgress.status === 'complete' && 'Sync Complete!'}
+                            {syncProgress.status === 'error' && 'Sync Failed'}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {syncProgress.activityName}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {syncProgress.status === 'syncing' && syncProgress.total > 0 && (
+                        <div className="space-y-2">
+                          <Progress 
+                            value={(syncProgress.current / syncProgress.total) * 100} 
+                            className="h-2"
+                          />
+                          <div className="flex justify-between text-xs text-gray-500">
+                            <span>{syncProgress.current} of {syncProgress.total} activities</span>
+                            <span>~{Math.ceil((syncProgress.total - syncProgress.current) * 0.5)}s remaining</span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {syncProgress.status === 'insights' && (
+                        <div className="space-y-2">
+                          <Progress value={100} className="h-2 animate-pulse" />
+                          <p className="text-xs text-gray-500">Analyzing your training data...</p>
+                        </div>
+                      )}
+                      
+                      {syncProgress.status === 'error' && (
+                        <div className="mt-2">
+                          <p className="text-sm text-red-600">{syncProgress.errorMessage}</p>
+                          <Button 
+                            onClick={() => setSyncProgress(null)}
+                            variant="outline"
+                            size="sm"
+                            className="mt-2"
+                          >
+                            Dismiss
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                      <p className="text-sm text-amber-800">
+                        ⏱️ <strong>Tip:</strong> Syncing typically takes 30-60 seconds. You'll see real-time progress below.
+                      </p>
+                    </div>
+                  )}
+                  
                   <Button 
                     onClick={handleSyncActivities}
-                    disabled={syncActivitiesMutation.isPending}
+                    disabled={syncProgress !== null && syncProgress.status !== 'error'}
                     className="flex items-center gap-2"
                     data-testid="button-sync-activities"
                   >
-                    <RefreshCw className={`h-4 w-4 ${syncActivitiesMutation.isPending ? 'animate-spin' : ''}`} />
-                    {syncActivitiesMutation.isPending ? "Syncing Activities..." : "Sync 100 Activities"}
+                    <RefreshCw className={`h-4 w-4 ${syncProgress?.status === 'syncing' ? 'animate-spin' : ''}`} />
+                    {syncProgress?.status === 'syncing' ? "Syncing..." : "Sync 100 Activities"}
                   </Button>
-                  {dashboardData?.user?.lastSyncAt && (
+                  {dashboardData?.user?.lastSyncAt && !syncProgress && (
                     <p className="text-xs text-gray-500 mt-2">
                       Last synced: {new Date(dashboardData.user.lastSyncAt).toLocaleString()}
                     </p>
