@@ -2206,21 +2206,73 @@ ${allPages.map(page => `  <url>
   });
 
   // Repair endpoint to requeue activities missing hydration data
+  // Now smarter: checks sync state to decide between full re-list vs just hydrate
   app.post("/api/strava/queue/repair/:userId", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const limit = parseInt(req.query?.limit as string) || 500;
+      const forceRelist = req.body?.forceRelist === true;
       
       if (isNaN(userId) || req.user.id !== userId) {
         return res.status(403).json({ message: "Access denied" });
       }
+
+      // Check sync state to decide repair strategy
+      const syncState = await storage.getSyncState(userId);
+      const user = await storage.getUser(userId);
       
+      if (!user || !user.stravaAccessToken) {
+        return res.status(400).json({ message: "User not connected to Strava" });
+      }
+      
+      // If sync is currently running, don't allow repair
+      if (syncState?.syncStatus === 'running') {
+        return res.status(409).json({ 
+          message: "Sync is currently in progress. Please wait for it to complete.",
+          syncStatus: syncState.syncStatus,
+        });
+      }
+      
+      // If last sync failed or never completed, or forceRelist requested, do a full re-list
+      const needsRelist = forceRelist || 
+        syncState?.syncStatus === 'error' || 
+        !syncState?.lastSyncAt;
+      
+      if (needsRelist) {
+        // Full re-list: queue LIST_ACTIVITIES job to fetch all activities
+        const { createListActivitiesJob } = await import("./services/queue/jobTypes");
+        
+        const hasProPlan = user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'premium';
+        const hasActiveStatus = user.subscriptionStatus === 'active' || 
+                                user.subscriptionStatus === 'trialing' || 
+                                user.subscriptionStatus === 'past_due';
+        const maxActivities = hasProPlan && hasActiveStatus ? 500 : 50;
+        
+        const job = jobQueue.addJob(createListActivitiesJob(
+          userId,
+          1,       // Start from page 1
+          200,     // Per page
+          maxActivities,
+          undefined, // No 'after' - fetch from beginning
+          1        // Priority
+        ));
+        
+        return res.json({ 
+          success: true, 
+          message: `Started full activity re-sync${syncState?.syncError ? ` (previous error: ${syncState.syncError})` : ''}`,
+          strategy: 'relist',
+          jobId: job.id,
+        });
+      }
+      
+      // Otherwise, just hydrate activities missing streams/laps
       const activitiesNeedingHydration = await storage.getActivitiesNeedingHydration(userId, limit);
       
       if (activitiesNeedingHydration.length === 0) {
         return res.json({ 
           success: true, 
           message: "All activities are fully hydrated", 
+          strategy: 'hydrate',
           requeued: 0,
         });
       }
@@ -2246,6 +2298,7 @@ ${allPages.map(page => `  <url>
       res.json({ 
         success: true, 
         message: `Requeued ${activitiesNeedingHydration.length} activities for hydration`,
+        strategy: 'hydrate',
         requeued: activitiesNeedingHydration.length,
       });
     } catch (error: any) {
