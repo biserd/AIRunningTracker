@@ -327,88 +327,54 @@ export async function generateYearEndImage(
   year: number,
   aiInsights: string[] = []
 ): Promise<string> {
-  const formatPace = (pace: number) => {
-    const mins = Math.floor(pace);
-    const secs = Math.round((pace - mins) * 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  // Create meaningful comparisons for storytelling
+  const milesComparison = stats.totalDistanceMiles > 500 
+    ? `That's like running across a small country!` 
+    : stats.totalDistanceMiles > 100 
+      ? `Enough to run a few marathons and then some.`
+      : `Every mile was a victory.`;
 
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-      return `${hours}h ${mins}m`;
-    }
-    return `${mins}m`;
-  };
+  const hoursSpent = Math.floor(stats.totalTimeSeconds / 3600);
+  const timeStory = hoursSpent > 100 
+    ? `${hoursSpent} hours of pure dedication` 
+    : `${hoursSpent} hours chasing your goals`;
 
-  // Build REQUIRED advanced metrics - these MUST appear on the image
-  const advancedMetricsLines: string[] = [];
-  if (stats.estimatedVO2Max) advancedMetricsLines.push(`VO2 MAX: ${stats.estimatedVO2Max}`);
-  if (stats.averageCadence) advancedMetricsLines.push(`CADENCE: ${stats.averageCadence} SPM`);
-  if (stats.zone2Hours && stats.zone2Hours > 0) advancedMetricsLines.push(`ZONE 2: ${stats.zone2Hours}H`);
-  if (stats.averageHeartrate) advancedMetricsLines.push(`AVG HR: ${Math.round(stats.averageHeartrate)} BPM`);
-  if (stats.maxHeartrateAchieved) advancedMetricsLines.push(`MAX HR: ${Math.round(stats.maxHeartrateAchieved)} BPM`);
+  // Pick the most impactful insight if available
+  const heroInsight = aiInsights.length > 0 ? aiInsights[0] : null;
 
-  // Build AI insights section
-  const insightsSection = aiInsights.length > 0 
-    ? `\n\nAI INSIGHTS (display as motivational quotes/highlights):\n${aiInsights.map(i => `"${i}"`).join('\n')}`
-    : '';
+  // Build the narrative around key moments
+  const longestRunStory = stats.longestRunMiles > 13.1 
+    ? `Your longest run was ${stats.longestRunMiles.toFixed(1)} miles - beyond a half marathon!`
+    : `Your longest adventure: ${stats.longestRunMiles.toFixed(1)} miles`;
 
-  const prompt = `Generate an EPIC vertical infographic poster (STRICT 9:16 TALL PORTRAIT format for Instagram Stories/TikTok).
+  const streakStory = stats.streakDays > 7 
+    ? `${stats.streakDays} days of unstoppable momentum` 
+    : null;
 
-===== CRITICAL FORMAT REQUIREMENTS =====
-- MUST be TALL and NARROW (9:16 ratio) - optimized for phone screens and story posts
-- Dark/black background with vibrant neon accents
-- NO landscape orientation - this MUST be portrait/vertical
+  const prompt = `Create an artistic, cinematic vertical poster (9:16 portrait format) celebrating a runner's year.
 
-===== DESIGN STYLE =====
-Think: Nike "Just Do It" campaign meets Spotify Wrapped meets professional sports data visualization
-- Bold sans-serif typography (like Bebas Neue, Impact, or Oswald style)
-- Neon glow effects on key numbers
-- Color scheme: Electric orange (#FF6B00), Deep purple (#6B00FF), Cyan (#00D4FF) on dark background
-- Subtle geometric patterns and motion lines in background
+STORY TO TELL:
+${userName}'s ${year} running journey - a story of dedication, growth, and ${stats.totalRuns} runs that added up to something incredible.
 
-===== LAYOUT (TOP TO BOTTOM) =====
+THE HERO MOMENT:
+${stats.totalDistanceMiles.toFixed(0)} miles covered this year. ${milesComparison}
 
-[SECTION 1 - HEADER]
-"${userName.toUpperCase()}"
-"${year} YEAR IN RUNNING"
-(dramatic, glowing text)
+THE JOURNEY:
+- ${timeStory}
+- ${longestRunStory}
+${streakStory ? `- ${streakStory}` : ''}
+${heroInsight ? `- "${heroInsight}"` : ''}
 
-[SECTION 2 - HERO STAT - MASSIVE]
-"${stats.totalDistanceMiles.toFixed(0)}"
-"MILES"
-(This number should dominate - huge, glowing, impossible to miss)
+VISUAL STYLE:
+Create a dramatic, artistic image of a runner's silhouette against a stunning backdrop - think golden hour light, misty morning trail, or city skyline at dawn. The runner should embody determination and triumph.
 
-[SECTION 3 - PRIMARY STATS GRID]
-Display these in a clean 2x3 or 3x2 grid with icons:
-• ${stats.totalRuns} RUNS
-• ${formatTime(stats.totalTimeSeconds)} TIME
-• ${stats.totalElevationFeet.toFixed(0)} FT ELEVATION
-• ${formatPace(stats.fastestPaceMinPerMile)}/MI FASTEST
-• ${stats.longestRunMiles.toFixed(1)} MI LONGEST
-• ${stats.streakDays > 1 ? `${stats.streakDays} DAY STREAK` : `${stats.mostActiveMonth.toUpperCase()} BEST MONTH`}
+Overlay the key number "${stats.totalDistanceMiles.toFixed(0)} MILES" in large, elegant typography. Include "${userName.toUpperCase()}" and "${year}" prominently.
 
-[SECTION 4 - ADVANCED METRICS - REQUIRED]
-These MUST appear on the image in a distinct section:
-${advancedMetricsLines.join('\n')}
-(Display in smaller cards or a horizontal bar with icons)${insightsSection}
+The mood should be inspirational and celebratory - like a movie poster for an athlete's documentary. Use warm golden tones mixed with cool blues. Add subtle motion blur or light rays to suggest movement and energy.
 
-[SECTION 5 - FOOTER]
-Small "RunAnalytics" watermark/logo
+Small "RunAnalytics" watermark in the corner.
 
-===== VISUAL ELEMENTS =====
-- Running shoe silhouette or runner silhouette accent
-- Abstract route/GPS trail lines as decorative elements
-- Glowing particle effects around the hero number
-- Subtle medal or trophy icon
-
-===== CRITICAL REMINDERS =====
-1. FORMAT: Strict 9:16 vertical/portrait (tall, narrow)
-2. ADVANCED METRICS: Must include VO2 Max, Cadence, Zone 2, Heart Rate data
-3. STYLE: Dark background, neon accents, premium sports aesthetic
-4. READABILITY: All text must be legible and properly sized`;
+IMPORTANT: This should feel like ART, not a data dashboard. Focus on emotion and the human story of running, with the distance as the hero number. Vertical 9:16 format for social media stories.`;
 
   try {
     const response = await ai.models.generateContent({
