@@ -91,7 +91,12 @@ export class StravaService {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to refresh access token');
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.error(`Strava token refresh error (${response.status}): ${errorText}`);
+      if (response.status === 429) {
+        throw new Error('Strava rate limit exceeded. Please wait a few minutes and try again.');
+      }
+      throw new Error(`Failed to refresh access token (${response.status})`);
     }
 
     return response.json();
