@@ -2095,6 +2095,17 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
 
+      // Clear backend caches for this user
+      deleteCachedResponse(`dashboard:${userId}`);
+      deleteCachedResponse(`chart:${userId}:7days`);
+      deleteCachedResponse(`chart:${userId}:30days`);
+      deleteCachedResponse(`chart:${userId}:90days`);
+      deleteCachedResponse(`fitness:${userId}:30`);
+      deleteCachedResponse(`fitness:${userId}:90`);
+      deleteCachedResponse(`fitness:${userId}:180`);
+      deleteCachedResponse(`fitness:${userId}:365`);
+      console.log(`[CACHE] Cleared caches for user ${userId} after Strava disconnect`);
+
       res.json({ success: true });
     } catch (error: any) {
       console.error('Strava disconnect error:', error);

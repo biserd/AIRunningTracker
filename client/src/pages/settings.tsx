@@ -92,7 +92,11 @@ function SettingsPageContent() {
       return apiRequest(`/api/strava/disconnect/${user!.id}`, "POST");
     },
     onSuccess: () => {
+      // Invalidate all relevant caches to reflect disconnected state
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user!.id}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/activities'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/chart/${user!.id}`] });
       toast({
         title: "Strava disconnected",
         description: "Your Strava account has been disconnected successfully",
