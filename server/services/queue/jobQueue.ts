@@ -7,6 +7,9 @@ import { stravaClient, isRateLimitError } from '../stravaClient';
 import { storage } from '../../storage';
 import { metrics } from './metrics';
 
+// Track users with active sync operations
+const activeSyncs = new Map<number, { startedAt: Date; totalActivities: number; processedActivities: number }>();
+
 export interface QueueStats {
   pending: number;
   processing: number;
@@ -78,6 +81,12 @@ class JobQueue {
       return a.priority - b.priority;
     });
 
+    // Start sync tracking for first LIST_ACTIVITIES job
+    if (job.type === 'LIST_ACTIVITIES' && !activeSyncs.has(job.userId)) {
+      activeSyncs.set(job.userId, { startedAt: new Date(), totalActivities: 0, processedActivities: 0 });
+      storage.startSync(job.userId).catch(err => console.error('[JobQueue] Failed to start sync state:', err));
+    }
+
     console.log(`[JobQueue] Added job ${job.id} (${job.type}) for user ${job.userId}. Queue size: ${this.queue.length}`);
     return job;
   }
@@ -129,6 +138,9 @@ class JobQueue {
           this.addJobs(result.newJobs);
         }
         
+        // Check if sync is complete (no more jobs for this user)
+        this.checkSyncCompletion(job.userId);
+        
         if (this.completed.length > 1000) {
           this.completed = this.completed.slice(-500);
         }
@@ -156,6 +168,11 @@ class JobQueue {
         this.failed.push(job);
         metrics.incrementJobsFailed(job.type, error.message);
         this.notifyProgress(job.userId, `Job ${job.type} failed after ${job.attempts} attempts`, { error: error.message });
+        
+        // Mark sync as failed if this was a LIST_ACTIVITIES job
+        if (job.type === 'LIST_ACTIVITIES') {
+          this.markSyncError(job.userId, `Sync failed: ${error.message}`);
+        }
         
         if (this.failed.length > 500) {
           this.failed = this.failed.slice(-250);
@@ -275,6 +292,15 @@ class JobQueue {
 
     this.notifyProgress(job.userId, `Created ${processedCount} new activities${rehydratedCount > 0 ? `, requeued ${rehydratedCount} for missing data` : ''}`);
     console.log(`[JobQueue] User ${job.userId}: ${processedCount} new activities, ${rehydratedCount} rehydration jobs queued`);
+
+    // Update sync progress
+    const syncState = activeSyncs.get(job.userId);
+    if (syncState) {
+      syncState.processedActivities += processedCount;
+      syncState.totalActivities += activities.length;
+      storage.updateSyncProgress(job.userId, syncState.processedActivities, syncState.totalActivities)
+        .catch(err => console.error('[JobQueue] Failed to update sync progress:', err));
+    }
 
     if (activities.length === perPage && processedCount < maxActivities) {
       newJobs.unshift({
@@ -416,6 +442,37 @@ class JobQueue {
       completed: this.completed.filter(j => j.userId === userId).slice(-20),
       failed: this.failed.filter(j => j.userId === userId).slice(-10),
     };
+  }
+
+  private checkSyncCompletion(userId: number): void {
+    const userJobs = this.getJobsForUser(userId);
+    const hasPendingWork = userJobs.pending.length > 0 || userJobs.processing.length > 0;
+    
+    if (!hasPendingWork && activeSyncs.has(userId)) {
+      const syncState = activeSyncs.get(userId)!;
+      activeSyncs.delete(userId);
+      
+      // Get the most recent activity date to store for next incremental sync
+      storage.getMostRecentActivityByUserId(userId)
+        .then(mostRecent => {
+          const incrementalSince = mostRecent?.startDate || new Date();
+          return storage.completeSyncSuccess(userId, incrementalSince);
+        })
+        .then(() => {
+          console.log(`[JobQueue] Sync completed for user ${userId}. Processed ${syncState.processedActivities} activities.`);
+          this.notifyProgress(userId, 'Sync completed', { 
+            processedActivities: syncState.processedActivities,
+            totalActivities: syncState.totalActivities,
+          });
+        })
+        .catch(err => console.error('[JobQueue] Failed to complete sync state:', err));
+    }
+  }
+
+  markSyncError(userId: number, error: string): void {
+    activeSyncs.delete(userId);
+    storage.completeSyncError(userId, error)
+      .catch(err => console.error('[JobQueue] Failed to mark sync error:', err));
   }
 
   clearCompletedJobs(): void {
