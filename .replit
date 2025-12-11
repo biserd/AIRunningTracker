@@ -36,7 +36,7 @@ args = "npm run dev"
 waitForPort = 5000
 
 [agent]
-integrations = ["javascript_stripe:1.0.0", "stripe:2.0.0"]
+integrations = ["javascript_stripe:1.0.0", "stripe:2.0.0", "javascript_gemini_ai_integrations:1.0.0"]
 
 [userenv]
 
