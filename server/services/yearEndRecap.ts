@@ -324,12 +324,9 @@ function findMostRunLocation(activities: Activity[]): LocationInfo | null {
 export async function generateYearEndImage(
   stats: YearlyStats,
   userName: string,
-  year: number
+  year: number,
+  aiInsights: string[] = []
 ): Promise<string> {
-  const locationTheme = stats.mostRunLocation 
-    ? `The background should feature a beautiful scenic view inspired by coordinates (${stats.mostRunLocation.latitude.toFixed(4)}, ${stats.mostRunLocation.longitude.toFixed(4)}) - imagine a typical running route scenery for this location with paths, nature, and local landmarks.`
-    : "The background should feature a generic beautiful running trail with sunrise colors.";
-
   const formatPace = (pace: number) => {
     const mins = Math.floor(pace);
     const secs = Math.round((pace - mins) * 60);
@@ -345,58 +342,73 @@ export async function generateYearEndImage(
     return `${mins}m`;
   };
 
-  // Build advanced metrics section if available
-  const advancedMetrics: string[] = [];
-  if (stats.estimatedVO2Max) advancedMetrics.push(`VO2 Max: ${stats.estimatedVO2Max} ml/kg/min`);
-  if (stats.averageCadence) advancedMetrics.push(`Cadence: ${stats.averageCadence} spm`);
-  if (stats.zone2Hours && stats.zone2Hours > 0) advancedMetrics.push(`Zone 2: ${stats.zone2Hours}h aerobic base`);
-  if (stats.averageHeartrate) advancedMetrics.push(`Avg HR: ${Math.round(stats.averageHeartrate)} bpm`);
-  if (stats.totalSufferScore > 0) advancedMetrics.push(`Total Effort: ${stats.totalSufferScore.toLocaleString()}`);
+  // Build REQUIRED advanced metrics - these MUST appear on the image
+  const advancedMetricsLines: string[] = [];
+  if (stats.estimatedVO2Max) advancedMetricsLines.push(`VO2 MAX: ${stats.estimatedVO2Max}`);
+  if (stats.averageCadence) advancedMetricsLines.push(`CADENCE: ${stats.averageCadence} SPM`);
+  if (stats.zone2Hours && stats.zone2Hours > 0) advancedMetricsLines.push(`ZONE 2: ${stats.zone2Hours}H`);
+  if (stats.averageHeartrate) advancedMetricsLines.push(`AVG HR: ${Math.round(stats.averageHeartrate)} BPM`);
+  if (stats.maxHeartrateAchieved) advancedMetricsLines.push(`MAX HR: ${Math.round(stats.maxHeartrateAchieved)} BPM`);
 
-  const advancedSection = advancedMetrics.length > 0 
-    ? `\n\nADVANCED PERFORMANCE DATA (smaller section):\n${advancedMetrics.join('\n')}`
+  // Build AI insights section
+  const insightsSection = aiInsights.length > 0 
+    ? `\n\nAI INSIGHTS (display as motivational quotes/highlights):\n${aiInsights.map(i => `"${i}"`).join('\n')}`
     : '';
 
-  const prompt = `Create an EPIC, jaw-dropping Year in Running infographic poster for ${year}. This should look like a premium sports brand advertisement - the kind of image that makes people stop scrolling.
+  const prompt = `Generate an EPIC vertical infographic poster (STRICT 9:16 TALL PORTRAIT format for Instagram Stories/TikTok).
 
-CRITICAL DESIGN REQUIREMENTS:
-- LARGE vertical format (9:16 aspect ratio, Instagram story style)
-- MASSIVE, BOLD typography - think Nike/Adidas campaign level impact
-- Electric gradient color scheme: deep purples, hot oranges, electric blues, neon accents
-- High contrast with dark backgrounds and glowing text effects
-- ${locationTheme}
-- Premium sports magazine aesthetic with dramatic lighting effects
-- Geometric patterns, speed lines, and dynamic visual elements
-- Numbers should be HUGE and impossible to miss
+===== CRITICAL FORMAT REQUIREMENTS =====
+- MUST be TALL and NARROW (9:16 ratio) - optimized for phone screens and story posts
+- Dark/black background with vibrant neon accents
+- NO landscape orientation - this MUST be portrait/vertical
 
-LAYOUT STRUCTURE:
-1. TOP: Epic hero title "${userName.toUpperCase()}'S ${year}" with dramatic styling
-2. CENTER: The biggest stat as a massive hero number (total distance: ${stats.totalDistanceMiles.toFixed(0)} MILES)
-3. GRID: Key stats in bold cards with icons
+===== DESIGN STYLE =====
+Think: Nike "Just Do It" campaign meets Spotify Wrapped meets professional sports data visualization
+- Bold sans-serif typography (like Bebas Neue, Impact, or Oswald style)
+- Neon glow effects on key numbers
+- Color scheme: Electric orange (#FF6B00), Deep purple (#6B00FF), Cyan (#00D4FF) on dark background
+- Subtle geometric patterns and motion lines in background
 
-HERO STATS (make these MASSIVE and bold):
-🏃 ${stats.totalRuns} RUNS
-📏 ${stats.totalDistanceMiles.toFixed(1)} MILES (${stats.totalDistanceKm.toFixed(0)} km)
-⏱️ ${formatTime(stats.totalTimeSeconds)} TOTAL TIME
-⛰️ ${stats.totalElevationFeet.toFixed(0)} FT CLIMBED
-🚀 ${formatPace(stats.fastestPaceMinPerMile)}/mi FASTEST PACE
-🏆 ${stats.longestRunMiles.toFixed(1)} mi LONGEST RUN
-📅 ${stats.mostActiveMonth.toUpperCase()} BEST MONTH
-${stats.streakDays > 1 ? `🔥 ${stats.streakDays} DAY STREAK` : ''}
-${stats.totalCalories > 0 ? `💪 ${stats.totalCalories.toLocaleString()} CALORIES` : ''}${advancedSection}
+===== LAYOUT (TOP TO BOTTOM) =====
 
-VISUAL ELEMENTS:
-- Glowing running shoe silhouettes
-- Abstract route/trail lines as design accents  
-- Medal or trophy graphics
-- Speed motion blur effects
-- Particle/energy effects around numbers
+[SECTION 1 - HEADER]
+"${userName.toUpperCase()}"
+"${year} YEAR IN RUNNING"
+(dramatic, glowing text)
 
-BRANDING:
-- Small "RunAnalytics" logo watermark in bottom corner
-- Premium, polished finish
+[SECTION 2 - HERO STAT - MASSIVE]
+"${stats.totalDistanceMiles.toFixed(0)}"
+"MILES"
+(This number should dominate - huge, glowing, impossible to miss)
 
-Make this image SO impressive that every runner would be proud to share it. It should feel like a celebration of athletic achievement.`;
+[SECTION 3 - PRIMARY STATS GRID]
+Display these in a clean 2x3 or 3x2 grid with icons:
+• ${stats.totalRuns} RUNS
+• ${formatTime(stats.totalTimeSeconds)} TIME
+• ${stats.totalElevationFeet.toFixed(0)} FT ELEVATION
+• ${formatPace(stats.fastestPaceMinPerMile)}/MI FASTEST
+• ${stats.longestRunMiles.toFixed(1)} MI LONGEST
+• ${stats.streakDays > 1 ? `${stats.streakDays} DAY STREAK` : `${stats.mostActiveMonth.toUpperCase()} BEST MONTH`}
+
+[SECTION 4 - ADVANCED METRICS - REQUIRED]
+These MUST appear on the image in a distinct section:
+${advancedMetricsLines.join('\n')}
+(Display in smaller cards or a horizontal bar with icons)${insightsSection}
+
+[SECTION 5 - FOOTER]
+Small "RunAnalytics" watermark/logo
+
+===== VISUAL ELEMENTS =====
+- Running shoe silhouette or runner silhouette accent
+- Abstract route/GPS trail lines as decorative elements
+- Glowing particle effects around the hero number
+- Subtle medal or trophy icon
+
+===== CRITICAL REMINDERS =====
+1. FORMAT: Strict 9:16 vertical/portrait (tall, narrow)
+2. ADVANCED METRICS: Must include VO2 Max, Cadence, Zone 2, Heart Rate data
+3. STYLE: Dark background, neon accents, premium sports aesthetic
+4. READABILITY: All text must be legible and properly sized`;
 
   try {
     const response = await ai.models.generateContent({

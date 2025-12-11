@@ -4183,7 +4183,12 @@ ${allPages.map(page => `  <url>
       }
 
       const userName = user.firstName || user.username || "Runner";
-      const imageDataUrl = await generateYearEndImage(stats, userName, year);
+      
+      // Fetch AI insights to include in the image
+      const aiInsightsList = await storage.getAIInsightsByUserId(userId, undefined, 5);
+      const insights = aiInsightsList.map(i => i.title).slice(0, 3);
+      
+      const imageDataUrl = await generateYearEndImage(stats, userName, year, insights);
 
       res.json({
         image: imageDataUrl,
