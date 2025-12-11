@@ -213,6 +213,28 @@ export interface IStorage {
   revokeAllUserRefreshTokens(userId: number): Promise<void>;
   updateRefreshTokenLastUsed(tokenId: number): Promise<void>;
   getActiveRefreshTokens(userId: number): Promise<Array<{ id: number; deviceName: string | null; deviceId: string | null; lastUsedAt: Date | null; createdAt: Date | null }>>;
+  
+  // Sync state methods
+  getSyncState(userId: number): Promise<{
+    syncStatus: "idle" | "running" | "error";
+    syncProgress: number;
+    syncTotal: number;
+    syncError: string | null;
+    lastSyncAt: Date | null;
+    lastIncrementalSince: Date | null;
+  } | undefined>;
+  updateSyncState(userId: number, state: {
+    syncStatus?: "idle" | "running" | "error";
+    syncProgress?: number;
+    syncTotal?: number;
+    syncError?: string | null;
+    lastSyncAt?: Date;
+    lastIncrementalSince?: Date;
+  }): Promise<void>;
+  startSync(userId: number, total?: number): Promise<void>;
+  updateSyncProgress(userId: number, progress: number, total?: number): Promise<void>;
+  completeSyncSuccess(userId: number, incrementalSince?: Date): Promise<void>;
+  completeSyncError(userId: number, error: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1580,6 +1602,93 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(refreshTokens.lastUsedAt));
     
     return tokens;
+  }
+
+  // Sync state methods
+  async getSyncState(userId: number): Promise<{
+    syncStatus: "idle" | "running" | "error";
+    syncProgress: number;
+    syncTotal: number;
+    syncError: string | null;
+    lastSyncAt: Date | null;
+    lastIncrementalSince: Date | null;
+  } | undefined> {
+    const [user] = await db.select({
+      syncStatus: users.syncStatus,
+      syncProgress: users.syncProgress,
+      syncTotal: users.syncTotal,
+      syncError: users.syncError,
+      lastSyncAt: users.lastSyncAt,
+      lastIncrementalSince: users.lastIncrementalSince,
+    }).from(users).where(eq(users.id, userId));
+    
+    if (!user) return undefined;
+    
+    return {
+      syncStatus: (user.syncStatus as "idle" | "running" | "error") || "idle",
+      syncProgress: user.syncProgress || 0,
+      syncTotal: user.syncTotal || 0,
+      syncError: user.syncError,
+      lastSyncAt: user.lastSyncAt,
+      lastIncrementalSince: user.lastIncrementalSince,
+    };
+  }
+
+  async updateSyncState(userId: number, state: {
+    syncStatus?: "idle" | "running" | "error";
+    syncProgress?: number;
+    syncTotal?: number;
+    syncError?: string | null;
+    lastSyncAt?: Date;
+    lastIncrementalSince?: Date;
+  }): Promise<void> {
+    await db.update(users)
+      .set(state)
+      .where(eq(users.id, userId));
+  }
+
+  async startSync(userId: number, total?: number): Promise<void> {
+    await db.update(users)
+      .set({
+        syncStatus: "running",
+        syncProgress: 0,
+        syncTotal: total || 0,
+        syncError: null,
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async updateSyncProgress(userId: number, progress: number, total?: number): Promise<void> {
+    const updates: Record<string, unknown> = { syncProgress: progress };
+    if (total !== undefined) {
+      updates.syncTotal = total;
+    }
+    await db.update(users)
+      .set(updates)
+      .where(eq(users.id, userId));
+  }
+
+  async completeSyncSuccess(userId: number, incrementalSince?: Date): Promise<void> {
+    const updates: Record<string, unknown> = {
+      syncStatus: "idle",
+      syncError: null,
+      lastSyncAt: new Date(),
+    };
+    if (incrementalSince) {
+      updates.lastIncrementalSince = incrementalSince;
+    }
+    await db.update(users)
+      .set(updates)
+      .where(eq(users.id, userId));
+  }
+
+  async completeSyncError(userId: number, error: string): Promise<void> {
+    await db.update(users)
+      .set({
+        syncStatus: "error",
+        syncError: error,
+      })
+      .where(eq(users.id, userId));
   }
 }
 
