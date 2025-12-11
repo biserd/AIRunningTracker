@@ -93,31 +93,38 @@ export function useManageSubscription() {
 }
 
 export function useFeatureAccess() {
-  const { isPro, isPremium, isFree, usage } = useSubscription();
+  const { isPro, isPremium, isFree, usage, isReverseTrial } = useSubscription();
+  
+  // Reverse trial users get Pro-level access
+  const hasProAccess = isPro || isPremium || isReverseTrial;
+  const hasFreeAccess = isFree && !isReverseTrial;
   
   return {
     canAccessBasicAnalytics: true,
     canAccessStravaIntegration: true,
     canAccessRunnerScore: true,
     
-    canAccessAdvancedInsights: isPro || isPremium,
-    canAccessInsightHistory: isPro || isPremium,
-    canAccessTrainingPlans: isPro || isPremium,
-    canAccessRacePredictions: isPro || isPremium,
+    canAccessAdvancedInsights: hasProAccess,
+    canAccessInsightHistory: hasProAccess,
+    canAccessTrainingPlans: hasProAccess,
+    canAccessRacePredictions: hasProAccess,
     
     canAccessAICoachChat: isPremium,
     canAccessFormAnalysis: isPremium,
     canAccessPrioritySupport: isPremium,
     canAccessEarlyAccess: isPremium,
     
-    canAccessUnlimitedHistory: isPro || isPremium,
-    maxInsightsPerMonth: isFree ? 3 : Infinity,
-    maxDataHistoryDays: isFree ? 30 : Infinity,
+    canAccessUnlimitedHistory: hasProAccess,
+    maxInsightsPerMonth: hasFreeAccess ? 3 : Infinity,
+    maxDataHistoryDays: hasFreeAccess ? 30 : Infinity,
     
     // Usage stats
     insightsUsed: usage?.insightsUsed ?? 0,
     insightsRemaining: usage?.insightsRemaining ?? 3,
     insightsLimit: usage?.insightsLimit ?? 3,
     usageResetAt: usage?.resetAt ? new Date(usage.resetAt) : null,
+    
+    // Trial status for UI
+    isOnReverseTrial: isReverseTrial,
   };
 }
