@@ -63,13 +63,7 @@ export default function YearRecapPage() {
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useQuery<YearlyStats>({
     queryKey: ['/api/year-recap', user?.id, 'stats', selectedYear],
     queryFn: async () => {
-      const response = await fetch(`/api/year-recap/${user?.id}/stats?year=${selectedYear}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch stats');
-      return response.json();
+      return await apiRequest(`/api/year-recap/${user?.id}/stats?year=${selectedYear}`, 'GET');
     },
     enabled: !!user?.id,
   });
