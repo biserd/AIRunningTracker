@@ -29,11 +29,12 @@ import RecentConversations from "@/components/RecentConversations";
 import TrialBadge from "@/components/TrialBadge";
 import { MessageCircle, X, Gift, ChevronRight, Crown, Lock } from "lucide-react";
 import { Link } from "wouter";
-import { useFeatureAccess } from "@/hooks/useSubscription";
+import { useFeatureAccess, useSubscription } from "@/hooks/useSubscription";
 
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const { canAccessAICoachChat, insightsUsed, insightsLimit, maxInsightsPerMonth } = useFeatureAccess();
+  const { isReverseTrial, trialDaysRemaining } = useSubscription();
   const [chartTimeRange, setChartTimeRange] = useState<string>("30days");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -59,6 +60,25 @@ export default function Dashboard() {
       window.history.replaceState({}, '', '/dashboard');
     }
   }, []);
+
+  // Show welcome toast for reverse trial users on first visit
+  useEffect(() => {
+    if (isReverseTrial && user?.id) {
+      const seenKey = `trial_welcome_shown_${user.id}`;
+      const hasSeenWelcome = localStorage.getItem(seenKey);
+      
+      if (!hasSeenWelcome) {
+        setTimeout(() => {
+          toast({
+            title: "Welcome to your 7-day Pro trial!",
+            description: `You have ${trialDaysRemaining} days to explore unlimited AI insights, training plans, race predictions, and more. No credit card needed.`,
+            duration: 8000,
+          });
+          localStorage.setItem(seenKey, 'true');
+        }, 1500);
+      }
+    }
+  }, [isReverseTrial, user?.id, trialDaysRemaining, toast]);
 
   // Check if user has chatted (for checklist)
   const { data: conversationSummaries } = useQuery<Array<{ id: number }>>({
