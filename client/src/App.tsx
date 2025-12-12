@@ -51,6 +51,7 @@ import AICoachLanding from "@/pages/ai-running-coach";
 import DevelopersPage from "@/pages/developers";
 import ApiDocsPage from "@/pages/developers/api-docs";
 import YearRecapPage from "@/pages/year-recap";
+import TrainingPlansPage from "@/pages/training-plans";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -159,6 +160,12 @@ function Router() {
       </Route>
       <Route path="/year-recap">
         <ProtectedRoute component={YearRecapPage} />
+      </Route>
+      <Route path="/training-plans">
+        <ProtectedRoute component={TrainingPlansPage} />
+      </Route>
+      <Route path="/training-plans/:planId">
+        <ProtectedRoute component={TrainingPlansPage} />
       </Route>
       
       <Route component={NotFound} />
