@@ -1,0 +1,50 @@
+This is the best possible UX decision. It unifies your value proposition into a single, powerful "Coach" view, rather than forcing the user to hunt for data across tabs.
+
+Here is the specific layout strategy to merge your "AI Insights" and "Performance" screenshots into one cohesive **"Coach Insights"** page.
+
+### 📄 New Page Structure: "Coach Insights"
+
+You will organize the page into two distinct "chapters." Use a clear section header (H2) to visually separate them so the user knows they are switching context from "Speed" to "Safety."
+
+---
+
+#### Section 1: The Engine (Race Potential)
+**Goal:** Answer *"How fit am I, and how fast can I race?"*
+**Layout:**
+* **Top Row (The "What"):**
+    * **Race Predictions Card** (from `AI Insights`). This is the headline stat. Place it top-left or full width.
+* **Middle Row (The "Why"):**
+    * **VO2 Max Analysis** (from `Performance`). Place this directly next to or below Race Predictions.
+    * *Why connect them?* If a user sees their prediction dropped, they immediately look at VO2 Max to understand if their fitness dropped.
+* **Bottom Row (The "How"):**
+    * **Heart Rate Zones** (from `Performance`). This explains the *training intensity* that contributes to the engine.
+
+---
+
+#### Section 2: The Mechanics (Form & Health)
+**Goal:** Answer *"Am I running efficiently, or am I about to get injured?"*
+**Layout:**
+* **Top Row (The Risk):**
+    * **Injury Risk Analysis** (from `AI Insights`). This is the most critical alert. It acts as the "Check Engine Light."
+* **Bottom Row (The Cause):**
+    * **Running Efficiency** (Cadence, Oscillation, etc. from `Performance`).
+    * *Why connect them?* The "Risk Factors" in your AI card often cite things like "inconsistent volume" or biomechanics. Placing the **Cadence/Oscillation** metrics right below the Injury Risk helps the user see *what* to fix to lower their risk.
+
+---
+
+### 🎨 Visual UX Tips for the Merge
+
+1.  **Use "Contextual Bridges":**
+    Don't just stack the cards. Add a small text bridge between the sections.
+    * *Between Section 1 and 2:* "Your fitness is high. Now let's check your durability."
+
+2.  **Color Coding:**
+    * Use your **Orange/Red** accents for the **Engine** section (Energy, Speed).
+    * Use your **Green/Blue** accents for the **Mechanics** section (Health, Safety, Recovery).
+    * *Note:* You already use Green for "Low Risk" and Blue for "Efficiency", so this fits your existing design system perfectly.
+
+3.  **The Navigation Bar:**
+    Since you are removing a menu item, your top navigation becomes cleaner:
+    `Dashboard` | **`Coach Insights`** | `Training Plans` | `Admin`
+
+This layout transforms your app from a "Data Dump" into a coherent narrative: **"Here is how fast you can go, and here is how to stay healthy while doing it."**
