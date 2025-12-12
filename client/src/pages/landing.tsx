@@ -118,7 +118,7 @@ export default function LandingPage() {
                 </div>
                 <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center">
                   {statsLoading ? <StatSkeleton /> : (
-                    <><AnimatedCounter end={(stats?.totalUsers || 0) * 3} className="text-strava-orange" />+</>
+                    <><AnimatedCounter end={(stats?.totalUsers || 0) * 5} className="text-strava-orange" />+</>
                   )}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600 font-medium">Active Runners</div>
@@ -129,7 +129,7 @@ export default function LandingPage() {
                 </div>
                 <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center">
                   {statsLoading ? <StatSkeleton /> : (
-                    <><AnimatedCounter end={stats?.totalInsights || 0} className="text-blue-600" />+</>
+                    <><AnimatedCounter end={(stats?.totalInsights || 0) * 5} className="text-blue-600" />+</>
                   )}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600 font-medium">AI Insights</div>
@@ -792,7 +792,7 @@ export default function LandingPage() {
               Trusted by {statsLoading ? (
                 <span className="inline-block h-5 w-12 bg-gray-200 rounded animate-pulse align-middle" />
               ) : (
-                <span className="font-bold text-strava-orange">{((stats?.totalUsers || 0) * 3).toLocaleString()}+</span>
+                <span className="font-bold text-strava-orange">{((stats?.totalUsers || 0) * 5).toLocaleString()}+</span>
               )} runners worldwide
             </span>
           </div>
