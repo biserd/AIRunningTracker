@@ -316,24 +316,29 @@ export default function ActivityPage() {
           )}
         </div>
 
-        {/* Cadence and Power Analysis */}
-        {(activity.averageCadence || activity.averageWatts) && (
+        {/* Cadence and Power Analysis - Only show when real streams data exists */}
+        {(performanceData?.streams?.cadence?.data || performanceData?.streams?.watts?.data) && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {activity.averageCadence && (
+            {performanceData?.streams?.cadence?.data && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <BarChart3 className="mr-2 h-5 w-5 text-purple-600" />
-                    Cadence Analysis
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <BarChart3 className="mr-2 h-5 w-5 text-purple-600" />
+                      Cadence Analysis
+                    </div>
+                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                      Real Data
+                    </span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CadenceChart activity={activity} />
+                  <CadenceChart activity={activity} streams={performanceData?.streams} />
                 </CardContent>
               </Card>
             )}
 
-            {activity.averageWatts && (
+            {performanceData?.streams?.watts?.data && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
@@ -341,11 +346,9 @@ export default function ActivityPage() {
                       <Zap className="mr-2 h-5 w-5 text-yellow-600" />
                       Power Analysis
                     </div>
-                    {performanceData?.streams?.watts && (
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                        Real Data
-                      </span>
-                    )}
+                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                      Real Data
+                    </span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -481,30 +484,36 @@ function HeartRateChart({ activity, streams }: { activity: any, streams?: any })
   );
 }
 
-// Cadence Chart Component
-function CadenceChart({ activity }: { activity: any }) {
-  const avgCadence = activity.averageCadence;
+// Cadence Chart Component - Uses real streams data only
+function CadenceChart({ activity, streams }: { activity: any, streams?: any }) {
+  const avgCadence = activity.averageCadence || 0;
   const maxCadence = activity.maxCadence || avgCadence * 1.1;
   
-  // Generate deterministic cadence variation over time
-  const cadenceData = [];
-  const intervals = 20;
-  const activitySeed = parseInt(activity.stravaId) % 1000;
+  // Build chart data from real streams
+  const cadenceData: { time: string; cadence: number; target: number }[] = [];
   
-  for (let i = 0; i < intervals; i++) {
-    // Create consistent variation based on time position and activity ID
-    const timeSeed = (activitySeed + i * 13) % 100;
-    const variation = (timeSeed / 100 - 0.5) * 0.12; // ±6% variation, consistent per time interval
+  if (streams?.cadence?.data && streams?.time?.data) {
+    const cadenceStream = streams.cadence.data;
+    const timeStream = streams.time.data;
+    const totalTime = activity.movingTime || timeStream[timeStream.length - 1];
     
-    // Apply fatigue pattern - slight decrease over time for longer runs
-    const fatigueAdjustment = activity.movingTime > 3600 ? 1 - (i / intervals) * 0.03 : 1;
-    const cadence = avgCadence * (1 + variation) * fatigueAdjustment;
+    // Sample every ~5% of the activity for a cleaner chart
+    const sampleInterval = Math.max(1, Math.floor(cadenceStream.length / 20));
     
-    cadenceData.push({
-      time: `${Math.round((i / intervals) * (activity.movingTime / 60))}min`,
-      cadence: Math.round(cadence),
-      target: 180 // Optimal cadence target
-    });
+    for (let i = 0; i < cadenceStream.length; i += sampleInterval) {
+      const timeSeconds = timeStream[i] || 0;
+      const timeMinutes = Math.round(timeSeconds / 60);
+      
+      cadenceData.push({
+        time: `${timeMinutes}min`,
+        cadence: Math.round(cadenceStream[i] * 2), // Strava stores cadence as half (steps per leg)
+        target: 180
+      });
+    }
+  }
+
+  if (cadenceData.length === 0) {
+    return <p className="text-gray-500 text-sm">No cadence data available</p>;
   }
 
   return (
@@ -515,8 +524,8 @@ function CadenceChart({ activity }: { activity: any }) {
           <XAxis dataKey="time" />
           <YAxis domain={['dataMin - 5', 'dataMax + 5']} />
           <Tooltip />
-          <Line type="monotone" dataKey="cadence" stroke="#8b5cf6" strokeWidth={2} dot={{ fill: '#8b5cf6' }} />
-          <Line type="monotone" dataKey="target" stroke="#22c55e" strokeDasharray="5 5" />
+          <Line type="monotone" dataKey="cadence" stroke="#8b5cf6" strokeWidth={2} dot={false} />
+          <Line type="monotone" dataKey="target" stroke="#22c55e" strokeDasharray="5 5" dot={false} />
         </LineChart>
       </ResponsiveContainer>
       
@@ -544,13 +553,18 @@ function CadenceChart({ activity }: { activity: any }) {
   );
 }
 
-// Power Chart Component  
+// Power Chart Component - Uses real streams data only
 function PowerChart({ activity, streams }: { activity: any, streams?: any }) {
-  const avgWatts = activity.averageWatts;
+  const avgWatts = activity.averageWatts || 0;
   const maxWatts = activity.maxWatts || avgWatts * 1.4;
   
+  // Require real power data
+  if (!streams?.watts?.data || !streams?.time?.data) {
+    return <p className="text-gray-500 text-sm">No power data available</p>;
+  }
+  
   // Generate power zones based on FTP estimation
-  const estimatedFTP = avgWatts * 0.85; // Rough FTP estimation
+  const estimatedFTP = avgWatts * 0.85;
   
   let powerZones = [
     { zone: 'Zone 1', range: '<55% FTP', min: 0, max: estimatedFTP * 0.55, time: 0, color: '#22c55e' },
@@ -560,54 +574,35 @@ function PowerChart({ activity, streams }: { activity: any, streams?: any }) {
     { zone: 'Zone 5', range: '>105% FTP', min: estimatedFTP * 1.05, max: maxWatts, time: 0, color: '#7c3aed' }
   ];
 
-  // Use real power data if available
-  if (streams?.watts?.data && streams?.time?.data) {
-    const powerData = streams.watts.data;
-    const timeData = streams.time.data;
-    const totalTime = activity.movingTime;
-    
-    // Calculate actual time in each zone
-    const zoneTimes = [0, 0, 0, 0, 0];
-    let previousTime = 0;
-    
-    powerData.forEach((watts: number, index: number) => {
-      if (watts > 0) {
-        const currentTime = timeData[index] || 0;
-        const timeDiff = index === 0 ? 0 : currentTime - previousTime;
-        
-        // Determine which zone this power falls into
-        if (watts >= powerZones[4].min) zoneTimes[4] += timeDiff;
-        else if (watts >= powerZones[3].min) zoneTimes[3] += timeDiff;
-        else if (watts >= powerZones[2].min) zoneTimes[2] += timeDiff;
-        else if (watts >= powerZones[1].min) zoneTimes[1] += timeDiff;
-        else zoneTimes[0] += timeDiff;
-        
-        previousTime = currentTime;
-      }
-    });
-    
-    // Update zones with actual data
-    powerZones = powerZones.map((zone, index) => ({
-      ...zone,
-      time: zoneTimes[index] / totalTime // Convert to percentage
-    }));
-  } else {
-    // Fallback to estimated distribution based on activity type and intensity
-    const intensity = avgWatts / estimatedFTP;
-    let zoneDistribution;
-    if (intensity < 0.7) {
-      zoneDistribution = [0.5, 0.3, 0.15, 0.04, 0.01]; // Easy effort
-    } else if (intensity < 0.85) {
-      zoneDistribution = [0.3, 0.4, 0.2, 0.08, 0.02]; // Moderate effort
-    } else {
-      zoneDistribution = [0.1, 0.25, 0.35, 0.25, 0.05]; // Hard effort
+  const powerData = streams.watts.data;
+  const timeData = streams.time.data;
+  const totalTime = activity.movingTime || timeData[timeData.length - 1];
+  
+  // Calculate actual time in each zone
+  const zoneTimes = [0, 0, 0, 0, 0];
+  let previousTime = 0;
+  
+  powerData.forEach((watts: number, index: number) => {
+    if (watts > 0) {
+      const currentTime = timeData[index] || 0;
+      const timeDiff = index === 0 ? 0 : currentTime - previousTime;
+      
+      // Determine which zone this power falls into
+      if (watts >= powerZones[4].min) zoneTimes[4] += timeDiff;
+      else if (watts >= powerZones[3].min) zoneTimes[3] += timeDiff;
+      else if (watts >= powerZones[2].min) zoneTimes[2] += timeDiff;
+      else if (watts >= powerZones[1].min) zoneTimes[1] += timeDiff;
+      else zoneTimes[0] += timeDiff;
+      
+      previousTime = currentTime;
     }
-    
-    powerZones = powerZones.map((zone, index) => ({
-      ...zone,
-      time: zoneDistribution[index]
-    }));
-  }
+  });
+  
+  // Update zones with actual data
+  powerZones = powerZones.map((zone, index) => ({
+    ...zone,
+    time: zoneTimes[index] / totalTime
+  }));
 
   const timeInZones = powerZones.map(zone => ({
     ...zone,
