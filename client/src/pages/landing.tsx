@@ -1,7 +1,8 @@
+import { useState, useRef } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp, Trophy, Users, TrendingDown, Calculator, ArrowRight, MessageCircle, Activity, Map, Footprints, RotateCcw, Gift, Sparkles } from "lucide-react";
+import { CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp, Trophy, Users, TrendingDown, Calculator, ArrowRight, MessageCircle, Activity, Map, Footprints, RotateCcw, Gift, Sparkles, ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import { VERSION } from "@shared/version";
 import Footer from "@/components/Footer";
 import PublicHeader from "@/components/PublicHeader";
@@ -10,6 +11,9 @@ import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { useQuery } from "@tanstack/react-query";
 
 export default function LandingPage() {
+  const [showAllFeatures, setShowAllFeatures] = useState(false);
+  const toolsCarouselRef = useRef<HTMLDivElement>(null);
+  
   const { data: stats, isLoading: statsLoading } = useQuery<{
     totalInsights: number;
     totalActivities: number;
@@ -19,6 +23,16 @@ export default function LandingPage() {
     queryKey: ['/api/platform-stats'],
     staleTime: 60000,
   });
+
+  const scrollTools = (direction: 'left' | 'right') => {
+    if (toolsCarouselRef.current) {
+      const scrollAmount = 350;
+      toolsCarouselRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   const StatSkeleton = () => (
     <div className="h-8 w-16 bg-gray-200 rounded animate-pulse" />
@@ -427,8 +441,9 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Other Features Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 px-4">
+          {/* Core Features Grid - 3 "Wow" Features */}
+          <div className="grid md:grid-cols-3 gap-6 sm:gap-8 px-4">
+            {/* Smart Performance Insights */}
             <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:shadow-orange-200/50">
               <div className="w-11 h-11 sm:w-12 sm:h-12 bg-strava-orange rounded-xl flex items-center justify-center mb-4">
                 <Brain className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
@@ -443,6 +458,7 @@ export default function LandingPage() {
               </div>
             </div>
 
+            {/* Race Time Predictions */}
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:shadow-blue-200/50">
               <div className="w-11 h-11 sm:w-12 sm:h-12 bg-blue-500 rounded-xl flex items-center justify-center mb-4">
                 <Target className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
@@ -467,66 +483,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:shadow-green-200/50">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 bg-green-500 rounded-xl flex items-center justify-center mb-4">
-                <BarChart className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-              </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-charcoal mb-3">Advanced Analytics</h3>
-              <p className="text-gray-600 mb-4">
-                VO2 Max estimation, running efficiency analysis, heart rate zones, and comprehensive performance metrics.
-              </p>
-              <div className="bg-white p-3 rounded-lg text-sm space-y-1">
-                <div className="flex justify-between">
-                  <span className="font-medium">VO2 Max:</span>
-                  <span className="text-green-600">52.1 ml/kg/min</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Efficiency:</span>
-                  <span className="text-green-600">168 SPM</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Training Load:</span>
-                  <span className="text-green-600">Optimal</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:shadow-orange-200/50">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 bg-orange-500 rounded-xl flex items-center justify-center mb-4">
-                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-              </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-charcoal mb-3">Training Plans</h3>
-              <p className="text-gray-600 mb-4">
-                AI-generated personalized training schedules that adapt to your progress and goals.
-              </p>
-              <div className="bg-white p-3 rounded-lg text-sm">
-                <div className="font-medium text-orange-700 mb-1">This Week:</div>
-                <div className="space-y-1 text-gray-600">
-                  <div>• 3x Easy runs (5-6 miles)</div>
-                  <div>• 1x Tempo run (4 miles)</div>
-                  <div>• 1x Long run (12 miles)</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-6 rounded-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:shadow-teal-200/50">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-r from-teal-500 to-teal-600 rounded-xl flex items-center justify-center mb-4">
-                <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-              </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-charcoal mb-3">Running Coach Chat</h3>
-              <p className="text-gray-600 mb-4">
-                Chat with your running coach for instant insights and personalized advice about your training.
-              </p>
-              <div className="bg-white p-3 rounded-lg text-sm">
-                <div className="font-medium text-teal-700 mb-1">Ask anything:</div>
-                <div className="space-y-1 text-gray-600 text-xs">
-                  <div>• "How's my training been?"</div>
-                  <div>• "What should I focus on?"</div>
-                  <div>• "Am I ready for a race?"</div>
-                </div>
-              </div>
-            </div>
-
+            {/* Injury Prevention */}
             <div className="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:shadow-red-200/50">
               <div className="w-11 h-11 sm:w-12 sm:h-12 bg-red-500 rounded-xl flex items-center justify-center mb-4">
                 <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
@@ -543,357 +500,270 @@ export default function LandingPage() {
                 <div className="text-gray-600 text-xs">Your training load is well-balanced with adequate recovery time.</div>
               </div>
             </div>
+          </div>
 
-            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-6 rounded-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:shadow-yellow-200/50">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 bg-yellow-500 rounded-xl flex items-center justify-center mb-4">
-                <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-              </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-charcoal mb-3">Performance Tracking</h3>
-              <p className="text-gray-600 mb-4">
-                Real-time GPS route visualization, pace analysis, and comprehensive activity breakdowns.
-              </p>
-              <div className="bg-white p-3 rounded-lg text-sm">
-                <div className="space-y-1 text-gray-600">
-                  <div>• Interactive route maps</div>
-                  <div>• Pace zone analysis</div>
-                  <div>• Heart rate monitoring</div>
-                  <div>• Weekly/monthly trends</div>
+          {/* See All Features Toggle */}
+          <div className="text-center mt-8 px-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowAllFeatures(!showAllFeatures)}
+              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              data-testid="button-toggle-features"
+            >
+              {showAllFeatures ? 'Show Less' : 'See All Features'}
+              {showAllFeatures ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
+            </Button>
+          </div>
+
+          {/* Expanded Features - Hidden by default */}
+          {showAllFeatures && (
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 px-4 mt-8 animate-in fade-in slide-in-from-top-4 duration-300">
+              {/* Advanced Analytics */}
+              <div className="bg-gradient-to-br from-green-50 to-green-100 p-5 rounded-xl transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center mb-3">
+                  <BarChart className="h-5 w-5 text-white" />
                 </div>
+                <h3 className="text-base font-semibold text-charcoal mb-2">Advanced Analytics</h3>
+                <p className="text-gray-600 text-sm">
+                  VO2 Max estimation, heart rate zones, and comprehensive performance metrics.
+                </p>
+              </div>
+
+              {/* Training Plans */}
+              <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-5 rounded-xl transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center mb-3">
+                  <TrendingUp className="h-5 w-5 text-white" />
+                </div>
+                <h3 className="text-base font-semibold text-charcoal mb-2">Training Plans</h3>
+                <p className="text-gray-600 text-sm">
+                  AI-generated personalized training schedules that adapt to your progress.
+                </p>
+              </div>
+
+              {/* Running Coach Chat */}
+              <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-5 rounded-xl transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                <div className="w-10 h-10 bg-teal-500 rounded-xl flex items-center justify-center mb-3">
+                  <MessageCircle className="h-5 w-5 text-white" />
+                </div>
+                <h3 className="text-base font-semibold text-charcoal mb-2">Running Coach Chat</h3>
+                <p className="text-gray-600 text-sm">
+                  Chat with your AI coach for instant insights about your training.
+                </p>
+              </div>
+
+              {/* Performance Tracking */}
+              <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-5 rounded-xl transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                <div className="w-10 h-10 bg-yellow-500 rounded-xl flex items-center justify-center mb-3">
+                  <Zap className="h-5 w-5 text-white" />
+                </div>
+                <h3 className="text-base font-semibold text-charcoal mb-2">Performance Tracking</h3>
+                <p className="text-gray-600 text-sm">
+                  GPS route visualization, pace analysis, and activity breakdowns.
+                </p>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
-      {/* Free Running Tools Section */}
-      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-gradient-to-br from-gray-50 via-white to-orange-50">
+      {/* Free Running Tools Section - Horizontal Carousel */}
+      <section className="py-12 sm:py-16 px-4 sm:px-6 bg-gradient-to-br from-gray-50 via-white to-orange-50">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12 sm:mb-16">
-            <div className="inline-flex items-center space-x-2 bg-strava-orange/10 text-strava-orange px-4 py-2 rounded-full mb-6">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center space-x-2 bg-strava-orange/10 text-strava-orange px-4 py-2 rounded-full mb-4">
               <Calculator size={20} />
               <span className="font-semibold text-sm">Free Tools for All Runners</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-charcoal mb-3 sm:mb-4 px-4">
+            <h2 className="text-2xl sm:text-3xl font-bold text-charcoal mb-2 px-4">
               Professional Analysis Tools
             </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4">
-              Access powerful calculators and analyzers used by elite coaches. No account required.
+            <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4">
+              Access powerful calculators used by elite coaches. No account required.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 px-4">
-            {/* Aerobic Decoupling Calculator */}
-            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center mb-4">
-                <TrendingDown className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-charcoal mb-3">Aerobic Decoupling</h3>
-              <p className="text-gray-600 mb-4 text-sm">
-                Measure cardiovascular drift during long runs to assess endurance efficiency and aerobic fitness.
-              </p>
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                  <span>Split-halves analysis</span>
+          {/* Carousel Container */}
+          <div className="relative">
+            {/* Navigation Arrows */}
+            <button
+              onClick={() => scrollTools('left')}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white shadow-lg rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors hidden md:flex"
+              data-testid="carousel-scroll-left"
+              aria-label="Scroll tools left"
+            >
+              <ChevronLeft className="h-5 w-5 text-gray-700" />
+            </button>
+            <button
+              onClick={() => scrollTools('right')}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white shadow-lg rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors hidden md:flex"
+              data-testid="carousel-scroll-right"
+              aria-label="Scroll tools right"
+            >
+              <ChevronRight className="h-5 w-5 text-gray-700" />
+            </button>
+
+            {/* Scrollable Tools Container */}
+            <div 
+              ref={toolsCarouselRef}
+              className="flex gap-4 overflow-x-auto pb-4 px-2 md:px-8 scrollbar-hide scroll-smooth snap-x snap-mandatory"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {/* Tool Card - Aerobic Decoupling */}
+              <Link href="/tools/aerobic-decoupling-calculator" className="flex-shrink-0 w-72 snap-start">
+                <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 h-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center">
+                      <TrendingDown className="h-5 w-5 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-charcoal">Aerobic Decoupling</h3>
+                  </div>
+                  <p className="text-gray-600 text-sm mb-3">Measure cardiovascular drift to assess endurance efficiency.</p>
+                  <span className="text-blue-600 text-sm font-medium flex items-center">
+                    Try Calculator <ArrowRight className="ml-1 h-3 w-3" />
+                  </span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                  <span>Drift visualization</span>
+              </Link>
+
+              {/* Tool Card - Training Split */}
+              <Link href="/tools/training-split-analyzer" className="flex-shrink-0 w-72 snap-start">
+                <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 h-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-rose-500 to-pink-600 rounded-lg flex items-center justify-center">
+                      <Activity className="h-5 w-5 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-charcoal">Training Split Analyzer</h3>
+                  </div>
+                  <p className="text-gray-600 text-sm mb-3">Discover if you're training polarized, pyramidal, or threshold-heavy.</p>
+                  <span className="text-rose-600 text-sm font-medium flex items-center">
+                    Analyze Training <ArrowRight className="ml-1 h-3 w-3" />
+                  </span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                  <span>Auto-import from Strava</span>
+              </Link>
+
+              {/* Tool Card - Marathon Fueling */}
+              <Link href="/tools/marathon-fueling" className="flex-shrink-0 w-72 snap-start">
+                <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 h-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
+                      <Zap className="h-5 w-5 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-charcoal">Marathon Fueling</h3>
+                  </div>
+                  <p className="text-gray-600 text-sm mb-3">Calculate optimal race nutrition with precise gel timing.</p>
+                  <span className="text-orange-600 text-sm font-medium flex items-center">
+                    Plan Nutrition <ArrowRight className="ml-1 h-3 w-3" />
+                  </span>
                 </div>
-              </div>
-              <Link href="/tools/aerobic-decoupling-calculator">
-                <Button 
-                  className="w-full bg-gradient-to-r from-blue-500 to-blue-700 text-white hover:from-blue-600 hover:to-blue-800"
-                  data-testid="tool-cta-aerobic-decoupling"
-                >
-                  Try Calculator
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+              </Link>
+
+              {/* Tool Card - Race Predictor */}
+              <Link href="/tools/race-predictor" className="flex-shrink-0 w-72 snap-start">
+                <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 h-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="h-5 w-5 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-charcoal">Race Time Predictor</h3>
+                  </div>
+                  <p className="text-gray-600 text-sm mb-3">Predict your race times with confidence intervals.</p>
+                  <span className="text-green-600 text-sm font-medium flex items-center">
+                    Predict Times <ArrowRight className="ml-1 h-3 w-3" />
+                  </span>
+                </div>
+              </Link>
+
+              {/* Tool Card - Form Stability */}
+              <Link href="/tools/cadence-analyzer" className="flex-shrink-0 w-72 snap-start">
+                <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 h-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center">
+                      <Activity className="h-5 w-5 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-charcoal">Form Stability Analyzer</h3>
+                  </div>
+                  <p className="text-gray-600 text-sm mb-3">Detect form fade through cadence drift analysis.</p>
+                  <span className="text-cyan-600 text-sm font-medium flex items-center">
+                    Analyze Form <ArrowRight className="ml-1 h-3 w-3" />
+                  </span>
+                </div>
+              </Link>
+
+              {/* Tool Card - Shoe Hub */}
+              <Link href="/tools/shoes" className="flex-shrink-0 w-72 snap-start">
+                <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 h-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
+                      <Footprints className="h-5 w-5 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-charcoal">Running Shoe Hub</h3>
+                  </div>
+                  <p className="text-gray-600 text-sm mb-3">Browse 100+ verified shoes with detailed specs.</p>
+                  <span className="text-amber-600 text-sm font-medium flex items-center">
+                    Browse Shoes <ArrowRight className="ml-1 h-3 w-3" />
+                  </span>
+                </div>
+              </Link>
+
+              {/* Tool Card - Shoe Finder */}
+              <Link href="/tools/shoe-finder" className="flex-shrink-0 w-72 snap-start">
+                <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 h-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
+                      <Target className="h-5 w-5 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-charcoal">Personalized Shoe Finder</h3>
+                  </div>
+                  <p className="text-gray-600 text-sm mb-3">Find your perfect shoes based on your profile.</p>
+                  <span className="text-emerald-600 text-sm font-medium flex items-center">
+                    Find My Shoes <ArrowRight className="ml-1 h-3 w-3" />
+                  </span>
+                </div>
+              </Link>
+
+              {/* Tool Card - Rotation Planner */}
+              <Link href="/tools/rotation-planner" className="flex-shrink-0 w-72 snap-start">
+                <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 h-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-sky-500 to-blue-600 rounded-lg flex items-center justify-center">
+                      <RotateCcw className="h-5 w-5 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-charcoal">Shoe Rotation Planner</h3>
+                  </div>
+                  <p className="text-gray-600 text-sm mb-3">Build a complete training rotation for all workouts.</p>
+                  <span className="text-sky-600 text-sm font-medium flex items-center">
+                    Plan Rotation <ArrowRight className="ml-1 h-3 w-3" />
+                  </span>
+                </div>
+              </Link>
+
+              {/* Tool Card - Heatmap */}
+              <Link href="/tools/heatmap" className="flex-shrink-0 w-72 snap-start">
+                <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 h-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-rose-600 rounded-lg flex items-center justify-center">
+                      <Map className="h-5 w-5 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-charcoal">Running Heatmap</h3>
+                  </div>
+                  <p className="text-gray-600 text-sm mb-3">Visualize your routes on an interactive map.</p>
+                  <span className="text-red-600 text-sm font-medium flex items-center">
+                    View Heatmap <ArrowRight className="ml-1 h-3 w-3" />
+                  </span>
+                </div>
               </Link>
             </div>
 
-            {/* Training Split Analyzer */}
-            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
-              <div className="w-12 h-12 bg-gradient-to-br from-rose-500 to-pink-600 rounded-xl flex items-center justify-center mb-4">
-                <Activity className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-charcoal mb-3">Training Split Analyzer</h3>
-              <p className="text-gray-600 mb-4 text-sm">
-                Discover if you're training polarized, pyramidal, or threshold-heavy with personalized zone recommendations.
-              </p>
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                  <span>Zone distribution analysis</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                  <span>Weekly trends</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                  <span>Training prescription</span>
-                </div>
-              </div>
-              <Link href="/tools/training-split-analyzer">
-                <Button 
-                  className="w-full bg-gradient-to-r from-rose-500 to-pink-600 text-white hover:from-rose-600 hover:to-pink-700"
-                  data-testid="tool-cta-training-split"
-                >
-                  Analyze Training
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-
-            {/* Marathon Fueling Planner */}
-            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
-              <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center mb-4">
-                <Zap className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-charcoal mb-3">Marathon Fueling</h3>
-              <p className="text-gray-600 mb-4 text-sm">
-                Calculate optimal race nutrition with precise gel timing, carb targets, and electrolyte balance.
-              </p>
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                  <span>Feeding schedule</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                  <span>Carb & sodium tracking</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                  <span>Shopping list</span>
-                </div>
-              </div>
-              <Link href="/tools/marathon-fueling">
-                <Button 
-                  className="w-full bg-gradient-to-r from-orange-500 to-red-600 text-white hover:from-orange-600 hover:to-red-700"
-                  data-testid="tool-cta-marathon-fueling"
-                >
-                  Plan Nutrition
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-
-            {/* Race Predictor */}
-            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mb-4">
-                <TrendingUp className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-charcoal mb-3">Race Time Predictor</h3>
-              <p className="text-gray-600 mb-4 text-sm">
-                Predict your 10K, Half Marathon, and Marathon times with confidence intervals based on recent efforts.
-              </p>
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                  <span>Riegel formula with personalization</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                  <span>Pace tables & split times</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                  <span>Weather & course adjustments</span>
-                </div>
-              </div>
-              <Link href="/tools/race-predictor">
-                <Button 
-                  className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700"
-                  data-testid="tool-cta-race-predictor"
-                >
-                  Predict Times
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-
-            {/* Cadence Analyzer */}
-            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
-              <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center mb-4">
-                <Activity className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-charcoal mb-3">Form Stability Analyzer</h3>
-              <p className="text-gray-600 mb-4 text-sm">
-                Detect form fade through cadence drift analysis with a comprehensive Form Stability Score (0-100).
-              </p>
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
-                  <span>Cadence drift tracking</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
-                  <span>Stride variability analysis</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
-                  <span>Form stability score</span>
-                </div>
-              </div>
-              <Link href="/tools/cadence-analyzer">
-                <Button 
-                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-600 hover:to-blue-700"
-                  data-testid="tool-cta-cadence-analyzer"
-                >
-                  Analyze Form
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-
-            {/* Running Shoe Hub */}
-            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
-              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center mb-4">
-                <Footprints className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-charcoal mb-3">Running Shoe Hub</h3>
-              <p className="text-gray-600 mb-4 text-sm">
-                Browse 100+ verified running shoes with detailed specs, ratings, and AI-powered recommendations.
-              </p>
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                  <span>16 major brands</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                  <span>Verified specifications</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                  <span>Detailed shoe pages</span>
-                </div>
-              </div>
-              <Link href="/tools/shoes">
-                <Button 
-                  className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700"
-                  data-testid="tool-cta-shoe-hub"
-                >
-                  Browse Shoes
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-
-            {/* Shoe Finder */}
-            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
-              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center mb-4">
-                <Target className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-charcoal mb-3">Personalized Shoe Finder</h3>
-              <p className="text-gray-600 mb-4 text-sm">
-                Find your perfect running shoes based on weight, goals, foot type, and training preferences.
-              </p>
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span>Weight-based matching</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span>Goal-specific suggestions</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span>Foot type recommendations</span>
-                </div>
-              </div>
-              <Link href="/tools/shoe-finder">
-                <Button 
-                  className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700"
-                  data-testid="tool-cta-shoe-finder"
-                >
-                  Find My Shoes
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-
-            {/* Rotation Planner */}
-            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
-              <div className="w-12 h-12 bg-gradient-to-br from-sky-500 to-blue-600 rounded-xl flex items-center justify-center mb-4">
-                <RotateCcw className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-charcoal mb-3">Shoe Rotation Planner</h3>
-              <p className="text-gray-600 mb-4 text-sm">
-                Build a complete training rotation with role-based shoe recommendations for all workout types.
-              </p>
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-                  <span>Daily trainer picks</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-                  <span>Speed & race day shoes</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-                  <span>Recovery options</span>
-                </div>
-              </div>
-              <Link href="/tools/rotation-planner">
-                <Button 
-                  className="w-full bg-gradient-to-r from-sky-500 to-blue-600 text-white hover:from-sky-600 hover:to-blue-700"
-                  data-testid="tool-cta-rotation-planner"
-                >
-                  Plan Rotation
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-
-            {/* Running Heatmap */}
-            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
-              <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl flex items-center justify-center mb-4">
-                <Map className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-charcoal mb-3">Running Heatmap</h3>
-              <p className="text-gray-600 mb-4 text-sm">
-                Visualize your running routes on an interactive map showing your most-used training areas.
-              </p>
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                  <span>Last 30 activities</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                  <span>Route overlap visualization</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                  <span>Interactive popups</span>
-                </div>
-              </div>
-              <Link href="/tools/heatmap">
-                <Button 
-                  className="w-full bg-gradient-to-r from-red-500 to-rose-600 text-white hover:from-red-600 hover:to-rose-700"
-                  data-testid="tool-cta-heatmap"
-                >
-                  View Heatmap
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
+            {/* Scroll Indicator */}
+            <div className="flex justify-center gap-1 mt-4 md:hidden">
+              <span className="text-xs text-gray-500">Swipe to see more tools</span>
+              <ChevronRight className="h-4 w-4 text-gray-400" />
             </div>
           </div>
 
           {/* View All Tools Link */}
-          <div className="text-center mt-8">
+          <div className="text-center mt-6">
             <Link href="/tools">
               <Button 
-                size="lg"
                 className="bg-gradient-to-r from-strava-orange via-orange-500 to-red-500 text-white hover:from-orange-600 hover:via-orange-500 hover:to-red-600 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
                 data-testid="button-view-all-tools"
               >
