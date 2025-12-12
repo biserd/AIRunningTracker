@@ -4475,6 +4475,242 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // ============================================================
+  // Training Plan V2 Routes (Normalized Schema)
+  // ============================================================
+  
+  // Import plan generator lazily to avoid circular dependencies
+  const { planGeneratorService } = await import("./services/planGenerator");
+  const { athleteProfileService } = await import("./services/athleteProfile");
+  
+  // Get or compute athlete profile
+  app.get("/api/training/profile", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const maxAgeHours = parseInt(req.query.maxAgeHours) || 24;
+      
+      const profile = await athleteProfileService.getOrComputeProfile(userId, maxAgeHours);
+      res.json(profile);
+    } catch (error: any) {
+      console.error("Get athlete profile error:", error);
+      res.status(500).json({ message: error.message || "Failed to get athlete profile" });
+    }
+  });
+  
+  // Force recompute athlete profile
+  app.post("/api/training/profile/refresh", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const profile = await athleteProfileService.computeProfile(userId);
+      res.json(profile);
+    } catch (error: any) {
+      console.error("Refresh athlete profile error:", error);
+      res.status(500).json({ message: error.message || "Failed to refresh athlete profile" });
+    }
+  });
+  
+  // Generate training plan
+  app.post("/api/training/plans/generate", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const request = {
+        userId,
+        ...req.body,
+      };
+      
+      const result = await planGeneratorService.generatePlan(request);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error });
+      }
+      
+      res.json(result);
+    } catch (error: any) {
+      console.error("Generate training plan error:", error);
+      res.status(500).json({ message: error.message || "Failed to generate training plan" });
+    }
+  });
+  
+  // Get user's training plans
+  app.get("/api/training/plans", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      
+      const plans = await storage.getTrainingPlansByUserId(userId);
+      res.json(plans);
+    } catch (error: any) {
+      console.error("Get training plans error:", error);
+      res.status(500).json({ message: error.message || "Failed to get training plans" });
+    }
+  });
+  
+  // Get a specific training plan with weeks and days
+  app.get("/api/training/plans/:planId", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const planId = parseInt(req.params.planId);
+      
+      const plan = await storage.getTrainingPlanById(planId);
+      if (!plan || plan.userId !== userId) {
+        return res.status(404).json({ message: "Training plan not found" });
+      }
+      
+      // Get weeks and days
+      const weeks = await storage.getPlanWeeks(planId);
+      const weeksWithDays = await Promise.all(
+        weeks.map(async (week: any) => {
+          const days = await storage.getPlanDays(week.id);
+          return { ...week, days };
+        })
+      );
+      
+      res.json({ ...plan, weeks: weeksWithDays });
+    } catch (error: any) {
+      console.error("Get training plan error:", error);
+      res.status(500).json({ message: error.message || "Failed to get training plan" });
+    }
+  });
+  
+  // Update plan status (archive, complete, etc.)
+  app.patch("/api/training/plans/:planId/status", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const planId = parseInt(req.params.planId);
+      const { status } = req.body;
+      
+      const plan = await storage.getTrainingPlanById(planId);
+      if (!plan || plan.userId !== userId) {
+        return res.status(404).json({ message: "Training plan not found" });
+      }
+      
+      const updated = await storage.updateTrainingPlan(planId, { status });
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Update training plan status error:", error);
+      res.status(500).json({ message: error.message || "Failed to update training plan status" });
+    }
+  });
+  
+  // Get current week's workouts
+  app.get("/api/training/plans/:planId/current-week", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const planId = parseInt(req.params.planId);
+      
+      const plan = await storage.getTrainingPlanById(planId);
+      if (!plan || plan.userId !== userId) {
+        return res.status(404).json({ message: "Training plan not found" });
+      }
+      
+      // Find current week based on date
+      const now = new Date();
+      const weeks = await storage.getPlanWeeks(planId);
+      const currentWeek = weeks.find((w: any) => {
+        const start = new Date(w.weekStartDate);
+        const end = new Date(w.weekEndDate);
+        return now >= start && now <= end;
+      });
+      
+      if (!currentWeek) {
+        return res.status(404).json({ message: "No current week found" });
+      }
+      
+      const days = await storage.getPlanDays(currentWeek.id);
+      res.json({ ...currentWeek, days });
+    } catch (error: any) {
+      console.error("Get current week error:", error);
+      res.status(500).json({ message: error.message || "Failed to get current week" });
+    }
+  });
+  
+  // Mark workout as completed/skipped
+  app.patch("/api/training/days/:dayId", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const dayId = parseInt(req.params.dayId);
+      
+      const day = await storage.getPlanDayById(dayId);
+      if (!day) {
+        return res.status(404).json({ message: "Workout day not found" });
+      }
+      
+      // Verify ownership
+      const plan = await storage.getTrainingPlanById(day.planId);
+      if (!plan || plan.userId !== userId) {
+        return res.status(404).json({ message: "Workout not found" });
+      }
+      
+      const updates = req.body;
+      const updated = await storage.updatePlanDay(dayId, updates);
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Update workout day error:", error);
+      res.status(500).json({ message: error.message || "Failed to update workout" });
+    }
+  });
+  
+  // Link an activity to a planned workout
+  app.post("/api/training/days/:dayId/link-activity", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const dayId = parseInt(req.params.dayId);
+      const { activityId } = req.body;
+      
+      const day = await storage.getPlanDayById(dayId);
+      if (!day) {
+        return res.status(404).json({ message: "Workout day not found" });
+      }
+      
+      // Verify ownership
+      const plan = await storage.getTrainingPlanById(day.planId);
+      if (!plan || plan.userId !== userId) {
+        return res.status(404).json({ message: "Workout not found" });
+      }
+      
+      // Get activity data
+      const activity = await storage.getActivityByStravaId(activityId.toString());
+      if (!activity || activity.userId !== userId) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
+      
+      // Update day with activity data
+      const updated = await storage.updatePlanDay(dayId, {
+        linkedActivityId: activity.id,
+        status: "completed",
+        actualDistanceKm: activity.distance ? activity.distance / 1000 : undefined,
+        actualDurationMins: activity.movingTime ? Math.round(activity.movingTime / 60) : undefined,
+        actualPace: activity.averageSpeed ? 
+          `${Math.floor(1000 / activity.averageSpeed / 60)}:${String(Math.floor((1000 / activity.averageSpeed) % 60)).padStart(2, '0')}` : 
+          undefined,
+      });
+      
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Link activity error:", error);
+      res.status(500).json({ message: error.message || "Failed to link activity" });
+    }
+  });
+  
+  // Delete training plan (cascade delete weeks and days)
+  app.delete("/api/training/plans/:planId", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const planId = parseInt(req.params.planId);
+      
+      const plan = await storage.getTrainingPlanById(planId);
+      if (!plan || plan.userId !== userId) {
+        return res.status(404).json({ message: "Training plan not found" });
+      }
+      
+      // Delete plan - days and weeks will cascade if properly set up
+      await storage.deleteTrainingPlans(userId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Delete training plan error:", error);
+      res.status(500).json({ message: error.message || "Failed to delete training plan" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
