@@ -12,8 +12,9 @@ import { Link, useRoute } from "wouter";
 import { 
   ChevronLeft, ChevronRight, Calendar, Target, Clock, 
   Loader2, CheckCircle, Play, Pause, RotateCcw,
-  Footprints, Zap, Mountain, Timer, Coffee
+  Footprints, Zap, Mountain, Timer, Coffee, Trash2
 } from "lucide-react";
+import { useLocation } from "wouter";
 import { format, parseISO, addDays, startOfWeek } from "date-fns";
 
 const KM_TO_MILES = 0.621371;
@@ -104,6 +105,8 @@ export default function TrainingPlanDetail() {
     enabled: !!user && !!planId,
   });
   
+  const [, navigate] = useLocation();
+  
   const completeDayMutation = useMutation({
     mutationFn: async ({ dayId, status }: { dayId: number; status: string }) => {
       return await apiRequest(`/api/training/days/${dayId}`, "PATCH", { status });
@@ -113,6 +116,27 @@ export default function TrainingPlanDetail() {
       toast({
         title: "Workout updated",
         description: "Your progress has been saved.",
+      });
+    },
+  });
+  
+  const deletePlanMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest(`/api/training/plans/${planId}`, "DELETE");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/training/plans"] });
+      toast({
+        title: "Plan deleted",
+        description: "Your training plan has been removed.",
+      });
+      navigate("/training-plans");
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete plan. Please try again.",
+        variant: "destructive",
       });
     },
   });
@@ -200,6 +224,24 @@ export default function TrainingPlanDetail() {
               </span>
             </div>
           </div>
+          
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => {
+              if (confirm("Are you sure you want to delete this training plan? This cannot be undone.")) {
+                deletePlanMutation.mutate();
+              }
+            }}
+            disabled={deletePlanMutation.isPending}
+            data-testid="button-delete-plan"
+          >
+            {deletePlanMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <><Trash2 className="w-4 h-4 mr-2" /> Delete Plan</>
+            )}
+          </Button>
         </div>
         
         <div className="flex items-center justify-between mb-6 bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">

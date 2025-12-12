@@ -55,6 +55,7 @@ export interface IStorage {
   createTrainingPlan(plan: InsertTrainingPlan): Promise<TrainingPlan>;
   getLatestTrainingPlan(userId: number): Promise<TrainingPlan | undefined>;
   deleteTrainingPlans(userId: number): Promise<void>;
+  deleteTrainingPlanById(planId: number): Promise<void>;
   
   // New Training Plan System (v2)
   // Athlete Profile methods
@@ -617,6 +618,18 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTrainingPlans(userId: number): Promise<void> {
     await db.delete(trainingPlans).where(eq(trainingPlans.userId, userId));
+  }
+
+  async deleteTrainingPlanById(planId: number): Promise<void> {
+    // Delete days first
+    const weeks = await this.getPlanWeeks(planId);
+    for (const week of weeks) {
+      await db.delete(planDays).where(eq(planDays.weekId, week.id));
+    }
+    // Delete weeks
+    await db.delete(planWeeks).where(eq(planWeeks.planId, planId));
+    // Delete plan
+    await db.delete(trainingPlans).where(eq(trainingPlans.id, planId));
   }
 
   // ============== New Training Plan System (v2) ==============

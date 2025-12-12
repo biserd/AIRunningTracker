@@ -4591,6 +4591,25 @@ ${allPages.map(page => `  <url>
     }
   });
   
+  // Delete a training plan
+  app.delete("/api/training/plans/:planId", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const planId = parseInt(req.params.planId);
+      
+      const plan = await storage.getTrainingPlanById(planId);
+      if (!plan || plan.userId !== userId) {
+        return res.status(404).json({ message: "Training plan not found" });
+      }
+      
+      await storage.deleteTrainingPlanById(planId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Delete training plan error:", error);
+      res.status(500).json({ message: error.message || "Failed to delete training plan" });
+    }
+  });
+  
   // Get current week's workouts
   app.get("/api/training/plans/:planId/current-week", authenticateJWT, async (req: any, res) => {
     try {
