@@ -284,16 +284,6 @@ export default function YearRecapPage() {
                         Share
                       </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      onClick={handleGenerateImage}
-                      disabled={isGenerating}
-                      className="w-full"
-                      data-testid="button-regenerate"
-                    >
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Regenerate
-                    </Button>
                   </div>
                 )}
               </CardContent>
