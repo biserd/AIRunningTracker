@@ -224,14 +224,14 @@ export class AthleteProfileService {
       return { hrZones: null, maxHr: null, restingHr: null };
     }
     
-    // Estimate max HR from max recorded
-    const maxHr = runsWithHr.reduce((max, r) => 
-      Math.max(max, r.maxHeartrate || 0), 0);
+    // Estimate max HR from max recorded (round to integer for DB)
+    const maxHr = Math.round(runsWithHr.reduce((max, r) => 
+      Math.max(max, r.maxHeartrate || 0), 0));
     
     // Estimate resting HR (not available from runs, estimate from lowest average)
     const lowestAvgHr = runsWithHr.reduce((min, r) => 
       Math.min(min, r.averageHeartrate || 999), 999);
-    const restingHr = Math.max(40, lowestAvgHr - 60); // Rough estimate
+    const restingHr = Math.round(Math.max(40, lowestAvgHr - 60)); // Rough estimate, rounded to integer
     
     if (maxHr > 0) {
       // Calculate zones based on max HR (using standard percentages)
