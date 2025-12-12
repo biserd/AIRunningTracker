@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, Thermometer, BarChart3, Timer } from "lucide-react";
+import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, Thermometer, BarChart3, Timer, Trophy, Mountain, Pause, Flag, Users } from "lucide-react";
 import { Link } from "wouter";
 import AppHeader from "@/components/AppHeader";
 import RouteMap from "../components/RouteMap";
@@ -67,7 +67,34 @@ export default function ActivityPage() {
           </Link>
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{activity.name}</h1>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-3xl font-bold text-gray-900">{activity.name}</h1>
+                {activity.prCount > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-medium" data-testid="badge-pr-count">
+                    <Trophy className="h-4 w-4" />
+                    {activity.prCount} PR{activity.prCount > 1 ? 's' : ''}
+                  </span>
+                )}
+                {activity.workoutType !== null && activity.workoutType !== undefined && activity.workoutType !== 0 && activity.workoutType !== 10 && (
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium ${
+                    activity.workoutType === 1 || activity.workoutType === 11 ? 'bg-red-100 text-red-800' :
+                    activity.workoutType === 2 || activity.workoutType === 12 ? 'bg-blue-100 text-blue-800' :
+                    activity.workoutType === 3 || activity.workoutType === 13 ? 'bg-purple-100 text-purple-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`} data-testid="badge-workout-type">
+                    {activity.workoutType === 1 || activity.workoutType === 11 ? <><Flag className="h-4 w-4" /> Race</> :
+                     activity.workoutType === 2 || activity.workoutType === 12 ? <><Mountain className="h-4 w-4" /> Long Run</> :
+                     activity.workoutType === 3 || activity.workoutType === 13 ? <><Zap className="h-4 w-4" /> Workout</> :
+                     'Default'}
+                  </span>
+                )}
+                {activity.athleteCount > 1 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium" data-testid="badge-group-run">
+                    <Users className="h-4 w-4" />
+                    Group ({activity.athleteCount})
+                  </span>
+                )}
+              </div>
               <p className="text-gray-600 text-lg mb-3">
                 {new Date(activity.startDate).toLocaleDateString('en-US', {
                   weekday: 'long',
@@ -218,6 +245,22 @@ export default function ActivityPage() {
                   <div>
                     <div className="text-sm font-medium text-gray-600">Max Power</div>
                     <div className="text-gray-900 font-semibold">{Math.round(activity.maxWatts)}W</div>
+                  </div>
+                )}
+                {activity.elapsedTime && activity.elapsedTime > activity.movingTime && (
+                  <div data-testid="stat-stop-time">
+                    <div className="text-sm font-medium text-gray-600">Stop Time</div>
+                    <div className="text-gray-900 font-semibold">
+                      {Math.round((activity.elapsedTime - activity.movingTime) / 60)}m ({Math.round(((activity.elapsedTime - activity.movingTime) / activity.elapsedTime) * 100)}%)
+                    </div>
+                  </div>
+                )}
+                {activity.elevHigh !== null && activity.elevLow !== null && (
+                  <div data-testid="stat-elev-range">
+                    <div className="text-sm font-medium text-gray-600">Elevation Range</div>
+                    <div className="text-gray-900 font-semibold">
+                      {Math.round(activity.elevLow)}m - {Math.round(activity.elevHigh)}m
+                    </div>
                   </div>
                 )}
               </div>
