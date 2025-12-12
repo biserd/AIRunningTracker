@@ -1,13 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Activity, TrendingUp, Calendar, Shield, Database, BarChart3, Clock, Target, Signal, Server, Cpu, HardDrive, AlertTriangle, CheckCircle, XCircle, ChevronLeft, ChevronRight, ShoppingBag, Layers } from "lucide-react";
+import { Users, Activity, TrendingUp, Calendar, Shield, Database, BarChart3, Clock, Target, Signal, Server, Cpu, HardDrive, AlertTriangle, CheckCircle, XCircle, ChevronLeft, ChevronRight, ShoppingBag, Layers, Mail, Send } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
@@ -137,6 +137,35 @@ export default function AdminPage() {
     queryKey: ["/api/admin/performance"],
     enabled: !!user,
     refetchInterval: 30000, // Refresh every 30 seconds for real-time monitoring
+  });
+
+  // Launch email blast
+  const { data: pendingLaunchEmails, isLoading: pendingEmailsLoading } = useQuery<{ count: number; emails: string[] }>({
+    queryKey: ["/api/admin/launch-emails/pending"],
+    enabled: !!user,
+  });
+
+  const [launchEmailResult, setLaunchEmailResult] = useState<{ sent: number; failed: number; errors: string[] } | null>(null);
+  const [showConfirmSend, setShowConfirmSend] = useState(false);
+
+  const sendLaunchEmailsMutation = useMutation({
+    mutationFn: () => apiRequest("/api/admin/send-launch-emails", "POST"),
+    onSuccess: (data: any) => {
+      setLaunchEmailResult(data);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/launch-emails/pending"] });
+      toast({
+        title: "Launch Emails Sent",
+        description: `Successfully sent ${data.sent} emails${data.failed > 0 ? `, ${data.failed} failed` : ""}`,
+      });
+      setShowConfirmSend(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Send",
+        description: error.message || "Could not send launch emails",
+        variant: "destructive",
+      });
+    },
   });
 
   // Check if user is admin
@@ -317,6 +346,113 @@ export default function AdminPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Launch Email Blast */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Launch Email Blast
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {pendingEmailsLoading ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-strava-orange mx-auto"></div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-lg font-semibold" data-testid="text-pending-emails-count">
+                      {pendingLaunchEmails?.count || 0} subscribers waiting
+                    </p>
+                    <p className="text-sm text-gray-500">Waitlist subscribers who haven't received the launch email</p>
+                  </div>
+                  {!showConfirmSend ? (
+                    <Button
+                      onClick={() => setShowConfirmSend(true)}
+                      disabled={(pendingLaunchEmails?.count || 0) === 0}
+                      className="bg-green-600 hover:bg-green-700"
+                      data-testid="button-send-launch-emails"
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      Send Launch Emails
+                    </Button>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowConfirmSend(false)}
+                        data-testid="button-cancel-send"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={() => sendLaunchEmailsMutation.mutate()}
+                        disabled={sendLaunchEmailsMutation.isPending}
+                        className="bg-red-600 hover:bg-red-700"
+                        data-testid="button-confirm-send"
+                      >
+                        {sendLaunchEmailsMutation.isPending ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Sending...
+                          </>
+                        ) : (
+                          <>Confirm Send {pendingLaunchEmails?.count} Emails</>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {launchEmailResult && (
+                  <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border">
+                    <h4 className="font-semibold mb-2">Last Send Results:</h4>
+                    <div className="flex gap-4">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <span data-testid="text-sent-count">{launchEmailResult.sent} sent</span>
+                      </div>
+                      {launchEmailResult.failed > 0 && (
+                        <div className="flex items-center gap-2">
+                          <XCircle className="h-4 w-4 text-red-500" />
+                          <span data-testid="text-failed-count">{launchEmailResult.failed} failed</span>
+                        </div>
+                      )}
+                    </div>
+                    {launchEmailResult.errors.length > 0 && (
+                      <details className="mt-2">
+                        <summary className="text-sm text-red-600 cursor-pointer hover:underline">
+                          View errors
+                        </summary>
+                        <ul className="text-xs text-red-500 mt-1 list-disc list-inside">
+                          {launchEmailResult.errors.map((err, i) => (
+                            <li key={i}>{err}</li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
+                  </div>
+                )}
+
+                {(pendingLaunchEmails?.emails?.length || 0) > 0 && (
+                  <details className="text-sm">
+                    <summary className="cursor-pointer text-gray-600 hover:text-gray-800">
+                      Show pending email addresses
+                    </summary>
+                    <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded max-h-40 overflow-y-auto">
+                      {pendingLaunchEmails?.emails.map((email, i) => (
+                        <div key={i} className="text-xs text-gray-600">{email}</div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* User Analytics Section */}
         <div className="space-y-6">
