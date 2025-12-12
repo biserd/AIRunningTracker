@@ -287,7 +287,7 @@ const YearRecapInfographic = forwardRef<YearRecapInfographicRef, YearRecapInfogr
           </div>
         )}
 
-        <p className="text-center text-sm opacity-60 mt-4">runanalytics.io</p>
+        <p className="text-center text-sm opacity-60 mt-4">aitracker.run</p>
       </div>
     );
   }

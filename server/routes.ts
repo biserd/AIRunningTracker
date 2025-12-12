@@ -4451,9 +4451,12 @@ ${allPages.map(page => `  <url>
       const favoriteDayEntry = Object.entries(dayCounts).reduce((a, b) => b[1] > a[1] ? b : a, ["", 0]);
       const favoriteDay = favoriteDayEntry[0] ? { day: favoriteDayEntry[0], count: favoriteDayEntry[1] } : undefined;
 
-      // Get AI insights for the infographic
+      // Get AI insights for the infographic - use content (the actual insight), not title (category name)
       const aiInsightsList = await storage.getAIInsightsByUserId(userId, undefined, 5);
-      const aiInsights = aiInsightsList.map(i => i.title).slice(0, 2);
+      const aiInsights = aiInsightsList
+        .filter(i => i.content && i.content.length > 10)
+        .map(i => i.content)
+        .slice(0, 2);
 
       // Calculate percentile (simple estimation based on distance)
       const percentile = Math.min(99, Math.max(1, Math.round(
