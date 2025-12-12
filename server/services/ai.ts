@@ -68,18 +68,60 @@ export class AIService {
     };
   }
 
+  private getWorkoutTypeName(workoutType: number | null | undefined): string | null {
+    if (workoutType === null || workoutType === undefined) return null;
+    const types: Record<number, string> = {
+      0: 'default',
+      1: 'race',
+      2: 'long run',
+      3: 'workout',
+      10: 'default',
+      11: 'race',
+      12: 'long run',
+      13: 'workout'
+    };
+    return types[workoutType] || null;
+  }
+
   private formatActivitiesForAI(activities: Activity[], isMetric: boolean): string {
     return activities.slice(0, 10).map(activity => {
       const distanceInKm = activity.distance / 1000;
       const pacePerKm = activity.distance > 0 ? (activity.movingTime / 60) / distanceInKm : 0;
       
+      // Calculate stop time percentage
+      const elapsedTime = activity.elapsedTime || activity.movingTime;
+      const stopTime = elapsedTime - activity.movingTime;
+      const stopTimePercent = elapsedTime > 0 ? ((stopTime / elapsedTime) * 100).toFixed(0) : '0';
+      
+      // Elevation range
+      const elevRange = (activity.elevHigh !== null && activity.elevLow !== null) 
+        ? `${(activity.elevHigh - activity.elevLow).toFixed(0)}m range` 
+        : null;
+      
+      // Workout type label
+      const workoutLabel = this.getWorkoutTypeName(activity.workoutType);
+      
+      // PR count
+      const prInfo = activity.prCount && activity.prCount > 0 ? `${activity.prCount} PRs` : null;
+      
+      // Build activity description
+      const extras: string[] = [];
+      if (workoutLabel && workoutLabel !== 'default') extras.push(`[${workoutLabel.toUpperCase()}]`);
+      if (prInfo) extras.push(`🏆${prInfo}`);
+      if (parseInt(stopTimePercent) > 5) extras.push(`${stopTimePercent}% stop time`);
+      
+      const extrasStr = extras.length > 0 ? ` (${extras.join(', ')})` : '';
+      
       if (isMetric) {
-        return `${activity.name}: ${distanceInKm.toFixed(1)}km, ${pacePerKm.toFixed(2)} min/km, ${activity.totalElevationGain}m elevation, ${activity.startDate.toDateString()}`;
+        const elevStr = elevRange || `${activity.totalElevationGain}m gain`;
+        return `${activity.name}${extrasStr}: ${distanceInKm.toFixed(1)}km, ${pacePerKm.toFixed(2)} min/km, ${elevStr}, ${activity.startDate.toDateString()}`;
       } else {
         const distanceInMiles = distanceInKm * 0.621371;
         const pacePerMile = pacePerKm / 0.621371;
-        const elevationInFeet = activity.totalElevationGain * 3.28084;
-        return `${activity.name}: ${distanceInMiles.toFixed(1)}mi, ${pacePerMile.toFixed(2)} min/mi, ${elevationInFeet.toFixed(0)}ft elevation, ${activity.startDate.toDateString()}`;
+        const elevInFeet = elevRange 
+          ? `${((activity.elevHigh! - activity.elevLow!) * 3.28084).toFixed(0)}ft range`
+          : `${(activity.totalElevationGain * 3.28084).toFixed(0)}ft gain`;
+        return `${activity.name}${extrasStr}: ${distanceInMiles.toFixed(1)}mi, ${pacePerMile.toFixed(2)} min/mi, ${elevInFeet}, ${activity.startDate.toDateString()}`;
       }
     }).join('\n');
   }
@@ -127,6 +169,21 @@ export class AIService {
     const cumulativeMiles = (cumulativeRunningDistance / 1000) * 0.621371;
     const cumulativeKm = cumulativeRunningDistance / 1000;
 
+    // Calculate aggregate stats from new Strava fields
+    const totalPRs = runningActivities.reduce((sum, a) => sum + (a.prCount || 0), 0);
+    const raceCount = runningActivities.filter(a => a.workoutType === 1 || a.workoutType === 11).length;
+    const longRunCount = runningActivities.filter(a => a.workoutType === 2 || a.workoutType === 12).length;
+    const workoutCount = runningActivities.filter(a => a.workoutType === 3 || a.workoutType === 13).length;
+    
+    // Calculate average stop time percentage (time stopped vs total elapsed)
+    const activitiesWithElapsed = runningActivities.filter(a => a.elapsedTime && a.elapsedTime > a.movingTime);
+    const avgStopPercent = activitiesWithElapsed.length > 0
+      ? activitiesWithElapsed.reduce((sum, a) => {
+          const stopTime = (a.elapsedTime || a.movingTime) - a.movingTime;
+          return sum + (stopTime / (a.elapsedTime || a.movingTime));
+        }, 0) / activitiesWithElapsed.length * 100
+      : 0;
+
     // Format statistics based on unit preference (running only)
     const totalDistance = isMetric ? 
       `${(runningStats.totalDistance / 1000).toFixed(1)}km` : 
@@ -154,6 +211,9 @@ Running Statistics (running activities only):
 - Average running pace: ${avgPace}
 - Total elevation: ${elevation}
 - Average heart rate: ${runningStats.averageHeartRate?.toFixed(0) || 'N/A'} bpm
+- Personal records achieved: ${totalPRs}${totalPRs > 0 ? ' (runner is progressing!)' : ''}
+- Training mix: ${raceCount} races, ${longRunCount} long runs, ${workoutCount} structured workouts
+- Average stop time: ${avgStopPercent.toFixed(1)}%${avgStopPercent > 10 ? ' (consider traffic lights, rest stops)' : ''}
 
 Training Context (Holistic Assessment):
 - Total activities (all types): ${totalActivities}
