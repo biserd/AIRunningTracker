@@ -9,8 +9,7 @@ import Dashboard from "@/pages/dashboard";
 import SettingsPage from "@/pages/settings";
 import ActivityPage from "@/pages/activity";
 import ActivitiesPage from "@/pages/activities";
-import MLInsightsPage from "@/pages/ml-insights";
-import PerformancePage from "@/pages/performance";
+import CoachInsightsPage from "@/pages/coach-insights";
 import LandingPage from "@/pages/landing";
 import AuthPage from "@/pages/auth";
 import ForgotPasswordPage from "@/pages/forgot-password";
@@ -131,11 +130,15 @@ function Router() {
       <Route path="/dashboard">
         <ProtectedRoute component={Dashboard} />
       </Route>
+      <Route path="/coach-insights">
+        <ProtectedRoute component={CoachInsightsPage} />
+      </Route>
+      {/* Redirects for old routes */}
       <Route path="/ml-insights">
-        <ProtectedRoute component={MLInsightsPage} />
+        {() => { window.location.href = "/coach-insights"; return null; }}
       </Route>
       <Route path="/performance">
-        <ProtectedRoute component={PerformancePage} />
+        {() => { window.location.href = "/coach-insights"; return null; }}
       </Route>
       <Route path="/settings">
         <ProtectedRoute component={SettingsPage} />

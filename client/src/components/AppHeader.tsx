@@ -1,4 +1,4 @@
-import { Activity, User, LogOut, Settings, BarChart3, Brain, Home, Shield, MessageCircle, CalendarCheck } from "lucide-react";
+import { Activity, User, LogOut, Settings, Brain, Home, Shield, MessageCircle, CalendarCheck } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -17,8 +17,7 @@ import FeedbackDialog from "@/components/FeedbackDialog";
 
 const navigationItems = [
   { path: "/dashboard", label: "Dashboard", icon: Home },
-  { path: "/ml-insights", label: "AI Insights", icon: Brain },
-  { path: "/performance", label: "Performance", icon: BarChart3 },
+  { path: "/coach-insights", label: "Coach Insights", icon: Brain },
   { path: "/training-plans", label: "Training Plans", icon: CalendarCheck },
 ];
 
