@@ -13,7 +13,7 @@ import { runnerScoreService } from "./services/runnerScore";
 import goalsService from "./services/goals";
 import { ChatService } from "./services/chat";
 import { fitnessService } from "./services/fitness";
-import { calculateYearlyStats, generateYearEndImage, reverseGeocode } from "./services/yearEndRecap";
+import { calculateYearlyStats, reverseGeocode } from "./services/yearEndRecap";
 import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, emailWaitlist, type Activity, type RunningShoe } from "@shared/schema";
 import { shoeData } from "./shoe-data";
 import { validateAllShoes, getPipelineStats, findDuplicates, getShoeDataWithMetadata, getShoesWithMetadataFromStorage, getEnrichedShoeData, enrichShoeWithAIData } from "./shoe-pipeline";
@@ -4371,58 +4371,39 @@ ${allPages.map(page => `  <url>
         stats.mostRunLocation.description = `You ran here ${stats.mostRunLocation.runCount} times in ${year}`;
       }
 
-      res.json(stats);
+      // Calculate favorite day of the week
+      const yearActivities = activities.filter(a => {
+        const activityYear = new Date(a.startDate).getFullYear();
+        return activityYear === year && a.type === "Run";
+      });
+      
+      const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const dayCounts: Record<string, number> = {};
+      yearActivities.forEach(a => {
+        const day = dayNames[new Date(a.startDate).getDay()];
+        dayCounts[day] = (dayCounts[day] || 0) + 1;
+      });
+      const favoriteDayEntry = Object.entries(dayCounts).reduce((a, b) => b[1] > a[1] ? b : a, ["", 0]);
+      const favoriteDay = favoriteDayEntry[0] ? { day: favoriteDayEntry[0], count: favoriteDayEntry[1] } : undefined;
+
+      // Get AI insights for the infographic
+      const aiInsightsList = await storage.getAIInsightsByUserId(userId, undefined, 5);
+      const aiInsights = aiInsightsList.map(i => i.title).slice(0, 2);
+
+      // Calculate percentile (simple estimation based on distance)
+      const percentile = Math.min(99, Math.max(1, Math.round(
+        50 + (stats.totalDistanceMiles / 500) * 30
+      )));
+
+      res.json({
+        ...stats,
+        favoriteDay,
+        aiInsights,
+        percentile,
+      });
     } catch (error: any) {
       console.error("Year recap stats error:", error);
       res.status(500).json({ message: error.message || "Failed to get year recap stats" });
-    }
-  });
-
-  // Year End Recap - Generate infographic image
-  app.post("/api/year-recap/:userId/generate-image", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      const year = parseInt(req.body.year) || new Date().getFullYear();
-
-      if (req.user.id !== userId) {
-        return res.status(403).json({ message: "Unauthorized" });
-      }
-
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      const activities = await storage.getActivitiesByUserId(userId);
-      const stats = calculateYearlyStats(activities, year);
-
-      if (stats.totalRuns === 0) {
-        return res.status(400).json({ message: "No running activities found for this year" });
-      }
-
-      // Get location name for the prompt
-      if (stats.mostRunLocation) {
-        stats.mostRunLocation.name = await reverseGeocode(
-          stats.mostRunLocation.latitude,
-          stats.mostRunLocation.longitude
-        );
-      }
-
-      const userName = user.firstName || user.username || "Runner";
-      
-      // Fetch AI insights to include in the image
-      const aiInsightsList = await storage.getAIInsightsByUserId(userId, undefined, 5);
-      const insights = aiInsightsList.map(i => i.title).slice(0, 3);
-      
-      const imageDataUrl = await generateYearEndImage(stats, userName, year, insights);
-
-      res.json({
-        image: imageDataUrl,
-        stats: stats
-      });
-    } catch (error: any) {
-      console.error("Year recap image generation error:", error);
-      res.status(500).json({ message: error.message || "Failed to generate year recap image" });
     }
   });
 
