@@ -3,9 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Shield, AlertTriangle, CheckCircle, XCircle, Lock, Crown } from "lucide-react";
+import { Shield, AlertTriangle, CheckCircle, XCircle, Lock, Crown, Calendar, ArrowRight } from "lucide-react";
 import { useFeatureAccess } from "@/hooks/useSubscription";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 interface InjuryRiskData {
   riskLevel: 'Low' | 'Medium' | 'High';
@@ -20,6 +20,7 @@ interface InjuryRiskAnalysisProps {
 
 export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnalysisProps) {
   const { canAccessAdvancedInsights } = useFeatureAccess();
+  const [, setLocation] = useLocation();
   
   // All hooks must be called before any conditional returns
   const { data: riskDataResponse, isLoading } = useQuery({
@@ -220,6 +221,18 @@ export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnal
               <li>• Maintain proper running form and footwear</li>
             </ul>
           </div>
+
+          {/* Action Button */}
+          <Button
+            variant="outline"
+            className="w-full border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+            onClick={() => setLocation('/training-plans?adjust=recovery')}
+            data-testid="adjust-training-btn"
+          >
+            <Calendar className="h-4 w-4 mr-2" />
+            Adjust training load
+            <ArrowRight className="h-4 w-4 ml-2" />
+          </Button>
         </div>
       </CardContent>
     </Card>

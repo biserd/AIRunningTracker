@@ -2,9 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trophy, Target, Clock, Lock, Crown } from "lucide-react";
+import { Trophy, Target, Clock, Lock, Crown, ArrowRight, Calendar } from "lucide-react";
 import { useFeatureAccess } from "@/hooks/useSubscription";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 interface RacePrediction {
   distance: string;
@@ -20,6 +20,7 @@ interface RacePredictionsProps {
 
 export default function RacePredictions({ userId, batchData }: RacePredictionsProps) {
   const { canAccessRacePredictions } = useFeatureAccess();
+  const [, setLocation] = useLocation();
   
   // All hooks must be called before any conditional returns
   const { data: predictionsData, isLoading } = useQuery({
@@ -125,9 +126,28 @@ export default function RacePredictions({ userId, batchData }: RacePredictionsPr
                 <span className="text-2xl font-bold text-charcoal">{prediction.predictedTime}</span>
               </div>
               
-              <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
-                <strong>Recommendation:</strong> {prediction.recommendation}
-              </p>
+              <button
+                onClick={() => setLocation('/training-plans')}
+                className="w-full text-left text-sm text-gray-600 bg-gray-50 p-3 rounded-md hover:bg-orange-50 hover:text-orange-700 transition-colors group cursor-pointer"
+                data-testid={`recommendation-link-${index}`}
+              >
+                <div className="flex items-center justify-between">
+                  <span><strong>Recommendation:</strong> {prediction.recommendation}</span>
+                  <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity text-orange-500" />
+                </div>
+              </button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3 w-full border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+                onClick={() => setLocation(`/training-plans?goal=${encodeURIComponent(prediction.distance)}&time=${encodeURIComponent(prediction.predictedTime)}`)}
+                data-testid={`build-plan-btn-${index}`}
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Build plan for this goal
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
             </div>
           ))}
           

@@ -2,7 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Zap, Clock, Footprints, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Zap, Clock, Footprints, TrendingUp, AlertCircle, CheckCircle, Calendar, ArrowRight } from "lucide-react";
+import { useLocation } from "wouter";
 import { 
   metersToFeet, 
   cmToInches, 
@@ -25,6 +27,8 @@ interface RunningEfficiencyProps {
 }
 
 export default function RunningEfficiency({ userId, batchData }: RunningEfficiencyProps) {
+  const [, setLocation] = useLocation();
+  
   const { data: efficiencyDataResponse, isLoading } = useQuery({
     queryKey: ['/api/performance/efficiency', userId],
     queryFn: () => fetch(`/api/performance/efficiency/${userId}`).then(res => res.json()),
@@ -250,6 +254,18 @@ export default function RunningEfficiency({ userId, batchData }: RunningEfficien
               <li>• Use a metronome to practice consistent cadence</li>
             </ul>
           </div>
+
+          {/* Action Button */}
+          <Button
+            variant="outline"
+            className="w-full border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+            onClick={() => setLocation('/training-plans?focus=drills')}
+            data-testid="adjust-training-btn"
+          >
+            <Calendar className="h-4 w-4 mr-2" />
+            Adjust training load
+            <ArrowRight className="h-4 w-4 ml-2" />
+          </Button>
         </div>
       </CardContent>
     </Card>
