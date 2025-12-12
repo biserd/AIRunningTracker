@@ -65,6 +65,19 @@ export default function LandingPage() {
         keywords="AI running coach, running analytics, Strava analytics, runner score, race predictions, VO2 max, running performance, training insights, running app, marathon training, AI coach chat"
         structuredData={structuredData}
       />
+      
+      {/* 2025 Running Wrapped Notification Bar */}
+      <Link href="/auth">
+        <div className="bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 py-2 px-4 cursor-pointer hover:opacity-95 transition-opacity" data-testid="banner-wrapped-promo">
+          <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 sm:gap-3 text-white text-sm sm:text-base">
+            <Sparkles className="h-4 w-4 text-yellow-300 flex-shrink-0" />
+            <span className="font-semibold">2025 Running Wrapped is here!</span>
+            <span className="hidden sm:inline text-white/80">See your year in review</span>
+            <ArrowRight className="h-4 w-4 flex-shrink-0" />
+          </div>
+        </div>
+      </Link>
+
       <PublicHeader />
 
       {/* Hero Section */}
@@ -171,36 +184,6 @@ export default function LandingPage() {
               <span>Syncs instantly with Strava</span>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* 2025 Running Wrapped Promo */}
-      <section className="py-8 sm:py-12 px-4 sm:px-6 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600">
-        <div className="max-w-4xl mx-auto">
-          <Link href="/auth">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 cursor-pointer group" data-testid="banner-wrapped-promo">
-              <div className="flex items-center gap-4">
-                <div className="bg-white/20 rounded-full p-3">
-                  <Gift className="h-8 w-8 text-white" />
-                </div>
-                <div className="text-center sm:text-left">
-                  <div className="flex items-center gap-2 justify-center sm:justify-start">
-                    <Sparkles className="h-4 w-4 text-yellow-300" />
-                    <span className="text-yellow-300 text-sm font-bold uppercase tracking-wide">New Feature</span>
-                  </div>
-                  <h3 className="text-white font-bold text-xl sm:text-2xl">2025 Running Wrapped</h3>
-                  <p className="text-white/80 text-sm sm:text-base">See your year in review & share your running stats</p>
-                </div>
-              </div>
-              <Button 
-                className="bg-white text-purple-600 hover:bg-white/90 font-bold px-8 py-3 shadow-lg group-hover:scale-105 transition-transform"
-                data-testid="button-wrapped-cta"
-              >
-                View Your Wrapped
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </div>
-          </Link>
         </div>
       </section>
 
