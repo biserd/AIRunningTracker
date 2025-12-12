@@ -339,10 +339,13 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-charcoal mb-3 sm:mb-4 px-4">
-              Complete Running Analytics Suite
+              Quantify Your Fitness in One Number
             </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4">
-              From your personal Runner Score to AI-powered insights, we provide everything you need to optimize your running performance.
+            <p className="text-lg sm:text-xl font-semibold text-charcoal mb-2 px-4">
+              Strava shows you the miles. This score shows you the truth.
+            </p>
+            <p className="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto px-4">
+              Stop guessing if you're actually getting fitter. We distill your volume, consistency, and speed into a single Runner Score™.
             </p>
           </div>
 
@@ -353,28 +356,30 @@ export default function LandingPage() {
                 <div className="w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
                   <Trophy className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
-                <h3 className="text-xl sm:text-2xl font-bold text-charcoal">Runner Score</h3>
+                <h3 className="text-xl sm:text-2xl font-bold text-charcoal">Get Your Personal "Runner Grade"</h3>
               </div>
-              <p className="text-base sm:text-lg text-gray-600 mb-6">
-                Get your comprehensive running rating from 0-100 based on consistency, performance, volume, and improvement. 
-                Share your achievements with beautiful radar charts that showcase your strengths.
+              <p className="text-lg sm:text-xl font-semibold text-charcoal mb-2">
+                Are you an A+ Athlete or a C-Student?
               </p>
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                  <span className="text-sm sm:text-base text-gray-700">Four-component performance analysis</span>
+              <p className="text-base sm:text-lg text-gray-600 mb-6">
+                Our algorithm ranks you against thousands of other runners to show exactly where you stand. Finally, a metric that rewards <strong>consistency</strong>, not just speed.
+              </p>
+              <div className="space-y-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm sm:text-base text-gray-700"><strong>Track 4 Key Metrics at Once</strong></span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                  <span className="text-sm sm:text-base text-gray-700">Visual radar chart representation</span>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm sm:text-base text-gray-700">
+                    <strong>Instant Strengths & Weaknesses.</strong> See instantly if you need more speed or more volume.
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                  <span className="text-sm sm:text-base text-gray-700">Shareable achievement badges</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                  <span className="text-sm sm:text-base text-gray-700">Grade system (A+ to F)</span>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm sm:text-base text-gray-700">
+                    <strong>The Ultimate "Humble Brag".</strong> Export beautiful, pro-level visuals to share your score on Instagram or Strava.
+                  </div>
                 </div>
               </div>
               {/* Secondary CTA */}
@@ -383,7 +388,7 @@ export default function LandingPage() {
                   className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-700 h-12 px-8 text-base font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200 mt-4"
                   data-testid="runnerscore-cta-getstarted"
                 >
-                  Get Your Runner Score
+                  Calculate My Score Now
                 </Button>
               </Link>
             </div>
