@@ -349,47 +349,7 @@ export default function PricingPage() {
             </div>
           </div>
 
-          {/* Sample Runner Report Preview */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 mb-16 border border-gray-100" data-testid="sample-report">
-            <div className="text-center mb-6">
-              <h3 className="text-xl font-bold text-charcoal mb-2">See What You Get</h3>
-              <p className="text-gray-600">A glimpse of your personalized runner insights</p>
-            </div>
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 border border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-gray-300 rounded-full animate-pulse" />
-                  <div className="h-4 w-24 bg-gray-300 rounded animate-pulse" />
-                </div>
-                <span className="text-xs text-gray-400">Sample Report</span>
-              </div>
-              <div className="grid grid-cols-3 gap-4 mb-4">
-                <div className="bg-white rounded-lg p-4 text-center shadow-sm">
-                  <Target className="h-6 w-6 text-strava-orange mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-charcoal">82</p>
-                  <p className="text-xs text-gray-500">Runner Score</p>
-                </div>
-                <div className="bg-white rounded-lg p-4 text-center shadow-sm">
-                  <TrendingUp className="h-6 w-6 text-green-500 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-charcoal">3:45</p>
-                  <p className="text-xs text-gray-500">Predicted Marathon</p>
-                </div>
-                <div className="bg-white rounded-lg p-4 text-center shadow-sm">
-                  <Activity className="h-6 w-6 text-blue-500 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-charcoal">Low</p>
-                  <p className="text-xs text-gray-500">Injury Risk</p>
-                </div>
-              </div>
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <p className="text-sm text-gray-600">
-                  <span className="font-semibold text-charcoal">AI Insight:</span> Your aerobic base is strong. 
-                  Consider adding tempo runs on Wednesdays to improve your lactate threshold before your target race.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden mt-16">
             <div className="p-6 bg-gray-50 border-b">
               <h3 className="text-2xl font-bold text-center text-charcoal">Feature Comparison</h3>
             </div>
