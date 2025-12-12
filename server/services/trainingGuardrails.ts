@@ -170,6 +170,7 @@ export class TrainingGuardrails {
   
   /**
    * Validate long runs don't exceed percentage of weekly mileage
+   * AND ensure long runs are the longest workout of the week
    */
   private validateLongRunPercentages(
     plan: GeneratedPlan,
@@ -177,6 +178,11 @@ export class TrainingGuardrails {
   ): void {
     for (const week of plan.weeks) {
       const longRuns = week.days.filter(d => d.workoutType === "long_run");
+      const nonLongRunWorkouts = week.days.filter(d => 
+        d.workoutType !== "long_run" && 
+        d.workoutType !== "rest" && 
+        d.plannedDistanceKm
+      );
       
       for (const longRun of longRuns) {
         if (!longRun.plannedDistanceKm) continue;
@@ -199,6 +205,24 @@ export class TrainingGuardrails {
           const easyRun = week.days.find(d => d.workoutType === "easy");
           if (easyRun && easyRun.plannedDistanceKm) {
             easyRun.plannedDistanceKm = Math.round((easyRun.plannedDistanceKm + difference * 0.5) * 10) / 10;
+          }
+        }
+        
+        // Ensure the long run is the longest workout of the week
+        for (const workout of nonLongRunWorkouts) {
+          if (workout.plannedDistanceKm && workout.plannedDistanceKm >= longRun.plannedDistanceKm) {
+            // An easy/tempo/etc run is longer than the long run - fix this
+            const originalEasyDistance = workout.plannedDistanceKm;
+            // Reduce the easy run to 80% of long run distance
+            workout.plannedDistanceKm = Math.round(longRun.plannedDistanceKm * 0.8 * 10) / 10;
+            
+            validation.corrections.push({
+              type: "reduce_mileage",
+              weekNumber: week.weekNumber,
+              originalValue: originalEasyDistance,
+              correctedValue: workout.plannedDistanceKm,
+              reason: `${workout.workoutType} run was longer than long run - reduced to maintain proper workout hierarchy`,
+            });
           }
         }
       }

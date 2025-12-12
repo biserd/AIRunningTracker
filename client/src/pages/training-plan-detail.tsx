@@ -16,6 +16,16 @@ import {
 } from "lucide-react";
 import { format, parseISO, addDays, startOfWeek } from "date-fns";
 
+const KM_TO_MILES = 0.621371;
+
+function formatDistance(km: number | null | undefined, useMiles: boolean): string {
+  if (!km) return "";
+  if (useMiles) {
+    return `${(km * KM_TO_MILES).toFixed(1)} mi`;
+  }
+  return `${km.toFixed(1)} km`;
+}
+
 interface PlanWeek {
   id: number;
   weekNumber: number;
@@ -79,6 +89,14 @@ export default function TrainingPlanDetail() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [selectedWeek, setSelectedWeek] = useState<number>(1);
+  
+  const { data: dashboardData } = useQuery<{ user?: { unitPreference?: string } }>({
+    queryKey: [`/api/dashboard/${user?.id}`],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    enabled: !!user?.id,
+  });
+  
+  const useMiles = dashboardData?.user?.unitPreference === "miles";
   
   const { data: plan, isLoading } = useQuery<TrainingPlanDetail>({
     queryKey: [`/api/training/plans/${planId}`],
@@ -235,7 +253,7 @@ export default function TrainingPlanDetail() {
                 <div>
                   <span className="text-sm text-gray-500">Target Distance</span>
                   <p className="text-2xl font-bold" data-testid="text-week-distance">
-                    {currentWeekData.plannedDistanceKm.toFixed(1)} km
+                    {formatDistance(currentWeekData.plannedDistanceKm, useMiles)}
                   </p>
                 </div>
                 {currentWeekData.coachNotes && (
@@ -281,7 +299,7 @@ export default function TrainingPlanDetail() {
                       
                       {dayData.plannedDistanceKm && (
                         <p className="text-sm font-semibold" data-testid={`text-distance-${dayKey}`}>
-                          {dayData.plannedDistanceKm.toFixed(1)} km
+                          {formatDistance(dayData.plannedDistanceKm, useMiles)}
                         </p>
                       )}
                       

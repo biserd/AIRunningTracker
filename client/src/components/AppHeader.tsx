@@ -1,4 +1,4 @@
-import { Activity, User, LogOut, Settings, BarChart3, Brain, Home, Shield, MessageCircle, Calculator, BookOpen } from "lucide-react";
+import { Activity, User, LogOut, Settings, BarChart3, Brain, Home, Shield, MessageCircle, CalendarCheck } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -19,8 +19,7 @@ const navigationItems = [
   { path: "/dashboard", label: "Dashboard", icon: Home },
   { path: "/ml-insights", label: "AI Insights", icon: Brain },
   { path: "/performance", label: "Performance", icon: BarChart3 },
-  { path: "/tools", label: "Tools", icon: Calculator },
-  { path: "/blog", label: "Blog", icon: BookOpen },
+  { path: "/training-plans", label: "Training Plans", icon: CalendarCheck },
 ];
 
 export default function AppHeader() {

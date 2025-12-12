@@ -20,6 +20,16 @@ import {
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
+const KM_TO_MILES = 0.621371;
+
+function formatDistance(km: number | null | undefined, useMiles: boolean): string {
+  if (!km) return useMiles ? "0 mi" : "0 km";
+  if (useMiles) {
+    return `${(km * KM_TO_MILES).toFixed(1)} mi`;
+  }
+  return `${km.toFixed(1)} km`;
+}
+
 interface AthleteProfile {
   id: number;
   baselineWeeklyMileageKm: number | null;
@@ -61,6 +71,15 @@ export default function TrainingPlans() {
   const [includeLongRuns, setIncludeLongRuns] = useState(true);
   const [constraints, setConstraints] = useState("");
   const [preferredDays, setPreferredDays] = useState<string[]>(["monday", "wednesday", "friday", "saturday", "sunday"]);
+  
+  // Fetch user preferences for unit conversion
+  const { data: dashboardData } = useQuery<{ user?: { unitPreference?: string } }>({
+    queryKey: [`/api/dashboard/${user?.id}`],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    enabled: !!user?.id,
+  });
+  
+  const useMiles = dashboardData?.user?.unitPreference === "miles";
   
   // Fetch athlete profile
   const { data: profile, isLoading: profileLoading } = useQuery<AthleteProfile>({
@@ -188,7 +207,7 @@ export default function TrainingPlans() {
                 <div>
                   <span className="text-gray-500 dark:text-gray-400">Weekly Mileage</span>
                   <p className="font-semibold text-lg" data-testid="text-weekly-mileage">
-                    {profile.baselineWeeklyMileageKm?.toFixed(1) || 0} km
+                    {formatDistance(profile.baselineWeeklyMileageKm, useMiles)}
                   </p>
                 </div>
                 <div>
@@ -200,7 +219,7 @@ export default function TrainingPlans() {
                 <div>
                   <span className="text-gray-500 dark:text-gray-400">Longest Run</span>
                   <p className="font-semibold text-lg" data-testid="text-longest-run">
-                    {profile.longestRecentRunKm?.toFixed(1) || 0} km
+                    {formatDistance(profile.longestRecentRunKm, useMiles)}
                   </p>
                 </div>
                 <div>

@@ -3,7 +3,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import AppHeader from "@/components/AppHeader";
 import RacePredictions from "@/components/dashboard/RacePredictions";
-import TrainingPlan from "@/components/dashboard/TrainingPlan";
 import InjuryRiskAnalysis from "@/components/dashboard/InjuryRiskAnalysis";
 
 export default function MLInsightsPage() {
@@ -55,9 +54,6 @@ export default function MLInsightsPage() {
           </div>
           <div className="xl:col-span-1">
             <InjuryRiskAnalysis userId={user.id} batchData={batchData} />
-          </div>
-          <div className="xl:col-span-2">
-            <TrainingPlan userId={user.id} batchData={batchData} />
           </div>
         </div>
       </main>
