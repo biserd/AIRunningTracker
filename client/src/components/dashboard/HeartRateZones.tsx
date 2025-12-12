@@ -104,7 +104,7 @@ export default function HeartRateZones({ userId, batchData }: HeartRateZonesProp
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-2">
         <CardTitle className="text-xl font-semibold text-charcoal flex items-center justify-between">
           <div className="flex items-center">
             <Heart className="mr-2 h-5 w-5 text-red-500" />
@@ -118,32 +118,35 @@ export default function HeartRateZones({ userId, batchData }: HeartRateZonesProp
             <Settings className="h-4 w-4" />
           </Button>
         </CardTitle>
+        <p className="text-sm text-gray-500 mt-1">Automatically calculated from your recent runs</p>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+      <CardContent className="pt-2">
+        <div className="space-y-3">
           {/* Settings Panel */}
           {showSettings && (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
-              <h4 className="font-medium text-charcoal">Customize Your Heart Rate</h4>
-              <div className="grid grid-cols-2 gap-4">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-3">
+              <h4 className="font-medium text-charcoal text-sm">Customize Your Heart Rate</h4>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="maxHR">Max Heart Rate</Label>
+                  <Label htmlFor="maxHR" className="text-xs">Max Heart Rate</Label>
                   <Input
                     id="maxHR"
                     type="number"
                     placeholder="190"
                     value={maxHR}
                     onChange={(e) => setMaxHR(e.target.value)}
+                    className="h-8"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="restingHR">Resting Heart Rate</Label>
+                  <Label htmlFor="restingHR" className="text-xs">Resting Heart Rate</Label>
                   <Input
                     id="restingHR"
                     type="number"
                     placeholder="60"
                     value={restingHR}
                     onChange={(e) => setRestingHR(e.target.value)}
+                    className="h-8"
                   />
                 </div>
               </div>
@@ -153,89 +156,82 @@ export default function HeartRateZones({ userId, batchData }: HeartRateZonesProp
             </div>
           )}
 
-          {/* Heart Rate Zones Display */}
-          <div className="space-y-3">
+          {/* Heart Rate Zones Display - Compact */}
+          <div className="space-y-1.5">
             {Object.entries(heartRateZones).map(([zoneKey, zone]) => {
               const zoneData = zone as HeartRateZone;
               return (
               <div 
                 key={zoneKey}
-                className={`border rounded-lg p-4 ${zoneColors[zoneKey as keyof typeof zoneColors]}`}
+                className={`border rounded-md px-3 py-2 ${zoneColors[zoneKey as keyof typeof zoneColors]}`}
               >
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <Badge variant="outline" className="bg-white/80">
-                      Zone {zoneKey.slice(-1)}
+                    <Badge variant="outline" className="bg-white/80 text-xs px-1.5 py-0">
+                      Z{zoneKey.slice(-1)}
                     </Badge>
-                    <span className="font-semibold">{zoneData.name}</span>
+                    <span className="font-medium text-sm">{zoneData.name}</span>
                   </div>
-                  <span className="font-bold text-lg">
-                    {zoneData.min} - {zoneData.max} bpm
+                  <span className="font-bold text-sm">
+                    {zoneData.min}-{zoneData.max} bpm
                   </span>
                 </div>
-                <p className="text-sm opacity-90">{zoneData.description}</p>
               </div>
               );
             })}
           </div>
 
-          {/* Training Guidelines */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-center space-x-2 mb-3">
-              <Info className="h-4 w-4 text-blue-600" />
-              <h4 className="font-medium text-blue-900">Training Guidelines</h4>
+          {/* Training Guidelines - Compact */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-center space-x-2 mb-2">
+              <Info className="h-3.5 w-3.5 text-blue-600" />
+              <h4 className="font-medium text-blue-900 text-sm">Training Guidelines</h4>
             </div>
-            <div className="space-y-2 text-sm text-blue-800">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <strong>Zone 1-2 (80% of training):</strong>
-                  <p>Build aerobic base, improve fat burning</p>
-                </div>
-                <div>
-                  <strong>Zone 3-4 (15% of training):</strong>
-                  <p>Improve lactate threshold, race pace</p>
-                </div>
-                <div>
-                  <strong>Zone 5 (5% of training):</strong>
-                  <p>Develop VO2 max, neuromuscular power</p>
-                </div>
-                <div>
-                  <strong>Recovery:</strong>
-                  <p>Stay in Zone 1 for easy days</p>
-                </div>
+            <div className="grid grid-cols-2 gap-2 text-xs text-blue-800">
+              <div>
+                <strong>Zone 1-2 (80%):</strong> Aerobic base
+              </div>
+              <div>
+                <strong>Zone 3-4 (15%):</strong> Threshold
+              </div>
+              <div>
+                <strong>Zone 5 (5%):</strong> VO2 max
+              </div>
+              <div>
+                <strong>Recovery:</strong> Stay in Zone 1
               </div>
             </div>
           </div>
 
-          {/* Zone Distribution Recommendation */}
-          <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4">
-            <h4 className="font-medium text-green-900 mb-2">Ideal Weekly Distribution</h4>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-green-800">Zone 1-2 (Easy/Aerobic)</span>
-                <div className="flex items-center space-x-2">
-                  <div className="w-24 h-2 bg-green-200 rounded">
-                    <div className="w-4/5 h-2 bg-green-500 rounded"></div>
+          {/* Zone Distribution - Compact */}
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-3">
+            <h4 className="font-medium text-green-900 text-sm mb-1.5">Ideal Weekly Distribution</h4>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-green-800">Zone 1-2</span>
+                <div className="flex items-center space-x-1.5">
+                  <div className="w-16 h-1.5 bg-green-200 rounded">
+                    <div className="w-4/5 h-1.5 bg-green-500 rounded"></div>
                   </div>
-                  <span className="text-green-700 font-medium">80%</span>
+                  <span className="text-green-700 font-medium w-8">80%</span>
                 </div>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-orange-800">Zone 3-4 (Moderate/Hard)</span>
-                <div className="flex items-center space-x-2">
-                  <div className="w-24 h-2 bg-orange-200 rounded">
-                    <div className="w-3/12 h-2 bg-orange-500 rounded"></div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-orange-800">Zone 3-4</span>
+                <div className="flex items-center space-x-1.5">
+                  <div className="w-16 h-1.5 bg-orange-200 rounded">
+                    <div className="w-3/12 h-1.5 bg-orange-500 rounded"></div>
                   </div>
-                  <span className="text-orange-700 font-medium">15%</span>
+                  <span className="text-orange-700 font-medium w-8">15%</span>
                 </div>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-red-800">Zone 5 (Very Hard)</span>
-                <div className="flex items-center space-x-2">
-                  <div className="w-24 h-2 bg-red-200 rounded">
-                    <div className="w-1/12 h-2 bg-red-500 rounded"></div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-red-800">Zone 5</span>
+                <div className="flex items-center space-x-1.5">
+                  <div className="w-16 h-1.5 bg-red-200 rounded">
+                    <div className="w-1/12 h-1.5 bg-red-500 rounded"></div>
                   </div>
-                  <span className="text-red-700 font-medium">5%</span>
+                  <span className="text-red-700 font-medium w-8">5%</span>
                 </div>
               </div>
             </div>
