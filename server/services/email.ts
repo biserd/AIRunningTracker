@@ -615,6 +615,88 @@ The RunAnalytics Team
       text
     });
   }
+
+  async sendLaunchAnnouncementEmail(email: string): Promise<boolean> {
+    const subject = "We're Live! Start Your Free 7-Day Pro Trial - RunAnalytics";
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #e74c3c; margin: 0;">🏃‍♂️ RunAnalytics</h1>
+          <p style="color: #666; margin: 5px 0;">Your AI-Powered Running Coach</p>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; padding: 25px; border-radius: 10px; text-align: center; margin-bottom: 25px;">
+          <h2 style="margin: 0; font-size: 28px;">🎉 We're Live!</h2>
+          <p style="margin: 10px 0 0 0; font-size: 18px; opacity: 0.95;">The wait is over - RunAnalytics is ready for you</p>
+        </div>
+        
+        <p style="font-size: 16px; line-height: 1.6;">Hey there!</p>
+        
+        <p style="font-size: 16px; line-height: 1.6;">You signed up for our waitlist, and we're thrilled to let you know that <strong>RunAnalytics is now live!</strong></p>
+        
+        <p style="font-size: 16px; line-height: 1.6;">As a thank you for your patience, you'll get a <strong>free 7-day Pro trial</strong> when you sign up - no credit card required.</p>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 25px 0;">
+          <h3 style="color: #27ae60; margin-top: 0;">✨ What You'll Get:</h3>
+          <ul style="color: #2c3e50; line-height: 1.8; font-size: 15px;">
+            <li><strong>AI-Powered Insights</strong> - Personalized coaching based on your Strava data</li>
+            <li><strong>Race Predictions</strong> - Know your 5K, 10K, Half & Full Marathon times</li>
+            <li><strong>Training Plans</strong> - AI-generated plans tailored to your goals</li>
+            <li><strong>Runner Score</strong> - See how you rank and track your progress</li>
+            <li><strong>Fitness/Fatigue Charts</strong> - Optimize your training load</li>
+            <li><strong>Year End Recap</strong> - Beautiful infographics of your running year</li>
+          </ul>
+        </div>
+        
+        <div style="text-align: center; margin: 35px 0;">
+          <a href="https://aitracker.run" style="background: #e74c3c; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px; display: inline-block;">Get Started Free →</a>
+        </div>
+        
+        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+          <p style="margin: 0; color: #856404; font-size: 14px;"><strong>💡 Quick Setup:</strong> Just connect your Strava account and we'll do the rest. Your AI insights will be ready in minutes!</p>
+        </div>
+        
+        <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; color: #666; font-size: 14px;">
+          <p>Questions? Just reply to this email - we're here to help!</p>
+          <p>Happy running!<br>The RunAnalytics Team</p>
+        </div>
+      </div>
+    `;
+    
+    const text = `
+We're Live! Start Your Free 7-Day Pro Trial - RunAnalytics
+
+Hey there!
+
+You signed up for our waitlist, and we're thrilled to let you know that RunAnalytics is now live!
+
+As a thank you for your patience, you'll get a free 7-day Pro trial when you sign up - no credit card required.
+
+What You'll Get:
+- AI-Powered Insights - Personalized coaching based on your Strava data
+- Race Predictions - Know your 5K, 10K, Half & Full Marathon times
+- Training Plans - AI-generated plans tailored to your goals
+- Runner Score - See how you rank and track your progress
+- Fitness/Fatigue Charts - Optimize your training load
+- Year End Recap - Beautiful infographics of your running year
+
+Get Started Free: https://aitracker.run
+
+Quick Setup: Just connect your Strava account and we'll do the rest. Your AI insights will be ready in minutes!
+
+Questions? Just reply to this email - we're here to help!
+
+Happy running!
+The RunAnalytics Team
+    `;
+    
+    return await this.sendEmail({
+      to: email,
+      subject,
+      html,
+      text
+    });
+  }
 }
 
 export const emailService = new EmailService();

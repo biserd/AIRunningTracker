@@ -49,6 +49,7 @@ export const emailWaitlist = pgTable("email_waitlist", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
   createdAt: timestamp("created_at").defaultNow(),
+  launchEmailSentAt: timestamp("launch_email_sent_at"),
 });
 
 export const activities = pgTable("activities", {
