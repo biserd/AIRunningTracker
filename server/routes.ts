@@ -4691,6 +4691,50 @@ ${allPages.map(page => `  <url>
     }
   });
   
+  // Adapt training plan based on adherence
+  app.post("/api/training/plans/:planId/adapt", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const planId = parseInt(req.params.planId);
+      const { reason } = req.body;
+      
+      const plan = await storage.getTrainingPlanById(planId);
+      if (!plan || plan.userId !== userId) {
+        return res.status(404).json({ message: "Training plan not found" });
+      }
+      
+      const result = await planGeneratorService.adaptPlan(planId, reason);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error });
+      }
+      
+      res.json(result);
+    } catch (error: any) {
+      console.error("Adapt training plan error:", error);
+      res.status(500).json({ message: error.message || "Failed to adapt training plan" });
+    }
+  });
+  
+  // Get adherence statistics for a plan
+  app.get("/api/training/plans/:planId/adherence", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const planId = parseInt(req.params.planId);
+      
+      const plan = await storage.getTrainingPlanById(planId);
+      if (!plan || plan.userId !== userId) {
+        return res.status(404).json({ message: "Training plan not found" });
+      }
+      
+      const stats = await planGeneratorService.getAdherenceStats(planId);
+      res.json(stats);
+    } catch (error: any) {
+      console.error("Get adherence stats error:", error);
+      res.status(500).json({ message: error.message || "Failed to get adherence stats" });
+    }
+  });
+  
   // Delete training plan (cascade delete weeks and days)
   app.delete("/api/training/plans/:planId", authenticateJWT, async (req: any, res) => {
     try {

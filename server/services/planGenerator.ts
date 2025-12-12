@@ -371,6 +371,164 @@ Ensure each week has 7 days. Use "rest" type for rest days.`;
       suggestedWeeks: Math.max(planWeeks, minWeeks),
     };
   }
+  
+  /**
+   * Adapt the plan based on actual training adherence and performance
+   * This regenerates future weeks while keeping completed weeks intact
+   */
+  async adaptPlan(planId: number, reason?: string): Promise<{
+    success: boolean;
+    adaptedWeeks?: number;
+    changes?: string[];
+    error?: string;
+  }> {
+    console.log(`[PlanGenerator] Adapting plan ${planId}${reason ? ` - ${reason}` : ''}`);
+    
+    try {
+      const plan = await storage.getTrainingPlanById(planId);
+      if (!plan) {
+        return { success: false, error: "Plan not found" };
+      }
+      
+      const profile = await athleteProfileService.getOrComputeProfile(plan.userId);
+      const weeks = await storage.getPlanWeeks(planId);
+      
+      // Calculate adherence for completed weeks
+      let totalPlanned = 0;
+      let totalCompleted = 0;
+      let completedWeeks = 0;
+      
+      for (const week of weeks) {
+        const days = await storage.getPlanDays(week.id);
+        const workoutDays = days.filter((d: any) => d.workoutType !== 'rest');
+        const completedDays = workoutDays.filter((d: any) => 
+          d.status === 'completed' || d.linkedActivityId
+        );
+        
+        if (completedDays.length > 0) {
+          completedWeeks++;
+          totalPlanned += workoutDays.length;
+          totalCompleted += completedDays.length;
+        }
+      }
+      
+      const adherenceRate = totalPlanned > 0 ? totalCompleted / totalPlanned : 1;
+      const futureWeeks = weeks.filter((w: any) => w.weekNumber > completedWeeks);
+      
+      if (futureWeeks.length === 0) {
+        return { 
+          success: true, 
+          adaptedWeeks: 0, 
+          changes: ["Plan is complete, no future weeks to adapt"] 
+        };
+      }
+      
+      // Determine adaptation strategy based on adherence
+      const changes: string[] = [];
+      
+      if (adherenceRate < 0.5) {
+        changes.push(`Low adherence detected (${(adherenceRate * 100).toFixed(0)}%). Reducing volume for upcoming weeks.`);
+        // Reduce future week volumes by 15-20%
+        for (const week of futureWeeks) {
+          const currentDistance = week.plannedDistanceKm || 0;
+          const reducedDistance = currentDistance * 0.85;
+          await storage.updatePlanWeek(week.id, { 
+            plannedDistanceKm: reducedDistance,
+            coachNotes: `Volume reduced due to training adherence. Original: ${currentDistance.toFixed(1)}km`
+          });
+          
+          // Reduce individual day distances
+          const days = await storage.getPlanDays(week.id);
+          for (const day of days) {
+            if (day.plannedDistanceKm && day.workoutType !== 'rest') {
+              await storage.updatePlanDay(day.id, {
+                plannedDistanceKm: day.plannedDistanceKm * 0.85
+              });
+            }
+          }
+        }
+      } else if (adherenceRate < 0.75) {
+        changes.push(`Moderate adherence (${(adherenceRate * 100).toFixed(0)}%). Making minor adjustments.`);
+        // Reduce volume by 10%
+        for (const week of futureWeeks.slice(0, 2)) { // Only next 2 weeks
+          const currentDistance = week.plannedDistanceKm || 0;
+          const reducedDistance = currentDistance * 0.9;
+          await storage.updatePlanWeek(week.id, { 
+            plannedDistanceKm: reducedDistance 
+          });
+        }
+      } else if (adherenceRate >= 0.9) {
+        changes.push(`Excellent adherence (${(adherenceRate * 100).toFixed(0)}%). Plan is on track.`);
+        // Could optionally increase volume slightly, but safer to keep as-is
+      } else {
+        changes.push(`Good adherence (${(adherenceRate * 100).toFixed(0)}%). No changes needed.`);
+      }
+      
+      // Update current week pointer
+      if (completedWeeks > 0) {
+        await storage.updateTrainingPlan(planId, { currentWeek: completedWeeks + 1 });
+      }
+      
+      console.log(`[PlanGenerator] Adapted ${futureWeeks.length} future weeks with ${changes.length} changes`);
+      
+      return {
+        success: true,
+        adaptedWeeks: futureWeeks.length,
+        changes,
+      };
+    } catch (error) {
+      console.error(`[PlanGenerator] Adaptation failed:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error during adaptation",
+      };
+    }
+  }
+  
+  /**
+   * Calculate adherence stats for a training plan
+   */
+  async getAdherenceStats(planId: number): Promise<{
+    totalWorkouts: number;
+    completedWorkouts: number;
+    adherenceRate: number;
+    weeklyStats: Array<{
+      weekNumber: number;
+      planned: number;
+      completed: number;
+      rate: number;
+    }>;
+  }> {
+    const weeks = await storage.getPlanWeeks(planId);
+    const weeklyStats = [];
+    let totalPlanned = 0;
+    let totalCompleted = 0;
+    
+    for (const week of weeks) {
+      const days = await storage.getPlanDays(week.id);
+      const workoutDays = days.filter((d: any) => d.workoutType !== 'rest');
+      const completedDays = workoutDays.filter((d: any) => 
+        d.status === 'completed' || d.linkedActivityId
+      );
+      
+      totalPlanned += workoutDays.length;
+      totalCompleted += completedDays.length;
+      
+      weeklyStats.push({
+        weekNumber: week.weekNumber,
+        planned: workoutDays.length,
+        completed: completedDays.length,
+        rate: workoutDays.length > 0 ? completedDays.length / workoutDays.length : 0,
+      });
+    }
+    
+    return {
+      totalWorkouts: totalPlanned,
+      completedWorkouts: totalCompleted,
+      adherenceRate: totalPlanned > 0 ? totalCompleted / totalPlanned : 0,
+      weeklyStats,
+    };
+  }
 }
 
 export const planGeneratorService = new PlanGeneratorService();

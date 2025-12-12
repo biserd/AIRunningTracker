@@ -52,6 +52,7 @@ import DevelopersPage from "@/pages/developers";
 import ApiDocsPage from "@/pages/developers/api-docs";
 import YearRecapPage from "@/pages/year-recap";
 import TrainingPlansPage from "@/pages/training-plans";
+import TrainingPlanDetailPage from "@/pages/training-plan-detail";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -165,7 +166,7 @@ function Router() {
         <ProtectedRoute component={TrainingPlansPage} />
       </Route>
       <Route path="/training-plans/:planId">
-        <ProtectedRoute component={TrainingPlansPage} />
+        <ProtectedRoute component={TrainingPlanDetailPage} />
       </Route>
       
       <Route component={NotFound} />

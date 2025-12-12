@@ -4,6 +4,7 @@ import type { Activity, AIMessage } from "@shared/schema";
 import { PerformanceAnalyticsService } from "./performance";
 import { RunnerScoreService } from "./runnerScore";
 import { MLService } from "./ml";
+import { planGeneratorService } from "./planGenerator";
 
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY || "default_key" 
@@ -111,6 +112,55 @@ ${recentActivities}
       context += `\nRace Predictions (based on current fitness):
 ${racePredictions.map(p => `- ${p.distance}: ${p.predictedTime} (${p.confidence}% confidence)`).join('\n')}
 `;
+    }
+
+    // Get active training plan context
+    try {
+      const plans = await storage.getTrainingPlansByUserId(userId);
+      const activePlan = plans?.find((p: any) => p.status === 'active');
+      
+      if (activePlan) {
+        const weeks = await storage.getPlanWeeks(activePlan.id);
+        const currentWeekNumber = activePlan.currentWeek || 1;
+        const currentWeekData = weeks?.find((w: any) => w.weekNumber === currentWeekNumber);
+        
+        // Get adherence stats with safe fallback
+        let adherenceInfo = '';
+        try {
+          const adherenceStats = await planGeneratorService.getAdherenceStats(activePlan.id);
+          if (adherenceStats && typeof adherenceStats.adherenceRate === 'number') {
+            adherenceInfo = `- Adherence: ${(adherenceStats.adherenceRate * 100).toFixed(0)}% (${adherenceStats.completedWorkouts}/${adherenceStats.totalWorkouts} workouts)`;
+          }
+        } catch (e) {
+          console.log('Could not fetch adherence stats:', e);
+        }
+        
+        context += `\nActive Training Plan:
+- Goal: ${activePlan.goalType.replace('_', ' ')}${activePlan.targetTime ? ` (target: ${activePlan.targetTime})` : ''}
+${activePlan.raceDate ? `- Race date: ${new Date(activePlan.raceDate).toLocaleDateString()}` : ''}
+- Progress: Week ${currentWeekNumber} of ${activePlan.totalWeeks}
+${adherenceInfo}
+`;
+        
+        if (currentWeekData) {
+          const days = await storage.getPlanDays(currentWeekData.id);
+          const upcomingWorkouts = days
+            ?.filter((d: any) => d.workoutType !== 'rest' && d.status !== 'completed' && !d.linkedActivityId)
+            .slice(0, 3) || [];
+          
+          if (upcomingWorkouts.length > 0) {
+            context += `\nUpcoming Workouts This Week:
+${upcomingWorkouts.map((d: any) => 
+  `- ${d.dayOfWeek}: ${d.workoutType}${d.title ? ` - ${d.title}` : ''}${d.plannedDistanceKm ? ` (${d.plannedDistanceKm.toFixed(1)}km)` : ''}`
+).join('\n')}
+`;
+          }
+          
+          context += `\nWhen discussing training, reference their current plan and adjust advice accordingly.`;
+        }
+      }
+    } catch (error) {
+      console.log('Could not fetch training plan context:', error);
     }
 
     return context;
