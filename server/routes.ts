@@ -82,10 +82,11 @@ interface CacheEntry {
 }
 
 const responseCache = new Map<string, CacheEntry>();
-const CACHE_TTL = 60 * 1000; // 60 seconds
+const CACHE_TTL = 60 * 1000; // 60 seconds (default)
+const CACHE_TTL_LONG = 5 * 60 * 1000; // 5 minutes (for expensive/stable endpoints like platform-stats)
 const ENABLE_CACHE_LOGGING = process.env.NODE_ENV !== 'production'; // Disable verbose logging in production
 
-function getCachedResponse(key: string): any | null {
+function getCachedResponse(key: string, ttl: number = CACHE_TTL): any | null {
   const entry = responseCache.get(key);
   if (!entry) {
     if (ENABLE_CACHE_LOGGING) {
@@ -96,9 +97,9 @@ function getCachedResponse(key: string): any | null {
   
   const now = Date.now();
   const age = now - entry.timestamp;
-  if (age > CACHE_TTL) {
+  if (age > ttl) {
     if (ENABLE_CACHE_LOGGING) {
-      console.log(`[CACHE] Key "${key}" expired (age: ${age}ms, TTL: ${CACHE_TTL}ms)`);
+      console.log(`[CACHE] Key "${key}" expired (age: ${age}ms, TTL: ${ttl}ms)`);
     }
     responseCache.delete(key);
     return null;
@@ -254,20 +255,21 @@ ${allPages.map(page => `  <url>
   });
 
   // Platform stats for landing page (public endpoint)
+  // Uses 5-minute cache since stats don't change frequently and this is on the homepage
   app.get("/api/platform-stats", async (req, res) => {
     try {
       const cacheKey = "platform-stats";
-      const cached = getCachedResponse(cacheKey);
+      const cached = getCachedResponse(cacheKey, CACHE_TTL_LONG);
       
       if (cached) {
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Cache-Control', 'public, max-age=300'); // 5 min browser cache
         return res.json(cached);
       }
 
       const stats = await storage.getPlatformStats();
       
       setCachedResponse(cacheKey, stats);
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Cache-Control', 'public, max-age=300'); // 5 min browser cache
       res.json(stats);
     } catch (error: any) {
       console.error('Platform stats error:', error);

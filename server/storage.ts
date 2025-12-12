@@ -1312,27 +1312,21 @@ export class DatabaseStorage implements IStorage {
     totalDistance: number;
     totalUsers: number;
   }> {
-    const [insightsCount] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(aiInsights);
-    
-    const [activityCount] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(activities);
-    
-    const [distanceSum] = await db
-      .select({ sum: sql<number>`COALESCE(sum(distance), 0)::numeric` })
-      .from(activities);
-    
-    const [userCount] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(users);
+    // Single optimized query instead of 4 separate queries
+    const result = await db.execute(sql`
+      SELECT 
+        (SELECT count(*)::int FROM ai_insights) as total_insights,
+        (SELECT count(*)::int FROM activities) as total_activities,
+        (SELECT COALESCE(sum(distance), 0)::numeric FROM activities) as total_distance,
+        (SELECT count(*)::int FROM users) as total_users
+    `);
 
+    const row = result.rows[0] as any;
     return {
-      totalInsights: insightsCount?.count || 0,
-      totalActivities: activityCount?.count || 0,
-      totalDistance: Number(distanceSum?.sum) || 0,
-      totalUsers: userCount?.count || 0
+      totalInsights: row?.total_insights || 0,
+      totalActivities: row?.total_activities || 0,
+      totalDistance: Number(row?.total_distance) || 0,
+      totalUsers: row?.total_users || 0
     };
   }
 
