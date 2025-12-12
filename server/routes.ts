@@ -3646,7 +3646,7 @@ ${allPages.map(page => `  <url>
         trainingPlan: trainingPlan?.planData || null,
         vo2Max,
         efficiency,
-        hrZones,
+        hrZones: hrZones ? { heartRateZones: hrZones } : null,
         unitPreference: user?.unitPreference || 'miles'
       };
 
