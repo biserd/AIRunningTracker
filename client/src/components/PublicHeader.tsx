@@ -20,7 +20,7 @@ export default function PublicHeader() {
               className="bg-strava-orange text-white hover:bg-strava-orange/90"
               data-testid="header-sign-in"
             >
-              Sign In
+              Analyze My Data
             </Button>
           </Link>
         </div>
