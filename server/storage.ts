@@ -1,4 +1,4 @@
-import { users, activities, aiInsights, trainingPlans, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, apiKeys, refreshTokens, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ApiKey, type InsertApiKey, type RefreshToken, type InsertRefreshToken } from "@shared/schema";
+import { users, activities, aiInsights, trainingPlans, trainingPlansLegacy, athleteProfiles, planWeeks, planDays, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, apiKeys, refreshTokens, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ApiKey, type InsertApiKey, type RefreshToken, type InsertRefreshToken, type AthleteProfile, type InsertAthleteProfile, type PlanWeek, type InsertPlanWeek, type PlanDay, type InsertPlanDay } from "@shared/schema";
 import crypto from "crypto";
 import { db } from "./db";
 import { eq, desc, and, sql, inArray, gte, gt, lt } from "drizzle-orm";
@@ -55,6 +55,38 @@ export interface IStorage {
   createTrainingPlan(plan: InsertTrainingPlan): Promise<TrainingPlan>;
   getLatestTrainingPlan(userId: number): Promise<TrainingPlan | undefined>;
   deleteTrainingPlans(userId: number): Promise<void>;
+  
+  // New Training Plan System (v2)
+  // Athlete Profile methods
+  getAthleteProfile(userId: number, sport?: string): Promise<AthleteProfile | undefined>;
+  upsertAthleteProfile(profile: InsertAthleteProfile & { userId: number }): Promise<AthleteProfile>;
+  
+  // Training Plan v2 methods
+  createTrainingPlanV2(plan: InsertTrainingPlan): Promise<TrainingPlan>;
+  getTrainingPlanById(planId: number): Promise<TrainingPlan | undefined>;
+  getActiveTrainingPlan(userId: number): Promise<TrainingPlan | undefined>;
+  getTrainingPlansByUserId(userId: number): Promise<TrainingPlan[]>;
+  updateTrainingPlan(planId: number, updates: Partial<TrainingPlan>): Promise<TrainingPlan | undefined>;
+  archiveTrainingPlan(planId: number): Promise<void>;
+  
+  // Plan Week methods
+  createPlanWeek(week: InsertPlanWeek): Promise<PlanWeek>;
+  createPlanWeeks(weeks: InsertPlanWeek[]): Promise<PlanWeek[]>;
+  getPlanWeeks(planId: number): Promise<PlanWeek[]>;
+  getPlanWeekById(weekId: number): Promise<PlanWeek | undefined>;
+  updatePlanWeek(weekId: number, updates: Partial<PlanWeek>): Promise<PlanWeek | undefined>;
+  getCurrentPlanWeek(planId: number): Promise<PlanWeek | undefined>;
+  
+  // Plan Day methods
+  createPlanDay(day: InsertPlanDay): Promise<PlanDay>;
+  createPlanDays(days: InsertPlanDay[]): Promise<PlanDay[]>;
+  getPlanDays(weekId: number): Promise<PlanDay[]>;
+  getPlanDaysByPlanId(planId: number): Promise<PlanDay[]>;
+  getPlanDayById(dayId: number): Promise<PlanDay | undefined>;
+  getPlanDayByDate(planId: number, date: Date): Promise<PlanDay | undefined>;
+  updatePlanDay(dayId: number, updates: Partial<PlanDay>): Promise<PlanDay | undefined>;
+  linkActivityToPlanDay(dayId: number, activityId: number, actualMetrics: { distanceKm?: number; durationMins?: number; pace?: string }): Promise<PlanDay | undefined>;
+  getUpcomingWorkouts(userId: number, limit?: number): Promise<PlanDay[]>;
   
   createFeedback(feedback: InsertFeedback): Promise<Feedback>;
   
@@ -585,6 +617,266 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTrainingPlans(userId: number): Promise<void> {
     await db.delete(trainingPlans).where(eq(trainingPlans.userId, userId));
+  }
+
+  // ============== New Training Plan System (v2) ==============
+
+  // Athlete Profile methods
+  async getAthleteProfile(userId: number, sport: string = "run"): Promise<AthleteProfile | undefined> {
+    const [profile] = await db
+      .select()
+      .from(athleteProfiles)
+      .where(and(
+        eq(athleteProfiles.userId, userId),
+        eq(athleteProfiles.sport, sport as any)
+      ));
+    return profile || undefined;
+  }
+
+  async upsertAthleteProfile(profile: InsertAthleteProfile & { userId: number }): Promise<AthleteProfile> {
+    // Check if profile exists
+    const existing = await this.getAthleteProfile(profile.userId, profile.sport || "run");
+    
+    // Prepare the data - cast JSON fields properly
+    const profileData = {
+      ...profile,
+      lastComputedAt: new Date(),
+    } as any;
+    
+    if (existing) {
+      // Update existing
+      const [updated] = await db
+        .update(athleteProfiles)
+        .set(profileData)
+        .where(eq(athleteProfiles.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      // Create new
+      const [created] = await db
+        .insert(athleteProfiles)
+        .values(profileData)
+        .returning();
+      return created;
+    }
+  }
+
+  // Training Plan v2 methods
+  async createTrainingPlanV2(plan: InsertTrainingPlan): Promise<TrainingPlan> {
+    const [created] = await db
+      .insert(trainingPlans)
+      .values(plan)
+      .returning();
+    return created;
+  }
+
+  async getTrainingPlanById(planId: number): Promise<TrainingPlan | undefined> {
+    const [plan] = await db
+      .select()
+      .from(trainingPlans)
+      .where(eq(trainingPlans.id, planId));
+    return plan || undefined;
+  }
+
+  async getActiveTrainingPlan(userId: number): Promise<TrainingPlan | undefined> {
+    const [plan] = await db
+      .select()
+      .from(trainingPlans)
+      .where(and(
+        eq(trainingPlans.userId, userId),
+        eq(trainingPlans.status, "active")
+      ))
+      .orderBy(desc(trainingPlans.createdAt))
+      .limit(1);
+    return plan || undefined;
+  }
+
+  async getTrainingPlansByUserId(userId: number): Promise<TrainingPlan[]> {
+    return await db
+      .select()
+      .from(trainingPlans)
+      .where(eq(trainingPlans.userId, userId))
+      .orderBy(desc(trainingPlans.createdAt));
+  }
+
+  async updateTrainingPlan(planId: number, updates: Partial<TrainingPlan>): Promise<TrainingPlan | undefined> {
+    const [updated] = await db
+      .update(trainingPlans)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(trainingPlans.id, planId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async archiveTrainingPlan(planId: number): Promise<void> {
+    await db
+      .update(trainingPlans)
+      .set({ status: "archived", updatedAt: new Date() })
+      .where(eq(trainingPlans.id, planId));
+  }
+
+  // Plan Week methods
+  async createPlanWeek(week: InsertPlanWeek): Promise<PlanWeek> {
+    const [created] = await db
+      .insert(planWeeks)
+      .values(week)
+      .returning();
+    return created;
+  }
+
+  async createPlanWeeks(weeks: InsertPlanWeek[]): Promise<PlanWeek[]> {
+    if (weeks.length === 0) return [];
+    return await db
+      .insert(planWeeks)
+      .values(weeks)
+      .returning();
+  }
+
+  async getPlanWeeks(planId: number): Promise<PlanWeek[]> {
+    return await db
+      .select()
+      .from(planWeeks)
+      .where(eq(planWeeks.planId, planId))
+      .orderBy(planWeeks.weekNumber);
+  }
+
+  async getPlanWeekById(weekId: number): Promise<PlanWeek | undefined> {
+    const [week] = await db
+      .select()
+      .from(planWeeks)
+      .where(eq(planWeeks.id, weekId));
+    return week || undefined;
+  }
+
+  async updatePlanWeek(weekId: number, updates: Partial<PlanWeek>): Promise<PlanWeek | undefined> {
+    const [updated] = await db
+      .update(planWeeks)
+      .set(updates)
+      .where(eq(planWeeks.id, weekId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async getCurrentPlanWeek(planId: number): Promise<PlanWeek | undefined> {
+    const now = new Date();
+    const [week] = await db
+      .select()
+      .from(planWeeks)
+      .where(and(
+        eq(planWeeks.planId, planId),
+        lt(planWeeks.weekStartDate, now),
+        gte(planWeeks.weekEndDate, now)
+      ));
+    return week || undefined;
+  }
+
+  // Plan Day methods
+  async createPlanDay(day: InsertPlanDay): Promise<PlanDay> {
+    const [created] = await db
+      .insert(planDays)
+      .values(day as any)
+      .returning();
+    return created;
+  }
+
+  async createPlanDays(days: InsertPlanDay[]): Promise<PlanDay[]> {
+    if (days.length === 0) return [];
+    return await db
+      .insert(planDays)
+      .values(days as any)
+      .returning();
+  }
+
+  async getPlanDays(weekId: number): Promise<PlanDay[]> {
+    return await db
+      .select()
+      .from(planDays)
+      .where(eq(planDays.weekId, weekId))
+      .orderBy(planDays.date);
+  }
+
+  async getPlanDaysByPlanId(planId: number): Promise<PlanDay[]> {
+    return await db
+      .select()
+      .from(planDays)
+      .where(eq(planDays.planId, planId))
+      .orderBy(planDays.date);
+  }
+
+  async getPlanDayById(dayId: number): Promise<PlanDay | undefined> {
+    const [day] = await db
+      .select()
+      .from(planDays)
+      .where(eq(planDays.id, dayId));
+    return day || undefined;
+  }
+
+  async getPlanDayByDate(planId: number, date: Date): Promise<PlanDay | undefined> {
+    // Match by date (ignoring time)
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    const [day] = await db
+      .select()
+      .from(planDays)
+      .where(and(
+        eq(planDays.planId, planId),
+        gte(planDays.date, startOfDay),
+        lt(planDays.date, endOfDay)
+      ));
+    return day || undefined;
+  }
+
+  async updatePlanDay(dayId: number, updates: Partial<PlanDay>): Promise<PlanDay | undefined> {
+    const [updated] = await db
+      .update(planDays)
+      .set(updates)
+      .where(eq(planDays.id, dayId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async linkActivityToPlanDay(
+    dayId: number, 
+    activityId: number, 
+    actualMetrics: { distanceKm?: number; durationMins?: number; pace?: string }
+  ): Promise<PlanDay | undefined> {
+    const [updated] = await db
+      .update(planDays)
+      .set({
+        linkedActivityId: activityId,
+        status: "completed",
+        actualDistanceKm: actualMetrics.distanceKm,
+        actualDurationMins: actualMetrics.durationMins,
+        actualPace: actualMetrics.pace,
+      })
+      .where(eq(planDays.id, dayId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async getUpcomingWorkouts(userId: number, limit: number = 7): Promise<PlanDay[]> {
+    const now = new Date();
+    
+    // First get the active plan for this user
+    const activePlan = await this.getActiveTrainingPlan(userId);
+    if (!activePlan) return [];
+    
+    return await db
+      .select()
+      .from(planDays)
+      .where(and(
+        eq(planDays.planId, activePlan.id),
+        gte(planDays.date, now),
+        eq(planDays.status, "pending")
+      ))
+      .orderBy(planDays.date)
+      .limit(limit);
   }
 
   async updateActivity(activityId: number, updates: Partial<Activity>): Promise<Activity | undefined> {

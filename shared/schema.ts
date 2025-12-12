@@ -118,13 +118,153 @@ export const aiInsights = pgTable("ai_insights", {
   userIdTypeIdx: index("ai_insights_user_id_type_idx").on(table.userId, table.type),
 }));
 
-export const trainingPlans = pgTable("training_plans", {
+// Legacy training plans - kept for backward compatibility
+export const trainingPlansLegacy = pgTable("training_plans", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   weeks: integer("weeks").notNull(),
   planData: json("plan_data").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// ============== NEW TRAINING PLAN SYSTEM ==============
+
+// Athlete profiles - computed from Strava history
+export const athleteProfiles = pgTable("athlete_profiles", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  sport: text("sport", { enum: ["run", "cycle", "swim"] }).default("run").notNull(),
+  // Mileage baseline
+  baselineWeeklyMileageKm: real("baseline_weekly_mileage_km"),
+  weeklyMileageLast12Weeks: json("weekly_mileage_last_12_weeks").$type<number[]>(),
+  longestRecentRunKm: real("longest_recent_run_km"),
+  avgRunsPerWeek: real("avg_runs_per_week"),
+  // Pace data (min/km)
+  typicalEasyPaceMin: real("typical_easy_pace_min"),
+  typicalEasyPaceMax: real("typical_easy_pace_max"),
+  typicalTempoPace: real("typical_tempo_pace"),
+  typicalIntervalPace: real("typical_interval_pace"),
+  // Heart rate
+  hrZones: json("hr_zones").$type<{ zone1?: { min: number; max: number }; zone2?: { min: number; max: number }; zone3?: { min: number; max: number }; zone4?: { min: number; max: number }; zone5?: { min: number; max: number } }>(),
+  maxHr: integer("max_hr"),
+  restingHr: integer("resting_hr"),
+  // Terrain & preferences
+  avgElevationGainPerKm: real("avg_elevation_gain_per_km"),
+  preferredRunDays: text("preferred_run_days").array(),
+  // Constraints / flags
+  injuryFlags: text("injury_flags").array(),
+  maxDaysPerWeek: integer("max_days_per_week"),
+  // Estimated fitness
+  estimatedVdot: real("estimated_vdot"),
+  estimatedRaceTimes: json("estimated_race_times").$type<{ fiveK?: string; tenK?: string; halfMarathon?: string; marathon?: string }>(),
+  // Metadata
+  lastComputedAt: timestamp("last_computed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userSportIdx: index("athlete_profiles_user_sport_idx").on(table.userId, table.sport),
+}));
+
+// Training plans - normalized version
+export const trainingPlans = pgTable("training_plans_v2", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  // Goal configuration
+  goalType: text("goal_type", { 
+    enum: ["5k", "10k", "half_marathon", "marathon", "general_fitness"] 
+  }).notNull(),
+  raceDate: timestamp("race_date"),
+  targetTime: text("target_time"),
+  // Plan configuration
+  daysPerWeek: integer("days_per_week").notNull().default(4),
+  preferredLongRunDay: text("preferred_long_run_day").default("sunday"),
+  preferredDays: text("preferred_days").array(),
+  allowCrossTraining: boolean("allow_cross_training").default(true),
+  paceBasedWorkouts: boolean("pace_based_workouts").default(true),
+  // Status
+  status: text("status", { 
+    enum: ["draft", "active", "completed", "archived"] 
+  }).default("draft"),
+  // Metrics
+  totalWeeks: integer("total_weeks").notNull(),
+  currentWeek: integer("current_week").default(1),
+  // Coach notes
+  coachNotes: text("coach_notes"),
+  generationPrompt: text("generation_prompt"),
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("training_plans_v2_user_id_idx").on(table.userId),
+  statusIdx: index("training_plans_v2_status_idx").on(table.status),
+}));
+
+// Plan weeks
+export const planWeeks = pgTable("plan_weeks", {
+  id: serial("id").primaryKey(),
+  planId: integer("plan_id").notNull(),
+  weekNumber: integer("week_number").notNull(),
+  weekStartDate: timestamp("week_start_date").notNull(),
+  weekEndDate: timestamp("week_end_date").notNull(),
+  // Planned totals
+  plannedDistanceKm: real("planned_distance_km").notNull(),
+  plannedDurationMins: integer("planned_duration_mins"),
+  weekType: text("week_type", { 
+    enum: ["base", "build", "peak", "recovery", "taper"] 
+  }).notNull(),
+  // Completed metrics
+  completedDistanceKm: real("completed_distance_km").default(0),
+  completedDurationMins: integer("completed_duration_mins").default(0),
+  adherenceScore: real("adherence_score"),
+  // Coach notes
+  coachNotes: text("coach_notes"),
+  wasAdjusted: boolean("was_adjusted").default(false),
+  adjustedAt: timestamp("adjusted_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  planIdIdx: index("plan_weeks_plan_id_idx").on(table.planId),
+  weekStartIdx: index("plan_weeks_week_start_idx").on(table.weekStartDate),
+}));
+
+// Plan days - individual workouts
+export const planDays = pgTable("plan_days", {
+  id: serial("id").primaryKey(),
+  weekId: integer("week_id").notNull(),
+  planId: integer("plan_id").notNull(),
+  date: timestamp("date").notNull(),
+  dayOfWeek: text("day_of_week").notNull(),
+  // Workout details
+  workoutType: text("workout_type", { 
+    enum: ["easy", "tempo", "intervals", "long_run", "recovery", "rest", "cross_training", "race", "fartlek", "hills", "progression"] 
+  }).notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  // Planned metrics
+  plannedDistanceKm: real("planned_distance_km"),
+  plannedDurationMins: integer("planned_duration_mins"),
+  targetPace: text("target_pace"),
+  targetHrZone: text("target_hr_zone"),
+  intensity: text("intensity", { enum: ["low", "moderate", "high"] }).default("low"),
+  // Structure for intervals/tempo
+  workoutStructure: json("workout_structure").$type<{ warmup?: string; main?: string; cooldown?: string; intervals?: { reps: number; distance: string; pace: string; rest: string }[] }>(),
+  // Completion status
+  status: text("status", { 
+    enum: ["pending", "completed", "partial", "missed", "skipped"] 
+  }).default("pending"),
+  linkedActivityId: integer("linked_activity_id"),
+  // Actual metrics
+  actualDistanceKm: real("actual_distance_km"),
+  actualDurationMins: integer("actual_duration_mins"),
+  actualPace: text("actual_pace"),
+  // User feedback
+  userNotes: text("user_notes"),
+  perceivedEffort: integer("perceived_effort"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  weekIdIdx: index("plan_days_week_id_idx").on(table.weekId),
+  planIdIdx: index("plan_days_plan_id_idx").on(table.planId),
+  dateIdx: index("plan_days_date_idx").on(table.date),
+  linkedActivityIdx: index("plan_days_linked_activity_idx").on(table.linkedActivityId),
+}));
 
 export const feedback = pgTable("feedback", {
   id: serial("id").primaryKey(),
@@ -343,6 +483,33 @@ export const insertRefreshTokenSchema = createInsertSchema(refreshTokens).omit({
   isRevoked: true,
 });
 
+// New training plan system schemas
+export const insertAthleteProfileSchema = createInsertSchema(athleteProfiles).omit({
+  id: true,
+  createdAt: true,
+  lastComputedAt: true,
+});
+
+export const insertPlanWeekSchema = createInsertSchema(planWeeks).omit({
+  id: true,
+  createdAt: true,
+  completedDistanceKm: true,
+  completedDurationMins: true,
+  adherenceScore: true,
+  wasAdjusted: true,
+  adjustedAt: true,
+});
+
+export const insertPlanDaySchema = createInsertSchema(planDays).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+  linkedActivityId: true,
+  actualDistanceKm: true,
+  actualDurationMins: true,
+  actualPace: true,
+});
+
 // Login schema for authentication
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -383,5 +550,11 @@ export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
 export type ApiKey = typeof apiKeys.$inferSelect;
 export type InsertRefreshToken = z.infer<typeof insertRefreshTokenSchema>;
 export type RefreshToken = typeof refreshTokens.$inferSelect;
+export type InsertAthleteProfile = z.infer<typeof insertAthleteProfileSchema>;
+export type AthleteProfile = typeof athleteProfiles.$inferSelect;
+export type InsertPlanWeek = z.infer<typeof insertPlanWeekSchema>;
+export type PlanWeek = typeof planWeeks.$inferSelect;
+export type InsertPlanDay = z.infer<typeof insertPlanDaySchema>;
+export type PlanDay = typeof planDays.$inferSelect;
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;
