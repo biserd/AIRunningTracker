@@ -415,11 +415,11 @@ export default function Dashboard() {
         {/* Trial Badge for reverse trial users */}
         <TrialBadge />
 
-        {/* 2025 Running Wrapped Banner */}
-        <Link href="/wrapped-2025">
+        {/* Year End Recap Banner */}
+        <Link href="/year-recap">
           <div 
             className="mb-6 p-4 rounded-xl bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 cursor-pointer hover:shadow-lg hover:scale-[1.01] transition-all duration-200 group"
-            data-testid="banner-wrapped-2025"
+            data-testid="banner-year-recap"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -427,8 +427,8 @@ export default function Dashboard() {
                   <Gift className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-white font-bold text-lg">Your 2025 Running Wrapped is ready!</h3>
-                  <p className="text-white/80 text-sm">See your year in review and share your stats</p>
+                  <h3 className="text-white font-bold text-lg">Your Year End Recap is ready!</h3>
+                  <p className="text-white/80 text-sm">See your AI-generated running highlights and share your stats</p>
                 </div>
               </div>
               <ChevronRight className="h-6 w-6 text-white group-hover:translate-x-1 transition-transform" />

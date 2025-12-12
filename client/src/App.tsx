@@ -50,7 +50,6 @@ import ImproveRunningPace from "@/pages/blog/how-to-improve-running-pace";
 import AICoachLanding from "@/pages/ai-running-coach";
 import DevelopersPage from "@/pages/developers";
 import ApiDocsPage from "@/pages/developers/api-docs";
-import Wrapped2025 from "@/pages/wrapped-2025";
 import YearRecapPage from "@/pages/year-recap";
 import NotFound from "@/pages/not-found";
 
@@ -157,9 +156,6 @@ function Router() {
       </Route>
       <Route path="/admin/queue">
         <ProtectedRoute component={QueueDashboard} />
-      </Route>
-      <Route path="/wrapped-2025">
-        <ProtectedRoute component={Wrapped2025} />
       </Route>
       <Route path="/year-recap">
         <ProtectedRoute component={YearRecapPage} />
