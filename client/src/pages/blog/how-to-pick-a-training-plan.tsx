@@ -27,7 +27,6 @@ import {
 import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
-import heroImage from "@assets/generated_images/runner_with_training_data_overlay.png";
 import comparisonImage from "@assets/generated_images/generic_vs_ai_plan_comparison.png";
 
 export default function HowToPickTrainingPlan() {
@@ -134,16 +133,6 @@ export default function HowToPickTrainingPlan() {
             <p className="text-xl text-gray-700 dark:text-gray-300 leading-relaxed">
               Choosing the right training plan can make or break your running goals. Whether you're preparing for your first 5K or chasing a marathon PR, this guide covers everything you need to know about picking a training plan that actually works for <strong>you</strong>—not some hypothetical "average" runner.
             </p>
-          </div>
-
-          {/* Hero Image */}
-          <div className="mb-8 rounded-xl overflow-hidden shadow-lg">
-            <img 
-              src={heroImage} 
-              alt="Runner with AI-powered training data visualization showing weekly schedule, pace zones, and performance metrics" 
-              className="w-full h-auto"
-              data-testid="img-hero"
-            />
           </div>
 
           <Separator className="my-8" />
@@ -508,12 +497,12 @@ export default function HowToPickTrainingPlan() {
                   <p className="mb-3">
                     AI analyzes your last 12 weeks of Strava data to understand your:
                   </p>
-                  <ul className="space-y-1">
-                    <li>• Current weekly mileage baseline</li>
-                    <li>• Typical easy, tempo, and hard paces</li>
-                    <li>• Average runs per week and preferred days</li>
-                    <li>• Longest recent run distance</li>
-                    <li>• Estimated VO2 max and race potential</li>
+                  <ul className="space-y-1 list-disc list-inside">
+                    <li>Current weekly mileage baseline</li>
+                    <li>Typical easy, tempo, and hard paces</li>
+                    <li>Average runs per week and preferred days</li>
+                    <li>Longest recent run distance</li>
+                    <li>Estimated VO2 max and race potential</li>
                   </ul>
                 </CardContent>
               </Card>
@@ -529,12 +518,12 @@ export default function HowToPickTrainingPlan() {
                   <p className="mb-3">
                     Unlike human coaches who might push too hard, AI enforces evidence-based limits:
                   </p>
-                  <ul className="space-y-1">
-                    <li>• Max 12% weekly mileage increase</li>
-                    <li>• Long runs capped at 32% of weekly volume</li>
-                    <li>• Automatic recovery weeks every 4 weeks</li>
-                    <li>• Appropriate taper based on race distance</li>
-                    <li>• Maximum 3 hard workouts per week</li>
+                  <ul className="space-y-1 list-disc list-inside">
+                    <li>Max 12% weekly mileage increase</li>
+                    <li>Long runs capped at 32% of weekly volume</li>
+                    <li>Automatic recovery weeks every 4 weeks</li>
+                    <li>Appropriate taper based on race distance</li>
+                    <li>Maximum 3 hard workouts per week</li>
                   </ul>
                 </CardContent>
               </Card>
@@ -550,11 +539,11 @@ export default function HowToPickTrainingPlan() {
                   <p className="mb-3">
                     The plan evolves based on how training is actually going:
                   </p>
-                  <ul className="space-y-1">
-                    <li>• Low adherence? Volume automatically reduces to match reality</li>
-                    <li>• Feeling tired? One click softens next week's training</li>
-                    <li>• Running strong? Maintain or progress as planned</li>
-                    <li>• Missed workouts? Plan adjusts without derailing goals</li>
+                  <ul className="space-y-1 list-disc list-inside">
+                    <li>Low adherence? Volume automatically reduces to match reality</li>
+                    <li>Feeling tired? One click softens next week's training</li>
+                    <li>Running strong? Maintain or progress as planned</li>
+                    <li>Missed workouts? Plan adjusts without derailing goals</li>
                   </ul>
                 </CardContent>
               </Card>
@@ -572,7 +561,7 @@ export default function HowToPickTrainingPlan() {
               We built Training Plan HQ to solve the problems we saw runners facing: generic plans that don't fit, no adaptation when life happens, and zero guidance on whether training is actually working.
             </p>
 
-            <Card className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white mb-8">
+            <Card className="bg-gradient-to-r from-blue-600 to-teal-500 text-white mb-8">
               <CardContent className="py-8">
                 <h3 className="text-2xl font-bold mb-4">What Makes Training Plan HQ Different</h3>
                 <div className="grid md:grid-cols-2 gap-6">
@@ -682,7 +671,7 @@ export default function HowToPickTrainingPlan() {
                     </Button>
                   </Link>
                   <Link href="/training-plans">
-                    <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/20 font-bold px-8" data-testid="button-cta-plans">
+                    <Button size="lg" className="bg-white text-red-600 hover:bg-gray-100 font-bold px-8" data-testid="button-cta-plans">
                       Explore Training Plans
                     </Button>
                   </Link>
