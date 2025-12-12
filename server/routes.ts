@@ -13,6 +13,7 @@ import { runnerScoreService } from "./services/runnerScore";
 import goalsService from "./services/goals";
 import { ChatService } from "./services/chat";
 import { fitnessService } from "./services/fitness";
+import { autoLinkActivitiesForPlan } from "./services/activityLinker";
 import { calculateYearlyStats, reverseGeocode } from "./services/yearEndRecap";
 import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, emailWaitlist, type Activity, type RunningShoe } from "@shared/schema";
 import { shoeData } from "./shoe-data";
@@ -4754,6 +4755,74 @@ ${allPages.map(page => `  <url>
     }
   });
   
+  // Auto-link activities to plan days
+  app.post("/api/training/plans/:planId/auto-link", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const planId = parseInt(req.params.planId);
+      
+      const plan = await storage.getTrainingPlanById(planId);
+      if (!plan || plan.userId !== userId) {
+        return res.status(404).json({ message: "Training plan not found" });
+      }
+      
+      const results = await autoLinkActivitiesForPlan(planId, userId);
+      
+      res.json({
+        success: true,
+        linkedCount: results.length,
+        links: results.map(r => ({
+          dayId: r.dayId,
+          activityId: r.activityId,
+          status: r.status,
+          matchScore: r.matchScore,
+        })),
+      });
+    } catch (error: any) {
+      console.error("Auto-link activities error:", error);
+      res.status(500).json({ message: error.message || "Failed to auto-link activities" });
+    }
+  });
+  
+  // Adjust training plan - simplified endpoint with tired/feeling flags
+  app.post("/api/training/plans/:planId/adjust", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const planId = parseInt(req.params.planId);
+      const { feeling } = req.body; // "tired" or "strong"
+      
+      const plan = await storage.getTrainingPlanById(planId);
+      if (!plan || plan.userId !== userId) {
+        return res.status(404).json({ message: "Training plan not found" });
+      }
+      
+      // Build the reason based on feeling
+      let reason = "Weekly adjustment based on recent training";
+      if (feeling === "tired") {
+        reason = "User reports feeling tired or fatigued. Reduce intensity and volume for next week.";
+      } else if (feeling === "strong") {
+        reason = "User reports feeling strong. Maintain or slightly increase planned workouts.";
+      }
+      
+      const { planGeneratorService } = await import("./services/planGenerator");
+      const result = await planGeneratorService.adaptPlan(planId, reason);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: result.error });
+      }
+      
+      res.json({
+        success: true,
+        feeling,
+        adaptedWeeks: result.adaptedWeeks,
+        changes: result.changes,
+      });
+    } catch (error: any) {
+      console.error("Adjust training plan error:", error);
+      res.status(500).json({ message: error.message || "Failed to adjust training plan" });
+    }
+  });
+
   // Delete training plan (cascade delete weeks and days)
   app.delete("/api/training/plans/:planId", authenticateJWT, async (req: any, res) => {
     try {

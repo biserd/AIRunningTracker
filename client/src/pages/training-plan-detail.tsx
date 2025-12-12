@@ -12,7 +12,8 @@ import { Link, useRoute } from "wouter";
 import { 
   ChevronLeft, ChevronRight, Calendar, Target, Clock, 
   Loader2, CheckCircle, Play, Pause, RotateCcw,
-  Footprints, Zap, Mountain, Timer, Coffee, Trash2
+  Footprints, Zap, Mountain, Timer, Coffee, Trash2,
+  Link2, Battery, BatteryLow, RefreshCw, MessageSquare
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { format, parseISO, addDays, startOfWeek } from "date-fns";
@@ -136,6 +137,50 @@ export default function TrainingPlanDetail() {
       toast({
         title: "Error",
         description: "Failed to delete plan. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const autoLinkMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest(`/api/training/plans/${planId}/auto-link`, "POST");
+    },
+    onSuccess: (data: { linkedCount: number }) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/training/plans/${planId}`] });
+      toast({
+        title: "Activities linked",
+        description: data.linkedCount > 0 
+          ? `Linked ${data.linkedCount} activities to your plan.`
+          : "No new activities to link.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to auto-link activities. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const adjustPlanMutation = useMutation({
+    mutationFn: async (feeling: "tired" | "strong") => {
+      return await apiRequest(`/api/training/plans/${planId}/adjust`, "POST", { feeling });
+    },
+    onSuccess: (data: { feeling: string; adaptedWeeks?: number }) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/training/plans/${planId}`] });
+      toast({
+        title: "Plan adjusted",
+        description: data.feeling === "tired" 
+          ? "Next week has been softened based on your feedback."
+          : "Plan maintained - keep up the great work!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to adjust plan. Please try again.",
         variant: "destructive",
       });
     },
@@ -288,8 +333,67 @@ export default function TrainingPlanDetail() {
           </div>
         )}
         
+        {/* Plan Actions: Auto-link and Adjustment buttons */}
+        <Card className="mb-6 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900">
+          <CardContent className="py-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => autoLinkMutation.mutate()}
+                disabled={autoLinkMutation.isPending}
+                data-testid="button-auto-link"
+              >
+                {autoLinkMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Link2 className="w-4 h-4 mr-2" />
+                )}
+                Sync Activities
+              </Button>
+              
+              <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 hidden sm:block" />
+              
+              <span className="text-sm text-gray-500 hidden sm:inline">How are you feeling?</span>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => adjustPlanMutation.mutate("tired")}
+                disabled={adjustPlanMutation.isPending}
+                className="border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-900/20"
+                data-testid="button-feeling-tired"
+              >
+                {adjustPlanMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <BatteryLow className="w-4 h-4 mr-2 text-orange-500" />
+                )}
+                I'm tired
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => adjustPlanMutation.mutate("strong")}
+                disabled={adjustPlanMutation.isPending}
+                className="border-green-200 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-900/20"
+                data-testid="button-feeling-strong"
+              >
+                {adjustPlanMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Battery className="w-4 h-4 mr-2 text-green-500" />
+                )}
+                I'm strong
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Week Stats Card */}
         {currentWeekData?.plannedDistanceKm && (
-          <Card className="mb-6 border-l-4 border-l-strava-orange">
+          <Card className="mb-4 border-l-4 border-l-strava-orange">
             <CardContent className="pt-4">
               <div className="flex items-center gap-6">
                 <div>
@@ -298,12 +402,21 @@ export default function TrainingPlanDetail() {
                     {formatDistance(currentWeekData.plannedDistanceKm, useMiles)}
                   </p>
                 </div>
-                {currentWeekData.coachNotes && (
-                  <div className="flex-1 border-l pl-6">
-                    <span className="text-sm text-gray-500">Coach Notes</span>
-                    <p className="text-sm">{currentWeekData.coachNotes}</p>
-                  </div>
-                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
+        {/* Coach Notes Panel - always show when notes exist */}
+        {currentWeekData?.coachNotes && (
+          <Card className="mb-6 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800" data-testid="card-coach-notes">
+            <CardContent className="py-4">
+              <div className="flex items-start gap-3">
+                <MessageSquare className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1">Coach Notes</p>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">{currentWeekData.coachNotes}</p>
+                </div>
               </div>
             </CardContent>
           </Card>
