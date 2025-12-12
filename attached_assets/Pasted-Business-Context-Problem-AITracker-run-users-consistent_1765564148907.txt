@@ -1,0 +1,264 @@
+Business Context & Problem
+
+AITracker.run users consistently signal “training plan” as the #1 desired feature.
+
+Existing plans (Strava, Garmin, generic PDFs) are:
+
+Template-based, not personalized to actual history.
+
+Poor at adapting to real-world adherence, fatigue, or constraints.
+
+Opportunity: make the AI-powered training plan the hero feature, tightly integrated with Strava data and your AI coach.
+
+2. Objectives
+
+Primary Objective
+
+Deliver a personalized, adaptive training plan system that uses real user data and feels clearly smarter/better than existing offerings.
+
+Secondary Objectives
+
+Increase activation and retention (users who connect Strava and keep coming back weekly).
+
+Position AITracker.run as a “coach, not just analytics.”
+
+Create a reusable framework for other coaching use cases (cycling, general fitness later).
+
+Success Metrics (examples)
+
+% of connected users who create a plan.
+
+4-week retention for users with a plan vs without.
+
+% of users who accept/adopt weekly plan adjustments.
+
+Qualitative feedback (NPS or in-app rating of training plan).
+
+3. Scope
+
+In Scope
+
+Use Strava history (last 8–12 weeks) to build an athlete profile.
+
+Generate structured training plans (JSON) for:
+
+5K, 10K, Half Marathon, Marathon, “general fitness” running.
+
+Respect safety rules (mileage caps, taper, long-run limits).
+
+Provide:
+
+Initial plan generation.
+
+Weekly adaptation based on completed vs planned workouts.
+
+On-demand adjustments when user constraints change.
+
+Expose plans via:
+
+Calendar-style UI and per-week/day view.
+
+Integration with existing AI “coach chat” (e.g. “Ask your coach about this week”).
+
+Out of Scope (v1)
+
+Non-running sports (cycling, triathlon, strength).
+
+Multi-goal periodization across an entire season.
+
+Real-time in-workout guidance (e.g. watch app prompts).
+
+4. Users & Key Use Cases
+
+Primary User Persona
+
+Recreational runner (5K–marathon), uses Strava, wants structure but not a human coach.
+
+Key Use Cases
+
+“I want a training plan for a race on date X with target time Y.”
+
+“I can run N days per week with these preferred days.”
+
+“I missed some workouts / got sick last week, please adjust the plan.”
+
+“I’m too tired; can we back off intensity next week?”
+
+“I want to tweak the plan (e.g., switch to 3 days/week).”
+
+5. Functional Requirements
+5.1 Data & Athlete Profiling
+
+System must:
+
+Use synced Strava activities to compute last 8–12 weeks:
+
+Weekly mileage, runs/week, longest run.
+
+Typical paces (easy / tempo / intervals).
+
+HR zones and max HR estimate (if data available).
+
+Terrain (elevation, road vs trail).
+
+Store a derived athlete profile per user:
+
+“Current safe mileage” baseline.
+
+Est. fitness level and race-equivalent performances.
+
+Any user-provided injury/constraint flags (e.g., “knee-sensitive”, “no more than 4 days/week”).
+
+5.2 Safety & Guardrails (Non-AI Logic)
+
+System must enforce non-negotiable constraints:
+
+Max weekly mileage increase (e.g. 10–15% from baseline).
+
+Limit long run to ≤ ~30–35% of weekly mileage.
+
+Include cutback weeks every 3–4 weeks.
+
+Include appropriate taper for race plans (e.g. 2 weeks for HM/marathon).
+
+Respect user-specified constraints:
+
+Max run days/week.
+
+Preferred long-run day.
+
+System must validate model output (plans) against these rules.
+
+If plan violates rules → auto-correct or re-prompt the model.
+
+5.3 Plan Generation
+
+Endpoint: e.g. POST /api/training-plan/generate
+
+Inputs:
+
+Goal: race distance, date, target time OR “general fitness”.
+
+Constraints: days per week, preferred days, cross-training allowed, treadmill allowed.
+
+User preferences: pace-based vs HR-based, workout type preferences.
+
+Behavior:
+
+Build a summarized athlete profile from DB.
+
+Call LLM with structured prompt (profile + goal + rules).
+
+Receive structured JSON:
+
+plan_meta + weeks[] → days[] with type, distance, duration, intensity, description.
+
+Validate against guardrails.
+
+Store plan in DB, linked to user.
+
+5.4 Plan Storage & Linking to Workouts
+
+Store training plan as normalized entities:
+
+Plan: id, userId, goal, race info, createdAt, status (active, archived).
+
+Week: planId, weekIndex, date range, total planned distance.
+
+Day: weekId, date, workout type, description, planned metrics.
+
+Link actual Strava activities to plan days:
+
+Match by date +/- small tolerance and workout type.
+
+Compute adherence metrics (completed, partial, missed).
+
+5.5 Weekly Adaptation / Re-planning
+
+Endpoint: e.g. POST /api/training-plan/adjust
+
+Triggered weekly or on-demand.
+
+Inputs:
+
+Plan id.
+
+Summary of last week:
+
+Planned vs completed mileage and key workouts.
+
+User feedback (fatigue, RPE, injuries/illness).
+
+Any schedule changes (e.g. days available).
+
+Behavior:
+
+Build a compact “week summary” + “next planned weeks” context.
+
+Call LLM to adjust next 1–2 weeks (not entire plan).
+
+Validate against guardrails.
+
+Update the plan (modified weeks) and store “coach notes”.
+
+System should maintain a change history or at least track last adjusted date.
+
+5.6 User Interaction & UI
+
+UI must provide:
+
+Plan creation flow (goal, date, constraints, preview before saving).
+
+Calendar/week view:
+
+Planned workouts vs completed workouts (from Strava).
+
+Color-coding for done/partial/missed.
+
+Progress summary (e.g. weekly mileage, long runs completed).
+
+Plan insight panel:
+
+“Why this week looks like this” (coach notes).
+
+Adjustment actions:
+
+“I’m injured/tired” → triggers adjust endpoint.
+
+“I can only run 3 days next week” → triggers adjust.
+
+5.7 AI Coach Chat Integration (Nice-to-have v1.5+)
+
+Allow the chat to:
+
+Answer questions about the plan (“What’s my key workout this week?”).
+
+Explain rationale (“Why are we doing tempo runs?”).
+
+Suggest alternatives (“I can’t do my long run Sunday, what should I do?”).
+
+6. Non-Functional Requirements
+
+Performance
+
+Initial plan generation should complete within a few seconds (LLM call + validation).
+
+Weekly adjustment calls should be similarly fast.
+
+Reliability
+
+If LLM fails or returns invalid JSON, system must handle gracefully:
+
+Retry once or twice.
+
+If still failing, show user a friendly error and suggestion to retry later.
+
+Safety
+
+Hard constraints enforce sensible training load increases.
+
+System must avoid generating “crash” plans for unrealistic timelines (e.g., 0→marathon in 4 weeks).
+
+Explainability
+
+Store “coach notes” per week to explain changes and key workouts.
