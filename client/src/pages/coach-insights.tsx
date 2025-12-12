@@ -23,6 +23,13 @@ function getInjuryRiskColor(risk: string): string {
   }
 }
 
+function getEfficiencyLabel(efficiency: number): string {
+  if (efficiency >= 85) return "Excellent";
+  if (efficiency >= 70) return "Good";
+  if (efficiency >= 55) return "Fair";
+  return "Needs Work";
+}
+
 export default function CoachInsightsPage() {
   const { user, isLoading } = useAuth();
   
@@ -125,9 +132,9 @@ export default function CoachInsightsPage() {
             </div>
             {isDataLoading ? (
               <div className="h-5 bg-gray-100 rounded animate-pulse"></div>
-            ) : vo2Max?.currentVO2Max ? (
+            ) : vo2Max?.current ? (
               <p className="text-sm font-semibold text-charcoal">
-                VO₂ Max {vo2Max.currentVO2Max.toFixed(1)} · <span className="text-red-600">{vo2Max.category || 'Good'}</span>
+                VO₂ Max {vo2Max.current.toFixed(1)} · <span className="text-red-600">{vo2Max.comparison || 'Good'}</span>
               </p>
             ) : (
               <p className="text-sm text-gray-400">No data</p>
@@ -157,9 +164,9 @@ export default function CoachInsightsPage() {
             </div>
             {isDataLoading ? (
               <div className="h-5 bg-gray-100 rounded animate-pulse"></div>
-            ) : efficiency?.overallEfficiency ? (
+            ) : efficiency?.efficiency ? (
               <p className="text-sm font-semibold text-charcoal">
-                {Math.round(efficiency.overallEfficiency)}% · <span className="text-blue-600">{efficiency.efficiencyRating || 'Good'}</span>
+                {Math.round(efficiency.efficiency)}% · <span className="text-blue-600">{getEfficiencyLabel(efficiency.efficiency)}</span>
               </p>
             ) : (
               <p className="text-sm text-gray-400">No data</p>
