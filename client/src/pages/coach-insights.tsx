@@ -1,4 +1,4 @@
-import { Flame, Shield, Activity, Brain } from "lucide-react";
+import { Flame, Shield, Activity, Brain, Target, Heart, AlertTriangle, Gauge } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import AppHeader from "@/components/AppHeader";
@@ -8,15 +8,40 @@ import HeartRateZones from "@/components/dashboard/HeartRateZones";
 import InjuryRiskAnalysis from "@/components/dashboard/InjuryRiskAnalysis";
 import RunningEfficiency from "@/components/dashboard/RunningEfficiency";
 
+function getConfidenceText(confidence: number): string {
+  if (confidence >= 80) return "High";
+  if (confidence >= 60) return "Medium";
+  return "Low";
+}
+
+function getInjuryRiskColor(risk: string): string {
+  switch (risk?.toLowerCase()) {
+    case 'low': return 'text-emerald-600 bg-emerald-50 border-emerald-200';
+    case 'medium': return 'text-amber-600 bg-amber-50 border-amber-200';
+    case 'high': return 'text-red-600 bg-red-50 border-red-200';
+    default: return 'text-gray-600 bg-gray-50 border-gray-200';
+  }
+}
+
 export default function CoachInsightsPage() {
   const { user, isLoading } = useAuth();
   
-  const { data: batchData } = useQuery({
+  const { data: batchData, isLoading: isDataLoading } = useQuery({
     queryKey: ['/api/analytics/batch', user?.id],
     queryFn: () => fetch(`/api/analytics/batch/${user!.id}`).then(res => res.json()),
     enabled: !!user?.id,
     staleTime: 60000,
   });
+
+  const scrollToSection = (sectionId: string) => {
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Extract snapshot data
+  const topPrediction = batchData?.predictions?.[0];
+  const vo2Max = batchData?.vo2Max;
+  const injuryRisk = batchData?.injuryRisk;
+  const efficiency = batchData?.efficiency;
   
   if (isLoading) {
     return (
@@ -39,8 +64,8 @@ export default function CoachInsightsPage() {
       
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* Page Header */}
-        <div className="mb-8">
-          <div className="flex items-center space-x-3 mb-4">
+        <div className="mb-6">
+          <div className="flex items-center space-x-3 mb-2">
             <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
               <Brain className="text-white" size={20} />
             </div>
@@ -49,17 +74,108 @@ export default function CoachInsightsPage() {
               <p className="text-gray-600">AI-powered analysis of your running performance and health</p>
             </div>
           </div>
+
+          {/* Anchor Navigation Bar */}
+          <div className="flex items-center gap-4 mt-4" data-testid="anchor-nav">
+            <button
+              onClick={() => scrollToSection('section-engine')}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-100 to-red-100 hover:from-orange-200 hover:to-red-200 text-orange-700 font-medium text-sm transition-colors border border-orange-200"
+              data-testid="nav-engine"
+            >
+              <Flame size={14} />
+              The Engine
+            </button>
+            <span className="text-gray-400">•</span>
+            <button
+              onClick={() => scrollToSection('section-mechanics')}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-100 to-blue-100 hover:from-emerald-200 hover:to-blue-200 text-emerald-700 font-medium text-sm transition-colors border border-emerald-200"
+              data-testid="nav-mechanics"
+            >
+              <Shield size={14} />
+              The Mechanics
+            </button>
+          </div>
+        </div>
+
+        {/* Snapshot Row - TL;DR Chips */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8" data-testid="snapshot-row">
+          {/* Race Potential */}
+          <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <Target size={14} className="text-orange-500" />
+              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Race Potential</span>
+            </div>
+            {isDataLoading ? (
+              <div className="h-5 bg-gray-100 rounded animate-pulse"></div>
+            ) : topPrediction ? (
+              <p className="text-sm font-semibold text-charcoal">
+                {topPrediction.distance} · {topPrediction.predictedTime}
+                <span className="text-xs text-gray-500 ml-1">({getConfidenceText(topPrediction.confidence)} confidence)</span>
+              </p>
+            ) : (
+              <p className="text-sm text-gray-400">No data</p>
+            )}
+          </div>
+
+          {/* Fitness (VO2 Max) */}
+          <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <Heart size={14} className="text-red-500" />
+              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Fitness</span>
+            </div>
+            {isDataLoading ? (
+              <div className="h-5 bg-gray-100 rounded animate-pulse"></div>
+            ) : vo2Max?.currentVO2Max ? (
+              <p className="text-sm font-semibold text-charcoal">
+                VO₂ Max {vo2Max.currentVO2Max.toFixed(1)} · <span className="text-red-600">{vo2Max.category || 'Good'}</span>
+              </p>
+            ) : (
+              <p className="text-sm text-gray-400">No data</p>
+            )}
+          </div>
+
+          {/* Injury Risk */}
+          <div className={`rounded-lg border p-3 shadow-sm ${getInjuryRiskColor(injuryRisk?.riskLevel)}`}>
+            <div className="flex items-center gap-2 mb-1">
+              <AlertTriangle size={14} />
+              <span className="text-xs font-medium uppercase tracking-wide opacity-70">Injury Risk</span>
+            </div>
+            {isDataLoading ? (
+              <div className="h-5 bg-gray-100 rounded animate-pulse"></div>
+            ) : injuryRisk?.riskLevel ? (
+              <p className="text-sm font-semibold capitalize">{injuryRisk.riskLevel}</p>
+            ) : (
+              <p className="text-sm opacity-60">No data</p>
+            )}
+          </div>
+
+          {/* Efficiency */}
+          <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <Gauge size={14} className="text-blue-500" />
+              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Efficiency</span>
+            </div>
+            {isDataLoading ? (
+              <div className="h-5 bg-gray-100 rounded animate-pulse"></div>
+            ) : efficiency?.overallEfficiency ? (
+              <p className="text-sm font-semibold text-charcoal">
+                {Math.round(efficiency.overallEfficiency)}% · <span className="text-blue-600">{efficiency.efficiencyRating || 'Good'}</span>
+              </p>
+            ) : (
+              <p className="text-sm text-gray-400">No data</p>
+            )}
+          </div>
         </div>
 
         {/* Section 1: The Engine (Race Potential) - Orange/Red Theme */}
-        <section className="mb-12" data-testid="section-engine">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-              <Flame className="text-white" size={16} />
+        <section id="section-engine" className="mb-12 scroll-mt-24" data-testid="section-engine">
+          <div className="flex items-center space-x-4 mb-6 pb-4 border-b-2 border-orange-200">
+            <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-200">
+              <Flame className="text-white" size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-charcoal">The Engine</h2>
-              <p className="text-sm text-gray-500">Your race potential and cardiovascular power</p>
+              <h2 className="text-2xl font-bold text-charcoal">The Engine</h2>
+              <p className="text-base text-gray-500">Your race potential and cardiovascular power</p>
             </div>
           </div>
           
@@ -98,14 +214,14 @@ export default function CoachInsightsPage() {
         </div>
 
         {/* Section 2: The Mechanics (Form & Health) - Green/Blue Theme */}
-        <section className="mb-12" data-testid="section-mechanics">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full flex items-center justify-center">
-              <Shield className="text-white" size={16} />
+        <section id="section-mechanics" className="mb-12 scroll-mt-24" data-testid="section-mechanics">
+          <div className="flex items-center space-x-4 mb-6 pb-4 border-b-2 border-emerald-200">
+            <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200">
+              <Shield className="text-white" size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-charcoal">The Mechanics</h2>
-              <p className="text-sm text-gray-500">Your form stability and injury resilience</p>
+              <h2 className="text-2xl font-bold text-charcoal">The Mechanics</h2>
+              <p className="text-base text-gray-500">Your form stability and injury resilience</p>
             </div>
           </div>
           
