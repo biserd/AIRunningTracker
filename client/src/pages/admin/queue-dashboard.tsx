@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { useAuth } from "@/hooks/useAuth";
+import AppHeader from "@/components/AppHeader";
 
 interface MetricEvent {
   timestamp: string;
@@ -175,7 +176,8 @@ export default function QueueDashboard() {
   }
 
   return (
-    <>
+    <div className="min-h-screen bg-gray-50">
+      <AppHeader />
       <Helmet>
         <title>Queue Dashboard | Admin | RunAnalytics</title>
       </Helmet>
@@ -487,6 +489,6 @@ export default function QueueDashboard() {
           </CardContent>
         </Card>
       </div>
-    </>
+    </div>
   );
 }
