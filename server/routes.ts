@@ -20,7 +20,7 @@ import { validateAllShoes, getPipelineStats, findDuplicates, getShoeDataWithMeta
 import { z } from "zod";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { db } from "./db";
-import { sql, eq } from "drizzle-orm";
+import { sql, eq, isNull } from "drizzle-orm";
 import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getActivityHistoryLimit, RATE_LIMITS } from "./rateLimits";
 
 // Authentication middleware
@@ -4345,6 +4345,69 @@ ${allPages.map(page => `  <url>
     } catch (error: any) {
       console.error('Trial users error:', error);
       res.status(500).json({ message: error.message || "Failed to get trial users" });
+    }
+  });
+
+  // ============== WAITLIST LAUNCH EMAIL BLAST ==============
+  // Get count of pending launch emails
+  app.get("/api/admin/launch-emails/pending", authenticateAdmin, async (req: any, res) => {
+    try {
+      const pendingEmails = await db.select()
+        .from(emailWaitlist)
+        .where(isNull(emailWaitlist.launchEmailSentAt));
+      
+      res.json({
+        count: pendingEmails.length,
+        emails: pendingEmails.map(e => e.email)
+      });
+    } catch (error: any) {
+      console.error('Pending launch emails error:', error);
+      res.status(500).json({ message: error.message || "Failed to get pending emails" });
+    }
+  });
+
+  // Send launch announcement emails to all waitlist subscribers who haven't received it
+  app.post("/api/admin/send-launch-emails", authenticateAdmin, async (req: any, res) => {
+    try {
+      const pendingEmails = await db.select()
+        .from(emailWaitlist)
+        .where(isNull(emailWaitlist.launchEmailSentAt));
+
+      const results = {
+        sent: 0,
+        failed: 0,
+        errors: [] as string[]
+      };
+
+      for (const subscriber of pendingEmails) {
+        try {
+          const success = await emailService.sendLaunchAnnouncementEmail(subscriber.email);
+          if (success) {
+            // Mark as sent
+            await db.update(emailWaitlist)
+              .set({ launchEmailSentAt: new Date() })
+              .where(eq(emailWaitlist.id, subscriber.id));
+            results.sent++;
+            console.log(`📧 Launch email sent to ${subscriber.email}`);
+          } else {
+            results.failed++;
+            results.errors.push(`${subscriber.email}: Send failed`);
+          }
+        } catch (err: any) {
+          results.failed++;
+          results.errors.push(`${subscriber.email}: ${err.message}`);
+        }
+      }
+
+      console.log(`[Launch Emails] Sent: ${results.sent}, Failed: ${results.failed}`);
+      res.json({
+        success: true,
+        totalPending: pendingEmails.length,
+        ...results
+      });
+    } catch (error: any) {
+      console.error('Launch email error:', error);
+      res.status(500).json({ message: error.message || "Failed to send launch emails" });
     }
   });
 
