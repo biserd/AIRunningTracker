@@ -20,10 +20,14 @@ import {
 interface YearlyStats {
   totalRuns: number;
   totalDistanceMiles: number;
+  totalDistanceKm: number;
   totalTimeSeconds: number;
   longestRunMiles: number;
+  longestRunKm: number;
   fastestPaceMinPerKm: number;
+  fastestPaceMinPerMile: number;
   totalElevationFeet: number;
+  totalElevationMeters: number;
   mostActiveMonth: string;
   mostActiveMonthRuns: number;
   streakDays: number;
@@ -50,6 +54,7 @@ interface YearRecapInfographicProps {
   percentile?: number;
   aiInsights?: string[];
   favoriteDay?: { day: string; count: number };
+  unitPreference?: 'km' | 'miles';
 }
 
 export interface YearRecapInfographicRef {
@@ -68,8 +73,9 @@ function formatHours(seconds: number): number {
 }
 
 const YearRecapInfographic = forwardRef<YearRecapInfographicRef, YearRecapInfographicProps>(
-  ({ stats, userName, year, percentile = 29, aiInsights = [], favoriteDay }, ref) => {
+  ({ stats, userName, year, percentile = 29, aiInsights = [], favoriteDay, unitPreference = 'km' }, ref) => {
     const infographicRef = useRef<HTMLDivElement>(null);
+    const isMetric = unitPreference === 'km';
 
     useImperativeHandle(ref, () => ({
       generateImage: async () => {
@@ -88,7 +94,12 @@ const YearRecapInfographic = forwardRef<YearRecapInfographicRef, YearRecapInfogr
     }));
 
     const hours = formatHours(stats.totalTimeSeconds);
-    const fastestPace = formatPace(stats.fastestPaceMinPerKm);
+    const fastestPace = formatPace(isMetric ? stats.fastestPaceMinPerKm : stats.fastestPaceMinPerMile);
+    const totalDistance = isMetric ? stats.totalDistanceKm : stats.totalDistanceMiles;
+    const longestRun = isMetric ? (stats.longestRunKm || stats.longestRunMiles * 1.60934) : stats.longestRunMiles;
+    const distanceUnit = isMetric ? 'km' : 'mi';
+    const elevationValue = isMetric ? Math.round(stats.totalElevationMeters || stats.totalElevationFeet * 0.3048) : Math.round(stats.totalElevationFeet);
+    const elevationUnit = isMetric ? 'm' : 'ft';
 
     return (
       <div
@@ -110,8 +121,8 @@ const YearRecapInfographic = forwardRef<YearRecapInfographicRef, YearRecapInfogr
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 text-center">
             <MapPin className="w-5 h-5 mx-auto mb-1 opacity-80" />
-            <p className="text-3xl font-bold">{stats.totalDistanceMiles.toFixed(1)}</p>
-            <p className="text-sm opacity-80">mi</p>
+            <p className="text-3xl font-bold">{totalDistance.toFixed(1)}</p>
+            <p className="text-sm opacity-80">{distanceUnit}</p>
           </div>
           <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 text-center">
             <Activity className="w-5 h-5 mx-auto mb-1 opacity-80" />
@@ -125,18 +136,18 @@ const YearRecapInfographic = forwardRef<YearRecapInfographicRef, YearRecapInfogr
           </div>
           <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 text-center">
             <TrendingUp className="w-5 h-5 mx-auto mb-1 opacity-80" />
-            <p className="text-3xl font-bold">{stats.longestRunMiles.toFixed(1)}</p>
-            <p className="text-sm opacity-80">longest mi</p>
+            <p className="text-3xl font-bold">{longestRun.toFixed(1)}</p>
+            <p className="text-sm opacity-80">longest {distanceUnit}</p>
           </div>
         </div>
 
-        {stats.totalElevationFeet > 0 && (
+        {elevationValue > 0 && (
           <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 mb-3">
             <div className="flex items-center gap-3">
               <Mountain className="w-5 h-5 opacity-80" />
               <div>
                 <p className="text-xs opacity-70 uppercase tracking-wide">Total Elevation</p>
-                <p className="text-xl font-bold">{Math.round(stats.totalElevationFeet).toLocaleString()} ft</p>
+                <p className="text-xl font-bold">{elevationValue.toLocaleString()} {elevationUnit}</p>
               </div>
             </div>
           </div>
@@ -147,7 +158,7 @@ const YearRecapInfographic = forwardRef<YearRecapInfographicRef, YearRecapInfogr
             <Zap className="w-5 h-5 opacity-80" />
             <div>
               <p className="text-xs opacity-70 uppercase tracking-wide">Fastest Pace</p>
-              <p className="text-xl font-bold">{fastestPace} /km</p>
+              <p className="text-xl font-bold">{fastestPace} /{distanceUnit}</p>
             </div>
           </div>
         </div>

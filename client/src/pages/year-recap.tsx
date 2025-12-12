@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getQueryFn } from "@/lib/queryClient";
+import type { DashboardData } from "@/lib/api";
 import { 
   Activity, 
   Download, 
@@ -65,6 +66,14 @@ export default function YearRecapPage() {
   const currentYear = new Date().getFullYear();
   const selectedYear = currentYear.toString();
   const infographicRef = useRef<YearRecapInfographicRef>(null);
+
+  const { data: dashboardData } = useQuery<DashboardData>({
+    queryKey: [`/api/dashboard/${user?.id}`],
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: !!user?.id,
+  });
+
+  const unitPreference = (dashboardData?.user?.unitPreference || 'km') as 'km' | 'miles';
 
   const { data: stats, isLoading: statsLoading } = useQuery<YearlyStats>({
     queryKey: ['/api/year-recap', user?.id, 'stats', selectedYear],
@@ -183,6 +192,7 @@ export default function YearRecapPage() {
               percentile={stats.percentile || 29}
               aiInsights={stats.aiInsights || []}
               favoriteDay={stats.favoriteDay}
+              unitPreference={unitPreference}
             />
 
             <div className="flex gap-3">

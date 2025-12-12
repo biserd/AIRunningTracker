@@ -10,6 +10,7 @@ export interface YearlyStats {
   totalElevationFeet: number;
   longestRunMeters: number;
   longestRunMiles: number;
+  longestRunKm: number;
   fastestPaceMinPerMile: number;
   fastestPaceMinPerKm: number;
   averagePaceMinPerMile: number;
@@ -60,6 +61,7 @@ export function calculateYearlyStats(activities: Activity[], year: number): Year
       totalElevationFeet: 0,
       longestRunMeters: 0,
       longestRunMiles: 0,
+      longestRunKm: 0,
       fastestPaceMinPerMile: 0,
       fastestPaceMinPerKm: 0,
       averagePaceMinPerMile: 0,
@@ -211,6 +213,7 @@ export function calculateYearlyStats(activities: Activity[], year: number): Year
     totalElevationFeet: totalElevationMeters * 3.28084,
     longestRunMeters: longestRun.distance,
     longestRunMiles: longestRun.distance / 1609.34,
+    longestRunKm: longestRun.distance / 1000,
     fastestPaceMinPerMile: fastestPace / 60,
     fastestPaceMinPerKm: (fastestPace / 60) / 1.60934,
     averagePaceMinPerMile: avgPaceSeconds / 60,
