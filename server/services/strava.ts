@@ -6,6 +6,7 @@ interface StravaActivity {
   name: string;
   distance: number;
   moving_time: number;
+  elapsed_time?: number;
   total_elevation_gain: number;
   average_speed: number;
   max_speed: number;
@@ -13,6 +14,7 @@ interface StravaActivity {
   max_heartrate?: number;
   start_date: string;
   type: string;
+  sport_type?: string;
   // Additional Strava fields
   calories?: number;
   average_cadence?: number;
@@ -28,6 +30,15 @@ interface StravaActivity {
   average_temp?: number;
   has_heartrate?: boolean;
   device_watts?: boolean;
+  // New fields for enhanced analysis
+  workout_type?: number;
+  pr_count?: number;
+  photo_count?: number;
+  athlete_count?: number;
+  timezone?: string;
+  gear_id?: string;
+  elev_high?: number;
+  elev_low?: number;
   map?: {
     id: string;
     polyline: string;
@@ -416,12 +427,22 @@ export class StravaService {
               endLatitude: stravaActivity.end_latlng?.[0] || null,
               endLongitude: stravaActivity.end_latlng?.[1] || null,
               polyline: stravaActivity.map?.summary_polyline || null,
-              detailedPolyline: null, // No longer fetching detailed polyline
+              detailedPolyline: null,
               streamsData: streams ? JSON.stringify(streams) : null,
               lapsData: laps && laps.length > 0 ? JSON.stringify(laps) : null,
               averageTemp: stravaActivity.average_temp || null,
               hasHeartrate: stravaActivity.has_heartrate || false,
               deviceWatts: stravaActivity.device_watts || false,
+              // New fields from Strava summary API
+              elapsedTime: stravaActivity.elapsed_time || null,
+              workoutType: stravaActivity.workout_type ?? null,
+              prCount: stravaActivity.pr_count || 0,
+              photoCount: stravaActivity.photo_count || 0,
+              athleteCount: stravaActivity.athlete_count || 1,
+              timezone: stravaActivity.timezone || null,
+              gearId: stravaActivity.gear_id || null,
+              elevHigh: stravaActivity.elev_high || null,
+              elevLow: stravaActivity.elev_low || null,
             });
             
             syncedCount++;

@@ -86,6 +86,16 @@ export const activities = pgTable("activities", {
   averageTemp: real("average_temp"), // celsius
   hasHeartrate: boolean("has_heartrate").default(false),
   deviceWatts: boolean("device_watts").default(false),
+  // New fields from Strava summary API
+  elapsedTime: integer("elapsed_time"), // Total time including stops (seconds)
+  workoutType: integer("workout_type"), // Strava workout type (0=default, 1=race, 2=long run, 3=workout, etc.)
+  prCount: integer("pr_count").default(0), // Personal records achieved in this activity
+  photoCount: integer("photo_count").default(0), // Number of photos attached
+  athleteCount: integer("athlete_count").default(1), // Number of athletes (group runs)
+  timezone: text("timezone"), // Activity timezone
+  gearId: text("gear_id"), // Strava gear ID (for shoe tracking)
+  elevHigh: real("elev_high"), // Highest elevation point (meters)
+  elevLow: real("elev_low"), // Lowest elevation point (meters)
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
   userIdIdx: index("activities_user_id_idx").on(table.userId),

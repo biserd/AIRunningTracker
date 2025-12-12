@@ -271,6 +271,16 @@ class JobQueue {
         endLatitude: activity.end_latlng?.[0] ?? null,
         endLongitude: activity.end_latlng?.[1] ?? null,
         polyline: activity.map?.summary_polyline || null,
+        // New fields from Strava summary API
+        elapsedTime: activity.elapsed_time || null,
+        workoutType: activity.workout_type ?? null,
+        prCount: activity.pr_count || 0,
+        photoCount: activity.photo_count || 0,
+        athleteCount: activity.athlete_count || 1,
+        timezone: activity.timezone || null,
+        gearId: activity.gear_id || null,
+        elevHigh: activity.elev_high || null,
+        elevLow: activity.elev_low || null,
       });
 
       newJobs.push({
