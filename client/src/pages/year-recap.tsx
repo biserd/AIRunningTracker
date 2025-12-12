@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -65,12 +64,10 @@ export default function YearRecapPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const currentYear = new Date().getFullYear();
-  const [selectedYear, setSelectedYear] = useState(currentYear.toString());
+  const selectedYear = currentYear.toString();
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const infographicRef = useRef<YearRecapInfographicRef>(null);
-
-  const availableYears = Array.from({ length: 5 }, (_, i) => (currentYear - i).toString());
 
   const { data: stats, isLoading: statsLoading } = useQuery<YearlyStats>({
     queryKey: ['/api/year-recap', user?.id, 'stats', selectedYear],
@@ -79,11 +76,6 @@ export default function YearRecapPage() {
     },
     enabled: !!user?.id,
   });
-
-  const handleYearChange = (year: string) => {
-    setSelectedYear(year);
-    setGeneratedImage(null);
-  };
 
   const handleGenerateImage = async () => {
     if (!infographicRef.current) return;
@@ -185,26 +177,13 @@ export default function YearRecapPage() {
       <AppHeader />
       
       <div className="container mx-auto py-8 px-4 max-w-4xl min-h-screen">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-purple-600 bg-clip-text text-transparent">
-              Your {selectedYear} Running Year
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Create a personalized infographic to share your achievements
-            </p>
-          </div>
-          
-          <Select value={selectedYear} onValueChange={handleYearChange}>
-            <SelectTrigger className="w-32" data-testid="select-year">
-              <SelectValue placeholder="Select year" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableYears.map((year) => (
-                <SelectItem key={year} value={year}>{year}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-purple-600 bg-clip-text text-transparent">
+            Your {selectedYear} Running Year
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Create a personalized infographic to share your achievements
+          </p>
         </div>
 
         {statsLoading ? (
