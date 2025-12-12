@@ -1,16 +1,15 @@
-import { useState, useRef } from "react";
+import { useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { 
   Activity, 
   Download, 
-  Share2, 
-  Sparkles
+  Share2
 } from "lucide-react";
 import { Helmet } from "react-helmet";
 import AppHeader from "@/components/AppHeader";
@@ -65,8 +64,6 @@ export default function YearRecapPage() {
   const { toast } = useToast();
   const currentYear = new Date().getFullYear();
   const selectedYear = currentYear.toString();
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
   const infographicRef = useRef<YearRecapInfographicRef>(null);
 
   const { data: stats, isLoading: statsLoading } = useQuery<YearlyStats>({
@@ -77,45 +74,33 @@ export default function YearRecapPage() {
     enabled: !!user?.id,
   });
 
-  const handleGenerateImage = async () => {
+  const handleDownload = async () => {
     if (!infographicRef.current) return;
     
-    setIsGenerating(true);
     try {
       const dataUrl = await infographicRef.current.generateImage();
-      setGeneratedImage(dataUrl);
-      toast({
-        title: "Image Generated!",
-        description: "Your Year in Running infographic is ready to download and share.",
-      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `RunAnalytics-${selectedYear}-Recap.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } catch (error) {
-      console.error("Image generation error:", error);
+      console.error("Download error:", error);
       toast({
-        title: "Generation Failed",
-        description: "Failed to generate infographic. Please try again.",
+        title: "Download Failed",
+        description: "Failed to generate image. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsGenerating(false);
     }
   };
 
-  const handleDownload = () => {
-    if (!generatedImage) return;
-    
-    const link = document.createElement('a');
-    link.href = generatedImage;
-    link.download = `RunAnalytics-${selectedYear}-Recap.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   const handleShare = async () => {
-    if (!generatedImage) return;
+    if (!infographicRef.current) return;
 
     try {
-      const response = await fetch(generatedImage);
+      const dataUrl = await infographicRef.current.generateImage();
+      const response = await fetch(dataUrl);
       const blob = await response.blob();
       const file = new File([blob], `RunAnalytics-${selectedYear}-Recap.png`, { type: 'image/png' });
 
@@ -189,84 +174,35 @@ export default function YearRecapPage() {
         {statsLoading ? (
           <Skeleton className="h-64 w-full" />
         ) : stats && stats.totalRuns > 0 ? (
-          <div className="grid md:grid-cols-2 gap-8 items-start">
-            <div className="flex justify-center">
-              <YearRecapInfographic
-                ref={infographicRef}
-                stats={stats}
-                userName={user.firstName || user.username || "Runner"}
-                year={parseInt(selectedYear)}
-                percentile={stats.percentile || 29}
-                aiInsights={stats.aiInsights || []}
-                favoriteDay={stats.favoriteDay}
-              />
-            </div>
+          <div className="flex flex-col items-center gap-6">
+            <YearRecapInfographic
+              ref={infographicRef}
+              stats={stats}
+              userName={user.firstName || user.username || "Runner"}
+              year={parseInt(selectedYear)}
+              percentile={stats.percentile || 29}
+              aiInsights={stats.aiInsights || []}
+              favoriteDay={stats.favoriteDay}
+            />
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-purple-500" />
-                  Generate Your Infographic
-                </CardTitle>
-                <CardDescription>
-                  Create a beautiful infographic featuring your running highlights
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {!generatedImage ? (
-                  <div className="flex flex-col gap-4">
-                    <p className="text-muted-foreground">
-                      Click the button below to generate a high-quality image of your {selectedYear} running recap. 
-                      Perfect for sharing on social media!
-                    </p>
-                    <Button 
-                      size="lg"
-                      onClick={handleGenerateImage}
-                      disabled={isGenerating}
-                      className="bg-gradient-to-r from-orange-500 to-purple-600 hover:from-orange-600 hover:to-purple-700 w-full"
-                      data-testid="button-generate-image"
-                    >
-                      {isGenerating ? (
-                        <>
-                          <Sparkles className="mr-2 h-4 w-4 animate-spin" />
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="mr-2 h-4 w-4" />
-                          Generate Image
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-4">
-                    <p className="text-green-600 dark:text-green-400 font-medium">
-                      ✓ Your infographic is ready!
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <Button 
-                        onClick={handleDownload}
-                        variant="outline"
-                        className="flex-1"
-                        data-testid="button-download"
-                      >
-                        <Download className="mr-2 h-4 w-4" />
-                        Download
-                      </Button>
-                      <Button 
-                        onClick={handleShare}
-                        className="bg-gradient-to-r from-orange-500 to-purple-600 flex-1"
-                        data-testid="button-share"
-                      >
-                        <Share2 className="mr-2 h-4 w-4" />
-                        Share
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <div className="flex gap-3">
+              <Button 
+                onClick={handleDownload}
+                variant="outline"
+                data-testid="button-download"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Download
+              </Button>
+              <Button 
+                onClick={handleShare}
+                className="bg-gradient-to-r from-orange-500 to-purple-600"
+                data-testid="button-share"
+              >
+                <Share2 className="mr-2 h-4 w-4" />
+                Share
+              </Button>
+            </div>
           </div>
         ) : (
           <Card className="text-center py-12">
