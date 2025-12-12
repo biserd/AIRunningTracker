@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, ArrowRight, Brain, TrendingUp, BarChart } from "lucide-react";
+import { Calendar, Clock, ArrowRight, Brain, TrendingUp, BarChart, Target } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
@@ -18,6 +18,16 @@ interface BlogPost {
 }
 
 const blogPosts: BlogPost[] = [
+  {
+    slug: "how-to-pick-a-training-plan",
+    title: "How to Pick a Training Plan: Complete Guide",
+    description: "Learn how to choose the right training plan for your running goals. Discover why AI-personalized plans outperform generic schedules.",
+    date: "December 12, 2025",
+    readTime: "15 min read",
+    category: "Training Plans",
+    icon: Target,
+    gradient: "from-green-500 to-emerald-600"
+  },
   {
     slug: "ai-running-coach-complete-guide-2025",
     title: "AI Running Coach: Complete Guide 2025",
