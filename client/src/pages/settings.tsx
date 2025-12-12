@@ -507,14 +507,14 @@ function SettingsPageContent() {
                 )}
               </CardTitle>
               <CardDescription>
-                Manually sync up to 100 activities from your Strava account
+                Manually sync up to 200 activities from your Strava account
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {canAccessUnlimitedHistory ? (
                 <div>
                   <p className="text-sm text-gray-600 mb-2">
-                    By default, we import your last 100 activities when you connect Strava. 
+                    By default, we import your last 200 activities when you connect Strava. 
                     Use this button to sync your latest activities and update your training data.
                   </p>
                   
@@ -596,7 +596,7 @@ function SettingsPageContent() {
                     data-testid="button-sync-activities"
                   >
                     <RefreshCw className={`h-4 w-4 ${syncProgress?.status === 'syncing' ? 'animate-spin' : ''}`} />
-                    {syncProgress?.status === 'syncing' ? "Syncing..." : "Sync 100 Activities"}
+                    {syncProgress?.status === 'syncing' ? "Syncing..." : "Sync 200 Activities"}
                   </Button>
                   {dashboardData?.user?.lastSyncAt && !syncProgress && (
                     <p className="text-xs text-gray-500 mt-2">
@@ -611,7 +611,7 @@ function SettingsPageContent() {
                   </div>
                   <h3 className="font-semibold text-lg mb-2">Pro Feature</h3>
                   <p className="text-sm text-gray-600 mb-4 max-w-md mx-auto">
-                    Sync up to 100 Strava activities at once to get comprehensive training history and more accurate AI insights.
+                    Sync up to 200 Strava activities at once to get comprehensive training history and more accurate AI insights.
                   </p>
                   <Button 
                     onClick={() => setLocation('/pricing')}

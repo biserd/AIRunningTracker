@@ -974,7 +974,7 @@ ${allPages.map(page => `  <url>
       return res.status(403).json({ message: "Access denied" });
     }
     
-    // Check subscription for 100 activity sync
+    // Check subscription for extended activity sync
     const user = await storage.getUser(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -997,14 +997,14 @@ ${allPages.map(page => `  <url>
       
       if (!hasPaidAccess && !isInReverseTrial) {
         return res.status(403).json({ 
-          message: "Syncing 100 activities requires a Pro or Premium subscription",
+          message: "Extended sync requires a Pro or Premium subscription",
           upgradeRequired: true
         });
       }
     }
     
-    // Clamp maxActivities to prevent abuse
-    maxActivities = Math.max(1, Math.min(100, maxActivities));
+    // Clamp maxActivities to prevent abuse (200 max with queue-based rate limiting)
+    maxActivities = Math.max(1, Math.min(200, maxActivities));
     
     // Generate cryptographically random nonce (NOT a JWT)
     const crypto = await import('crypto');
@@ -3155,7 +3155,7 @@ ${allPages.map(page => `  <url>
   app.post("/api/strava/sync-activities", authenticateJWT, async (req: any, res) => {
     try {
       const userId = req.user!.id;
-      const { maxActivities = 100 } = req.body;
+      const { maxActivities = 200 } = req.body;
 
       const user = await storage.getUser(userId);
       if (!user || !user.stravaConnected) {
@@ -3177,7 +3177,7 @@ ${allPages.map(page => `  <url>
       
       if (!hasPaidAccess && !isInReverseTrial) {
         return res.status(403).json({ 
-          message: "Syncing 100 activities requires a Pro or Premium subscription",
+          message: "Extended sync requires a Pro or Premium subscription",
           upgradeRequired: true
         });
       }
