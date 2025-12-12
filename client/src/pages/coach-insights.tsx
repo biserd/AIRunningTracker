@@ -187,19 +187,15 @@ export default function CoachInsightsPage() {
           </div>
           
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-            {/* Race Predictions - Primary */}
-            <div className="xl:col-span-1">
+            {/* Left Column: Race Predictions + Heart Rate Zones */}
+            <div className="space-y-6">
               <RacePredictions userId={user.id} batchData={batchData} />
+              <HeartRateZones userId={user.id} batchData={batchData} />
             </div>
             
-            {/* VO2 Max Tracker */}
+            {/* Right Column: VO2 Max Tracker */}
             <div className="xl:col-span-1">
               <VO2MaxTracker userId={user.id} batchData={batchData} />
-            </div>
-            
-            {/* Heart Rate Zones - Full Width */}
-            <div className="xl:col-span-2">
-              <HeartRateZones userId={user.id} batchData={batchData} />
             </div>
           </div>
         </section>
