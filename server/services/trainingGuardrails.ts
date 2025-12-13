@@ -48,6 +48,7 @@ export interface CorrectionAction {
 export interface GuardrailConfig {
   maxWeeklyMileageIncreasePercent: number; // Default 10-15%
   maxLongRunPercentOfWeekly: number; // Default 30-35%
+  maxLongRunIncreasePercent: number; // Max long run increase per week
   recoveryWeekFrequency: number; // Every N weeks
   recoveryWeekReduction: number; // Reduce by X%
   taperWeeksMarathon: number;
@@ -55,11 +56,21 @@ export interface GuardrailConfig {
   taperWeeks10k: number;
   minRestDaysPerWeek: number;
   maxHardWorkoutsPerWeek: number;
+  peakLongRunPercentOfRace: number; // 90% of race distance
 }
+
+// Race distances in km
+const RACE_DISTANCES_KM = {
+  marathon: 42.195,
+  half_marathon: 21.0975,
+  "10k": 10,
+  "5k": 5,
+};
 
 const DEFAULT_CONFIG: GuardrailConfig = {
   maxWeeklyMileageIncreasePercent: 12, // Conservative 10-15%
   maxLongRunPercentOfWeekly: 32, // 30-35% of weekly mileage
+  maxLongRunIncreasePercent: 15, // Max 15% long run increase per week
   recoveryWeekFrequency: 4, // Every 4 weeks
   recoveryWeekReduction: 25, // Reduce by 25%
   taperWeeksMarathon: 3,
@@ -67,6 +78,7 @@ const DEFAULT_CONFIG: GuardrailConfig = {
   taperWeeks10k: 1,
   minRestDaysPerWeek: 1,
   maxHardWorkoutsPerWeek: 3,
+  peakLongRunPercentOfRace: 90, // Peak long run should be 90% of race distance
 };
 
 export class TrainingGuardrails {
@@ -116,6 +128,14 @@ export class TrainingGuardrails {
     
     // 6. Check for unrealistic timeline
     this.validateTimeline(correctedPlan, profile, goalType, raceDate, validation);
+    
+    // 7. Validate peak long run reaches 90% of race distance (marathon/half marathon)
+    if (goalType === "marathon" || goalType === "half_marathon") {
+      this.validatePeakLongRun(correctedPlan, goalType, validation);
+    }
+    
+    // 8. Validate gradual long run build-up
+    this.validateLongRunProgression(correctedPlan, validation);
     
     // Set overall validity
     validation.valid = validation.errors.length === 0;
@@ -411,6 +431,127 @@ export class TrainingGuardrails {
       validation.warnings.push(
         `Current baseline (${baseMileage}km/week) is low for half marathon training. Consider building base first.`
       );
+    }
+  }
+  
+  /**
+   * Validate that peak long run reaches 90% of race distance for marathon/half marathon
+   */
+  private validatePeakLongRun(
+    plan: GeneratedPlan,
+    goalType: string,
+    validation: ValidationResult
+  ): void {
+    const raceDistanceKm = RACE_DISTANCES_KM[goalType as keyof typeof RACE_DISTANCES_KM];
+    if (!raceDistanceKm) return;
+    
+    const requiredPeakLongRunKm = raceDistanceKm * (this.config.peakLongRunPercentOfRace / 100);
+    
+    // Find peak long run across all non-taper weeks
+    let maxLongRunKm = 0;
+    let peakWeekNumber = 0;
+    
+    for (const week of plan.weeks) {
+      if (week.weekType === "taper") continue;
+      
+      for (const day of week.days) {
+        if (day.workoutType === "long_run" && day.plannedDistanceKm) {
+          if (day.plannedDistanceKm > maxLongRunKm) {
+            maxLongRunKm = day.plannedDistanceKm;
+            peakWeekNumber = week.weekNumber;
+          }
+        }
+      }
+    }
+    
+    if (maxLongRunKm < requiredPeakLongRunKm) {
+      const shortfall = requiredPeakLongRunKm - maxLongRunKm;
+      validation.errors.push(
+        `Peak long run (${maxLongRunKm.toFixed(1)}km) is below the required ${this.config.peakLongRunPercentOfRace}% of ${goalType.replace("_", " ")} distance (${requiredPeakLongRunKm.toFixed(1)}km). Shortfall: ${shortfall.toFixed(1)}km.`
+      );
+      
+      // Attempt to correct: find the peak week and increase the long run
+      const peakWeek = plan.weeks.find(w => w.weekType === "peak") || 
+                       plan.weeks.find(w => w.weekNumber === peakWeekNumber);
+      
+      if (peakWeek) {
+        const longRunDay = peakWeek.days.find(d => d.workoutType === "long_run");
+        if (longRunDay) {
+          const originalDistance = longRunDay.plannedDistanceKm || 0;
+          longRunDay.plannedDistanceKm = Math.round(requiredPeakLongRunKm * 10) / 10;
+          
+          // Calculate minimum weekly total to keep long run at max 32% of weekly
+          const minWeeklyForLongRun = requiredPeakLongRunKm / (this.config.maxLongRunPercentOfWeekly / 100);
+          const newWeeklyTotal = Math.max(peakWeek.plannedDistanceKm, minWeeklyForLongRun);
+          
+          // Add the extra mileage to an easy run if needed
+          const addedWeeklyDistance = newWeeklyTotal - peakWeek.plannedDistanceKm;
+          if (addedWeeklyDistance > 0) {
+            const easyRun = peakWeek.days.find(d => d.workoutType === "easy" && d.plannedDistanceKm);
+            if (easyRun && easyRun.plannedDistanceKm) {
+              easyRun.plannedDistanceKm = Math.round((easyRun.plannedDistanceKm + addedWeeklyDistance) * 10) / 10;
+            }
+          }
+          
+          peakWeek.plannedDistanceKm = Math.round(newWeeklyTotal * 10) / 10;
+          
+          validation.corrections.push({
+            type: "extend_plan",
+            weekNumber: peakWeek.weekNumber,
+            originalValue: originalDistance,
+            correctedValue: requiredPeakLongRunKm,
+            reason: `Increased peak long run to ${requiredPeakLongRunKm.toFixed(1)}km (90% of race distance), weekly total adjusted to ${newWeeklyTotal.toFixed(1)}km`,
+          });
+        }
+      }
+    }
+  }
+  
+  /**
+   * Validate gradual long run progression (max 10-15% increase per week)
+   * Only compares build weeks to previous build weeks (skips recovery/taper)
+   */
+  private validateLongRunProgression(
+    plan: GeneratedPlan,
+    validation: ValidationResult
+  ): void {
+    let previousBuildLongRunKm: number | null = null;
+    
+    for (const week of plan.weeks) {
+      // Skip recovery and taper weeks - don't use them as comparison baseline
+      if (week.weekType === "recovery" || week.weekType === "taper") {
+        continue;
+      }
+      
+      const longRunDay = week.days.find(d => d.workoutType === "long_run");
+      if (!longRunDay?.plannedDistanceKm) continue;
+      
+      const currentLongRunKm = longRunDay.plannedDistanceKm;
+      
+      // Only compare to previous build week's long run
+      if (previousBuildLongRunKm !== null && previousBuildLongRunKm > 0) {
+        const increasePercent = ((currentLongRunKm - previousBuildLongRunKm) / previousBuildLongRunKm) * 100;
+        
+        if (increasePercent > this.config.maxLongRunIncreasePercent) {
+          const maxAllowedKm: number = previousBuildLongRunKm * (1 + this.config.maxLongRunIncreasePercent / 100);
+          
+          validation.corrections.push({
+            type: "reduce_long_run",
+            weekNumber: week.weekNumber,
+            originalValue: currentLongRunKm,
+            correctedValue: Math.round(maxAllowedKm * 10) / 10,
+            reason: `Long run increase of ${increasePercent.toFixed(0)}% exceeds max ${this.config.maxLongRunIncreasePercent}%`,
+          });
+          
+          // Apply correction
+          const reduction = maxAllowedKm - currentLongRunKm;
+          longRunDay.plannedDistanceKm = Math.round(maxAllowedKm * 10) / 10;
+          week.plannedDistanceKm = Math.round((week.plannedDistanceKm + reduction) * 10) / 10;
+        }
+      }
+      
+      // Only update baseline from build weeks (not recovery/taper)
+      previousBuildLongRunKm = longRunDay.plannedDistanceKm;
     }
   }
   
