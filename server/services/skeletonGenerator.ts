@@ -185,7 +185,10 @@ function buildWeeklyTargetsKm(
     consistency === "medium" ? 1.0 : 1.0;
 
   const baseWeeklyKm = profile.baselineWeeklyMileageKm || 20;
-  const startKm = Math.max(10, baseWeeklyKm * consistencyFactor);
+  // Week 1 should start at ~85% of baseline to allow adjustment to new training structure
+  // This prevents an aggressive start and gives the body time to adapt
+  const week1Factor = 0.85;
+  const startKm = Math.max(10, baseWeeklyKm * consistencyFactor * week1Factor);
   const peakKm = getTargetPeakMileage(settings.goalType as GoalType, baseWeeklyKm);
 
   const targets: number[] = [];
@@ -240,7 +243,11 @@ function buildScheduleTemplate(
     });
     return normalizedPreferred.includes(d);
   });
-  const runDays = preferred.slice(0, settings.daysPerWeek);
+  
+  // Enforce maximum 5-6 running days to ensure 1-2 rest days per week
+  // Even if user selects 7 days, cap at 6 to prevent overtraining
+  const maxRunDays = Math.min(settings.daysPerWeek, 6);
+  const runDays = preferred.slice(0, maxRunDays);
 
   const normalizedLongRunDay = (() => {
     const lower = settings.preferredLongRunDay.toLowerCase();
@@ -366,6 +373,52 @@ function computeQualityLevel(
       return 3;
     default:
       return 2;
+  }
+}
+
+function generateWeekCoachNotes(
+  weekType: WeekType,
+  weekNumber: number,
+  totalWeeks: number,
+  qualityLevel: 1 | 2 | 3 | 4 | 5,
+  goalType: GoalType
+): string {
+  const goalLabel = goalType === "5k" ? "5K" :
+    goalType === "10k" ? "10K" :
+    goalType === "half_marathon" ? "half marathon" :
+    goalType === "marathon" ? "marathon" : "fitness";
+
+  switch (weekType) {
+    case "base":
+      if (weekNumber === 1) {
+        return `Week 1: Foundation Building - This opening week establishes your training rhythm. Focus on finding your easy pace and getting comfortable with the schedule. Don't push too hard—consistency matters more than intensity right now.`;
+      }
+      return `Week ${weekNumber}: Base Development - Continue building your aerobic foundation. Keep runs conversational and prioritize proper form. Your body is adapting to the training load.`;
+    
+    case "build":
+      if (qualityLevel === 3) {
+        return `Week ${weekNumber}: Progressive Build - You're in the growth phase now. Workouts are getting more structured. Pay attention to how your body responds to the increased intensity and volume.`;
+      }
+      return `Week ${weekNumber}: Intensive Build - This is challenging training with higher quality sessions. Trust the process and nail your key workouts. Recovery between hard sessions is crucial.`;
+    
+    case "peak":
+      return `Week ${weekNumber}: Peak Training - This is your highest training load week. You've built up to this—embrace the challenge. After this week, you'll begin tapering for race day. Push yourself but stay smart.`;
+    
+    case "recovery":
+      return `Week ${weekNumber}: Recovery Week - A planned lower-volume week to let your body absorb recent training adaptations. Keep the effort easy—this is where fitness gains actually happen. Don't skip this!`;
+    
+    case "taper":
+      const weeksToRace = totalWeeks - weekNumber;
+      if (weeksToRace === 0) {
+        return `Week ${weekNumber}: Race Week - The hay is in the barn! Trust your training. Light shakeout runs only, plenty of sleep, and stay off your feet. Visualize your ${goalLabel} success.`;
+      }
+      if (weeksToRace === 1) {
+        return `Week ${weekNumber}: Final Taper - One week to go! Reduce volume significantly while maintaining some intensity. Focus on rest, nutrition, and mental preparation for your ${goalLabel}.`;
+      }
+      return `Week ${weekNumber}: Taper Phase - Begin reducing training load. Your body needs time to fully recover and peak on race day. Maintain quality in shorter sessions while cutting overall volume.`;
+    
+    default:
+      return `Week ${weekNumber}: Training continues. Stay consistent and listen to your body.`;
   }
 }
 
@@ -742,6 +795,15 @@ export function generateSkeleton(
       days.map(d => [d.dayOfWeek, d.plannedDistanceKm])
     );
 
+    const qualityLevel = computeQualityLevel(weekType, w, settings.totalWeeks);
+    const coachNotes = generateWeekCoachNotes(
+      weekType,
+      w,
+      settings.totalWeeks,
+      qualityLevel,
+      settings.goalType
+    );
+
     weeks.push({
       weekNumber: w,
       weekStartDate: toISO(weekStart),
@@ -749,8 +811,8 @@ export function generateSkeleton(
       plannedDistanceKm: roundToHalfKm(sumWeekKm(days)),
       plannedDurationMins: null,
       weekType,
-      qualityLevel: computeQualityLevel(weekType, w, settings.totalWeeks),
-      coachNotes: null,
+      qualityLevel,
+      coachNotes,
       days,
     });
   }
@@ -775,18 +837,20 @@ export function runSkeletonInvariantTests(): { passed: number; failed: number; e
     }
   }
 
-  const testProfiles: AthleteProfile[] = [
-    { id: 1, userId: 1, baselineWeeklyMileageKm: 20, longestRecentRunKm: 10, averagePaceMinPerKm: 6.0, currentVo2Max: null, estimatedFtp: null, injuryHistory: null, preferredWorkoutTypes: null, restingHeartRate: null, maxHeartRate: null, heartRateZones: null, recentRaceResults: null, weeklyAvailability: null, createdAt: new Date(), updatedAt: new Date() },
-    { id: 2, userId: 2, baselineWeeklyMileageKm: 40, longestRecentRunKm: 18, averagePaceMinPerKm: 5.5, currentVo2Max: null, estimatedFtp: null, injuryHistory: null, preferredWorkoutTypes: null, restingHeartRate: null, maxHeartRate: null, heartRateZones: null, recentRaceResults: null, weeklyAvailability: null, createdAt: new Date(), updatedAt: new Date() },
-    { id: 3, userId: 3, baselineWeeklyMileageKm: 60, longestRecentRunKm: 25, averagePaceMinPerKm: 5.0, currentVo2Max: null, estimatedFtp: null, injuryHistory: null, preferredWorkoutTypes: null, restingHeartRate: null, maxHeartRate: null, heartRateZones: null, recentRaceResults: null, weeklyAvailability: null, createdAt: new Date(), updatedAt: new Date() },
-  ];
+  // Use partial profiles for testing - only fields actually used by skeleton generator
+  const testProfiles = [
+    { id: 1, userId: 1, sport: "run" as const, baselineWeeklyMileageKm: 20, longestRecentRunKm: 10, weeklyMileageLast12Weeks: null, avgRunsPerWeek: null, typicalEasyPaceMin: null, typicalEasyPaceMax: null, typicalTempoPace: null, typicalIntervalPace: null, hrZones: null, maxHr: null, restingHr: null, avgElevationGainPerKm: null, preferredRunDays: null, injuryFlags: null, maxDaysPerWeek: null, estimatedVdot: null, estimatedRaceTimes: null, lastComputedAt: null, createdAt: new Date() },
+    { id: 2, userId: 2, sport: "run" as const, baselineWeeklyMileageKm: 40, longestRecentRunKm: 18, weeklyMileageLast12Weeks: null, avgRunsPerWeek: null, typicalEasyPaceMin: null, typicalEasyPaceMax: null, typicalTempoPace: null, typicalIntervalPace: null, hrZones: null, maxHr: null, restingHr: null, avgElevationGainPerKm: null, preferredRunDays: null, injuryFlags: null, maxDaysPerWeek: null, estimatedVdot: null, estimatedRaceTimes: null, lastComputedAt: null, createdAt: new Date() },
+    { id: 3, userId: 3, sport: "run" as const, baselineWeeklyMileageKm: 60, longestRecentRunKm: 25, weeklyMileageLast12Weeks: null, avgRunsPerWeek: null, typicalEasyPaceMin: null, typicalEasyPaceMax: null, typicalTempoPace: null, typicalIntervalPace: null, hrZones: null, maxHr: null, restingHr: null, avgElevationGainPerKm: null, preferredRunDays: null, injuryFlags: null, maxDaysPerWeek: null, estimatedVdot: null, estimatedRaceTimes: null, lastComputedAt: null, createdAt: new Date() },
+  ] as AthleteProfile[];
 
-  const testRequests: PlanGenerationRequest[] = [
-    { goalType: "marathon", preferredRunDays: ["tuesday", "thursday", "saturday", "sunday"], includeSpeedwork: true, includeLongRuns: true },
-    { goalType: "half_marathon", preferredRunDays: ["monday", "wednesday", "friday", "sunday"], includeSpeedwork: true, includeLongRuns: true },
-    { goalType: "10k", preferredRunDays: ["tuesday", "thursday", "saturday"], includeSpeedwork: true, includeLongRuns: true },
-    { goalType: "5k", preferredRunDays: ["monday", "wednesday", "friday", "saturday"], includeSpeedwork: true, includeLongRuns: true },
-  ];
+  // Use partial requests for testing - userId not needed for skeleton generation
+  const testRequests = [
+    { userId: 0, goalType: "marathon", preferredRunDays: ["tuesday", "thursday", "saturday", "sunday"], includeSpeedwork: true, includeLongRuns: true },
+    { userId: 0, goalType: "half_marathon", preferredRunDays: ["monday", "wednesday", "friday", "sunday"], includeSpeedwork: true, includeLongRuns: true },
+    { userId: 0, goalType: "10k", preferredRunDays: ["tuesday", "thursday", "saturday"], includeSpeedwork: true, includeLongRuns: true },
+    { userId: 0, goalType: "5k", preferredRunDays: ["monday", "wednesday", "friday", "saturday"], includeSpeedwork: true, includeLongRuns: true },
+  ] as PlanGenerationRequest[];
 
   const weekLengths = [8, 12, 16];
 
@@ -870,6 +934,13 @@ export function runSkeletonInvariantTests(): { passed: number; failed: number; e
               );
             }
           }
+
+          // Verify at least 1 rest day per week (prevents overtraining)
+          const restDays = week.days.filter(d => d.workoutType === "rest");
+          assert(
+            restDays.length >= 1,
+            `${weekLabel} should have at least 1 rest day, but has ${restDays.length}`
+          );
         }
 
         const weekTypes = skeleton.weeks.map(w => w.weekType);
