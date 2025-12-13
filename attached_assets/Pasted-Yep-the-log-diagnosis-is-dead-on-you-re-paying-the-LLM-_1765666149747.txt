@@ -1,0 +1,146 @@
+Yep — the log diagnosis is dead-on: you’re paying the “LLM tax” **98 times** (effectively) because you’re asking it to author full coaching content for *every* day, including rest/easy days that don’t need bespoke prose.
+
+Here’s what I’d tell the dev to do. This is the fastest path to cutting 90s down to **<5–15s perceived**, and often **<10s actual**.
+
+---
+
+## The core change: stop generating “98 unique workouts”
+
+**Backend should generate 100% of these fields without AI for most days:**
+
+* `title` for rest/easy/recovery/long_run (template)
+* `description` for rest/easy/recovery/long_run (template with inserted distance/time)
+* `intensity` for those days (deterministic)
+* `targetPace` / `targetHrZone` (deterministic from your VDOT/zones)
+
+**LLM should only fill:**
+
+* Quality workouts: `tempo | intervals | hills | fartlek | progression`
+  (typically 1–2 per week → **14–28 workouts**, not 98)
+* `week.coachNotes` (14 items)
+* optionally `plan.coachNotes` (1 item)
+
+That alone reduces the “AI fill payload” by ~70–85%.
+
+---
+
+## Recommended architecture: Fast skeleton + background “coach fill” jobs
+
+### Step 1 — Immediately return usable plan (0–2s)
+
+* Generate skeleton
+* Fill **non-quality days** with deterministic templates (no AI)
+* Save to DB
+* Respond to UI: plan is ready, “Coach details loading…”
+
+### Step 2 — Queue AI fill jobs (async, but user doesn’t wait)
+
+Create jobs like:
+
+1. `FILL_WEEK_NOTES(planId, weekNumber)`
+2. `FILL_QUALITY_WORKOUTS(planId, weekNumber)` (only for workouts that need it)
+
+Run them with limited concurrency (2–4 workers) and rate-limit.
+
+### Step 3 — UI loads details progressively
+
+* Week view shows instantly
+* Quality workouts show “Generating…” until filled
+* Week notes panel loads when ready
+
+This makes the app feel instant even if full richness arrives over 10–30 seconds.
+
+---
+
+## Model strategy: tiered + cheap where possible
+
+* Use **GPT-4o-mini** for:
+
+  * quality workout descriptions + workoutStructure
+* Use **GPT-4o** only for:
+
+  * plan-level coach note / realism narrative (optional)
+
+You’ll get 80% of the value for a fraction of the latency/cost.
+
+---
+
+## Batch-by-week (good) vs one giant call (bad)
+
+Even if you keep AI on more items, **don’t do 98 days in one shot**.
+
+Preferred:
+
+* 14 weekly calls (or fewer) that each fill:
+
+  * week note + 1–2 quality workouts
+
+Benefits:
+
+* Less token bloat per request
+* Faster first results (Week 1 appears almost immediately)
+* Easier retries (only regenerate week 6, not whole plan)
+
+---
+
+## Cache what’s repetitive (easy win)
+
+Cache outputs by a fingerprint like:
+
+* `goalType`
+* `qualityLevel`
+* `workoutType`
+* `plannedDistanceKm bucket` (e.g. 6–8, 8–10, 10–12)
+* `paceBasedWorkouts`
+* `experienceLevel`
+
+**Things you can fully template/cachify:**
+
+* Easy run
+* Recovery run
+* Long run (maybe 2–3 variants)
+* Rest day
+* Cross training
+
+Even for quality workouts, you can cache the *structure* template and only let the model add “human” phrasing.
+
+---
+
+## Biggest latency killer: reduce prompt/output size
+
+Tell the dev:
+
+* **Don’t send full plan JSON** when filling content for a week.
+* Send only:
+
+  * athlete summary
+  * that week’s “quality workouts skeleton”
+  * qualityLevel + goalType + pace/zones computed values
+* Make the model output **only the fields you need**, e.g.:
+
+```json
+{
+  "weekCoachNotes": "...",
+  "workouts": [
+    { "date": "YYYY-MM-DD", "title": "...", "description": "...", "targetPace": "...", "workoutStructure": {...} }
+  ]
+}
+```
+
+Then merge into DB.
+
+---
+
+## What to tell the developer (copy/paste)
+
+> **We need to stop AI-filling all 98 days.**
+> Backend must fully template rest/easy/recovery/long days (title/description/intensity/targets).
+> AI should only fill (a) quality workouts and (b) week coach notes.
+> Implement background jobs per week: `FILL_WEEK_NOTES` and `FILL_QUALITY_WORKOUTS`.
+> UI shows the plan immediately and progressively loads “coach details.”
+> Use GPT-4o-mini for fills, GPT-4o only for optional top-level narrative.
+> Keep prompts small: send only the week’s quality workouts skeleton, not the entire plan.
+
+---
+
+If you want, paste your current “fill” request payload (what you’re sending to the OpenAI API), and I’ll rewrite it into a **week-level minimal payload** + the exact JSON merge strategy so you can ship the speedup fast.
