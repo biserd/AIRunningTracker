@@ -57,6 +57,7 @@ export interface GuardrailConfig {
   minRestDaysPerWeek: number;
   maxHardWorkoutsPerWeek: number;
   peakLongRunPercentOfRace: number; // 90% of race distance
+  maxEasyRunPercentOfRace: number; // Easy runs should not exceed this % of race distance
 }
 
 // Race distances in km
@@ -79,6 +80,7 @@ const DEFAULT_CONFIG: GuardrailConfig = {
   minRestDaysPerWeek: 1,
   maxHardWorkoutsPerWeek: 3,
   peakLongRunPercentOfRace: 90, // Peak long run should be 90% of race distance
+  maxEasyRunPercentOfRace: 50, // Easy runs should not exceed 50% of race distance
 };
 
 export class TrainingGuardrails {
@@ -108,6 +110,10 @@ export class TrainingGuardrails {
     
     // Get baseline from profile
     const baselineMileage = profile.baselineWeeklyMileageKm || 20;
+    
+    // 0. FIRST: Cap all workouts to sensible race-based limits and enforce hierarchy
+    // This MUST run before other validations to prevent absurd values from propagating
+    this.validateWorkoutCaps(correctedPlan, goalType, validation);
     
     // 1. Validate weekly mileage progression
     this.validateMileageProgression(correctedPlan, baselineMileage, validation);
@@ -141,6 +147,104 @@ export class TrainingGuardrails {
     validation.valid = validation.errors.length === 0;
     
     return { plan: correctedPlan, validation };
+  }
+  
+  /**
+   * FIRST VALIDATION: Cap all workouts to sensible limits based on race type
+   * This prevents absurd values like a 22-mile easy run for a half marathon
+   */
+  private validateWorkoutCaps(
+    plan: GeneratedPlan,
+    goalType: string,
+    validation: ValidationResult
+  ): void {
+    const raceDistanceKm = RACE_DISTANCES_KM[goalType as keyof typeof RACE_DISTANCES_KM];
+    
+    // For non-race goals, use a reasonable default (e.g., 15km max easy run)
+    const maxEasyRunKm = raceDistanceKm 
+      ? raceDistanceKm * (this.config.maxEasyRunPercentOfRace / 100)
+      : 15;
+    
+    // Peak long run target (90% of race distance, or 25km for non-race)
+    const peakLongRunKm = raceDistanceKm 
+      ? raceDistanceKm * (this.config.peakLongRunPercentOfRace / 100)
+      : 25;
+    
+    for (const week of plan.weeks) {
+      // Find the long run for this week
+      const longRunDay = week.days.find(d => d.workoutType === "long_run");
+      const longRunKm = longRunDay?.plannedDistanceKm || 0;
+      
+      // Process each day in the week
+      for (const day of week.days) {
+        if (!day.plannedDistanceKm || day.workoutType === "rest") continue;
+        
+        const originalDistance = day.plannedDistanceKm;
+        
+        // Rule 1: No non-long-run workout should exceed the long run distance
+        if (day.workoutType !== "long_run" && longRunKm > 0 && day.plannedDistanceKm >= longRunKm) {
+          // Cap at 70% of long run distance to maintain clear hierarchy
+          const cappedDistance = Math.round(longRunKm * 0.7 * 10) / 10;
+          day.plannedDistanceKm = cappedDistance;
+          
+          validation.corrections.push({
+            type: "reduce_mileage",
+            weekNumber: week.weekNumber,
+            originalValue: originalDistance,
+            correctedValue: cappedDistance,
+            reason: `${day.workoutType} run (${originalDistance.toFixed(1)}km) exceeded long run (${longRunKm.toFixed(1)}km) - capped to 70% of long run`,
+          });
+        }
+        
+        // Rule 2: Easy runs should not exceed maxEasyRunKm (50% of race distance)
+        if ((day.workoutType === "easy" || day.workoutType === "recovery") && day.plannedDistanceKm > maxEasyRunKm) {
+          day.plannedDistanceKm = Math.round(maxEasyRunKm * 10) / 10;
+          
+          validation.corrections.push({
+            type: "reduce_mileage",
+            weekNumber: week.weekNumber,
+            originalValue: originalDistance,
+            correctedValue: maxEasyRunKm,
+            reason: `${day.workoutType} run (${originalDistance.toFixed(1)}km) exceeded max for ${goalType.replace("_", " ")} (${maxEasyRunKm.toFixed(1)}km / 50% of race)`,
+          });
+        }
+        
+        // Rule 3: No single workout should exceed the peak long run target (unless it's a race)
+        if (day.workoutType !== "race" && day.plannedDistanceKm > peakLongRunKm * 1.1) {
+          day.plannedDistanceKm = Math.round(peakLongRunKm * 10) / 10;
+          
+          validation.corrections.push({
+            type: "reduce_mileage",
+            weekNumber: week.weekNumber,
+            originalValue: originalDistance,
+            correctedValue: peakLongRunKm,
+            reason: `${day.workoutType} run (${originalDistance.toFixed(1)}km) exceeded peak long run target (${peakLongRunKm.toFixed(1)}km)`,
+          });
+        }
+      }
+      
+      // Rule 4: If no long run exists but other workouts are very long, something is wrong
+      // Flag weeks where the longest workout is not marked as long_run
+      const allWorkoutsWithDistance = week.days
+        .filter(d => d.plannedDistanceKm && d.workoutType !== "rest")
+        .sort((a, b) => (b.plannedDistanceKm || 0) - (a.plannedDistanceKm || 0));
+      
+      if (allWorkoutsWithDistance.length > 0 && !longRunDay) {
+        const longestWorkout = allWorkoutsWithDistance[0];
+        if (longestWorkout.plannedDistanceKm && longestWorkout.plannedDistanceKm > maxEasyRunKm) {
+          // The longest workout should probably be marked as long_run
+          validation.warnings.push(
+            `Week ${week.weekNumber}: Longest workout is ${longestWorkout.workoutType} (${longestWorkout.plannedDistanceKm?.toFixed(1)}km) but no long_run scheduled`
+          );
+        }
+      }
+      
+      // After capping, recalculate weekly total
+      const recalculatedTotal = week.days.reduce((sum, d) => sum + (d.plannedDistanceKm || 0), 0);
+      if (recalculatedTotal !== week.plannedDistanceKm) {
+        week.plannedDistanceKm = Math.round(recalculatedTotal * 10) / 10;
+      }
+    }
   }
   
   /**
