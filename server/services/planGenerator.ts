@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { storage } from "../storage";
 import { athleteProfileService } from "./athleteProfile";
 import { trainingGuardrails, type GeneratedPlan, type PlanWeekInput, type PlanDayInput } from "./trainingGuardrails";
+import { generateSkeleton, type PlanSkeleton, type SkeletonWeek, type SkeletonDay } from "./skeletonGenerator";
 import type { AthleteProfile, TrainingPlan, InsertTrainingPlan, InsertPlanWeek, InsertPlanDay } from "@shared/schema";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -56,48 +57,44 @@ export class PlanGeneratorService {
       // Determine unit preference
       const useMiles = request.unitPreference === "miles";
       
-      // 3. Generate plan with LLM (with retry if weeks are too short)
-      let generatedPlan = await this.callLLMForPlan(request, profile, planWeeks, false, useMiles);
+      // 3. Generate skeleton with fixed structure (dates, distances, workout types)
+      console.log(`[PlanGenerator] Generating skeleton for ${planWeeks} weeks`);
+      const skeleton = generateSkeleton(request, profile, planWeeks);
+      console.log(`[PlanGenerator] Skeleton generated with ${skeleton.weeks.length} weeks`);
       
-      if (!generatedPlan) {
+      // Log skeleton distances for debugging
+      for (const week of skeleton.weeks) {
+        const longRun = week.days.find(d => d.workoutType === "long_run");
+        console.log(`[PlanGenerator] Week ${week.weekNumber} (${week.weekType}): ${week.plannedDistanceKm}km total, long run: ${longRun?.plannedDistanceKm || 0}km`);
+      }
+      
+      // 4. Call LLM to fill coaching content (titles, descriptions, paces, etc.)
+      const filledPlan = await this.fillSkeletonWithLLM(skeleton, profile, request, useMiles);
+      
+      if (!filledPlan) {
+        // Fallback: use skeleton with default coaching content
+        console.log(`[PlanGenerator] LLM fill failed, using skeleton with defaults`);
+        const fallbackPlan = this.skeletonToGeneratedPlan(skeleton);
+        const savedPlan = await this.savePlanFromSkeleton(request, skeleton, fallbackPlan, profile);
         return {
-          success: false,
-          error: "Failed to generate training plan. Please try again.",
+          success: true,
+          plan: savedPlan,
+          validation: {
+            warnings: ["Coaching content was auto-generated due to AI service issues."],
+            corrections: [],
+          },
         };
       }
       
-      // Validate minimum weeks for goal type
-      const minWeeks = this.getMinimumWeeks(request.goalType);
-      if (generatedPlan.weeks.length < minWeeks) {
-        console.log(`[PlanGenerator] Plan has ${generatedPlan.weeks.length} weeks, expected at least ${minWeeks}. Retrying...`);
-        // Retry once with explicit week requirement
-        generatedPlan = await this.callLLMForPlan(request, profile, planWeeks, true, useMiles);
-        
-        if (!generatedPlan || generatedPlan.weeks.length < minWeeks) {
-          return {
-            success: false,
-            error: `Training plan generation failed. Please try again.`,
-          };
-        }
-      }
-      
-      // 4. Apply guardrails
-      const { plan: correctedPlan, validation } = trainingGuardrails.validateAndCorrect(
-        generatedPlan,
-        profile,
-        request.goalType,
-        raceDate
-      );
-      
-      // 5. Save to database
-      const savedPlan = await this.savePlan(request, correctedPlan, profile);
+      // 5. Save to database (use skeleton dates, but LLM-filled content)
+      const savedPlan = await this.savePlanFromSkeleton(request, skeleton, filledPlan, profile);
       
       return {
         success: true,
         plan: savedPlan,
         validation: {
-          warnings: validation.warnings,
-          corrections: validation.corrections.map(c => c.reason),
+          warnings: [],
+          corrections: [],
         },
       };
     } catch (error) {
@@ -350,6 +347,266 @@ Ensure each week has 7 days. Use "rest" type for rest days.`;
       console.error("[PlanGenerator] JSON repair attempt failed:", error);
       return null;
     }
+  }
+  
+  /**
+   * Fill a skeleton with coaching content using LLM
+   * The LLM only fills: title, description, targetPace, targetHrZone, intensity, workoutStructure, coachNotes
+   * All other fields (dates, distances, workout types) remain unchanged from skeleton
+   */
+  private async fillSkeletonWithLLM(
+    skeleton: PlanSkeleton,
+    profile: AthleteProfile,
+    request: PlanGenerationRequest,
+    useMiles: boolean
+  ): Promise<GeneratedPlan | null> {
+    const KM_TO_MILES = 0.621371;
+    const distUnit = useMiles ? "miles" : "km";
+    const paceUnit = useMiles ? "min/mile" : "min/km";
+    
+    // Convert profile values to display units
+    const weeklyMileage = useMiles 
+      ? ((profile.baselineWeeklyMileageKm || 0) * KM_TO_MILES).toFixed(1)
+      : (profile.baselineWeeklyMileageKm?.toFixed(1) || "0");
+    const longestRun = useMiles
+      ? ((profile.longestRecentRunKm || 0) * KM_TO_MILES).toFixed(1)
+      : (profile.longestRecentRunKm?.toFixed(1) || "0");
+    
+    let easyPaceStr = "not available";
+    if (profile.typicalEasyPaceMin && profile.typicalEasyPaceMax) {
+      if (useMiles) {
+        const minPaceMile = profile.typicalEasyPaceMin / KM_TO_MILES;
+        const maxPaceMile = profile.typicalEasyPaceMax / KM_TO_MILES;
+        easyPaceStr = `${minPaceMile.toFixed(1)}-${maxPaceMile.toFixed(1)} ${paceUnit}`;
+      } else {
+        easyPaceStr = `${profile.typicalEasyPaceMin.toFixed(1)}-${profile.typicalEasyPaceMax.toFixed(1)} ${paceUnit}`;
+      }
+    }
+
+    const systemPrompt = `You are an expert running coach. You are given a TRAINING PLAN SKELETON JSON that already contains the exact schedule and distances.
+
+HARD CONSTRAINTS - DO NOT CHANGE:
+- weekNumber, weekStartDate, weekEndDate, plannedDistanceKm, plannedDurationMins
+- date, dayOfWeek, workoutType for each day
+- The structure and order of weeks and days
+
+YOU MUST ONLY FILL THESE FIELDS:
+- trainingPlan.coachNotes: Overall plan summary
+- weeks[].coachNotes: Weekly focus/theme
+- days[].title: Short workout title (e.g., "Easy Recovery Run")
+- days[].description: Detailed workout description with guidance
+- days[].targetPace: Pace target in ${paceUnit} format (e.g., "8:30-9:00 ${paceUnit}")
+- days[].targetHrZone: Heart rate zone (e.g., "Zone 2" or "Zone 3-4")
+- days[].intensity: "low" | "moderate" | "high"
+- days[].workoutStructure: For quality workouts (tempo, intervals, etc.), include warmup/main/cooldown
+
+IMPORTANT:
+- All text must use ${distUnit} for distances and ${paceUnit} for paces
+- For rest days: title="Rest Day", description="Complete rest or light stretching", intensity="low"
+- Keep the exact JSON structure - return the same shape with filled fields
+
+Output valid JSON only.`;
+
+    const userPrompt = `ATHLETE PROFILE:
+- Current weekly mileage: ${weeklyMileage} ${distUnit}
+- Average runs per week: ${profile.avgRunsPerWeek?.toFixed(1) || 0}
+- Longest recent run: ${longestRun} ${distUnit}
+- Easy pace: ${easyPaceStr}
+- Estimated VDOT: ${profile.estimatedVdot || "not available"}
+- Experience level: ${request.experienceLevel || "intermediate"}
+
+GOAL: ${request.goalType.replace("_", " ")}
+${request.goalTimeTarget ? `Target time: ${request.goalTimeTarget}` : ""}
+${request.raceName ? `Race: ${request.raceName}` : ""}
+
+TRAINING PLAN SKELETON JSON (fill the null fields):
+${JSON.stringify(skeleton, null, 2)}
+
+Return the complete JSON with all null fields filled appropriately. Keep all dates, distances, and workout types exactly as given.`;
+
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 16000,
+        response_format: { type: "json_object" },
+      });
+      
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        console.error("[PlanGenerator] No content in LLM fill response");
+        return null;
+      }
+      
+      const finishReason = response.choices[0]?.finish_reason;
+      if (finishReason === 'length') {
+        console.error("[PlanGenerator] Fill response was truncated");
+        return null;
+      }
+      
+      let parsed: PlanSkeleton;
+      try {
+        parsed = JSON.parse(content) as PlanSkeleton;
+      } catch (parseError) {
+        console.error("[PlanGenerator] Fill JSON parse failed");
+        return null;
+      }
+      
+      // Convert filled skeleton to GeneratedPlan format
+      return this.skeletonToGeneratedPlan(parsed);
+    } catch (error) {
+      console.error("[PlanGenerator] LLM fill call failed:", error);
+      return null;
+    }
+  }
+  
+  /**
+   * Convert a skeleton (filled or not) to the GeneratedPlan format
+   */
+  private skeletonToGeneratedPlan(skeleton: PlanSkeleton): GeneratedPlan {
+    return {
+      weeks: skeleton.weeks.map(week => ({
+        weekNumber: week.weekNumber,
+        weekType: week.weekType,
+        plannedDistanceKm: week.plannedDistanceKm,
+        days: week.days.map(day => ({
+          dayOfWeek: day.dayOfWeek,
+          workoutType: day.workoutType as any,
+          title: day.title || this.getDefaultTitle(day.workoutType),
+          description: day.description || undefined,
+          plannedDistanceKm: day.plannedDistanceKm || undefined,
+          plannedDurationMins: day.plannedDurationMins || undefined,
+          targetPace: day.targetPace || undefined,
+          targetHrZone: day.targetHrZone || undefined,
+          intensity: (day.intensity || this.getDefaultIntensity(day.workoutType)) as "low" | "moderate" | "high",
+          workoutStructure: day.workoutStructure || undefined,
+        })),
+      })),
+      coachNotes: skeleton.trainingPlan.coachNotes || undefined,
+    };
+  }
+  
+  /**
+   * Get default title based on workout type
+   */
+  private getDefaultTitle(workoutType: string): string {
+    const titles: Record<string, string> = {
+      easy: "Easy Run",
+      tempo: "Tempo Run",
+      intervals: "Interval Training",
+      long_run: "Long Run",
+      recovery: "Recovery Run",
+      rest: "Rest Day",
+      cross_training: "Cross Training",
+      fartlek: "Fartlek Run",
+      hills: "Hill Repeats",
+      progression: "Progression Run",
+    };
+    return titles[workoutType] || "Workout";
+  }
+  
+  /**
+   * Get default intensity based on workout type
+   */
+  private getDefaultIntensity(workoutType: string): "low" | "moderate" | "high" {
+    const intensities: Record<string, "low" | "moderate" | "high"> = {
+      easy: "low",
+      tempo: "moderate",
+      intervals: "high",
+      long_run: "moderate",
+      recovery: "low",
+      rest: "low",
+      cross_training: "low",
+      fartlek: "moderate",
+      hills: "high",
+      progression: "moderate",
+    };
+    return intensities[workoutType] || "low";
+  }
+  
+  /**
+   * Save plan using skeleton dates (more accurate) and LLM-filled content
+   */
+  private async savePlanFromSkeleton(
+    request: PlanGenerationRequest,
+    skeleton: PlanSkeleton,
+    plan: GeneratedPlan,
+    profile: AthleteProfile
+  ): Promise<TrainingPlan> {
+    const raceDate = request.raceDate ? new Date(request.raceDate) : null;
+    
+    // Create the main plan record
+    const planData: InsertTrainingPlan = {
+      userId: request.userId,
+      goalType: request.goalType,
+      raceDate: raceDate || undefined,
+      targetTime: request.goalTimeTarget || undefined,
+      daysPerWeek: skeleton.trainingPlan.daysPerWeek,
+      preferredLongRunDay: skeleton.trainingPlan.preferredLongRunDay,
+      preferredDays: skeleton.trainingPlan.preferredDays,
+      allowCrossTraining: skeleton.trainingPlan.allowCrossTraining,
+      paceBasedWorkouts: skeleton.trainingPlan.paceBasedWorkouts,
+      status: "active",
+      totalWeeks: skeleton.weeks.length,
+      currentWeek: 1,
+      coachNotes: plan.coachNotes || undefined,
+      generationPrompt: request.constraints || undefined,
+    };
+    
+    const savedPlan = await storage.createTrainingPlanV2(planData);
+    
+    // Save weeks and days using skeleton dates
+    for (let i = 0; i < skeleton.weeks.length; i++) {
+      const skeletonWeek = skeleton.weeks[i];
+      const planWeek = plan.weeks[i];
+      
+      const weekData: InsertPlanWeek = {
+        planId: savedPlan.id,
+        weekNumber: skeletonWeek.weekNumber,
+        weekType: skeletonWeek.weekType,
+        weekStartDate: new Date(skeletonWeek.weekStartDate),
+        weekEndDate: new Date(skeletonWeek.weekEndDate),
+        plannedDistanceKm: skeletonWeek.plannedDistanceKm,
+        plannedDurationMins: skeletonWeek.plannedDurationMins || undefined,
+        coachNotes: undefined,
+      };
+      
+      const savedWeek = await storage.createPlanWeek(weekData);
+      
+      // Save days using skeleton dates but LLM content
+      for (let j = 0; j < skeletonWeek.days.length; j++) {
+        const skeletonDay = skeletonWeek.days[j];
+        const planDay = planWeek?.days[j];
+        
+        const dayData: InsertPlanDay = {
+          weekId: savedWeek.id,
+          planId: savedPlan.id,
+          date: new Date(skeletonDay.date),
+          dayOfWeek: skeletonDay.dayOfWeek,
+          workoutType: skeletonDay.workoutType,
+          title: planDay?.title || this.getDefaultTitle(skeletonDay.workoutType),
+          description: planDay?.description || undefined,
+          plannedDistanceKm: skeletonDay.plannedDistanceKm || undefined,
+          plannedDurationMins: skeletonDay.plannedDurationMins || undefined,
+          targetPace: planDay?.targetPace || undefined,
+          targetHrZone: planDay?.targetHrZone || undefined,
+          intensity: planDay?.intensity || this.getDefaultIntensity(skeletonDay.workoutType),
+          workoutStructure: planDay?.workoutStructure || undefined,
+          userNotes: undefined,
+          perceivedEffort: undefined,
+        };
+        
+        await storage.createPlanDay(dayData);
+      }
+    }
+    
+    console.log(`[PlanGenerator] Plan saved from skeleton with ID ${savedPlan.id}, ${skeleton.weeks.length} weeks`);
+    
+    return savedPlan;
   }
   
   /**
