@@ -1,10 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Zap, Clock, Footprints, TrendingUp, AlertCircle, CheckCircle, Calendar, ArrowRight } from "lucide-react";
-import { useLocation } from "wouter";
+import { Zap, Clock, Footprints, TrendingUp, AlertCircle, CheckCircle, Target, Plus } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { 
   metersToFeet, 
   cmToInches, 
@@ -27,7 +28,40 @@ interface RunningEfficiencyProps {
 }
 
 export default function RunningEfficiency({ userId, batchData }: RunningEfficiencyProps) {
-  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Goal creation mutation
+  const createGoalMutation = useMutation({
+    mutationFn: async (goalData: any) => {
+      return apiRequest("/api/goals", "POST", goalData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/goals/${userId}`] });
+      toast({
+        title: "Form Goal Added!",
+        description: "Your efficiency goal has been added to your dashboard.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create goal",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCreateEfficiencyGoal = () => {
+    createGoalMutation.mutate({
+      userId,
+      title: "Improve running form",
+      description: "Focus on cadence drills, stride length optimization, and reducing ground contact time",
+      type: 'form',
+      status: 'active',
+      source: 'efficiency-analysis',
+    });
+  };
   
   const { data: efficiencyDataResponse, isLoading } = useQuery({
     queryKey: ['/api/performance/efficiency', userId],
@@ -259,12 +293,13 @@ export default function RunningEfficiency({ userId, batchData }: RunningEfficien
           <Button
             variant="outline"
             className="w-full border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-            onClick={() => setLocation('/training-plans?focus=drills')}
-            data-testid="adjust-training-btn"
+            onClick={handleCreateEfficiencyGoal}
+            disabled={createGoalMutation.isPending}
+            data-testid="add-form-goal-btn"
           >
-            <Calendar className="h-4 w-4 mr-2" />
-            Adjust training load
-            <ArrowRight className="h-4 w-4 ml-2" />
+            <Target className="h-4 w-4 mr-2" />
+            {createGoalMutation.isPending ? "Adding..." : "Add form improvement goal"}
+            <Plus className="h-4 w-4 ml-2" />
           </Button>
         </div>
       </CardContent>

@@ -1,11 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Shield, AlertTriangle, CheckCircle, XCircle, Lock, Crown, Calendar, ArrowRight } from "lucide-react";
+import { Shield, AlertTriangle, CheckCircle, XCircle, Lock, Crown, Target, Plus } from "lucide-react";
 import { useFeatureAccess } from "@/hooks/useSubscription";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface InjuryRiskData {
   riskLevel: 'Low' | 'Medium' | 'High';
@@ -20,7 +22,40 @@ interface InjuryRiskAnalysisProps {
 
 export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnalysisProps) {
   const { canAccessAdvancedInsights } = useFeatureAccess();
-  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Goal creation mutation
+  const createGoalMutation = useMutation({
+    mutationFn: async (goalData: any) => {
+      return apiRequest("/api/goals", "POST", goalData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/goals/${userId}`] });
+      toast({
+        title: "Recovery Goal Added!",
+        description: "Your recovery goal has been added to your dashboard.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create goal",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCreateRecoveryGoal = () => {
+    createGoalMutation.mutate({
+      userId,
+      title: "Take a recovery week",
+      description: "Based on injury risk analysis: reduce training load and focus on recovery to prevent injury",
+      type: 'recovery',
+      status: 'active',
+      source: 'injury-risk',
+    });
+  };
   
   // All hooks must be called before any conditional returns
   const { data: riskDataResponse, isLoading } = useQuery({
@@ -226,12 +261,13 @@ export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnal
           <Button
             variant="outline"
             className="w-full border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
-            onClick={() => setLocation('/training-plans?adjust=recovery')}
-            data-testid="adjust-training-btn"
+            onClick={handleCreateRecoveryGoal}
+            disabled={createGoalMutation.isPending}
+            data-testid="add-recovery-goal-btn"
           >
-            <Calendar className="h-4 w-4 mr-2" />
-            Adjust training load
-            <ArrowRight className="h-4 w-4 ml-2" />
+            <Target className="h-4 w-4 mr-2" />
+            {createGoalMutation.isPending ? "Adding..." : "Add recovery goal"}
+            <Plus className="h-4 w-4 ml-2" />
           </Button>
         </div>
       </CardContent>

@@ -1,10 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trophy, Target, Clock, Lock, Crown, ArrowRight, Calendar } from "lucide-react";
+import { Trophy, Target, Clock, Lock, Crown, Plus, CheckCircle } from "lucide-react";
 import { useFeatureAccess } from "@/hooks/useSubscription";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface RacePrediction {
   distance: string;
@@ -20,7 +22,40 @@ interface RacePredictionsProps {
 
 export default function RacePredictions({ userId, batchData }: RacePredictionsProps) {
   const { canAccessRacePredictions } = useFeatureAccess();
-  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Goal creation mutation
+  const createGoalMutation = useMutation({
+    mutationFn: async (goalData: any) => {
+      return apiRequest("/api/goals", "POST", goalData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/goals/${userId}`] });
+      toast({
+        title: "Goal Added!",
+        description: "Your training goal has been added to your dashboard.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create goal",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCreateGoal = (title: string, description: string, type: string = 'general') => {
+    createGoalMutation.mutate({
+      userId,
+      title,
+      description,
+      type,
+      status: 'active',
+      source: 'coach-insights',
+    });
+  };
   
   // All hooks must be called before any conditional returns
   const { data: predictionsData, isLoading } = useQuery({
@@ -127,13 +162,18 @@ export default function RacePredictions({ userId, batchData }: RacePredictionsPr
               </div>
               
               <button
-                onClick={() => setLocation('/training-plans')}
-                className="w-full text-left text-sm text-gray-600 bg-gray-50 p-3 rounded-md hover:bg-orange-50 hover:text-orange-700 transition-colors group cursor-pointer"
+                onClick={() => handleCreateGoal(
+                  prediction.recommendation,
+                  `Based on your ${prediction.distance} prediction of ${prediction.predictedTime}`,
+                  'training'
+                )}
+                disabled={createGoalMutation.isPending}
+                className="w-full text-left text-sm text-gray-600 bg-gray-50 p-3 rounded-md hover:bg-orange-50 hover:text-orange-700 transition-colors group cursor-pointer disabled:opacity-50"
                 data-testid={`recommendation-link-${index}`}
               >
                 <div className="flex items-center justify-between">
                   <span><strong>Recommendation:</strong> {prediction.recommendation}</span>
-                  <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity text-orange-500" />
+                  <Plus className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity text-orange-500" />
                 </div>
               </button>
               
@@ -141,12 +181,17 @@ export default function RacePredictions({ userId, batchData }: RacePredictionsPr
                 variant="outline"
                 size="sm"
                 className="mt-3 w-full border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
-                onClick={() => setLocation(`/training-plans?goal=${encodeURIComponent(prediction.distance)}&time=${encodeURIComponent(prediction.predictedTime)}`)}
-                data-testid={`build-plan-btn-${index}`}
+                onClick={() => handleCreateGoal(
+                  `${prediction.distance} in ${prediction.predictedTime}`,
+                  `Race goal: Achieve a ${prediction.distance} finish time of ${prediction.predictedTime}`,
+                  'race'
+                )}
+                disabled={createGoalMutation.isPending}
+                data-testid={`set-goal-btn-${index}`}
               >
-                <Calendar className="h-4 w-4 mr-2" />
-                Build plan for this goal
-                <ArrowRight className="h-4 w-4 ml-2" />
+                <Target className="h-4 w-4 mr-2" />
+                {createGoalMutation.isPending ? "Adding..." : "Set as goal"}
+                <CheckCircle className="h-4 w-4 ml-2" />
               </Button>
             </div>
           ))}
