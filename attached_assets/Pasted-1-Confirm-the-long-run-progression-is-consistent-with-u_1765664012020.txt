@@ -1,0 +1,105 @@
+1) Confirm the long run progression is consistent with user reality
+
+Your test looks perfect for a runner who can handle it. The real edge case is:
+
+user’s current longest run is 10–12km, but your progression wants to reach 24km in 12 weeks (which may be fine for some, too aggressive for others)
+
+Backend should clamp long-run growth based on the athlete’s longestRecentRunKm:
+
+Max long-run increase per build week: +1–2 km
+
+Total delta from longest recent run to peak long run: cap based on experience/consistency, e.g.:
+
+beginner/low consistency: +8–10km max over the plan
+
+intermediate: +12–14km max
+
+advanced: +16km max
+
+So your buildLongRunProgression() should take longestRecentRunKm, consistency, and optionally daysPerWeek into account.
+
+Developer note: treat the goal cap (24km HM, 35km marathon) as a ceiling, not a requirement.
+
+2) Add a second progression: quality volume progression
+
+Now that long runs are precomputed, your “randomness” will mostly show up in quality day workouts (tempo/intervals).
+
+Even if distances are fixed, you want the plan to “feel coached” by progressing the work:
+
+Early base: strides, light tempo blocks
+
+Build: longer tempo / more reps
+
+Peak: hardest session
+
+Taper: reduce volume but keep a touch of intensity
+
+Backend should tag each week with a “quality level” (1–5) based on weekType and weekNumber, and pass that to the LLM so it structures workouts appropriately.
+
+Example:
+
+base weeks: level 1–2
+
+build: 3–4
+
+peak: 5
+
+taper: drop to 2–3
+
+This avoids the LLM giving “6×1 mile @ threshold” in week 2.
+
+3) Add structure invariants as tests (these catch regressions fast)
+
+Add automated assertions for every generated plan:
+
+Weekly invariants
+
+week.plannedDistanceKm === sum(days[].plannedDistanceKm)
+
+weekType matches expected (recovery at 4,8, etc.; taper last N)
+
+plannedDistanceKm never increases > 15% vs prior week (unless you explicitly allow exceptions)
+
+Day invariants
+
+Long run exists (if enabled) and is longest
+
+No more than allowed quality days/week
+
+No back-to-back high intensity days
+
+Run days only on preferredDays
+
+If paceBasedWorkouts=false, all targetPace must be null
+
+Long run invariants
+
+Long run equals your precomputed longRunTarget[w]
+
+Long run doesn’t jump > 2km on build weeks
+
+Long run reduces during recovery and taper weeks
+
+These tests turn “it seems good” into “we can’t break it accidentally.”
+
+4) Make the LLM prompt even tighter (now that skeleton is fixed)
+
+You should change your plan-generation LLM prompt to be explicit:
+
+“You may only fill: title, description, intensity, workoutStructure, targetPace/targetHrZone, coachNotes”
+
+“If you output different plannedDistanceKm or workoutType, it will be discarded—do not attempt.”
+
+This reduces “helpful” model rewrites.
+
+5) One more UX win: “Plan confidence” + realism warnings
+
+Because your engine is now deterministic, you can compute a simple “realism score” for the goal:
+
+If peak weekly volume is > 2× their current weekly volume → warning
+
+If peak long run is > longestRecentRun + 12km (and user is beginner/low consistency) → warning
+
+If race date too soon for safe build → warning + offer a “finish-focused plan”
+
+This prevents users from blaming the plan for being too aggressive.
