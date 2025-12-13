@@ -233,75 +233,99 @@ export class PlanGeneratorService {
         enrichedWeeks: skeleton.weeks.length 
       });
       emitEnrichmentProgress(planId, skeleton.weeks.length, skeleton.weeks.length, "complete");
+      // Clean up listeners after terminal event
+      setTimeout(() => enrichmentListeners.delete(planId), 1000);
       return;
     }
     
     let enrichedCount = 0;
     let failedCount = 0;
     
-    // Process chunks sequentially for progressive updates
-    for (const chunk of weekChunks) {
-      try {
-        const result = await this.fillWeekChunk(chunk, athleteContext, paceUnit);
-        
-        if (result.success && result.workouts) {
-          // Get the week from database and update its days
-          const weeks = await storage.getPlanWeeks(planId);
-          const week = weeks.find((w: any) => w.weekNumber === chunk.weekNumber);
+    try {
+      // Pre-fetch weeks once to avoid repeated queries
+      const allWeeks = await storage.getPlanWeeks(planId);
+      const weekMap = new Map(allWeeks.map((w: any) => [w.weekNumber, w]));
+      
+      // Process chunks sequentially for progressive updates
+      for (const chunk of weekChunks) {
+        try {
+          const result = await this.fillWeekChunk(chunk, athleteContext, paceUnit);
           
-          if (week) {
-            // Update each quality workout day
-            const days = await storage.getPlanDays(week.id);
-            for (const workout of result.workouts) {
-              const day = days.find((d: any) => 
-                d.dayOfWeek === workout.dayOfWeek && 
-                this.qualityWorkoutTypes.has(d.workoutType)
-              );
-              if (day) {
-                await storage.updatePlanDay(day.id, {
-                  title: workout.title,
-                  description: workout.description,
-                  intensity: workout.intensity,
-                  targetPace: workout.targetPace || undefined,
-                  workoutStructure: {
-                    warmup: "10 min easy jog + dynamic stretches",
-                    main: workout.mainSet || "",
-                    cooldown: "10 min easy jog + stretching",
-                  },
-                });
-              }
-            }
+          if (result.success && result.workouts) {
+            const week = weekMap.get(chunk.weekNumber);
             
-            // Mark week as enriched
-            await storage.updatePlanWeek(week.id, { enriched: true });
+            if (week) {
+              // Fetch days for this specific week
+              const days = await storage.getPlanDays(week.id);
+              
+              // Update each quality workout day
+              for (const workout of result.workouts) {
+                const day = days.find((d: any) => 
+                  d.dayOfWeek === workout.dayOfWeek && 
+                  this.qualityWorkoutTypes.has(d.workoutType)
+                );
+                if (day) {
+                  await storage.updatePlanDay(day.id, {
+                    title: workout.title,
+                    description: workout.description,
+                    intensity: workout.intensity,
+                    targetPace: workout.targetPace || undefined,
+                    workoutStructure: {
+                      warmup: "10 min easy jog + dynamic stretches",
+                      main: workout.mainSet || "",
+                      cooldown: "10 min easy jog + stretching",
+                    },
+                  });
+                }
+              }
+              
+              // Mark week as enriched
+              await storage.updatePlanWeek(week.id, { enriched: true });
+            }
+            enrichedCount++;
+          } else {
+            failedCount++;
           }
-          enrichedCount++;
-        } else {
+          
+          // Update plan progress and emit event
+          await storage.updateTrainingPlan(planId, { 
+            enrichedWeeks: enrichedCount 
+          });
+          emitEnrichmentProgress(planId, enrichedCount, totalChunks, "enriching");
+          
+        } catch (error) {
+          console.error(`[PlanGenerator] Chunk ${chunk.weekNumber} failed:`, error);
           failedCount++;
         }
-        
-        // Update plan progress and emit event
-        await storage.updateTrainingPlan(planId, { 
-          enrichedWeeks: enrichedCount 
-        });
-        emitEnrichmentProgress(planId, enrichedCount, totalChunks, "enriching");
-        
-      } catch (error) {
-        console.error(`[PlanGenerator] Chunk ${chunk.weekNumber} failed:`, error);
-        failedCount++;
       }
+      
+      // Final status update
+      const finalStatus = failedCount === 0 ? "complete" : (enrichedCount > 0 ? "partial" : "failed");
+      await storage.updateTrainingPlan(planId, { 
+        enrichmentStatus: finalStatus,
+        enrichedWeeks: enrichedCount,
+        enrichmentError: failedCount > 0 ? `${failedCount} of ${totalChunks} chunks failed` : undefined
+      });
+      
+      emitEnrichmentProgress(planId, enrichedCount, totalChunks, finalStatus);
+      console.log(`[PlanGenerator] Enrichment complete for plan ${planId}: ${finalStatus} (${enrichedCount}/${totalChunks})`);
+      
+    } catch (error) {
+      // Catch-all for unexpected errors
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      console.error(`[PlanGenerator] Background enrichment failed for plan ${planId}:`, error);
+      
+      await storage.updateTrainingPlan(planId, { 
+        enrichmentStatus: "failed",
+        enrichedWeeks: enrichedCount,
+        enrichmentError: `Enrichment failed: ${errorMsg}`
+      });
+      
+      emitEnrichmentProgress(planId, enrichedCount, totalChunks, "failed");
+    } finally {
+      // Clean up listeners after terminal event (give SSE clients time to receive final event)
+      setTimeout(() => enrichmentListeners.delete(planId), 2000);
     }
-    
-    // Final status update
-    const finalStatus = failedCount === 0 ? "complete" : (enrichedCount > 0 ? "partial" : "failed");
-    await storage.updateTrainingPlan(planId, { 
-      enrichmentStatus: finalStatus,
-      enrichedWeeks: enrichedCount,
-      enrichmentError: failedCount > 0 ? `${failedCount} chunks failed` : undefined
-    });
-    
-    emitEnrichmentProgress(planId, enrichedCount, totalChunks, finalStatus);
-    console.log(`[PlanGenerator] Enrichment complete for plan ${planId}: ${finalStatus} (${enrichedCount}/${totalChunks})`);
   }
 
   /**
