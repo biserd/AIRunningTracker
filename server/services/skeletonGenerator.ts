@@ -576,6 +576,105 @@ function allocateDistancesForWeek(args: {
   reconcileWeekTotal(days, W, longDay?.dayOfWeek ?? null);
 }
 
+export interface PlanRealismWarning {
+  type: "aggressive_volume" | "aggressive_long_run" | "insufficient_time" | "low_baseline";
+  severity: "info" | "warning" | "critical";
+  message: string;
+}
+
+export function computePlanRealism(
+  skeleton: PlanSkeleton,
+  profile: AthleteProfile,
+  request: PlanGenerationRequest
+): PlanRealismWarning[] {
+  const warnings: PlanRealismWarning[] = [];
+  
+  const baselineWeeklyKm = profile.baselineWeeklyMileageKm ?? 0;
+  const longestRecentRunKm = profile.longestRecentRunKm ?? 0;
+  const experience = inferExperienceLevel(profile);
+  const consistency = (profile as { consistency?: string }).consistency ?? "medium";
+  
+  const peakWeek = skeleton.weeks.reduce((max, w) => 
+    w.plannedDistanceKm > max.plannedDistanceKm ? w : max, skeleton.weeks[0]);
+  const peakWeeklyKm = peakWeek?.plannedDistanceKm ?? 0;
+  
+  const peakLongRunKm = Math.max(...skeleton.weeks.map(w => {
+    const lr = w.days.find(d => d.workoutType === "long_run");
+    return lr?.plannedDistanceKm ?? 0;
+  }));
+  
+  if (baselineWeeklyKm < 15 && skeleton.trainingPlan.goalType !== "5k") {
+    warnings.push({
+      type: "low_baseline",
+      severity: "warning",
+      message: `Your current weekly mileage (${baselineWeeklyKm.toFixed(0)}km) is quite low. Consider building a stronger base before starting this plan.`,
+    });
+  }
+  
+  const volumeRatio = peakWeeklyKm / Math.max(baselineWeeklyKm, 10);
+  if (volumeRatio > 2.5) {
+    warnings.push({
+      type: "aggressive_volume",
+      severity: "critical",
+      message: `Peak weekly volume (${peakWeeklyKm.toFixed(0)}km) is ${volumeRatio.toFixed(1)}x your current ${baselineWeeklyKm.toFixed(0)}km. This increases injury risk significantly.`,
+    });
+  } else if (volumeRatio > 2.0) {
+    warnings.push({
+      type: "aggressive_volume",
+      severity: "warning",
+      message: `Peak weekly volume (${peakWeeklyKm.toFixed(0)}km) is ${volumeRatio.toFixed(1)}x your current ${baselineWeeklyKm.toFixed(0)}km. Listen to your body and reduce if needed.`,
+    });
+  }
+  
+  const safeMaxDelta = experience === "beginner" ? 10 : experience === "intermediate" ? 14 : 18;
+  const adjustedMaxDelta = consistency === "low" ? safeMaxDelta - 2 : consistency === "high" ? safeMaxDelta + 2 : safeMaxDelta;
+  const longRunDelta = peakLongRunKm - longestRecentRunKm;
+  
+  if (longRunDelta > adjustedMaxDelta + 4) {
+    warnings.push({
+      type: "aggressive_long_run",
+      severity: "critical",
+      message: `Peak long run (${peakLongRunKm.toFixed(0)}km) is ${longRunDelta.toFixed(0)}km more than your recent longest (${longestRecentRunKm.toFixed(0)}km). This is a significant jump.`,
+    });
+  } else if (longRunDelta > adjustedMaxDelta) {
+    warnings.push({
+      type: "aggressive_long_run",
+      severity: "warning",
+      message: `Peak long run (${peakLongRunKm.toFixed(0)}km) increases ${longRunDelta.toFixed(0)}km from your recent longest. Progress carefully.`,
+    });
+  }
+  
+  const goalType = skeleton.trainingPlan.goalType;
+  const totalWeeks = skeleton.weeks.length;
+  const minSafeWeeks: Record<string, number> = {
+    marathon: 16,
+    half_marathon: 12,
+    "10k": 8,
+    "5k": 6,
+    general_fitness: 4,
+  };
+  const minWeeks = minSafeWeeks[goalType] ?? 8;
+  
+  if (totalWeeks < minWeeks) {
+    const weekDeficit = minWeeks - totalWeeks;
+    warnings.push({
+      type: "insufficient_time",
+      severity: weekDeficit >= 4 ? "critical" : "warning",
+      message: `${totalWeeks} weeks may not be enough for a ${goalType.replace("_", " ")} build. Ideally you'd have ${minWeeks}+ weeks.`,
+    });
+  }
+  
+  if (experience === "beginner" && totalWeeks < minWeeks + 2) {
+    warnings.push({
+      type: "insufficient_time",
+      severity: "info",
+      message: `As a beginner, extra preparation time helps. Consider a race date ${minWeeks + 4}+ weeks away.`,
+    });
+  }
+  
+  return warnings;
+}
+
 export function generateSkeleton(
   request: PlanGenerationRequest,
   profile: AthleteProfile,
