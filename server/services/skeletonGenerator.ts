@@ -56,6 +56,7 @@ export interface SkeletonWeek {
   plannedDistanceKm: number;
   plannedDurationMins: number | null;
   weekType: WeekType;
+  qualityLevel: 1 | 2 | 3 | 4 | 5;
   coachNotes: string | null;
   days: SkeletonDay[];
 }
@@ -345,6 +346,66 @@ function pickWeekType(
   return "build";
 }
 
+function computeQualityLevel(
+  weekType: WeekType,
+  weekNumber: number,
+  totalWeeks: number
+): 1 | 2 | 3 | 4 | 5 {
+  switch (weekType) {
+    case "base":
+      return weekNumber === 1 ? 1 : 2;
+    case "build": {
+      const buildProgress = weekNumber / totalWeeks;
+      return buildProgress < 0.5 ? 3 : 4;
+    }
+    case "peak":
+      return 5;
+    case "recovery":
+      return 2;
+    case "taper":
+      return 3;
+    default:
+      return 2;
+  }
+}
+
+type ExperienceLevel = "beginner" | "intermediate" | "advanced";
+
+function inferExperienceLevel(profile: AthleteProfile): ExperienceLevel {
+  const weeklyKm = profile.baselineWeeklyMileageKm ?? 0;
+  const longestRun = profile.longestRecentRunKm ?? 0;
+  const fitnessLevel = (profile as { fitnessLevel?: string }).fitnessLevel;
+  
+  if (fitnessLevel === "advanced" || weeklyKm >= 50 || longestRun >= 20) {
+    return "advanced";
+  }
+  if (fitnessLevel === "intermediate" || weeklyKm >= 25 || longestRun >= 12) {
+    return "intermediate";
+  }
+  return "beginner";
+}
+
+function getMaxLongRunDelta(
+  experience: ExperienceLevel,
+  consistency: string
+): number {
+  const baseDelta: Record<ExperienceLevel, number> = {
+    beginner: 10,
+    intermediate: 14,
+    advanced: 16,
+  };
+  
+  let delta = baseDelta[experience];
+  
+  if (consistency === "low") {
+    delta -= 2;
+  } else if (consistency === "high") {
+    delta += 2;
+  }
+  
+  return delta;
+}
+
 function buildLongRunProgression(
   settings: TrainingPlanSettings,
   profile: AthleteProfile,
@@ -357,7 +418,13 @@ function buildLongRunProgression(
 
   const buildWeeks = totalWeeks - taperWeeks;
   const longestRecentRun = profile.longestRecentRunKm || 8;
-  const peakLongRun = goalLongCapKm(settings.goalType as GoalType);
+  
+  const experience = inferExperienceLevel(profile);
+  const consistency = (profile as { consistency?: string }).consistency ?? "medium";
+  const maxDelta = getMaxLongRunDelta(experience, consistency);
+  
+  const goalCap = goalLongCapKm(settings.goalType as GoalType);
+  const peakLongRun = Math.min(goalCap, longestRecentRun + maxDelta);
   
   const startLongRun = Math.max(longestRecentRun * 0.8, 6);
 
@@ -583,6 +650,7 @@ export function generateSkeleton(
       plannedDistanceKm: roundToHalfKm(sumWeekKm(days)),
       plannedDurationMins: null,
       weekType,
+      qualityLevel: computeQualityLevel(weekType, w, settings.totalWeeks),
       coachNotes: null,
       days,
     });
