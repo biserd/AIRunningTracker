@@ -178,9 +178,10 @@ function buildWeeklyTargetsKm(
   const recoveryEvery = 4;
   const buildWeeks = W - taperWeeks;
 
+  const consistency = (profile as { consistency?: string }).consistency ?? "medium";
   const consistencyFactor =
-    profile.consistency === "low" ? 0.9 :
-    profile.consistency === "medium" ? 1.0 : 1.0;
+    consistency === "low" ? 0.9 :
+    consistency === "medium" ? 1.0 : 1.0;
 
   const baseWeeklyKm = profile.baselineWeeklyMileageKm || 20;
   const startKm = Math.max(10, baseWeeklyKm * consistencyFactor);
@@ -252,7 +253,7 @@ function buildScheduleTemplate(
     return settings.preferredLongRunDay.charAt(0).toUpperCase() + settings.preferredLongRunDay.slice(1, 3);
   })();
 
-  const longRunDay = runDays.includes(normalizedLongRunDay)
+  const longRunDay = runDays.includes(normalizedLongRunDay as typeof DOW[number])
     ? normalizedLongRunDay
     : runDays[runDays.length - 1] || "Sun";
 
@@ -278,7 +279,7 @@ function buildScheduleTemplate(
   for (const d of runDays) {
     if (template[d] === "tempo" || template[d] === "intervals" || template[d] === "hills") {
       const next = nextDow(d);
-      if (runDays.includes(next) && template[next] === "easy") template[next] = "recovery";
+      if (runDays.includes(next as typeof DOW[number]) && template[next] === "easy") template[next] = "recovery";
     }
   }
 
@@ -425,8 +426,9 @@ function allocateDistancesForWeek(args: {
   weekStart: Date;
   days: SkeletonDay[];
   prevWeekDistancesByDow: Record<string, number | null>;
+  longRunTarget: number;
 }) {
-  const { settings, profile, opts, weekType, weekTargetKm, days, prevWeekDistancesByDow } = args;
+  const { settings, opts, weekType, weekTargetKm, days, prevWeekDistancesByDow, longRunTarget } = args;
 
   const raceKm = goalDistanceKm(settings.goalType as GoalType);
   const raceDateISO = settings.raceDate ? toISO(settings.raceDate) : null;
@@ -454,45 +456,12 @@ function allocateDistancesForWeek(args: {
   const longDay = runDays.find(d => d.workoutType === "long_run");
   const raceDay = runDays.find(d => d.workoutType === "race");
 
-  const maxLongIncrease = (weekType === "recovery" || weekType === "taper") ? 0 : 2.0;
-  
-  const normalizedLongRunDay = (() => {
-    const lower = settings.preferredLongRunDay.toLowerCase();
-    if (lower === "sunday") return "Sun";
-    if (lower === "monday") return "Mon";
-    if (lower === "tuesday") return "Tue";
-    if (lower === "wednesday") return "Wed";
-    if (lower === "thursday") return "Thu";
-    if (lower === "friday") return "Fri";
-    if (lower === "saturday") return "Sat";
-    return settings.preferredLongRunDay.charAt(0).toUpperCase() + settings.preferredLongRunDay.slice(1, 3);
-  })();
-  
-  const prevLong = prevWeekDistancesByDow[normalizedLongRunDay] ?? null;
-
   let longKm = 0;
-  const longestRecentRunKm = profile.longestRecentRunKm || 10;
-  const goalLongCap = goalLongCapKm(settings.goalType as GoalType);
 
   if (raceDay) {
     longKm = raceDay.plannedDistanceKm ?? 0;
   } else if (opts.includeLongRuns && longDay) {
-    const raw = W * 0.30;
-    const minLong = Math.max(6, longestRecentRunKm * 0.5);
-    
-    longKm = roundToHalfKm(clamp(raw, minLong, goalLongCap));
-
-    if (prevLong && (weekType === "build" || weekType === "base" || weekType === "peak")) {
-      longKm = roundToHalfKm(clamp(longKm, prevLong - 1, prevLong + maxLongIncrease));
-    }
-    
-    if (weekType === "recovery") {
-      longKm = roundToHalfKm((prevLong ?? longKm) * 0.75);
-    }
-    if (weekType === "taper") {
-      longKm = roundToHalfKm((prevLong ?? longKm) * 0.70);
-    }
-    
+    longKm = longRunTarget;
     longDay.plannedDistanceKm = longKm;
     longDay.intensity = "moderate";
   }
@@ -563,7 +532,7 @@ export function generateSkeleton(
     goalType: request.goalType as GoalType,
     raceDate: request.raceDate ? new Date(request.raceDate) : null,
     targetTime: request.goalTimeTarget || null,
-    daysPerWeek: request.daysPerWeek || preferredDays.length,
+    daysPerWeek: preferredDays.length,
     preferredLongRunDay,
     preferredDays,
     allowCrossTraining: true,
@@ -575,6 +544,7 @@ export function generateSkeleton(
   const planStart = startOfWeek(opts.startDate, weekStartsOn);
 
   const weeklyTargets = buildWeeklyTargetsKm(settings, profile, planStart);
+  const longRunTargets = buildLongRunProgression(settings, profile, settings.totalWeeks);
 
   const scheduleTemplate = buildScheduleTemplate(settings, opts.includeSpeedwork, opts.includeLongRuns);
 
@@ -598,7 +568,8 @@ export function generateSkeleton(
       weekTargetKm: targetKm,
       weekStart,
       days,
-      prevWeekDistancesByDow
+      prevWeekDistancesByDow,
+      longRunTarget: longRunTargets[w - 1]
     });
 
     prevWeekDistancesByDow = Object.fromEntries(
