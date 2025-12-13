@@ -194,7 +194,7 @@ Ensure each week has 7 days. Use "rest" type for rest days.`;
           { role: "user", content: userPrompt },
         ],
         temperature: 0.7,
-        max_tokens: 8000,
+        max_tokens: 16000,
         response_format: { type: "json_object" },
       });
       
@@ -204,7 +204,28 @@ Ensure each week has 7 days. Use "rest" type for rest days.`;
         return null;
       }
       
-      const parsed = JSON.parse(content) as GeneratedPlan;
+      // Check if response was truncated (finish_reason !== 'stop')
+      const finishReason = response.choices[0]?.finish_reason;
+      if (finishReason === 'length') {
+        console.error("[PlanGenerator] Response was truncated due to token limit");
+        return null;
+      }
+      
+      let parsed: GeneratedPlan;
+      try {
+        parsed = JSON.parse(content) as GeneratedPlan;
+      } catch (parseError) {
+        console.error("[PlanGenerator] JSON parse failed, attempting repair...");
+        // Attempt to repair common JSON issues
+        const repaired = this.repairJSON(content);
+        if (repaired) {
+          parsed = repaired;
+          console.log("[PlanGenerator] JSON repair successful");
+        } else {
+          console.error("[PlanGenerator] JSON repair failed");
+          return null;
+        }
+      }
       
       // Validate structure
       if (!parsed.weeks || !Array.isArray(parsed.weeks)) {
@@ -215,6 +236,44 @@ Ensure each week has 7 days. Use "rest" type for rest days.`;
       return parsed;
     } catch (error) {
       console.error("[PlanGenerator] LLM call failed:", error);
+      return null;
+    }
+  }
+  
+  /**
+   * Attempt to repair malformed JSON from LLM
+   */
+  private repairJSON(content: string): GeneratedPlan | null {
+    try {
+      let repaired = content;
+      
+      // Remove any markdown code blocks
+      repaired = repaired.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+      
+      // Remove trailing commas before } or ]
+      repaired = repaired.replace(/,\s*([}\]])/g, '$1');
+      
+      // Remove JavaScript-style comments
+      repaired = repaired.replace(/\/\/[^\n]*/g, '');
+      repaired = repaired.replace(/\/\*[\s\S]*?\*\//g, '');
+      
+      // Try to fix truncated JSON by closing open brackets
+      const openBraces = (repaired.match(/{/g) || []).length;
+      const closeBraces = (repaired.match(/}/g) || []).length;
+      const openBrackets = (repaired.match(/\[/g) || []).length;
+      const closeBrackets = (repaired.match(/]/g) || []).length;
+      
+      // Add missing closing brackets/braces
+      for (let i = 0; i < openBrackets - closeBrackets; i++) {
+        repaired += ']';
+      }
+      for (let i = 0; i < openBraces - closeBraces; i++) {
+        repaired += '}';
+      }
+      
+      return JSON.parse(repaired) as GeneratedPlan;
+    } catch (error) {
+      console.error("[PlanGenerator] JSON repair attempt failed:", error);
       return null;
     }
   }
