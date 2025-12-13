@@ -4514,8 +4514,14 @@ ${allPages.map(page => `  <url>
   app.post("/api/training/plans/generate", authenticateJWT, async (req: any, res) => {
     try {
       const userId = req.user.id;
+      
+      // Get user's unit preference (fallback to "km" to match frontend behavior when null)
+      const user = await storage.getUser(userId);
+      const unitPreference = user?.unitPreference || "km";
+      
       const request = {
         userId,
+        unitPreference,
         ...req.body,
       };
       

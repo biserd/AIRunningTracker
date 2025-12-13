@@ -18,6 +18,7 @@ export interface PlanGenerationRequest {
   includeSpeedwork?: boolean;
   includeLongRuns?: boolean;
   experienceLevel?: "beginner" | "intermediate" | "advanced";
+  unitPreference?: "km" | "miles"; // User's preferred display unit
 }
 
 export interface PlanGenerationResult {
@@ -52,8 +53,11 @@ export class PlanGeneratorService {
         };
       }
       
+      // Determine unit preference
+      const useMiles = request.unitPreference === "miles";
+      
       // 3. Generate plan with LLM (with retry if weeks are too short)
-      let generatedPlan = await this.callLLMForPlan(request, profile, planWeeks);
+      let generatedPlan = await this.callLLMForPlan(request, profile, planWeeks, false, useMiles);
       
       if (!generatedPlan) {
         return {
@@ -67,7 +71,7 @@ export class PlanGeneratorService {
       if (generatedPlan.weeks.length < minWeeks) {
         console.log(`[PlanGenerator] Plan has ${generatedPlan.weeks.length} weeks, expected at least ${minWeeks}. Retrying...`);
         // Retry once with explicit week requirement
-        generatedPlan = await this.callLLMForPlan(request, profile, planWeeks, true);
+        generatedPlan = await this.callLLMForPlan(request, profile, planWeeks, true, useMiles);
         
         if (!generatedPlan || generatedPlan.weeks.length < minWeeks) {
           return {
@@ -152,11 +156,37 @@ export class PlanGeneratorService {
     request: PlanGenerationRequest,
     profile: AthleteProfile,
     totalWeeks: number,
-    strictWeeks: boolean = false
+    strictWeeks: boolean = false,
+    useMiles: boolean = false
   ): Promise<GeneratedPlan | null> {
     const weekRequirement = strictWeeks 
       ? `CRITICAL: You MUST generate EXACTLY ${totalWeeks} weeks. Do not generate fewer weeks.`
       : '';
+    
+    // Unit conversion helpers
+    const KM_TO_MILES = 0.621371;
+    const distUnit = useMiles ? "miles" : "km";
+    const paceUnit = useMiles ? "min/mile" : "min/km";
+    
+    // Convert profile values to display units for the prompt
+    const weeklyMileage = useMiles 
+      ? ((profile.baselineWeeklyMileageKm || 0) * KM_TO_MILES).toFixed(1)
+      : (profile.baselineWeeklyMileageKm?.toFixed(1) || "0");
+    const longestRun = useMiles
+      ? ((profile.longestRecentRunKm || 0) * KM_TO_MILES).toFixed(1)
+      : (profile.longestRecentRunKm?.toFixed(1) || "0");
+    
+    // Convert pace (min/km to min/mile if needed)
+    let easyPaceStr = "not available";
+    if (profile.typicalEasyPaceMin && profile.typicalEasyPaceMax) {
+      if (useMiles) {
+        const minPaceMile = profile.typicalEasyPaceMin / KM_TO_MILES;
+        const maxPaceMile = profile.typicalEasyPaceMax / KM_TO_MILES;
+        easyPaceStr = `${minPaceMile.toFixed(1)}-${maxPaceMile.toFixed(1)} ${paceUnit}`;
+      } else {
+        easyPaceStr = `${profile.typicalEasyPaceMin.toFixed(1)}-${profile.typicalEasyPaceMax.toFixed(1)} ${paceUnit}`;
+      }
+    }
     
     const systemPrompt = `You are an expert running coach creating personalized training plans. 
 You follow evidence-based training principles:
@@ -169,15 +199,19 @@ You follow evidence-based training principles:
 - Rest days are essential for adaptation
 ${weekRequirement}
 
+IMPORTANT: All distances in the JSON output MUST be in KILOMETERS (plannedDistanceKm field).
+However, all TEXT descriptions, titles, and targetPace values MUST use ${distUnit} and ${paceUnit}.
+This means: numeric distance fields are always in km, but human-readable text uses ${distUnit}.
+
 Output a complete training plan in JSON format.`;
 
     const userPrompt = `Create EXACTLY ${totalWeeks} weeks of training (weekNumber 1 through ${totalWeeks}) for a runner with:
 
 ATHLETE PROFILE:
-- Current weekly mileage: ${profile.baselineWeeklyMileageKm?.toFixed(1) || 0}km
+- Current weekly mileage: ${weeklyMileage} ${distUnit}
 - Average runs per week: ${profile.avgRunsPerWeek?.toFixed(1) || 0}
-- Longest recent run: ${profile.longestRecentRunKm?.toFixed(1) || 0}km
-- Easy pace: ${profile.typicalEasyPaceMin ? `${profile.typicalEasyPaceMin.toFixed(1)}-${profile.typicalEasyPaceMax?.toFixed(1)} min/km` : "not available"}
+- Longest recent run: ${longestRun} ${distUnit}
+- Easy pace: ${easyPaceStr}
 - Estimated VDOT: ${profile.estimatedVdot || "not available"}
 - Experience level: ${request.experienceLevel || "intermediate"}
 
@@ -194,6 +228,11 @@ ${request.constraints ? `- Notes: ${request.constraints}` : ""}
 - Include speedwork: ${request.includeSpeedwork !== false ? "yes" : "no"}
 - Include long runs: ${request.includeLongRuns !== false ? "yes" : "no"}
 
+CRITICAL UNIT INSTRUCTIONS:
+- All "plannedDistanceKm" fields MUST be in KILOMETERS (the database field name)
+- All "targetPace" values MUST use "${paceUnit}" format (e.g., "8:30-9:00 ${paceUnit}")
+- All text descriptions mentioning distances should use "${distUnit}"
+
 Output JSON with this exact structure:
 {
   "weeks": [
@@ -209,13 +248,13 @@ Output JSON with this exact structure:
           "description": "30 min easy pace",
           "plannedDistanceKm": 5.0,
           "plannedDurationMins": 30,
-          "targetPace": "5:30-6:00 min/km",
+          "targetPace": "8:30-9:00 ${paceUnit}",
           "intensity": "low|moderate|high"
         }
       ]
     }
   ],
-  "coachNotes": "Summary of the plan approach"
+  "coachNotes": "Summary of the plan approach (use ${distUnit} for any distances mentioned)"
 }
 
 Days of week: monday, tuesday, wednesday, thursday, friday, saturday, sunday.
