@@ -249,7 +249,7 @@ export class PlanGeneratorService {
       // Process chunks sequentially for progressive updates
       for (const chunk of weekChunks) {
         try {
-          const result = await this.fillWeekChunk(chunk, athleteContext, paceUnit);
+          const result = await this.fillWeekChunk(chunk, athleteContext, paceUnit, request.goalType, profile.estimatedVdot || 45);
           
           if (result.success && result.workouts) {
             const week = weekMap.get(chunk.weekNumber);
@@ -846,7 +846,9 @@ Ensure each week has 7 days. Use "rest" type for rest days.`;
       weekChunks,
       athleteContext,
       paceUnit,
-      CONCURRENCY_LIMIT
+      CONCURRENCY_LIMIT,
+      request.goalType,
+      profile.estimatedVdot || 45
     );
 
     const elapsed = Date.now() - startTime;
@@ -870,6 +872,7 @@ Ensure each week has 7 days. Use "rest" type for rest days.`;
       dayOfWeek: string;
       workoutType: string;
       distance: string;
+      distanceKm: number;
     }>;
   }> {
     const KM_TO_MILES = 0.621371;
@@ -878,7 +881,7 @@ Ensure each week has 7 days. Use "rest" type for rest days.`;
       weekNumber: number;
       weekType: string;
       qualityLevel: number;
-      workouts: Array<{ dayOfWeek: string; workoutType: string; distance: string }>;
+      workouts: Array<{ dayOfWeek: string; workoutType: string; distance: string; distanceKm: number }>;
     }> = [];
 
     for (const week of skeleton.weeks) {
@@ -888,6 +891,7 @@ Ensure each week has 7 days. Use "rest" type for rest days.`;
           dayOfWeek: d.dayOfWeek,
           workoutType: d.workoutType,
           distance: this.formatDistance(d.plannedDistanceKm || 0, useMiles) + distUnit,
+          distanceKm: d.plannedDistanceKm || 0,
         }));
 
       if (qualityWorkouts.length > 0) {
@@ -932,11 +936,13 @@ Ensure each week has 7 days. Use "rest" type for rest days.`;
       weekNumber: number;
       weekType: string;
       qualityLevel: number;
-      workouts: Array<{ dayOfWeek: string; workoutType: string; distance: string }>;
+      workouts: Array<{ dayOfWeek: string; workoutType: string; distance: string; distanceKm: number }>;
     }>,
     athleteContext: string,
     paceUnit: string,
-    concurrencyLimit: number
+    concurrencyLimit: number,
+    goalType: string,
+    vdot: number
   ): Promise<Array<{
     weekNumber: number;
     success: boolean;
@@ -967,7 +973,7 @@ Ensure each week has 7 days. Use "rest" type for rest days.`;
     // Process in batches with concurrency limit
     for (let i = 0; i < chunks.length; i += concurrencyLimit) {
       const batch = chunks.slice(i, i + concurrencyLimit);
-      const batchPromises = batch.map(chunk => this.fillWeekChunk(chunk, athleteContext, paceUnit));
+      const batchPromises = batch.map(chunk => this.fillWeekChunk(chunk, athleteContext, paceUnit, goalType, vdot));
       const batchResults = await Promise.all(batchPromises);
       results.push(...batchResults);
     }
@@ -976,17 +982,68 @@ Ensure each week has 7 days. Use "rest" type for rest days.`;
   }
 
   /**
+   * Generate cache fingerprint for a workout
+   * Format: {goalType}:{workoutType}:{qualityLevel}:{weekType}:{distanceBucket}:{vdotBucket}
+   */
+  private generateWorkoutFingerprint(
+    goalType: string,
+    workoutType: string,
+    qualityLevel: number,
+    weekType: string,
+    distanceKm: number,
+    vdot: number
+  ): string {
+    const distanceBucket = Math.round(distanceKm / 2) * 2;
+    const vdotBucket = Math.round(vdot / 5) * 5;
+    return `${goalType}:${workoutType}:${qualityLevel}:${weekType}:${distanceBucket}:${vdotBucket}`;
+  }
+
+  /**
+   * Personalize cached pace based on athlete's VDOT
+   * Uses VDOT-based pace calculation for consistent results
+   */
+  private personalizePace(vdot: number, workoutType: string, paceUnit: string): string {
+    // Base easy pace calculation from VDOT (min per km)
+    // Formula approximation: easy pace = 7.5 - (vdot - 30) * 0.05 min/km
+    const baseEasyPaceKm = Math.max(4.5, 7.5 - (vdot - 30) * 0.05);
+    
+    // Pace multipliers for different workout types
+    const paceMultipliers: Record<string, [number, number]> = {
+      tempo: [0.88, 0.92],      // 88-92% of easy pace (faster)
+      intervals: [0.80, 0.85],  // 80-85% of easy pace (fastest)
+      long_run: [1.00, 1.05],   // 100-105% of easy pace (slightly slower)
+      fartlek: [0.85, 0.95],    // Mixed paces
+      hills: [0.90, 0.95],      // Slightly faster than easy
+      progression: [0.90, 1.00], // Starts easy, ends faster
+    };
+    
+    const [minMult, maxMult] = paceMultipliers[workoutType] || [0.85, 0.95];
+    const minPaceKm = baseEasyPaceKm * minMult;
+    const maxPaceKm = baseEasyPaceKm * maxMult;
+    
+    // Convert to miles if needed
+    const KM_TO_MILES = 0.621371;
+    const minPace = paceUnit.includes("mile") ? minPaceKm / KM_TO_MILES : minPaceKm;
+    const maxPace = paceUnit.includes("mile") ? maxPaceKm / KM_TO_MILES : maxPaceKm;
+    
+    return `${this.formatPace(minPace, false)}-${this.formatPace(maxPace, false)} ${paceUnit}`;
+  }
+
+  /**
    * Fill a single week's quality workouts with compact LLM call
+   * Now includes caching: checks cache first, stores results after LLM call
    */
   private async fillWeekChunk(
     chunk: {
       weekNumber: number;
       weekType: string;
       qualityLevel: number;
-      workouts: Array<{ dayOfWeek: string; workoutType: string; distance: string }>;
+      workouts: Array<{ dayOfWeek: string; workoutType: string; distance: string; distanceKm: number }>;
     },
     athleteContext: string,
-    paceUnit: string
+    paceUnit: string,
+    goalType: string = "general_fitness",
+    vdot: number = 45
   ): Promise<{
     weekNumber: number;
     success: boolean;
@@ -1000,6 +1057,63 @@ Ensure each week has 7 days. Use "rest" type for rest days.`;
       mainSet: string;
     }>;
   }> {
+    // Step 1: Check cache for each workout
+    const cachedWorkouts: Array<{
+      dayOfWeek: string;
+      title: string;
+      description: string;
+      intensity: "moderate" | "high";
+      targetPace: string | null;
+      mainSet: string;
+    }> = [];
+    const uncachedWorkouts: typeof chunk.workouts = [];
+    
+    for (const workout of chunk.workouts) {
+      const fingerprint = this.generateWorkoutFingerprint(
+        goalType,
+        workout.workoutType,
+        chunk.qualityLevel,
+        chunk.weekType,
+        workout.distanceKm,
+        vdot
+      );
+      
+      try {
+        const cached = await storage.getWorkoutByFingerprint(fingerprint);
+        if (cached) {
+          // Cache hit! Personalize pace and add to results
+          await storage.incrementWorkoutCacheHit(fingerprint);
+          cachedWorkouts.push({
+            dayOfWeek: workout.dayOfWeek,
+            title: cached.title,
+            description: cached.descriptionTemplate,
+            intensity: cached.intensity as "moderate" | "high",
+            targetPace: this.personalizePace(vdot, workout.workoutType, paceUnit),
+            mainSet: cached.mainSetTemplate,
+          });
+          console.log(`[PlanGenerator] Cache HIT for ${fingerprint}`);
+        } else {
+          uncachedWorkouts.push(workout);
+        }
+      } catch (err) {
+        // Cache lookup failed, treat as uncached
+        uncachedWorkouts.push(workout);
+      }
+    }
+    
+    // Step 2: If all workouts are cached, return immediately
+    if (uncachedWorkouts.length === 0 && cachedWorkouts.length > 0) {
+      console.log(`[PlanGenerator] Week ${chunk.weekNumber}: All ${cachedWorkouts.length} workouts from cache`);
+      return {
+        weekNumber: chunk.weekNumber,
+        success: true,
+        workouts: cachedWorkouts,
+      };
+    }
+    
+    // Step 3: Call LLM for uncached workouts (or all if none cached)
+    const workoutsToFill = uncachedWorkouts.length > 0 ? uncachedWorkouts : chunk.workouts;
+    
     // Compact system prompt with strict limits
     const systemPrompt = `Running coach. Fill quality workouts. STRICT LIMITS:
 - title: max 6 words
@@ -1017,7 +1131,7 @@ JSON only. No markdown.`;
 
     const userPrompt = `${athleteContext}
 Week ${chunk.weekNumber} (${chunk.weekType}, level ${chunk.qualityLevel}):
-${JSON.stringify(chunk.workouts)}
+${JSON.stringify(workoutsToFill.map(w => ({ dayOfWeek: w.dayOfWeek, workoutType: w.workoutType, distance: w.distance })))}
 
 Output:
 {"weekNote":"...","workouts":[{"dayOfWeek":"...","title":"...","description":"...","intensity":"...","targetPace":"...","mainSet":"..."}]}`;
@@ -1030,7 +1144,7 @@ Output:
           { role: "user", content: userPrompt },
         ],
         temperature: 0.6,
-        max_tokens: 800, // Budget: ~400 tokens for 2 workouts + week note
+        max_tokens: 800,
         response_format: { type: "json_object" },
       });
 
@@ -1052,11 +1166,48 @@ Output:
         }>;
       };
 
+      // Step 4: Cache the LLM results
+      for (const llmWorkout of parsed.workouts || []) {
+        const matchingChunkWorkout = workoutsToFill.find(w => w.dayOfWeek === llmWorkout.dayOfWeek);
+        if (matchingChunkWorkout) {
+          const fingerprint = this.generateWorkoutFingerprint(
+            goalType,
+            matchingChunkWorkout.workoutType,
+            chunk.qualityLevel,
+            chunk.weekType,
+            matchingChunkWorkout.distanceKm,
+            vdot
+          );
+          
+          try {
+            await storage.cacheWorkout({
+              fingerprint,
+              goalType,
+              workoutType: matchingChunkWorkout.workoutType,
+              qualityLevel: chunk.qualityLevel,
+              weekType: chunk.weekType,
+              distanceBucket: Math.round(matchingChunkWorkout.distanceKm / 2) * 2,
+              vdotBucket: Math.round(vdot / 5) * 5,
+              title: llmWorkout.title,
+              descriptionTemplate: llmWorkout.description,
+              mainSetTemplate: llmWorkout.mainSet,
+              intensity: llmWorkout.intensity,
+            });
+            console.log(`[PlanGenerator] Cached workout: ${fingerprint}`);
+          } catch (err) {
+            console.warn(`[PlanGenerator] Failed to cache workout:`, err);
+          }
+        }
+      }
+
+      // Step 5: Merge cached and LLM results
+      const allWorkouts = [...cachedWorkouts, ...(parsed.workouts || [])];
+
       return {
         weekNumber: chunk.weekNumber,
         success: true,
         coachNotes: parsed.weekNote,
-        workouts: parsed.workouts || [],
+        workouts: allWorkouts,
       };
     } catch (error) {
       console.error(`[PlanGenerator] Week ${chunk.weekNumber} failed:`, error);
