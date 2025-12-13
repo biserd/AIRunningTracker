@@ -291,7 +291,8 @@ function generateWeeklyStructure(
 
 /**
  * Calculate weekly distance progression with recovery weeks
- * Recovery weeks use reduced mileage as the new baseline to prevent jumps
+ * Uses forward simulation to count actual build weeks, then distributes increments
+ * Respects caps throughout - no forced overrides that violate progression limits
  */
 function calculateWeeklyProgression(
   totalWeeks: number,
@@ -303,43 +304,65 @@ function calculateWeeklyProgression(
   const distances: number[] = [];
   const buildWeeks = totalWeeks - taperWeeks;
   
-  // Calculate required weekly increase to reach peak
-  const totalIncrease = targetPeakMileage - baselineMileage;
-  const nonRecoveryBuildWeeks = buildWeeks - Math.floor(buildWeeks / config.recoveryWeekFrequency);
-  const weeklyIncrease = totalIncrease / Math.max(nonRecoveryBuildWeeks, 1);
-  
-  // Cap weekly increase at max allowed (based on current mileage, not baseline)
+  // Max increase per week: 10-15% of current mileage
   const maxIncreasePercent = config.maxWeeklyIncreasePercent / 100;
   
-  let currentMileage = baselineMileage;
+  // First pass: identify which weeks are recovery weeks
+  const isRecoveryWeekArr: boolean[] = [];
   let weeksSinceRecovery = 0;
-  
-  // Build phase
   for (let week = 1; week <= buildWeeks; week++) {
     weeksSinceRecovery++;
+    const isRecovery = weeksSinceRecovery >= config.recoveryWeekFrequency && week < buildWeeks;
+    isRecoveryWeekArr.push(isRecovery);
+    if (isRecovery) weeksSinceRecovery = 0;
+  }
+  
+  // Count actual build weeks (non-recovery weeks)
+  const actualBuildWeeks = isRecoveryWeekArr.filter(r => !r).length;
+  
+  // Calculate the maximum achievable peak given caps
+  // Each week we can increase by maxIncreasePercent, compounding
+  // achievablePeak = baseline * (1 + maxIncreasePercent)^actualBuildWeeks
+  const maxAchievablePeak = baselineMileage * Math.pow(1 + maxIncreasePercent, actualBuildWeeks);
+  
+  // Use the lesser of target and achievable peak
+  const effectivePeakMileage = Math.min(targetPeakMileage, maxAchievablePeak);
+  
+  // Second pass: calculate distances with even distribution
+  let currentMileage = baselineMileage;
+  
+  for (let week = 1; week <= buildWeeks; week++) {
+    const isRecoveryWeek = isRecoveryWeekArr[week - 1];
     
-    // Check if this should be a recovery week
-    if (weeksSinceRecovery >= config.recoveryWeekFrequency && week < buildWeeks) {
-      // Recovery week - reduce by 20-25%
+    if (isRecoveryWeek) {
+      // Recovery week - reduce by 20-25% but DON'T reset currentMileage baseline
       const recoveryMileage = currentMileage * (1 - config.recoveryWeekReduction / 100);
       distances.push(Math.round(recoveryMileage * 10) / 10);
-      // Reset baseline to recovery level so next week builds from there
-      currentMileage = recoveryMileage;
-      weeksSinceRecovery = 0;
     } else {
-      // Progressive build week - increase from current level
-      // Cap increase at maxIncreasePercent of current mileage
-      const cappedIncrease = Math.min(weeklyIncrease, currentMileage * maxIncreasePercent);
-      currentMileage = Math.min(currentMileage + cappedIncrease, targetPeakMileage);
+      // Count remaining build weeks (non-recovery) from this week onwards
+      let remainingBuildWeeks = 0;
+      for (let w = week; w <= buildWeeks; w++) {
+        if (!isRecoveryWeekArr[w - 1]) remainingBuildWeeks++;
+      }
+      
+      // Calculate even increment to reach effective peak
+      const remainingDistance = effectivePeakMileage - currentMileage;
+      const evenIncrement = remainingBuildWeeks > 0 ? remainingDistance / remainingBuildWeeks : 0;
+      
+      // Apply cap: max 10-15% of current mileage
+      const maxIncrease = currentMileage * maxIncreasePercent;
+      const actualIncrement = Math.min(Math.max(evenIncrement, 0), maxIncrease);
+      
+      currentMileage = Math.min(currentMileage + actualIncrement, effectivePeakMileage);
       distances.push(Math.round(currentMileage * 10) / 10);
     }
   }
   
-  // Taper phase - progressive reduction from peak
-  const peakMileage = distances[distances.length - 1] || targetPeakMileage;
+  // Taper phase - progressive reduction from the achieved peak (last build week)
+  const achievedPeak = distances.length > 0 ? distances[distances.length - 1] : baselineMileage;
   for (let week = 1; week <= taperWeeks; week++) {
     const reductionPercent = 20 + (week * 10); // 30%, 40%, 50% reduction
-    const taperMileage = peakMileage * (1 - reductionPercent / 100);
+    const taperMileage = achievedPeak * (1 - reductionPercent / 100);
     distances.push(Math.round(taperMileage * 10) / 10);
   }
   
@@ -348,7 +371,8 @@ function calculateWeeklyProgression(
 
 /**
  * Calculate long run progression to reach peak
- * Recovery weeks use reduced distance as new baseline to prevent jumps
+ * Uses forward simulation to count actual build weeks, then distributes increments
+ * Respects caps throughout - no forced overrides that violate progression limits
  */
 function calculateLongRunProgression(
   totalWeeks: number,
@@ -360,44 +384,69 @@ function calculateLongRunProgression(
   const longRuns: number[] = [];
   const buildWeeks = totalWeeks - taperWeeks;
   
-  // Ensure starting long run is at least minEasyRunKm
-  const adjustedStart = Math.max(startingLongRun, config.minEasyRunKm + 2); // Long run should be > easy run
+  // Ensure starting long run is at least minEasyRunKm + 2
+  const adjustedStart = Math.max(startingLongRun, config.minEasyRunKm + 2);
   
-  // Calculate increment needed
-  const totalIncrease = peakLongRun - adjustedStart;
-  const nonRecoveryWeeks = buildWeeks - Math.floor(buildWeeks / config.recoveryWeekFrequency);
-  const weeklyIncrease = totalIncrease / Math.max(nonRecoveryWeeks, 1);
-  
-  // Cap at 15% increase per week (based on current, not initial)
+  // Max increase per week: ~1-2km or 15% of current, whichever is smaller
+  const maxAbsoluteIncreaseKm = 2.0;
   const maxIncreasePercent = 0.15;
   
-  let currentLongRun = adjustedStart;
+  // First pass: identify which weeks are recovery weeks
+  const isRecoveryWeekArr: boolean[] = [];
   let weeksSinceRecovery = 0;
-  
-  // Build phase
   for (let week = 1; week <= buildWeeks; week++) {
     weeksSinceRecovery++;
+    const isRecovery = weeksSinceRecovery >= config.recoveryWeekFrequency && week < buildWeeks;
+    isRecoveryWeekArr.push(isRecovery);
+    if (isRecovery) weeksSinceRecovery = 0;
+  }
+  
+  // Count actual build weeks (non-recovery weeks)
+  const actualBuildWeeks = isRecoveryWeekArr.filter(r => !r).length;
+  
+  // Calculate the maximum achievable peak given caps
+  // For long runs, we use the more restrictive cap: min(2km, 15% of current)
+  // Estimate using 15% compound growth (conservative estimate)
+  const maxAchievablePeak = adjustedStart * Math.pow(1 + maxIncreasePercent, actualBuildWeeks);
+  
+  // Use the lesser of target and achievable peak
+  const effectivePeakLongRun = Math.min(peakLongRun, maxAchievablePeak);
+  
+  // Second pass: calculate distances with even distribution
+  let currentLongRun = adjustedStart;
+  
+  for (let week = 1; week <= buildWeeks; week++) {
+    const isRecoveryWeek = isRecoveryWeekArr[week - 1];
     
-    if (weeksSinceRecovery >= config.recoveryWeekFrequency && week < buildWeeks) {
-      // Recovery week - reduce long run by 25%
+    if (isRecoveryWeek) {
+      // Recovery week - reduce long run by 25% but DON'T reset baseline
       const recoveryLongRun = currentLongRun * 0.75;
       longRuns.push(Math.round(recoveryLongRun * 10) / 10);
-      // Reset baseline to recovery level
-      currentLongRun = recoveryLongRun;
-      weeksSinceRecovery = 0;
     } else {
-      // Progressive week - increase long run
-      const cappedIncrease = Math.min(weeklyIncrease, currentLongRun * maxIncreasePercent);
-      currentLongRun = Math.min(currentLongRun + cappedIncrease, peakLongRun);
+      // Count remaining build weeks (non-recovery) from this week onwards
+      let remainingBuildWeeks = 0;
+      for (let w = week; w <= buildWeeks; w++) {
+        if (!isRecoveryWeekArr[w - 1]) remainingBuildWeeks++;
+      }
+      
+      // Calculate even increment to reach effective peak
+      const remainingDistance = effectivePeakLongRun - currentLongRun;
+      const evenIncrement = remainingBuildWeeks > 0 ? remainingDistance / remainingBuildWeeks : 0;
+      
+      // Apply caps: max 2km or 15% of current
+      const maxIncrease = Math.min(maxAbsoluteIncreaseKm, currentLongRun * maxIncreasePercent);
+      const actualIncrement = Math.min(Math.max(evenIncrement, 0), maxIncrease);
+      
+      currentLongRun = Math.min(currentLongRun + actualIncrement, effectivePeakLongRun);
       longRuns.push(Math.round(currentLongRun * 10) / 10);
     }
   }
   
-  // Taper phase - reduce long runs from peak
-  const peakLongRunActual = longRuns[longRuns.length - 1] || peakLongRun;
+  // Taper phase - reduce long runs from the achieved peak (last build week)
+  const achievedPeak = longRuns.length > 0 ? longRuns[longRuns.length - 1] : adjustedStart;
   for (let week = 1; week <= taperWeeks; week++) {
     const reductionPercent = 25 + (week * 15); // 40%, 55%, 70% reduction
-    const taperLongRun = peakLongRunActual * (1 - reductionPercent / 100);
+    const taperLongRun = achievedPeak * (1 - reductionPercent / 100);
     longRuns.push(Math.round(Math.max(taperLongRun, config.minEasyRunKm) * 10) / 10);
   }
   
