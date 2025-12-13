@@ -1,0 +1,123 @@
+1) Change the fill call to a “compact fill contract”
+
+Right now your model is likely producing:
+
+multi-paragraph descriptions
+
+long coachNotes
+
+verbose warmup/main/cooldown strings
+
+Instead, enforce hard length budgets per workout and per field.
+
+Developer change
+
+Update the fill prompt to include strict caps (and reject outputs that exceed them):
+
+title: max 8 words
+
+description: max 240 characters (1–2 sentences)
+
+workoutStructure.warmup/main/cooldown: max 120 characters each
+
+workoutStructure.intervals: max 6 items; each interval pace/rest strings max 24 characters
+
+coachNotes: max 180 characters (optional)
+
+This alone usually drops output tokens by 3–6×.
+
+Important: If you already template warmup/cooldown, don’t ask the model to write them. Let the model output only the main set.
+
+2) Don’t fill 28 workouts in one call
+
+Even compact output, doing all 28 in one request is still fragile (and slow). Split it.
+
+Recommended chunking
+
+Batch by week:
+
+1 request per week
+
+Each request fills:
+
+the week’s weekCoachNotes
+
+the week’s 1–2 quality workouts
+
+That’s 14 requests, each very small, easy to retry, and no truncation risk.
+
+If you want even tighter:
+
+1 request per workout (28 requests) with concurrency 3–6.
+
+Backend behavior
+
+Prepare QualityFillWorkItem[] (planDayId + workoutType + plannedDistanceKm + qualityLevel + targetPace/zone already computed).
+
+Chunk into week groups (or per-workout).
+
+Call model per chunk.
+
+Merge results into DB.
+
+3) Stop sending/receiving “structural fields” in the fill call
+
+The fill endpoint shouldn’t even include plannedDistanceKm for the model to echo back (that wastes tokens and invites drift).
+
+Developer change
+
+In the AI fill call:
+
+Input includes planDayId, date, workoutType, qualityLevel, targetPace/zone and the precomputed distance (read-only).
+
+Output should be ONLY:
+
+{
+  "workouts": [
+    {
+      "planDayId": 123,
+      "title": "...",
+      "description": "...",
+      "intensity": "high",
+      "targetPace": "...",
+      "targetHrZone": null,
+      "workoutStructure": {
+        "main": "...",
+        "intervals": [...]
+      }
+    }
+  ],
+  "weekCoachNotes": "..."
+}
+
+
+Then you merge those fields onto the existing PlanDay rows.
+
+4) Set max_output_tokens based on a budget, not a guess
+
+Your current “4000 tokens for 28 workouts” is only ~140 tokens per workout including JSON overhead — and your prose likely exceeds that.
+
+With the compact contract above, you can estimate:
+
+~80–140 output tokens per workout (compact)
+
+~150–250 tokens for week note
+
+So per-week call (2 workouts) is ~400–600 tokens.
+Set max_output_tokens = 800 (safe headroom).
+
+This is the most reliable approach: small, bounded outputs per call.
+
+5) Add a “degrade gracefully” strategy instead of all-or-nothing
+
+Right now truncation causes “templates only for everything.” Better:
+
+If a chunk fill fails:
+
+keep templates for those workouts
+
+mark those planDays as needsEnrichment=true
+
+retry later (even if you defer full async UX, a simple retry queue helps)
+
+This prevents “one failure nukes the whole plan quality.”
