@@ -502,6 +502,14 @@ export default function Dashboard() {
               hasChatted={(conversationSummaries?.length || 0) > 0}
             />
 
+            {/* My Goals - moved up for visibility */}
+            <GoalProgress userId={user?.id!} unitPreference={dashboardData?.user?.unitPreference} />
+            
+            <AIInsights insights={dashboardData?.insights || {}} userId={user?.id!} />
+            <InsightHistory userId={user?.id!} />
+            <TrainingRecommendations recommendations={dashboardData?.insights?.recommendations || []} userId={user?.id!} />
+            <FitnessTrends chartData={dashboardData?.chartData || []} unitPreference={dashboardData?.user?.unitPreference} />
+
             {/* Recent Conversations - Premium Only */}
             {canAccessAICoachChat && (
               <RecentConversations 
@@ -512,12 +520,8 @@ export default function Dashboard() {
               />
             )}
             
-            <AIInsights insights={dashboardData?.insights || {}} userId={user?.id!} />
-            <InsightHistory userId={user?.id!} />
-            <TrainingRecommendations recommendations={dashboardData?.insights?.recommendations || []} userId={user?.id!} />
+            {/* Running Shoe Hub - at bottom */}
             <ShoeHub />
-            <FitnessTrends chartData={dashboardData?.chartData || []} unitPreference={dashboardData?.user?.unitPreference} />
-            <GoalProgress userId={user?.id!} unitPreference={dashboardData?.user?.unitPreference} />
           </div>
         </div>
       </main>
