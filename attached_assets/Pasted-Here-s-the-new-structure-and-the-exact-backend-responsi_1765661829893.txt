@@ -1,0 +1,233 @@
+Here’s the **new structure** and the exact “backend responsibilities” you should give your developer. This is the shift from “LLM generates the plan” → to **“backend generates the plan skeleton, LLM fills coaching content.”** This is what stops the random days/distances problem.
+
+---
+
+## The new structure at a glance
+
+### Backend = **Plan Engine (deterministic)**
+
+* Builds the **schedule + mileage math** (weeks, run days, distances, week types, taper/cutback).
+* Produces a **Plan Skeleton JSON** matching your `weeks[].days[]` shape.
+* Validates and enforces “common running principles” deterministically.
+
+### LLM = **Coach Layer (text + intensity)**
+
+* Takes the skeleton and fills:
+
+  * `title`
+  * `description`
+  * `intensity` + `targetPace/targetHrZone`
+  * `workoutStructure` (warmup/main/cooldown/intervals)
+  * `weeks[].coachNotes` and optional plan-level coach note
+
+LLM is **not allowed** to change:
+
+* dates, run days, workoutType pattern, distances, week totals
+
+---
+
+## What the backend should do (developer checklist)
+
+### 1) Create an AthleteProfile snapshot (input features)
+
+Backend computes and stores/retrieves (from Strava-derived stats):
+
+* `currentWeeklyKm` (e.g., avg last 4–8 weeks)
+* `runsPerWeekAvg`
+* `longestRecentRunKm`
+* `easyPace` (or HR-based easy HR)
+* `vdot` (if you use it)
+* optional: injury flags, training consistency score
+
+This is used to pick a safe starting point and week targets.
+
+---
+
+### 2) Choose a schedule template (fixed run days)
+
+Given:
+
+* `daysPerWeek`
+* `preferredDays[]`
+* `preferredLongRunDay`
+* `includeSpeedwork`
+* `allowCrossTraining`
+
+Backend assigns workout roles to the preferred days consistently:
+
+Example for **4 days/week** (Tue/Thu/Sat/Sun):
+
+* Tue = Quality (tempo/intervals alternating)
+* Thu = Easy (optionally strides/drills)
+* Sat = Easy/recovery
+* Sun = Long run
+
+Rules:
+
+* Exactly 1 long run per week (if enabled)
+* Max 1 quality day if daysPerWeek ≤ 4, else max 2
+* Never back-to-back hard days
+* Non-preferred days become `rest` or `cross_training` (if allowed)
+
+**Important:** This pattern is the same every week (except race week).
+
+---
+
+### 3) Build weekly mileage targets (deterministic)
+
+Backend produces `weeklyTargetsKm[1..totalWeeks]` using rules:
+
+* Week 1 target:
+
+  * Usually `currentWeeklyKm` (or 90% if inconsistent)
+* Build weeks:
+
+  * +5–10% week-over-week, never >15%
+* Recovery/cutback:
+
+  * every 3–4 weeks reduce 20–25%
+* Taper:
+
+  * Marathon: last 2–3 weeks reduce volume
+  * Half: last 1–2 weeks
+  * 5k/10k: last 1 week
+* Also enforce:
+
+  * Long run never jumps > ~1–2 km/week
+  * If goal timeline is too short relative to baseline, clamp the progression and optionally warn
+
+This becomes the authoritative “week totals”.
+
+---
+
+### 4) Allocate per-day distances from the weekly total (deterministic)
+
+For each week with total `W`:
+
+* Long run distance = `clamp(W * 0.28..0.32, minLong, maxLong)`
+
+  * and must be longest
+* Quality day distance (includes warmup/cooldown) = `W * 0.18..0.22`
+* Remaining distance split across easy days
+
+Smoothing constraints:
+
+* Each weekday run distance should change by ≤ 1–2 km vs previous week (unless cutback/taper)
+* Easy run should not exceed quality or long run
+* If user selected “no speedwork”, quality days become easy/steady runs but keep distances
+
+---
+
+### 5) Assign weekType by phase
+
+Backend assigns:
+
+* `base` early weeks
+* `build` mid
+* `peak` near max week(s)
+* `recovery` on cutback weeks
+* `taper` final taper weeks (and race week)
+
+This should be deterministic; the LLM can write notes about it, but backend sets it.
+
+---
+
+### 6) Generate the Plan Skeleton JSON (matching your schema)
+
+Backend creates the JSON that the model will fill.
+
+For each week:
+
+* `plannedDistanceKm` = weekly target
+* create 7 `days[]` entries with:
+
+  * `date`, `dayOfWeek`
+  * `workoutType` (from template)
+  * `plannedDistanceKm` for run days; null for rest/cross-training
+  * `plannedDurationMins` optionally computed or left null
+  * set empty placeholders:
+
+    * `title: ""`
+    * `description: null`
+    * `targetPace: null`
+    * `targetHrZone: null`
+    * `intensity: "low"` default
+    * `workoutStructure: null`
+
+**Race day handling:**
+If `raceDate` falls inside the plan:
+
+* Set that day `workoutType="race"`
+* plannedDistanceKm = race distance
+* Ensure prior weeks are taper
+
+---
+
+### 7) Call the LLM with “Fill Skeleton” prompt
+
+Backend sends:
+
+* Athlete profile summary
+* Plan settings
+* Skeleton JSON
+
+LLM returns the same JSON with filled content.
+
+---
+
+### 8) Post-process & enforce invariants (hard overwrite)
+
+Backend must:
+
+* Parse JSON
+* **Overwrite** these fields with the skeleton values (authoritative):
+
+  * `weekStartDate`, `weekEndDate`, `plannedDistanceKm`, `date`, `dayOfWeek`, `workoutType`, `plannedDistanceKm` at day-level
+* Keep only the filled fields from LLM:
+
+  * `title`, `description`, `intensity`, `targetPace/targetHrZone`, `workoutStructure`, `coachNotes`
+
+Then run final validation:
+
+* week totals match sums
+* long run is longest
+* quality count <= allowed
+* no back-to-back hard days
+* taper/cutback rules satisfied
+
+If violations appear (should be rare with skeleton):
+
+* auto-correct locally (preferred) OR
+* re-prompt LLM with “repair content only” (no structure changes)
+
+---
+
+### 9) Save to your tables
+
+* Create `TrainingPlan` record
+* Insert `PlanWeek` rows
+* Insert `PlanDay` rows
+* Store `generationPrompt` (optional) for audit/debug
+
+---
+
+## What to tell the developer (copy/paste message)
+
+> **We need to change plan generation to a 2-layer system:**
+>
+> 1. Backend generates a deterministic plan skeleton (dates, preferred run days, week totals, week types, workout types, and per-day distances).
+> 2. LLM only fills coaching content (titles, descriptions, intensity, pace/HR guidance, workoutStructure, coach notes) and is forbidden from changing structure/distances.
+>
+> **Backend must own:**
+>
+> * schedule template selection from preferredDays/daysPerWeek/longRunDay/speedwork
+> * weekly target km progression (build/cutback/taper)
+> * per-day distance allocation (long run 28–32% of weekly total, quality distance %, smooth week-to-week changes)
+> * race day placement and taper weeks
+> * hard validation + overwrite of structure fields after LLM returns
+>
+> LLM output should be treated as “text + intensity only.”
+
+---
+
+If you want, I can also provide a **pseudo-code skeleton generator** (for weekly targets + day distance allocation) that your developer can implement quickly in TS/Node.
