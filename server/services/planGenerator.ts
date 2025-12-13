@@ -32,6 +32,41 @@ export interface PlanGenerationResult {
   error?: string;
 }
 
+export interface InstantPlanResult {
+  success: boolean;
+  planId?: number;
+  plan?: TrainingPlan;
+  totalWeeks?: number;
+  enrichmentStatus?: "pending" | "enriching" | "complete" | "partial" | "failed";
+  error?: string;
+}
+
+// SSE event emitter for enrichment progress
+type EnrichmentListener = (event: { planId: number; enrichedWeeks: number; totalWeeks: number; status: string }) => void;
+const enrichmentListeners = new Map<number, Set<EnrichmentListener>>();
+
+export function subscribeToEnrichment(planId: number, listener: EnrichmentListener): () => void {
+  if (!enrichmentListeners.has(planId)) {
+    enrichmentListeners.set(planId, new Set());
+  }
+  enrichmentListeners.get(planId)!.add(listener);
+  return () => {
+    enrichmentListeners.get(planId)?.delete(listener);
+    if (enrichmentListeners.get(planId)?.size === 0) {
+      enrichmentListeners.delete(planId);
+    }
+  };
+}
+
+function emitEnrichmentProgress(planId: number, enrichedWeeks: number, totalWeeks: number, status: string) {
+  const listeners = enrichmentListeners.get(planId);
+  if (listeners) {
+    Array.from(listeners).forEach(listener => {
+      listener({ planId, enrichedWeeks, totalWeeks, status });
+    });
+  }
+}
+
 export class PlanGeneratorService {
   /**
    * Generate a complete training plan for a user
@@ -104,6 +139,254 @@ export class PlanGeneratorService {
         error: error instanceof Error ? error.message : "Unknown error occurred",
       };
     }
+  }
+
+  /**
+   * INSTANT PLAN GENERATION - Returns immediately with template content
+   * Background enrichment fills in quality workouts progressively
+   */
+  async generatePlanInstant(request: PlanGenerationRequest): Promise<InstantPlanResult> {
+    console.log(`[PlanGenerator] Instant generation: ${request.goalType} plan for user ${request.userId}`);
+    
+    try {
+      // 1. Get or compute athlete profile
+      const profile = await athleteProfileService.getOrComputeProfile(request.userId);
+      
+      // 2. Calculate plan duration
+      const raceDate = request.raceDate ? new Date(request.raceDate) : undefined;
+      const planWeeks = this.calculatePlanWeeks(request, profile, raceDate);
+      
+      if (planWeeks < 4) {
+        return {
+          success: false,
+          error: "Not enough time before race date. Please select a date at least 4 weeks away.",
+        };
+      }
+      
+      // Determine unit preference
+      const useMiles = request.unitPreference === "miles";
+      
+      // 3. Generate skeleton with fixed structure (instant, ~100ms)
+      console.log(`[PlanGenerator] Generating skeleton for ${planWeeks} weeks`);
+      const skeleton = generateSkeleton(request, profile, planWeeks);
+      console.log(`[PlanGenerator] Skeleton generated with ${skeleton.weeks.length} weeks`);
+      
+      // 4. Fill non-quality days with templates (instant, ~50ms)
+      const templateFilledSkeleton = this.fillNonQualityDaysWithTemplates(skeleton, profile, useMiles);
+      
+      // 5. Convert to plan format and save immediately with "enriching" status
+      const templatePlan = this.skeletonToGeneratedPlan(templateFilledSkeleton);
+      const savedPlan = await this.savePlanFromSkeletonWithStatus(
+        request, 
+        skeleton, 
+        templatePlan, 
+        profile,
+        "enriching" // Status indicates enrichment in progress
+      );
+      
+      console.log(`[PlanGenerator] Plan ${savedPlan.id} saved instantly, starting background enrichment`);
+      
+      // 6. Start background enrichment (fire and forget)
+      this.enrichPlanInBackground(savedPlan.id, skeleton, profile, request, useMiles)
+        .catch(err => console.error(`[PlanGenerator] Background enrichment failed for plan ${savedPlan.id}:`, err));
+      
+      return {
+        success: true,
+        planId: savedPlan.id,
+        plan: savedPlan,
+        totalWeeks: skeleton.weeks.length,
+        enrichmentStatus: "enriching",
+      };
+    } catch (error) {
+      console.error(`[PlanGenerator] Instant generation error:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error occurred",
+      };
+    }
+  }
+
+  /**
+   * Background enrichment - processes quality workouts one chunk at a time
+   * Updates database progressively and emits SSE events
+   */
+  private async enrichPlanInBackground(
+    planId: number,
+    skeleton: PlanSkeleton,
+    profile: AthleteProfile,
+    request: PlanGenerationRequest,
+    useMiles: boolean
+  ): Promise<void> {
+    const paceUnit = useMiles ? "min/mile" : "min/km";
+    const athleteContext = this.buildCompactAthleteContext(profile, request, useMiles);
+    
+    // Group quality workouts by week
+    const weekChunks = this.groupQualityWorkoutsByWeek(skeleton, useMiles);
+    const totalChunks = weekChunks.length;
+    
+    console.log(`[PlanGenerator] Starting background enrichment for plan ${planId} (${totalChunks} chunks)`);
+    
+    if (totalChunks === 0) {
+      // No quality workouts to enrich, mark complete
+      await storage.updateTrainingPlan(planId, { 
+        enrichmentStatus: "complete",
+        enrichedWeeks: skeleton.weeks.length 
+      });
+      emitEnrichmentProgress(planId, skeleton.weeks.length, skeleton.weeks.length, "complete");
+      return;
+    }
+    
+    let enrichedCount = 0;
+    let failedCount = 0;
+    
+    // Process chunks sequentially for progressive updates
+    for (const chunk of weekChunks) {
+      try {
+        const result = await this.fillWeekChunk(chunk, athleteContext, paceUnit);
+        
+        if (result.success && result.workouts) {
+          // Get the week from database and update its days
+          const weeks = await storage.getPlanWeeks(planId);
+          const week = weeks.find((w: any) => w.weekNumber === chunk.weekNumber);
+          
+          if (week) {
+            // Update each quality workout day
+            const days = await storage.getPlanDays(week.id);
+            for (const workout of result.workouts) {
+              const day = days.find((d: any) => 
+                d.dayOfWeek === workout.dayOfWeek && 
+                this.qualityWorkoutTypes.has(d.workoutType)
+              );
+              if (day) {
+                await storage.updatePlanDay(day.id, {
+                  title: workout.title,
+                  description: workout.description,
+                  intensity: workout.intensity,
+                  targetPace: workout.targetPace || undefined,
+                  workoutStructure: {
+                    warmup: "10 min easy jog + dynamic stretches",
+                    main: workout.mainSet || "",
+                    cooldown: "10 min easy jog + stretching",
+                  },
+                });
+              }
+            }
+            
+            // Mark week as enriched
+            await storage.updatePlanWeek(week.id, { enriched: true });
+          }
+          enrichedCount++;
+        } else {
+          failedCount++;
+        }
+        
+        // Update plan progress and emit event
+        await storage.updateTrainingPlan(planId, { 
+          enrichedWeeks: enrichedCount 
+        });
+        emitEnrichmentProgress(planId, enrichedCount, totalChunks, "enriching");
+        
+      } catch (error) {
+        console.error(`[PlanGenerator] Chunk ${chunk.weekNumber} failed:`, error);
+        failedCount++;
+      }
+    }
+    
+    // Final status update
+    const finalStatus = failedCount === 0 ? "complete" : (enrichedCount > 0 ? "partial" : "failed");
+    await storage.updateTrainingPlan(planId, { 
+      enrichmentStatus: finalStatus,
+      enrichedWeeks: enrichedCount,
+      enrichmentError: failedCount > 0 ? `${failedCount} chunks failed` : undefined
+    });
+    
+    emitEnrichmentProgress(planId, enrichedCount, totalChunks, finalStatus);
+    console.log(`[PlanGenerator] Enrichment complete for plan ${planId}: ${finalStatus} (${enrichedCount}/${totalChunks})`);
+  }
+
+  /**
+   * Save plan with specific enrichment status
+   */
+  private async savePlanFromSkeletonWithStatus(
+    request: PlanGenerationRequest,
+    skeleton: PlanSkeleton,
+    plan: GeneratedPlan,
+    profile: AthleteProfile,
+    enrichmentStatus: "pending" | "enriching" | "complete" | "partial" | "failed"
+  ): Promise<TrainingPlan> {
+    const raceDate = request.raceDate ? new Date(request.raceDate) : null;
+    
+    // Create the main plan record with enrichment status
+    const planData: InsertTrainingPlan = {
+      userId: request.userId,
+      goalType: request.goalType,
+      raceDate: raceDate || undefined,
+      targetTime: request.goalTimeTarget || undefined,
+      daysPerWeek: skeleton.trainingPlan.daysPerWeek,
+      preferredLongRunDay: skeleton.trainingPlan.preferredLongRunDay,
+      preferredDays: skeleton.trainingPlan.preferredDays,
+      allowCrossTraining: skeleton.trainingPlan.allowCrossTraining,
+      paceBasedWorkouts: skeleton.trainingPlan.paceBasedWorkouts,
+      status: "active",
+      totalWeeks: skeleton.weeks.length,
+      currentWeek: 1,
+      coachNotes: plan.coachNotes || undefined,
+      generationPrompt: request.constraints || undefined,
+      enrichmentStatus,
+      enrichedWeeks: 0,
+    };
+    
+    const savedPlan = await storage.createTrainingPlanV2(planData);
+    
+    // Save weeks and days using skeleton dates
+    for (let i = 0; i < skeleton.weeks.length; i++) {
+      const skeletonWeek = skeleton.weeks[i];
+      const planWeek = plan.weeks[i];
+      
+      const weekData: InsertPlanWeek = {
+        planId: savedPlan.id,
+        weekNumber: skeletonWeek.weekNumber,
+        weekType: skeletonWeek.weekType,
+        weekStartDate: new Date(skeletonWeek.weekStartDate),
+        weekEndDate: new Date(skeletonWeek.weekEndDate),
+        plannedDistanceKm: skeletonWeek.plannedDistanceKm,
+        plannedDurationMins: skeletonWeek.plannedDurationMins || undefined,
+        coachNotes: undefined,
+        enriched: false, // Not enriched yet
+      };
+      
+      const savedWeek = await storage.createPlanWeek(weekData);
+      
+      // Save days using skeleton dates but template content
+      for (let j = 0; j < skeletonWeek.days.length; j++) {
+        const skeletonDay = skeletonWeek.days[j];
+        const planDay = planWeek?.days[j];
+        
+        const dayData: InsertPlanDay = {
+          weekId: savedWeek.id,
+          planId: savedPlan.id,
+          date: new Date(skeletonDay.date),
+          dayOfWeek: skeletonDay.dayOfWeek,
+          workoutType: skeletonDay.workoutType,
+          title: planDay?.title || this.getDefaultTitle(skeletonDay.workoutType),
+          description: planDay?.description || undefined,
+          plannedDistanceKm: skeletonDay.plannedDistanceKm || undefined,
+          plannedDurationMins: skeletonDay.plannedDurationMins || undefined,
+          targetPace: planDay?.targetPace || undefined,
+          targetHrZone: planDay?.targetHrZone || undefined,
+          intensity: planDay?.intensity || this.getDefaultIntensity(skeletonDay.workoutType),
+          workoutStructure: planDay?.workoutStructure || undefined,
+          userNotes: undefined,
+          perceivedEffort: undefined,
+        };
+        
+        await storage.createPlanDay(dayData);
+      }
+    }
+    
+    console.log(`[PlanGenerator] Plan ${savedPlan.id} saved with status '${enrichmentStatus}'`);
+    
+    return savedPlan;
   }
   
   /**

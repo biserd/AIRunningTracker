@@ -4510,7 +4510,7 @@ ${allPages.map(page => `  <url>
     }
   });
   
-  // Generate training plan
+  // Generate training plan (instant version with background enrichment)
   app.post("/api/training/plans/generate", authenticateJWT, async (req: any, res) => {
     try {
       const userId = req.user.id;
@@ -4525,16 +4525,107 @@ ${allPages.map(page => `  <url>
         ...req.body,
       };
       
-      const result = await planGeneratorService.generatePlan(request);
+      // Use instant generation - returns immediately, enrichment happens in background
+      const result = await planGeneratorService.generatePlanInstant(request);
       
       if (!result.success) {
         return res.status(400).json({ message: result.error });
       }
       
-      res.json(result);
+      // Return with enrichment info
+      res.json({
+        success: true,
+        plan: result.plan,
+        planId: result.planId,
+        totalWeeks: result.totalWeeks,
+        enrichmentStatus: result.enrichmentStatus,
+      });
     } catch (error: any) {
       console.error("Generate training plan error:", error);
       res.status(500).json({ message: error.message || "Failed to generate training plan" });
+    }
+  });
+  
+  // SSE endpoint for enrichment progress
+  app.get("/api/training/plans/:planId/enrichment-stream", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const planId = parseInt(req.params.planId);
+      
+      // Verify ownership
+      const plan = await storage.getTrainingPlanById(planId);
+      if (!plan || plan.userId !== userId) {
+        return res.status(404).json({ message: "Training plan not found" });
+      }
+      
+      // Set SSE headers
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.flushHeaders();
+      
+      // Send initial status
+      res.write(`data: ${JSON.stringify({
+        planId,
+        enrichedWeeks: plan.enrichedWeeks || 0,
+        totalWeeks: plan.totalWeeks,
+        status: plan.enrichmentStatus || 'pending'
+      })}\n\n`);
+      
+      // If already complete, close connection
+      if (plan.enrichmentStatus === 'complete' || plan.enrichmentStatus === 'failed' || plan.enrichmentStatus === 'partial') {
+        res.write(`data: ${JSON.stringify({ done: true, status: plan.enrichmentStatus })}\n\n`);
+        res.end();
+        return;
+      }
+      
+      // Subscribe to enrichment updates
+      const { subscribeToEnrichment } = await import("./services/planGenerator");
+      const unsubscribe = subscribeToEnrichment(planId, (event) => {
+        res.write(`data: ${JSON.stringify(event)}\n\n`);
+        
+        // Close on completion
+        if (event.status === 'complete' || event.status === 'failed' || event.status === 'partial') {
+          res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+          setTimeout(() => {
+            unsubscribe();
+            res.end();
+          }, 100);
+        }
+      });
+      
+      // Handle client disconnect
+      req.on('close', () => {
+        unsubscribe();
+      });
+      
+    } catch (error: any) {
+      console.error("Enrichment stream error:", error);
+      res.status(500).json({ message: error.message || "Failed to stream enrichment status" });
+    }
+  });
+  
+  // Get enrichment status (polling alternative)
+  app.get("/api/training/plans/:planId/enrichment-status", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const planId = parseInt(req.params.planId);
+      
+      const plan = await storage.getTrainingPlanById(planId);
+      if (!plan || plan.userId !== userId) {
+        return res.status(404).json({ message: "Training plan not found" });
+      }
+      
+      res.json({
+        planId,
+        enrichmentStatus: plan.enrichmentStatus || 'pending',
+        enrichedWeeks: plan.enrichedWeeks || 0,
+        totalWeeks: plan.totalWeeks,
+        enrichmentError: plan.enrichmentError,
+      });
+    } catch (error: any) {
+      console.error("Get enrichment status error:", error);
+      res.status(500).json({ message: error.message || "Failed to get enrichment status" });
     }
   });
   
