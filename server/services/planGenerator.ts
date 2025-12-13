@@ -500,8 +500,7 @@ Ensure each week has 7 days. Use "rest" type for rest days.`;
 
   /**
    * Fill a skeleton with coaching content using LLM
-   * OPTIMIZED: Only sends quality workouts to LLM, templates fill non-quality days
-   * All other fields (dates, distances, workout types) remain unchanged from skeleton
+   * OPTIMIZED V2: Per-week chunking, compact contract, graceful degradation
    */
   private async fillSkeletonWithLLM(
     skeleton: PlanSkeleton,
@@ -513,170 +512,322 @@ Ensure each week has 7 days. Use "rest" type for rest days.`;
     const distUnit = useMiles ? "miles" : "km";
     const paceUnit = useMiles ? "min/mile" : "min/km";
 
-    // Step 1: Pre-fill non-quality days with templates (instant, no LLM needed)
+    // Step 1: Pre-fill non-quality days with templates (instant)
     console.log("[PlanGenerator] Filling non-quality days with templates...");
     const templateFilledSkeleton = this.fillNonQualityDaysWithTemplates(skeleton, profile, useMiles);
 
-    // Step 2: Extract only quality workouts for LLM
-    const { qualityDays, weekCoachNotes } = this.extractQualityWorkoutsForLLM(skeleton);
-    console.log(`[PlanGenerator] Quality workouts to fill: ${qualityDays.length} (reduced from ${skeleton.weeks.reduce((sum, w) => sum + w.days.length, 0)} total days)`);
+    // Step 2: Group quality workouts by week for chunked processing
+    const weekChunks = this.groupQualityWorkoutsByWeek(skeleton, useMiles);
+    const totalQualityWorkouts = weekChunks.reduce((sum, w) => sum + w.workouts.length, 0);
+    console.log(`[PlanGenerator] Quality workouts: ${totalQualityWorkouts} across ${weekChunks.length} weeks`);
 
     // If no quality workouts, skip LLM entirely
-    if (qualityDays.length === 0) {
-      console.log("[PlanGenerator] No quality workouts - skipping LLM call");
+    if (totalQualityWorkouts === 0) {
+      console.log("[PlanGenerator] No quality workouts - skipping LLM");
       return this.skeletonToGeneratedPlan(templateFilledSkeleton);
     }
-    
-    // Convert profile values to display units
-    const weeklyMileage = useMiles 
-      ? ((profile.baselineWeeklyMileageKm || 0) * KM_TO_MILES).toFixed(1)
-      : (profile.baselineWeeklyMileageKm?.toFixed(1) || "0");
-    const longestRun = useMiles
-      ? ((profile.longestRecentRunKm || 0) * KM_TO_MILES).toFixed(1)
-      : (profile.longestRecentRunKm?.toFixed(1) || "0");
-    
-    let easyPaceStr = "not available";
-    if (profile.typicalEasyPaceMin && profile.typicalEasyPaceMax) {
-      if (useMiles) {
-        const minPaceMile = profile.typicalEasyPaceMin / KM_TO_MILES;
-        const maxPaceMile = profile.typicalEasyPaceMax / KM_TO_MILES;
-        easyPaceStr = `${minPaceMile.toFixed(1)}-${maxPaceMile.toFixed(1)} ${paceUnit}`;
-      } else {
-        easyPaceStr = `${profile.typicalEasyPaceMin.toFixed(1)}-${profile.typicalEasyPaceMax.toFixed(1)} ${paceUnit}`;
+
+    // Step 3: Build compact athlete context (sent with each request)
+    const athleteContext = this.buildCompactAthleteContext(profile, request, useMiles);
+
+    // Step 4: Process weeks in parallel with concurrency limit
+    const CONCURRENCY_LIMIT = 4;
+    const startTime = Date.now();
+    console.log(`[PlanGenerator] Starting ${weekChunks.length} chunk requests (concurrency: ${CONCURRENCY_LIMIT})...`);
+
+    const results = await this.processWeekChunksWithConcurrency(
+      weekChunks,
+      athleteContext,
+      paceUnit,
+      CONCURRENCY_LIMIT
+    );
+
+    const elapsed = Date.now() - startTime;
+    const successCount = results.filter(r => r.success).length;
+    console.log(`[PlanGenerator] Chunks completed in ${elapsed}ms (${successCount}/${weekChunks.length} succeeded)`);
+
+    // Step 5: Merge successful results into skeleton (graceful degradation)
+    const mergedSkeleton = this.mergeChunkResultsIntoSkeleton(templateFilledSkeleton, results);
+
+    return this.skeletonToGeneratedPlan(mergedSkeleton);
+  }
+
+  /**
+   * Group quality workouts by week for chunked LLM processing
+   */
+  private groupQualityWorkoutsByWeek(skeleton: PlanSkeleton, useMiles: boolean): Array<{
+    weekNumber: number;
+    weekType: string;
+    qualityLevel: number;
+    workouts: Array<{
+      dayOfWeek: string;
+      workoutType: string;
+      distance: string;
+    }>;
+  }> {
+    const KM_TO_MILES = 0.621371;
+    const distUnit = useMiles ? "miles" : "km";
+    const chunks: Array<{
+      weekNumber: number;
+      weekType: string;
+      qualityLevel: number;
+      workouts: Array<{ dayOfWeek: string; workoutType: string; distance: string }>;
+    }> = [];
+
+    for (const week of skeleton.weeks) {
+      const qualityWorkouts = week.days
+        .filter(d => this.qualityWorkoutTypes.has(d.workoutType))
+        .map(d => ({
+          dayOfWeek: d.dayOfWeek,
+          workoutType: d.workoutType,
+          distance: this.formatDistance(d.plannedDistanceKm || 0, useMiles) + distUnit,
+        }));
+
+      if (qualityWorkouts.length > 0) {
+        chunks.push({
+          weekNumber: week.weekNumber,
+          weekType: week.weekType,
+          qualityLevel: week.qualityLevel || 3,
+          workouts: qualityWorkouts,
+        });
       }
     }
 
-    // Step 3: Build optimized prompt with only quality workouts (much smaller payload)
-    const systemPrompt = `You are an expert running coach. Generate coaching content for QUALITY WORKOUTS ONLY.
+    return chunks;
+  }
 
-You will receive a list of quality workouts (tempo, intervals, hills, fartlek, progression) that need detailed coaching.
-Easy runs, recovery runs, long runs, rest days, and cross-training are already handled with templates.
-
-For each quality workout, provide:
-- title: Short descriptive title (e.g., "Threshold Tempo", "800m Repeats")
-- description: Detailed workout instructions with warmup, main set, cooldown
-- targetPace: Pace in ${paceUnit} format
-- targetHrZone: Heart rate zone (e.g., "Zone 3-4")
-- intensity: "moderate" or "high"
-- workoutStructure: Structured breakdown (warmup/main/cooldown)
-
-Also provide:
-- coachNotes: Overall plan philosophy (1-2 sentences)
-- weekNotes: Brief note for each week based on weekType and qualityLevel
-
-Scale intensity based on qualityLevel (1-5):
-- Level 1-2: Introductory quality work, shorter intervals, tempo blocks
-- Level 3-4: Building intensity, longer efforts, more reps
-- Level 5: Peak race-specific sessions
-
-Output JSON only.`;
-
-    const qualityWorkoutsInput = {
-      qualityDays: qualityDays.map(d => ({
-        ...d,
-        plannedDistance: this.formatDistance(d.plannedDistanceKm, useMiles) + " " + distUnit,
-      })),
-      weekCoachNotes,
-    };
-
-    const userPrompt = `ATHLETE PROFILE:
-- Weekly mileage: ${weeklyMileage} ${distUnit}
-- Easy pace: ${easyPaceStr}
-- VDOT: ${profile.estimatedVdot || "unknown"}
-- Level: ${request.experienceLevel || "intermediate"}
-
-GOAL: ${request.goalType.replace("_", " ")}${request.goalTimeTarget ? ` (${request.goalTimeTarget})` : ""}
-
-QUALITY WORKOUTS TO FILL (${qualityDays.length} workouts):
-${JSON.stringify(qualityWorkoutsInput, null, 2)}
-
-Return JSON with this structure:
-{
-  "coachNotes": "Overall plan summary",
-  "weekNotes": { "1": "Week 1 focus", "2": "Week 2 focus", ... },
-  "workouts": [
-    {
-      "weekNumber": 1,
-      "dayOfWeek": "tuesday",
-      "title": "Tempo Run",
-      "description": "Warmup: 10 min easy...",
-      "targetPace": "7:30-8:00 ${paceUnit}",
-      "targetHrZone": "Zone 3-4",
-      "intensity": "moderate",
-      "workoutStructure": { "warmup": "10 min easy", "main": "20 min tempo", "cooldown": "10 min easy" }
+  /**
+   * Build compact athlete context for LLM prompts
+   */
+  private buildCompactAthleteContext(
+    profile: AthleteProfile,
+    request: PlanGenerationRequest,
+    useMiles: boolean
+  ): string {
+    const KM_TO_MILES = 0.621371;
+    const paceUnit = useMiles ? "min/mi" : "min/km";
+    
+    let easyPace = "6:00-7:00";
+    if (profile.typicalEasyPaceMin && profile.typicalEasyPaceMax) {
+      const min = useMiles ? profile.typicalEasyPaceMin / KM_TO_MILES : profile.typicalEasyPaceMin;
+      const max = useMiles ? profile.typicalEasyPaceMax / KM_TO_MILES : profile.typicalEasyPaceMax;
+      easyPace = `${this.formatPace(min, false)}-${this.formatPace(max, false)}`;
     }
-  ]
-}`;
+
+    return `Goal:${request.goalType.replace("_", "")}${request.goalTimeTarget ? `(${request.goalTimeTarget})` : ""} Easy:${easyPace}${paceUnit} VDOT:${profile.estimatedVdot || 45} Level:${request.experienceLevel || "intermediate"}`;
+  }
+
+  /**
+   * Process week chunks with concurrency limit
+   */
+  private async processWeekChunksWithConcurrency(
+    chunks: Array<{
+      weekNumber: number;
+      weekType: string;
+      qualityLevel: number;
+      workouts: Array<{ dayOfWeek: string; workoutType: string; distance: string }>;
+    }>,
+    athleteContext: string,
+    paceUnit: string,
+    concurrencyLimit: number
+  ): Promise<Array<{
+    weekNumber: number;
+    success: boolean;
+    coachNotes?: string;
+    workouts?: Array<{
+      dayOfWeek: string;
+      title: string;
+      description: string;
+      intensity: "moderate" | "high";
+      targetPace: string | null;
+      mainSet: string;
+    }>;
+  }>> {
+    const results: Array<{
+      weekNumber: number;
+      success: boolean;
+      coachNotes?: string;
+      workouts?: Array<{
+        dayOfWeek: string;
+        title: string;
+        description: string;
+        intensity: "moderate" | "high";
+        targetPace: string | null;
+        mainSet: string;
+      }>;
+    }> = [];
+
+    // Process in batches with concurrency limit
+    for (let i = 0; i < chunks.length; i += concurrencyLimit) {
+      const batch = chunks.slice(i, i + concurrencyLimit);
+      const batchPromises = batch.map(chunk => this.fillWeekChunk(chunk, athleteContext, paceUnit));
+      const batchResults = await Promise.all(batchPromises);
+      results.push(...batchResults);
+    }
+
+    return results;
+  }
+
+  /**
+   * Fill a single week's quality workouts with compact LLM call
+   */
+  private async fillWeekChunk(
+    chunk: {
+      weekNumber: number;
+      weekType: string;
+      qualityLevel: number;
+      workouts: Array<{ dayOfWeek: string; workoutType: string; distance: string }>;
+    },
+    athleteContext: string,
+    paceUnit: string
+  ): Promise<{
+    weekNumber: number;
+    success: boolean;
+    coachNotes?: string;
+    workouts?: Array<{
+      dayOfWeek: string;
+      title: string;
+      description: string;
+      intensity: "moderate" | "high";
+      targetPace: string | null;
+      mainSet: string;
+    }>;
+  }> {
+    // Compact system prompt with strict limits
+    const systemPrompt = `Running coach. Fill quality workouts. STRICT LIMITS:
+- title: max 6 words
+- description: max 200 chars (warmup+main+cooldown summary)
+- mainSet: max 100 chars (the core workout only)
+- targetPace: pace range like "7:30-8:00 ${paceUnit}"
+- intensity: "moderate" or "high"
+- weekNote: max 150 chars
+
+qualityLevel 1-2: intro work, short intervals
+qualityLevel 3-4: building, longer efforts
+qualityLevel 5: peak race-specific
+
+JSON only. No markdown.`;
+
+    const userPrompt = `${athleteContext}
+Week ${chunk.weekNumber} (${chunk.weekType}, level ${chunk.qualityLevel}):
+${JSON.stringify(chunk.workouts)}
+
+Output:
+{"weekNote":"...","workouts":[{"dayOfWeek":"...","title":"...","description":"...","intensity":"...","targetPace":"...","mainSet":"..."}]}`;
 
     try {
-      console.log(`[PlanGenerator] Calling LLM for ${qualityDays.length} quality workouts...`);
-      const startTime = Date.now();
-      
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini", // Use faster, cheaper model for quality workouts
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.7,
-        max_tokens: 4000, // Much smaller since we only need quality workouts
+        temperature: 0.6,
+        max_tokens: 800, // Budget: ~400 tokens for 2 workouts + week note
         response_format: { type: "json_object" },
       });
-      
-      const elapsed = Date.now() - startTime;
-      console.log(`[PlanGenerator] LLM call completed in ${elapsed}ms`);
-      
+
       const content = response.choices[0]?.message?.content;
-      if (!content) {
-        console.error("[PlanGenerator] No content in LLM fill response");
-        return this.skeletonToGeneratedPlan(templateFilledSkeleton);
+      if (!content || response.choices[0]?.finish_reason === 'length') {
+        console.warn(`[PlanGenerator] Week ${chunk.weekNumber} truncated or empty`);
+        return { weekNumber: chunk.weekNumber, success: false };
       }
-      
-      const finishReason = response.choices[0]?.finish_reason;
-      if (finishReason === 'length') {
-        console.warn("[PlanGenerator] Fill response was truncated, using templates only");
-        return this.skeletonToGeneratedPlan(templateFilledSkeleton);
-      }
-      
-      // Parse LLM response
-      interface QualityWorkoutFill {
-        weekNumber: number;
+
+      const parsed = JSON.parse(content) as {
+        weekNote?: string;
+        workouts: Array<{
+          dayOfWeek: string;
+          title: string;
+          description: string;
+          intensity: "moderate" | "high";
+          targetPace: string | null;
+          mainSet: string;
+        }>;
+      };
+
+      return {
+        weekNumber: chunk.weekNumber,
+        success: true,
+        coachNotes: parsed.weekNote,
+        workouts: parsed.workouts || [],
+      };
+    } catch (error) {
+      console.error(`[PlanGenerator] Week ${chunk.weekNumber} failed:`, error);
+      return { weekNumber: chunk.weekNumber, success: false };
+    }
+  }
+
+  /**
+   * Merge chunk results into skeleton with graceful degradation
+   */
+  private mergeChunkResultsIntoSkeleton(
+    skeleton: PlanSkeleton,
+    results: Array<{
+      weekNumber: number;
+      success: boolean;
+      coachNotes?: string;
+      workouts?: Array<{
         dayOfWeek: string;
         title: string;
         description: string;
-        targetPace: string | null;
-        targetHrZone: string | null;
         intensity: "moderate" | "high";
-        workoutStructure?: { warmup?: string; main?: string; cooldown?: string };
+        targetPace: string | null;
+        mainSet: string;
+      }>;
+    }>
+  ): PlanSkeleton {
+    const merged: PlanSkeleton = JSON.parse(JSON.stringify(skeleton));
+
+    // Build lookup for successful results
+    const resultMap = new Map<number, typeof results[0]>();
+    for (const r of results) {
+      if (r.success) {
+        resultMap.set(r.weekNumber, r);
       }
-      interface LLMQualityResponse {
-        coachNotes?: string;
-        weekNotes?: Record<string, string>;
-        workouts: QualityWorkoutFill[];
-      }
-      
-      let parsed: LLMQualityResponse;
-      try {
-        parsed = JSON.parse(content) as LLMQualityResponse;
-      } catch (parseError) {
-        console.error("[PlanGenerator] Fill JSON parse failed, using templates");
-        return this.skeletonToGeneratedPlan(templateFilledSkeleton);
-      }
-      
-      // Step 4: Merge LLM quality workout fills into template-filled skeleton
-      const mergedSkeleton = this.mergeQualityWorkoutsIntoSkeleton(
-        templateFilledSkeleton,
-        parsed.workouts || [],
-        parsed.coachNotes,
-        parsed.weekNotes
-      );
-      
-      return this.skeletonToGeneratedPlan(mergedSkeleton);
-    } catch (error) {
-      console.error("[PlanGenerator] LLM fill call failed:", error);
-      // Fallback to template-only plan
-      return this.skeletonToGeneratedPlan(templateFilledSkeleton);
     }
+
+    // Merge into skeleton
+    for (const week of merged.weeks) {
+      const result = resultMap.get(week.weekNumber);
+      if (!result) continue;
+
+      // Set week coach notes
+      if (result.coachNotes) {
+        week.coachNotes = result.coachNotes;
+      }
+
+      // Build workout lookup
+      const workouts = result.workouts || [];
+      const workoutMap = new Map<string, typeof workouts[number]>();
+      for (const w of workouts) {
+        workoutMap.set(w.dayOfWeek, w);
+      }
+
+      // Merge workouts
+      for (const day of week.days) {
+        const fill = workoutMap.get(day.dayOfWeek);
+        if (fill && this.qualityWorkoutTypes.has(day.workoutType)) {
+          day.title = fill.title;
+          day.description = fill.description;
+          day.intensity = fill.intensity;
+          day.targetPace = fill.targetPace;
+          // Build workoutStructure with mainSet only (warmup/cooldown are standard)
+          day.workoutStructure = {
+            warmup: "10 min easy jog + dynamic stretches",
+            main: fill.mainSet || "",
+            cooldown: "10 min easy jog + stretching",
+          };
+        }
+      }
+    }
+
+    // Set overall coach notes from first successful week
+    const firstSuccess = results.find(r => r.success && r.coachNotes);
+    if (firstSuccess?.coachNotes && !merged.trainingPlan.coachNotes) {
+      merged.trainingPlan.coachNotes = firstSuccess.coachNotes;
+    }
+
+    return merged;
   }
 
   /**
