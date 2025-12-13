@@ -52,14 +52,29 @@ export class PlanGeneratorService {
         };
       }
       
-      // 3. Generate plan with LLM
-      const generatedPlan = await this.callLLMForPlan(request, profile, planWeeks);
+      // 3. Generate plan with LLM (with retry if weeks are too short)
+      let generatedPlan = await this.callLLMForPlan(request, profile, planWeeks);
       
       if (!generatedPlan) {
         return {
           success: false,
           error: "Failed to generate training plan. Please try again.",
         };
+      }
+      
+      // Validate minimum weeks for goal type
+      const minWeeks = this.getMinimumWeeks(request.goalType);
+      if (generatedPlan.weeks.length < minWeeks) {
+        console.log(`[PlanGenerator] Plan has ${generatedPlan.weeks.length} weeks, expected at least ${minWeeks}. Retrying...`);
+        // Retry once with explicit week requirement
+        generatedPlan = await this.callLLMForPlan(request, profile, planWeeks, true);
+        
+        if (!generatedPlan || generatedPlan.weeks.length < minWeeks) {
+          return {
+            success: false,
+            error: `Training plan generation failed. Please try again.`,
+          };
+        }
       }
       
       // 4. Apply guardrails
@@ -117,13 +132,32 @@ export class PlanGeneratorService {
   }
   
   /**
+   * Get minimum acceptable weeks for a goal type
+   */
+  private getMinimumWeeks(goalType: string): number {
+    const minimums: Record<string, number> = {
+      "5k": 6,
+      "10k": 8,
+      "half_marathon": 10,
+      "marathon": 12,
+      "general_fitness": 4,
+    };
+    return minimums[goalType] || 4;
+  }
+  
+  /**
    * Call LLM to generate the training plan structure
    */
   private async callLLMForPlan(
     request: PlanGenerationRequest,
     profile: AthleteProfile,
-    totalWeeks: number
+    totalWeeks: number,
+    strictWeeks: boolean = false
   ): Promise<GeneratedPlan | null> {
+    const weekRequirement = strictWeeks 
+      ? `CRITICAL: You MUST generate EXACTLY ${totalWeeks} weeks. Do not generate fewer weeks.`
+      : '';
+    
     const systemPrompt = `You are an expert running coach creating personalized training plans. 
 You follow evidence-based training principles:
 - Progressive overload with 10-15% weekly mileage increases max
@@ -133,10 +167,11 @@ You follow evidence-based training principles:
 - Easy runs at conversational pace (80% of training volume)
 - Quality workouts (tempo, intervals) 2-3x per week max
 - Rest days are essential for adaptation
+${weekRequirement}
 
 Output a complete training plan in JSON format.`;
 
-    const userPrompt = `Create a ${totalWeeks}-week training plan for a runner with:
+    const userPrompt = `Create EXACTLY ${totalWeeks} weeks of training (weekNumber 1 through ${totalWeeks}) for a runner with:
 
 ATHLETE PROFILE:
 - Current weekly mileage: ${profile.baselineWeeklyMileageKm?.toFixed(1) || 0}km
