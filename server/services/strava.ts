@@ -348,8 +348,10 @@ export class StravaService {
       const sportTypes = new Set();
       let skippedExisting = 0;
       
-      // Filter to only new activities that need syncing (accept ALL activity types)
+      // Only sync running activities (Run, TrailRun, VirtualRun)
+      const RUNNING_TYPES = ['Run', 'TrailRun', 'VirtualRun'];
       const activitiesToProcess: any[] = [];
+      let skippedNonRunning = 0;
       
       for (const stravaActivity of stravaActivities) {
         activityTypes.add(stravaActivity.type);
@@ -361,7 +363,12 @@ export class StravaService {
           continue;
         }
 
-        // Accept all activity types (running, cross-training, cycling, etc.)
+        // Only accept running activity types
+        if (!RUNNING_TYPES.includes(stravaActivity.type)) {
+          skippedNonRunning++;
+          continue;
+        }
+        
         activitiesToProcess.push(stravaActivity);
       }
       
@@ -369,7 +376,10 @@ export class StravaService {
       if (skippedExisting > 0) {
         console.log(`Skipped ${skippedExisting} existing activities (already synced)`);
       }
-      console.log(`Found ${activitiesToProcess.length} new activities to sync (all types)`);
+      if (skippedNonRunning > 0) {
+        console.log(`Skipped ${skippedNonRunning} non-running activities (cycling, swimming, etc.)`);
+      }
+      console.log(`Found ${activitiesToProcess.length} new running activities to sync`);
       
       // Process activities in batches of 5 for better performance
       const batchSize = 5;
