@@ -661,3 +661,152 @@ export function generateSkeleton(
     weeks,
   };
 }
+
+export function runSkeletonInvariantTests(): { passed: number; failed: number; errors: string[] } {
+  const errors: string[] = [];
+  let passed = 0;
+  let failed = 0;
+
+  function assert(condition: boolean, message: string) {
+    if (condition) {
+      passed++;
+    } else {
+      failed++;
+      errors.push(message);
+    }
+  }
+
+  const testProfiles: AthleteProfile[] = [
+    { id: 1, userId: 1, baselineWeeklyMileageKm: 20, longestRecentRunKm: 10, averagePaceMinPerKm: 6.0, currentVo2Max: null, estimatedFtp: null, injuryHistory: null, preferredWorkoutTypes: null, restingHeartRate: null, maxHeartRate: null, heartRateZones: null, recentRaceResults: null, weeklyAvailability: null, createdAt: new Date(), updatedAt: new Date() },
+    { id: 2, userId: 2, baselineWeeklyMileageKm: 40, longestRecentRunKm: 18, averagePaceMinPerKm: 5.5, currentVo2Max: null, estimatedFtp: null, injuryHistory: null, preferredWorkoutTypes: null, restingHeartRate: null, maxHeartRate: null, heartRateZones: null, recentRaceResults: null, weeklyAvailability: null, createdAt: new Date(), updatedAt: new Date() },
+    { id: 3, userId: 3, baselineWeeklyMileageKm: 60, longestRecentRunKm: 25, averagePaceMinPerKm: 5.0, currentVo2Max: null, estimatedFtp: null, injuryHistory: null, preferredWorkoutTypes: null, restingHeartRate: null, maxHeartRate: null, heartRateZones: null, recentRaceResults: null, weeklyAvailability: null, createdAt: new Date(), updatedAt: new Date() },
+  ];
+
+  const testRequests: PlanGenerationRequest[] = [
+    { goalType: "marathon", preferredRunDays: ["tuesday", "thursday", "saturday", "sunday"], includeSpeedwork: true, includeLongRuns: true },
+    { goalType: "half_marathon", preferredRunDays: ["monday", "wednesday", "friday", "sunday"], includeSpeedwork: true, includeLongRuns: true },
+    { goalType: "10k", preferredRunDays: ["tuesday", "thursday", "saturday"], includeSpeedwork: true, includeLongRuns: true },
+    { goalType: "5k", preferredRunDays: ["monday", "wednesday", "friday", "saturday"], includeSpeedwork: true, includeLongRuns: true },
+  ];
+
+  const weekLengths = [8, 12, 16];
+
+  for (const profile of testProfiles) {
+    for (const request of testRequests) {
+      for (const totalWeeks of weekLengths) {
+        const label = `[${request.goalType}, ${totalWeeks}wk, baseline=${profile.baselineWeeklyMileageKm}km]`;
+        
+        let skeleton: PlanSkeleton;
+        try {
+          skeleton = generateSkeleton(request, profile, totalWeeks);
+        } catch (e) {
+          errors.push(`${label} generateSkeleton threw: ${e}`);
+          failed++;
+          continue;
+        }
+
+        assert(skeleton.weeks.length === totalWeeks, `${label} week count mismatch: ${skeleton.weeks.length} != ${totalWeeks}`);
+
+        for (let i = 0; i < skeleton.weeks.length; i++) {
+          const week = skeleton.weeks[i];
+          const weekLabel = `${label} Week ${week.weekNumber}`;
+          
+          const daySum = week.days.reduce((sum, d) => sum + (d.plannedDistanceKm ?? 0), 0);
+          assert(
+            Math.abs(daySum - week.plannedDistanceKm) < 1,
+            `${weekLabel} sum mismatch: days=${daySum.toFixed(1)} vs week=${week.plannedDistanceKm}`
+          );
+
+          assert(
+            week.qualityLevel >= 1 && week.qualityLevel <= 5,
+            `${weekLabel} invalid qualityLevel: ${week.qualityLevel}`
+          );
+
+          if (week.weekType === "base") {
+            assert(week.qualityLevel <= 2, `${weekLabel} base week should have qualityLevel 1-2, got ${week.qualityLevel}`);
+          } else if (week.weekType === "peak") {
+            assert(week.qualityLevel >= 4, `${weekLabel} peak week should have qualityLevel 4-5, got ${week.qualityLevel}`);
+          } else if (week.weekType === "recovery") {
+            assert(week.qualityLevel <= 3, `${weekLabel} recovery week should have qualityLevel 1-3, got ${week.qualityLevel}`);
+          }
+
+          if (i > 0) {
+            const prevWeek = skeleton.weeks[i - 1];
+            const increase = week.plannedDistanceKm - prevWeek.plannedDistanceKm;
+            const maxIncrease = prevWeek.plannedDistanceKm * 0.25;
+            
+            if (week.weekType !== "recovery" && prevWeek.weekType !== "recovery" && 
+                week.weekType !== "taper" && prevWeek.weekType !== "taper") {
+              assert(
+                increase <= maxIncrease + 0.5,
+                `${weekLabel} excessive weekly jump: ${increase.toFixed(1)}km (max ${maxIncrease.toFixed(1)}km from ${prevWeek.plannedDistanceKm}km)`
+              );
+            }
+          }
+
+          const longRunDay = week.days.find(d => d.workoutType === "long_run");
+          if (longRunDay && longRunDay.plannedDistanceKm) {
+            const otherRuns = week.days.filter(d => 
+              d.workoutType !== "long_run" && 
+              d.workoutType !== "rest" && 
+              d.workoutType !== "cross_training" &&
+              d.workoutType !== "race" &&
+              d.plannedDistanceKm
+            );
+            for (const other of otherRuns) {
+              assert(
+                (other.plannedDistanceKm ?? 0) <= longRunDay.plannedDistanceKm,
+                `${weekLabel} long run (${longRunDay.plannedDistanceKm}km) should be longest, but ${other.workoutType} is ${other.plannedDistanceKm}km`
+              );
+            }
+          }
+
+          for (let d = 0; d < week.days.length - 1; d++) {
+            const today = week.days[d];
+            const tomorrow = week.days[d + 1];
+            if (today.intensity === "high" && tomorrow.intensity === "high") {
+              assert(
+                false,
+                `${weekLabel} back-to-back high intensity: ${today.dayOfWeek} (${today.workoutType}) and ${tomorrow.dayOfWeek} (${tomorrow.workoutType})`
+              );
+            }
+          }
+        }
+
+        const weekTypes = skeleton.weeks.map(w => w.weekType);
+        const hasBase = weekTypes.includes("base");
+        const hasBuild = weekTypes.includes("build") || weekTypes.includes("peak");
+        const hasTaper = weekTypes.includes("taper");
+
+        assert(hasBase || hasBuild, `${label} should have base or build weeks`);
+        if (request.goalType !== "general_fitness") {
+          assert(hasTaper, `${label} race plan should have taper weeks`);
+        }
+
+        const taperIdx = weekTypes.findIndex(t => t === "taper");
+        if (taperIdx > 0) {
+          const beforeTaper = weekTypes.slice(0, taperIdx);
+          assert(
+            beforeTaper.every(t => t !== "taper"),
+            `${label} taper should be at the end of the plan`
+          );
+        }
+
+        const peakLongRun = Math.max(...skeleton.weeks.map(w => {
+          const lr = w.days.find(d => d.workoutType === "long_run");
+          return lr?.plannedDistanceKm ?? 0;
+        }));
+        const longestRecent = profile.longestRecentRunKm ?? 8;
+        const experience = inferExperienceLevel(profile);
+        const maxExpectedDelta = experience === "beginner" ? 12 : experience === "intermediate" ? 16 : 20;
+        
+        assert(
+          peakLongRun <= longestRecent + maxExpectedDelta,
+          `${label} peak long run (${peakLongRun}km) exceeds safe progression from ${longestRecent}km`
+        );
+      }
+    }
+  }
+
+  return { passed, failed, errors };
+}

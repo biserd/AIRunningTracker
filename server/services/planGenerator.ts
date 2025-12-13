@@ -385,14 +385,18 @@ Ensure each week has 7 days. Use "rest" type for rest days.`;
 
     const systemPrompt = `You are an expert running coach. You are given a TRAINING PLAN SKELETON JSON that already contains the exact schedule and distances.
 
-HARD CONSTRAINTS - DO NOT CHANGE:
+==== LOCKED FIELDS (DO NOT MODIFY - CHANGES WILL BE DISCARDED) ====
+These fields are computed by the training engine and MUST remain exactly as provided:
 - weekNumber, weekStartDate, weekEndDate, plannedDistanceKm, plannedDurationMins
 - date, dayOfWeek, workoutType for each day
+- qualityLevel (used internally for workout intensity scaling)
 - The structure and order of weeks and days
 
-YOU MUST ONLY FILL THESE FIELDS:
-- trainingPlan.coachNotes: Overall plan summary
-- weeks[].coachNotes: Weekly focus/theme
+If you output different values for these fields, they will be overwritten with the original values.
+
+==== FIELDS YOU MUST FILL ====
+- trainingPlan.coachNotes: Overall plan summary and training philosophy
+- weeks[].coachNotes: Weekly focus/theme matching the qualityLevel (1-2: build base, 3-4: increase intensity, 5: peak effort)
 - days[].title: Short workout title (e.g., "Easy Recovery Run")
 - days[].description: Detailed workout description with guidance
 - days[].targetPace: Pace target in ${paceUnit} format (e.g., "8:30-9:00 ${paceUnit}")
@@ -400,10 +404,16 @@ YOU MUST ONLY FILL THESE FIELDS:
 - days[].intensity: "low" | "moderate" | "high"
 - days[].workoutStructure: For quality workouts (tempo, intervals, etc.), include warmup/main/cooldown
 
-IMPORTANT:
+==== QUALITY LEVEL GUIDANCE ====
+Use the week's qualityLevel to scale workout intensity appropriately:
+- Level 1-2 (base): Strides, easy tempo blocks, building aerobic base
+- Level 3-4 (build): Longer tempo efforts, more interval reps, building speed
+- Level 5 (peak): Hardest quality sessions, race-specific workouts
+- Level 2-3 (taper): Maintain intensity but reduce volume, sharpen for race
+
+==== TEXT FORMATTING ====
 - All text must use ${distUnit} for distances and ${paceUnit} for paces
 - For rest days: title="Rest Day", description="Complete rest or light stretching", intensity="low"
-- Keep the exact JSON structure - return the same shape with filled fields
 
 Output valid JSON only.`;
 
