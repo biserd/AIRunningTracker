@@ -1,4 +1,4 @@
-import { users, activities, aiInsights, trainingPlans, trainingPlansLegacy, athleteProfiles, planWeeks, planDays, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, apiKeys, refreshTokens, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ApiKey, type InsertApiKey, type RefreshToken, type InsertRefreshToken, type AthleteProfile, type InsertAthleteProfile, type PlanWeek, type InsertPlanWeek, type PlanDay, type InsertPlanDay } from "@shared/schema";
+import { users, activities, aiInsights, trainingPlans, trainingPlansLegacy, athleteProfiles, planWeeks, planDays, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, apiKeys, refreshTokens, workoutCache, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ApiKey, type InsertApiKey, type RefreshToken, type InsertRefreshToken, type AthleteProfile, type InsertAthleteProfile, type PlanWeek, type InsertPlanWeek, type PlanDay, type InsertPlanDay, type WorkoutCache, type InsertWorkoutCache } from "@shared/schema";
 import crypto from "crypto";
 import { db } from "./db";
 import { eq, desc, and, sql, inArray, gte, gt, lt } from "drizzle-orm";
@@ -268,6 +268,14 @@ export interface IStorage {
   updateSyncProgress(userId: number, progress: number, total?: number): Promise<void>;
   completeSyncSuccess(userId: number, incrementalSince?: Date): Promise<void>;
   completeSyncError(userId: number, error: string): Promise<void>;
+  
+  // Workout cache methods
+  getWorkoutByFingerprint(fingerprint: string): Promise<WorkoutCache | undefined>;
+  cacheWorkout(workout: InsertWorkoutCache): Promise<WorkoutCache>;
+  incrementWorkoutCacheHit(fingerprint: string): Promise<void>;
+  
+  // Batch update methods for progressive persistence
+  updatePlanDaysByWeek(weekId: number, updates: Array<{ dayOfWeek: string; updates: Partial<PlanDay> }>): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1988,6 +1996,54 @@ export class DatabaseStorage implements IStorage {
         syncError: error,
       })
       .where(eq(users.id, userId));
+  }
+
+  // Workout cache methods
+  async getWorkoutByFingerprint(fingerprint: string): Promise<WorkoutCache | undefined> {
+    const [cached] = await db.select()
+      .from(workoutCache)
+      .where(eq(workoutCache.fingerprint, fingerprint))
+      .limit(1);
+    return cached || undefined;
+  }
+
+  async cacheWorkout(workout: InsertWorkoutCache): Promise<WorkoutCache> {
+    const [cached] = await db.insert(workoutCache)
+      .values(workout)
+      .onConflictDoUpdate({
+        target: workoutCache.fingerprint,
+        set: {
+          title: workout.title,
+          descriptionTemplate: workout.descriptionTemplate,
+          mainSetTemplate: workout.mainSetTemplate,
+          intervalsTemplate: workout.intervalsTemplate,
+          intensity: workout.intensity,
+          lastUsedAt: new Date(),
+        },
+      })
+      .returning();
+    return cached;
+  }
+
+  async incrementWorkoutCacheHit(fingerprint: string): Promise<void> {
+    await db.update(workoutCache)
+      .set({
+        hitCount: sql`${workoutCache.hitCount} + 1`,
+        lastUsedAt: new Date(),
+      })
+      .where(eq(workoutCache.fingerprint, fingerprint));
+  }
+
+  // Batch update plan days by week for progressive persistence
+  async updatePlanDaysByWeek(weekId: number, updates: Array<{ dayOfWeek: string; updates: Partial<PlanDay> }>): Promise<void> {
+    for (const update of updates) {
+      await db.update(planDays)
+        .set(update.updates)
+        .where(and(
+          eq(planDays.weekId, weekId),
+          eq(planDays.dayOfWeek, update.dayOfWeek)
+        ));
+    }
   }
 }
 

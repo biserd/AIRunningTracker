@@ -190,6 +190,12 @@ export const trainingPlans = pgTable("training_plans_v2", {
   // Coach notes
   coachNotes: text("coach_notes"),
   generationPrompt: text("generation_prompt"),
+  // AI enrichment tracking
+  enrichmentStatus: text("enrichment_status", {
+    enum: ["pending", "enriching", "complete", "partial", "failed"]
+  }).default("pending"),
+  enrichedWeeks: integer("enriched_weeks").default(0),
+  enrichmentError: text("enrichment_error"),
   // Timestamps
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -219,6 +225,7 @@ export const planWeeks = pgTable("plan_weeks", {
   coachNotes: text("coach_notes"),
   wasAdjusted: boolean("was_adjusted").default(false),
   adjustedAt: timestamp("adjusted_at"),
+  enriched: boolean("enriched").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
   planIdIdx: index("plan_weeks_plan_id_idx").on(table.planId),
@@ -264,6 +271,29 @@ export const planDays = pgTable("plan_days", {
   planIdIdx: index("plan_days_plan_id_idx").on(table.planId),
   dateIdx: index("plan_days_date_idx").on(table.date),
   linkedActivityIdx: index("plan_days_linked_activity_idx").on(table.linkedActivityId),
+}));
+
+// Workout cache - stores AI-generated workout content by fingerprint
+export const workoutCache = pgTable("workout_cache", {
+  id: serial("id").primaryKey(),
+  fingerprint: text("fingerprint").notNull().unique(),
+  goalType: text("goal_type").notNull(),
+  workoutType: text("workout_type").notNull(),
+  qualityLevel: integer("quality_level").notNull(),
+  weekType: text("week_type").notNull(),
+  distanceBucket: integer("distance_bucket").notNull(),
+  vdotBucket: integer("vdot_bucket"),
+  title: text("title").notNull(),
+  descriptionTemplate: text("description_template").notNull(),
+  mainSetTemplate: text("main_set_template").notNull(),
+  intervalsTemplate: json("intervals_template").$type<{ reps: number; distance: string; paceMultiplier: number; rest: string }[]>(),
+  intensity: text("intensity", { enum: ["moderate", "high"] }).notNull(),
+  hitCount: integer("hit_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastUsedAt: timestamp("last_used_at").defaultNow(),
+}, (table) => ({
+  fingerprintIdx: index("workout_cache_fingerprint_idx").on(table.fingerprint),
+  goalTypeIdx: index("workout_cache_goal_type_idx").on(table.goalType, table.workoutType),
 }));
 
 export const feedback = pgTable("feedback", {
@@ -510,6 +540,13 @@ export const insertPlanDaySchema = createInsertSchema(planDays).omit({
   actualPace: true,
 });
 
+export const insertWorkoutCacheSchema = createInsertSchema(workoutCache).omit({
+  id: true,
+  createdAt: true,
+  lastUsedAt: true,
+  hitCount: true,
+});
+
 // Login schema for authentication
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -556,5 +593,7 @@ export type InsertPlanWeek = z.infer<typeof insertPlanWeekSchema>;
 export type PlanWeek = typeof planWeeks.$inferSelect;
 export type InsertPlanDay = z.infer<typeof insertPlanDaySchema>;
 export type PlanDay = typeof planDays.$inferSelect;
+export type InsertWorkoutCache = z.infer<typeof insertWorkoutCacheSchema>;
+export type WorkoutCache = typeof workoutCache.$inferSelect;
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;
