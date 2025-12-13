@@ -53,7 +53,7 @@ export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnal
       description: "Based on injury risk analysis: reduce training load and focus on recovery to prevent injury",
       type: 'recovery',
       status: 'active',
-      source: 'injury-risk',
+      source: 'recommendation',
     });
   };
   

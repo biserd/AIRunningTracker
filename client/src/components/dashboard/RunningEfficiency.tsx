@@ -59,7 +59,7 @@ export default function RunningEfficiency({ userId, batchData }: RunningEfficien
       description: "Focus on cadence drills, stride length optimization, and reducing ground contact time",
       type: 'form',
       status: 'active',
-      source: 'efficiency-analysis',
+      source: 'recommendation',
     });
   };
   

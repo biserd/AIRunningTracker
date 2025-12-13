@@ -53,7 +53,7 @@ export default function RacePredictions({ userId, batchData }: RacePredictionsPr
       description,
       type,
       status: 'active',
-      source: 'coach-insights',
+      source: 'recommendation',
     });
   };
   
