@@ -85,6 +85,17 @@ const workoutTypeColors: Record<string, string> = {
 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
+// Map full day names to database abbreviations (Mon, Tue, Wed, etc.)
+const dayNameToDbKey: Record<string, string> = {
+  "Sunday": "Sun",
+  "Monday": "Mon",
+  "Tuesday": "Tue",
+  "Wednesday": "Wed",
+  "Thursday": "Thu",
+  "Friday": "Fri",
+  "Saturday": "Sat",
+};
+
 export default function TrainingPlanDetail() {
   const [, params] = useRoute("/training-plans/:planId");
   const planId = params?.planId;
@@ -424,7 +435,7 @@ export default function TrainingPlanDetail() {
         
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
           {dayNames.map((dayName, index) => {
-            const dayKey = dayName.toLowerCase();
+            const dayKey = dayNameToDbKey[dayName]; // Use "Mon", "Tue", etc. to match DB
             const dayData = currentWeekData?.days.find(d => d.dayOfWeek === dayKey);
             const Icon = dayData?.workoutType ? workoutTypeIcons[dayData.workoutType] || Footprints : Coffee;
             const colorClass = dayData?.workoutType ? workoutTypeColors[dayData.workoutType] || workoutTypeColors.rest : workoutTypeColors.rest;
