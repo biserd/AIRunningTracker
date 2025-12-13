@@ -1,0 +1,605 @@
+Great — here’s **TypeScript-style pseudo-code** your developer can implement to generate the **deterministic plan skeleton** (weeks + days + fixed distances/types). This is the “Plan Engine” that the LLM will *fill*, not *invent*.
+
+---
+
+# 1) Data contracts (matches your schema)
+
+```ts
+type GoalType = "5k"|"10k"|"half_marathon"|"marathon"|"general_fitness";
+type WeekType = "base"|"build"|"peak"|"recovery"|"taper";
+type WorkoutType =
+  "easy"|"tempo"|"intervals"|"long_run"|"recovery"|"rest"|
+  "cross_training"|"race"|"fartlek"|"hills"|"progression";
+type Intensity = "low"|"moderate"|"high";
+
+type TrainingPlanSettings = {
+  userId: number;
+  goalType: GoalType;
+  raceDate: Date | null;
+  targetTime: string | null;
+  daysPerWeek: number;
+  preferredLongRunDay: string; // "Mon".."Sun"
+  preferredDays: string[];     // subset of ["Mon"..]
+  allowCrossTraining: boolean;
+  paceBasedWorkouts: boolean;
+  totalWeeks: number;
+};
+
+type AthleteProfile = {
+  currentWeeklyKm: number;        // avg last 4–8 weeks
+  runsPerWeekAvg: number;
+  longestRecentRunKm: number;
+  easyPaceText?: string;          // for LLM only
+  vdot?: number;                  // optional
+  consistency?: "low"|"medium"|"high";
+  injuryNotes?: string | null;
+  experience?: "beginner"|"intermediate"|"advanced";
+};
+
+type SkeletonDay = {
+  date: string; // YYYY-MM-DD
+  dayOfWeek: string; // Mon..Sun
+  workoutType: WorkoutType;
+  title: string; // empty placeholder
+  description: string | null;
+  plannedDistanceKm: number | null;
+  plannedDurationMins: number | null;
+  targetPace: string | null;
+  targetHrZone: string | null;
+  intensity: Intensity;
+  workoutStructure: any | null; // LLM fills
+};
+
+type SkeletonWeek = {
+  weekNumber: number;
+  weekStartDate: string;
+  weekEndDate: string;
+  plannedDistanceKm: number;
+  plannedDurationMins: number | null;
+  weekType: WeekType;
+  coachNotes: string | null;
+  days: SkeletonDay[];
+};
+
+type PlanSkeleton = {
+  trainingPlan: TrainingPlanSettings & { coachNotes: string | null };
+  weeks: SkeletonWeek[];
+};
+```
+
+---
+
+# 2) Helper utilities (dates + rounding)
+
+```ts
+const DOW = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"] as const;
+
+function toISO(d: Date): string {
+  return d.toISOString().slice(0,10);
+}
+
+function addDays(d: Date, n: number): Date {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+}
+
+function startOfWeek(d: Date, weekStartsOn: typeof DOW[number] = "Mon"): Date {
+  const x = new Date(d);
+  const jsDay = x.getDay(); // Sun=0 ... Sat=6
+  const map: Record<string, number> = { Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6 };
+  const target = map[weekStartsOn];
+  const delta = (jsDay - target + 7) % 7;
+  return addDays(x, -delta);
+}
+
+function dayOfWeekFromDate(d: Date): typeof DOW[number] {
+  const js = d.getDay(); // Sun=0..Sat=6
+  return (["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][js] as any);
+}
+
+function roundToHalfKm(x: number): number {
+  return Math.round(x * 2) / 2; // 0.5km increments
+}
+
+function clamp(x: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, x));
+}
+```
+
+---
+
+# 3) Core plan engine (high level)
+
+```ts
+type EngineOptions = {
+  startDate: Date;                 // when plan begins (align to week start)
+  includeSpeedwork: boolean;       // user preference
+  includeLongRuns: boolean;        // user preference
+  weekStartsOn?: typeof DOW[number]; // default "Mon"
+};
+
+export function generatePlanSkeleton(
+  settings: TrainingPlanSettings,
+  profile: AthleteProfile,
+  opts: EngineOptions
+): PlanSkeleton {
+
+  const weekStartsOn = opts.weekStartsOn ?? "Mon";
+  const planStart = startOfWeek(opts.startDate, weekStartsOn);
+
+  // 1) compute weekly targets (deterministic)
+  const weeklyTargets = buildWeeklyTargetsKm(settings, profile, planStart);
+
+  // 2) build a fixed weekly schedule template (workout roles per day-of-week)
+  const scheduleTemplate = buildScheduleTemplate(settings, opts.includeSpeedwork, opts.includeLongRuns);
+
+  // 3) allocate distances week-by-week to template days (deterministic + smoothing)
+  const weeks: SkeletonWeek[] = [];
+  let prevWeekDistancesByDow: Record<string, number | null> = {}; // for smoothing
+
+  for (let w = 1; w <= settings.totalWeeks; w++) {
+    const weekStart = addDays(planStart, (w - 1) * 7);
+    const weekEnd   = addDays(weekStart, 6);
+
+    const weekType = pickWeekType(settings, w, weekStart, weeklyTargets); // base/build/peak/recovery/taper
+    const targetKm = weeklyTargets[w - 1];
+
+    const days = buildWeekDays(weekStart, settings, scheduleTemplate);
+
+    // allocate distances into those days
+    allocateDistancesForWeek({
+      settings, profile, opts, weekType,
+      weekTargetKm: targetKm,
+      weekStart,
+      days,
+      prevWeekDistancesByDow
+    });
+
+    // update smoothing memory
+    prevWeekDistancesByDow = Object.fromEntries(
+      days.map(d => [d.dayOfWeek, d.plannedDistanceKm])
+    );
+
+    weeks.push({
+      weekNumber: w,
+      weekStartDate: toISO(weekStart),
+      weekEndDate: toISO(weekEnd),
+      plannedDistanceKm: roundToHalfKm(sumWeekKm(days)),
+      plannedDurationMins: null,
+      weekType,
+      coachNotes: null,
+      days
+    });
+  }
+
+  return {
+    trainingPlan: { ...settings, coachNotes: null },
+    weeks
+  };
+}
+
+function sumWeekKm(days: SkeletonDay[]): number {
+  return days.reduce((acc, d) => acc + (d.plannedDistanceKm ?? 0), 0);
+}
+```
+
+---
+
+# 4) Weekly targets generator (build/cutback/taper)
+
+This is the “progression” brain. It’s deterministic and enforces your rules.
+
+```ts
+function buildWeeklyTargetsKm(
+  settings: TrainingPlanSettings,
+  profile: AthleteProfile,
+  planStart: Date
+): number[] {
+
+  const W = settings.totalWeeks;
+
+  const taperWeeks =
+    settings.goalType === "marathon" ? 3 :
+    settings.goalType === "half_marathon" ? 2 :
+    (settings.goalType === "10k" || settings.goalType === "5k") ? 1 :
+    1; // general_fitness: light taper at end
+
+  const recoveryEvery = 4; // every 4th week
+
+  // starting point: if inconsistent, reduce
+  const consistencyFactor =
+    profile.consistency === "low" ? 0.9 :
+    profile.consistency === "medium" ? 1.0 : 1.0;
+
+  let week1 = Math.max(10, profile.currentWeeklyKm * consistencyFactor);
+  week1 = roundToHalfKm(week1);
+
+  const targets: number[] = [];
+  targets.push(week1);
+
+  for (let i = 2; i <= W; i++) {
+    const prev = targets[i - 2];
+
+    const isTaper = i > (W - taperWeeks);
+    const isRecovery = !isTaper && (i % recoveryEvery === 0);
+
+    let next = prev;
+
+    if (isTaper) {
+      // Example taper curve: 75%, then 60%, then 45% (for marathon)
+      const taperIndex = i - (W - taperWeeks); // 1..taperWeeks
+      const factors = taperWeeks === 3 ? [0.75, 0.60, 0.45]
+                    : taperWeeks === 2 ? [0.75, 0.55]
+                    : [0.70];
+      next = prev * factors[taperIndex - 1];
+    } else if (isRecovery) {
+      next = prev * 0.80; // -20%
+    } else {
+      // build week growth depends on base volume: smaller runners can progress a bit faster but capped
+      const base = profile.currentWeeklyKm;
+      const buildPct = base < 25 ? 0.10 : base < 50 ? 0.08 : 0.06;
+
+      next = prev * (1 + buildPct);
+
+      // cap 15%
+      next = Math.min(next, prev * 1.15);
+
+      // optional hard cap on absolute growth (keeps it sane)
+      next = Math.min(next, prev + 8);
+    }
+
+    targets.push(roundToHalfKm(next));
+  }
+
+  return targets;
+}
+```
+
+---
+
+# 5) Schedule template builder (fixed run-day roles)
+
+This maps preferredDays into a stable “role plan”.
+
+```ts
+type ScheduleTemplate = Record<string, WorkoutType>; // dayOfWeek -> type
+
+function buildScheduleTemplate(
+  settings: TrainingPlanSettings,
+  includeSpeedwork: boolean,
+  includeLongRuns: boolean
+): ScheduleTemplate {
+
+  // Normalize preferredDays ordering Mon..Sun
+  const preferred = DOW.filter(d => settings.preferredDays.includes(d));
+  const runDays = preferred.slice(0, settings.daysPerWeek);
+
+  // Long run day: use preferredLongRunDay if valid else last run day
+  const longRunDay = (runDays.includes(settings.preferredLongRunDay as any))
+    ? settings.preferredLongRunDay
+    : runDays[runDays.length - 1];
+
+  const template: ScheduleTemplate = {};
+  for (const d of DOW) template[d] = "rest";
+
+  // Set run days default to easy
+  for (const d of runDays) template[d] = "easy";
+
+  if (includeLongRuns) template[longRunDay] = "long_run";
+
+  if (includeSpeedwork) {
+    const maxQuality = (settings.daysPerWeek <= 4) ? 1 : 2;
+
+    // pick quality day 1 = first run day not adjacent to long run
+    const qualityCandidates = runDays.filter(d => d !== longRunDay);
+    const q1 = pickQualityDay(runDays, longRunDay, /*preferEarly*/ true);
+    if (q1) template[q1] = "tempo"; // alternate later
+
+    if (maxQuality === 2) {
+      const q2 = pickQualityDay(runDays, longRunDay, /*preferEarly*/ false, new Set([q1]));
+      if (q2) template[q2] = "intervals";
+    }
+  }
+
+  // Optional: day after quality becomes recovery if it's also a run day
+  // (only if run day exists and is not another quality day)
+  for (const d of runDays) {
+    if (template[d] === "tempo" || template[d] === "intervals" || template[d] === "hills") {
+      const next = nextDow(d);
+      if (runDays.includes(next) && template[next] === "easy") template[next] = "recovery";
+    }
+  }
+
+  return template;
+}
+
+function nextDow(d: string): string {
+  const idx = DOW.indexOf(d as any);
+  return DOW[(idx + 1) % 7];
+}
+
+function pickQualityDay(
+  runDays: string[],
+  longRunDay: string,
+  preferEarly: boolean,
+  exclude: Set<string> = new Set()
+): string | null {
+  const longIdx = DOW.indexOf(longRunDay as any);
+  const candidates = runDays
+    .filter(d => d !== longRunDay && !exclude.has(d))
+    .filter(d => {
+      // avoid day immediately before long run
+      const idx = DOW.indexOf(d as any);
+      return idx !== (longIdx + 6) % 7; // day before
+    });
+
+  if (candidates.length === 0) return null;
+  return preferEarly ? candidates[0] : candidates[Math.floor(candidates.length / 2)];
+}
+```
+
+---
+
+# 6) Build week day records (placeholders)
+
+```ts
+function buildWeekDays(
+  weekStart: Date,
+  settings: TrainingPlanSettings,
+  template: ScheduleTemplate
+): SkeletonDay[] {
+  const days: SkeletonDay[] = [];
+
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(weekStart, i);
+    const dow = dayOfWeekFromDate(d);
+
+    const workoutType = template[dow] ?? "rest";
+
+    days.push({
+      date: toISO(d),
+      dayOfWeek: dow,
+      workoutType,
+      title: "",
+      description: null,
+      plannedDistanceKm: workoutType === "rest" ? null : (workoutType === "cross_training" ? null : 0),
+      plannedDurationMins: workoutType === "cross_training" ? 30 : null,
+      targetPace: null,
+      targetHrZone: null,
+      intensity: workoutType === "tempo" || workoutType === "intervals" || workoutType === "hills" ? "high" :
+                 workoutType === "long_run" ? "moderate" :
+                 workoutType === "recovery" ? "low" :
+                 workoutType === "easy" ? "low" : "low",
+      workoutStructure: null
+    });
+  }
+
+  // Fill non-preferred days with cross-training if allowed and you want to schedule it
+  if (settings.allowCrossTraining) {
+    // optional: schedule 1 cross-training day on a rest day (mid-week) when daysPerWeek <= 4
+    // keep it conservative for v1 (or leave all rest by default)
+  }
+
+  return days;
+}
+```
+
+---
+
+# 7) Allocate distances for the week (deterministic + smoothing)
+
+```ts
+function allocateDistancesForWeek(args: {
+  settings: TrainingPlanSettings;
+  profile: AthleteProfile;
+  opts: EngineOptions;
+  weekType: WeekType;
+  weekTargetKm: number;
+  weekStart: Date;
+  days: SkeletonDay[];
+  prevWeekDistancesByDow: Record<string, number | null>;
+}) {
+  const { settings, profile, opts, weekType, weekTargetKm, days, prevWeekDistancesByDow } = args;
+
+  // Race day handling (if within this week)
+  const raceKm = goalDistanceKm(settings.goalType);
+  const raceDateISO = settings.raceDate ? toISO(settings.raceDate) : null;
+
+  if (raceDateISO) {
+    const raceDay = days.find(d => d.date === raceDateISO);
+    if (raceDay) {
+      raceDay.workoutType = "race";
+      raceDay.plannedDistanceKm = raceKm;
+      raceDay.intensity = "high";
+      // In race week, keep other runs very light; allocation below will handle remaining
+    }
+  }
+
+  // Identify run days (excluding rest/cross)
+  const runDays = days.filter(d =>
+    d.workoutType !== "rest" && d.workoutType !== "cross_training" && d.workoutType !== "strength" && d.workoutType !== "drills"
+  );
+
+  // If race day exists, treat it as the long/primary run and reduce other run load
+  const hasRace = runDays.some(d => d.workoutType === "race");
+
+  // Base allocation percentages
+  const W = weekTargetKm;
+
+  // Determine how many quality days are in template
+  const qualityDays = runDays.filter(d =>
+    ["tempo","intervals","hills","fartlek","progression"].includes(d.workoutType)
+  );
+  const longDay = runDays.find(d => d.workoutType === "long_run");
+  const raceDay = runDays.find(d => d.workoutType === "race");
+
+  // Long run cap based on athlete + week type
+  const maxLongIncrease = (weekType === "recovery" || weekType === "taper") ? 0 : 2.0; // km/week
+  const prevLong = prevWeekDistancesByDow[settings.preferredLongRunDay] ?? null;
+
+  // Allocate key distances
+  let longKm = 0;
+
+  if (raceDay) {
+    longKm = raceDay.plannedDistanceKm ?? 0; // race is the "key run"
+  } else if (opts.includeLongRuns && longDay) {
+    const raw = W * 0.30;
+    const minLong = Math.max(8, profile.longestRecentRunKm * 0.6);
+    const maxLong = clamp(profile.longestRecentRunKm + 8, 12, goalLongCapKm(settings.goalType));
+    longKm = roundToHalfKm(clamp(raw, minLong, maxLong));
+
+    // smooth long run
+    if (prevLong && weekType === "build") {
+      longKm = roundToHalfKm(clamp(longKm, prevLong - 2, prevLong + maxLongIncrease));
+    }
+    longDay.plannedDistanceKm = longKm;
+    longDay.intensity = "moderate";
+  }
+
+  // Quality day distances (include warmup/cooldown)
+  // keep them stable and not huge
+  for (const q of qualityDays) {
+    const raw = W * 0.20;
+    const prev = prevWeekDistancesByDow[q.dayOfWeek] ?? null;
+    let qKm = roundToHalfKm(clamp(raw, 6, 14));
+
+    // smooth
+    if (prev && weekType === "build") qKm = roundToHalfKm(clamp(qKm, prev - 2, prev + 2));
+    if (weekType === "taper") qKm = roundToHalfKm(Math.max(6, qKm * 0.8));
+
+    q.plannedDistanceKm = qKm;
+    q.intensity = "high";
+  }
+
+  // Remaining run days = easy/recovery
+  const fixedKm = sumWeekKm(days);
+  let remaining = roundToHalfKm(Math.max(0, W - fixedKm));
+
+  const easyDays = runDays.filter(d =>
+    d.plannedDistanceKm === 0 || d.plannedDistanceKm === null
+  ).filter(d => d.workoutType === "easy" || d.workoutType === "recovery" || d.workoutType === "long_run");
+
+  // If we have race day, make remaining tiny
+  if (hasRace) remaining = Math.min(remaining, 12);
+
+  if (easyDays.length > 0) {
+    const per = roundToHalfKm(remaining / easyDays.length);
+
+    for (const d of easyDays) {
+      // set minimums (keep recovery shorter)
+      const min = (d.workoutType === "recovery") ? 4 : 5;
+      const prev = prevWeekDistancesByDow[d.dayOfWeek] ?? null;
+
+      let km = roundToHalfKm(Math.max(min, per));
+
+      // smooth weekday changes unless recovery/taper week
+      if (prev && weekType === "build") km = roundToHalfKm(clamp(km, prev - 2, prev + 2));
+      if (weekType === "taper") km = roundToHalfKm(Math.max(min, km * 0.8));
+
+      // never exceed long run
+      if (longDay?.plannedDistanceKm) km = Math.min(km, (longDay.plannedDistanceKm ?? km) - 1);
+
+      d.plannedDistanceKm = km;
+      d.intensity = "low";
+    }
+  }
+
+  // Final reconciliation: adjust small rounding drift by adding/subtracting 0.5km to easy days
+  reconcileWeekTotal(days, W, longDay?.dayOfWeek ?? null);
+}
+
+function reconcileWeekTotal(days: SkeletonDay[], targetW: number, avoidDow: string | null) {
+  let current = roundToHalfKm(sumWeekKm(days));
+  let diff = roundToHalfKm(targetW - current);
+  if (Math.abs(diff) < 0.25) return;
+
+  // adjust easiest days first
+  const adjustable = days
+    .filter(d => d.plannedDistanceKm && d.workoutType === "easy")
+    .filter(d => d.dayOfWeek !== avoidDow)
+    .sort((a,b) => (a.plannedDistanceKm! - b.plannedDistanceKm!));
+
+  while (Math.abs(diff) >= 0.5 && adjustable.length > 0) {
+    const d = adjustable[0];
+    const step = diff > 0 ? 0.5 : -0.5;
+    const next = (d.plannedDistanceKm ?? 0) + step;
+
+    if (next >= 4) { // don't drop too low
+      d.plannedDistanceKm = roundToHalfKm(next);
+      diff = roundToHalfKm(targetW - roundToHalfKm(sumWeekKm(days)));
+    } else {
+      adjustable.shift();
+    }
+  }
+}
+
+function goalDistanceKm(goal: GoalType): number {
+  if (goal === "5k") return 5;
+  if (goal === "10k") return 10;
+  if (goal === "half_marathon") return 21.0975;
+  if (goal === "marathon") return 42.195;
+  return 0;
+}
+
+function goalLongCapKm(goal: GoalType): number {
+  // conservative caps
+  if (goal === "marathon") return 35;
+  if (goal === "half_marathon") return 24;
+  if (goal === "10k") return 16;
+  if (goal === "5k") return 14;
+  return 20;
+}
+```
+
+---
+
+# 8) Week type picker (simple but effective)
+
+```ts
+function pickWeekType(
+  settings: TrainingPlanSettings,
+  weekNumber: number,
+  weekStart: Date,
+  weeklyTargets: number[]
+): WeekType {
+  const W = settings.totalWeeks;
+
+  const taperWeeks =
+    settings.goalType === "marathon" ? 3 :
+    settings.goalType === "half_marathon" ? 2 :
+    (settings.goalType === "10k" || settings.goalType === "5k") ? 1 : 1;
+
+  if (weekNumber > (W - taperWeeks)) return "taper";
+  if (weekNumber % 4 === 0) return "recovery";
+
+  // crude “peak” is around the highest target before taper
+  const peakIndex = weeklyTargets.indexOf(Math.max(...weeklyTargets.slice(0, W - taperWeeks)));
+  if (weekNumber === peakIndex + 1) return "peak";
+
+  // base early, build middle
+  if (weekNumber <= 2) return "base";
+  return "build";
+}
+```
+
+---
+
+# 9) What developer does next
+
+1. Implement the skeleton generator above (or simplified version).
+2. Call the LLM with your **“Fill Skeleton”** prompt.
+3. On return:
+
+* **overwrite** structural fields from skeleton:
+
+  * all dates, workoutType, plannedDistanceKm (week/day)
+* keep only:
+
+  * title/description/intensity/target pace or HR zone/workoutStructure/coach notes
+
+4. Save to `TrainingPlan`, `PlanWeek`, `PlanDay`.
+
+---
+
+If you tell me your preferred **week start day** (Mon vs Sun) and your default run templates (3/4/5/6 days), I can tighten the schedule template logic so it matches your exact product behavior (e.g., always tempo on Tue, intervals on Thu, etc.).
