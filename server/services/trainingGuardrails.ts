@@ -58,6 +58,7 @@ export interface GuardrailConfig {
   maxHardWorkoutsPerWeek: number;
   peakLongRunPercentOfRace: number; // 90% of race distance
   maxEasyRunPercentOfRace: number; // Easy runs should not exceed this % of race distance
+  minEasyRunKm: number; // Minimum easy run distance in km (floor)
 }
 
 // Race distances in km
@@ -81,6 +82,7 @@ const DEFAULT_CONFIG: GuardrailConfig = {
   maxHardWorkoutsPerWeek: 3,
   peakLongRunPercentOfRace: 90, // Peak long run should be 90% of race distance
   maxEasyRunPercentOfRace: 50, // Easy runs should not exceed 50% of race distance
+  minEasyRunKm: 5, // Minimum 5km (3.1 miles) for easy runs
 };
 
 export class TrainingGuardrails {
@@ -207,6 +209,19 @@ export class TrainingGuardrails {
             correctedValue: maxEasyRunKm,
             reason: `${day.workoutType} run (${originalDistance.toFixed(1)}km) exceeded max for ${goalType.replace("_", " ")} (${maxEasyRunKm.toFixed(1)}km / 50% of race)`,
           });
+        }
+        
+        // Rule 2b: Easy runs should not be below minimum (5km / 3.1mi floor)
+        if ((day.workoutType === "easy" || day.workoutType === "recovery") && day.plannedDistanceKm < this.config.minEasyRunKm) {
+          const correctedMin = this.config.minEasyRunKm;
+          validation.corrections.push({
+            type: "reduce_mileage",
+            weekNumber: week.weekNumber,
+            originalValue: originalDistance,
+            correctedValue: correctedMin,
+            reason: `${day.workoutType} run (${originalDistance.toFixed(1)}km) below minimum ${correctedMin}km floor - increased`,
+          });
+          day.plannedDistanceKm = correctedMin;
         }
         
         // Rule 3: No single workout should exceed the peak long run target (unless it's a race)
@@ -551,22 +566,20 @@ export class TrainingGuardrails {
     
     const requiredPeakLongRunKm = raceDistanceKm * (this.config.peakLongRunPercentOfRace / 100);
     
-    // Find peak long run across all non-taper weeks
+    // Find the current max long run across all non-taper weeks
     let maxLongRunKm = 0;
-    let peakWeekNumber = 0;
     
     for (const week of plan.weeks) {
       if (week.weekType === "taper") continue;
       
       for (const day of week.days) {
         if (day.workoutType === "long_run" && day.plannedDistanceKm) {
-          if (day.plannedDistanceKm > maxLongRunKm) {
-            maxLongRunKm = day.plannedDistanceKm;
-            peakWeekNumber = week.weekNumber;
-          }
+          maxLongRunKm = Math.max(maxLongRunKm, day.plannedDistanceKm);
         }
       }
     }
+    
+    console.log(`[Guardrails] Peak long run check: current max=${maxLongRunKm.toFixed(1)}km, required=${requiredPeakLongRunKm.toFixed(1)}km`);
     
     if (maxLongRunKm < requiredPeakLongRunKm) {
       const shortfall = requiredPeakLongRunKm - maxLongRunKm;
@@ -574,12 +587,28 @@ export class TrainingGuardrails {
         `Peak long run (${maxLongRunKm.toFixed(1)}km) is below the required ${this.config.peakLongRunPercentOfRace}% of ${goalType.replace("_", " ")} distance (${requiredPeakLongRunKm.toFixed(1)}km). Shortfall: ${shortfall.toFixed(1)}km.`
       );
       
-      // Attempt to correct: find the peak week and increase the long run
-      const peakWeek = plan.weeks.find(w => w.weekType === "peak") || 
-                       plan.weeks.find(w => w.weekNumber === peakWeekNumber);
+      // Find the LAST non-taper week (the actual peak week before taper begins)
+      // This is where the peak long run should occur
+      const nonTaperWeeks = plan.weeks.filter(w => w.weekType !== "taper");
+      const lastNonTaperWeek = nonTaperWeeks[nonTaperWeeks.length - 1];
+      
+      // Also check for explicitly marked "peak" week
+      const peakWeek = plan.weeks.find(w => w.weekType === "peak") || lastNonTaperWeek;
       
       if (peakWeek) {
-        const longRunDay = peakWeek.days.find(d => d.workoutType === "long_run");
+        let longRunDay = peakWeek.days.find(d => d.workoutType === "long_run");
+        
+        // If no long run exists in peak week, find the longest workout and convert it,
+        // or add a long run on Sunday
+        if (!longRunDay) {
+          const sundayDay = peakWeek.days.find(d => d.dayOfWeek.toLowerCase() === "sunday");
+          if (sundayDay && sundayDay.workoutType !== "rest") {
+            sundayDay.workoutType = "long_run";
+            sundayDay.title = "Peak Long Run";
+            longRunDay = sundayDay;
+          }
+        }
+        
         if (longRunDay) {
           const originalDistance = longRunDay.plannedDistanceKm || 0;
           longRunDay.plannedDistanceKm = Math.round(requiredPeakLongRunKm * 10) / 10;
@@ -606,6 +635,8 @@ export class TrainingGuardrails {
             correctedValue: requiredPeakLongRunKm,
             reason: `Increased peak long run to ${requiredPeakLongRunKm.toFixed(1)}km (90% of race distance), weekly total adjusted to ${newWeeklyTotal.toFixed(1)}km`,
           });
+          
+          console.log(`[Guardrails] Boosted peak long run in week ${peakWeek.weekNumber} from ${originalDistance.toFixed(1)}km to ${requiredPeakLongRunKm.toFixed(1)}km`);
         }
       }
     }
