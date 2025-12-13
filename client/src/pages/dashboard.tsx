@@ -506,7 +506,6 @@ export default function Dashboard() {
             <GoalProgress userId={user?.id!} unitPreference={dashboardData?.user?.unitPreference} />
             
             <AIInsights insights={dashboardData?.insights || {}} userId={user?.id!} />
-            <InsightHistory userId={user?.id!} />
             <TrainingRecommendations recommendations={dashboardData?.insights?.recommendations || []} userId={user?.id!} />
             <FitnessTrends chartData={dashboardData?.chartData || []} unitPreference={dashboardData?.user?.unitPreference} />
 
@@ -520,8 +519,10 @@ export default function Dashboard() {
               />
             )}
             
-            {/* Running Shoe Hub - at bottom */}
             <ShoeHub />
+            
+            {/* Insight History - at bottom */}
+            <InsightHistory userId={user?.id!} />
           </div>
         </div>
       </main>
