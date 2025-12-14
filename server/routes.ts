@@ -4547,9 +4547,24 @@ ${allPages.map(page => `  <url>
   });
   
   // SSE endpoint for enrichment progress
-  app.get("/api/training/plans/:planId/enrichment-stream", authenticateJWT, async (req: any, res) => {
+  // Note: SSE can't send Authorization headers, so we accept token from query param
+  app.get("/api/training/plans/:planId/enrichment-stream", async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      // Check both header and query param for token (SSE needs query param)
+      const authHeader = req.headers.authorization;
+      const queryToken = req.query.token as string | undefined;
+      const token = (authHeader && authHeader.split(' ')[1]) || queryToken;
+      
+      if (!token) {
+        return res.status(401).json({ message: "Access token required" });
+      }
+      
+      const user = await authService.verifyToken(token);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+      
+      const userId = user.id;
       const planId = parseInt(req.params.planId);
       
       // Verify ownership
