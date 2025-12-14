@@ -54,7 +54,7 @@ export default function CoachVerdict({ activityId, compact = false }: CoachVerdi
     queryFn: async () => {
       const res = await fetch(`/api/activities/${activityId}/verdict`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         }
       });
       if (!res.ok) {
