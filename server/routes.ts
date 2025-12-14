@@ -4867,7 +4867,7 @@ ${allPages.map(page => `  <url>
     }
   });
   
-  // Auto-link activities to plan days
+  // Auto-link activities to plan days with adherence summary
   app.post("/api/training/plans/:planId/auto-link", authenticateJWT, async (req: any, res) => {
     try {
       const userId = req.user.id;
@@ -4880,6 +4880,59 @@ ${allPages.map(page => `  <url>
       
       const results = await autoLinkActivitiesForPlan(planId, userId);
       
+      // Calculate adherence summary for last 7 days
+      const weeks = await storage.getPlanWeeks(planId);
+      const now = new Date();
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      
+      let plannedLast7Days = 0;
+      let completedLast7Days = 0;
+      let plannedDistanceKm = 0;
+      let completedDistanceKm = 0;
+      const missedKeyWorkouts: string[] = [];
+      
+      for (const week of weeks) {
+        const days = await storage.getPlanDays(week.id);
+        for (const day of days) {
+          const dayDate = new Date(day.date);
+          if (dayDate >= sevenDaysAgo && dayDate <= now) {
+            if (day.workoutType !== "rest") {
+              plannedLast7Days++;
+              plannedDistanceKm += day.plannedDistanceKm || 0;
+              
+              if (day.status === "completed" || day.linkedActivityId) {
+                completedLast7Days++;
+                completedDistanceKm += day.actualDistanceKm || day.plannedDistanceKm || 0;
+              } else if (dayDate < now) {
+                // Past workout not completed - check if it was a key workout
+                const keyTypes = ["tempo", "intervals", "long_run", "hills", "fartlek", "progression"];
+                if (day.workoutType && keyTypes.includes(day.workoutType)) {
+                  const dayName = dayDate.toLocaleDateString("en-US", { weekday: "short" });
+                  missedKeyWorkouts.push(`${day.workoutType.replace("_", " ")} (${dayName})`);
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      const adherenceRate = plannedLast7Days > 0 
+        ? Math.round((completedLast7Days / plannedLast7Days) * 100) 
+        : 100;
+      
+      // Generate summary message
+      let summary = `Synced ${results.length} activities. Last 7 days: ${completedLast7Days}/${plannedLast7Days} workouts (${adherenceRate}%).`;
+      
+      // Add callout for missed key workouts
+      let callout: string | null = null;
+      if (missedKeyWorkouts.length > 0) {
+        callout = `Missed key workout${missedKeyWorkouts.length > 1 ? "s" : ""}: ${missedKeyWorkouts.join(", ")}. Feeling tired? Consider using the recovery button.`;
+      } else if (adherenceRate >= 90) {
+        callout = "Excellent adherence! You're crushing it.";
+      } else if (adherenceRate < 50) {
+        callout = "Training consistency has been low. Consider adjusting your plan.";
+      }
+      
       res.json({
         success: true,
         linkedCount: results.length,
@@ -4889,6 +4942,18 @@ ${allPages.map(page => `  <url>
           status: r.status,
           matchScore: r.matchScore,
         })),
+        adherenceSummary: {
+          last7Days: {
+            planned: plannedLast7Days,
+            completed: completedLast7Days,
+            adherenceRate,
+            plannedDistanceKm: Math.round(plannedDistanceKm * 10) / 10,
+            completedDistanceKm: Math.round(completedDistanceKm * 10) / 10,
+          },
+          missedKeyWorkouts,
+          summary,
+          callout,
+        },
       });
     } catch (error: any) {
       console.error("Auto-link activities error:", error);
@@ -4896,38 +4961,190 @@ ${allPages.map(page => `  <url>
     }
   });
   
-  // Adjust training plan - simplified endpoint with tired/feeling flags
+  // Adjust training plan - deterministic coach-like adjustments
   app.post("/api/training/plans/:planId/adjust", authenticateJWT, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const planId = parseInt(req.params.planId);
-      const { feeling } = req.body; // "tired" or "strong"
+      const { feeling, skipSync } = req.body; // "tired" or "strong", optionally skip pre-sync
+      
+      if (!feeling || !["tired", "strong"].includes(feeling)) {
+        return res.status(400).json({ message: "Invalid feeling. Use 'tired' or 'strong'" });
+      }
       
       const plan = await storage.getTrainingPlanById(planId);
       if (!plan || plan.userId !== userId) {
         return res.status(404).json({ message: "Training plan not found" });
       }
       
-      // Build the reason based on feeling
-      let reason = "Weekly adjustment based on recent training";
-      if (feeling === "tired") {
-        reason = "User reports feeling tired or fatigued. Reduce intensity and volume for next week.";
-      } else if (feeling === "strong") {
-        reason = "User reports feeling strong. Maintain or slightly increase planned workouts.";
+      // Mini-sync check: if last sync was > 24 hours ago, run auto-link first
+      const user = await storage.getUser(userId);
+      let syncPerformed = false;
+      const SYNC_THRESHOLD_HOURS = 24;
+      
+      if (!skipSync && user?.stravaAccessToken) {
+        const lastSync = user.lastSyncAt ? new Date(user.lastSyncAt) : null;
+        const hoursSinceSync = lastSync ? (Date.now() - lastSync.getTime()) / (1000 * 60 * 60) : Infinity;
+        
+        if (hoursSinceSync > SYNC_THRESHOLD_HOURS) {
+          // Auto-link activities to ground adjustments in recent training
+          try {
+            await autoLinkActivitiesForPlan(planId, userId);
+            syncPerformed = true;
+            console.log(`[Adjust] Pre-adjustment sync completed for plan ${planId}`);
+          } catch (syncErr) {
+            console.warn(`[Adjust] Pre-sync failed, continuing with adjustment:`, syncErr);
+          }
+        }
       }
       
-      const { planGeneratorService } = await import("./services/planGenerator");
-      const result = await planGeneratorService.adaptPlan(planId, reason);
+      const weeks = await storage.getPlanWeeks(planId);
+      const now = new Date();
       
-      if (!result.success) {
-        return res.status(400).json({ message: result.error });
+      // Find the next week(s) to adjust (next 7-14 days from now)
+      const nextWeeks = weeks.filter((w: any) => {
+        const weekStart = new Date(w.weekStartDate);
+        const weekEnd = new Date(w.weekEndDate);
+        // Week starts in the future or is current week
+        return weekEnd >= now;
+      }).slice(0, 2); // Only adjust next 1-2 weeks
+      
+      if (nextWeeks.length === 0) {
+        return res.json({
+          success: true,
+          feeling,
+          adaptedWeeks: 0,
+          changes: ["No future weeks to adjust"],
+          coachNote: "Your plan is complete - no adjustments needed!"
+        });
       }
+      
+      const changes: string[] = [];
+      const adjustedDayIds: number[] = [];
+      
+      for (const week of nextWeeks) {
+        const days = await storage.getPlanDays(week.id);
+        const originalWeekDistance = week.plannedDistanceKm || 0;
+        let newWeekDistance = originalWeekDistance;
+        
+        if (feeling === "tired") {
+          // TIRED: Reduce volume 10-20%, soften quality workouts, shorten long run
+          const volumeReduction = 0.85; // 15% reduction
+          newWeekDistance = originalWeekDistance * volumeReduction;
+          
+          let qualitySoftened = false;
+          
+          for (const day of days) {
+            if (day.workoutType === "rest") continue;
+            
+            const originalDistance = day.plannedDistanceKm;
+            const originalType = day.workoutType;
+            let updates: any = {};
+            
+            // Soften ONE quality workout per week
+            if (!qualitySoftened && ["intervals", "tempo", "hills", "fartlek"].includes(day.workoutType)) {
+              updates.originalWorkoutType = day.workoutType;
+              updates.originalDistanceKm = day.plannedDistanceKm;
+              updates.workoutType = "easy";
+              updates.intensity = "low";
+              updates.title = "Easy Run (adjusted)";
+              updates.description = `Originally ${day.workoutType}. Converted to easy run to allow recovery.`;
+              if (day.plannedDistanceKm) {
+                updates.plannedDistanceKm = Math.round(day.plannedDistanceKm * 0.9 * 10) / 10;
+              }
+              updates.wasAdjusted = true;
+              qualitySoftened = true;
+              changes.push(`Week ${week.weekNumber}: ${originalType} → easy run`);
+            }
+            // Shorten long run by 10-20%
+            else if (day.workoutType === "long_run" && day.plannedDistanceKm) {
+              updates.originalDistanceKm = day.plannedDistanceKm;
+              updates.plannedDistanceKm = Math.round(day.plannedDistanceKm * 0.85 * 10) / 10;
+              updates.wasAdjusted = true;
+              changes.push(`Week ${week.weekNumber}: Long run ${originalDistance?.toFixed(1)}km → ${updates.plannedDistanceKm}km`);
+            }
+            // Reduce easy/recovery runs slightly
+            else if (["easy", "recovery"].includes(day.workoutType) && day.plannedDistanceKm) {
+              updates.originalDistanceKm = day.plannedDistanceKm;
+              updates.plannedDistanceKm = Math.round(day.plannedDistanceKm * 0.9 * 10) / 10;
+              updates.wasAdjusted = true;
+            }
+            
+            if (Object.keys(updates).length > 0) {
+              await storage.updatePlanDay(day.id, updates);
+              adjustedDayIds.push(day.id);
+            }
+          }
+          
+          // Update week with adjustment metadata
+          await storage.updatePlanWeek(week.id, {
+            plannedDistanceKm: Math.round(newWeekDistance * 10) / 10,
+            wasAdjusted: true,
+            adjustmentReason: "tired",
+            adjustedAt: new Date(),
+            coachNotes: `Recovery adjustment: You indicated fatigue, so we reduced volume by ~15% and converted a quality session to an easy run. Listen to your body - consistent easy running beats pushing through fatigue.`
+          });
+          
+        } else if (feeling === "strong") {
+          // STRONG: Modest increase 5-10% (cap at 15%), progress existing quality session slightly
+          const volumeIncrease = 1.08; // 8% increase (conservative)
+          newWeekDistance = Math.min(originalWeekDistance * 1.15, originalWeekDistance * volumeIncrease);
+          
+          let qualityProgressed = false;
+          
+          for (const day of days) {
+            if (day.workoutType === "rest") continue;
+            
+            let updates: any = {};
+            
+            // Slightly progress ONE quality workout
+            if (!qualityProgressed && ["intervals", "tempo"].includes(day.workoutType)) {
+              updates.originalDistanceKm = day.plannedDistanceKm;
+              if (day.plannedDistanceKm) {
+                updates.plannedDistanceKm = Math.round(day.plannedDistanceKm * 1.1 * 10) / 10;
+              }
+              updates.wasAdjusted = true;
+              qualityProgressed = true;
+              changes.push(`Week ${week.weekNumber}: ${day.workoutType} slightly extended`);
+            }
+            // Modest long run increase (+1-2km max)
+            else if (day.workoutType === "long_run" && day.plannedDistanceKm) {
+              const increase = Math.min(1.5, day.plannedDistanceKm * 0.08); // 8% or 1.5km max
+              updates.originalDistanceKm = day.plannedDistanceKm;
+              updates.plannedDistanceKm = Math.round((day.plannedDistanceKm + increase) * 10) / 10;
+              updates.wasAdjusted = true;
+              changes.push(`Week ${week.weekNumber}: Long run +${increase.toFixed(1)}km`);
+            }
+            
+            if (Object.keys(updates).length > 0) {
+              await storage.updatePlanDay(day.id, updates);
+              adjustedDayIds.push(day.id);
+            }
+          }
+          
+          // Update week with adjustment metadata
+          await storage.updatePlanWeek(week.id, {
+            plannedDistanceKm: Math.round(newWeekDistance * 10) / 10,
+            wasAdjusted: true,
+            adjustmentReason: "strong",
+            adjustedAt: new Date(),
+            coachNotes: `Progressive adjustment: You're feeling strong! We've slightly increased your quality session and long run to build on this momentum. Stay consistent and keep listening to your body.`
+          });
+        }
+      }
+      
+      const coachNote = feeling === "tired"
+        ? `Recovery Mode: Next week eased by ~15%. We converted a hard workout to easy running and shortened your long run. This helps you recover while maintaining fitness.`
+        : `Building Momentum: Next week progressed by ~8%. Your tempo/interval session is slightly longer and your long run increased modestly. Great work - keep it rolling!`;
       
       res.json({
         success: true,
         feeling,
-        adaptedWeeks: result.adaptedWeeks,
-        changes: result.changes,
+        adaptedWeeks: nextWeeks.length,
+        adjustedDays: adjustedDayIds.length,
+        changes,
+        coachNote,
+        syncPerformed,
       });
     } catch (error: any) {
       console.error("Adjust training plan error:", error);

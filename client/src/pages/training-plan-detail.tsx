@@ -49,6 +49,14 @@ interface PlanDay {
   intensity: string | null;
   status: string | null;
   linkedActivityId: number | null;
+  wasAdjusted?: boolean;
+  originalWorkoutType?: string | null;
+  originalDistanceKm?: number | null;
+}
+
+interface PlanWeekExtended extends PlanWeek {
+  wasAdjusted?: boolean;
+  adjustmentReason?: "tired" | "strong" | "manual" | null;
 }
 
 interface TrainingPlanDetail {
@@ -62,7 +70,11 @@ interface TrainingPlanDetail {
   status: string;
   coachNotes: string | null;
   createdAt: string;
-  weeks: (PlanWeek & { days: PlanDay[] })[];
+  weeks: (PlanWeek & { 
+    days: PlanDay[]; 
+    wasAdjusted?: boolean;
+    adjustmentReason?: "tired" | "strong" | "manual" | null;
+  })[];
   enrichmentStatus?: "pending" | "enriching" | "complete" | "partial" | "failed" | null;
   enrichedWeeks?: number | null;
   enrichmentError?: string | null;
@@ -71,19 +83,27 @@ interface TrainingPlanDetail {
 const workoutTypeIcons: Record<string, typeof Footprints> = {
   easy: Footprints,
   long: Mountain,
+  long_run: Mountain,
   tempo: Zap,
   intervals: Timer,
   recovery: Coffee,
   rest: Coffee,
+  fartlek: Zap,
+  hills: Mountain,
+  progression: Zap,
 };
 
 const workoutTypeColors: Record<string, string> = {
   easy: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
   long: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+  long_run: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
   tempo: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
   intervals: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
   recovery: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
   rest: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
+  fartlek: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
+  hills: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
+  progression: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
 };
 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -268,19 +288,40 @@ export default function TrainingPlanDetail() {
     mutationFn: async () => {
       return await apiRequest(`/api/training/plans/${planId}/auto-link`, "POST");
     },
-    onSuccess: (data: { linkedCount: number }) => {
+    onSuccess: (data: { 
+      linkedCount: number; 
+      adherenceSummary?: { 
+        summary: string; 
+        callout: string | null;
+        last7Days: { adherenceRate: number; planned: number; completed: number };
+      } 
+    }) => {
       queryClient.invalidateQueries({ queryKey: [`/api/training/plans/${planId}`] });
+      
+      const summary = data.adherenceSummary?.summary || 
+        (data.linkedCount > 0 ? `Linked ${data.linkedCount} activities.` : "No new activities to link.");
+      
       toast({
-        title: "Activities linked",
-        description: data.linkedCount > 0 
-          ? `Linked ${data.linkedCount} activities to your plan.`
-          : "No new activities to link.",
+        title: "Sync complete",
+        description: summary,
       });
+      
+      // Show callout as separate toast if present
+      if (data.adherenceSummary?.callout) {
+        const adherenceRate = data.adherenceSummary?.last7Days?.adherenceRate ?? 75;
+        setTimeout(() => {
+          toast({
+            title: adherenceRate >= 90 ? "Great work!" : "Training update",
+            description: data.adherenceSummary?.callout,
+            variant: adherenceRate < 50 ? "destructive" : "default",
+          });
+        }, 500);
+      }
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to auto-link activities. Please try again.",
+        description: "Failed to sync activities. Please try again.",
         variant: "destructive",
       });
     },
@@ -290,14 +331,28 @@ export default function TrainingPlanDetail() {
     mutationFn: async (feeling: "tired" | "strong") => {
       return await apiRequest(`/api/training/plans/${planId}/adjust`, "POST", { feeling });
     },
-    onSuccess: (data: { feeling: string; adaptedWeeks?: number }) => {
+    onSuccess: (data: { 
+      feeling: string; 
+      adaptedWeeks?: number;
+      adjustedDays?: number;
+      changes?: string[];
+      coachNote?: string;
+      syncPerformed?: boolean;
+    }) => {
       queryClient.invalidateQueries({ queryKey: [`/api/training/plans/${planId}`] });
       toast({
-        title: "Plan adjusted",
-        description: data.feeling === "tired" 
+        title: data.feeling === "tired" ? "Recovery mode activated" : "Plan progressed",
+        description: data.coachNote || (data.feeling === "tired" 
           ? "Next week has been softened based on your feedback."
-          : "Plan maintained - keep up the great work!",
+          : "Plan maintained - keep up the great work!"),
       });
+      
+      if (data.syncPerformed) {
+        toast({
+          title: "Activities synced",
+          description: "We synced your recent activities before adjusting.",
+        });
+      }
     },
     onError: () => {
       toast({
@@ -606,9 +661,16 @@ export default function TrainingPlanDetail() {
                 <CardHeader className="pb-2 pt-4 px-4">
                   <CardTitle className="text-sm font-medium flex items-center justify-between">
                     <span>{dayName.slice(0, 3)}</span>
-                    {isCompleted && (
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                    )}
+                    <div className="flex items-center gap-1">
+                      {dayData?.wasAdjusted && (
+                        <Badge variant="outline" className="text-[10px] px-1 py-0 bg-yellow-50 text-yellow-700 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400" data-testid="badge-adjusted">
+                          Adjusted
+                        </Badge>
+                      )}
+                      {isCompleted && (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      )}
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0 px-4 pb-4">
