@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Activity, Heart, TrendingUp, Zap, Mountain } from "lucide-react";
+import { Activity, Heart, TrendingUp, Zap, Mountain, Loader2 } from "lucide-react";
 import { Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, ReferenceDot, Line } from 'recharts';
 
 interface AIPin {
@@ -28,11 +28,12 @@ interface RunTimelineProps {
   streams?: StreamData | null;
   unitPreference?: string;
   activityDistance?: number;
+  isHydrating?: boolean;
 }
 
 type MetricType = "pace" | "heartrate" | "power" | "cadence";
 
-export default function RunTimeline({ streams, unitPreference = 'km', activityDistance }: RunTimelineProps) {
+export default function RunTimeline({ streams, unitPreference = 'km', activityDistance, isHydrating = false }: RunTimelineProps) {
   const [activeMetric, setActiveMetric] = useState<MetricType>("pace");
   const [showElevation, setShowElevation] = useState(true);
 
@@ -47,8 +48,18 @@ export default function RunTimeline({ streams, unitPreference = 'km', activityDi
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-gray-500">
-            <p>Detailed stream data not available for this activity.</p>
-            <p className="text-sm mt-1">Sync more activities to see timeline charts.</p>
+            {isHydrating ? (
+              <>
+                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-500" />
+                <p>Fetching detailed data from Strava...</p>
+                <p className="text-sm mt-1">This may take a moment.</p>
+              </>
+            ) : (
+              <>
+                <p>Detailed stream data not available for this activity.</p>
+                <p className="text-sm mt-1">Sync more activities to see timeline charts.</p>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>

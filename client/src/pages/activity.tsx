@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, Thermometer, BarChart3, Timer, Trophy, Mountain, Pause, Flag, Users, BookOpen, BarChart2, Minimize2, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, Thermometer, BarChart3, Timer, Trophy, Mountain, Pause, Flag, Users, BookOpen, BarChart2, Minimize2, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 import AppHeader from "@/components/AppHeader";
 import RouteMap from "../components/RouteMap";
@@ -116,6 +116,47 @@ export default function ActivityPage() {
     enabled: !!activityId && viewMode === 'story',
     retry: false
   });
+
+  const [isHydrating, setIsHydrating] = useState(false);
+  const hydrationAttempted = useRef(false);
+
+  const hydrateMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/activities/${activityId}/hydrate`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+      });
+      if (!res.ok) throw new Error('Hydration failed');
+      return res.json();
+    },
+    onSuccess: (data) => {
+      if (data.message === "Hydration queued") {
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId] });
+          setIsHydrating(false);
+        }, 3000);
+      } else {
+        setIsHydrating(false);
+      }
+    },
+    onError: () => {
+      setIsHydrating(false);
+    }
+  });
+
+  useEffect(() => {
+    const activity = activityData?.activity;
+    if (!activity || hydrationAttempted.current) return;
+    
+    const needsHydration = activity.hydrationStatus === 'pending' || 
+                          (!activity.streamsData || activity.streamsData === 'null');
+    
+    if (needsHydration) {
+      hydrationAttempted.current = true;
+      setIsHydrating(true);
+      hydrateMutation.mutate();
+    }
+  }, [activityData?.activity]);
 
   if (isLoading) {
     return (
@@ -264,6 +305,7 @@ export default function ActivityPage() {
               streams={performanceData?.streams}
               unitPreference={activity.unitPreference}
               activityDistance={activity.distance}
+              isHydrating={isHydrating}
             />
             
             {/* Insight Chips */}
