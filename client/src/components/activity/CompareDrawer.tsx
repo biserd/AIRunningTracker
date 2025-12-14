@@ -5,6 +5,8 @@ import { TrendingUp, TrendingDown, Minus, X, Crown, Calendar, Route, Clock, Hear
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { Link } from "wouter";
 
+const KM_TO_MILES = 0.621371;
+
 interface ComparableRun {
   activityId: number;
   name: string;
@@ -79,12 +81,24 @@ interface CompareDrawerProps {
   onClose: () => void;
 }
 
-function formatPace(metersPerSecond: number): string {
+function formatPace(metersPerSecond: number, unitPreference: string = 'km'): string {
   if (!metersPerSecond || metersPerSecond <= 0) return "N/A";
-  const secondsPerKm = 1000 / metersPerSecond;
-  const mins = Math.floor(secondsPerKm / 60);
-  const secs = Math.round(secondsPerKm % 60);
+  const distanceUnit = unitPreference === 'miles' ? 1609.34 : 1000;
+  const secondsPerUnit = distanceUnit / metersPerSecond;
+  const mins = Math.floor(secondsPerUnit / 60);
+  const secs = Math.round(secondsPerUnit % 60);
   return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function formatDistance(meters: number, unitPreference: string = 'km'): string {
+  if (unitPreference === 'miles') {
+    return `${(meters / 1609.34).toFixed(2)} mi`;
+  }
+  return `${(meters / 1000).toFixed(2)} km`;
+}
+
+function getPaceUnit(unitPreference: string = 'km'): string {
+  return unitPreference === 'miles' ? '/mi' : '/km';
 }
 
 function DeltaIndicator({ value, inverted = false, unit = "%" }: { value: number; inverted?: boolean; unit?: string }) {
@@ -104,12 +118,15 @@ function DeltaIndicator({ value, inverted = false, unit = "%" }: { value: number
   );
 }
 
-function RouteHistorySparkline({ history }: { history: Array<{ startDate: string; averageSpeed: number }> }) {
+function RouteHistorySparkline({ history, unitPreference = 'km' }: { history: Array<{ startDate: string; averageSpeed: number }>; unitPreference?: string }) {
   if (history.length < 2) return null;
+  
+  const distanceUnit = unitPreference === 'miles' ? 1609.34 : 1000;
+  const paceLabel = unitPreference === 'miles' ? '/mi' : '/km';
   
   const data = history.slice().reverse().map((h, i) => ({
     idx: i,
-    pace: h.averageSpeed > 0 ? 1000 / h.averageSpeed : 0,
+    pace: h.averageSpeed > 0 ? distanceUnit / h.averageSpeed : 0,
     date: new Date(h.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }));
   
@@ -122,7 +139,7 @@ function RouteHistorySparkline({ history }: { history: Array<{ startDate: string
             formatter={(value: number) => {
               const mins = Math.floor(value / 60);
               const secs = Math.round(value % 60);
-              return [`${mins}:${secs.toString().padStart(2, '0')}/km`, "Pace"];
+              return [`${mins}:${secs.toString().padStart(2, '0')}${paceLabel}`, "Pace"];
             }}
             labelFormatter={(idx) => data[idx as number]?.date}
           />
@@ -160,6 +177,12 @@ function PremiumUpgradePrompt({ message }: { message: string }) {
 }
 
 export default function CompareDrawer({ activityId, onClose }: CompareDrawerProps) {
+  const { data: userData } = useQuery<{ unitPreference?: string }>({
+    queryKey: ['/api/user'],
+  });
+  
+  const unitPref = userData?.unitPreference || 'km';
+  
   const { data: comparison, isLoading, error } = useQuery<ComparisonData>({
     queryKey: ['/api/activities', activityId, 'comparison'],
     queryFn: async () => {
@@ -228,7 +251,7 @@ export default function CompareDrawer({ activityId, onClose }: CompareDrawerProp
             {routeMatch?.routeHistory && routeMatch.routeHistory.length > 1 && (
               <>
                 <p className="text-xs text-gray-500 mb-2">Pace trend over your runs on this route</p>
-                <RouteHistorySparkline history={routeMatch.routeHistory} />
+                <RouteHistorySparkline history={routeMatch.routeHistory} unitPreference={unitPref} />
               </>
             )}
           </div>
@@ -344,7 +367,7 @@ export default function CompareDrawer({ activityId, onClose }: CompareDrawerProp
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-medium text-gray-900">{formatPace(run.averageSpeed)}/km</p>
+                      <p className="text-sm font-medium text-gray-900">{formatPace(run.averageSpeed, unitPref)}{getPaceUnit(unitPref)}</p>
                       {run.averageHeartrate && (
                         <p className="text-xs text-gray-500">{Math.round(run.averageHeartrate)} bpm</p>
                       )}
