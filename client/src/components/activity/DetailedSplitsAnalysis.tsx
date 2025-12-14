@@ -23,12 +23,13 @@ interface DetailedSplitsAnalysisProps {
   activity: any;
   streams?: any;
   laps?: any[];
-  unitPreference?: 'km' | 'mi';
+  unitPreference?: string;
 }
 
-function calculateEnhancedSplits(activity: any, streams?: any, laps?: any[], unitPreference?: 'km' | 'mi'): SplitData[] {
+function calculateEnhancedSplits(activity: any, streams?: any, laps?: any[], unitPreference?: string): SplitData[] {
   // Determine if using metric or imperial units - default to km if not specified
-  const isMetric = unitPreference !== 'mi';
+  // Handle both 'mi' and 'miles' as imperial
+  const isMetric = unitPreference !== 'mi' && unitPreference !== 'miles';
   const distanceInKm = (activity.distance || 0) / 1000;
   const distanceInMiles = distanceInKm * 0.621371;
   
@@ -414,7 +415,7 @@ const SplitsAnalysis = ({ splits }: { splits: SplitData[] }) => {
 
 export default function DetailedSplitsAnalysis({ activity, streams, laps, unitPreference }: DetailedSplitsAnalysisProps) {
   const splits = calculateEnhancedSplits(activity, streams, laps, unitPreference);
-  const isMetric = unitPreference !== 'mi';
+  const isMetric = unitPreference !== 'mi' && unitPreference !== 'miles';
   const hasDetailedData = splits.some(s => s.realData);
 
   if (splits.length === 0) {

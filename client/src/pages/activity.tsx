@@ -33,7 +33,7 @@ export default function ActivityPage() {
   const [isChartsOpen, setIsChartsOpen] = useState(false);
   const [activeChip, setActiveChip] = useState<"drift" | "pacing" | "quality" | "benchmark" | "details" | null>(null);
 
-  const { data: userData } = useQuery<{ activityViewMode?: string; unitPreference?: 'km' | 'mi' }>({
+  const { data: userData } = useQuery<{ activityViewMode?: string; unitPreference?: string }>({
     queryKey: ['/api/user'],
   });
 
