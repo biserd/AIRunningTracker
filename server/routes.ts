@@ -17,6 +17,8 @@ import { autoLinkActivitiesForPlan } from "./services/activityLinker";
 import { calculateYearlyStats, reverseGeocode } from "./services/yearEndRecap";
 import { effortScoreService } from "./services/effortScore";
 import { coachVerdictService } from "./services/coachVerdict";
+import { dataQualityService } from "./services/dataQuality";
+import { efficiencyService } from "./services/efficiency";
 import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, emailWaitlist, type Activity, type RunningShoe } from "@shared/schema";
 import { shoeData } from "./shoe-data";
 import { validateAllShoes, getPipelineStats, findDuplicates, getShoeDataWithMetadata, getShoesWithMetadataFromStorage, getEnrichedShoeData, enrichShoeWithAIData } from "./shoe-pipeline";
@@ -3679,6 +3681,97 @@ ${allPages.map(page => `  <url>
     } catch (error: any) {
       console.error('Error generating verdict:', error);
       res.status(500).json({ message: error.message || "Failed to generate verdict" });
+    }
+  });
+
+  // Get data quality analysis for an activity
+  app.get("/api/activities/:activityId/quality", authenticateJWT, async (req: any, res) => {
+    try {
+      const activityId = parseInt(req.params.activityId);
+      const userId = req.user.id;
+
+      const activity = await storage.getActivityById(activityId);
+      if (!activity || activity.userId !== userId) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
+
+      const cacheKey = `quality:${activityId}`;
+      const cached = getCachedResponse(cacheKey);
+      if (cached) {
+        return res.json(cached);
+      }
+
+      const streams = await storage.getActivityStreams(activityId);
+      if (!streams) {
+        return res.json({
+          score: 0,
+          flags: [],
+          hrQuality: 0,
+          gpsQuality: 0,
+          pauseQuality: 0,
+          totalDataPoints: 0,
+          affectedPercentage: 0
+        });
+      }
+
+      const qualityResult = dataQualityService.analyzeStreamQuality(
+        streams,
+        activity.movingTime || 0,
+        activity.elapsedTime || activity.movingTime || 0
+      );
+
+      setCachedResponse(cacheKey, qualityResult);
+      res.json(qualityResult);
+    } catch (error: any) {
+      console.error('Error analyzing data quality:', error);
+      res.status(500).json({ message: error.message || "Failed to analyze data quality" });
+    }
+  });
+
+  // Get efficiency metrics for an activity
+  app.get("/api/activities/:activityId/efficiency", authenticateJWT, async (req: any, res) => {
+    try {
+      const activityId = parseInt(req.params.activityId);
+      const userId = req.user.id;
+
+      const activity = await storage.getActivityById(activityId);
+      if (!activity || activity.userId !== userId) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
+
+      const cacheKey = `efficiency:${activityId}`;
+      const cached = getCachedResponse(cacheKey);
+      if (cached) {
+        return res.json(cached);
+      }
+
+      const streams = await storage.getActivityStreams(activityId);
+      if (!streams) {
+        return res.json({
+          aerobicDecoupling: null,
+          decouplingLabel: "unknown",
+          paceHrEfficiency: null,
+          pacingStability: 50,
+          pacingLabel: "variable",
+          cadenceDrift: null,
+          firstHalfPace: null,
+          secondHalfPace: null,
+          firstHalfHr: null,
+          secondHalfHr: null,
+          splitVariance: 0
+        });
+      }
+
+      const efficiencyResult = efficiencyService.calculateEfficiencyMetrics(
+        streams,
+        activity.distance || 0
+      );
+
+      setCachedResponse(cacheKey, efficiencyResult);
+      res.json(efficiencyResult);
+    } catch (error: any) {
+      console.error('Error calculating efficiency:', error);
+      res.status(500).json({ message: error.message || "Failed to calculate efficiency" });
     }
   });
 

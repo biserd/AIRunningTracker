@@ -41,6 +41,7 @@ export interface IStorage {
     totalPages: number;
   }>;
   getActivityById(activityId: number): Promise<Activity | undefined>;
+  getActivityStreams(activityId: number): Promise<any | null>;
   getActivityByStravaId(stravaId: string): Promise<Activity | undefined>;
   getActivityByStravaIdAndUser(stravaId: string, userId: number): Promise<Activity | undefined>;
   getUserStravaIds(userId: number): Promise<string[]>;
@@ -492,6 +493,23 @@ export class DatabaseStorage implements IStorage {
       .from(activities)
       .where(eq(activities.id, activityId));
     return activity || undefined;
+  }
+
+  async getActivityStreams(activityId: number): Promise<any | null> {
+    const [activity] = await db
+      .select({ streamsData: activities.streamsData })
+      .from(activities)
+      .where(eq(activities.id, activityId));
+    
+    if (!activity?.streamsData) return null;
+    
+    try {
+      return typeof activity.streamsData === 'string' 
+        ? JSON.parse(activity.streamsData)
+        : activity.streamsData;
+    } catch {
+      return null;
+    }
   }
 
   async getActivityByStravaId(stravaId: string): Promise<Activity | undefined> {

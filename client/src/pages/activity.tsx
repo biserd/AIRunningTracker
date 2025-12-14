@@ -14,6 +14,11 @@ import CoachVerdict from "@/components/activity/CoachVerdict";
 import TrainingConsistency from "@/components/activity/TrainingConsistency";
 import KPIRibbon from "@/components/activity/KPIRibbon";
 import RunTimeline from "@/components/activity/RunTimeline";
+import NextSteps from "@/components/activity/NextSteps";
+import InsightChips from "@/components/activity/InsightChips";
+import BenchmarkDrawer from "@/components/activity/BenchmarkDrawer";
+import EfficiencyDrawer from "@/components/activity/EfficiencyDrawer";
+import DeepDiveDrawer from "@/components/activity/DeepDiveDrawer";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { ViewOnStravaLink, StravaPoweredBy } from "@/components/StravaConnect";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -26,6 +31,7 @@ export default function ActivityPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("story");
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [isChartsOpen, setIsChartsOpen] = useState(false);
+  const [activeChip, setActiveChip] = useState<"drift" | "pacing" | "quality" | "benchmark" | "details" | null>(null);
 
   const { data: userData } = useQuery<{ activityViewMode?: string }>({
     queryKey: ['/api/user'],
@@ -79,6 +85,32 @@ export default function ActivityPage() {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
       });
       if (!res.ok) throw new Error('Failed to fetch verdict');
+      return res.json();
+    },
+    enabled: !!activityId && viewMode === 'story',
+    retry: false
+  });
+
+  const { data: efficiencyData } = useQuery({
+    queryKey: ['/api/activities', activityId, 'efficiency'],
+    queryFn: async () => {
+      const res = await fetch(`/api/activities/${activityId}/efficiency`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+      });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!activityId && viewMode === 'story',
+    retry: false
+  });
+
+  const { data: qualityData } = useQuery({
+    queryKey: ['/api/activities', activityId, 'quality'],
+    queryFn: async () => {
+      const res = await fetch(`/api/activities/${activityId}/quality`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+      });
+      if (!res.ok) return null;
       return res.json();
     },
     enabled: !!activityId && viewMode === 'story',
@@ -218,14 +250,68 @@ export default function ActivityPage() {
               power={activity.averageWatts}
               cadence={activity.averageCadence}
             />
-            <div className="mb-6">
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
               <CoachVerdict activityId={parseInt(activityId || '0')} />
+              {verdictData && (
+                <NextSteps
+                  nextSteps={verdictData.nextSteps || []}
+                  consistencyLabel={verdictData.consistencyLabel}
+                  effortScore={verdictData.effortScore}
+                />
+              )}
             </div>
             <RunTimeline 
               streams={performanceData?.streams}
               unitPreference={activity.unitPreference}
               activityDistance={activity.distance}
             />
+            
+            {/* Insight Chips */}
+            <InsightChips
+              onChipClick={(chip) => setActiveChip(activeChip === chip ? null : chip)}
+              activeChip={activeChip}
+              efficiencyData={efficiencyData}
+              qualityData={qualityData}
+              comparisonData={verdictData?.comparison}
+            />
+            
+            {/* Benchmark Drawer */}
+            {activeChip === 'benchmark' && verdictData?.comparison && (
+              <div className="mt-4">
+                <BenchmarkDrawer 
+                  onClose={() => setActiveChip(null)} 
+                  comparison={verdictData.comparison} 
+                />
+              </div>
+            )}
+            
+            {/* Efficiency Drawer */}
+            {(activeChip === 'drift' || activeChip === 'pacing' || activeChip === 'quality') && efficiencyData && qualityData && (
+              <div className="mt-4">
+                <EfficiencyDrawer 
+                  onClose={() => setActiveChip(null)} 
+                  efficiency={efficiencyData} 
+                  quality={qualityData} 
+                />
+              </div>
+            )}
+            
+            {/* Deep Dive Drawer */}
+            {activeChip === 'details' && (
+              <div className="mt-4">
+                <DeepDiveDrawer 
+                  onClose={() => setActiveChip(null)} 
+                  activity={activity}
+                  streams={performanceData?.streams ? {
+                    heartrate: performanceData.streams.heartrate?.data,
+                    cadence: performanceData.streams.cadence?.data,
+                    watts: performanceData.streams.watts?.data,
+                    altitude: performanceData.streams.altitude?.data
+                  } : undefined}
+                  laps={performanceData?.laps}
+                />
+              </div>
+            )}
           </>
         )}
 
