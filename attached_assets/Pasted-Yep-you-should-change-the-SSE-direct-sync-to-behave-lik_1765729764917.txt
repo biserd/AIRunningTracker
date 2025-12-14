@@ -1,0 +1,103 @@
+Yep — you should change the **SSE “direct sync”** to behave like the **queue-based two-phase sync**, otherwise you’ll always have two different behaviors (and you’ll keep paying the streams/laps tax up front).
+
+Here’s the clean backend structure I’d tell the developer to implement.
+
+---
+
+## Target architecture: one sync pipeline, two phases
+
+### Phase 1: **List + Save Summaries (fast, cheap)**
+
+* Call `GET /athlete/activities` (per_page=200) paginated
+* Upsert **summary activity rows only** (the fields you get from the list)
+* Mark any *new* activities as `hydrationStatus = "pending"`
+
+✅ This phase should be what your SSE endpoint triggers first, so the user sees “Synced X activities” quickly.
+
+### Phase 2: **Hydrate (background, prioritized)**
+
+For activities with `hydrationStatus="pending"`:
+
+* Fetch detail / streams / laps **only when needed**
+* Update `hydrationStatus = "complete" | "partial" | "not_available" | "failed"`
+
+Hydration ordering should be:
+
+1. Most recent runs first (last 8–12 weeks)
+2. Run activities only (ignore “Workout”, etc unless user opts in)
+3. Older runs last (or on-demand)
+
+---
+
+## What each endpoint should do
+
+### `/api/strava/sync/stream` (SSE)
+
+**Should NOT do hydration itself.** It should:
+
+1. Create a `SyncSession` record (or use user sync state fields)
+2. Enqueue jobs:
+
+   * `LIST_ACTIVITIES(userId, since=lastIncrementalSince)`
+   * `HYDRATE_RECENT(userId, window=8-12w, priority=high)`
+   * `HYDRATE_BACKFILL(userId, older, priority=low)` (optional)
+3. Stream progress from the queue worker events:
+
+   * `listedCount`, `newCount`
+   * `hydratedCount`, `failedCount`
+   * rate limit state
+
+So SSE becomes “progress UI”, not a second sync implementation.
+
+### `/api/strava/queue/sync`
+
+Remains the canonical sync trigger, same behavior as SSE (just no live stream unless you add it).
+
+---
+
+## On-demand hydration (best of both worlds)
+
+When a user opens an activity or a metric needs streams:
+
+* If `hydrationStatus !== "complete"`:
+
+  * enqueue `HYDRATE_ACTIVITY(activityId)` with **priority 0**
+  * return the summary immediately + “loading details…”
+
+This keeps initial sync cheap, but still delivers “deep metrics” quickly when they’re actually needed.
+
+---
+
+## Data model changes (minimal)
+
+On the `Activity` record (or separate table), store:
+
+* `hydrationStatus`: `"none" | "pending" | "partial" | "complete" | "not_available" | "failed"`
+* `hydrationMissing`: `{ streams?: boolean, laps?: boolean, detail?: boolean }`
+* `hydratedAt`, `hydrateAttempts`, `lastHydrateError`
+
+You already have sentinel handling — this just makes it explicit and queryable.
+
+---
+
+## Biggest win: stop hydrating everything
+
+Most of your product value (weekly mileage, runs/week, long run, race predictor inputs) can be built from list summaries.
+
+Only hydrate streams/laps for:
+
+* last 8–12 weeks (for training plan + recent insights)
+* key workouts (intervals/tempo/long runs)
+* anything the user clicks into
+
+That’s how you stay under Strava limits even with many users.
+
+---
+
+## Concrete instruction to the dev
+
+> Refactor so the SSE sync endpoint **only enqueues** the same queue-based jobs and streams queue progress. Remove direct hydration from SSE. Initial sync should upsert only activity summaries from the list call and mark new ones `hydrationStatus=pending`. Hydrate streams/laps via background jobs prioritized by recency (last 8–12 weeks) and only for run activities; older activities hydrate on-demand or low priority. This unifies behavior, reduces API calls, and prevents hitting read limits.
+
+---
+
+If you paste what metrics *require* streams/laps in your app today (e.g., aerobic decoupling, cadence drift), I can give you an exact “hydration policy matrix” (which endpoints to call for which feature) so you don’t over-fetch.
