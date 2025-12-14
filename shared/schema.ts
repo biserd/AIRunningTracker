@@ -455,6 +455,84 @@ export const refreshTokens = pgTable("refresh_tokens", {
   tokenHashIdx: index("refresh_tokens_token_hash_idx").on(table.tokenHash),
 }));
 
+// Route clustering and comparison tables
+export const routes = pgTable("routes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  routeKey: text("route_key").notNull(), // Hash of start/end cells + path cells
+  name: text("name"), // Auto-generated or user-provided name
+  startGeohash: text("start_geohash").notNull(), // Geohash of start point
+  endGeohash: text("end_geohash").notNull(), // Geohash of end point
+  pathCells: text("path_cells").array(), // Array of geohash cells along the route
+  representativePolyline: text("representative_polyline"), // Best polyline for display
+  avgDistance: real("avg_distance"), // Average distance of runs on this route (meters)
+  avgElevationGain: real("avg_elevation_gain"), // Average elevation gain (meters)
+  runCount: integer("run_count").default(0), // Number of activities on this route
+  lastRunAt: timestamp("last_run_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("routes_user_id_idx").on(table.userId),
+  routeKeyIdx: index("routes_route_key_idx").on(table.routeKey),
+}));
+
+export const activityRouteMap = pgTable("activity_route_map", {
+  id: serial("id").primaryKey(),
+  activityId: integer("activity_id").notNull(),
+  routeId: integer("route_id").notNull(),
+  matchConfidence: real("match_confidence").default(1.0), // 0-1 confidence in route match
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  activityIdIdx: index("activity_route_map_activity_id_idx").on(table.activityId),
+  routeIdIdx: index("activity_route_map_route_id_idx").on(table.routeId),
+}));
+
+export const activityFeatures = pgTable("activity_features", {
+  id: serial("id").primaryKey(),
+  activityId: integer("activity_id").notNull().unique(),
+  userId: integer("user_id").notNull(),
+  // Efficiency metrics
+  aerobicDecoupling: real("aerobic_decoupling"), // HR drift percentage
+  paceAtHrEfficiency: real("pace_at_hr_efficiency"), // Pace per HR unit
+  pacingStability: real("pacing_stability"), // 0-100 score
+  cadenceVariability: real("cadence_variability"), // CV of cadence
+  powerVariability: real("power_variability"), // CV of power
+  // Quality metrics
+  qualityScore: real("quality_score"), // 0-100 overall data quality
+  qualityFlags: json("quality_flags").$type<string[]>(), // Array of quality issues
+  // Classification
+  runType: text("run_type"), // easy, tempo, interval, long_run, race, recovery
+  effortBucket: text("effort_bucket"), // low, moderate, high, max
+  // Computed at
+  computedAt: timestamp("computed_at").defaultNow(),
+}, (table) => ({
+  activityIdIdx: index("activity_features_activity_id_idx").on(table.activityId),
+  userIdIdx: index("activity_features_user_id_idx").on(table.userId),
+}));
+
+export const similarRunsCache = pgTable("similar_runs_cache", {
+  id: serial("id").primaryKey(),
+  activityId: integer("activity_id").notNull(),
+  userId: integer("user_id").notNull(),
+  similarActivityIds: json("similar_activity_ids").$type<number[]>().notNull(), // Top N similar activity IDs
+  similarityScores: json("similarity_scores").$type<number[]>().notNull(), // Corresponding scores
+  // Baseline metrics (median of comparable set)
+  baselinePace: real("baseline_pace"), // m/s
+  baselineHr: real("baseline_hr"),
+  baselineDrift: real("baseline_drift"),
+  baselinePacingStability: real("baseline_pacing_stability"),
+  // Deltas vs baseline
+  paceVsBaseline: real("pace_vs_baseline"), // % difference
+  hrVsBaseline: real("hr_vs_baseline"),
+  driftVsBaseline: real("drift_vs_baseline"),
+  pacingVsBaseline: real("pacing_vs_baseline"),
+  // Cache metadata
+  computedAt: timestamp("computed_at").defaultNow(),
+  expiresAt: timestamp("expires_at"),
+}, (table) => ({
+  activityIdIdx: index("similar_runs_cache_activity_id_idx").on(table.activityId),
+  userIdIdx: index("similar_runs_cache_user_id_idx").on(table.userId),
+}));
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   stravaConnected: true,
@@ -563,6 +641,28 @@ export const insertWorkoutCacheSchema = createInsertSchema(workoutCache).omit({
   hitCount: true,
 });
 
+// Route and comparison schemas
+export const insertRouteSchema = createInsertSchema(routes).omit({
+  id: true,
+  createdAt: true,
+  runCount: true,
+});
+
+export const insertActivityRouteMapSchema = createInsertSchema(activityRouteMap).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertActivityFeaturesSchema = createInsertSchema(activityFeatures).omit({
+  id: true,
+  computedAt: true,
+});
+
+export const insertSimilarRunsCacheSchema = createInsertSchema(similarRunsCache).omit({
+  id: true,
+  computedAt: true,
+});
+
 // Login schema for authentication
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -611,5 +711,13 @@ export type InsertPlanDay = z.infer<typeof insertPlanDaySchema>;
 export type PlanDay = typeof planDays.$inferSelect;
 export type InsertWorkoutCache = z.infer<typeof insertWorkoutCacheSchema>;
 export type WorkoutCache = typeof workoutCache.$inferSelect;
+export type InsertRoute = z.infer<typeof insertRouteSchema>;
+export type Route = typeof routes.$inferSelect;
+export type InsertActivityRouteMap = z.infer<typeof insertActivityRouteMapSchema>;
+export type ActivityRouteMap = typeof activityRouteMap.$inferSelect;
+export type InsertActivityFeatures = z.infer<typeof insertActivityFeaturesSchema>;
+export type ActivityFeatures = typeof activityFeatures.$inferSelect;
+export type InsertSimilarRunsCache = z.infer<typeof insertSimilarRunsCacheSchema>;
+export type SimilarRunsCache = typeof similarRunsCache.$inferSelect;
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;
