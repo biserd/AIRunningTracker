@@ -224,6 +224,9 @@ export const planWeeks = pgTable("plan_weeks", {
   // Coach notes
   coachNotes: text("coach_notes"),
   wasAdjusted: boolean("was_adjusted").default(false),
+  adjustmentReason: text("adjustment_reason", {
+    enum: ["tired", "strong", "manual"]
+  }),
   adjustedAt: timestamp("adjusted_at"),
   enriched: boolean("enriched").default(false),
   createdAt: timestamp("created_at").defaultNow(),
@@ -265,6 +268,10 @@ export const planDays = pgTable("plan_days", {
   // User feedback
   userNotes: text("user_notes"),
   perceivedEffort: integer("perceived_effort"),
+  // Adjustment tracking
+  wasAdjusted: boolean("was_adjusted").default(false),
+  originalWorkoutType: text("original_workout_type"),
+  originalDistanceKm: real("original_distance_km"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
   weekIdIdx: index("plan_days_week_id_idx").on(table.weekId),
