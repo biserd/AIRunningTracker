@@ -1,0 +1,119 @@
+Here’s a clean, “coach-like” behavior for each button that matches what you’ve built (sync + linking + adjustment + progressive enrichment). The key is: **each click triggers a small, deterministic workflow + a visible outcome**.
+
+---
+
+## 1) Sync Activities
+
+### What it should do
+
+1. **Pull recent Strava activities** (default: last 14 days, or since `lastIncrementalSince`)
+2. **Auto-link activities → plan days**
+
+   * Match by date ± tolerance (0–1 day), distance tolerance, type=Run
+3. **Update adherence**
+
+   * Day status: completed / partial / missed / skipped
+   * Week totals + adherenceScore
+4. **Generate a “Last 7 days” summary** (planned vs done)
+5. Show feedback in UI
+
+### UX outcome
+
+* Immediately show: “Syncing…” spinner
+* When done: “✅ Synced 6 runs, linked 5 to your plan”
+* Update the week view colors instantly
+* Optional: surface “Missed key workout” callouts
+
+**Bonus:** if you detect the user is behind/ahead, show a small suggestion:
+
+* “You missed the tempo run—want to adjust next week?” (link to tired/strong)
+
+---
+
+## 2) “I’m tired”
+
+Think of this as: **reduce injury risk and restore consistency**.
+
+### What it should do
+
+1. Require quick input (lightweight, optional):
+
+   * Fatigue level (1–5) OR just a single click
+   * Optional checkbox: “Niggle/injury”
+2. Call your adjust endpoint to modify **next 7 days** (or next 14 if you prefer)
+3. Apply deterministic rules before/after LLM:
+
+   * Reduce next week volume **10–20%**
+   * Remove/soften **one** quality workout (intervals→easy, tempo→steady)
+   * Keep long run but shorten it (e.g., -10–20%)
+   * Add/keep at least 1 extra rest or recovery emphasis
+4. Save adjusted days, mark:
+
+   * `PlanWeek.wasAdjusted = true`
+   * Store adjustment reason (“tired”) and timestamp
+5. Generate a short “coach note” explaining what changed
+
+### UX outcome
+
+* Show: “Adjusting next week…”
+* When done:
+
+  * “✅ Next week eased by 15% and intensity reduced”
+  * Highlight changed workouts (small “Adjusted” pill)
+* Coach Notes panel updates with:
+
+  * “You indicated fatigue, so we reduced volume and swapped intervals for an easy run.”
+
+---
+
+## 3) “I’m strong”
+
+This is **not** “make it way harder.” It’s: **progress safely or sharpen slightly**.
+
+### What it should do
+
+1. Optional quick input:
+
+   * “Feeling strong” + (optional) “slept well / low stress”
+2. Adjust only **next 7 days** (or 14)
+3. Safe rules:
+
+   * Increase next week volume by **0–10%** (cap hard at 15%)
+   * Do **not** add extra quality days
+   * Slightly progress the existing quality session (more reps, slightly longer tempo)
+   * Keep long run progression modest (+1–2km max)
+4. Save + mark `wasAdjusted=true`
+5. Write coach note (“we’re building on momentum”)
+
+### UX outcome
+
+* Show: “Tuning next week…”
+* When done:
+
+  * “✅ Next week progressed slightly (+6%) with a stronger tempo session”
+  * Highlight what changed
+
+---
+
+## One important behavior for BOTH tired/strong
+
+Before adjusting, do an automatic “mini sync” check:
+
+* If the user hasn’t synced in a while, prompt:
+
+  * “Want to sync your recent runs first so adjustments are based on actual training?”
+  * Default action: run sync in the background anyway, then adjust.
+
+This keeps adjustments grounded.
+
+---
+
+## What NOT to do
+
+* Don’t adjust the entire 14-week plan on each click. Users will feel like the plan is unstable.
+* Don’t rewrite past weeks.
+* Don’t change run days (keep the schedule stable).
+
+---
+
+If you want, I can write the exact backend flow as a short spec (endpoints + event names for SSE + DB fields to update) so the behavior is fully consistent and debuggable.
