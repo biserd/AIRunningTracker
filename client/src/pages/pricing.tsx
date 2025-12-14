@@ -25,24 +25,43 @@ interface PlanFeature {
   free: boolean | string;
   pro: boolean | string;
   premium: boolean | string;
+  isSection?: boolean;
+  isNew?: boolean;
 }
 
 const features: PlanFeature[] = [
+  // Core Section
+  { name: "Core", free: "", pro: "", premium: "", isSection: true },
   { name: "Strava Integration", free: true, pro: true, premium: true },
-  { name: "Basic Performance Analytics", free: true, pro: true, premium: true },
+  { name: "Activity History", free: "30 days", pro: "Unlimited", premium: "Unlimited" },
+  { name: "Sync Volume", free: "Limited", pro: "Sync 100+ activities", premium: "Sync 100+ activities" },
+  { name: "Basic Activity Analytics (splits, zones, cadence/power charts)", free: true, pro: true, premium: true },
   { name: "Runner Score", free: true, pro: true, premium: true },
   { name: "Free Calculator Tools", free: true, pro: true, premium: true },
-  { name: "Activity History", free: "30 days", pro: "Unlimited", premium: "Unlimited" },
-  { name: "Sync 100 Strava Activities", free: false, pro: true, premium: true },
-  { name: "AI Performance Insights", free: "3/month", pro: "Unlimited", premium: "Unlimited" },
+  
+  // Story Mode Activity Page Section
+  { name: "Story Mode Activity Page", free: "", pro: "", premium: "", isSection: true, isNew: true },
+  { name: "Story View Activity Page (clean summary + KPIs)", free: true, pro: true, premium: true },
+  { name: "Run Timeline (pace over time)", free: "Pace only", pro: "Pace + HR/power overlays", premium: "All overlays" },
+  { name: "AI Coach Verdict (grade + key takeaways)", free: "3/month", pro: "Unlimited", premium: "Unlimited" },
+  { name: "AI Key Moments (drift onset, big slowdown, spikes)", free: false, pro: true, premium: true },
+  { name: "Data Quality Checks (GPS/HR issues, pause effects)", free: false, pro: true, premium: true },
+  { name: "Compared-to-You Insights (percentiles vs recent baseline)", free: false, pro: true, premium: true },
+  
+  // Training & Coaching Section
+  { name: "Training & Coaching", free: "", pro: "", premium: "", isSection: true },
   { name: "AI Training Plans", free: false, pro: true, premium: true },
   { name: "Race Predictions", free: false, pro: true, premium: true },
   { name: "Injury Risk Analysis", free: false, pro: true, premium: true },
-  { name: "Fitness/Fatigue/Form Charts", free: false, pro: true, premium: true },
-  { name: "AI Running Coach Chat", free: false, pro: false, premium: true },
-  { name: "Form Stability Analysis", free: false, pro: false, premium: true },
-  { name: "Priority Support", free: false, pro: false, premium: true },
-  { name: "Early Access to Features", free: false, pro: false, premium: true },
+  { name: "Fitness / Fatigue / Form Charts", free: false, pro: true, premium: true },
+  { name: "AI Coach Chat (across your training)", free: false, pro: false, premium: true },
+  
+  // Benchmarking & Comparisons Section (Premium differentiator)
+  { name: "Benchmarking & Comparisons", free: "", pro: "", premium: "", isSection: true },
+  { name: "Personal Benchmarks (similar-run matching)", free: false, pro: "Preview", premium: true },
+  { name: "Same Route Trends (performance over time)", free: false, pro: "Preview", premium: true },
+  { name: "Compare Runs (overlay 2 runs, split-by-split diffs)", free: false, pro: false, premium: true },
+  { name: "Form Stability Analysis (cadence/power stability over time)", free: false, pro: false, premium: true },
 ];
 
 export default function PricingPage() {
@@ -67,6 +86,16 @@ export default function PricingPage() {
     }
     if (value === false) {
       return <X className="h-5 w-5 text-gray-300" />;
+    }
+    if (value === "Preview") {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+          Preview
+        </span>
+      );
+    }
+    if (value === "") {
+      return null;
     }
     return <span className="text-sm font-medium text-gray-700">{value}</span>;
   };
@@ -365,14 +394,37 @@ export default function PricingPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {features.map((feature, index) => (
-                    <tr key={feature.name} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
-                      <td className="p-4 text-charcoal">{feature.name}</td>
-                      <td className="p-4 text-center">{renderFeatureValue(feature.free)}</td>
-                      <td className="p-4 text-center">{renderFeatureValue(feature.pro)}</td>
-                      <td className="p-4 text-center">{renderFeatureValue(feature.premium)}</td>
-                    </tr>
-                  ))}
+                  {features.map((feature, index) => {
+                    if (feature.isSection) {
+                      return (
+                        <tr key={feature.name} className="bg-gray-100 border-t-2 border-gray-200">
+                          <td colSpan={4} className="p-4">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-charcoal text-lg">{feature.name}</span>
+                              {feature.isNew && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700">
+                                  NEW
+                                </span>
+                              )}
+                              {feature.name === "Benchmarking & Comparisons" && (
+                                <span className="text-xs font-medium text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded">
+                                  PREMIUM differentiator
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
+                    return (
+                      <tr key={feature.name} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
+                        <td className="p-4 text-charcoal text-sm">{feature.name}</td>
+                        <td className="p-4 text-center">{renderFeatureValue(feature.free)}</td>
+                        <td className="p-4 text-center">{renderFeatureValue(feature.pro)}</td>
+                        <td className="p-4 text-center">{renderFeatureValue(feature.premium)}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
