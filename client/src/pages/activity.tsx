@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, Thermometer, BarChart3, Timer, Trophy, Mountain, Pause, Flag, Users, BookOpen, BarChart2, Minimize2, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, Thermometer, BarChart3, Timer, Trophy, Mountain, Pause, Flag, Users, BookOpen, BarChart2, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 import AppHeader from "@/components/AppHeader";
 import RouteMap from "../components/RouteMap";
@@ -23,7 +23,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { ViewOnStravaLink, StravaPoweredBy } from "@/components/StravaConnect";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
-type ViewMode = "story" | "deep_dive" | "minimal";
+type ViewMode = "story" | "deep_dive";
 
 export default function ActivityPage() {
   const [match, params] = useRoute("/activity/:id");
@@ -60,7 +60,7 @@ export default function ActivityPage() {
   });
 
   const handleViewModeChange = (newMode: string) => {
-    if (newMode && ['story', 'deep_dive', 'minimal'].includes(newMode)) {
+    if (newMode && ['story', 'deep_dive'].includes(newMode)) {
       setViewMode(newMode as ViewMode);
       updatePreferenceMutation.mutate(newMode as ViewMode);
     }
@@ -282,10 +282,6 @@ export default function ActivityPage() {
                   <BarChart2 className="h-4 w-4 mr-1" />
                   Deep Dive
                 </ToggleGroupItem>
-                <ToggleGroupItem value="minimal" aria-label="Minimal Mode" className="px-3" data-testid="toggle-minimal">
-                  <Minimize2 className="h-4 w-4 mr-1" />
-                  Minimal
-                </ToggleGroupItem>
               </ToggleGroup>
             </div>
           </div>
@@ -441,9 +437,8 @@ export default function ActivityPage() {
         </div>
         )}
 
-        {/* Route & Details Section - Collapsible in Story Mode, Hidden in Minimal */}
-        {viewMode !== 'minimal' && (
-          <Collapsible open={viewMode === 'deep_dive' || isMapOpen} onOpenChange={setIsMapOpen}>
+        {/* Route & Details Section - Collapsible in Story Mode */}
+        <Collapsible open={viewMode === 'deep_dive' || isMapOpen} onOpenChange={setIsMapOpen}>
             {viewMode === 'story' && (
               <CollapsibleTrigger asChild>
                 <button className="w-full mb-3 flex items-center justify-between p-3 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-colors" data-testid="button-toggle-map">
@@ -528,11 +523,9 @@ export default function ActivityPage() {
               </div>
             </CollapsibleContent>
           </Collapsible>
-        )}
 
-        {/* Performance Analysis - Show in Story (always visible) and Deep Dive, hide in Minimal */}
-        {viewMode !== 'minimal' && (
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        {/* Performance Analysis */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Analysis</h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="p-4 bg-blue-50 rounded-lg">
@@ -584,11 +577,9 @@ export default function ActivityPage() {
               )}
             </div>
           </div>
-        )}
 
-        {/* Charts Section - Collapsible in Story Mode, Expanded in Deep Dive, Hidden in Minimal */}
-        {viewMode !== 'minimal' && (
-          <Collapsible open={viewMode === 'deep_dive' || isChartsOpen} onOpenChange={setIsChartsOpen}>
+        {/* Charts Section - Collapsible in Story Mode, Expanded in Deep Dive */}
+        <Collapsible open={viewMode === 'deep_dive' || isChartsOpen} onOpenChange={setIsChartsOpen}>
             {viewMode === 'story' && (
               <CollapsibleTrigger asChild>
                 <button className="w-full mb-3 flex items-center justify-between p-3 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-colors" data-testid="button-toggle-charts">
@@ -680,7 +671,6 @@ export default function ActivityPage() {
               )}
             </CollapsibleContent>
           </Collapsible>
-        )}
       </div>
     </div>
   );
