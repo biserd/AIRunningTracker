@@ -1,6 +1,6 @@
 // @ts-ignore - ngeohash doesn't have type declarations
 import ngeohash from 'ngeohash';
-import { decode } from '@googlemaps/polyline-codec';
+import * as polylineCodec from '@googlemaps/polyline-codec';
 import { db } from '../db';
 import { routes, activityRouteMap, activities } from '@shared/schema';
 import { eq, and, desc } from 'drizzle-orm';
@@ -65,7 +65,7 @@ function perpendicularDistance(point: LatLng, lineStart: LatLng, lineEnd: LatLng
 
 export function decodePolylineToLatLng(polyline: string): LatLng[] {
   try {
-    const decoded = decode(polyline);
+    const decoded = polylineCodec.decode(polyline);
     return decoded.map(([lat, lng]) => ({ lat, lng }));
   } catch (error) {
     console.error('Error decoding polyline:', error);
