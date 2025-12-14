@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Activity, Gauge, BarChart3, Layers } from "lucide-react";
+import { TrendingUp, Activity, Gauge, BarChart3 } from "lucide-react";
 
-type ChipType = "drift" | "pacing" | "quality" | "benchmark" | "details";
+type ChipType = "drift" | "pacing" | "quality" | "benchmark";
 
 interface InsightChipsProps {
   onChipClick: (chip: ChipType) => void;
@@ -43,11 +43,6 @@ const chipConfig: Record<ChipType, { icon: typeof TrendingUp; label: string; des
     icon: BarChart3,
     label: "vs Baseline",
     description: "Compare to your recent average"
-  },
-  details: {
-    icon: Layers,
-    label: "Details",
-    description: "Splits, zones, and metrics"
   }
 };
 
@@ -83,9 +78,6 @@ function getChipStatus(chip: ChipType, efficiencyData?: InsightChipsProps['effic
       if (pace < -3) return { status: "good", value: `${pace}%` };
       if (pace > 3) return { status: "warning", value: `+${pace}%` };
       return { status: "neutral", value: `${pace > 0 ? '+' : ''}${pace}%` };
-    
-    case "details":
-      return { status: "neutral", value: "View" };
   }
 }
 
@@ -96,7 +88,7 @@ const statusColors = {
 };
 
 export default function InsightChips({ onChipClick, activeChip, efficiencyData, qualityData, comparisonData }: InsightChipsProps) {
-  const chips: ChipType[] = ["drift", "pacing", "quality", "benchmark", "details"];
+  const chips: ChipType[] = ["drift", "pacing", "quality", "benchmark"];
 
   return (
     <div className="flex flex-wrap gap-2 mt-4 mb-2" data-testid="insight-chips">
