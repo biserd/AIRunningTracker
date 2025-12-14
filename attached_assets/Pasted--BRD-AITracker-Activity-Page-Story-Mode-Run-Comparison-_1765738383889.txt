@@ -1,0 +1,397 @@
+# BRD: AITracker Activity Page “Story Mode” + Run Comparison Engine
+
+## 1) Background
+
+Your current Activity detail page shows strong **raw analysis modules** (overview, route, splits, HR/cadence/power), but it’s missing a cohesive **story** and **comparisons** (vs baseline, vs similar runs, vs same route). The goal is to add a lightweight “Story” layer on top of existing modules and power it with a matching engine.
+
+---
+
+## 2) Objectives
+
+### Product goals
+
+* Make every activity answer, in <10 seconds:
+
+  1. **How good was this for me?**
+  2. **What happened during the run?**
+  3. **What should I do next?**
+* Add paid value as **depth** (benchmarks, trends, compare mode), not a hard paywall.
+
+### Business goals
+
+* Increase retention: more activity-page revisits per user/week.
+* Increase conversion: Pro/Premium upgrades driven by “Compared to You” + “Personal Benchmark”.
+
+---
+
+## 3) Non-goals (v1)
+
+* Full training plan generation across weeks/months (beyond “next 48h / next 7d” suggestions).
+* Community/social features.
+* Perfect map matching (we’ll do pragmatic route clustering).
+
+---
+
+## 4) Users & primary use cases
+
+### Personas (assume all exist)
+
+* **Coach-seekers:** want verdict + what to do next.
+* **Chart-nerds:** want timeline overlays + deep dive.
+* **Casual trackers:** want quick recap.
+
+### Top use cases
+
+* “Was this harder than my usual run?”
+* “Where did I fade and why?”
+* “How does this compare to similar runs / last time on this route?”
+* “What should I do next?”
+
+---
+
+## 5) Scope overview (what devs will build)
+
+### A) New UX layers (Activity page)
+
+* **View toggle**: `Story / Deep Dive / Minimal` (remember preference per user).
+* **Story Mode layout**: compact KPI ribbon + Coach Verdict + Run Timeline + Next Steps, with 3 drawers:
+
+  * Drawer 1: Compared & Benchmarks
+  * Drawer 2: Why it happened (efficiency/conditions/quality)
+  * Drawer 3: Deep dive (splits/zones/cadence/power)
+
+### B) Matching + comparison engine
+
+* Route clustering (`route_id`)
+* Comparable run matching (top N)
+* “What changed since last time?” diff
+* Trend baselines (median comparable set; route trend)
+
+### C) Data pipeline
+
+* Store activity summaries for all.
+* Fetch and cache activity **detail** and **streams** on-demand (and/or prefetch recent N).
+
+---
+
+## 6) Tiering (feature access)
+
+* **Free:** KPI ribbon, map, splits table, basic charts, notes.
+* **Pro:** Coach Verdict, Compared-to-You percentiles, Run Timeline overlays + AI pins, Efficiency panel, Data Quality, Next 48h recommendation, share insight card.
+* **Premium:** Comparable runs engine + personal benchmarks, trends over time, compare any 2 runs overlays, “next 7 days” suggestions / readiness impact, training-history chat (optional later).
+
+---
+
+## 7) Functional Requirements (FR)
+
+### FR-1: Activity Page View Modes
+
+* **FR-1.1** Add “View: Story ▾” control with options:
+
+  * Story (default for new users)
+  * Deep Dive
+  * Minimal
+* **FR-1.2** Persist view preference per user (DB).
+* **FR-1.3** Auto-suggest switching defaults after behavior thresholds (see Analytics section), but never force.
+
+**Acceptance criteria**
+
+* User preference persists across sessions/devices.
+* Switching views does not refetch data unnecessarily (reuse cached).
+
+---
+
+### FR-2: Story Mode Layout (Progressive Disclosure)
+
+**Modules in Story Mode (top → bottom)**
+
+1. `KPI Ribbon` (Free): distance, time, pace, avg HR, elev gain, calories (+ avg power if exists)
+2. `Coach Verdict` (Pro): grade + 2 evidence bullets + “show details”
+3. `Run Timeline` (Pro): one chart with toggle (pace/HR/power) + optional elevation overlay + AI pins
+4. `Next Steps` (Pro): next 48 hours guidance (1–2 actions max)
+5. Drawers (collapsed by default):
+
+   * `Compared & Benchmarks` (Pro/Premium)
+   * `Why it happened` (Pro)
+   * `Deep dive` (Free)
+
+**UX rules**
+
+* No more than **2 large cards** visible above the fold (verdict + timeline).
+* Use **chips** under the timeline (Drift, Pacing, Quality, Benchmark) that open the right drawer.
+
+**Acceptance criteria**
+
+* Story mode shows ≤ 5 primary elements above fold on standard laptop width.
+* Deep dive content is accessible but not visually dominant.
+
+---
+
+### FR-3: Run Timeline (requires streams)
+
+* **FR-3.1** Timeline supports:
+
+  * Pace (from `velocity_smooth`), HR, Power (watts), Cadence
+  * Elevation overlay (altitude)
+  * Lap markers (optional)
+  * Auto-pause markers (optional)
+* **FR-3.2** AI Pins (rule-based v1):
+
+  * Drift onset point
+  * Largest pace drop
+  * Largest HR spike (if HR exists)
+  * Hill segment causing slowdown (requires altitude/grade)
+
+**Acceptance criteria**
+
+* Timeline renders in < 500ms once streams are loaded from DB cache.
+* If HR/power streams missing, UI hides toggles gracefully.
+
+Streams types commonly used include: `time, latlng, distance, altitude, velocity_smooth, heartrate, cadence, watts, temp, moving, grade_smooth`. ([Stravalib Docs][1])
+
+---
+
+### FR-4: Data Quality Scoring (streams-based)
+
+* **FR-4.1** Compute `quality_score (0–100)` with flags:
+
+  * HR dropout detection (gaps/flatlines/unrealistic jumps)
+  * GPS drift detection (latlng jumps -> impossible speed)
+  * Pause artifacts affecting pace (moving vs elapsed)
+* **FR-4.2** Show a small “Data Quality: 82/100” badge and list top 1–3 flags.
+
+**Acceptance criteria**
+
+* Flags are deterministic (same input -> same output).
+* User can click “learn more” tooltips.
+
+---
+
+### FR-5: Efficiency & Drift Metrics (Pro)
+
+Compute and store per activity:
+
+* Aerobic decoupling / HR drift (using first half vs second half or rolling regression)
+* Pace@HR efficiency (and optionally pace@power)
+* Pacing stability score (split variance + early volatility)
+* Cadence drift / power variability (if streams available)
+
+**Acceptance criteria**
+
+* Metrics computed for any run with required data; missing-data paths handled.
+
+---
+
+### FR-6: Matching Engine (Premium)
+
+#### FR-6.1 Route clustering (`route_id`)
+
+* Build route signatures from polyline or latlng stream:
+
+  * simplify
+  * convert to geohash/H3 cells at a fixed resolution
+  * route_key = hash(start_cell + end_cell + bag-of-cells)
+* Assign stable `route_id` for grouping.
+
+#### FR-6.2 Comparable run matching (“smart match”)
+
+* Candidate filter: same user, type=Run, date range (e.g., last 12 months), distance ±10%, elevation bucket, effort bucket
+* Score top N by weighted distance in feature space:
+
+  * distance diff, elev diff, avg HR/power diff, optional temperature/surface
+* Return top 12–20 “comparables” and compute baseline (median) for benchmark deltas.
+
+#### FR-6.3 “What changed since last time?”
+
+* If route match exists: compare to last run with same `route_id`
+* Else: compare to median of comparable set
+* Produce 2–3 deltas: pace@HR, drift, pacing stability, cadence stability
+
+**Acceptance criteria**
+
+* Same route view shows an ordered history and trend (sparkline).
+* Comparable matching returns stable results (minor additions don’t reshuffle wildly).
+
+---
+
+### FR-7: “Compared to You” Percentiles (Pro)
+
+* For last 42/90 days compute percentile ranks for:
+
+  * intensity proxy (avg HR or power, or pace vs baseline)
+  * efficiency (pace@HR)
+  * drift
+* Cache per user per rolling window.
+
+**Acceptance criteria**
+
+* Percentiles update when new activity arrives or nightly recompute.
+
+---
+
+### FR-8: Notes, Tags, Share (Free/Pro)
+
+* **Notes & tags** (Free): RPE slider, “legs heavy / great / niggle”, fueling notes
+* **Share Insight Card** (Pro): generate an image-like card (HTML-to-image ok) with:
+
+  * Grade, benchmark delta, drift, route name, date
+
+**Acceptance criteria**
+
+* Notes save is instant and does not block page render.
+
+---
+
+## 8) Data Requirements (Strava)
+
+### Required endpoints (high level)
+
+* List athlete activities (bulk sync)
+* Get activity by id (detail)
+* Get activity streams by id (granular story + quality + drift)
+* Optional: laps endpoint
+
+Strava activity detail access depends on scope: `activity:read` (for follower/everyone activities) and `activity:read_all` for “Only Me” activities. ([Strava Developers][2])
+Strava supports webhooks for activity create/update/delete events to keep data in sync. ([Strava Developers][3])
+
+### What you must store (minimum)
+
+**Activity summary/detail (always)**
+
+* id, user_id, name, type, start_date, distance, moving_time, elapsed_time
+* elev_gain, avg/max HR, avg watts, avg cadence, avg speed/pace
+* map polyline (if available)
+* splits_metric (if available)
+
+**Streams (on-demand, cached)**
+
+* time, distance, velocity_smooth, heartrate, watts, cadence, altitude, latlng (+ grade_smooth optional)
+
+**Why streams matter**
+
+* Without streams: you can do coarse verdicts and simple comparisons.
+* With streams: you can do timeline, AI pins, drift/decoupling, quality scoring, workout shape matching.
+
+---
+
+## 9) System Design / Architecture (implementation guidance)
+
+### Ingestion strategy (rate-limit friendly)
+
+1. **Bulk sync** summaries for all activities.
+2. On Activity page view:
+
+   * if missing: fetch activity detail
+   * if Story Mode needs it and missing: fetch streams at `resolution=medium`
+3. Cache streams in DB; never refetch unless explicitly invalidated.
+
+(Streams libraries commonly support resolutions like low/medium/high; medium is typically enough for charts and drift.) ([Stravalib Docs][1])
+
+### Suggested storage (example)
+
+* `activities` (raw summary/detail)
+* `activity_streams` (compressed arrays + metadata + resolution)
+* `activity_features` (derived scalars: drift, efficiency, stability, quality_score, run_type)
+* `routes` (`route_id`, `route_key`, representative polyline, stats)
+* `activity_route_map` (activity_id → route_id)
+* `similar_activity_cache` (activity_id → [activity_ids] + scores + computed_at)
+
+### Compute pipeline
+
+* Job `compute_activity_features(activity_id)`
+* Job `assign_route(activity_id)`
+* Job `compute_similar_runs(activity_id)` (Premium)
+* Job `recompute_user_percentiles(user_id)` (rolling 42/90d)
+
+---
+
+## 10) Non-Functional Requirements (NFR)
+
+* **Performance:** Activity page first render < 1.5s; timeline drawn < 0.5s after cached streams load.
+* **Reliability:** Handle missing HR/power/cadence gracefully (no broken UI).
+* **Privacy:** Respect Strava privacy; don’t display private activity data without correct scope. ([Strava Developers][2])
+* **Cost controls:** Cache streams; compute features once; avoid reprocessing on every view.
+* **Explainability:** AI outputs must show evidence (2 bullets) and avoid medical claims.
+
+---
+
+## 11) Analytics & instrumentation (must-have)
+
+Track events to learn user types and drive UX defaults:
+
+* `activity_viewed` (view_mode, has_streams, has_hr, has_power)
+* `view_mode_changed`
+* `timeline_toggle_changed` (pace/hr/power)
+* `drawer_opened` (benchmarks/why/deep_dive)
+* `compare_clicked`
+* `ask_ai_clicked`
+* `upgrade_prompt_viewed` / `upgrade_clicked`
+* `time_on_activity_page`
+
+Auto-adapt rule examples (v1):
+
+* If `drawer_opened(deep_dive)` ≥ 5 in last 7 days → suggest default “Deep Dive”
+* If `ask_ai_clicked` ≥ 3 and `deep_dive` low → keep “Story”
+* If time_on_page < 10s repeatedly → suggest “Minimal”
+
+---
+
+## 12) Rollout plan (recommended)
+
+### Milestone 1 (1–2 sprints): Story UX + streams caching
+
+* View toggle + Story layout
+* Streams fetch-on-view + caching
+* Timeline + chips (no AI pins yet)
+* Basic Next Steps (rules-based)
+
+### Milestone 2: Features store + Pro insights
+
+* Drift/decoupling + efficiency panel
+* Data quality score + flags
+* Coach verdict (2 bullets)
+
+### Milestone 3: Premium matching engine
+
+* Route clustering + route trends
+* Comparable runs + benchmark deltas
+* Compare drawer overlays
+
+### Milestone 4 (optional): AI/LLM polish
+
+* Natural language summaries generated from computed metrics (not raw streams)
+* Training-history chat (Premium)
+
+---
+
+## 13) Risks & mitigations
+
+* **Missing streams on some activities:** build fallbacks (summary-only verdict).
+* **Rate limits:** cache streams; prefetch only recent N; compute in background jobs.
+* **Overwhelm risk:** keep Story minimal; everything else in drawers/tabs.
+* **Trust risk:** show Data Quality + evidence for AI claims.
+
+---
+
+## 14) Definition of Done (DoD)
+
+* Story Mode works end-to-end for runs with:
+
+  * full data (HR + streams)
+  * partial data (no HR)
+  * no streams (fallback)
+* Matching engine returns:
+
+  * route history when route matches exist
+  * comparable set otherwise
+* Feature flags for Pro/Premium gating are in place.
+* Analytics events implemented.
+* Page is not visually heavier than current page (measured by above-the-fold element count).
+
+---
+
+If you want, paste your current **pricing tiers** (Free/Pro/Premium bullet list), and I’ll align the gating precisely and write the exact **upgrade teaser states** (blurred values + microcopy) for each module so the dev can implement it without product back-and-forth.
+
+[1]: https://stravalib.readthedocs.io/en/latest/reference/api/stravalib.client.Client.get_activity_streams.html?utm_source=chatgpt.com "stravalib.client.Client.get_activity_streams"
+[2]: https://developers.strava.com/docs/reference/?utm_source=chatgpt.com "Strava API v3"
+[3]: https://developers.strava.com/docs/webhooks/?utm_source=chatgpt.com "Webhook Events API"
