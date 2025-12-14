@@ -284,216 +284,244 @@ export default function ActivityPage() {
           )}
         </div>
 
-        {/* Two Column Layout */}
-        <div className="grid lg:grid-cols-2 gap-6 mb-6">
-          
-          {/* Route Map */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Route</h3>
-            <RouteMap 
-              polyline={activity.polyline}
-              startLat={activity.startLatitude}
-              startLng={activity.startLongitude}
-              endLat={activity.endLatitude}
-              endLng={activity.endLongitude}
-            />
-          </div>
+        {/* Route & Details Section - Collapsible in Story Mode, Hidden in Minimal */}
+        {viewMode !== 'minimal' && (
+          <Collapsible open={viewMode === 'deep_dive' || isMapOpen} onOpenChange={setIsMapOpen}>
+            {viewMode === 'story' && (
+              <CollapsibleTrigger asChild>
+                <button className="w-full mb-3 flex items-center justify-between p-3 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-colors" data-testid="button-toggle-map">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-blue-600" />
+                    <span className="font-medium text-gray-900">Route & Details</span>
+                  </div>
+                  {isMapOpen ? <ChevronUp className="h-5 w-5 text-gray-500" /> : <ChevronDown className="h-5 w-5 text-gray-500" />}
+                </button>
+              </CollapsibleTrigger>
+            )}
+            <CollapsibleContent className={viewMode === 'deep_dive' ? '' : 'data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down'}>
+              <div className="grid lg:grid-cols-2 gap-6 mb-6">
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Route</h3>
+                  <RouteMap 
+                    polyline={activity.polyline}
+                    startLat={activity.startLatitude}
+                    startLng={activity.startLongitude}
+                    endLat={activity.endLatitude}
+                    endLng={activity.endLongitude}
+                  />
+                </div>
 
-          {/* Activity Details */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Details</h3>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm font-medium text-gray-600">Type</div>
-                  <div className="text-gray-900 font-semibold">{activity.type}</div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-gray-600">Elevation Gain</div>
-                  <div className="text-gray-900 font-semibold">{activity.totalElevationGain} m</div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-gray-600">Avg Speed</div>
-                  <div className="text-gray-900 font-semibold">{activity.formattedSpeed} {activity.speedUnit}</div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-gray-600">Max Speed</div>
-                  <div className="text-gray-900 font-semibold">{activity.formattedMaxSpeed} {activity.speedUnit}</div>
-                </div>
-                {activity.maxHeartrate && (
-                  <div>
-                    <div className="text-sm font-medium text-gray-600">Max HR</div>
-                    <div className="text-gray-900 font-semibold">{Math.round(activity.maxHeartrate)} bpm</div>
-                  </div>
-                )}
-                {activity.maxCadence && (
-                  <div>
-                    <div className="text-sm font-medium text-gray-600">Max Cadence</div>
-                    <div className="text-gray-900 font-semibold">{Math.round(activity.maxCadence)} spm</div>
-                  </div>
-                )}
-                {activity.maxWatts && (
-                  <div>
-                    <div className="text-sm font-medium text-gray-600">Max Power</div>
-                    <div className="text-gray-900 font-semibold">{Math.round(activity.maxWatts)}W</div>
-                  </div>
-                )}
-                {activity.elapsedTime && activity.elapsedTime > activity.movingTime && (
-                  <div data-testid="stat-stop-time">
-                    <div className="text-sm font-medium text-gray-600">Stop Time</div>
-                    <div className="text-gray-900 font-semibold">
-                      {Math.round((activity.elapsedTime - activity.movingTime) / 60)}m ({Math.round(((activity.elapsedTime - activity.movingTime) / activity.elapsedTime) * 100)}%)
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Details</h3>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-sm font-medium text-gray-600">Type</div>
+                        <div className="text-gray-900 font-semibold">{activity.type}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-600">Elevation Gain</div>
+                        <div className="text-gray-900 font-semibold">{activity.totalElevationGain} m</div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-600">Avg Speed</div>
+                        <div className="text-gray-900 font-semibold">{activity.formattedSpeed} {activity.speedUnit}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-600">Max Speed</div>
+                        <div className="text-gray-900 font-semibold">{activity.formattedMaxSpeed} {activity.speedUnit}</div>
+                      </div>
+                      {activity.maxHeartrate && (
+                        <div>
+                          <div className="text-sm font-medium text-gray-600">Max HR</div>
+                          <div className="text-gray-900 font-semibold">{Math.round(activity.maxHeartrate)} bpm</div>
+                        </div>
+                      )}
+                      {activity.maxCadence && (
+                        <div>
+                          <div className="text-sm font-medium text-gray-600">Max Cadence</div>
+                          <div className="text-gray-900 font-semibold">{Math.round(activity.maxCadence)} spm</div>
+                        </div>
+                      )}
+                      {activity.maxWatts && (
+                        <div>
+                          <div className="text-sm font-medium text-gray-600">Max Power</div>
+                          <div className="text-gray-900 font-semibold">{Math.round(activity.maxWatts)}W</div>
+                        </div>
+                      )}
+                      {activity.elapsedTime && activity.elapsedTime > activity.movingTime && (
+                        <div data-testid="stat-stop-time">
+                          <div className="text-sm font-medium text-gray-600">Stop Time</div>
+                          <div className="text-gray-900 font-semibold">
+                            {Math.round((activity.elapsedTime - activity.movingTime) / 60)}m ({Math.round(((activity.elapsedTime - activity.movingTime) / activity.elapsedTime) * 100)}%)
+                          </div>
+                        </div>
+                      )}
+                      {activity.elevHigh !== null && activity.elevLow !== null && (
+                        <div data-testid="stat-elev-range">
+                          <div className="text-sm font-medium text-gray-600">Elevation Range</div>
+                          <div className="text-gray-900 font-semibold">
+                            {Math.round(activity.elevLow)}m - {Math.round(activity.elevHigh)}m
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
-                {activity.elevHigh !== null && activity.elevLow !== null && (
-                  <div data-testid="stat-elev-range">
-                    <div className="text-sm font-medium text-gray-600">Elevation Range</div>
-                    <div className="text-gray-900 font-semibold">
-                      {Math.round(activity.elevLow)}m - {Math.round(activity.elevHigh)}m
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
+        {/* Performance Analysis - Show in Story (always visible) and Deep Dive, hide in Minimal */}
+        {viewMode !== 'minimal' && (
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Analysis</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-semibold text-blue-900 mb-2">Pace Analysis</h4>
+                <p className="text-sm text-blue-800">
+                  Your average pace of {activity.formattedPace} {activity.paceUnit} shows consistent effort throughout the activity.
+                </p>
+              </div>
+              
+              {activity.averageHeartrate && (
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <h4 className="font-semibold text-green-900 mb-2">Heart Rate Zone</h4>
+                  <p className="text-sm text-green-800">
+                    Average HR of {Math.round(activity.averageHeartrate)} bpm indicates {
+                      activity.averageHeartrate < 140 ? "aerobic base" : 
+                      activity.averageHeartrate < 160 ? "aerobic threshold" : 
+                      "anaerobic"
+                    } training zone.
+                  </p>
+                </div>
+              )}
+
+              {activity.averageCadence && (
+                <div className="p-4 bg-purple-50 rounded-lg">
+                  <h4 className="font-semibold text-purple-900 mb-2">Running Form</h4>
+                  <p className="text-sm text-purple-800">
+                    Cadence of {Math.round(activity.averageCadence)} spm is {
+                      activity.averageCadence < 160 ? "below optimal range" :
+                      activity.averageCadence < 180 ? "in good range" :
+                      activity.averageCadence < 190 ? "excellent form" :
+                      "very high turnover"
+                    }.
+                  </p>
+                </div>
+              )}
+
+              {activity.sufferScore && (
+                <div className="p-4 bg-red-50 rounded-lg">
+                  <h4 className="font-semibold text-red-900 mb-2">Training Load</h4>
+                  <p className="text-sm text-red-800">
+                    Suffer score of {activity.sufferScore} indicates {
+                      activity.sufferScore < 50 ? "low intensity" :
+                      activity.sufferScore < 100 ? "moderate load" :
+                      activity.sufferScore < 150 ? "challenging workout" :
+                      "very demanding session"
+                    }.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        )}
 
-
-
-        {/* Performance Analysis */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Analysis</h3>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <h4 className="font-semibold text-blue-900 mb-2">Pace Analysis</h4>
-              <p className="text-sm text-blue-800">
-                Your average pace of {activity.formattedPace} {activity.paceUnit} shows consistent effort throughout the activity.
-              </p>
-            </div>
-            
-            {activity.averageHeartrate && (
-              <div className="p-4 bg-green-50 rounded-lg">
-                <h4 className="font-semibold text-green-900 mb-2">Heart Rate Zone</h4>
-                <p className="text-sm text-green-800">
-                  Average HR of {Math.round(activity.averageHeartrate)} bpm indicates {
-                    activity.averageHeartrate < 140 ? "aerobic base" : 
-                    activity.averageHeartrate < 160 ? "aerobic threshold" : 
-                    "anaerobic"
-                  } training zone.
-                </p>
-              </div>
-            )}
-
-            {activity.averageCadence && (
-              <div className="p-4 bg-purple-50 rounded-lg">
-                <h4 className="font-semibold text-purple-900 mb-2">Running Form</h4>
-                <p className="text-sm text-purple-800">
-                  Cadence of {Math.round(activity.averageCadence)} spm is {
-                    activity.averageCadence < 160 ? "below optimal range" :
-                    activity.averageCadence < 180 ? "in good range" :
-                    activity.averageCadence < 190 ? "excellent form" :
-                    "very high turnover"
-                  }.
-                </p>
-              </div>
-            )}
-
-            {activity.sufferScore && (
-              <div className="p-4 bg-red-50 rounded-lg">
-                <h4 className="font-semibold text-red-900 mb-2">Training Load</h4>
-                <p className="text-sm text-red-800">
-                  Suffer score of {activity.sufferScore} indicates {
-                    activity.sufferScore < 50 ? "low intensity" :
-                    activity.sufferScore < 100 ? "moderate load" :
-                    activity.sufferScore < 150 ? "challenging workout" :
-                    "very demanding session"
-                  }.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Performance Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Enhanced Splits Analysis */}
-          <DetailedSplitsAnalysis
-            activity={activity}
-            streams={performanceData?.streams}
-            laps={performanceData?.laps}
-          />
-
-          {/* Heart Rate Zones */}
-          {activity.averageHeartrate && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Heart className="mr-2 h-5 w-5 text-red-600" />
-                    Heart Rate Analysis
+        {/* Charts Section - Collapsible in Story Mode, Expanded in Deep Dive, Hidden in Minimal */}
+        {viewMode !== 'minimal' && (
+          <Collapsible open={viewMode === 'deep_dive' || isChartsOpen} onOpenChange={setIsChartsOpen}>
+            {viewMode === 'story' && (
+              <CollapsibleTrigger asChild>
+                <button className="w-full mb-3 flex items-center justify-between p-3 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-colors" data-testid="button-toggle-charts">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-purple-600" />
+                    <span className="font-medium text-gray-900">Detailed Charts & Splits</span>
                   </div>
-                  {performanceData?.streams?.heartrate && (
-                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                      Real Data
-                    </span>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <HeartRateChart 
+                  {isChartsOpen ? <ChevronUp className="h-5 w-5 text-gray-500" /> : <ChevronDown className="h-5 w-5 text-gray-500" />}
+                </button>
+              </CollapsibleTrigger>
+            )}
+            <CollapsibleContent className={viewMode === 'deep_dive' ? '' : 'data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down'}>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <DetailedSplitsAnalysis
                   activity={activity}
                   streams={performanceData?.streams}
+                  laps={performanceData?.laps}
                 />
-              </CardContent>
-            </Card>
-          )}
-        </div>
 
-        {/* Cadence and Power Analysis - Only show when real streams data exists */}
-        {(performanceData?.streams?.cadence?.data || performanceData?.streams?.watts?.data) && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {performanceData?.streams?.cadence?.data && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <BarChart3 className="mr-2 h-5 w-5 text-purple-600" />
-                      Cadence Analysis
-                    </div>
-                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                      Real Data
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CadenceChart activity={activity} streams={performanceData?.streams} />
-                </CardContent>
-              </Card>
-            )}
+                {activity.averageHeartrate && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <Heart className="mr-2 h-5 w-5 text-red-600" />
+                          Heart Rate Analysis
+                        </div>
+                        {performanceData?.streams?.heartrate && (
+                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                            Real Data
+                          </span>
+                        )}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <HeartRateChart 
+                        activity={activity}
+                        streams={performanceData?.streams}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
 
-            {performanceData?.streams?.watts?.data && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Zap className="mr-2 h-5 w-5 text-yellow-600" />
-                      Power Analysis
-                    </div>
-                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                      Real Data
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <PowerChart 
-                    activity={activity} 
-                    streams={performanceData?.streams}
-                  />
-                </CardContent>
-              </Card>
-            )}
-          </div>
+              {(performanceData?.streams?.cadence?.data || performanceData?.streams?.watts?.data) && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                  {performanceData?.streams?.cadence?.data && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <BarChart3 className="mr-2 h-5 w-5 text-purple-600" />
+                            Cadence Analysis
+                          </div>
+                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                            Real Data
+                          </span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <CadenceChart activity={activity} streams={performanceData?.streams} />
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {performanceData?.streams?.watts?.data && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <Zap className="mr-2 h-5 w-5 text-yellow-600" />
+                            Power Analysis
+                          </div>
+                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                            Real Data
+                          </span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <PowerChart 
+                          activity={activity} 
+                          streams={performanceData?.streams}
+                        />
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
         )}
       </div>
     </div>
