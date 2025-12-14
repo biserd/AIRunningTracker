@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { queryClient, apiRequest, getQueryFn } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import AppHeader from "@/components/AppHeader";
@@ -13,7 +13,7 @@ import {
   ChevronLeft, ChevronRight, Calendar, Target, Clock, 
   Loader2, CheckCircle, Play, Pause, RotateCcw,
   Footprints, Zap, Mountain, Timer, Coffee, Trash2,
-  Link2, Battery, BatteryLow, RefreshCw, MessageSquare
+  Link2, Battery, BatteryLow, RefreshCw, MessageSquare, Sparkles
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { format, parseISO, addDays, startOfWeek } from "date-fns";
@@ -63,6 +63,9 @@ interface TrainingPlanDetail {
   coachNotes: string | null;
   createdAt: string;
   weeks: (PlanWeek & { days: PlanDay[] })[];
+  enrichmentStatus?: "pending" | "enriching" | "complete" | "partial" | "failed" | null;
+  enrichedWeeks?: number | null;
+  enrichmentError?: string | null;
 }
 
 const workoutTypeIcons: Record<string, typeof Footprints> = {
@@ -102,6 +105,9 @@ export default function TrainingPlanDetail() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [selectedWeek, setSelectedWeek] = useState<number>(1);
+  const [enrichmentProgress, setEnrichmentProgress] = useState<{ enrichedWeeks: number; totalWeeks: number; status: string } | null>(null);
+  const [sseFailed, setSseFailed] = useState(false);
+  const sseRef = useRef<EventSource | null>(null);
   
   const { data: dashboardData } = useQuery<{ user?: { unitPreference?: string } }>({
     queryKey: [`/api/dashboard/${user?.id}`],
@@ -111,11 +117,116 @@ export default function TrainingPlanDetail() {
   
   const useMiles = dashboardData?.user?.unitPreference === "miles";
   
-  const { data: plan, isLoading } = useQuery<TrainingPlanDetail>({
+  const { data: plan, isLoading, refetch } = useQuery<TrainingPlanDetail>({
     queryKey: [`/api/training/plans/${planId}`],
     queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: !!user && !!planId,
   });
+  
+  // SSE subscription for enrichment progress
+  useEffect(() => {
+    if (!planId || !plan) return;
+    
+    // Only subscribe if plan is currently enriching
+    if (plan.enrichmentStatus !== "enriching") {
+      setEnrichmentProgress(null);
+      return;
+    }
+    
+    // Initialize progress from plan data
+    setEnrichmentProgress({
+      enrichedWeeks: plan.enrichedWeeks || 0,
+      totalWeeks: plan.totalWeeks,
+      status: plan.enrichmentStatus
+    });
+    
+    // Get auth token for SSE connection
+    const token = localStorage.getItem("auth_token");
+    if (!token) return;
+    
+    // Create SSE connection with auth
+    const eventSource = new EventSource(
+      `/api/training/plans/${planId}/enrichment-stream?token=${encodeURIComponent(token)}`
+    );
+    sseRef.current = eventSource;
+    
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        setEnrichmentProgress({
+          enrichedWeeks: data.enrichedWeeks,
+          totalWeeks: data.totalWeeks,
+          status: data.status
+        });
+        
+        // If enrichment is complete or failed, close connection and refetch
+        if (data.status === "complete" || data.status === "partial" || data.status === "failed") {
+          eventSource.close();
+          sseRef.current = null;
+          refetch();
+          
+          if (data.status === "complete") {
+            toast({
+              title: "Plan enrichment complete!",
+              description: "All your workouts now have personalized coaching details.",
+            });
+          }
+        }
+      } catch (err) {
+        console.error("SSE parse error:", err);
+      }
+    };
+    
+    eventSource.onerror = () => {
+      // Fall back to polling if SSE fails
+      eventSource.close();
+      sseRef.current = null;
+      setSseFailed(true); // Trigger polling fallback
+    };
+    
+    return () => {
+      if (sseRef.current) {
+        sseRef.current.close();
+        sseRef.current = null;
+      }
+    };
+  }, [planId, plan?.enrichmentStatus, plan?.totalWeeks, plan?.enrichedWeeks, refetch, toast]);
+  
+  // Polling fallback for enrichment progress (activates when SSE fails)
+  useEffect(() => {
+    if (!planId || !plan) return;
+    if (plan.enrichmentStatus !== "enriching") {
+      setSseFailed(false); // Reset on completion
+      return;
+    }
+    if (!sseFailed && sseRef.current) return; // SSE is active and working, skip polling
+    
+    const pollInterval = setInterval(async () => {
+      try {
+        const token = localStorage.getItem("auth_token");
+        const res = await fetch(`/api/training/plans/${planId}/enrichment-status`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setEnrichmentProgress({
+            enrichedWeeks: data.enrichedWeeks,
+            totalWeeks: data.totalWeeks,
+            status: data.status
+          });
+          
+          if (data.status !== "enriching") {
+            clearInterval(pollInterval);
+            refetch();
+          }
+        }
+      } catch (err) {
+        console.error("Polling error:", err);
+      }
+    }, 3000); // Poll every 3 seconds
+    
+    return () => clearInterval(pollInterval);
+  }, [planId, plan?.enrichmentStatus, sseFailed, refetch]);
   
   const [, navigate] = useLocation();
   
@@ -299,6 +410,51 @@ export default function TrainingPlanDetail() {
             )}
           </Button>
         </div>
+        
+        {/* Enrichment Progress Banner */}
+        {(plan.enrichmentStatus === "enriching" || enrichmentProgress?.status === "enriching") && (
+          <Card className="mb-6 border-l-4 border-l-strava-orange bg-gradient-to-r from-orange-50 to-white dark:from-orange-950/20 dark:to-gray-900" data-testid="card-enrichment-progress">
+            <CardContent className="py-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-strava-orange/10 rounded-full">
+                  <Sparkles className="w-5 h-5 text-strava-orange animate-pulse" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      AI is customizing your workouts...
+                    </span>
+                    <span className="text-sm text-strava-orange font-semibold">
+                      {enrichmentProgress?.enrichedWeeks || plan.enrichedWeeks || 0}/{enrichmentProgress?.totalWeeks || plan.totalWeeks} weeks
+                    </span>
+                  </div>
+                  <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-strava-orange transition-all duration-500 ease-out"
+                      style={{ 
+                        width: `${Math.round(((enrichmentProgress?.enrichedWeeks || plan.enrichedWeeks || 0) / (enrichmentProgress?.totalWeeks || plan.totalWeeks)) * 100)}%` 
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Personalized pace targets and coaching tips are being added
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
+        {/* Enrichment Complete/Partial/Failed Status */}
+        {plan.enrichmentStatus === "partial" && (
+          <Card className="mb-6 border-l-4 border-l-yellow-500 bg-yellow-50 dark:bg-yellow-950/20" data-testid="card-enrichment-partial">
+            <CardContent className="py-3">
+              <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                Some workout details couldn't be generated. Your plan is still usable with template workouts.
+              </p>
+            </CardContent>
+          </Card>
+        )}
         
         <div className="flex items-center justify-between mb-6 bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
           <Button

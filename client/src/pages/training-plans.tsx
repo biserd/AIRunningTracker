@@ -12,11 +12,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { 
   Plus, Calendar, Target, Clock, ChevronRight, ChevronLeft,
   Loader2, CheckCircle, AlertTriangle, TrendingUp, Footprints,
-  Sparkles, ArrowRight
+  Sparkles, ArrowRight, RefreshCw
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
@@ -51,6 +51,8 @@ interface TrainingPlan {
   status: string;
   createdAt: string;
   coachNotes: string | null;
+  enrichmentStatus?: "pending" | "enriching" | "complete" | "partial" | "failed" | null;
+  enrichedWeeks?: number | null;
 }
 
 type WizardStep = "goal" | "preferences" | "generating" | "preview";
@@ -58,6 +60,7 @@ type WizardStep = "goal" | "preferences" | "generating" | "preview";
 export default function TrainingPlans() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [showWizard, setShowWizard] = useState(false);
   const [wizardStep, setWizardStep] = useState<WizardStep>("goal");
   
@@ -95,7 +98,7 @@ export default function TrainingPlans() {
     enabled: !!user,
   });
   
-  // Generate plan mutation
+  // Generate plan mutation - instant generation, navigate immediately
   const generateMutation = useMutation({
     mutationFn: async () => {
       return await apiRequest("/api/training/plans/generate", "POST", {
@@ -110,14 +113,25 @@ export default function TrainingPlans() {
         preferredRunDays: preferredDays,
       });
     },
-    onSuccess: () => {
+    onSuccess: (data: { planId?: number; plan?: TrainingPlan }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/training/plans"] });
       setShowWizard(false);
       setWizardStep("goal");
-      toast({
-        title: "Training plan created!",
-        description: "Your personalized training plan is ready.",
-      });
+      
+      // Navigate directly to the new plan - it's available immediately
+      const planId = data.planId || data.plan?.id;
+      if (planId) {
+        toast({
+          title: "Training plan created!",
+          description: "AI is customizing your workouts in the background.",
+        });
+        navigate(`/training-plans/${planId}`);
+      } else {
+        toast({
+          title: "Training plan created!",
+          description: "Your personalized training plan is ready.",
+        });
+      }
     },
     onError: (error: any) => {
       toast({
@@ -457,45 +471,74 @@ export default function TrainingPlans() {
               </div>
             ) : plans && plans.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {plans.map((plan) => (
-                  <Link key={plan.id} href={`/training-plans/${plan.id}`}>
-                    <Card 
-                      className="cursor-pointer hover:shadow-lg transition-shadow"
-                      data-testid={`card-plan-${plan.id}`}
-                    >
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <Badge variant={plan.status === "active" ? "default" : "secondary"}>
-                            {plan.status}
-                          </Badge>
-                          <span className="text-sm text-gray-500">
-                            Week {plan.currentWeek || 1}/{plan.totalWeeks}
-                          </span>
-                        </div>
-                        <CardTitle className="text-lg mt-2">
-                          {goalTypeLabels[plan.goalType] || plan.goalType}
-                          {plan.targetTime && ` - ${plan.targetTime}`}
-                        </CardTitle>
-                        {plan.raceDate && (
-                          <CardDescription className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            {format(parseISO(plan.raceDate), "MMM d, yyyy")}
-                          </CardDescription>
-                        )}
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-500">
-                            {plan.totalWeeks} weeks
-                          </span>
-                          <span className="flex items-center text-strava-orange">
-                            View <ArrowRight className="w-4 h-4 ml-1" />
-                          </span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
+                {plans.map((plan) => {
+                  const isEnriching = plan.enrichmentStatus === "enriching";
+                  const enrichProgress = plan.enrichedWeeks && plan.totalWeeks 
+                    ? Math.round((plan.enrichedWeeks / plan.totalWeeks) * 100) 
+                    : 0;
+                  
+                  return (
+                    <Link key={plan.id} href={`/training-plans/${plan.id}`}>
+                      <Card 
+                        className="cursor-pointer hover:shadow-lg transition-shadow"
+                        data-testid={`card-plan-${plan.id}`}
+                      >
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Badge variant={plan.status === "active" ? "default" : "secondary"}>
+                                {plan.status}
+                              </Badge>
+                              {isEnriching && (
+                                <Badge variant="outline" className="text-strava-orange border-strava-orange animate-pulse">
+                                  <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                                  Enriching
+                                </Badge>
+                              )}
+                            </div>
+                            <span className="text-sm text-gray-500">
+                              Week {plan.currentWeek || 1}/{plan.totalWeeks}
+                            </span>
+                          </div>
+                          <CardTitle className="text-lg mt-2">
+                            {goalTypeLabels[plan.goalType] || plan.goalType}
+                            {plan.targetTime && ` - ${plan.targetTime}`}
+                          </CardTitle>
+                          {plan.raceDate && (
+                            <CardDescription className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              {format(parseISO(plan.raceDate), "MMM d, yyyy")}
+                            </CardDescription>
+                          )}
+                        </CardHeader>
+                        <CardContent>
+                          {isEnriching && (
+                            <div className="mb-3">
+                              <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                                <span>AI enriching workouts...</span>
+                                <span>{enrichProgress}%</span>
+                              </div>
+                              <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-strava-orange transition-all duration-500" 
+                                  style={{ width: `${enrichProgress}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-500">
+                              {plan.totalWeeks} weeks
+                            </span>
+                            <span className="flex items-center text-strava-orange">
+                              View <ArrowRight className="w-4 h-4 ml-1" />
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })}
               </div>
             ) : (
               <Card className="text-center py-12">
