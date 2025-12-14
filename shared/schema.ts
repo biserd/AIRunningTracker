@@ -17,6 +17,7 @@ export const users = pgTable("users", {
   stravaBrandingEnabled: boolean("strava_branding_enabled").default(false),
   stravaBrandingTemplate: text("strava_branding_template").default("🏃 Runner Score: {score} | {insight} — Analyzed with AITracker.run"),
   unitPreference: text("unit_preference", { enum: ["km", "miles"] }).default("miles"),
+  activityViewMode: text("activity_view_mode", { enum: ["story", "deep_dive", "minimal"] }).default("story"),
   isAdmin: boolean("is_admin").default(false),
   // Strava sync state tracking
   lastSyncAt: timestamp("last_sync_at"),
