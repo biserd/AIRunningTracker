@@ -1,18 +1,62 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, Thermometer, BarChart3, Timer, Trophy, Mountain, Pause, Flag, Users } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, Thermometer, BarChart3, Timer, Trophy, Mountain, Pause, Flag, Users, BookOpen, BarChart2, Minimize2, ChevronDown, ChevronUp } from "lucide-react";
 import { Link } from "wouter";
 import AppHeader from "@/components/AppHeader";
 import RouteMap from "../components/RouteMap";
 import DetailedSplitsAnalysis from "@/components/activity/DetailedSplitsAnalysis";
+import CoachVerdict from "@/components/activity/CoachVerdict";
+import TrainingConsistency from "@/components/activity/TrainingConsistency";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { ViewOnStravaLink, StravaPoweredBy } from "@/components/StravaConnect";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+
+type ViewMode = "story" | "deep_dive" | "minimal";
 
 export default function ActivityPage() {
   const [match, params] = useRoute("/activity/:id");
   const activityId = params?.id;
+  const [viewMode, setViewMode] = useState<ViewMode>("story");
+  const [isMapOpen, setIsMapOpen] = useState(false);
+  const [isChartsOpen, setIsChartsOpen] = useState(false);
+
+  const { data: userData } = useQuery<{ activityViewMode?: string }>({
+    queryKey: ['/api/user'],
+  });
+
+  useEffect(() => {
+    if (userData?.activityViewMode) {
+      setViewMode(userData.activityViewMode as ViewMode);
+    }
+  }, [userData?.activityViewMode]);
+
+  const updatePreferenceMutation = useMutation({
+    mutationFn: async (newMode: ViewMode) => {
+      return fetch('/api/user/preferences', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ activityViewMode: newMode }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+    }
+  });
+
+  const handleViewModeChange = (newMode: string) => {
+    if (newMode && ['story', 'deep_dive', 'minimal'].includes(newMode)) {
+      setViewMode(newMode as ViewMode);
+      updatePreferenceMutation.mutate(newMode as ViewMode);
+    }
+  };
 
   const { data: activityData, isLoading } = useQuery({
     queryKey: ['/api/activities', activityId],
@@ -24,6 +68,19 @@ export default function ActivityPage() {
     queryKey: ['/api/activities', activityId, 'performance'],
     queryFn: () => fetch(`/api/activities/${activityId}/performance`).then(res => res.json()),
     enabled: !!activityId
+  });
+
+  const { data: verdictData } = useQuery({
+    queryKey: ['/api/activities', activityId, 'verdict'],
+    queryFn: async () => {
+      const res = await fetch(`/api/activities/${activityId}/verdict`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch verdict');
+      return res.json();
+    },
+    enabled: !!activityId && viewMode === 'story',
+    retry: false
   });
 
   if (isLoading) {
@@ -69,6 +126,14 @@ export default function ActivityPage() {
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-3xl font-bold text-gray-900">{activity.name}</h1>
+                {verdictData && (
+                  <TrainingConsistency
+                    consistencyLabel={verdictData.consistencyLabel}
+                    effortScore={verdictData.effortScore}
+                    effortVsAverage={verdictData.comparison?.effortVsAvg || 0}
+                    compact
+                  />
+                )}
                 {activity.prCount > 0 && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-medium" data-testid="badge-pr-count">
                     <Trophy className="h-4 w-4" />
@@ -111,12 +176,38 @@ export default function ActivityPage() {
                 <StravaPoweredBy variant="orange" size="sm" />
               </div>
             </div>
+            
+            {/* View Mode Toggle */}
+            <div className="flex flex-col items-end gap-2">
+              <span className="text-xs text-gray-500">View Mode</span>
+              <ToggleGroup type="single" value={viewMode} onValueChange={handleViewModeChange} data-testid="toggle-view-mode">
+                <ToggleGroupItem value="story" aria-label="Story Mode" className="px-3" data-testid="toggle-story">
+                  <BookOpen className="h-4 w-4 mr-1" />
+                  Story
+                </ToggleGroupItem>
+                <ToggleGroupItem value="deep_dive" aria-label="Deep Dive Mode" className="px-3" data-testid="toggle-deep-dive">
+                  <BarChart2 className="h-4 w-4 mr-1" />
+                  Deep Dive
+                </ToggleGroupItem>
+                <ToggleGroupItem value="minimal" aria-label="Minimal Mode" className="px-3" data-testid="toggle-minimal">
+                  <Minimize2 className="h-4 w-4 mr-1" />
+                  Minimal
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         
+        {/* Story Mode: Coach Verdict (Pro feature) */}
+        {viewMode === 'story' && (
+          <div className="mb-6">
+            <CoachVerdict activityId={parseInt(activityId || '0')} />
+          </div>
+        )}
+
         {/* Main Stats Grid */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Activity Overview</h2>
