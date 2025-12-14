@@ -292,7 +292,7 @@ export class StravaService {
 
   async syncActivitiesForUser(
     userId: number, 
-    maxActivities: number = 200,
+    maxActivities: number = 500,
     onProgress?: (current: number, total: number, activityName: string) => void
   ): Promise<{ syncedCount: number; totalActivities: number }> {
     const user = await storage.getUser(userId);
@@ -325,14 +325,14 @@ export class StravaService {
         allActivities.push(...activities);
         console.log(`Fetched ${activities.length} new activities since last sync`);
       } else {
-        // First sync: fetch multiple pages up to maxActivities
-        const totalPages = Math.ceil(maxActivities / 50);
-        for (let page = 1; page <= totalPages; page++) {
-          const activities = await this.getActivities(user.stravaAccessToken, page, 50);
+        // First sync: fetch using 200 per page (max allowed by Strava) until empty or maxActivities reached
+        for (let page = 1; ; page++) {
+          const activities = await this.getActivities(user.stravaAccessToken, page, perPage);
           if (activities.length === 0) break;
           allActivities.push(...activities);
           console.log(`Fetched page ${page}: ${activities.length} activities (total: ${allActivities.length})`);
-          if (activities.length < 50) break;
+          if (allActivities.length >= maxActivities) break;
+          if (activities.length < perPage) break; // Last page (partial results)
         }
       }
       

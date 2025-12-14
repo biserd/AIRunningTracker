@@ -983,10 +983,10 @@ ${allPages.map(page => `  <url>
       return res.status(404).json({ message: "User not found" });
     }
     
-    // Extended sync (up to 200 activities) is now available to all users
+    // Extended sync (up to 500 activities) is now available to all users
     
-    // Clamp maxActivities to prevent abuse (200 max with queue-based rate limiting)
-    maxActivities = Math.max(1, Math.min(200, maxActivities));
+    // Clamp maxActivities to prevent abuse (500 max with queue-based rate limiting)
+    maxActivities = Math.max(1, Math.min(500, maxActivities));
     
     // Generate cryptographically random nonce (NOT a JWT)
     const crypto = await import('crypto');
@@ -2293,7 +2293,7 @@ ${allPages.map(page => `  <url>
   app.post("/api/strava/queue/sync/:userId", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
-      let maxActivities = parseInt(req.body?.maxActivities) || 200;
+      let maxActivities = parseInt(req.body?.maxActivities) || 500;
       
       if (isNaN(userId) || req.user.id !== userId) {
         return res.status(403).json({ message: "Access denied" });
@@ -3137,14 +3137,14 @@ ${allPages.map(page => `  <url>
   app.post("/api/strava/sync-activities", authenticateJWT, async (req: any, res) => {
     try {
       const userId = req.user!.id;
-      const { maxActivities = 200 } = req.body;
+      const { maxActivities = 500 } = req.body;
 
       const user = await storage.getUser(userId);
       if (!user || !user.stravaConnected) {
         return res.status(400).json({ message: "Strava not connected" });
       }
 
-      // Extended sync (up to 200 activities) is now available to all users
+      // Extended sync (up to 500 activities) is now available to all users
 
       const result = await stravaService.syncActivitiesForUser(userId, maxActivities);
       
