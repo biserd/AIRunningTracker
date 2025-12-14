@@ -33,8 +33,8 @@ const features: PlanFeature[] = [
   // Core Section
   { name: "Core", free: "", pro: "", premium: "", isSection: true },
   { name: "Strava Integration", free: true, pro: true, premium: true },
-  { name: "Activity History", free: "30 days", pro: "Unlimited", premium: "Unlimited" },
-  { name: "Sync Volume", free: "Limited", pro: "Sync 100+ activities", premium: "Sync 100+ activities" },
+  { name: "Activity History", free: "Unlimited", pro: "Unlimited", premium: "Unlimited" },
+  { name: "Sync Volume", free: "Sync 100+ activities", pro: "Sync 100+ activities", premium: "Sync 100+ activities" },
   { name: "Basic Activity Analytics (splits, zones, cadence/power charts)", free: true, pro: true, premium: true },
   { name: "Runner Score", free: true, pro: true, premium: true },
   { name: "Free Calculator Tools", free: true, pro: true, premium: true },
