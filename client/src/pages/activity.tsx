@@ -18,6 +18,7 @@ import NextSteps from "@/components/activity/NextSteps";
 import InsightChips from "@/components/activity/InsightChips";
 import BenchmarkDrawer from "@/components/activity/BenchmarkDrawer";
 import EfficiencyDrawer from "@/components/activity/EfficiencyDrawer";
+import CompareDrawer from "@/components/activity/CompareDrawer";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { ViewOnStravaLink, StravaPoweredBy } from "@/components/StravaConnect";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -336,10 +337,14 @@ export default function ActivityPage() {
             
             {/* Benchmark Drawer */}
             {activeChip === 'benchmark' && verdictData?.comparison && (
-              <div className="mt-4">
+              <div className="mt-4 space-y-4">
                 <BenchmarkDrawer 
                   onClose={() => setActiveChip(null)} 
                   comparison={verdictData.comparison} 
+                />
+                <CompareDrawer
+                  activityId={parseInt(activityId || '0')}
+                  onClose={() => setActiveChip(null)}
                 />
               </div>
             )}
