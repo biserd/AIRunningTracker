@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stravaService } from "./services/strava";
 import { stravaClient } from "./services/stravaClient";
-import { jobQueue, createListActivitiesJob, metrics } from "./services/queue";
+import { jobQueue, createListActivitiesJob, createHydrateActivityJob, metrics } from "./services/queue";
 import { aiService } from "./services/ai";
 import { mlService } from "./services/ml";
 import { performanceService } from "./services/performance";
@@ -3079,6 +3079,62 @@ ${allPages.map(page => `  <url>
     } catch (error: any) {
       console.error('Activity fetch error:', error);
       res.status(500).json({ message: error.message || "Failed to fetch activity" });
+    }
+  });
+
+  // On-demand activity hydration - fetches streams/laps when needed
+  app.post("/api/activities/:activityId/hydrate", authenticateJWT, async (req: any, res) => {
+    try {
+      const activityId = parseInt(req.params.activityId);
+      
+      if (isNaN(activityId)) {
+        return res.status(400).json({ message: "Invalid activity ID" });
+      }
+
+      const activity = await storage.getActivityById(activityId);
+      if (!activity) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
+
+      // Verify ownership
+      if (activity.userId !== req.user.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Check if already hydrated
+      if (activity.hydrationStatus === 'complete') {
+        return res.json({ 
+          success: true, 
+          message: "Activity already hydrated",
+          activity 
+        });
+      }
+
+      // Enqueue immediate hydration with highest priority
+      const needsStreams = !activity.streamsData || activity.streamsData === 'null';
+      const needsLaps = !activity.lapsData || activity.lapsData === 'null';
+      
+      if (needsStreams || needsLaps) {
+        jobQueue.addJob(createHydrateActivityJob(
+          activity.userId,
+          activity.id,
+          activity.stravaId,
+          needsStreams,
+          needsLaps,
+          0 // Priority 0 = highest
+        ));
+      }
+
+      res.json({ 
+        success: true, 
+        message: "Hydration queued",
+        needsStreams,
+        needsLaps,
+        queuePosition: jobQueue.getStats().pendingJobs
+      });
+    } catch (error: any) {
+      console.error('Activity hydration error:', error);
+      res.status(500).json({ message: error.message || "Failed to hydrate activity" });
     }
   });
 

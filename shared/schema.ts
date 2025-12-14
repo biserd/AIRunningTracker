@@ -97,6 +97,14 @@ export const activities = pgTable("activities", {
   gearId: text("gear_id"), // Strava gear ID (for shoe tracking)
   elevHigh: real("elev_high"), // Highest elevation point (meters)
   elevLow: real("elev_low"), // Lowest elevation point (meters)
+  // Hydration tracking - for streams/laps lazy loading
+  hydrationStatus: text("hydration_status", { 
+    enum: ["none", "pending", "partial", "complete", "not_available", "failed"] 
+  }).default("none"),
+  hydrationMissing: json("hydration_missing").$type<{ streams?: boolean; laps?: boolean; detail?: boolean }>(),
+  hydratedAt: timestamp("hydrated_at"),
+  hydrateAttempts: integer("hydrate_attempts").default(0),
+  lastHydrateError: text("last_hydrate_error"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
   userIdIdx: index("activities_user_id_idx").on(table.userId),

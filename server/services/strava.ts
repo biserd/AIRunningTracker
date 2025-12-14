@@ -1,5 +1,7 @@
 import { storage } from "../storage";
 import { runnerScoreService } from "./runnerScore";
+import { jobQueue } from "./queue";
+import { createHydrateActivityJob } from "./queue/jobTypes";
 
 interface StravaActivity {
   id: number;
@@ -381,90 +383,126 @@ export class StravaService {
       }
       console.log(`Found ${activitiesToProcess.length} new running activities to sync`);
       
-      // Process activities in batches of 5 for better performance
-      const batchSize = 5;
+      // Process activities - save summary data only (no streams/laps API calls)
+      // Streams and laps will be hydrated on-demand or via background queue
       const totalToSync = activitiesToProcess.length;
       
-      for (let i = 0; i < activitiesToProcess.length; i += batchSize) {
-        const batch = activitiesToProcess.slice(i, i + batchSize);
+      for (let i = 0; i < activitiesToProcess.length; i++) {
+        const stravaActivity = activitiesToProcess[i];
+        const currentIndex = i + 1;
+        const activityName = stravaActivity.name;
         
-        // Process batch in parallel
-        await Promise.all(batch.map(async (stravaActivity, batchIndex) => {
-          const currentIndex = i + batchIndex + 1;
-          const activityName = stravaActivity.name;
+        // Report progress
+        if (onProgress) {
+          onProgress(currentIndex, totalToSync, activityName);
+        }
+        
+        console.log(`[${currentIndex}/${totalToSync}] Saving: ${activityName}`);
+        
+        try {
+          // Create activity in database with summary data only
+          // Mark as hydrationStatus="pending" - streams/laps fetched later
+          await storage.createActivity({
+            userId,
+            stravaId: stravaActivity.id.toString(),
+            name: stravaActivity.name,
+            distance: stravaActivity.distance,
+            movingTime: stravaActivity.moving_time,
+            totalElevationGain: stravaActivity.total_elevation_gain || 0,
+            averageSpeed: stravaActivity.average_speed,
+            maxSpeed: stravaActivity.max_speed,
+            averageHeartrate: stravaActivity.average_heartrate || null,
+            maxHeartrate: stravaActivity.max_heartrate || null,
+            startDate: new Date(stravaActivity.start_date),
+            type: stravaActivity.sport_type || stravaActivity.type,
+            calories: stravaActivity.calories || null,
+            averageCadence: stravaActivity.average_cadence ? stravaActivity.average_cadence * 2 : null,
+            maxCadence: stravaActivity.max_cadence ? stravaActivity.max_cadence * 2 : null,
+            averageWatts: stravaActivity.average_watts || null,
+            maxWatts: stravaActivity.max_watts || null,
+            sufferScore: stravaActivity.suffer_score || null,
+            commentsCount: stravaActivity.comment_count || 0,
+            kudosCount: stravaActivity.kudos_count || 0,
+            achievementCount: stravaActivity.achievement_count || 0,
+            startLatitude: stravaActivity.start_latlng?.[0] || null,
+            startLongitude: stravaActivity.start_latlng?.[1] || null,
+            endLatitude: stravaActivity.end_latlng?.[0] || null,
+            endLongitude: stravaActivity.end_latlng?.[1] || null,
+            polyline: stravaActivity.map?.summary_polyline || null,
+            detailedPolyline: null,
+            streamsData: null, // Not fetched during initial sync
+            lapsData: null, // Not fetched during initial sync
+            averageTemp: stravaActivity.average_temp || null,
+            hasHeartrate: stravaActivity.has_heartrate || false,
+            deviceWatts: stravaActivity.device_watts || false,
+            // New fields from Strava summary API
+            elapsedTime: stravaActivity.elapsed_time || null,
+            workoutType: stravaActivity.workout_type ?? null,
+            prCount: stravaActivity.pr_count || 0,
+            photoCount: stravaActivity.photo_count || 0,
+            athleteCount: stravaActivity.athlete_count || 1,
+            timezone: stravaActivity.timezone || null,
+            gearId: stravaActivity.gear_id || null,
+            elevHigh: stravaActivity.elev_high || null,
+            elevLow: stravaActivity.elev_low || null,
+            // Hydration tracking - mark as pending for background processing
+            hydrationStatus: "pending",
+            hydrationMissing: { streams: true, laps: true },
+            hydratedAt: null,
+            hydrateAttempts: 0,
+            lastHydrateError: null,
+          });
           
-          // Report progress
-          if (onProgress) {
-            onProgress(currentIndex, totalToSync, activityName);
-          }
-          
-          console.log(`[${currentIndex}/${totalToSync}] Syncing: ${activityName}`);
-          
-          try {
-            // Fetch performance streams and laps in parallel (no detailed activity call needed)
-            // Summary list already includes map.summary_polyline
-            const accessToken = user.stravaAccessToken!;
-            const [streams, laps] = await Promise.all([
-              this.getActivityStreams(accessToken, stravaActivity.id),
-              this.getActivityLaps(accessToken, stravaActivity.id)
-            ]);
-            
-            // Create activity in database - use polyline from summary list
-            await storage.createActivity({
-              userId,
-              stravaId: stravaActivity.id.toString(),
-              name: stravaActivity.name,
-              distance: stravaActivity.distance,
-              movingTime: stravaActivity.moving_time,
-              totalElevationGain: stravaActivity.total_elevation_gain || 0,
-              averageSpeed: stravaActivity.average_speed,
-              maxSpeed: stravaActivity.max_speed,
-              averageHeartrate: stravaActivity.average_heartrate || null,
-              maxHeartrate: stravaActivity.max_heartrate || null,
-              startDate: new Date(stravaActivity.start_date),
-              type: stravaActivity.sport_type || stravaActivity.type,
-              calories: stravaActivity.calories || null,
-              averageCadence: stravaActivity.average_cadence ? stravaActivity.average_cadence * 2 : null,
-              maxCadence: stravaActivity.max_cadence ? stravaActivity.max_cadence * 2 : null,
-              averageWatts: stravaActivity.average_watts || null,
-              maxWatts: stravaActivity.max_watts || null,
-              sufferScore: stravaActivity.suffer_score || null,
-              commentsCount: stravaActivity.comment_count || 0,
-              kudosCount: stravaActivity.kudos_count || 0,
-              achievementCount: stravaActivity.achievement_count || 0,
-              startLatitude: stravaActivity.start_latlng?.[0] || null,
-              startLongitude: stravaActivity.start_latlng?.[1] || null,
-              endLatitude: stravaActivity.end_latlng?.[0] || null,
-              endLongitude: stravaActivity.end_latlng?.[1] || null,
-              polyline: stravaActivity.map?.summary_polyline || null,
-              detailedPolyline: null,
-              streamsData: streams ? JSON.stringify(streams) : null,
-              lapsData: laps && laps.length > 0 ? JSON.stringify(laps) : null,
-              averageTemp: stravaActivity.average_temp || null,
-              hasHeartrate: stravaActivity.has_heartrate || false,
-              deviceWatts: stravaActivity.device_watts || false,
-              // New fields from Strava summary API
-              elapsedTime: stravaActivity.elapsed_time || null,
-              workoutType: stravaActivity.workout_type ?? null,
-              prCount: stravaActivity.pr_count || 0,
-              photoCount: stravaActivity.photo_count || 0,
-              athleteCount: stravaActivity.athlete_count || 1,
-              timezone: stravaActivity.timezone || null,
-              gearId: stravaActivity.gear_id || null,
-              elevHigh: stravaActivity.elev_high || null,
-              elevLow: stravaActivity.elev_low || null,
-            });
-            
-            syncedCount++;
-          } catch (error) {
-            console.error(`Failed to sync activity ${activityName}:`, error);
-          }
-        }));
+          syncedCount++;
+        } catch (error) {
+          console.error(`Failed to sync activity ${activityName}:`, error);
+        }
       }
 
       console.log(`Activity types found: ${Array.from(activityTypes).join(', ')}`);
       console.log(`Sport types found: ${Array.from(sportTypes).join(', ')}`);
       console.log(`Successfully synced ${syncedCount} activities for user ${userId}`);
+      
+      // Enqueue hydration jobs for recent activities (last 10 weeks) 
+      // These run in the background with priority ordering
+      if (syncedCount > 0) {
+        const tenWeeksAgo = new Date();
+        tenWeeksAgo.setDate(tenWeeksAgo.getDate() - 70);
+        
+        // Get recent activities that need hydration
+        const recentActivities = await storage.getActivitiesByUserId(userId, 500);
+        const activitiesNeedingHydration = recentActivities.filter((activity: any) => {
+          const activityDate = new Date(activity.startDate);
+          return activityDate >= tenWeeksAgo && 
+                 activity.hydrationStatus !== 'complete' &&
+                 activity.hydrationStatus !== 'not_available';
+        });
+        
+        // Enqueue with higher priority for most recent activities
+        let enqueuedCount = 0;
+        for (const activity of activitiesNeedingHydration) {
+          const activityDate = new Date(activity.startDate);
+          const daysAgo = Math.floor((Date.now() - activityDate.getTime()) / (1000 * 60 * 60 * 24));
+          // Priority: 1 for most recent, higher for older (lower priority = processed first)
+          const priority = Math.min(Math.floor(daysAgo / 7) + 1, 10);
+          
+          const needsStreams = !activity.streamsData || activity.streamsData === 'null';
+          const needsLaps = !activity.lapsData || activity.lapsData === 'null';
+          
+          if (needsStreams || needsLaps) {
+            jobQueue.addJob(createHydrateActivityJob(
+              userId,
+              activity.id,
+              activity.stravaId,
+              needsStreams,
+              needsLaps,
+              priority
+            ));
+            enqueuedCount++;
+          }
+        }
+        console.log(`[Hydration] Enqueued ${enqueuedCount} activities for background hydration`);
+      }
       
       // Apply branding to newly synced activities if enabled
       if (syncedCount > 0 && user.stravaHasWriteScope && user.stravaBrandingEnabled) {
