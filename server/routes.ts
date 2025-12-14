@@ -15,6 +15,8 @@ import { ChatService } from "./services/chat";
 import { fitnessService } from "./services/fitness";
 import { autoLinkActivitiesForPlan } from "./services/activityLinker";
 import { calculateYearlyStats, reverseGeocode } from "./services/yearEndRecap";
+import { effortScoreService } from "./services/effortScore";
+import { coachVerdictService } from "./services/coachVerdict";
 import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, emailWaitlist, type Activity, type RunningShoe } from "@shared/schema";
 import { shoeData } from "./shoe-data";
 import { validateAllShoes, getPipelineStats, findDuplicates, getShoeDataWithMetadata, getShoesWithMetadataFromStorage, getEnrichedShoeData, enrichShoeWithAIData } from "./shoe-pipeline";
@@ -3601,6 +3603,105 @@ ${allPages.map(page => `  <url>
     } catch (error: any) {
       console.error('Error fetching activity performance data:', error);
       res.status(500).json({ message: error.message || "Failed to fetch activity performance data" });
+    }
+  });
+
+  // Get user performance baseline (6-week rolling averages)
+  app.get("/api/performance/baseline/:userId", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      if (req.user.id !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const cacheKey = `baseline:${userId}`;
+      const cached = getCachedResponse(cacheKey);
+      if (cached) {
+        return res.json(cached);
+      }
+
+      const baseline = await effortScoreService.calculateUserBaseline(userId, 42);
+      
+      setCachedResponse(cacheKey, baseline);
+      res.json(baseline);
+    } catch (error: any) {
+      console.error('Error calculating baseline:', error);
+      res.status(500).json({ message: error.message || "Failed to calculate baseline" });
+    }
+  });
+
+  // Get coach verdict for an activity (Pro tier feature)
+  app.get("/api/activities/:activityId/verdict", authenticateJWT, async (req: any, res) => {
+    try {
+      const activityId = parseInt(req.params.activityId);
+      const userId = req.user.id;
+      
+      if (isNaN(activityId)) {
+        return res.status(400).json({ message: "Invalid activity ID" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const now = new Date();
+      const isInTrial = user.trialEndsAt && new Date(user.trialEndsAt) > now && !user.stripeSubscriptionId;
+      const isPro = user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'premium' || isInTrial;
+      
+      if (!isPro) {
+        return res.status(403).json({ 
+          message: "Coach Verdict requires Pro subscription",
+          requiresPro: true
+        });
+      }
+
+      const cacheKey = `verdict:${activityId}:${userId}`;
+      const cached = getCachedResponse(cacheKey);
+      if (cached) {
+        return res.json(cached);
+      }
+
+      const verdict = await coachVerdictService.generateVerdict(activityId, userId);
+      
+      if (!verdict) {
+        return res.status(404).json({ message: "Activity not found or not accessible" });
+      }
+
+      setCachedResponse(cacheKey, verdict);
+      res.json(verdict);
+    } catch (error: any) {
+      console.error('Error generating verdict:', error);
+      res.status(500).json({ message: error.message || "Failed to generate verdict" });
+    }
+  });
+
+  // Update user preferences (including activityViewMode)
+  app.patch("/api/user/preferences", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { activityViewMode } = req.body;
+      
+      const validModes = ['story', 'deep_dive', 'minimal'];
+      if (activityViewMode && !validModes.includes(activityViewMode)) {
+        return res.status(400).json({ message: "Invalid view mode" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const updatedUser = await storage.updateUser(userId, { activityViewMode });
+      res.json(updatedUser);
+    } catch (error: any) {
+      console.error('Error updating preferences:', error);
+      res.status(500).json({ message: error.message || "Failed to update preferences" });
     }
   });
 
