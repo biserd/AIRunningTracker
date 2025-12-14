@@ -41,8 +41,8 @@ class StravaClient {
   private rateLimitState: RateLimitState;
   private refreshLock: Map<number, Promise<string>> = new Map();
   
-  private readonly SHORT_TERM_THRESHOLD = 80;
-  private readonly LONG_TERM_THRESHOLD = 900;
+  private readonly SHORT_TERM_THRESHOLD = 240;  // 80% of 300 read limit (approved rate)
+  private readonly LONG_TERM_THRESHOLD = 2400;  // 80% of 3000 daily read limit (approved rate)
   private readonly PAUSE_DURATION_MS = 60000;
 
   constructor() {

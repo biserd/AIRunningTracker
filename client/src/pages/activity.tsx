@@ -155,8 +155,8 @@ export default function ActivityPage() {
       });
       const data = await res.json();
       
-      if (data.activity?.hydrationStatus === 'complete' && 
-          data.activity?.streamsData && data.activity.streamsData !== 'null') {
+      if (data.activity?.hydrationStatus === 'complete' || 
+          (data.activity?.streamsData && data.activity.streamsData !== 'null')) {
         queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId] });
         queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'performance'] });
         queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'efficiency'] });
