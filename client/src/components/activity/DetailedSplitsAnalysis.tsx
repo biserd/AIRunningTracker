@@ -23,18 +23,25 @@ interface DetailedSplitsAnalysisProps {
   activity: any;
   streams?: any;
   laps?: any[];
+  unitPreference?: 'km' | 'mi';
 }
 
-function calculateEnhancedSplits(activity: any, streams?: any, laps?: any[]): SplitData[] {
-  // Determine if using metric or imperial units
-  const isMetric = activity.distanceUnit === 'km';
-  const distanceInKm = activity.distance / 1000;
+function calculateEnhancedSplits(activity: any, streams?: any, laps?: any[], unitPreference?: 'km' | 'mi'): SplitData[] {
+  // Determine if using metric or imperial units - default to km if not specified
+  const isMetric = unitPreference !== 'mi';
+  const distanceInKm = (activity.distance || 0) / 1000;
   const distanceInMiles = distanceInKm * 0.621371;
   
   const totalDistance = isMetric ? distanceInKm : distanceInMiles;
-  const totalTime = activity.movingTime;
+  const totalTime = activity.movingTime || 0;
   const unitLabel = isMetric ? 'km' : 'mi';
   const splitDistance = isMetric ? 1 : 1; // 1km or 1mi splits
+  
+  // Guard against division by zero or invalid data
+  if (totalDistance <= 0 || totalTime <= 0) {
+    return [];
+  }
+  
   const avgPace = totalTime / totalDistance;
   
   let splits: SplitData[] = [];
@@ -42,26 +49,39 @@ function calculateEnhancedSplits(activity: any, streams?: any, laps?: any[]): Sp
   // Use real Strava laps data if available
   if (laps && laps.length > 0) {
     splits = laps.map((lap, index) => {
-      const lapDistance = isMetric ? lap.distance / 1000 : (lap.distance / 1000) * 0.621371;
-      const lapPace = lap.moving_time / lapDistance;
-      const paceMinutes = Math.floor(lapPace / 60);
-      const paceSeconds = Math.round(lapPace % 60);
-      const timeMinutes = Math.floor(lap.moving_time / 60);
-      const timeSeconds = Math.round(lap.moving_time % 60);
+      const lapDistanceKm = (lap.distance || 0) / 1000;
+      const lapDistance = isMetric ? lapDistanceKm : lapDistanceKm * 0.621371;
+      const lapMovingTime = lap.moving_time || 0;
+      
+      // Guard against division by zero
+      const lapPace = lapDistance > 0 ? lapMovingTime / lapDistance : 0;
+      const paceMinutes = isFinite(lapPace) ? Math.floor(lapPace / 60) : 0;
+      const paceSeconds = isFinite(lapPace) ? Math.round(lapPace % 60) : 0;
+      const timeMinutes = Math.floor(lapMovingTime / 60);
+      const timeSeconds = Math.round(lapMovingTime % 60);
+      
+      // Calculate pace variation safely
+      const paceVariation = (lapPace > 0 && avgPace > 0) 
+        ? ((lapPace - avgPace) / avgPace) * 100 
+        : 0;
       
       return {
         split: `${index + 1}${unitLabel}`,
         splitNumber: index + 1,
         pace: lapPace,
-        paceFormatted: `${paceMinutes}:${paceSeconds.toString().padStart(2, '0')}`,
-        time: lap.moving_time,
-        timeFormatted: `${timeMinutes}:${timeSeconds.toString().padStart(2, '0')}`,
+        paceFormatted: isFinite(lapPace) && lapPace > 0 
+          ? `${paceMinutes}:${paceSeconds.toString().padStart(2, '0')}`
+          : '--:--',
+        time: lapMovingTime,
+        timeFormatted: lapMovingTime > 0 
+          ? `${timeMinutes}:${timeSeconds.toString().padStart(2, '0')}`
+          : '--:--',
         distance: lapDistance,
         distanceFormatted: `${lapDistance.toFixed(2)} ${unitLabel}`,
         elevation: lap.total_elevation_gain || 0,
         avgHeartRate: lap.average_heartrate,
         realData: true,
-        paceVariation: ((lapPace - avgPace) / avgPace) * 100
+        paceVariation: isFinite(paceVariation) ? paceVariation : 0
       };
     });
   } 
@@ -86,9 +106,11 @@ function calculateEnhancedSplits(activity: any, streams?: any, laps?: any[]): Sp
         const splitTime = currentTime - lastSplitTime;
         const splitDist = currentDistance - lastSplitDistance;
         const actualSplitDistance = isMetric ? splitDist / 1000 : (splitDist / 1000) * 0.621371;
-        const splitPace = splitTime / actualSplitDistance;
-        const paceMinutes = Math.floor(splitPace / 60);
-        const paceSeconds = Math.round(splitPace % 60);
+        
+        // Guard against division by zero
+        const splitPace = actualSplitDistance > 0 ? splitTime / actualSplitDistance : 0;
+        const paceMinutes = isFinite(splitPace) ? Math.floor(splitPace / 60) : 0;
+        const paceSeconds = isFinite(splitPace) ? Math.round(splitPace % 60) : 0;
         const timeMinutes = Math.floor(splitTime / 60);
         const timeSeconds = Math.round(splitTime % 60);
         
@@ -109,19 +131,28 @@ function calculateEnhancedSplits(activity: any, streams?: any, laps?: any[]): Sp
           lastAltitude = altitudes[i];
         }
         
+        // Calculate pace variation safely
+        const paceVariation = (splitPace > 0 && avgPace > 0) 
+          ? ((splitPace - avgPace) / avgPace) * 100 
+          : 0;
+        
         splits.push({
           split: `${currentSplitIndex}${unitLabel}`,
           splitNumber: currentSplitIndex,
           pace: splitPace,
-          paceFormatted: `${paceMinutes}:${paceSeconds.toString().padStart(2, '0')}`,
+          paceFormatted: isFinite(splitPace) && splitPace > 0 
+            ? `${paceMinutes}:${paceSeconds.toString().padStart(2, '0')}`
+            : '--:--',
           time: splitTime,
-          timeFormatted: `${timeMinutes}:${timeSeconds.toString().padStart(2, '0')}`,
+          timeFormatted: splitTime > 0 
+            ? `${timeMinutes}:${timeSeconds.toString().padStart(2, '0')}`
+            : '--:--',
           distance: actualSplitDistance,
           distanceFormatted: `${actualSplitDistance.toFixed(2)} ${unitLabel}`,
           elevation: elevationGain,
           avgHeartRate,
           realData: true,
-          paceVariation: ((splitPace - avgPace) / avgPace) * 100
+          paceVariation: isFinite(paceVariation) ? paceVariation : 0
         });
         
         lastSplitDistance = currentDistance;
@@ -381,9 +412,9 @@ const SplitsAnalysis = ({ splits }: { splits: SplitData[] }) => {
   );
 };
 
-export default function DetailedSplitsAnalysis({ activity, streams, laps }: DetailedSplitsAnalysisProps) {
-  const splits = calculateEnhancedSplits(activity, streams, laps);
-  const isMetric = activity.distanceUnit === 'km';
+export default function DetailedSplitsAnalysis({ activity, streams, laps, unitPreference }: DetailedSplitsAnalysisProps) {
+  const splits = calculateEnhancedSplits(activity, streams, laps, unitPreference);
+  const isMetric = unitPreference !== 'mi';
   const hasDetailedData = splits.some(s => s.realData);
 
   if (splits.length === 0) {

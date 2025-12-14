@@ -3745,8 +3745,8 @@ ${allPages.map(page => `  <url>
         return res.json(cached);
       }
 
-      const streams = await storage.getActivityStreams(activityId);
-      if (!streams) {
+      const rawStreams = await storage.getActivityStreams(activityId);
+      if (!rawStreams) {
         return res.json({
           aerobicDecoupling: null,
           decouplingLabel: "unknown",
@@ -3762,8 +3762,15 @@ ${allPages.map(page => `  <url>
         });
       }
 
+      // Normalize streams format - Strava stores as { streamType: { data: [...] } }
+      // but efficiency service expects { streamType: [...] }
+      const normalizedStreams: any = {};
+      for (const key of Object.keys(rawStreams)) {
+        normalizedStreams[key] = rawStreams[key]?.data || rawStreams[key];
+      }
+
       const efficiencyResult = efficiencyService.calculateEfficiencyMetrics(
-        streams,
+        normalizedStreams,
         activity.distance || 0
       );
 

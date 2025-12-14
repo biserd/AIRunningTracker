@@ -33,7 +33,7 @@ export default function ActivityPage() {
   const [isChartsOpen, setIsChartsOpen] = useState(false);
   const [activeChip, setActiveChip] = useState<"drift" | "pacing" | "quality" | "benchmark" | "details" | null>(null);
 
-  const { data: userData } = useQuery<{ activityViewMode?: string }>({
+  const { data: userData } = useQuery<{ activityViewMode?: string; unitPreference?: 'km' | 'mi' }>({
     queryKey: ['/api/user'],
   });
 
@@ -618,6 +618,7 @@ export default function ActivityPage() {
                   activity={activity}
                   streams={performanceData?.streams}
                   laps={performanceData?.laps}
+                  unitPreference={userData?.unitPreference}
                 />
 
                 {activity.averageHeartrate && (
