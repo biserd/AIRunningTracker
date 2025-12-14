@@ -4385,7 +4385,8 @@ ${allPages.map(page => `  <url>
         return res.status(403).json({ message: "Unauthorized" });
       }
 
-      const activities = await storage.getActivitiesByUserId(userId);
+      // Fetch ALL user activities (no limit) for accurate year recap
+      const activities = await storage.getActivitiesByUserId(userId, 10000);
       const stats = calculateYearlyStats(activities, year);
 
       // Enhance location with reverse geocoding if available
