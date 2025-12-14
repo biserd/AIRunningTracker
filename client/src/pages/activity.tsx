@@ -13,6 +13,7 @@ import DetailedSplitsAnalysis from "@/components/activity/DetailedSplitsAnalysis
 import CoachVerdict from "@/components/activity/CoachVerdict";
 import TrainingConsistency from "@/components/activity/TrainingConsistency";
 import KPIRibbon from "@/components/activity/KPIRibbon";
+import RunTimeline from "@/components/activity/RunTimeline";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { ViewOnStravaLink, StravaPoweredBy } from "@/components/StravaConnect";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -220,6 +221,11 @@ export default function ActivityPage() {
             <div className="mb-6">
               <CoachVerdict activityId={parseInt(activityId || '0')} />
             </div>
+            <RunTimeline 
+              streams={performanceData?.streams}
+              unitPreference={activity.unitPreference}
+              activityDistance={activity.distance}
+            />
           </>
         )}
 

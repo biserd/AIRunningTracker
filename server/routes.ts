@@ -3661,13 +3661,14 @@ ${allPages.map(page => `  <url>
         });
       }
 
-      const cacheKey = `verdict:${activityId}:${userId}`;
+      const unitPreference = user.unitPreference || 'km';
+      const cacheKey = `verdict:${activityId}:${userId}:${unitPreference}`;
       const cached = getCachedResponse(cacheKey);
       if (cached) {
         return res.json(cached);
       }
 
-      const verdict = await coachVerdictService.generateVerdict(activityId, userId);
+      const verdict = await coachVerdictService.generateVerdict(activityId, userId, unitPreference);
       
       if (!verdict) {
         return res.status(404).json({ message: "Activity not found or not accessible" });

@@ -25,7 +25,7 @@ interface CoachVerdict {
 }
 
 export class CoachVerdictService {
-  async generateVerdict(activityId: number, userId: number): Promise<CoachVerdict | null> {
+  async generateVerdict(activityId: number, userId: number, unitPreference: string = 'km'): Promise<CoachVerdict | null> {
     const activity = await storage.getActivityById(activityId);
     if (!activity || activity.userId !== userId) {
       return null;
@@ -33,10 +33,15 @@ export class CoachVerdictService {
     
     const comparison = await effortScoreService.compareActivityToBaseline(activityId, userId);
     if (!comparison) {
-      return this.generateBasicVerdict(activity);
+      return this.generateBasicVerdict(activity, unitPreference);
     }
     
+    // Convert distance based on unit preference
     const distanceKm = activity.distance / 1000;
+    const distanceMiles = distanceKm * 0.621371;
+    const displayDistance = unitPreference === 'miles' ? distanceMiles : distanceKm;
+    const distanceUnit = unitPreference === 'miles' ? 'mi' : 'km';
+    
     const durationMinutes = activity.movingTime / 60;
     const pacePerKm = durationMinutes / distanceKm;
     
@@ -97,12 +102,12 @@ export class CoachVerdictService {
     if (evidenceBullets.length < 2) {
       evidenceBullets.push({
         type: "neutral",
-        text: `${distanceKm.toFixed(1)}km in ${this.formatDuration(durationMinutes)}`
+        text: `${displayDistance.toFixed(1)}${distanceUnit} in ${this.formatDuration(durationMinutes)}`
       });
     }
     
     const { grade, gradeLabel } = this.calculateGrade(comparison, activity);
-    const summary = this.generateSummary(grade, comparison, activity);
+    const summary = this.generateSummary(grade, comparison, activity, unitPreference);
     const nextSteps = this.generateNextSteps(comparison, activity);
     
     return {
@@ -123,21 +128,24 @@ export class CoachVerdictService {
     };
   }
 
-  private generateBasicVerdict(activity: Activity): CoachVerdict {
+  private generateBasicVerdict(activity: Activity, unitPreference: string = 'km'): CoachVerdict {
     const distanceKm = activity.distance / 1000;
+    const distanceMiles = distanceKm * 0.621371;
+    const displayDistance = unitPreference === 'miles' ? distanceMiles : distanceKm;
+    const distanceUnit = unitPreference === 'miles' ? 'mi' : 'km';
+    
     const durationMinutes = activity.movingTime / 60;
     const pacePerKm = durationMinutes / distanceKm;
     
-    const user = { id: activity.userId };
     const estimatedMaxHR = 190;
     const effortResult = effortScoreService.calculateEffortScore(activity, estimatedMaxHR);
     
     return {
       grade: "B",
       gradeLabel: "Good Run",
-      summary: `You completed ${distanceKm.toFixed(1)}km at ${this.formatPace(pacePerKm)} pace. Keep it up!`,
+      summary: `You completed ${displayDistance.toFixed(1)}${distanceUnit} at ${this.formatPace(pacePerKm, unitPreference)} pace. Keep it up!`,
       evidenceBullets: [
-        { type: "neutral", text: `Distance: ${distanceKm.toFixed(1)}km in ${this.formatDuration(durationMinutes)}` },
+        { type: "neutral", text: `Distance: ${displayDistance.toFixed(1)}${distanceUnit} in ${this.formatDuration(durationMinutes)}` },
         { type: "neutral", text: `Need more runs to compare against your baseline` }
       ],
       effortScore: effortResult.score,
@@ -177,11 +185,14 @@ export class CoachVerdictService {
     return { grade: "F", gradeLabel: "Tough Day" };
   }
 
-  private generateSummary(grade: string, comparison: any, activity: Activity): string {
+  private generateSummary(grade: string, comparison: any, activity: Activity, unitPreference: string = 'km'): string {
     const distanceKm = activity.distance / 1000;
+    const distanceMiles = distanceKm * 0.621371;
+    const displayDistance = unitPreference === 'miles' ? distanceMiles : distanceKm;
+    const distanceUnit = unitPreference === 'miles' ? 'mi' : 'km';
     
     if (grade === "A") {
-      return `Outstanding performance! You crushed this ${distanceKm.toFixed(1)}km run.`;
+      return `Outstanding performance! You crushed this ${displayDistance.toFixed(1)}${distanceUnit} run.`;
     } else if (grade === "B") {
       return `Solid run today. You're training at a good level.`;
     } else if (grade === "C") {
@@ -214,10 +225,12 @@ export class CoachVerdictService {
     return steps.slice(0, 2);
   }
 
-  private formatPace(pacePerKm: number): string {
-    const minutes = Math.floor(pacePerKm);
-    const seconds = Math.round((pacePerKm - minutes) * 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}/km`;
+  private formatPace(pacePerKm: number, unitPreference: string = 'km'): string {
+    const paceToShow = unitPreference === 'miles' ? pacePerKm / 0.621371 : pacePerKm;
+    const paceUnit = unitPreference === 'miles' ? '/mi' : '/km';
+    const minutes = Math.floor(paceToShow);
+    const seconds = Math.round((paceToShow - minutes) * 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}${paceUnit}`;
   }
 
   private formatDuration(minutes: number): string {
