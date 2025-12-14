@@ -471,15 +471,35 @@ function buildLongRunProgression(
 
   const buildWeeks = totalWeeks - taperWeeks;
   const longestRecentRun = profile.longestRecentRunKm || 8;
+  const raceDistance = goalDistanceKm(settings.goalType as GoalType);
   
   const experience = inferExperienceLevel(profile);
   const consistency = (profile as { consistency?: string }).consistency ?? "medium";
-  const maxDelta = getMaxLongRunDelta(experience, consistency);
+  
+  // Calculate appropriate peak long run based on race distance and experience
+  // Half marathon: peak at ~85-95% of race distance (18-20km)
+  // Marathon: peak at ~75-85% of race distance (32-36km)
+  // Shorter races: can go slightly over race distance
+  const peakPercentOfRace = 
+    settings.goalType === "marathon" ? (experience === "advanced" ? 0.85 : experience === "intermediate" ? 0.80 : 0.75) :
+    settings.goalType === "half_marathon" ? (experience === "advanced" ? 0.95 : experience === "intermediate" ? 0.90 : 0.85) :
+    settings.goalType === "10k" ? 1.4 :
+    settings.goalType === "5k" ? 2.0 :
+    1.0;
   
   const goalCap = goalLongCapKm(settings.goalType as GoalType);
-  const peakLongRun = Math.min(goalCap, longestRecentRun + maxDelta);
+  const peakLongRun = Math.min(goalCap, raceDistance * peakPercentOfRace);
   
-  const startLongRun = Math.max(longestRecentRun * 0.8, 6);
+  // Start long run should be:
+  // 1. Not exceed user's recent longest run (they're already comfortable with it)
+  // 2. Not exceed 50-60% of race distance in week 1
+  // 3. At least 6km minimum
+  const maxStartFromRace = raceDistance * 0.55; // ~11-12km for half marathon
+  const startLongRun = clamp(
+    Math.min(longestRecentRun * 0.85, maxStartFromRace),
+    6, // minimum
+    peakLongRun * 0.6 // never start above 60% of peak
+  );
 
   const longRuns: number[] = [];
   
