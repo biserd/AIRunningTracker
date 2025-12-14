@@ -118,7 +118,13 @@ export default function ActivityPage() {
   });
 
   const [isHydrating, setIsHydrating] = useState(false);
-  const hydrationAttempted = useRef(false);
+  const hydrationTriggered = useRef(false);
+
+  const activity = activityData?.activity;
+  const needsHydration = activity && (
+    activity.hydrationStatus === 'pending' || 
+    (!activity.streamsData || activity.streamsData === 'null')
+  );
 
   const hydrateMutation = useMutation({
     mutationFn: async () => {
@@ -130,12 +136,9 @@ export default function ActivityPage() {
       return res.json();
     },
     onSuccess: (data) => {
-      if (data.message === "Hydration queued") {
-        setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId] });
-          setIsHydrating(false);
-        }, 3000);
-      } else {
+      if (data.message === "Activity already hydrated") {
+        queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId] });
+        queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'performance'] });
         setIsHydrating(false);
       }
     },
@@ -144,19 +147,36 @@ export default function ActivityPage() {
     }
   });
 
+  useQuery({
+    queryKey: ['/api/activities', activityId, 'hydration-poll'],
+    queryFn: async () => {
+      const res = await fetch(`/api/activities/${activityId}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+      });
+      const data = await res.json();
+      
+      if (data.activity?.hydrationStatus === 'complete' && 
+          data.activity?.streamsData && data.activity.streamsData !== 'null') {
+        queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId] });
+        queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'performance'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'efficiency'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'quality'] });
+        setIsHydrating(false);
+      }
+      return data;
+    },
+    enabled: isHydrating,
+    refetchInterval: isHydrating ? 2000 : false,
+    refetchIntervalInBackground: false,
+  });
+
   useEffect(() => {
-    const activity = activityData?.activity;
-    if (!activity || hydrationAttempted.current) return;
+    if (!activity || hydrationTriggered.current || !needsHydration) return;
     
-    const needsHydration = activity.hydrationStatus === 'pending' || 
-                          (!activity.streamsData || activity.streamsData === 'null');
-    
-    if (needsHydration) {
-      hydrationAttempted.current = true;
-      setIsHydrating(true);
-      hydrateMutation.mutate();
-    }
-  }, [activityData?.activity]);
+    hydrationTriggered.current = true;
+    setIsHydrating(true);
+    hydrateMutation.mutate();
+  }, [activity, needsHydration]);
 
   if (isLoading) {
     return (
@@ -181,8 +201,6 @@ export default function ActivityPage() {
       </div>
     );
   }
-
-  const activity = activityData.activity;
 
   return (
     <div className="min-h-screen bg-gray-50">
