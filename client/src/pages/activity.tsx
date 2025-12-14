@@ -12,6 +12,7 @@ import RouteMap from "../components/RouteMap";
 import DetailedSplitsAnalysis from "@/components/activity/DetailedSplitsAnalysis";
 import CoachVerdict from "@/components/activity/CoachVerdict";
 import TrainingConsistency from "@/components/activity/TrainingConsistency";
+import KPIRibbon from "@/components/activity/KPIRibbon";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { ViewOnStravaLink, StravaPoweredBy } from "@/components/StravaConnect";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -201,14 +202,29 @@ export default function ActivityPage() {
 
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         
-        {/* Story Mode: Coach Verdict (Pro feature) */}
+        {/* Story Mode: Compact KPI Ribbon + Coach Verdict */}
         {viewMode === 'story' && (
-          <div className="mb-6">
-            <CoachVerdict activityId={parseInt(activityId || '0')} />
-          </div>
+          <>
+            <KPIRibbon
+              distance={activity.formattedDistance}
+              distanceUnit={activity.distanceUnit}
+              duration={activity.formattedDuration}
+              pace={activity.formattedPace}
+              paceUnit={activity.paceUnit}
+              avgHR={activity.averageHeartrate}
+              elevation={activity.totalElevationGain}
+              calories={activity.calories}
+              power={activity.averageWatts}
+              cadence={activity.averageCadence}
+            />
+            <div className="mb-6">
+              <CoachVerdict activityId={parseInt(activityId || '0')} />
+            </div>
+          </>
         )}
 
-        {/* Main Stats Grid */}
+        {/* Main Stats Grid - Only in Deep Dive and Minimal modes */}
+        {viewMode !== 'story' && (
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Activity Overview</h2>
           
@@ -283,6 +299,7 @@ export default function ActivityPage() {
             </div>
           )}
         </div>
+        )}
 
         {/* Route & Details Section - Collapsible in Story Mode, Hidden in Minimal */}
         {viewMode !== 'minimal' && (

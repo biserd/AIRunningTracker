@@ -164,11 +164,14 @@ export default function CoachVerdict({ activityId, compact = false }: CoachVerdi
           ))}
         </div>
 
-        <div className="grid grid-cols-4 gap-2 pt-3 border-t border-gray-100">
-          <ComparisonStat label="Pace" value={data.comparison.paceVsAvg} />
-          <ComparisonStat label="Heart Rate" value={data.comparison.hrVsAvg} />
-          <ComparisonStat label="Effort" value={data.comparison.effortVsAvg} />
-          <ComparisonStat label="Distance" value={data.comparison.distanceVsAvg} />
+        <div className="pt-3 border-t border-gray-100">
+          <p className="text-xs text-gray-400 text-center mb-2">vs last 42 days</p>
+          <div className="grid grid-cols-4 gap-2">
+            <ComparisonStat label="Pace" value={data.comparison.paceVsAvg} />
+            <ComparisonStat label="Heart Rate" value={data.comparison.hrVsAvg} />
+            <ComparisonStat label="Effort" value={data.comparison.effortVsAvg} />
+            <ComparisonStat label="Distance" value={data.comparison.distanceVsAvg} />
+          </div>
         </div>
 
         {data.nextSteps.length > 0 && (
@@ -187,18 +190,21 @@ export default function CoachVerdict({ activityId, compact = false }: CoachVerdi
 }
 
 function ComparisonStat({ label, value }: { label: string; value: number }) {
-  const isPositive = value > 0;
-  const isNegative = value < 0;
+  const getColor = () => {
+    if (label === "Pace") {
+      return value < 0 ? 'text-emerald-600' : value > 0 ? 'text-red-600' : 'text-gray-600';
+    }
+    if (label === "Heart Rate" || label === "Effort") {
+      return 'text-gray-600';
+    }
+    return value > 0 ? 'text-emerald-600' : value < 0 ? 'text-red-600' : 'text-gray-600';
+  };
   
   return (
     <div className="text-center">
       <p className="text-xs text-gray-500">{label}</p>
-      <p className={`text-sm font-medium ${
-        isPositive ? 'text-emerald-600' : 
-        isNegative ? 'text-red-600' : 
-        'text-gray-600'
-      }`} data-testid={`stat-${label.toLowerCase().replace(' ', '-')}`}>
-        {isPositive && '+'}{value}%
+      <p className={`text-sm font-medium ${getColor()}`} data-testid={`stat-${label.toLowerCase().replace(' ', '-')}`}>
+        {value > 0 && '+'}{value}%
       </p>
     </div>
   );
