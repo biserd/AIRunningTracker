@@ -983,28 +983,7 @@ ${allPages.map(page => `  <url>
       return res.status(404).json({ message: "User not found" });
     }
     
-    // Pro/Premium subscription or reverse trial required for extended sync (>50 activities)
-    // Match the same logic as /api/strava/sync-activities
-    if (maxActivities > 50) {
-      const hasProPlan = user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'premium';
-      // Allow active, trialing, and past_due (grace period for payment issues)
-      const hasActiveStatus = user.subscriptionStatus === 'active' || 
-                              user.subscriptionStatus === 'trialing' || 
-                              user.subscriptionStatus === 'past_due';
-      const hasPaidAccess = hasProPlan && hasActiveStatus;
-      
-      // Reverse trial: free plan + active trial period + no Stripe subscription
-      const now = new Date();
-      const isInReverseTrial = user.trialEndsAt && new Date(user.trialEndsAt) > now && 
-                               !user.stripeSubscriptionId && user.subscriptionPlan === 'free';
-      
-      if (!hasPaidAccess && !isInReverseTrial) {
-        return res.status(403).json({ 
-          message: "Extended sync requires a Pro or Premium subscription",
-          upgradeRequired: true
-        });
-      }
-    }
+    // Extended sync (up to 200 activities) is now available to all users
     
     // Clamp maxActivities to prevent abuse (200 max with queue-based rate limiting)
     maxActivities = Math.max(1, Math.min(200, maxActivities));
@@ -3165,25 +3144,7 @@ ${allPages.map(page => `  <url>
         return res.status(400).json({ message: "Strava not connected" });
       }
 
-      // Pro/Premium subscription or reverse trial required for extended sync
-      const hasProPlan = user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'premium';
-      // Allow active, trialing, and past_due (grace period for payment issues)
-      const hasActiveStatus = user.subscriptionStatus === 'active' || 
-                              user.subscriptionStatus === 'trialing' || 
-                              user.subscriptionStatus === 'past_due';
-      const hasPaidAccess = hasProPlan && hasActiveStatus;
-      
-      // Reverse trial: free plan + active trial period + no Stripe subscription
-      const now = new Date();
-      const isInReverseTrial = user.trialEndsAt && new Date(user.trialEndsAt) > now && 
-                               !user.stripeSubscriptionId && user.subscriptionPlan === 'free';
-      
-      if (!hasPaidAccess && !isInReverseTrial) {
-        return res.status(403).json({ 
-          message: "Extended sync requires a Pro or Premium subscription",
-          upgradeRequired: true
-        });
-      }
+      // Extended sync (up to 200 activities) is now available to all users
 
       const result = await stravaService.syncActivitiesForUser(userId, maxActivities);
       
