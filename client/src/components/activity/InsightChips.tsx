@@ -1,6 +1,5 @@
-import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Activity, Gauge, BarChart3 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type ChipType = "drift" | "pacing" | "quality" | "benchmark";
 
@@ -23,26 +22,26 @@ interface InsightChipsProps {
   };
 }
 
-const chipConfig: Record<ChipType, { icon: typeof TrendingUp; label: string; description: string }> = {
+const chipConfig: Record<ChipType, { icon: typeof TrendingUp; label: string; tooltip: string }> = {
   drift: {
     icon: TrendingUp,
     label: "Drift",
-    description: "Aerobic decoupling analysis"
+    tooltip: "Aerobic Decoupling: How much your heart rate increased relative to pace. Under 5% = good aerobic fitness."
   },
   pacing: {
     icon: Activity,
     label: "Pacing",
-    description: "Pace stability throughout run"
+    tooltip: "Pace Consistency: How even your pace was throughout the run. Higher % = more consistent effort."
   },
   quality: {
     icon: Gauge,
     label: "Quality",
-    description: "Data quality assessment"
+    tooltip: "Data Quality Score: Rates the reliability of your device data. Higher = more accurate metrics."
   },
   benchmark: {
     icon: BarChart3,
     label: "vs Baseline",
-    description: "Compare to your recent average"
+    tooltip: "Baseline Comparison: Compares this run to your 6-week average. Negative = faster than usual."
   }
 };
 
@@ -91,31 +90,39 @@ export default function InsightChips({ onChipClick, activeChip, efficiencyData, 
   const chips: ChipType[] = ["drift", "pacing", "quality", "benchmark"];
 
   return (
-    <div className="flex flex-wrap gap-2 mt-4 mb-2" data-testid="insight-chips">
-      {chips.map((chip) => {
-        const config = chipConfig[chip];
-        const IconComponent = config.icon;
-        const { status, value } = getChipStatus(chip, efficiencyData, qualityData, comparisonData);
-        const isActive = activeChip === chip;
+    <TooltipProvider delayDuration={300}>
+      <div className="flex flex-wrap gap-2 mt-4 mb-2" data-testid="insight-chips">
+        {chips.map((chip) => {
+          const config = chipConfig[chip];
+          const IconComponent = config.icon;
+          const { status, value } = getChipStatus(chip, efficiencyData, qualityData, comparisonData);
+          const isActive = activeChip === chip;
 
-        return (
-          <button
-            key={chip}
-            onClick={() => onChipClick(chip)}
-            className={`
-              inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium
-              transition-all duration-200 cursor-pointer
-              ${statusColors[status]}
-              ${isActive ? 'ring-2 ring-offset-1 ring-blue-500' : ''}
-            `}
-            data-testid={`chip-${chip}`}
-          >
-            <IconComponent className="w-4 h-4" />
-            <span>{config.label}</span>
-            <span className="font-semibold">{value}</span>
-          </button>
-        );
-      })}
-    </div>
+          return (
+            <Tooltip key={chip}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => onChipClick(chip)}
+                  className={`
+                    inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium
+                    transition-all duration-200 cursor-pointer
+                    ${statusColors[status]}
+                    ${isActive ? 'ring-2 ring-offset-1 ring-blue-500' : ''}
+                  `}
+                  data-testid={`chip-${chip}`}
+                >
+                  <IconComponent className="w-4 h-4" />
+                  <span>{config.label}</span>
+                  <span className="font-semibold">{value}</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs text-center">
+                <p className="text-sm">{config.tooltip}</p>
+              </TooltipContent>
+            </Tooltip>
+          );
+        })}
+      </div>
+    </TooltipProvider>
   );
 }
