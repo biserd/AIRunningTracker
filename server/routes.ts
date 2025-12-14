@@ -5392,6 +5392,123 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // ===== ROUTE MATCHING & COMPARISON ENDPOINTS (Premium) =====
+  
+  // Get route comparison data for an activity
+  app.get("/api/activities/:activityId/comparison", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const activityId = parseInt(req.params.activityId);
+      
+      // Check Premium tier for full comparison features
+      const user = await storage.getUser(userId);
+      const isPremium = user?.subscriptionPlan === 'premium';
+      
+      // Import services dynamically to avoid circular deps
+      const { getOrComputeComparison, getWhatChanged } = await import('./services/comparableRunsService');
+      const { assignRouteToActivity, getActivityRoute } = await import('./services/routeClusteringService');
+      
+      // Ensure activity has a route assigned
+      await assignRouteToActivity(activityId);
+      
+      // Get comparison data
+      const comparison = await getOrComputeComparison(userId, activityId);
+      if (!comparison) {
+        return res.json({ 
+          hasComparison: false,
+          message: "Not enough comparable runs found"
+        });
+      }
+      
+      // Get what changed analysis
+      const whatChanged = await getWhatChanged(activityId, comparison);
+      
+      // Get route info
+      const routeInfo = await getActivityRoute(activityId);
+      
+      // For non-premium users, limit the data
+      if (!isPremium) {
+        return res.json({
+          hasComparison: true,
+          isPremium: false,
+          comparableCount: comparison.comparableRuns.length,
+          deltas: comparison.deltas,
+          routeMatch: routeInfo ? {
+            runCount: routeInfo.route.runCount,
+            hasHistory: routeInfo.history.length > 1
+          } : null,
+          upgradeMessage: "Upgrade to Premium for full run comparison, route trends, and detailed history"
+        });
+      }
+      
+      res.json({
+        hasComparison: true,
+        isPremium: true,
+        comparableRuns: comparison.comparableRuns.slice(0, 10),
+        baseline: comparison.baseline,
+        deltas: comparison.deltas,
+        whatChanged,
+        routeMatch: comparison.routeMatch ? {
+          routeId: comparison.routeMatch.routeId,
+          lastRunOnRoute: comparison.routeMatch.lastRunOnRoute,
+          routeHistory: comparison.routeMatch.routeHistory.slice(0, 10)
+        } : null,
+        route: routeInfo ? {
+          id: routeInfo.route.id,
+          name: routeInfo.route.name,
+          runCount: routeInfo.route.runCount,
+          avgDistance: routeInfo.route.avgDistance,
+          avgElevationGain: routeInfo.route.avgElevationGain
+        } : null
+      });
+    } catch (error: any) {
+      console.error("Get activity comparison error:", error);
+      res.status(500).json({ message: error.message || "Failed to get comparison data" });
+    }
+  });
+  
+  // Get route history for an activity
+  app.get("/api/activities/:activityId/route-history", authenticateJWT, async (req: any, res) => {
+    try {
+      const activityId = parseInt(req.params.activityId);
+      
+      const { getActivityRoute } = await import('./services/routeClusteringService');
+      const routeInfo = await getActivityRoute(activityId);
+      
+      if (!routeInfo) {
+        return res.json({ hasRoute: false });
+      }
+      
+      res.json({
+        hasRoute: true,
+        route: {
+          id: routeInfo.route.id,
+          name: routeInfo.route.name,
+          runCount: routeInfo.route.runCount
+        },
+        history: routeInfo.history.slice(0, 20)
+      });
+    } catch (error: any) {
+      console.error("Get route history error:", error);
+      res.status(500).json({ message: error.message || "Failed to get route history" });
+    }
+  });
+  
+  // Manually trigger route assignment for an activity
+  app.post("/api/activities/:activityId/assign-route", authenticateJWT, async (req: any, res) => {
+    try {
+      const activityId = parseInt(req.params.activityId);
+      
+      const { assignRouteToActivity } = await import('./services/routeClusteringService');
+      const success = await assignRouteToActivity(activityId);
+      
+      res.json({ success });
+    } catch (error: any) {
+      console.error("Assign route error:", error);
+      res.status(500).json({ message: error.message || "Failed to assign route" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
