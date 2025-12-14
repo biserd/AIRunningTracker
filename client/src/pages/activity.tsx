@@ -41,7 +41,7 @@ export default function ActivityPage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         },
         body: JSON.stringify({ activityViewMode: newMode }),
       });
@@ -74,7 +74,7 @@ export default function ActivityPage() {
     queryKey: ['/api/activities', activityId, 'verdict'],
     queryFn: async () => {
       const res = await fetch(`/api/activities/${activityId}/verdict`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
       });
       if (!res.ok) throw new Error('Failed to fetch verdict');
       return res.json();
