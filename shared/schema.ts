@@ -511,7 +511,7 @@ export const activityFeatures = pgTable("activity_features", {
 
 export const similarRunsCache = pgTable("similar_runs_cache", {
   id: serial("id").primaryKey(),
-  activityId: integer("activity_id").notNull(),
+  activityId: integer("activity_id").notNull().unique(),
   userId: integer("user_id").notNull(),
   similarActivityIds: json("similar_activity_ids").$type<number[]>().notNull(), // Top N similar activity IDs
   similarityScores: json("similarity_scores").$type<number[]>().notNull(), // Corresponding scores

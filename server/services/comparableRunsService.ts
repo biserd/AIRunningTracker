@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { activities, activityFeatures, similarRunsCache, activityRouteMap } from '@shared/schema';
-import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, sql, inArray } from 'drizzle-orm';
 
 const DISTANCE_TOLERANCE = 0.10;
 const ELEVATION_TOLERANCE = 0.25;
@@ -316,7 +316,7 @@ export async function getOrComputeComparison(
         totalElevationGain: activities.totalElevationGain
       })
         .from(activities)
-        .where(sql`${activities.id} = ANY(${routeActivityIds})`);
+        .where(inArray(activities.id, routeActivityIds));
       
       const routeHistoryWithScore = routeHistory
         .map(a => ({ ...a, activityId: a.id, similarityScore: 1.0 }))
