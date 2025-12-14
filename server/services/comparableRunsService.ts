@@ -197,18 +197,31 @@ export async function getOrComputeComparison(
     const activityIds = cached.similarActivityIds as number[];
     const scores = cached.similarityScores as number[];
     
-    const comparableActivities = await db.select({
-      id: activities.id,
-      name: activities.name,
-      startDate: activities.startDate,
-      distance: activities.distance,
-      movingTime: activities.movingTime,
-      averageSpeed: activities.averageSpeed,
-      averageHeartrate: activities.averageHeartrate,
-      totalElevationGain: activities.totalElevationGain
-    })
-      .from(activities)
-      .where(sql`${activities.id} = ANY(${activityIds})`);
+    let comparableActivities: {
+      id: number;
+      name: string;
+      startDate: Date;
+      distance: number;
+      movingTime: number;
+      averageSpeed: number;
+      averageHeartrate: number | null;
+      totalElevationGain: number;
+    }[] = [];
+    
+    if (activityIds.length > 0) {
+      comparableActivities = await db.select({
+        id: activities.id,
+        name: activities.name,
+        startDate: activities.startDate,
+        distance: activities.distance,
+        movingTime: activities.movingTime,
+        averageSpeed: activities.averageSpeed,
+        averageHeartrate: activities.averageHeartrate,
+        totalElevationGain: activities.totalElevationGain
+      })
+        .from(activities)
+        .where(inArray(activities.id, activityIds));
+    }
     
     const comparableRuns = comparableActivities.map((a, idx) => ({
       ...a,
