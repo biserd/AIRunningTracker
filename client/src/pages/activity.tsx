@@ -15,6 +15,7 @@ import TrainingConsistency from "@/components/activity/TrainingConsistency";
 import KPIRibbon from "@/components/activity/KPIRibbon";
 import RunTimeline from "@/components/activity/RunTimeline";
 import NextSteps from "@/components/activity/NextSteps";
+import UnifiedCoachCard from "@/components/activity/UnifiedCoachCard";
 import InsightChips from "@/components/activity/InsightChips";
 import BenchmarkDrawer from "@/components/activity/BenchmarkDrawer";
 import EfficiencyDrawer from "@/components/activity/EfficiencyDrawer";
@@ -469,41 +470,71 @@ export default function ActivityPage() {
           </div>
           
           {/* Bottom Row: Key Stats - Always visible, no collapse */}
-          <div className="flex items-center gap-4 md:gap-8 overflow-x-auto py-2 border-t border-gray-100" data-testid="header-stats">
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <MapPin className="h-5 w-5 text-blue-600" />
-              <span className="text-lg font-bold text-gray-900">{activity.formattedDistance}</span>
-              <span className="text-sm text-gray-500">{activity.distanceUnit}</span>
+          <div className="flex items-center gap-4 md:gap-6 overflow-x-auto py-2 border-t border-gray-100" data-testid="header-stats">
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <MapPin className="h-4 w-4 text-blue-600" />
+              <span className="text-base font-bold text-gray-900">{activity.formattedDistance}</span>
+              <span className="text-xs text-gray-500">{activity.distanceUnit}</span>
             </div>
-            <div className="w-px h-6 bg-gray-200" />
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Clock className="h-5 w-5 text-green-600" />
-              <span className="text-lg font-bold text-gray-900">{activity.formattedDuration}</span>
-              <span className="text-sm text-gray-500">Time</span>
+            <div className="w-px h-5 bg-gray-200" />
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <Clock className="h-4 w-4 text-green-600" />
+              <span className="text-base font-bold text-gray-900">{activity.formattedDuration}</span>
+              <span className="text-xs text-gray-500">Time</span>
             </div>
-            <div className="w-px h-6 bg-gray-200" />
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <TrendingUp className="h-5 w-5 text-purple-600" />
-              <span className="text-lg font-bold text-gray-900">{activity.formattedPace}</span>
-              <span className="text-sm text-gray-500">{activity.paceUnit}</span>
+            <div className="w-px h-5 bg-gray-200" />
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <TrendingUp className="h-4 w-4 text-purple-600" />
+              <span className="text-base font-bold text-gray-900">{activity.formattedPace}</span>
+              <span className="text-xs text-gray-500">{activity.paceUnit}</span>
             </div>
             {activity.averageHeartrate && (
               <>
-                <div className="w-px h-6 bg-gray-200" />
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Heart className="h-5 w-5 text-red-600" />
-                  <span className="text-lg font-bold text-gray-900">{Math.round(activity.averageHeartrate)}</span>
-                  <span className="text-sm text-gray-500">bpm</span>
+                <div className="w-px h-5 bg-gray-200" />
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <Heart className="h-4 w-4 text-red-600" />
+                  <span className="text-base font-bold text-gray-900">{Math.round(activity.averageHeartrate)}</span>
+                  <span className="text-xs text-gray-500">bpm</span>
                 </div>
               </>
             )}
-            {activity.totalElevationGain && (
+            {activity.totalElevationGain > 0 && (
               <>
-                <div className="w-px h-6 bg-gray-200" />
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Mountain className="h-5 w-5 text-orange-600" />
-                  <span className="text-lg font-bold text-gray-900">{Math.round(activity.totalElevationGain)}</span>
-                  <span className="text-sm text-gray-500">m ↑</span>
+                <div className="w-px h-5 bg-gray-200" />
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <Mountain className="h-4 w-4 text-orange-600" />
+                  <span className="text-base font-bold text-gray-900">{Math.round(activity.totalElevationGain)}</span>
+                  <span className="text-xs text-gray-500">m ↑</span>
+                </div>
+              </>
+            )}
+            {activity.calories > 0 && (
+              <>
+                <div className="w-px h-5 bg-gray-200" />
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <Flame className="h-4 w-4 text-amber-600" />
+                  <span className="text-base font-bold text-gray-900">{Math.round(activity.calories)}</span>
+                  <span className="text-xs text-gray-500">cal</span>
+                </div>
+              </>
+            )}
+            {activity.averageCadence > 0 && (
+              <>
+                <div className="w-px h-5 bg-gray-200" />
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <Activity className="h-4 w-4 text-indigo-600" />
+                  <span className="text-base font-bold text-gray-900">{Math.round(activity.averageCadence * 2)}</span>
+                  <span className="text-xs text-gray-500">spm</span>
+                </div>
+              </>
+            )}
+            {activity.averageWatts > 0 && (
+              <>
+                <div className="w-px h-5 bg-gray-200" />
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <Zap className="h-4 w-4 text-yellow-600" />
+                  <span className="text-base font-bold text-gray-900">{Math.round(activity.averageWatts)}</span>
+                  <span className="text-xs text-gray-500">W</span>
                 </div>
               </>
             )}
@@ -516,73 +547,26 @@ export default function ActivityPage() {
         {/* Story Mode: Simplified Layout */}
         {viewMode === 'story' && (
           <>
-            {/* 1. Hero Coach Verdict - Full Width */}
+            {/* 1. Unified Coach Card - Combines Verdict, Next 48 Hours, and Goal Alignment */}
             <div className="mb-6">
               {isFree ? (
                 <LockedFeaturePanel 
                   tier="pro"
-                  title="AI Coach Verdict"
-                  description="Get personalized AI-powered analysis of your run including grade, key takeaways, training consistency metrics, and actionable recommendations."
+                  title="AI Coach Analysis"
+                  description="Get personalized AI-powered analysis of your run including grade, key takeaways, training consistency metrics, recovery guidance, and actionable recommendations."
                 />
               ) : (
-                <CoachVerdict activityId={parseInt(activityId || '0')} />
+                <UnifiedCoachCard 
+                  verdictData={verdictData}
+                  isLoading={!verdictData && subscriptionReady && !isFree}
+                  formattedDistance={activity.formattedDistance}
+                  distanceUnit={activity.distanceUnit}
+                  formattedDuration={activity.formattedDuration}
+                />
               )}
             </div>
-
-            {/* 2. Next 48 Hours + Goal Alignment Side by Side - Bolder styling */}
-            {!isFree && verdictData && (
-              <div className="grid md:grid-cols-2 gap-4 mb-6">
-                <NextSteps
-                  nextSteps={verdictData.nextSteps || []}
-                  consistencyLabel={verdictData.consistencyLabel}
-                  effortScore={verdictData.effortScore}
-                />
-                <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50" data-testid="card-goal-alignment">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-lg font-bold">
-                      <Sparkles className="w-6 h-6 text-blue-600" />
-                      Goal Alignment
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-base font-medium text-gray-700">Training Consistency</span>
-                        <span className="text-lg font-bold text-blue-700 capitalize">{verdictData.consistencyLabel?.replace('_', ' ')}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-base font-medium text-gray-700">Effort vs Average</span>
-                        <span className={`text-lg font-bold ${verdictData.comparison?.effortVsAvg > 0 ? 'text-orange-600' : 'text-green-600'}`}>
-                          {verdictData.comparison?.effortVsAvg > 0 ? '+' : ''}{verdictData.comparison?.effortVsAvg}%
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-base font-medium text-gray-700">Distance vs Average</span>
-                        <span className={`text-lg font-bold ${verdictData.comparison?.distanceVsAvg > 0 ? 'text-blue-600' : 'text-gray-600'}`}>
-                          {verdictData.comparison?.distanceVsAvg > 0 ? '+' : ''}{verdictData.comparison?.distanceVsAvg}%
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex gap-3 mt-5 pt-4 border-t border-blue-200">
-                      <Link href="/training-plans" className="flex-1">
-                        <Button variant="outline" className="w-full font-semibold border-blue-300 text-blue-700 hover:bg-blue-100" data-testid="button-view-training-plan">
-                          <Flag className="h-4 w-4 mr-2" />
-                          Training Plan
-                        </Button>
-                      </Link>
-                      <Link href="/coach" className="flex-1">
-                        <Button variant="outline" className="w-full font-semibold border-blue-300 text-blue-700 hover:bg-blue-100" data-testid="button-ask-coach">
-                          <Sparkles className="h-4 w-4 mr-2" />
-                          Ask Coach
-                        </Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
             
-            {/* 3. Route Map - Always visible */}
+            {/* 2. Route Map - Always visible with better sizing */}
             <div className="mb-6">
               <Card className="overflow-hidden">
                 <CardHeader className="pb-3">
@@ -592,7 +576,7 @@ export default function ActivityPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <div className="h-80">
+                  <div className="h-96 md:h-[400px]">
                     <RouteMap 
                       polyline={activity.polyline}
                       startLat={activity.startLatitude}

@@ -49,11 +49,11 @@ export default function RouteMap({ polyline, startLat, startLng, endLat, endLng,
           // Convert coordinates to Leaflet LatLng format
           const latLngs: L.LatLngExpression[] = coordinates.map(([lat, lng]) => [lat, lng]);
 
-          // Draw the route polyline
+          // Draw the route polyline with high-visibility blue color
           const polylineLayer = L.polyline(latLngs, {
-            color: '#ff6b35',
+            color: '#2563eb',
             weight: strokeWeight,
-            opacity: 0.9,
+            opacity: 0.95,
             lineJoin: 'round',
             lineCap: 'round',
           }).addTo(map);
