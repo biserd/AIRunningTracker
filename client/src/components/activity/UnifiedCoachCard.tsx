@@ -152,30 +152,66 @@ export default function UnifiedCoachCard({
         </div>
 
         {/* Comparison Stats Section */}
-        <div className="p-5 border-b">
-          <p className="text-xs text-gray-400 text-center mb-3">vs last 42 days</p>
-          <div className="grid grid-cols-4 gap-4">
-            <div className="text-center">
-              <p className="text-xs text-gray-500 mb-1">Pace</p>
-              <p className={`text-base font-bold ${getStatColor('Pace', comparison.paceVsAvg)}`} data-testid="stat-pace">
+        <div className="p-5 border-b bg-gradient-to-b from-white to-slate-50/50">
+          <p className="text-sm font-medium text-gray-500 text-center mb-4">vs last 42 days</p>
+          <div className="grid grid-cols-4 gap-3">
+            <div className="text-center p-3 rounded-xl bg-white shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                {comparison.paceVsAvg < 0 ? (
+                  <TrendingUp className="w-4 h-4 text-emerald-500" />
+                ) : comparison.paceVsAvg > 0 ? (
+                  <TrendingDown className="w-4 h-4 text-red-500" />
+                ) : (
+                  <Minus className="w-4 h-4 text-gray-400" />
+                )}
+                <p className="text-sm font-semibold text-gray-600">Pace</p>
+              </div>
+              <p className={`text-2xl font-black tracking-tight ${getStatColor('Pace', comparison.paceVsAvg)}`} data-testid="stat-pace">
                 {comparison.paceVsAvg > 0 ? '+' : ''}{comparison.paceVsAvg}%
               </p>
             </div>
-            <div className="text-center">
-              <p className="text-xs text-gray-500 mb-1">Heart Rate</p>
-              <p className={`text-base font-bold ${getStatColor('HR', comparison.hrVsAvg)}`} data-testid="stat-hr">
+            <div className="text-center p-3 rounded-xl bg-white shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                {comparison.hrVsAvg < 0 ? (
+                  <TrendingDown className="w-4 h-4 text-green-500" />
+                ) : comparison.hrVsAvg > 0 ? (
+                  <TrendingUp className="w-4 h-4 text-rose-500" />
+                ) : (
+                  <Minus className="w-4 h-4 text-gray-400" />
+                )}
+                <p className="text-sm font-semibold text-gray-600">Heart Rate</p>
+              </div>
+              <p className={`text-2xl font-black tracking-tight ${getStatColor('HR', comparison.hrVsAvg)}`} data-testid="stat-hr">
                 {comparison.hrVsAvg > 0 ? '+' : ''}{comparison.hrVsAvg}%
               </p>
             </div>
-            <div className="text-center">
-              <p className="text-xs text-gray-500 mb-1">Effort</p>
-              <p className={`text-base font-bold ${getStatColor('Effort', comparison.effortVsAvg)}`} data-testid="stat-effort">
+            <div className="text-center p-3 rounded-xl bg-white shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                {comparison.effortVsAvg > 15 ? (
+                  <TrendingUp className="w-4 h-4 text-orange-500" />
+                ) : comparison.effortVsAvg < -15 ? (
+                  <TrendingDown className="w-4 h-4 text-blue-500" />
+                ) : (
+                  <Minus className="w-4 h-4 text-gray-400" />
+                )}
+                <p className="text-sm font-semibold text-gray-600">Effort</p>
+              </div>
+              <p className={`text-2xl font-black tracking-tight ${getStatColor('Effort', comparison.effortVsAvg)}`} data-testid="stat-effort">
                 {comparison.effortVsAvg > 0 ? '+' : ''}{comparison.effortVsAvg}%
               </p>
             </div>
-            <div className="text-center">
-              <p className="text-xs text-gray-500 mb-1">Distance</p>
-              <p className={`text-base font-bold ${getStatColor('Distance', comparison.distanceVsAvg)}`} data-testid="stat-distance">
+            <div className="text-center p-3 rounded-xl bg-white shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                {comparison.distanceVsAvg > 0 ? (
+                  <TrendingUp className="w-4 h-4 text-blue-500" />
+                ) : comparison.distanceVsAvg < 0 ? (
+                  <TrendingDown className="w-4 h-4 text-gray-400" />
+                ) : (
+                  <Minus className="w-4 h-4 text-gray-400" />
+                )}
+                <p className="text-sm font-semibold text-gray-600">Distance</p>
+              </div>
+              <p className={`text-2xl font-black tracking-tight ${getStatColor('Distance', comparison.distanceVsAvg)}`} data-testid="stat-distance">
                 {comparison.distanceVsAvg > 0 ? '+' : ''}{comparison.distanceVsAvg}%
               </p>
             </div>
