@@ -126,5 +126,25 @@ export function useFeatureAccess() {
     
     // Trial status for UI
     isOnReverseTrial: isReverseTrial,
+    
+    // Activity page specific gates
+    activity: {
+      // Story Mode
+      coachVerdict: hasProAccess ? 'full' : 'basic',
+      nextSteps: hasProAccess ? 'full' : 'basic',
+      routeMap: true, // Always visible
+      baselineComparison: hasProAccess, // "vs 42-day avg" tiles
+      
+      // Deep Dive Mode
+      performanceMetrics: hasProAccess, // Drift, Pacing, vs Baseline
+      timeline: hasProAccess ? 'full' : 'readonly',
+      splits: hasProAccess ? 'full' : 'preview', // 3 splits for free
+      hrCadencePower: hasProAccess,
+      
+      // Premium only
+      askCoach: isPremium,
+      activityComparison: isPremium,
+      goalPlanActions: isPremium, // rest day / swap / reschedule
+    }
   };
 }
