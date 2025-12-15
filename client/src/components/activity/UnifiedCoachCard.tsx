@@ -331,7 +331,7 @@ export default function UnifiedCoachCard({
                     Training Plan
                   </Button>
                 </Link>
-                <Link href="/coach">
+                <Link href="/chat-history">
                   <Button size="sm" className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white" data-testid="button-ask-coach">
                     <Sparkles className="h-3.5 w-3.5 mr-1.5" />
                     Ask Coach
