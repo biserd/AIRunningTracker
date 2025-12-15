@@ -1365,23 +1365,54 @@ ${allPages.map(page => `  <url>
           activitiesChange: monthlyActivitiesChange !== null ? Math.round(monthlyActivitiesChange) : null,
           trainingLoadChange: lastMonthActivitiesCount > 0 ? Math.round(((totalActivities * 85 - lastMonthActivitiesCount * 85) / (lastMonthActivitiesCount * 85)) * 100) : null,
         },
-        activities: activities.map(activity => ({
-          id: activity.id,
-          name: activity.name,
-          distance: user.unitPreference === "miles" ? 
-            ((activity.distance / 1000) * 0.621371).toFixed(1) : 
-            (activity.distance / 1000).toFixed(1),
-          pace: activity.distance > 0 ? (() => {
-            const distanceInKm = activity.distance / 1000;
-            const pacePerKm = (activity.movingTime / 60) / distanceInKm;
-            const paceToShow = user.unitPreference === "miles" ? pacePerKm / 0.621371 : pacePerKm;
-            return `${Math.floor(paceToShow)}:${String(Math.round((paceToShow % 1) * 60)).padStart(2, '0')}`;
-          })() : "0:00",
-          duration: `${Math.floor(activity.movingTime / 60)}:${String(activity.movingTime % 60).padStart(2, '0')}`,
-          elevation: `+${Math.round(activity.totalElevationGain)}m`,
-          date: new Date(activity.startDate).toLocaleDateString(),
-          startDate: activity.startDate,
-        })),
+        activities: (() => {
+          const avgDistance = activities.length > 0 
+            ? activities.reduce((sum, a) => sum + (a.distance || 0), 0) / activities.length 
+            : 0;
+          const avgPaceValue = activities.length > 0 && activities.filter(a => a.distance > 0).length > 0
+            ? activities.filter(a => a.distance > 0).reduce((sum, a) => {
+                const distKm = a.distance / 1000;
+                return sum + (a.movingTime / 60) / distKm;
+              }, 0) / activities.filter(a => a.distance > 0).length
+            : 0;
+          
+          return activities.map(activity => {
+            let grade: "A" | "B" | "C" | "D" | "F" = "C";
+            if (avgDistance > 0) {
+              const distanceRatio = activity.distance / avgDistance;
+              const distKm = activity.distance / 1000;
+              const pacePerKm = distKm > 0 ? (activity.movingTime / 60) / distKm : 0;
+              const paceRatio = avgPaceValue > 0 ? avgPaceValue / pacePerKm : 1;
+              
+              const score = (distanceRatio * 0.6) + (paceRatio * 0.4);
+              
+              if (score >= 1.3) grade = "A";
+              else if (score >= 1.1) grade = "B";
+              else if (score >= 0.9) grade = "C";
+              else if (score >= 0.7) grade = "D";
+              else grade = "F";
+            }
+            
+            return {
+              id: activity.id,
+              name: activity.name,
+              distance: user.unitPreference === "miles" ? 
+                ((activity.distance / 1000) * 0.621371).toFixed(1) : 
+                (activity.distance / 1000).toFixed(1),
+              pace: activity.distance > 0 ? (() => {
+                const distanceInKm = activity.distance / 1000;
+                const pacePerKm = (activity.movingTime / 60) / distanceInKm;
+                const paceToShow = user.unitPreference === "miles" ? pacePerKm / 0.621371 : pacePerKm;
+                return `${Math.floor(paceToShow)}:${String(Math.round((paceToShow % 1) * 60)).padStart(2, '0')}`;
+              })() : "0:00",
+              duration: `${Math.floor(activity.movingTime / 60)}:${String(activity.movingTime % 60).padStart(2, '0')}`,
+              elevation: `+${Math.round(activity.totalElevationGain)}m`,
+              date: new Date(activity.startDate).toLocaleDateString(),
+              startDate: activity.startDate,
+              grade,
+            };
+          });
+        })(),
         insights: {
           performance: insights.find(i => i.type === 'performance'),
           pattern: insights.find(i => i.type === 'pattern'),

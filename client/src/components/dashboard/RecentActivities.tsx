@@ -12,12 +12,21 @@ interface ActivityData {
   duration: string;
   elevation: string;
   date: string;
+  grade?: "A" | "B" | "C" | "D" | "F";
 }
 
 interface RecentActivitiesProps {
   activities: ActivityData[];
   unitPreference?: string;
 }
+
+const gradeColors: Record<string, string> = {
+  A: "bg-gradient-to-br from-emerald-500 to-green-600",
+  B: "bg-gradient-to-br from-blue-500 to-indigo-600",
+  C: "bg-gradient-to-br from-yellow-500 to-amber-600",
+  D: "bg-gradient-to-br from-orange-500 to-red-500",
+  F: "bg-gradient-to-br from-red-600 to-rose-700"
+};
 
 export default function RecentActivities({ activities, unitPreference }: RecentActivitiesProps) {
   const getActivityIcon = (index: number) => {
@@ -62,19 +71,25 @@ export default function RecentActivities({ activities, unitPreference }: RecentA
         <div className="space-y-4">
           {activities.slice(0, 3).map((activity, index) => (
             <Link key={activity.id} href={`/activity/${activity.id}`}>
-              <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getActivityIcon(index)}`}>
-                  <Activity size={20} />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-charcoal">{activity.name}</h4>
+              <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" data-testid={`activity-row-${activity.id}`}>
+                {activity.grade ? (
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold text-white shadow-md ${gradeColors[activity.grade]}`} data-testid={`grade-badge-${activity.id}`}>
+                    {activity.grade}
+                  </div>
+                ) : (
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getActivityIcon(index)}`}>
+                    <Activity size={18} />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-charcoal truncate">{activity.name}</h4>
                   <p className="text-sm text-gray-600">{activity.date}</p>
                 </div>
                 <div className="text-right">
                   <p className="font-semibold text-charcoal">{activity.distance} {unitPreference === "miles" ? "mi" : "km"}</p>
                   <p className="text-sm text-gray-600">{activity.pace} /{unitPreference === "miles" ? "mi" : "km"}</p>
                 </div>
-                <div className="text-right">
+                <div className="text-right hidden sm:block">
                   <p className="font-semibold text-charcoal">{activity.duration}</p>
                   <p className="text-sm text-gray-600">{activity.elevation}</p>
                 </div>

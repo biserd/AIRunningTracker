@@ -435,7 +435,7 @@ export default function ActivityPage() {
                 data-testid="toggle-story"
               >
                 <BookOpen className="h-4 w-4" />
-                Story
+                The Story
               </button>
               <button
                 onClick={() => handleViewModeChange('deep_dive')}
@@ -447,7 +447,7 @@ export default function ActivityPage() {
                 data-testid="toggle-deep-dive"
               >
                 <BarChart2 className="h-4 w-4" />
-                Deep Dive
+                The Deep Dive
               </button>
             </div>
           </div>
