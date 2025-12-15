@@ -35,18 +35,19 @@ const features: PlanFeature[] = [
   { name: "Strava Integration", free: true, pro: true, premium: true },
   { name: "Activity History", free: "Unlimited", pro: "Unlimited", premium: "Unlimited" },
   { name: "Sync Volume", free: "Sync 100+ activities", pro: "Sync 100+ activities", premium: "Sync 100+ activities" },
-  { name: "Basic Activity Analytics (splits, zones, cadence/power charts)", free: true, pro: true, premium: true },
   { name: "Runner Score", free: true, pro: true, premium: true },
   { name: "Free Calculator Tools", free: true, pro: true, premium: true },
   
-  // Story Mode Activity Page Section
-  { name: "Story Mode Activity Page", free: "", pro: "", premium: "", isSection: true, isNew: true },
-  { name: "Story View Activity Page (clean summary + KPIs)", free: true, pro: true, premium: true },
-  { name: "Run Timeline (pace over time)", free: "Pace only", pro: "Pace + HR/power overlays", premium: "All overlays" },
-  { name: "AI Coach Verdict (grade + key takeaways)", free: "3/month", pro: "Unlimited", premium: "Unlimited" },
-  { name: "AI Key Moments (drift onset, big slowdown, spikes)", free: false, pro: true, premium: true },
-  { name: "Data Quality Checks (GPS/HR issues, pause effects)", free: false, pro: true, premium: true },
-  { name: "Compared-to-You Insights (percentiles vs recent baseline)", free: false, pro: true, premium: true },
+  // Activity Detail Page Section
+  { name: "Activity Analysis", free: "", pro: "", premium: "", isSection: true, isNew: true },
+  { name: "Route Map with Key Moments", free: true, pro: true, premium: true },
+  { name: "AI Coach Verdict (grade + summary)", free: "Basic", pro: "Full", premium: "Full" },
+  { name: "Performance Metrics (Drift, Pacing, Baseline)", free: false, pro: true, premium: true },
+  { name: "Interactive Run Timeline", free: false, pro: true, premium: true },
+  { name: "Detailed Splits Analysis", free: false, pro: true, premium: true },
+  { name: "Heart Rate, Cadence & Power Charts", free: false, pro: true, premium: true },
+  { name: "Activity Comparison Tool", free: false, pro: false, premium: true },
+  { name: "Ask AI Coach about this run", free: false, pro: false, premium: true },
   
   // Training & Coaching Section
   { name: "Training & Coaching", free: "", pro: "", premium: "", isSection: true },
@@ -91,6 +92,20 @@ export default function PricingPage() {
       return (
         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
           Preview
+        </span>
+      );
+    }
+    if (value === "Basic") {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+          Basic
+        </span>
+      );
+    }
+    if (value === "Full") {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+          Full
         </span>
       );
     }
@@ -172,15 +187,15 @@ export default function PricingPage() {
               <ul className="space-y-3 mb-6 text-sm text-gray-600">
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>Track your runs and progress</span>
+                  <span>Sync unlimited activities from Strava</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>See your Runner Score</span>
+                  <span>Route map with key moments</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>Get started in 60 seconds</span>
+                  <span>Basic AI Coach verdict (grade + summary)</span>
                 </li>
               </ul>
 
@@ -234,15 +249,15 @@ export default function PricingPage() {
               <ul className="space-y-3 mb-6 text-sm text-gray-600">
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-strava-orange mt-0.5 flex-shrink-0" />
-                  <span>Predict your race times accurately</span>
+                  <span>Full performance metrics (drift, pacing, baseline)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-strava-orange mt-0.5 flex-shrink-0" />
-                  <span>Catch injury risks before they happen</span>
+                  <span>Interactive timeline, splits, HR & power charts</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-strava-orange mt-0.5 flex-shrink-0" />
-                  <span>Train smarter with personalized plans</span>
+                  <span>AI training plans & race predictions</span>
                 </li>
               </ul>
 
@@ -299,15 +314,15 @@ export default function PricingPage() {
               <ul className="space-y-3 mb-6 text-sm text-gray-300">
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-yellow-400 mt-0.5 flex-shrink-0" />
-                  <span>Chat with your AI coach anytime</span>
+                  <span>Ask AI Coach about any run</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-yellow-400 mt-0.5 flex-shrink-0" />
-                  <span>Analyze your running form in detail</span>
+                  <span>Compare runs side-by-side</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-yellow-400 mt-0.5 flex-shrink-0" />
-                  <span>Get priority help when you need it</span>
+                  <span>Everything in Pro, plus form stability analysis</span>
                 </li>
               </ul>
 
