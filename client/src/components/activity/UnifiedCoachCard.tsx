@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Award, TrendingUp, TrendingDown, Minus, CheckCircle2, XCircle, AlertCircle, Sparkles, Flag, ArrowRight } from "lucide-react";
+import { Award, TrendingUp, TrendingDown, Minus, CheckCircle2, XCircle, AlertCircle, Sparkles, Flag, ArrowRight, Clock, Calendar, Zap } from "lucide-react";
 import { Link } from "wouter";
 
 interface VerdictEvidence {
@@ -29,9 +29,6 @@ interface CoachVerdictData {
 interface UnifiedCoachCardProps {
   verdictData: CoachVerdictData | null | undefined;
   isLoading?: boolean;
-  formattedDistance?: string;
-  distanceUnit?: string;
-  formattedDuration?: string;
 }
 
 const gradeColors: Record<string, { ring: string; text: string; bg: string }> = {
@@ -49,29 +46,66 @@ function gradeToScore(grade: string, effortScore: number): number {
   return Math.round(Math.min(100, Math.max(0, base + effortModifier)));
 }
 
+function getRecoveryHours(consistencyLabel: string): string {
+  switch (consistencyLabel) {
+    case 'recovery':
+    case 'easier':
+      return '12-24';
+    case 'consistent':
+      return '24-36';
+    case 'harder':
+      return '36-48';
+    case 'much_harder':
+      return '48-72';
+    default:
+      return '24-48';
+  }
+}
+
+function getTrainingGuidance(consistencyLabel: string): string {
+  switch (consistencyLabel) {
+    case 'recovery':
+      return 'Ready for your next workout';
+    case 'easier':
+      return 'Light activity is fine tomorrow';
+    case 'consistent':
+      return 'Normal training schedule continues';
+    case 'harder':
+      return 'Focus on easy runs for the next 36-48h';
+    case 'much_harder':
+      return 'Prioritize rest and recovery';
+    default:
+      return 'Listen to your body';
+  }
+}
+
+function formatConsistency(label: string) {
+  return label.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+}
+
 function CircularGauge({ grade, score }: { grade: string; score: number }) {
   const colors = gradeColors[grade] || gradeColors.C;
-  const circumference = 2 * Math.PI * 45;
+  const circumference = 2 * Math.PI * 54;
   const strokeDashoffset = circumference - (score / 100) * circumference;
 
   return (
     <div className="relative flex flex-col items-center">
-      <svg width="100" height="100" viewBox="0 0 100 100" className="transform -rotate-90">
+      <svg width="140" height="140" viewBox="0 0 140 140" className="transform -rotate-90">
         <circle
-          cx="50"
-          cy="50"
-          r="45"
+          cx="70"
+          cy="70"
+          r="54"
           fill="none"
           stroke="currentColor"
-          strokeWidth="8"
+          strokeWidth="10"
           className="text-gray-200"
         />
         <circle
-          cx="50"
-          cy="50"
-          r="45"
+          cx="70"
+          cy="70"
+          r="54"
           fill="none"
-          strokeWidth="8"
+          strokeWidth="10"
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
@@ -80,11 +114,11 @@ function CircularGauge({ grade, score }: { grade: string; score: number }) {
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className={`text-4xl font-black ${colors.text}`} data-testid="grade-badge">
+        <span className={`text-5xl font-black ${colors.text}`} data-testid="grade-badge">
           {grade}
         </span>
       </div>
-      <p className="mt-1 text-sm font-bold text-gray-600" data-testid="score-display">{score}/100</p>
+      <p className="mt-2 text-base font-bold text-gray-700" data-testid="score-display">{score}/100</p>
     </div>
   );
 }
@@ -112,12 +146,12 @@ function ComparisonStat({
   const iconColor = isPositive ? "text-emerald-500" : isNegative ? "text-red-400" : "text-gray-400";
 
   return (
-    <div className="flex items-center justify-between p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+    <div className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
       <div className="flex items-center gap-2">
         <Icon className={`w-4 h-4 ${iconColor}`} />
-        <span className="text-xs font-medium text-gray-600">{label}</span>
+        <span className="text-sm font-medium text-gray-600">{label}</span>
       </div>
-      <span className={`text-sm font-bold ${color}`}>
+      <span className={`text-base font-bold ${color}`}>
         {value > 0 ? "+" : ""}{value}%
       </span>
     </div>
@@ -133,15 +167,15 @@ export default function UnifiedCoachCard({
       <Card className="border shadow-sm" data-testid="unified-coach-card-loading">
         <CardContent className="p-6">
           <div className="flex items-start gap-6">
-            <Skeleton className="w-[100px] h-[100px] rounded-full" />
+            <Skeleton className="w-[140px] h-[140px] rounded-full" />
             <div className="flex-1 space-y-3">
               <Skeleton className="h-6 w-48" />
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-3/4" />
             </div>
-            <div className="w-40 space-y-2">
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
+            <div className="w-48 space-y-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
             </div>
           </div>
         </CardContent>
@@ -151,14 +185,16 @@ export default function UnifiedCoachCard({
 
   if (!verdictData) return null;
 
-  const { grade, gradeLabel, summary, comparison, nextSteps, effortScore, evidenceBullets } = verdictData;
+  const { grade, gradeLabel, summary, comparison, nextSteps, effortScore, consistencyLabel, evidenceBullets } = verdictData;
   const score = gradeToScore(grade, effortScore);
+  const recoveryHours = getRecoveryHours(consistencyLabel);
+  const trainingGuidance = getTrainingGuidance(consistencyLabel);
 
   return (
     <Card className="border shadow-sm overflow-hidden" data-testid="unified-coach-card">
       <CardContent className="p-0">
-        <div className="bg-gradient-to-r from-slate-50 to-gray-50 p-5">
-          <div className="flex items-center gap-2 text-gray-600 mb-4">
+        <div className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+          <div className="flex items-center gap-2 text-gray-600 mb-5">
             <Award className="w-5 h-5 text-orange-500" />
             <span className="font-semibold text-gray-800">Coach Verdict</span>
           </div>
@@ -170,8 +206,8 @@ export default function UnifiedCoachCard({
               </div>
 
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-gray-900 text-lg" data-testid="grade-label">{gradeLabel}</p>
-                <p className="text-gray-600 text-sm mt-1 mb-3" data-testid="verdict-summary">{summary}</p>
+                <p className="font-bold text-gray-900 text-xl mb-1" data-testid="grade-label">{gradeLabel}</p>
+                <p className="text-gray-600 text-sm mb-4" data-testid="verdict-summary">{summary}</p>
                 
                 {evidenceBullets && evidenceBullets.length > 0 && (
                   <div className="space-y-2" data-testid="evidence-bullets">
@@ -186,8 +222,8 @@ export default function UnifiedCoachCard({
               </div>
             </div>
 
-            <div className="lg:w-48 flex-shrink-0">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 text-center lg:text-left">vs 42-day avg</p>
+            <div className="lg:w-52 flex-shrink-0">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 text-center lg:text-left">vs 42-day avg</p>
               <div className="grid grid-cols-2 lg:grid-cols-1 gap-2">
                 <ComparisonStat label="Pace" value={comparison.paceVsAvg} type="pace" />
                 <ComparisonStat label="Heart Rate" value={comparison.hrVsAvg} type="hr" />
@@ -198,33 +234,73 @@ export default function UnifiedCoachCard({
           </div>
         </div>
 
-        {nextSteps && nextSteps.length > 0 && (
-          <div className="p-4 border-t bg-white">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Next Steps</p>
-                <p className="text-sm text-gray-700 flex items-start gap-2">
-                  <ArrowRight className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
-                  {nextSteps[0]}
-                </p>
+        <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-100">
+          <div className="p-5 bg-gradient-to-br from-amber-50/50 to-orange-50/50">
+            <div className="flex items-center gap-2 mb-4">
+              <Clock className="w-5 h-5 text-amber-600" />
+              <span className="font-bold text-gray-800">Next 48 Hours</span>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white/70 border border-amber-100">
+                <Zap className="w-4 h-4 text-amber-600" />
+                <div>
+                  <p className="font-semibold text-gray-900 text-sm">{formatConsistency(consistencyLabel)} Effort</p>
+                  <p className="text-xs text-gray-500">Effort Score: {effortScore}</p>
+                </div>
               </div>
-              <div className="flex gap-2 ml-4">
-                <Link href="/training-plans">
-                  <Button variant="outline" size="sm" className="text-xs font-semibold" data-testid="button-training-plan">
-                    <Flag className="h-3.5 w-3.5 mr-1.5" />
-                    Plan
-                  </Button>
-                </Link>
-                <Link href="/coach">
-                  <Button variant="outline" size="sm" className="text-xs font-semibold" data-testid="button-ask-coach">
-                    <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                    Coach
-                  </Button>
-                </Link>
+              
+              <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white/70 border border-amber-100">
+                <Calendar className="w-4 h-4 text-amber-600" />
+                <div>
+                  <p className="font-semibold text-gray-900 text-sm">Recovery Window</p>
+                  <p className="text-xs text-gray-500">{recoveryHours} hours recommended</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white/70 border border-amber-100">
+                <ArrowRight className="w-4 h-4 text-amber-600" />
+                <div>
+                  <p className="font-semibold text-gray-900 text-sm">Guidance</p>
+                  <p className="text-xs text-gray-500">{trainingGuidance}</p>
+                </div>
               </div>
             </div>
           </div>
-        )}
+
+          <div className="p-5 bg-white">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-5 h-5 text-blue-600" />
+              <span className="font-bold text-gray-800">Next Steps</span>
+            </div>
+            
+            {nextSteps && nextSteps.length > 0 && (
+              <div className="space-y-2 mb-4">
+                {nextSteps.slice(0, 2).map((step, idx) => (
+                  <p key={idx} className="text-sm text-gray-700 flex items-start gap-2">
+                    <span className="text-blue-500 font-bold">{idx + 1}.</span>
+                    {step}
+                  </p>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-3 border-t border-gray-100">
+              <Link href="/training-plans" className="flex-1">
+                <Button variant="outline" size="sm" className="w-full text-xs font-semibold border-blue-200 text-blue-700 hover:bg-blue-50" data-testid="button-training-plan">
+                  <Flag className="h-3.5 w-3.5 mr-1.5" />
+                  Training Plan
+                </Button>
+              </Link>
+              <Link href="/coach" className="flex-1">
+                <Button variant="outline" size="sm" className="w-full text-xs font-semibold border-blue-200 text-blue-700 hover:bg-blue-50" data-testid="button-ask-coach">
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                  Ask Coach
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

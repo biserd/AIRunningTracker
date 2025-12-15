@@ -1379,17 +1379,28 @@ ${allPages.map(page => `  <url>
           return activities.map(activity => {
             let grade: "A" | "B" | "C" | "D" | "F" = "C";
             if (avgDistance > 0) {
+              let score = 70;
+              
               const distanceRatio = activity.distance / avgDistance;
               const distKm = activity.distance / 1000;
               const pacePerKm = distKm > 0 ? (activity.movingTime / 60) / distKm : 0;
               const paceRatio = avgPaceValue > 0 ? avgPaceValue / pacePerKm : 1;
               
-              const score = (distanceRatio * 0.6) + (paceRatio * 0.4);
+              if (paceRatio > 1.1) score += 15;
+              else if (paceRatio > 1.05) score += 10;
+              else if (paceRatio > 1.0) score += 5;
+              else if (paceRatio < 0.9) score -= 10;
+              else if (paceRatio < 0.95) score -= 5;
               
-              if (score >= 1.3) grade = "A";
-              else if (score >= 1.1) grade = "B";
-              else if (score >= 0.9) grade = "C";
-              else if (score >= 0.7) grade = "D";
+              if (distanceRatio > 1.2) score += 10;
+              else if (distanceRatio > 1.0) score += 5;
+              else if (distanceRatio < 0.5) score -= 15;
+              else if (distanceRatio < 0.8) score -= 5;
+              
+              if (score >= 90) grade = "A";
+              else if (score >= 80) grade = "B";
+              else if (score >= 70) grade = "C";
+              else if (score >= 60) grade = "D";
               else grade = "F";
             }
             
@@ -2897,16 +2908,28 @@ ${allPages.map(page => `  <url>
         return activities.map((activity: any) => {
           let grade: "A" | "B" | "C" | "D" | "F" = "C";
           if (avgDistance > 0) {
+            let score = 70;
+            
             const distanceRatio = activity.distance / avgDistance;
             const distKm = activity.distance / 1000;
             const pacePerKm = distKm > 0 ? (activity.movingTime / 60) / distKm : 0;
             const paceRatio = avgPaceValue > 0 ? avgPaceValue / pacePerKm : 1;
-            const score = (distanceRatio * 0.6) + (paceRatio * 0.4);
             
-            if (score >= 1.3) grade = "A";
-            else if (score >= 1.1) grade = "B";
-            else if (score >= 0.9) grade = "C";
-            else if (score >= 0.7) grade = "D";
+            if (paceRatio > 1.1) score += 15;
+            else if (paceRatio > 1.05) score += 10;
+            else if (paceRatio > 1.0) score += 5;
+            else if (paceRatio < 0.9) score -= 10;
+            else if (paceRatio < 0.95) score -= 5;
+            
+            if (distanceRatio > 1.2) score += 10;
+            else if (distanceRatio > 1.0) score += 5;
+            else if (distanceRatio < 0.5) score -= 15;
+            else if (distanceRatio < 0.8) score -= 5;
+            
+            if (score >= 90) grade = "A";
+            else if (score >= 80) grade = "B";
+            else if (score >= 70) grade = "C";
+            else if (score >= 60) grade = "D";
             else grade = "F";
           }
           return { ...activity, grade };

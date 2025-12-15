@@ -559,9 +559,6 @@ export default function ActivityPage() {
                 <UnifiedCoachCard 
                   verdictData={verdictData}
                   isLoading={!verdictData && subscriptionReady && !isFree}
-                  formattedDistance={activity.formattedDistance}
-                  distanceUnit={activity.distanceUnit}
-                  formattedDuration={activity.formattedDuration}
                 />
               )}
             </div>
