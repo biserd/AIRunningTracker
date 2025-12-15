@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, Thermometer, BarChart3, Timer, Trophy, Mountain, Pause, Flag, Users, BookOpen, BarChart2, ChevronDown, ChevronUp, Loader2, Lock, Sparkles } from "lucide-react";
 import { Link } from "wouter";
 import AppHeader from "@/components/AppHeader";
-import RouteMap, { KeyMoment } from "../components/RouteMap";
+import RouteMap, { KeyMoment } from "@/components/RouteMap";
 import DetailedSplitsAnalysis from "@/components/activity/DetailedSplitsAnalysis";
 import CoachVerdict from "@/components/activity/CoachVerdict";
 import TrainingConsistency from "@/components/activity/TrainingConsistency";
