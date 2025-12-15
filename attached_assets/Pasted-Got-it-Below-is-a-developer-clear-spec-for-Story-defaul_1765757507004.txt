@@ -1,0 +1,255 @@
+Got it. Below is a **developer-clear spec** for **Story** (default) and **Deep Dive** (evidence), using the **components you already have** in the screenshot, plus a **Goal/Plan layer** (incl. “Take a rest day”) and **Free/Pro/Premium gating** that stays user-friendly.
+
+---
+
+# 1) Component inventory (what you already have)
+
+Use these exact names (or close) so your devs can map 1:1:
+
+1. **Activity Header**
+
+   * Title (“Afternoon Run”), date, “View on Strava”, “Share”, view toggle (Story / Deep Dive / Minimal)
+2. **Key Stats Strip**
+
+   * Distance, Time, Pace, Avg HR, Elev Gain, Avg Power, Avg Cadence (icons row)
+3. **Coach Verdict Card**
+
+   * Grade (C), label (“Solid Effort”), short explanation
+   * “vs last 42 days” deltas (Pace/HR/Effort/Distance)
+4. **Next 48 Hours Card**
+
+   * Harder effort guidance, Recovery window, Training guidance, Coach tip
+   * (You mentioned you already have actions like “Take a rest day”)
+5. **Run Timeline Chart**
+
+   * Toggle metrics (Pace/HR/Power/Cadence) + Elevation overlay, with legend/markers
+   * Chips: Drift %, Pacing %, Quality %, HR baseline (etc.)
+6. **Route & Details**
+
+   * Map + Details table (type, avg/max HR, stop time, elevation range, avg/max power, etc.)
+7. **Performance Analysis**
+
+   * Cards: Pace Analysis, Running Form, Heart Rate Zone (short text)
+8. **Detailed Charts & Splits**
+
+   * Detailed Splits Analysis (table/chart/analysis toggle)
+   * Heart Rate Analysis chart (zones)
+   * Cadence Analysis chart
+   * Power Analysis chart
+
+---
+
+# 2) STORY view (default): “Verdict → Why → What next → Proof-lite”
+
+**Goal:** user understands the workout in **10 seconds** without scrolling forever.
+
+## Story layout order (exact)
+
+### S1) Activity Header (existing)
+
+* Keep as-is.
+* View toggle: **Story (default)**, Deep Dive.
+
+### S2) Key Stats Strip (existing, but “Story-capped”)
+
+* Show max **5 primary stats** in Story (recommend: Distance, Time, Pace, Avg HR, Effort/Load).
+* Everything else behind **“More stats”** (opens modal or expands).
+
+**Tier note:** Free shows 5; Pro/Premium can show 7 but still capped visually.
+
+### S3) Coach Verdict Card (existing, elevated to “Hero”)
+
+* Make it full-width and visually dominant.
+* Content stays the same but with a strict structure:
+
+  * Grade + label
+  * 1-sentence summary
+  * 2–3 bullets (“What went well / What limited you / One focus”)
+
+**Move the “vs last 42 days” deltas** into:
+
+* Pro/Premium: visible by default (small row)
+* Free: collapsed with “Unlock comparisons”
+
+### S4) Goals & Next 48 Hours (existing Next 48 Hours + new Goal Context)
+
+Place these side-by-side on desktop:
+
+**Left: Next 48 Hours (existing)**
+
+* Keep: Recovery window + training guidance + coach tip
+* Add **primary action buttons** (Goal-aware):
+
+  * **Take a rest day** (always available if Training Plan exists; otherwise creates a “Rest Day” goal action)
+  * **Mark next workout as Easy** (or “Swap next workout”)
+  * **Add to plan** (if no plan: prompt to set a goal/plan)
+
+**Right: Goal Alignment Card (NEW but simple)**
+
+* Reads from your existing goal/plan facilities
+* Example fields:
+
+  * Current Goal: “Base building / Marathon / 5K PR / Weekly mileage”
+  * Progress: “This run: 4.35 mi → Week: 12.8/25 mi”
+  * Alignment: “On track / Slightly high intensity / Needs more Z2”
+  * CTA: **Adjust goal** (Premium) / **Set a goal** (Free/Pro)
+
+> This is how “Take a rest day” becomes contextual and not just a random button.
+
+### S5) Run Timeline (existing, but “Story simplified”)
+
+* Default view in Story: **Pace + HR** (and Elevation if you want one overlay).
+* Hide the multi-toggles behind a single dropdown: “Metric: Pace/HR/Power/Cadence”
+* Show **2–4 key markers** (AI-selected) on the timeline:
+
+  * “HR drift begins”
+  * “Big slowdown / stop”
+  * “Strong finish”
+  * “Form drop” (if cadence stream exists)
+
+**Chips row stays** (Drift/Pacing/Quality/etc.), but cap to 3 chips in Story.
+
+### S6) Performance Analysis (existing, Story version)
+
+* Show **only 3 cards max** (you already have them):
+
+  * Pace Analysis
+  * Running Form
+  * Heart Rate Zone
+* Each card gets a single CTA: **“See evidence in Deep Dive”** (links to correct Deep Dive tab anchor)
+
+### S7) Route & Details (existing, collapsed preview)
+
+* In Story: show a **small map preview + 3 key details** (e.g., Elev gain, Stop time, Max HR)
+* Add “Open full route & details” → Deep Dive Route tab
+
+✅ **Story hard rule:** No full splits table. No 4-chart grid. No huge details table.
+
+---
+
+# 3) DEEP DIVE view: “Everything measurable + configurable”
+
+**Goal:** analysts/enthusiasts can explore without cluttering Story.
+
+## Deep Dive layout (use what you already have)
+
+### D1) Header + Full Key Stats Strip (existing)
+
+* Show all stats (distance/time/pace/HR/elev/power/cadence etc.)
+
+### D2) Tabbed or Sectioned “Evidence” (recommended tabs)
+
+Each tab is just your existing components in a clean grouping:
+
+1. **Timeline**
+
+* Full Run Timeline with toggles: Pace/HR/Power/Cadence + Elevation
+* Marker legend, zoom/brush (optional)
+
+2. **Splits**
+
+* Detailed Splits Analysis (table / chart / analysis toggles)
+
+3. **Heart Rate**
+
+* Heart Rate Analysis chart + zones breakdown
+
+4. **Cadence**
+
+* Cadence Analysis chart
+
+5. **Power**
+
+* Power Analysis chart
+
+6. **Route & Details**
+
+* Full map + full details table
+
+> If you don’t want tabs, keep sections but add a left “On this page” anchor nav.
+
+### D3) Goal/Plan actions (sticky right rail)
+
+* Keep **Take a rest day**, **Swap workout**, **Mark complete**, **Add note/tag**
+* Show **Goal alignment details** here too (weekly totals, plan compliance)
+
+---
+
+# 4) Tiering that feels user-friendly (no confusion)
+
+Key principle: **everyone gets Story**, but **depth + personalization** increases by tier. Avoid “you can’t even open Deep Dive”.
+
+## Suggested gating by tier (mapped to your components)
+
+### Free
+
+* ✅ Story:
+
+  * Header, capped Key Stats (5)
+  * Coach Verdict (basic)
+  * Next 48 Hours (basic guidance) + “Take a rest day” (if user has a plan, otherwise prompt)
+  * Timeline (simplified, 1 default metric)
+  * Performance Analysis cards (text-only)
+  * Route preview
+* 🔒 Deep Dive:
+
+  * Route & Details (full) ✅
+  * Splits: show **top-level only** (e.g., first N rows or summary) 🔒
+  * HR/Cadence/Power charts blurred/locked 🔒
+  * “vs last 42 days” comparisons locked 🔒
+
+### Pro
+
+* ✅ Story:
+
+  * Everything Free, plus:
+  * “vs last 42 days” deltas visible
+  * Full chips row (drift/pacing/quality/etc.)
+  * Timeline markers (2–4) + metric dropdown
+* ✅ Deep Dive:
+
+  * Full splits table + HR zones + cadence + power (if data exists)
+
+### Premium
+
+* ✅ Story:
+
+  * Everything Pro, plus:
+  * Goal Alignment card becomes “smart” (plan compliance, weekly targets, intensity distribution vs goal)
+  * More actionable CTAs: “Reschedule tomorrow”, “Convert next workout to Z2”, “Reduce intensity this week”
+* ✅ Deep Dive:
+
+  * Adds “analysis mode” in splits (insight narratives, anomaly explanations)
+  * Optional: “Ask AI about this activity” / “Compare to similar runs” (if you have it)
+
+## Locking UX pattern (important)
+
+When something is locked:
+
+* Keep the component in place but **collapsed + teaser line**
+* Button: **Unlock with Pro/Premium**
+* Never block navigation; never show an empty page.
+
+---
+
+# 5) Dev acceptance criteria (so it ships clean)
+
+1. **Story can be consumed in ~2 scrolls** on desktop.
+2. Story always answers:
+
+   * Grade/verdict
+   * Why (3 insights max)
+   * What next (goal-aware actions)
+3. Deep Dive contains **all current charts/splits** without being shown in Story.
+4. “Take a rest day” is accessible from Story and Deep Dive and:
+
+   * If plan exists: modifies next scheduled workout day state
+   * If no plan: prompts “Set a goal / start a simple plan” then applies
+
+---
+
+If you want, I can turn this into a **one-page developer ticket** with:
+
+* component IDs (`<CoachVerdictCard/>`, `<Next48HoursCard/>`, `<GoalAlignmentCard/>`),
+* exact visibility rules per tier,
+* and navigation anchors (e.g., `#deepdive-splits`, `#deepdive-hr`).
