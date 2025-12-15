@@ -851,23 +851,11 @@ export default function ActivityPage() {
             ) : null}
 
             {/* Section 2: Run Timeline */}
-            {isFree ? (
-              <Card className="overflow-hidden">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
-                    <Activity className="w-5 h-5 text-indigo-600" />
-                    Run Timeline
-                    <TierBadge tier="pro" />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <LockedFeaturePanel 
-                    tier="pro"
-                    title="Run Timeline"
-                    description="See your entire run unfold second-by-second with interactive pace, heart rate, and elevation charts."
-                  />
-                </CardContent>
-              </Card>
+            {featureAccess.activity.timeline !== 'full' ? (
+              <LockedFeatureTeaser 
+                tier="pro"
+                teaser="See your run unfold second-by-second with interactive pace, heart rate, and elevation charts"
+              />
             ) : (
               <RunTimeline 
                 streams={performanceData?.streams}
@@ -878,23 +866,11 @@ export default function ActivityPage() {
             )}
 
             {/* Section 3: Splits Analysis */}
-            {isFree ? (
-              <Card className="overflow-hidden">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
-                    <BarChart3 className="w-5 h-5 text-green-600" />
-                    Splits Analysis
-                    <TierBadge tier="pro" />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <LockedFeaturePanel 
-                    tier="pro"
-                    title="Detailed Splits Analysis"
-                    description="Analyze every kilometer or mile split with pace consistency metrics and effort distribution."
-                  />
-                </CardContent>
-              </Card>
+            {featureAccess.activity.splits !== 'full' ? (
+              <LockedFeatureTeaser 
+                tier="pro"
+                teaser="Analyze every split with pace consistency metrics and effort distribution"
+              />
             ) : (
               <DetailedSplitsAnalysis
                 activity={activity}
@@ -905,6 +881,12 @@ export default function ActivityPage() {
             )}
 
             {/* Section 4: Heart Rate, Cadence, Power - Side by Side Grid */}
+            {!featureAccess.activity.hrCadencePower ? (
+              <LockedFeatureTeaser 
+                tier="pro"
+                teaser="Unlock detailed Heart Rate, Cadence, and Power analysis charts"
+              />
+            ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Heart Rate */}
               <Card className="overflow-hidden">
@@ -914,26 +896,18 @@ export default function ActivityPage() {
                       <Heart className="w-5 h-5 text-red-600" />
                       <span className="text-base font-bold">Heart Rate</span>
                     </div>
-                    {!isFree && performanceData?.streams?.heartrate && (
+                    {performanceData?.streams?.heartrate && (
                       <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
                         Real Data
                       </span>
                     )}
-                    {isFree && <TierBadge tier="pro" />}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {isFree ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <Lock className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                      <p className="text-sm">Upgrade to Pro</p>
-                    </div>
-                  ) : (
-                    <HeartRateChart 
-                      activity={activity}
-                      streams={performanceData?.streams}
-                    />
-                  )}
+                  <HeartRateChart 
+                    activity={activity}
+                    streams={performanceData?.streams}
+                  />
                 </CardContent>
               </Card>
 
@@ -945,23 +919,15 @@ export default function ActivityPage() {
                       <Activity className="w-5 h-5 text-purple-600" />
                       <span className="text-base font-bold">Cadence</span>
                     </div>
-                    {!isFree && performanceData?.streams?.cadence?.data && (
+                    {performanceData?.streams?.cadence?.data && (
                       <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
                         Real Data
                       </span>
                     )}
-                    {isFree && <TierBadge tier="pro" />}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {isFree ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <Lock className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                      <p className="text-sm">Upgrade to Pro</p>
-                    </div>
-                  ) : (
-                    <CadenceChart activity={activity} streams={performanceData?.streams} />
-                  )}
+                  <CadenceChart activity={activity} streams={performanceData?.streams} />
                 </CardContent>
               </Card>
 
@@ -973,35 +939,27 @@ export default function ActivityPage() {
                       <Zap className="w-5 h-5 text-yellow-600" />
                       <span className="text-base font-bold">Power</span>
                     </div>
-                    {!isFree && performanceData?.streams?.watts?.data && (
+                    {performanceData?.streams?.watts?.data && (
                       <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
                         Real Data
                       </span>
                     )}
-                    {isFree && <TierBadge tier="pro" />}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {isFree ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <Lock className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                      <p className="text-sm">Upgrade to Pro</p>
-                    </div>
-                  ) : (
-                    <PowerChart activity={activity} streams={performanceData?.streams} />
-                  )}
+                  <PowerChart activity={activity} streams={performanceData?.streams} />
                 </CardContent>
               </Card>
             </div>
+            )}
 
             {/* Section 5: Activity Comparison (Premium only) */}
-            {isPremium ? (
+            {featureAccess.activity.activityComparison ? (
               <Card className="overflow-hidden">
                 <CardHeader className="pb-3 bg-gradient-to-r from-yellow-50 to-amber-50">
                   <CardTitle className="flex items-center gap-2 text-lg font-bold">
                     <Users className="w-5 h-5 text-amber-600" />
                     Activity Comparison
-                    <TierBadge tier="premium" />
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-4">
@@ -1012,11 +970,10 @@ export default function ActivityPage() {
                   />
                 </CardContent>
               </Card>
-            ) : !isFree && (
-              <LockedFeaturePanel
+            ) : (
+              <LockedFeatureTeaser
                 tier="premium"
-                title="Activity Comparison"
-                description="Compare this run against your personal records, similar past activities, and track your progress over time."
+                teaser="Compare this run against your PRs and similar past activities"
               />
             )}
           </div>
