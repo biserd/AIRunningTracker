@@ -69,50 +69,50 @@ export default function NextSteps({ nextSteps, consistencyLabel, effortScore }: 
 
   return (
     <Card className={`${config.bgColor} border-2 ${config.borderColor}`} data-testid="card-next-steps">
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Clock className="w-5 h-5 text-gray-600" />
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-lg font-bold">
+          <Clock className="w-6 h-6 text-gray-700" />
           Next 48 Hours
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0">
         <div className="flex items-center gap-3 mb-4">
-          <div className={`w-10 h-10 rounded-lg bg-white/60 flex items-center justify-center`}>
-            <IconComponent className={`w-5 h-5 ${config.iconColor}`} />
+          <div className={`w-12 h-12 rounded-lg bg-white/60 flex items-center justify-center`}>
+            <IconComponent className={`w-6 h-6 ${config.iconColor}`} />
           </div>
           <div>
-            <p className="font-semibold text-gray-900" data-testid="text-intensity-title">{config.title}</p>
-            <p className="text-sm text-gray-600">Effort Score: {effortScore}</p>
+            <p className="text-lg font-bold text-gray-900" data-testid="text-intensity-title">{config.title}</p>
+            <p className="text-base font-medium text-gray-600">Effort Score: {effortScore}</p>
           </div>
         </div>
 
-        <div className="bg-white/50 rounded-lg p-3 mb-3">
-          <div className="flex items-center gap-2 mb-1">
-            <Calendar className="w-4 h-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">Recovery Window</span>
+        <div className="bg-white/50 rounded-lg p-4 mb-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Calendar className="w-5 h-5 text-gray-600" />
+            <span className="text-base font-semibold text-gray-800">Recovery Window</span>
           </div>
-          <p className="text-sm text-gray-600" data-testid="text-recovery-hours">
+          <p className="text-base text-gray-700" data-testid="text-recovery-hours">
             {config.recoveryHours} hours recommended before next hard session
           </p>
         </div>
 
-        <div className="bg-white/50 rounded-lg p-3 mb-3">
-          <div className="flex items-center gap-2 mb-1">
-            <Zap className="w-4 h-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">Training Guidance</span>
+        <div className="bg-white/50 rounded-lg p-4 mb-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Zap className="w-5 h-5 text-gray-600" />
+            <span className="text-base font-semibold text-gray-800">Training Guidance</span>
           </div>
-          <p className="text-sm text-gray-600" data-testid="text-next-workout">
+          <p className="text-base text-gray-700" data-testid="text-next-workout">
             {config.nextWorkoutTiming}
           </p>
         </div>
 
         {nextSteps.length > 0 && (
           <div className="space-y-2 mt-4">
-            <p className="text-xs font-medium text-gray-500 uppercase">Coach Tips</p>
+            <p className="text-sm font-bold text-gray-600 uppercase">Coach Tips</p>
             {nextSteps.map((step, index) => (
-              <div key={index} className="flex items-start gap-2 text-sm" data-testid={`next-step-${index}`}>
-                <ChevronRight className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">{step}</span>
+              <div key={index} className="flex items-start gap-2" data-testid={`next-step-${index}`}>
+                <ChevronRight className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                <span className="text-base text-gray-700">{step}</span>
               </div>
             ))}
           </div>

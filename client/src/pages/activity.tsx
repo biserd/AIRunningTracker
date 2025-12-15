@@ -186,12 +186,10 @@ export default function ActivityPage() {
   const [match, params] = useRoute("/activity/:id");
   const activityId = params?.id;
   const [viewMode, setViewMode] = useState<ViewMode>("story");
-  const [isMapOpen, setIsMapOpen] = useState(false);
-  const [isChartsOpen, setIsChartsOpen] = useState(false);
   const [activeChip, setActiveChip] = useState<"drift" | "pacing" | "quality" | "benchmark" | null>(null);
   const [deepDiveTab, setDeepDiveTab] = useState("overview");
 
-  const { isFree, isPro, isPremium } = useSubscription();
+  const { isFree, isPro, isPremium, isLoading: subscriptionLoading } = useSubscription();
 
   const { data: userData } = useQuery<{ activityViewMode?: string; unitPreference?: string }>({
     queryKey: ['/api/user'],
@@ -243,6 +241,8 @@ export default function ActivityPage() {
     enabled: !!activityId && needsPerformanceData
   });
 
+  const subscriptionReady = !subscriptionLoading;
+
   const { data: verdictData } = useQuery({
     queryKey: ['/api/activities', activityId, 'verdict'],
     queryFn: async () => {
@@ -252,7 +252,7 @@ export default function ActivityPage() {
       if (!res.ok) throw new Error('Failed to fetch verdict');
       return res.json();
     },
-    enabled: !!activityId && viewMode === 'story' && !isFree,
+    enabled: !!activityId && subscriptionReady && !isFree,
     retry: false
   });
 
@@ -265,7 +265,7 @@ export default function ActivityPage() {
       if (!res.ok) return null;
       return res.json();
     },
-    enabled: !!activityId && viewMode === 'story' && !isFree,
+    enabled: !!activityId && subscriptionReady && !isFree,
     retry: false
   });
 
@@ -278,7 +278,7 @@ export default function ActivityPage() {
       if (!res.ok) return null;
       return res.json();
     },
-    enabled: !!activityId && viewMode === 'story' && !isFree,
+    enabled: !!activityId && subscriptionReady && !isFree,
     retry: false
   });
 
@@ -304,6 +304,9 @@ export default function ActivityPage() {
       if (data.message === "Activity already hydrated") {
         queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId] });
         queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'performance'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'verdict'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'efficiency'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'quality'] });
         setIsHydrating(false);
       }
     },
@@ -324,6 +327,7 @@ export default function ActivityPage() {
           (data.activity?.streamsData && data.activity.streamsData !== 'null')) {
         queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId] });
         queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'performance'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'verdict'] });
         queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'efficiency'] });
         queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'quality'] });
         setIsHydrating(false);
@@ -371,123 +375,148 @@ export default function ActivityPage() {
     <div className="min-h-screen bg-gray-50">
       <AppHeader />
       
-      {/* Header Section */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4 py-6 max-w-6xl">
-          <Link href="/dashboard">
-            <Button variant="ghost" className="mb-4">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
-            </Button>
-          </Link>
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2 flex-wrap">
-                <h1 className="text-3xl font-bold text-gray-900">{activity.name}</h1>
-                {verdictData && (
-                  <TrainingConsistency
-                    consistencyLabel={verdictData.consistencyLabel}
-                    effortScore={verdictData.effortScore}
-                    effortVsAverage={verdictData.comparison?.effortVsAvg || 0}
-                    compact
-                  />
-                )}
-                {activity.prCount > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-medium" data-testid="badge-pr-count">
-                    <Trophy className="h-4 w-4" />
-                    {activity.prCount} PR{activity.prCount > 1 ? 's' : ''}
-                  </span>
-                )}
-                {activity.workoutType !== null && activity.workoutType !== undefined && activity.workoutType !== 0 && activity.workoutType !== 10 && (
-                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium ${
-                    activity.workoutType === 1 || activity.workoutType === 11 ? 'bg-red-100 text-red-800' :
-                    activity.workoutType === 2 || activity.workoutType === 12 ? 'bg-blue-100 text-blue-800' :
-                    activity.workoutType === 3 || activity.workoutType === 13 ? 'bg-purple-100 text-purple-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`} data-testid="badge-workout-type">
-                    {activity.workoutType === 1 || activity.workoutType === 11 ? <><Flag className="h-4 w-4" /> Race</> :
-                     activity.workoutType === 2 || activity.workoutType === 12 ? <><Mountain className="h-4 w-4" /> Long Run</> :
-                     activity.workoutType === 3 || activity.workoutType === 13 ? <><Zap className="h-4 w-4" /> Workout</> :
-                     'Default'}
-                  </span>
-                )}
-                {activity.athleteCount > 1 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium" data-testid="badge-group-run">
-                    <Users className="h-4 w-4" />
-                    Group ({activity.athleteCount})
-                  </span>
-                )}
-              </div>
-              <p className="text-gray-600 text-lg mb-3">
-                {new Date(activity.startDate).toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </p>
-              <div className="flex items-center gap-4">
-                <ViewOnStravaLink 
-                  activityId={activity.stravaActivityId || activity.id}
-                  className="text-sm"
+      {/* Sticky Header Section */}
+      <div className="bg-white border-b sticky top-0 z-20 shadow-sm">
+        <div className="container mx-auto px-4 py-4 max-w-6xl">
+          {/* Top Row: Back button + Title + Badges + Toggle */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <Link href="/dashboard">
+                <Button variant="ghost" size="sm" className="px-2">
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              </Link>
+              <h1 className="text-2xl font-bold text-gray-900">{activity.name}</h1>
+              {verdictData && (
+                <TrainingConsistency
+                  consistencyLabel={verdictData.consistencyLabel}
+                  effortScore={verdictData.effortScore}
+                  effortVsAverage={verdictData.comparison?.effortVsAvg || 0}
+                  compact
                 />
-                <StravaPoweredBy variant="orange" size="sm" />
-              </div>
+              )}
+              {activity.prCount > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-medium" data-testid="badge-pr-count">
+                  <Trophy className="h-4 w-4" />
+                  {activity.prCount} PR{activity.prCount > 1 ? 's' : ''}
+                </span>
+              )}
+              {activity.workoutType !== null && activity.workoutType !== undefined && activity.workoutType !== 0 && activity.workoutType !== 10 && (
+                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium ${
+                  activity.workoutType === 1 || activity.workoutType === 11 ? 'bg-red-100 text-red-800' :
+                  activity.workoutType === 2 || activity.workoutType === 12 ? 'bg-blue-100 text-blue-800' :
+                  activity.workoutType === 3 || activity.workoutType === 13 ? 'bg-purple-100 text-purple-800' :
+                  'bg-gray-100 text-gray-800'
+                }`} data-testid="badge-workout-type">
+                  {activity.workoutType === 1 || activity.workoutType === 11 ? <><Flag className="h-4 w-4" /> Race</> :
+                   activity.workoutType === 2 || activity.workoutType === 12 ? <><Mountain className="h-4 w-4" /> Long Run</> :
+                   activity.workoutType === 3 || activity.workoutType === 13 ? <><Zap className="h-4 w-4" /> Workout</> :
+                   'Default'}
+                </span>
+              )}
+              {activity.athleteCount > 1 && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium" data-testid="badge-group-run">
+                  <Users className="h-4 w-4" />
+                  Group ({activity.athleteCount})
+                </span>
+              )}
             </div>
             
-            {/* Prominent View Mode Toggle */}
-            <div className="w-full md:w-auto">
-              <div className="flex bg-gray-100 rounded-xl p-1" data-testid="toggle-view-mode">
-                <button
-                  onClick={() => handleViewModeChange('story')}
-                  className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 flex-1 md:flex-initial ${
-                    viewMode === 'story'
-                      ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg scale-[1.02]'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
-                  }`}
-                  data-testid="toggle-story"
-                >
-                  <BookOpen className="h-4 w-4" />
-                  Story
-                </button>
-                <button
-                  onClick={() => handleViewModeChange('deep_dive')}
-                  className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 flex-1 md:flex-initial ${
-                    viewMode === 'deep_dive'
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-[1.02]'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
-                  }`}
-                  data-testid="toggle-deep-dive"
-                >
-                  <BarChart2 className="h-4 w-4" />
-                  Deep Dive
-                </button>
-              </div>
+            {/* View Mode Toggle */}
+            <div className="flex bg-gray-100 rounded-xl p-1" data-testid="toggle-view-mode">
+              <button
+                onClick={() => handleViewModeChange('story')}
+                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                  viewMode === 'story'
+                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg scale-[1.02]'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                }`}
+                data-testid="toggle-story"
+              >
+                <BookOpen className="h-4 w-4" />
+                Story
+              </button>
+              <button
+                onClick={() => handleViewModeChange('deep_dive')}
+                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                  viewMode === 'deep_dive'
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-[1.02]'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                }`}
+                data-testid="toggle-deep-dive"
+              >
+                <BarChart2 className="h-4 w-4" />
+                Deep Dive
+              </button>
             </div>
+          </div>
+          
+          {/* Middle Row: Date + Strava links */}
+          <div className="flex items-center gap-4 mb-3 text-sm">
+            <span className="text-gray-600">
+              {new Date(activity.startDate).toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </span>
+            <ViewOnStravaLink 
+              activityId={activity.stravaActivityId || activity.id}
+              className="text-sm"
+            />
+            <StravaPoweredBy variant="orange" size="sm" />
+          </div>
+          
+          {/* Bottom Row: Key Stats - Always visible, no collapse */}
+          <div className="flex items-center gap-4 md:gap-8 overflow-x-auto py-2 border-t border-gray-100" data-testid="header-stats">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <MapPin className="h-5 w-5 text-blue-600" />
+              <span className="text-lg font-bold text-gray-900">{activity.formattedDistance}</span>
+              <span className="text-sm text-gray-500">{activity.distanceUnit}</span>
+            </div>
+            <div className="w-px h-6 bg-gray-200" />
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Clock className="h-5 w-5 text-green-600" />
+              <span className="text-lg font-bold text-gray-900">{activity.formattedDuration}</span>
+              <span className="text-sm text-gray-500">Time</span>
+            </div>
+            <div className="w-px h-6 bg-gray-200" />
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <TrendingUp className="h-5 w-5 text-purple-600" />
+              <span className="text-lg font-bold text-gray-900">{activity.formattedPace}</span>
+              <span className="text-sm text-gray-500">{activity.paceUnit}</span>
+            </div>
+            {activity.averageHeartrate && (
+              <>
+                <div className="w-px h-6 bg-gray-200" />
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Heart className="h-5 w-5 text-red-600" />
+                  <span className="text-lg font-bold text-gray-900">{Math.round(activity.averageHeartrate)}</span>
+                  <span className="text-sm text-gray-500">bpm</span>
+                </div>
+              </>
+            )}
+            {activity.totalElevationGain && (
+              <>
+                <div className="w-px h-6 bg-gray-200" />
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Mountain className="h-5 w-5 text-orange-600" />
+                  <span className="text-lg font-bold text-gray-900">{Math.round(activity.totalElevationGain)}</span>
+                  <span className="text-sm text-gray-500">m ↑</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         
-        {/* Story Mode: Restructured Layout */}
+        {/* Story Mode: Simplified Layout */}
         {viewMode === 'story' && (
           <>
-            {/* 1. Capped Key Stats Strip */}
-            <CappedKPIRibbon
-              distance={activity.formattedDistance}
-              distanceUnit={activity.distanceUnit}
-              duration={activity.formattedDuration}
-              pace={activity.formattedPace}
-              paceUnit={activity.paceUnit}
-              avgHR={activity.averageHeartrate}
-              elevation={activity.totalElevationGain}
-              calories={activity.calories}
-              power={activity.averageWatts}
-              cadence={activity.averageCadence}
-            />
-
-            {/* 2. Hero Coach Verdict - Full Width */}
+            {/* 1. Hero Coach Verdict - Full Width */}
             <div className="mb-6">
               {isFree ? (
                 <LockedFeaturePanel 
@@ -500,7 +529,7 @@ export default function ActivityPage() {
               )}
             </div>
 
-            {/* 3. Next 48 Hours + Goal Alignment Side by Side */}
+            {/* 2. Next 48 Hours + Goal Alignment Side by Side - Bolder styling */}
             {!isFree && verdictData && (
               <div className="grid md:grid-cols-2 gap-4 mb-6">
                 <NextSteps
@@ -509,41 +538,41 @@ export default function ActivityPage() {
                   effortScore={verdictData.effortScore}
                 />
                 <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50" data-testid="card-goal-alignment">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Sparkles className="w-5 h-5 text-blue-600" />
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg font-bold">
+                      <Sparkles className="w-6 h-6 text-blue-600" />
                       Goal Alignment
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Training Consistency</span>
-                        <span className="font-medium text-blue-700 capitalize">{verdictData.consistencyLabel?.replace('_', ' ')}</span>
+                        <span className="text-base font-medium text-gray-700">Training Consistency</span>
+                        <span className="text-lg font-bold text-blue-700 capitalize">{verdictData.consistencyLabel?.replace('_', ' ')}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Effort vs Average</span>
-                        <span className={`font-medium ${verdictData.comparison?.effortVsAvg > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                        <span className="text-base font-medium text-gray-700">Effort vs Average</span>
+                        <span className={`text-lg font-bold ${verdictData.comparison?.effortVsAvg > 0 ? 'text-orange-600' : 'text-green-600'}`}>
                           {verdictData.comparison?.effortVsAvg > 0 ? '+' : ''}{verdictData.comparison?.effortVsAvg}%
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Distance vs Average</span>
-                        <span className={`font-medium ${verdictData.comparison?.distanceVsAvg > 0 ? 'text-blue-600' : 'text-gray-600'}`}>
+                        <span className="text-base font-medium text-gray-700">Distance vs Average</span>
+                        <span className={`text-lg font-bold ${verdictData.comparison?.distanceVsAvg > 0 ? 'text-blue-600' : 'text-gray-600'}`}>
                           {verdictData.comparison?.distanceVsAvg > 0 ? '+' : ''}{verdictData.comparison?.distanceVsAvg}%
                         </span>
                       </div>
                     </div>
-                    <div className="flex gap-2 mt-4 pt-3 border-t border-blue-200">
+                    <div className="flex gap-3 mt-5 pt-4 border-t border-blue-200">
                       <Link href="/training-plans" className="flex-1">
-                        <Button variant="outline" size="sm" className="w-full text-xs border-blue-300 text-blue-700 hover:bg-blue-100" data-testid="button-view-training-plan">
-                          <Flag className="h-3 w-3 mr-1" />
+                        <Button variant="outline" className="w-full font-semibold border-blue-300 text-blue-700 hover:bg-blue-100" data-testid="button-view-training-plan">
+                          <Flag className="h-4 w-4 mr-2" />
                           Training Plan
                         </Button>
                       </Link>
                       <Link href="/coach" className="flex-1">
-                        <Button variant="outline" size="sm" className="w-full text-xs border-blue-300 text-blue-700 hover:bg-blue-100" data-testid="button-ask-coach">
-                          <Sparkles className="h-3 w-3 mr-1" />
+                        <Button variant="outline" className="w-full font-semibold border-blue-300 text-blue-700 hover:bg-blue-100" data-testid="button-ask-coach">
+                          <Sparkles className="h-4 w-4 mr-2" />
                           Ask Coach
                         </Button>
                       </Link>
@@ -553,98 +582,29 @@ export default function ActivityPage() {
               </div>
             )}
             
-            {/* 4. Run Timeline - Pro feature */}
+            {/* 3. Route Map - Always visible */}
             <div className="mb-6">
-              {isFree ? (
-                <LockedFeaturePanel 
-                  tier="pro"
-                  title="Run Timeline"
-                  description="Visualize your pace, heart rate, and elevation changes throughout your run. Identify key moments like drift onset, hill impacts, and performance patterns with AI-detected event markers."
-                />
-              ) : (
-                <RunTimeline 
-                  streams={performanceData?.streams}
-                  unitPreference={activity.unitPreference}
-                  activityDistance={activity.distance}
-                  isHydrating={isHydrating}
-                />
-              )}
-            </div>
-            
-            {/* 5. Insight Chips - Pro feature */}
-            {!isFree && (
-              <div className="relative">
-                <InsightChips
-                  onChipClick={(chip) => setActiveChip(activeChip === chip ? null : chip)}
-                  activeChip={activeChip}
-                  efficiencyData={efficiencyData}
-                  qualityData={qualityData}
-                  comparisonData={verdictData?.comparison}
-                />
-              </div>
-            )}
-            
-            {/* Benchmark Drawer - Only for Pro+ users (verdictData only exists for non-Free users) */}
-            {activeChip === 'benchmark' && verdictData?.comparison && !isFree && (
-              <div className="mt-4 space-y-4">
-                <BenchmarkDrawer 
-                  onClose={() => setActiveChip(null)} 
-                  comparison={verdictData.comparison} 
-                />
-                {isPremium ? (
-                  <CompareDrawer
-                    activityId={parseInt(activityId || '0')}
-                    onClose={() => setActiveChip(null)}
-                  />
-                ) : (
-                  <LockedFeaturePanel
-                    tier="premium"
-                    title="Activity Comparison"
-                    description="Compare this run against your personal records, similar past activities, and track your progress over time."
-                  />
-                )}
-              </div>
-            )}
-            
-            {/* Efficiency Drawer - Only for Pro+ users (efficiencyData/qualityData only exist for non-Free users) */}
-            {(activeChip === 'drift' || activeChip === 'pacing' || activeChip === 'quality') && !isFree && efficiencyData && qualityData && (
-              <div className="mt-4">
-                <EfficiencyDrawer 
-                  onClose={() => setActiveChip(null)} 
-                  efficiency={efficiencyData} 
-                  quality={qualityData} 
-                />
-              </div>
-            )}
-            
-            {/* 6. Route Preview - Collapsed by Default */}
-            <Collapsible open={isMapOpen} onOpenChange={setIsMapOpen} className="mt-6">
-              <CollapsibleTrigger asChild>
-                <button className="w-full flex items-center justify-between p-3 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-colors" data-testid="button-toggle-map">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <MapPin className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div className="text-left">
-                      <span className="font-medium text-gray-900">Route Preview</span>
-                      <p className="text-sm text-gray-500">View map and route details</p>
-                    </div>
+              <Card className="overflow-hidden">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
+                    <MapPin className="w-6 h-6 text-blue-600" />
+                    Route
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="h-80">
+                    <RouteMap 
+                      polyline={activity.polyline}
+                      startLat={activity.startLatitude}
+                      startLng={activity.startLongitude}
+                      endLat={activity.endLatitude}
+                      endLng={activity.endLongitude}
+                      strokeWeight={5}
+                    />
                   </div>
-                  {isMapOpen ? <ChevronUp className="h-5 w-5 text-gray-500" /> : <ChevronDown className="h-5 w-5 text-gray-500" />}
-                </button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-3">
-                <div className="bg-white rounded-lg shadow-sm p-4">
-                  <RouteMap 
-                    polyline={activity.polyline}
-                    startLat={activity.startLatitude}
-                    startLng={activity.startLongitude}
-                    endLat={activity.endLatitude}
-                    endLng={activity.endLongitude}
-                  />
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+                </CardContent>
+              </Card>
+            </div>
           </>
         )}
 
@@ -800,6 +760,52 @@ export default function ActivityPage() {
                   )}
                 </div>
               </div>
+
+              {/* Insight Chips - Moved from Story mode */}
+              {!isFree && (
+                <div className="mt-6">
+                  <InsightChips
+                    onChipClick={(chip) => setActiveChip(activeChip === chip ? null : chip)}
+                    activeChip={activeChip}
+                    efficiencyData={efficiencyData}
+                    qualityData={qualityData}
+                    comparisonData={verdictData?.comparison}
+                  />
+                </div>
+              )}
+              
+              {/* Benchmark Drawer */}
+              {activeChip === 'benchmark' && verdictData?.comparison && !isFree && (
+                <div className="mt-4 space-y-4">
+                  <BenchmarkDrawer 
+                    onClose={() => setActiveChip(null)} 
+                    comparison={verdictData.comparison} 
+                  />
+                  {isPremium ? (
+                    <CompareDrawer
+                      activityId={parseInt(activityId || '0')}
+                      onClose={() => setActiveChip(null)}
+                    />
+                  ) : (
+                    <LockedFeaturePanel
+                      tier="premium"
+                      title="Activity Comparison"
+                      description="Compare this run against your personal records, similar past activities, and track your progress over time."
+                    />
+                  )}
+                </div>
+              )}
+              
+              {/* Efficiency Drawer */}
+              {(activeChip === 'drift' || activeChip === 'pacing' || activeChip === 'quality') && !isFree && efficiencyData && qualityData && (
+                <div className="mt-4">
+                  <EfficiencyDrawer 
+                    onClose={() => setActiveChip(null)} 
+                    efficiency={efficiencyData} 
+                    quality={qualityData} 
+                  />
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="timeline">

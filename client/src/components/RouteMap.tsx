@@ -10,9 +10,10 @@ interface RouteMapProps {
   endLat?: number;
   endLng?: number;
   className?: string;
+  strokeWeight?: number;
 }
 
-export default function RouteMap({ polyline, startLat, startLng, endLat, endLng, className = '' }: RouteMapProps) {
+export default function RouteMap({ polyline, startLat, startLng, endLat, endLng, className = '', strokeWeight = 4 }: RouteMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMapRef = useRef<L.Map | null>(null);
 
@@ -51,8 +52,8 @@ export default function RouteMap({ polyline, startLat, startLng, endLat, endLng,
           // Draw the route polyline
           const polylineLayer = L.polyline(latLngs, {
             color: '#ff6b35',
-            weight: 4,
-            opacity: 0.8,
+            weight: strokeWeight,
+            opacity: 0.9,
             lineJoin: 'round',
             lineCap: 'round',
           }).addTo(map);
