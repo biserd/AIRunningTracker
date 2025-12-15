@@ -208,14 +208,16 @@ export default function CompareDrawer({ activityId, onClose, embedded = false }:
 
   if (error || !comparison?.hasComparison) {
     return (
-      <Card className="border-2 border-gray-200 bg-gray-50" data-testid="drawer-compare">
-        <CardHeader className="pb-2 flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Run Comparison</CardTitle>
-          <button onClick={onClose} className="p-1 hover:bg-gray-200 rounded-full transition-colors" data-testid="button-close-compare">
-            <X className="w-4 h-4 text-gray-500" />
-          </button>
-        </CardHeader>
-        <CardContent className="pt-0">
+      <Card className={embedded ? "border-0 shadow-none bg-transparent" : "border-2 border-gray-200 bg-gray-50"} data-testid="drawer-compare">
+        {!embedded && (
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardTitle className="text-base">Run Comparison</CardTitle>
+            <button onClick={onClose} className="p-1 hover:bg-gray-200 rounded-full transition-colors" data-testid="button-close-compare">
+              <X className="w-4 h-4 text-gray-500" />
+            </button>
+          </CardHeader>
+        )}
+        <CardContent className={embedded ? "pt-0 px-0" : "pt-0"}>
           <p className="text-sm text-gray-600">
             {comparison?.message || "Not enough comparable runs found. Keep running to build your comparison data!"}
           </p>
