@@ -847,58 +847,58 @@ export default function ActivityPage() {
             )}
 
             {/* Section 2: Run Timeline */}
-            <Card className="overflow-hidden">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg font-bold">
-                  <Activity className="w-5 h-5 text-indigo-600" />
-                  Run Timeline
-                  {isFree && <TierBadge tier="pro" />}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isFree ? (
+            {isFree ? (
+              <Card className="overflow-hidden">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
+                    <Activity className="w-5 h-5 text-indigo-600" />
+                    Run Timeline
+                    <TierBadge tier="pro" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
                   <LockedFeaturePanel 
                     tier="pro"
                     title="Run Timeline"
                     description="See your entire run unfold second-by-second with interactive pace, heart rate, and elevation charts."
                   />
-                ) : (
-                  <RunTimeline 
-                    streams={performanceData?.streams}
-                    unitPreference={activity.unitPreference}
-                    activityDistance={activity.distance}
-                    isHydrating={isHydrating}
-                  />
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            ) : (
+              <RunTimeline 
+                streams={performanceData?.streams}
+                unitPreference={activity.unitPreference}
+                activityDistance={activity.distance}
+                isHydrating={isHydrating}
+              />
+            )}
 
             {/* Section 3: Splits Analysis */}
-            <Card className="overflow-hidden">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg font-bold">
-                  <BarChart3 className="w-5 h-5 text-green-600" />
-                  Splits Analysis
-                  {isFree && <TierBadge tier="pro" />}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isFree ? (
+            {isFree ? (
+              <Card className="overflow-hidden">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
+                    <BarChart3 className="w-5 h-5 text-green-600" />
+                    Splits Analysis
+                    <TierBadge tier="pro" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
                   <LockedFeaturePanel 
                     tier="pro"
                     title="Detailed Splits Analysis"
                     description="Analyze every kilometer or mile split with pace consistency metrics and effort distribution."
                   />
-                ) : (
-                  <DetailedSplitsAnalysis
-                    activity={activity}
-                    streams={performanceData?.streams}
-                    laps={performanceData?.laps}
-                    unitPreference={userData?.unitPreference}
-                  />
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            ) : (
+              <DetailedSplitsAnalysis
+                activity={activity}
+                streams={performanceData?.streams}
+                laps={performanceData?.laps}
+                unitPreference={userData?.unitPreference}
+              />
+            )}
 
             {/* Section 4: Heart Rate, Cadence, Power - Side by Side Grid */}
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
