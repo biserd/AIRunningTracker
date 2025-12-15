@@ -2880,7 +2880,40 @@ ${allPages.map(page => `  <url>
         endDate,
       });
 
-      res.json(result);
+      // Calculate grades for activities
+      const activitiesWithGrades = (() => {
+        const activities = result.activities || [];
+        if (activities.length === 0) return activities;
+        
+        const avgDistance = activities.reduce((sum: number, a: any) => sum + (a.distance || 0), 0) / activities.length;
+        const validPaceActivities = activities.filter((a: any) => a.distance > 0 && a.movingTime > 0);
+        const avgPaceValue = validPaceActivities.length > 0
+          ? validPaceActivities.reduce((sum: number, a: any) => {
+              const distKm = a.distance / 1000;
+              return sum + (a.movingTime / 60) / distKm;
+            }, 0) / validPaceActivities.length
+          : 0;
+        
+        return activities.map((activity: any) => {
+          let grade: "A" | "B" | "C" | "D" | "F" = "C";
+          if (avgDistance > 0) {
+            const distanceRatio = activity.distance / avgDistance;
+            const distKm = activity.distance / 1000;
+            const pacePerKm = distKm > 0 ? (activity.movingTime / 60) / distKm : 0;
+            const paceRatio = avgPaceValue > 0 ? avgPaceValue / pacePerKm : 1;
+            const score = (distanceRatio * 0.6) + (paceRatio * 0.4);
+            
+            if (score >= 1.3) grade = "A";
+            else if (score >= 1.1) grade = "B";
+            else if (score >= 0.9) grade = "C";
+            else if (score >= 0.7) grade = "D";
+            else grade = "F";
+          }
+          return { ...activity, grade };
+        });
+      })();
+
+      res.json({ ...result, activities: activitiesWithGrades });
     } catch (error: any) {
       console.error('Get activities error:', error);
       res.status(500).json({ message: error.message || "Failed to fetch activities" });

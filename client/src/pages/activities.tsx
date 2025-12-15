@@ -21,7 +21,16 @@ interface ActivityData {
   startDate: string;
   type: string;
   averageHeartrate?: number;
+  grade?: "A" | "B" | "C" | "D" | "F";
 }
+
+const gradeColors: Record<string, string> = {
+  A: "bg-gradient-to-br from-emerald-500 to-green-600",
+  B: "bg-gradient-to-br from-blue-500 to-indigo-600",
+  C: "bg-gradient-to-br from-yellow-500 to-amber-600",
+  D: "bg-gradient-to-br from-orange-500 to-red-500",
+  F: "bg-gradient-to-br from-red-600 to-rose-700"
+};
 
 interface ActivitiesResponse {
   activities: ActivityData[];
@@ -325,9 +334,15 @@ export default function ActivitiesPage() {
                         className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
                         data-testid={`activity-item-${activity.id}`}
                       >
-                        <div className="w-12 h-12 rounded-full bg-strava-orange/10 flex items-center justify-center flex-shrink-0">
-                          <Activity className="h-5 w-5 text-strava-orange" />
-                        </div>
+                        {activity.grade ? (
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold text-white shadow-md flex-shrink-0 ${gradeColors[activity.grade]}`} data-testid={`grade-badge-${activity.id}`}>
+                            {activity.grade}
+                          </div>
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg bg-strava-orange/10 flex items-center justify-center flex-shrink-0">
+                            <Activity className="h-5 w-5 text-strava-orange" />
+                          </div>
+                        )}
                         
                         <div className="flex-1 min-w-0">
                           <h4 className="font-semibold text-charcoal truncate">{activity.name}</h4>
