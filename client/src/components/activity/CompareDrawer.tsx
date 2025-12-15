@@ -79,6 +79,7 @@ interface ComparisonData {
 interface CompareDrawerProps {
   activityId: number;
   onClose: () => void;
+  embedded?: boolean;
 }
 
 function formatPace(metersPerSecond: number, unitPreference: string = 'km'): string {
@@ -176,7 +177,7 @@ function PremiumUpgradePrompt({ message }: { message: string }) {
   );
 }
 
-export default function CompareDrawer({ activityId, onClose }: CompareDrawerProps) {
+export default function CompareDrawer({ activityId, onClose, embedded = false }: CompareDrawerProps) {
   const { data: userData } = useQuery<{ unitPreference?: string }>({
     queryKey: ['/api/user'],
   });
@@ -226,19 +227,21 @@ export default function CompareDrawer({ activityId, onClose }: CompareDrawerProp
   const { isPremium, deltas, whatChanged, routeMatch, route, comparableRuns, baseline, upgradeMessage, comparableCount } = comparison;
 
   return (
-    <Card className="border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50" data-testid="drawer-compare">
-      <CardHeader className="pb-2 flex flex-row items-center justify-between">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Route className="w-4 h-4" />
-          Run Comparison
-          {isPremium && (
-            <span className="text-xs bg-gradient-to-r from-amber-400 to-orange-400 text-white px-2 py-0.5 rounded-full">Premium</span>
-          )}
-        </CardTitle>
-        <button onClick={onClose} className="p-1 hover:bg-indigo-100 rounded-full transition-colors" data-testid="button-close-compare">
-          <X className="w-4 h-4 text-gray-500" />
-        </button>
-      </CardHeader>
+    <Card className={embedded ? "border-0 shadow-none bg-transparent" : "border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50"} data-testid="drawer-compare">
+      {!embedded && (
+        <CardHeader className="pb-2 flex flex-row items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Route className="w-4 h-4" />
+            Run Comparison
+            {isPremium && (
+              <span className="text-xs bg-gradient-to-r from-amber-400 to-orange-400 text-white px-2 py-0.5 rounded-full">Premium</span>
+            )}
+          </CardTitle>
+          <button onClick={onClose} className="p-1 hover:bg-indigo-100 rounded-full transition-colors" data-testid="button-close-compare">
+            <X className="w-4 h-4 text-gray-500" />
+          </button>
+        </CardHeader>
+      )}
       <CardContent className="pt-0 space-y-4">
         
         {/* Route Info (Premium only for full details) */}

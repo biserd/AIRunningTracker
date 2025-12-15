@@ -9,9 +9,10 @@ interface BenchmarkDrawerProps {
     effortVsAvg: number;
     distanceVsAvg: number;
   };
+  embedded?: boolean;
 }
 
-export default function BenchmarkDrawer({ onClose, comparison }: BenchmarkDrawerProps) {
+export default function BenchmarkDrawer({ onClose, comparison, embedded = false }: BenchmarkDrawerProps) {
   const getIcon = (value: number, inverted: boolean = false) => {
     const isPositive = inverted ? value < 0 : value > 0;
     const isNegative = inverted ? value > 0 : value < 0;
@@ -68,17 +69,19 @@ export default function BenchmarkDrawer({ onClose, comparison }: BenchmarkDrawer
   ];
 
   return (
-    <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50" data-testid="drawer-benchmark">
-      <CardHeader className="pb-2 flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Compared to Baseline (42 days)</CardTitle>
-        <button 
-          onClick={onClose} 
-          className="p-1 hover:bg-blue-100 rounded-full transition-colors"
-          data-testid="button-close-benchmark"
-        >
-          <X className="w-4 h-4 text-gray-500" />
-        </button>
-      </CardHeader>
+    <Card className={embedded ? "border-0 shadow-none bg-transparent" : "border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50"} data-testid="drawer-benchmark">
+      {!embedded && (
+        <CardHeader className="pb-2 flex flex-row items-center justify-between">
+          <CardTitle className="text-base">Compared to Baseline (42 days)</CardTitle>
+          <button 
+            onClick={onClose} 
+            className="p-1 hover:bg-blue-100 rounded-full transition-colors"
+            data-testid="button-close-benchmark"
+          >
+            <X className="w-4 h-4 text-gray-500" />
+          </button>
+        </CardHeader>
+      )}
       <CardContent className="pt-0">
         <div className="grid grid-cols-2 gap-4">
           {metrics.map((metric) => (

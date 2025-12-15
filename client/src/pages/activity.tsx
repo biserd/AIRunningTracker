@@ -188,7 +188,6 @@ export default function ActivityPage() {
   const activityId = params?.id;
   const [viewMode, setViewMode] = useState<ViewMode>("story");
   const [activeChip, setActiveChip] = useState<"drift" | "pacing" | "quality" | "benchmark" | null>(null);
-  const [deepDiveTab, setDeepDiveTab] = useState("overview");
 
   const { isFree, isPro, isPremium, isLoading: subscriptionLoading } = useSubscription();
 
@@ -231,10 +230,7 @@ export default function ActivityPage() {
     enabled: !!activityId
   });
 
-  const needsPerformanceData = !isFree && (
-    viewMode === 'story' || 
-    (viewMode === 'deep_dive' && ['timeline', 'splits', 'heartrate', 'cadence', 'power'].includes(deepDiveTab))
-  );
+  const needsPerformanceData = !isFree && (viewMode === 'story' || viewMode === 'deep_dive');
   
   const { data: performanceData, isLoading: performanceLoading } = useQuery({
     queryKey: ['/api/activities', activityId, 'performance'],
@@ -724,403 +720,358 @@ export default function ActivityPage() {
           </>
         )}
 
-        {/* Deep Dive Mode: Tabbed Interface */}
+        {/* Deep Dive Mode: Scrollable Sections */}
         {viewMode === 'deep_dive' && (
-          <Tabs value={deepDiveTab} onValueChange={setDeepDiveTab} className="w-full">
-            <TabsList className="w-full flex flex-wrap h-auto gap-1 bg-white p-2 rounded-lg shadow-sm mb-6">
-              <TabsTrigger value="overview" className="flex-1 min-w-[80px]">Overview</TabsTrigger>
-              <TabsTrigger value="timeline" className="flex-1 min-w-[80px]">
-                Timeline
-                {isFree && <TierBadge tier="pro" />}
-              </TabsTrigger>
-              <TabsTrigger value="splits" className="flex-1 min-w-[80px]">
-                Splits
-                {isFree && <TierBadge tier="pro" />}
-              </TabsTrigger>
-              <TabsTrigger value="heartrate" className="flex-1 min-w-[80px]">
-                Heart Rate
-                {isFree && <TierBadge tier="pro" />}
-              </TabsTrigger>
-              <TabsTrigger value="cadence" className="flex-1 min-w-[80px]">
-                Cadence
-                {isFree && <TierBadge tier="pro" />}
-              </TabsTrigger>
-              <TabsTrigger value="power" className="flex-1 min-w-[80px]">
-                Power
-                {isFree && <TierBadge tier="pro" />}
-              </TabsTrigger>
-              <TabsTrigger value="route" className="flex-1 min-w-[80px]">Route</TabsTrigger>
-            </TabsList>
+          <div className="space-y-6">
+            {/* Section 1: Unified Coach Card */}
+            {isFree ? (
+              <LockedFeaturePanel 
+                tier="pro"
+                title="AI Coach Analysis"
+                description="Get personalized AI-powered analysis of your run including grade, key takeaways, training consistency metrics, recovery guidance, and actionable recommendations."
+              />
+            ) : (
+              <UnifiedCoachCard 
+                verdictData={verdictData}
+                isLoading={!verdictData && subscriptionReady && !isFree}
+              />
+            )}
 
-            <TabsContent value="overview">
-              <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Activity Overview</h2>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <MapPin className="h-6 w-6 text-blue-600 mx-auto mb-2" />
-                    <div className="text-2xl font-bold text-gray-900">{activity.formattedDistance}</div>
-                    <div className="text-sm text-gray-600">{activity.distanceUnit}</div>
-                  </div>
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <Clock className="h-6 w-6 text-green-600 mx-auto mb-2" />
-                    <div className="text-2xl font-bold text-gray-900">{activity.formattedDuration}</div>
-                    <div className="text-sm text-gray-600">Duration</div>
-                  </div>
-                  <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <TrendingUp className="h-6 w-6 text-purple-600 mx-auto mb-2" />
-                    <div className="text-2xl font-bold text-gray-900">{activity.formattedPace}</div>
-                    <div className="text-sm text-gray-600">{activity.paceUnit}</div>
-                  </div>
-                  <div className="text-center p-4 bg-red-50 rounded-lg">
-                    <Heart className="h-6 w-6 text-red-600 mx-auto mb-2" />
-                    <div className="text-2xl font-bold text-gray-900">
-                      {activity.averageHeartrate ? Math.round(activity.averageHeartrate) : "N/A"}
-                    </div>
-                    <div className="text-sm text-gray-600">Avg HR</div>
-                  </div>
-                </div>
-
-                {(activity.calories || activity.averageCadence || activity.averageWatts || activity.sufferScore || activity.averageTemp) && (
-                  <div className="border-t border-gray-200 pt-4">
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                      {activity.calories && (
-                        <div className="text-center p-3 bg-orange-50 rounded-lg">
-                          <Flame className="h-5 w-5 text-orange-600 mx-auto mb-2" />
-                          <div className="text-lg font-bold text-gray-900">{Math.round(activity.calories)}</div>
-                          <div className="text-xs text-gray-600">Calories</div>
+            {/* Section 2: Performance Metrics - Drift, Pacing, Baseline */}
+            {!isFree && efficiencyData && (
+              <Card className="overflow-hidden">
+                <CardHeader className="pb-3 bg-gradient-to-r from-green-50 to-teal-50">
+                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
+                    <TrendingUp className="w-5 h-5 text-green-600" />
+                    Performance Metrics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="grid md:grid-cols-3 gap-4">
+                    {/* Aerobic Decoupling / Drift */}
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                          <Activity className="w-4 h-4 text-blue-600" />
                         </div>
-                      )}
-                      {activity.averageCadence && (
-                        <div className="text-center p-3 bg-indigo-50 rounded-lg">
-                          <Activity className="h-5 w-5 text-indigo-600 mx-auto mb-2" />
-                          <div className="text-lg font-bold text-gray-900">{Math.round(activity.averageCadence)}</div>
-                          <div className="text-xs text-gray-600">Cadence</div>
-                        </div>
-                      )}
-                      {activity.averageWatts && (
-                        <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                          <Zap className="h-5 w-5 text-yellow-600 mx-auto mb-2" />
-                          <div className="text-lg font-bold text-gray-900">{Math.round(activity.averageWatts)}</div>
-                          <div className="text-xs text-gray-600">Power</div>
-                        </div>
-                      )}
-                      {activity.sufferScore && (
-                        <div className="text-center p-3 bg-red-50 rounded-lg">
-                          <TrendingUp className="h-5 w-5 text-red-600 mx-auto mb-2" />
-                          <div className="text-lg font-bold text-gray-900">{activity.sufferScore}</div>
-                          <div className="text-xs text-gray-600">Suffer Score</div>
-                        </div>
-                      )}
-                      {activity.averageTemp && (
-                        <div className="text-center p-3 bg-blue-50 rounded-lg">
-                          <Thermometer className="h-5 w-5 text-blue-600 mx-auto mb-2" />
-                          <div className="text-lg font-bold text-gray-900">{Math.round(activity.averageTemp)}</div>
-                          <div className="text-xs text-gray-600">Temp (°C)</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Analysis</h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <h4 className="font-semibold text-blue-900 mb-2">Pace Analysis</h4>
-                    <p className="text-sm text-blue-800">
-                      Your average pace of {activity.formattedPace} {activity.paceUnit} shows consistent effort throughout the activity.
-                    </p>
-                  </div>
-                  
-                  {activity.averageHeartrate && (
-                    <div className="p-4 bg-green-50 rounded-lg">
-                      <h4 className="font-semibold text-green-900 mb-2">Heart Rate Zone</h4>
-                      <p className="text-sm text-green-800">
-                        Average HR of {Math.round(activity.averageHeartrate)} bpm indicates {
-                          activity.averageHeartrate < 140 ? "aerobic base" : 
-                          activity.averageHeartrate < 160 ? "aerobic threshold" : 
-                          "anaerobic"
-                        } training zone.
-                      </p>
-                    </div>
-                  )}
-
-                  {activity.averageCadence && (
-                    <div className="p-4 bg-purple-50 rounded-lg">
-                      <h4 className="font-semibold text-purple-900 mb-2">Running Form</h4>
-                      <p className="text-sm text-purple-800">
-                        Cadence of {Math.round(activity.averageCadence)} spm is {
-                          activity.averageCadence < 160 ? "below optimal range" :
-                          activity.averageCadence < 180 ? "in good range" :
-                          activity.averageCadence < 190 ? "excellent form" :
-                          "very high turnover"
-                        }.
-                      </p>
-                    </div>
-                  )}
-
-                  {activity.sufferScore && (
-                    <div className="p-4 bg-red-50 rounded-lg">
-                      <h4 className="font-semibold text-red-900 mb-2">Training Load</h4>
-                      <p className="text-sm text-red-800">
-                        Suffer score of {activity.sufferScore} indicates {
-                          activity.sufferScore < 50 ? "low intensity" :
-                          activity.sufferScore < 100 ? "moderate load" :
-                          activity.sufferScore < 150 ? "challenging workout" :
-                          "very demanding session"
-                        }.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Insight Chips - Moved from Story mode */}
-              {!isFree && (
-                <div className="mt-6">
-                  <InsightChips
-                    onChipClick={(chip) => setActiveChip(activeChip === chip ? null : chip)}
-                    activeChip={activeChip}
-                    efficiencyData={efficiencyData}
-                    qualityData={qualityData}
-                    comparisonData={verdictData?.comparison}
-                  />
-                </div>
-              )}
-              
-              {/* Benchmark Drawer */}
-              {activeChip === 'benchmark' && verdictData?.comparison && !isFree && (
-                <div className="mt-4 space-y-4">
-                  <BenchmarkDrawer 
-                    onClose={() => setActiveChip(null)} 
-                    comparison={verdictData.comparison} 
-                  />
-                  {isPremium ? (
-                    <CompareDrawer
-                      activityId={parseInt(activityId || '0')}
-                      onClose={() => setActiveChip(null)}
-                    />
-                  ) : (
-                    <LockedFeaturePanel
-                      tier="premium"
-                      title="Activity Comparison"
-                      description="Compare this run against your personal records, similar past activities, and track your progress over time."
-                    />
-                  )}
-                </div>
-              )}
-              
-              {/* Efficiency Drawer */}
-              {(activeChip === 'drift' || activeChip === 'pacing' || activeChip === 'quality') && !isFree && efficiencyData && qualityData && (
-                <div className="mt-4">
-                  <EfficiencyDrawer 
-                    onClose={() => setActiveChip(null)} 
-                    efficiency={efficiencyData} 
-                    quality={qualityData} 
-                  />
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="timeline">
-              {isFree ? (
-                <LockedFeaturePanel 
-                  tier="pro"
-                  title="Run Timeline"
-                  description="See your entire run unfold second-by-second with interactive pace, heart rate, and elevation charts. AI-detected event markers highlight key moments like drift onset, hill impacts, and performance patterns."
-                />
-              ) : (
-                <RunTimeline 
-                  streams={performanceData?.streams}
-                  unitPreference={activity.unitPreference}
-                  activityDistance={activity.distance}
-                  isHydrating={isHydrating}
-                />
-              )}
-            </TabsContent>
-
-            <TabsContent value="splits">
-              {isFree ? (
-                <LockedFeaturePanel 
-                  tier="pro"
-                  title="Detailed Splits Analysis"
-                  description="Analyze every kilometer or mile split with pace consistency metrics, effort distribution, and identify where you gained or lost time during your run."
-                />
-              ) : (
-                <DetailedSplitsAnalysis
-                  activity={activity}
-                  streams={performanceData?.streams}
-                  laps={performanceData?.laps}
-                  unitPreference={userData?.unitPreference}
-                />
-              )}
-            </TabsContent>
-
-            <TabsContent value="heartrate">
-              {isFree ? (
-                <LockedFeaturePanel 
-                  tier="pro"
-                  title="Heart Rate Analysis"
-                  description="Unlock detailed heart rate zone distribution, training load analysis, and real-time HR trends from your Strava data."
-                />
-              ) : (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <Heart className="mr-2 h-5 w-5 text-red-600" />
-                        Heart Rate Analysis
+                        <span className="font-semibold text-gray-900">Drift</span>
                       </div>
-                      {performanceData?.streams?.heartrate && (
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                          Real Data
-                        </span>
+                      {efficiencyData.aerobicDecoupling !== null ? (
+                        <>
+                          <p className={`text-2xl font-bold ${
+                            efficiencyData.decouplingLabel === 'excellent' ? 'text-emerald-600' :
+                            efficiencyData.decouplingLabel === 'good' ? 'text-blue-600' :
+                            efficiencyData.decouplingLabel === 'moderate' ? 'text-yellow-600' :
+                            'text-red-600'
+                          }`}>
+                            {efficiencyData.aerobicDecoupling}%
+                          </p>
+                          <p className="text-sm text-gray-600 capitalize mt-1">{efficiencyData.decouplingLabel.replace('_', ' ')}</p>
+                          {efficiencyData.firstHalfHr && efficiencyData.secondHalfHr && (
+                            <p className="text-xs text-gray-500 mt-2">
+                              HR: {efficiencyData.firstHalfHr} → {efficiencyData.secondHalfHr} bpm
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-sm text-gray-500">Insufficient data</p>
                       )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <HeartRateChart 
-                      activity={activity}
-                      streams={performanceData?.streams}
-                    />
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
+                    </div>
 
-            <TabsContent value="cadence">
-              {isFree ? (
-                <LockedFeaturePanel 
-                  tier="pro"
-                  title="Cadence Analysis"
-                  description="Track your running cadence patterns, identify optimal turnover rates, and improve your running form with detailed step rate analytics."
-                />
-              ) : (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <BarChart3 className="mr-2 h-5 w-5 text-purple-600" />
-                        Cadence Analysis
+                    {/* Pacing Stability */}
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                          <Timer className="w-4 h-4 text-purple-600" />
+                        </div>
+                        <span className="font-semibold text-gray-900">Pacing</span>
                       </div>
-                      {performanceData?.streams?.cadence?.data && (
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                          Real Data
-                        </span>
+                      <p className={`text-2xl font-bold ${
+                        efficiencyData.pacingLabel === 'very_stable' ? 'text-emerald-600' :
+                        efficiencyData.pacingLabel === 'stable' ? 'text-blue-600' :
+                        efficiencyData.pacingLabel === 'variable' ? 'text-yellow-600' :
+                        'text-red-600'
+                      }`}>
+                        {efficiencyData.pacingStability}%
+                      </p>
+                      <p className="text-sm text-gray-600 capitalize mt-1">{efficiencyData.pacingLabel.replace('_', ' ')}</p>
+                      {efficiencyData.splitVariance > 0 && (
+                        <p className="text-xs text-gray-500 mt-2">
+                          Split CV: {efficiencyData.splitVariance}%
+                        </p>
                       )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CadenceChart activity={activity} streams={performanceData?.streams} />
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
+                    </div>
 
-            <TabsContent value="power">
-              {isFree ? (
-                <LockedFeaturePanel 
-                  tier="pro"
-                  title="Power Analysis"
-                  description="Access advanced running power metrics, including power curve analysis, efficiency tracking, and wattage distribution throughout your runs."
-                />
-              ) : (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <Zap className="mr-2 h-5 w-5 text-yellow-600" />
-                        Power Analysis
+                    {/* vs Baseline */}
+                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-100">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                          <BarChart2 className="w-4 h-4 text-amber-600" />
+                        </div>
+                        <span className="font-semibold text-gray-900">vs Baseline</span>
                       </div>
-                      {performanceData?.streams?.watts?.data && (
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                          Real Data
-                        </span>
+                      {verdictData?.comparison ? (
+                        <>
+                          <p className={`text-2xl font-bold ${
+                            verdictData.comparison.paceVsAvg >= 0 ? 'text-emerald-600' : 'text-red-600'
+                          }`}>
+                            {verdictData.comparison.paceVsAvg >= 0 ? '+' : ''}{verdictData.comparison.paceVsAvg}%
+                          </p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {verdictData.comparison.paceVsAvg >= 0 ? 'Faster than avg' : 'Slower than avg'}
+                          </p>
+                          {verdictData.comparison.hrVsAvg !== undefined && (
+                            <p className="text-xs text-gray-500 mt-2">
+                              HR: {verdictData.comparison.hrVsAvg >= 0 ? '+' : ''}{verdictData.comparison.hrVsAvg}% vs avg
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-sm text-gray-500">Need more runs for baseline</p>
                       )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <PowerChart activity={activity} streams={performanceData?.streams} />
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
+                    </div>
+                  </div>
 
-            <TabsContent value="route">
-              <div className="grid lg:grid-cols-2 gap-6">
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Route</h3>
+                  {/* Data Quality indicator */}
+                  {qualityData && (
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Data Quality</span>
+                        <span className={`font-medium ${
+                          qualityData.score >= 85 ? 'text-emerald-600' :
+                          qualityData.score >= 70 ? 'text-blue-600' :
+                          qualityData.score >= 50 ? 'text-amber-600' :
+                          'text-red-600'
+                        }`}>
+                          {qualityData.score}/100
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Section 3: Route Map with Key Moments */}
+            <Card className="overflow-hidden">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
+                    <MapPin className="w-5 h-5 text-blue-600" />
+                    Route
+                  </CardTitle>
+                  {keyMoments.length > 0 && (
+                    <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                      {keyMoments.length} Key Moment{keyMoments.length > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="h-[400px]">
                   <RouteMap 
                     polyline={activity.polyline}
                     startLat={activity.startLatitude}
                     startLng={activity.startLongitude}
                     endLat={activity.endLatitude}
                     endLng={activity.endLongitude}
+                    strokeWeight={5}
+                    keyMoments={keyMoments}
+                    fillContainer={true}
                   />
                 </div>
+              </CardContent>
+            </Card>
 
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Details</h3>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <div className="text-sm font-medium text-gray-600">Type</div>
-                        <div className="text-gray-900 font-semibold">{activity.type}</div>
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-gray-600">Elevation Gain</div>
-                        <div className="text-gray-900 font-semibold">{activity.totalElevationGain} m</div>
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-gray-600">Avg Speed</div>
-                        <div className="text-gray-900 font-semibold">{activity.formattedSpeed} {activity.speedUnit}</div>
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-gray-600">Max Speed</div>
-                        <div className="text-gray-900 font-semibold">{activity.formattedMaxSpeed} {activity.speedUnit}</div>
-                      </div>
-                      {activity.maxHeartrate && (
-                        <div>
-                          <div className="text-sm font-medium text-gray-600">Max HR</div>
-                          <div className="text-gray-900 font-semibold">{Math.round(activity.maxHeartrate)} bpm</div>
-                        </div>
-                      )}
-                      {activity.maxCadence && (
-                        <div>
-                          <div className="text-sm font-medium text-gray-600">Max Cadence</div>
-                          <div className="text-gray-900 font-semibold">{Math.round(activity.maxCadence)} spm</div>
-                        </div>
-                      )}
-                      {activity.maxWatts && (
-                        <div>
-                          <div className="text-sm font-medium text-gray-600">Max Power</div>
-                          <div className="text-gray-900 font-semibold">{Math.round(activity.maxWatts)}W</div>
-                        </div>
-                      )}
-                      {activity.elapsedTime && activity.elapsedTime > activity.movingTime && (
-                        <div data-testid="stat-stop-time">
-                          <div className="text-sm font-medium text-gray-600">Stop Time</div>
-                          <div className="text-gray-900 font-semibold">
-                            {Math.round((activity.elapsedTime - activity.movingTime) / 60)}m ({Math.round(((activity.elapsedTime - activity.movingTime) / activity.elapsedTime) * 100)}%)
-                          </div>
-                        </div>
-                      )}
-                      {activity.elevHigh !== null && activity.elevLow !== null && (
-                        <div data-testid="stat-elev-range">
-                          <div className="text-sm font-medium text-gray-600">Elevation Range</div>
-                          <div className="text-gray-900 font-semibold">
-                            {Math.round(activity.elevLow)}m - {Math.round(activity.elevHigh)}m
-                          </div>
-                        </div>
-                      )}
+            {/* Section 4: Run Timeline */}
+            <Card className="overflow-hidden">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg font-bold">
+                  <Activity className="w-5 h-5 text-indigo-600" />
+                  Run Timeline
+                  {isFree && <TierBadge tier="pro" />}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isFree ? (
+                  <LockedFeaturePanel 
+                    tier="pro"
+                    title="Run Timeline"
+                    description="See your entire run unfold second-by-second with interactive pace, heart rate, and elevation charts."
+                  />
+                ) : (
+                  <RunTimeline 
+                    streams={performanceData?.streams}
+                    unitPreference={activity.unitPreference}
+                    activityDistance={activity.distance}
+                    isHydrating={isHydrating}
+                  />
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Section 5: Splits Analysis */}
+            <Card className="overflow-hidden">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg font-bold">
+                  <BarChart3 className="w-5 h-5 text-green-600" />
+                  Splits Analysis
+                  {isFree && <TierBadge tier="pro" />}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isFree ? (
+                  <LockedFeaturePanel 
+                    tier="pro"
+                    title="Detailed Splits Analysis"
+                    description="Analyze every kilometer or mile split with pace consistency metrics and effort distribution."
+                  />
+                ) : (
+                  <DetailedSplitsAnalysis
+                    activity={activity}
+                    streams={performanceData?.streams}
+                    laps={performanceData?.laps}
+                    unitPreference={userData?.unitPreference}
+                  />
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Section 6: Heart Rate, Cadence, Power - Side by Side Grid */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Heart Rate */}
+              <Card className="overflow-hidden">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Heart className="w-5 h-5 text-red-600" />
+                      <span className="text-base font-bold">Heart Rate</span>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+                    {!isFree && performanceData?.streams?.heartrate && (
+                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                        Real Data
+                      </span>
+                    )}
+                    {isFree && <TierBadge tier="pro" />}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isFree ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Lock className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                      <p className="text-sm">Upgrade to Pro</p>
+                    </div>
+                  ) : (
+                    <HeartRateChart 
+                      activity={activity}
+                      streams={performanceData?.streams}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Cadence */}
+              <Card className="overflow-hidden">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-purple-600" />
+                      <span className="text-base font-bold">Cadence</span>
+                    </div>
+                    {!isFree && performanceData?.streams?.cadence?.data && (
+                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                        Real Data
+                      </span>
+                    )}
+                    {isFree && <TierBadge tier="pro" />}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isFree ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Lock className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                      <p className="text-sm">Upgrade to Pro</p>
+                    </div>
+                  ) : (
+                    <CadenceChart activity={activity} streams={performanceData?.streams} />
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Power */}
+              <Card className="overflow-hidden md:col-span-2 lg:col-span-1">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-5 h-5 text-yellow-600" />
+                      <span className="text-base font-bold">Power</span>
+                    </div>
+                    {!isFree && performanceData?.streams?.watts?.data && (
+                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                        Real Data
+                      </span>
+                    )}
+                    {isFree && <TierBadge tier="pro" />}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isFree ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Lock className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                      <p className="text-sm">Upgrade to Pro</p>
+                    </div>
+                  ) : (
+                    <PowerChart activity={activity} streams={performanceData?.streams} />
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Section 7: Benchmark Comparison (Pro users) */}
+            {!isFree && verdictData?.comparison && (
+              <Card className="overflow-hidden">
+                <CardHeader className="pb-3 bg-gradient-to-r from-blue-50 to-purple-50">
+                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
+                    <Trophy className="w-5 h-5 text-blue-600" />
+                    Benchmark Comparison
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <BenchmarkDrawer 
+                    onClose={() => {}} 
+                    comparison={verdictData.comparison}
+                    embedded={true}
+                  />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Section 8: Activity Comparison (Premium only) */}
+            {isPremium ? (
+              <Card className="overflow-hidden">
+                <CardHeader className="pb-3 bg-gradient-to-r from-yellow-50 to-amber-50">
+                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
+                    <Users className="w-5 h-5 text-amber-600" />
+                    Activity Comparison
+                    <TierBadge tier="premium" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <CompareDrawer
+                    activityId={parseInt(activityId || '0')}
+                    onClose={() => {}}
+                    embedded={true}
+                  />
+                </CardContent>
+              </Card>
+            ) : !isFree && (
+              <LockedFeaturePanel
+                tier="premium"
+                title="Activity Comparison"
+                description="Compare this run against your personal records, similar past activities, and track your progress over time."
+              />
+            )}
+          </div>
         )}
       </div>
     </div>
