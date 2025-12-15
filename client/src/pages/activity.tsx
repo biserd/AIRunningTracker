@@ -722,21 +722,7 @@ export default function ActivityPage() {
         {/* Deep Dive Mode: Scrollable Sections */}
         {viewMode === 'deep_dive' && (
           <div className="space-y-6">
-            {/* Section 1: Unified Coach Card */}
-            {isFree ? (
-              <LockedFeaturePanel 
-                tier="pro"
-                title="AI Coach Analysis"
-                description="Get personalized AI-powered analysis of your run including grade, key takeaways, training consistency metrics, recovery guidance, and actionable recommendations."
-              />
-            ) : (
-              <UnifiedCoachCard 
-                verdictData={verdictData}
-                isLoading={!verdictData && subscriptionReady && !isFree}
-              />
-            )}
-
-            {/* Section 2: Performance Metrics - Drift, Pacing, Baseline */}
+            {/* Section 1: Performance Metrics - Drift, Pacing, Baseline */}
             {!isFree && efficiencyData && (
               <Card className="overflow-hidden">
                 <CardHeader className="pb-3 bg-gradient-to-r from-green-50 to-teal-50">
@@ -851,38 +837,7 @@ export default function ActivityPage() {
               </Card>
             )}
 
-            {/* Section 3: Route Map with Key Moments */}
-            <Card className="overflow-hidden">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
-                    <MapPin className="w-5 h-5 text-blue-600" />
-                    Route
-                  </CardTitle>
-                  {keyMoments.length > 0 && (
-                    <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                      {keyMoments.length} Key Moment{keyMoments.length > 1 ? 's' : ''}
-                    </span>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="h-[400px]">
-                  <RouteMap 
-                    polyline={activity.polyline}
-                    startLat={activity.startLatitude}
-                    startLng={activity.startLongitude}
-                    endLat={activity.endLatitude}
-                    endLng={activity.endLongitude}
-                    strokeWeight={5}
-                    keyMoments={keyMoments}
-                    fillContainer={true}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Section 4: Run Timeline */}
+            {/* Section 2: Run Timeline */}
             <Card className="overflow-hidden">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-lg font-bold">
@@ -909,7 +864,7 @@ export default function ActivityPage() {
               </CardContent>
             </Card>
 
-            {/* Section 5: Splits Analysis */}
+            {/* Section 3: Splits Analysis */}
             <Card className="overflow-hidden">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-lg font-bold">
@@ -936,7 +891,7 @@ export default function ActivityPage() {
               </CardContent>
             </Card>
 
-            {/* Section 6: Heart Rate, Cadence, Power - Side by Side Grid */}
+            {/* Section 4: Heart Rate, Cadence, Power - Side by Side Grid */}
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Heart Rate */}
               <Card className="overflow-hidden">
@@ -1026,7 +981,7 @@ export default function ActivityPage() {
               </Card>
             </div>
 
-            {/* Section 7: Benchmark Comparison (Pro users) */}
+            {/* Section 5: Benchmark Comparison (Pro users) */}
             {!isFree && verdictData?.comparison && (
               <Card className="overflow-hidden">
                 <CardHeader className="pb-3 bg-gradient-to-r from-blue-50 to-purple-50">
@@ -1045,7 +1000,7 @@ export default function ActivityPage() {
               </Card>
             )}
 
-            {/* Section 8: Activity Comparison (Premium only) */}
+            {/* Section 6: Activity Comparison (Premium only) */}
             {isPremium ? (
               <Card className="overflow-hidden">
                 <CardHeader className="pb-3 bg-gradient-to-r from-yellow-50 to-amber-50">
