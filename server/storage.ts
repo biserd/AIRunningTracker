@@ -46,6 +46,7 @@ export interface IStorage {
   getActivityByStravaIdAndUser(stravaId: string, userId: number): Promise<Activity | undefined>;
   getUserStravaIds(userId: number): Promise<string[]>;
   updateActivity(activityId: number, updates: Partial<Activity>): Promise<Activity | undefined>;
+  updateActivityGrade(activityId: number, grade: "A" | "B" | "C" | "D" | "F"): Promise<void>;
   
   createAIInsight(insight: InsertAIInsight): Promise<AIInsight>;
   getAIInsightsByUserId(userId: number, type?: string, limit?: number): Promise<AIInsight[]>;
@@ -925,6 +926,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(activities.id, activityId))
       .returning();
     return activity || undefined;
+  }
+
+  async updateActivityGrade(activityId: number, grade: "A" | "B" | "C" | "D" | "F"): Promise<void> {
+    await db
+      .update(activities)
+      .set({ cachedGrade: grade, cachedGradeUpdatedAt: new Date() })
+      .where(eq(activities.id, activityId));
   }
 
   async createFeedback(insertFeedback: InsertFeedback): Promise<Feedback> {

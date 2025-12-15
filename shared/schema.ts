@@ -106,6 +106,8 @@ export const activities = pgTable("activities", {
   hydratedAt: timestamp("hydrated_at"),
   hydrateAttempts: integer("hydrate_attempts").default(0),
   lastHydrateError: text("last_hydrate_error"),
+  cachedGrade: text("cached_grade", { enum: ["A", "B", "C", "D", "F"] }),
+  cachedGradeUpdatedAt: timestamp("cached_grade_updated_at"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
   userIdIdx: index("activities_user_id_idx").on(table.userId),

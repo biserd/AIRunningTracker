@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Award, TrendingUp, TrendingDown, Minus, CheckCircle2, XCircle, AlertCircle, Sparkles, Flag, ArrowRight, Clock, Calendar, Zap } from "lucide-react";
+import { Award, TrendingUp, TrendingDown, Minus, CheckCircle2, XCircle, AlertCircle, Sparkles, Flag, ArrowRight, Clock, Calendar, Zap, Activity, Heart, Gauge, Route } from "lucide-react";
 import { Link } from "wouter";
 
 interface VerdictEvidence {
@@ -31,18 +31,18 @@ interface UnifiedCoachCardProps {
   isLoading?: boolean;
 }
 
-const gradeColors: Record<string, { ring: string; text: string; bg: string }> = {
-  A: { ring: "stroke-emerald-500", text: "text-emerald-600", bg: "bg-emerald-50" },
-  B: { ring: "stroke-blue-500", text: "text-blue-600", bg: "bg-blue-50" },
-  C: { ring: "stroke-yellow-500", text: "text-yellow-600", bg: "bg-yellow-50" },
-  D: { ring: "stroke-orange-500", text: "text-orange-600", bg: "bg-orange-50" },
-  F: { ring: "stroke-red-500", text: "text-red-600", bg: "bg-red-50" }
+const gradeConfig: Record<string, { gradient: string; text: string; bg: string; border: string }> = {
+  A: { gradient: "from-emerald-500 to-green-600", text: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
+  B: { gradient: "from-blue-500 to-indigo-600", text: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" },
+  C: { gradient: "from-amber-500 to-yellow-600", text: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" },
+  D: { gradient: "from-orange-500 to-red-500", text: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200" },
+  F: { gradient: "from-red-500 to-rose-600", text: "text-red-600", bg: "bg-red-50", border: "border-red-200" }
 };
 
 function gradeToScore(grade: string, effortScore: number): number {
-  const baseScores: Record<string, number> = { A: 90, B: 75, C: 60, D: 45, F: 25 };
+  const baseScores: Record<string, number> = { A: 92, B: 78, C: 65, D: 50, F: 30 };
   const base = baseScores[grade] || 50;
-  const effortModifier = Math.min(10, Math.max(-10, (effortScore - 50) / 5));
+  const effortModifier = Math.min(8, Math.max(-8, (effortScore - 50) / 6));
   return Math.round(Math.min(100, Math.max(0, base + effortModifier)));
 }
 
@@ -83,57 +83,75 @@ function formatConsistency(label: string) {
   return label.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
 
-function CircularGauge({ grade, score }: { grade: string; score: number }) {
-  const colors = gradeColors[grade] || gradeColors.C;
-  const circumference = 2 * Math.PI * 54;
+function GradeGauge({ grade, score }: { grade: string; score: number }) {
+  const config = gradeConfig[grade] || gradeConfig.C;
+  const circumference = 2 * Math.PI * 58;
   const strokeDashoffset = circumference - (score / 100) * circumference;
+  
+  const strokeColors: Record<string, string> = {
+    A: "#10b981",
+    B: "#3b82f6",
+    C: "#f59e0b",
+    D: "#f97316",
+    F: "#ef4444"
+  };
 
   return (
-    <div className="relative flex flex-col items-center">
-      <svg width="140" height="140" viewBox="0 0 140 140" className="transform -rotate-90">
+    <div className="relative inline-flex flex-col items-center justify-center" data-testid="grade-gauge">
+      <svg width="160" height="160" viewBox="0 0 160 160" className="transform -rotate-90">
         <circle
-          cx="70"
-          cy="70"
-          r="54"
+          cx="80"
+          cy="80"
+          r="58"
           fill="none"
-          stroke="currentColor"
-          strokeWidth="10"
-          className="text-gray-200"
+          stroke="#e5e7eb"
+          strokeWidth="12"
         />
         <circle
-          cx="70"
-          cy="70"
-          r="54"
+          cx="80"
+          cy="80"
+          r="58"
           fill="none"
-          strokeWidth="10"
+          stroke={strokeColors[grade] || strokeColors.C}
+          strokeWidth="12"
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
-          className={colors.ring}
-          style={{ transition: "stroke-dashoffset 0.5s ease-in-out" }}
+          style={{ transition: "stroke-dashoffset 0.8s ease-out" }}
         />
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className={`text-5xl font-black ${colors.text}`} data-testid="grade-badge">
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className={`text-6xl font-black ${config.text}`} data-testid="grade-badge">
           {grade}
         </span>
+        <span className="text-lg font-bold text-gray-500 -mt-1" data-testid="score-display">
+          {score}/100
+        </span>
       </div>
-      <p className="mt-2 text-base font-bold text-gray-700" data-testid="score-display">{score}/100</p>
     </div>
   );
 }
 
-function EvidenceIcon({ type }: { type: "positive" | "neutral" | "negative" }) {
-  if (type === "positive") return <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />;
-  if (type === "negative") return <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />;
-  return <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0" />;
+function EvidenceBullet({ evidence }: { evidence: VerdictEvidence }) {
+  const Icon = evidence.type === "positive" ? CheckCircle2 : evidence.type === "negative" ? XCircle : AlertCircle;
+  const iconColor = evidence.type === "positive" ? "text-emerald-500" : evidence.type === "negative" ? "text-red-500" : "text-amber-500";
+  const bgColor = evidence.type === "positive" ? "bg-emerald-50" : evidence.type === "negative" ? "bg-red-50" : "bg-amber-50";
+
+  return (
+    <div className={`flex items-start gap-3 p-3 rounded-lg ${bgColor}`}>
+      <Icon className={`w-5 h-5 ${iconColor} flex-shrink-0 mt-0.5`} />
+      <span className="text-sm text-gray-700 leading-relaxed">{evidence.text}</span>
+    </div>
+  );
 }
 
-function ComparisonStat({ 
+function ComparisonMetric({ 
+  icon: Icon,
   label, 
   value, 
   type 
 }: { 
+  icon: any;
   label: string; 
   value: number; 
   type: "pace" | "hr" | "effort" | "distance" 
@@ -141,19 +159,25 @@ function ComparisonStat({
   const isPositive = type === "pace" ? value < 0 : type === "hr" ? value < 0 : value > 0;
   const isNegative = type === "pace" ? value > 0 : type === "hr" ? value > 0 : value < 0;
   
-  const color = isPositive ? "text-emerald-600" : isNegative ? "text-red-500" : "text-gray-600";
-  const Icon = isPositive ? TrendingUp : isNegative ? TrendingDown : Minus;
-  const iconColor = isPositive ? "text-emerald-500" : isNegative ? "text-red-400" : "text-gray-400";
+  const bgColor = isPositive ? "bg-emerald-50" : isNegative ? "bg-red-50" : "bg-gray-50";
+  const textColor = isPositive ? "text-emerald-600" : isNegative ? "text-red-600" : "text-gray-600";
+  const iconColor = isPositive ? "text-emerald-500" : isNegative ? "text-red-500" : "text-gray-400";
+  const TrendIcon = isPositive ? TrendingUp : isNegative ? TrendingDown : Minus;
 
   return (
-    <div className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-      <div className="flex items-center gap-2">
-        <Icon className={`w-4 h-4 ${iconColor}`} />
-        <span className="text-sm font-medium text-gray-600">{label}</span>
+    <div className={`flex items-center justify-between p-3 rounded-xl ${bgColor} transition-all hover:scale-[1.02]`}>
+      <div className="flex items-center gap-2.5">
+        <div className={`p-1.5 rounded-lg bg-white/70`}>
+          <Icon className={`w-4 h-4 ${iconColor}`} />
+        </div>
+        <span className="text-sm font-medium text-gray-700">{label}</span>
       </div>
-      <span className={`text-base font-bold ${color}`}>
-        {value > 0 ? "+" : ""}{value}%
-      </span>
+      <div className="flex items-center gap-1.5">
+        <TrendIcon className={`w-4 h-4 ${iconColor}`} />
+        <span className={`text-base font-bold ${textColor}`}>
+          {value > 0 ? "+" : ""}{value}%
+        </span>
+      </div>
     </div>
   );
 }
@@ -164,18 +188,22 @@ export default function UnifiedCoachCard({
 }: UnifiedCoachCardProps) {
   if (isLoading) {
     return (
-      <Card className="border shadow-sm" data-testid="unified-coach-card-loading">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-6">
-            <Skeleton className="w-[140px] h-[140px] rounded-full" />
-            <div className="flex-1 space-y-3">
-              <Skeleton className="h-6 w-48" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-            </div>
-            <div className="w-48 space-y-2">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
+      <Card className="border shadow-lg overflow-hidden" data-testid="unified-coach-card-loading">
+        <CardContent className="p-0">
+          <div className="p-6 bg-gradient-to-r from-slate-50 to-gray-50">
+            <div className="flex flex-col lg:flex-row gap-8">
+              <Skeleton className="w-[160px] h-[160px] rounded-full mx-auto lg:mx-0" />
+              <div className="flex-1 space-y-4">
+                <Skeleton className="h-7 w-48" />
+                <Skeleton className="h-5 w-full" />
+                <Skeleton className="h-16 w-full" />
+              </div>
+              <div className="w-full lg:w-64 space-y-3">
+                <Skeleton className="h-14 w-full rounded-xl" />
+                <Skeleton className="h-14 w-full rounded-xl" />
+                <Skeleton className="h-14 w-full rounded-xl" />
+                <Skeleton className="h-14 w-full rounded-xl" />
+              </div>
             </div>
           </div>
         </CardContent>
@@ -189,115 +217,127 @@ export default function UnifiedCoachCard({
   const score = gradeToScore(grade, effortScore);
   const recoveryHours = getRecoveryHours(consistencyLabel);
   const trainingGuidance = getTrainingGuidance(consistencyLabel);
+  const config = gradeConfig[grade] || gradeConfig.C;
 
   return (
-    <Card className="border shadow-sm overflow-hidden" data-testid="unified-coach-card">
+    <Card className="border shadow-lg overflow-hidden" data-testid="unified-coach-card">
       <CardContent className="p-0">
-        <div className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
-          <div className="flex items-center gap-2 text-gray-600 mb-5">
-            <Award className="w-5 h-5 text-orange-500" />
-            <span className="font-semibold text-gray-800">Coach Verdict</span>
+        {/* Header */}
+        <div className={`px-6 py-4 bg-gradient-to-r ${config.bg} border-b ${config.border}`}>
+          <div className="flex items-center gap-2">
+            <Award className={`w-5 h-5 ${config.text}`} />
+            <span className={`font-bold ${config.text}`}>Coach Verdict</span>
           </div>
+        </div>
 
-          <div className="flex flex-col lg:flex-row gap-6">
-            <div className="flex flex-col sm:flex-row lg:flex-row gap-6 flex-1">
-              <div className="flex-shrink-0 flex justify-center sm:justify-start">
-                <CircularGauge grade={grade} score={score} />
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-gray-900 text-xl mb-1" data-testid="grade-label">{gradeLabel}</p>
-                <p className="text-gray-600 text-sm mb-4" data-testid="verdict-summary">{summary}</p>
-                
-                {evidenceBullets && evidenceBullets.length > 0 && (
-                  <div className="space-y-2" data-testid="evidence-bullets">
-                    {evidenceBullets.slice(0, 3).map((bullet, idx) => (
-                      <div key={idx} className="flex items-start gap-2">
-                        <EvidenceIcon type={bullet.type} />
-                        <span className="text-sm text-gray-700">{bullet.text}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+        {/* Main Content - 3 Column Layout */}
+        <div className="p-6 bg-white">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            {/* Left Column - Grade Gauge */}
+            <div className="lg:col-span-3 flex flex-col items-center justify-center">
+              <GradeGauge grade={grade} score={score} />
+              <p className={`mt-3 text-lg font-bold ${config.text} text-center`} data-testid="grade-label">
+                {gradeLabel}
+              </p>
             </div>
 
-            <div className="lg:w-52 flex-shrink-0">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 text-center lg:text-left">vs 42-day avg</p>
-              <div className="grid grid-cols-2 lg:grid-cols-1 gap-2">
-                <ComparisonStat label="Pace" value={comparison.paceVsAvg} type="pace" />
-                <ComparisonStat label="Heart Rate" value={comparison.hrVsAvg} type="hr" />
-                <ComparisonStat label="Effort" value={comparison.effortVsAvg} type="effort" />
-                <ComparisonStat label="Distance" value={comparison.distanceVsAvg} type="distance" />
+            {/* Center Column - Summary & Evidence */}
+            <div className="lg:col-span-5 flex flex-col">
+              <p className="text-gray-600 text-base leading-relaxed mb-4" data-testid="verdict-summary">
+                {summary}
+              </p>
+              
+              {evidenceBullets && evidenceBullets.length > 0 && (
+                <div className="space-y-2.5 flex-1" data-testid="evidence-bullets">
+                  {evidenceBullets.slice(0, 3).map((bullet, idx) => (
+                    <EvidenceBullet key={idx} evidence={bullet} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Right Column - Comparison Stats */}
+            <div className="lg:col-span-4">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                vs 42-Day Average
+              </p>
+              <div className="space-y-2.5">
+                <ComparisonMetric icon={Gauge} label="Pace" value={comparison.paceVsAvg} type="pace" />
+                <ComparisonMetric icon={Heart} label="Heart Rate" value={comparison.hrVsAvg} type="hr" />
+                <ComparisonMetric icon={Activity} label="Effort" value={comparison.effortVsAvg} type="effort" />
+                <ComparisonMetric icon={Route} label="Distance" value={comparison.distanceVsAvg} type="distance" />
               </div>
             </div>
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-100">
-          <div className="p-5 bg-gradient-to-br from-amber-50/50 to-orange-50/50">
+        {/* Next 48 Hours Section */}
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-t border-amber-100">
+          <div className="p-5">
             <div className="flex items-center gap-2 mb-4">
               <Clock className="w-5 h-5 text-amber-600" />
               <span className="font-bold text-gray-800">Next 48 Hours</span>
             </div>
             
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white/70 border border-amber-100">
-                <Zap className="w-4 h-4 text-amber-600" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-amber-100 shadow-sm">
+                <div className="p-2 rounded-lg bg-amber-100">
+                  <Zap className="w-5 h-5 text-amber-600" />
+                </div>
                 <div>
-                  <p className="font-semibold text-gray-900 text-sm">{formatConsistency(consistencyLabel)} Effort</p>
-                  <p className="text-xs text-gray-500">Effort Score: {effortScore}</p>
+                  <p className="font-semibold text-gray-900">{formatConsistency(consistencyLabel)} Effort</p>
+                  <p className="text-sm text-gray-500">Effort Score: {effortScore}</p>
                 </div>
               </div>
               
-              <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white/70 border border-amber-100">
-                <Calendar className="w-4 h-4 text-amber-600" />
+              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-amber-100 shadow-sm">
+                <div className="p-2 rounded-lg bg-amber-100">
+                  <Calendar className="w-5 h-5 text-amber-600" />
+                </div>
                 <div>
-                  <p className="font-semibold text-gray-900 text-sm">Recovery Window</p>
-                  <p className="text-xs text-gray-500">{recoveryHours} hours recommended</p>
+                  <p className="font-semibold text-gray-900">Recovery Window</p>
+                  <p className="text-sm text-gray-500">{recoveryHours} hours recommended</p>
                 </div>
               </div>
               
-              <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white/70 border border-amber-100">
-                <ArrowRight className="w-4 h-4 text-amber-600" />
+              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-amber-100 shadow-sm">
+                <div className="p-2 rounded-lg bg-amber-100">
+                  <ArrowRight className="w-5 h-5 text-amber-600" />
+                </div>
                 <div>
-                  <p className="font-semibold text-gray-900 text-sm">Guidance</p>
-                  <p className="text-xs text-gray-500">{trainingGuidance}</p>
+                  <p className="font-semibold text-gray-900">Guidance</p>
+                  <p className="text-sm text-gray-500">{trainingGuidance}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="p-5 bg-white">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="w-5 h-5 text-blue-600" />
-              <span className="font-bold text-gray-800">Next Steps</span>
-            </div>
-            
-            {nextSteps && nextSteps.length > 0 && (
-              <div className="space-y-2 mb-4">
-                {nextSteps.slice(0, 2).map((step, idx) => (
-                  <p key={idx} className="text-sm text-gray-700 flex items-start gap-2">
-                    <span className="text-blue-500 font-bold">{idx + 1}.</span>
-                    {step}
-                  </p>
-                ))}
+          {/* Next Steps & Actions */}
+          <div className="px-5 pb-5 pt-0">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-white border border-amber-100 shadow-sm">
+              <div className="flex-1">
+                {nextSteps && nextSteps.length > 0 && (
+                  <div className="flex items-start gap-2">
+                    <Sparkles className="w-4 h-4 text-blue-500 mt-1 flex-shrink-0" />
+                    <p className="text-sm text-gray-700">{nextSteps[0]}</p>
+                  </div>
+                )}
               </div>
-            )}
-
-            <div className="flex gap-2 pt-3 border-t border-gray-100">
-              <Link href="/training-plans" className="flex-1">
-                <Button variant="outline" size="sm" className="w-full text-xs font-semibold border-blue-200 text-blue-700 hover:bg-blue-50" data-testid="button-training-plan">
-                  <Flag className="h-3.5 w-3.5 mr-1.5" />
-                  Training Plan
-                </Button>
-              </Link>
-              <Link href="/coach" className="flex-1">
-                <Button variant="outline" size="sm" className="w-full text-xs font-semibold border-blue-200 text-blue-700 hover:bg-blue-50" data-testid="button-ask-coach">
-                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                  Ask Coach
-                </Button>
-              </Link>
+              <div className="flex gap-2 flex-shrink-0">
+                <Link href="/training-plans">
+                  <Button variant="outline" size="sm" className="text-xs font-semibold border-blue-200 text-blue-700 hover:bg-blue-50" data-testid="button-training-plan">
+                    <Flag className="h-3.5 w-3.5 mr-1.5" />
+                    Training Plan
+                  </Button>
+                </Link>
+                <Link href="/coach">
+                  <Button size="sm" className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white" data-testid="button-ask-coach">
+                    <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                    Ask Coach
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>

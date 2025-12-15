@@ -1366,21 +1366,23 @@ ${allPages.map(page => `  <url>
           trainingLoadChange: lastMonthActivitiesCount > 0 ? Math.round(((totalActivities * 85 - lastMonthActivitiesCount * 85) / (lastMonthActivitiesCount * 85)) * 100) : null,
         },
         activities: (() => {
+          // Calculate fallback averages for activities without cached grade
           const avgDistance = activities.length > 0 
             ? activities.reduce((sum, a) => sum + (a.distance || 0), 0) / activities.length 
             : 0;
-          const avgPaceValue = activities.length > 0 && activities.filter(a => a.distance > 0).length > 0
-            ? activities.filter(a => a.distance > 0).reduce((sum, a) => {
+          const validPaceActivities = activities.filter(a => a.distance > 0 && a.movingTime > 0);
+          const avgPaceValue = validPaceActivities.length > 0
+            ? validPaceActivities.reduce((sum, a) => {
                 const distKm = a.distance / 1000;
                 return sum + (a.movingTime / 60) / distKm;
-              }, 0) / activities.filter(a => a.distance > 0).length
+              }, 0) / validPaceActivities.length
             : 0;
-          
+
           return activities.map(activity => {
-            let grade: "A" | "B" | "C" | "D" | "F" = "C";
-            if (avgDistance > 0) {
+            // Use cached grade if available, otherwise calculate fallback
+            let grade: "A" | "B" | "C" | "D" | "F" = activity.cachedGrade as any || (() => {
+              if (avgDistance <= 0) return "C";
               let score = 70;
-              
               const distanceRatio = activity.distance / avgDistance;
               const distKm = activity.distance / 1000;
               const pacePerKm = distKm > 0 ? (activity.movingTime / 60) / distKm : 0;
@@ -1397,12 +1399,12 @@ ${allPages.map(page => `  <url>
               else if (distanceRatio < 0.5) score -= 15;
               else if (distanceRatio < 0.8) score -= 5;
               
-              if (score >= 90) grade = "A";
-              else if (score >= 80) grade = "B";
-              else if (score >= 70) grade = "C";
-              else if (score >= 60) grade = "D";
-              else grade = "F";
-            }
+              if (score >= 85) return "A";
+              if (score >= 75) return "B";
+              if (score >= 65) return "C";
+              if (score >= 55) return "D";
+              return "F";
+            })();
             
             return {
               id: activity.id,
@@ -2891,25 +2893,26 @@ ${allPages.map(page => `  <url>
         endDate,
       });
 
-      // Calculate grades for activities
+      // Use cached grades from verdicts, calculate fallback if not available
       const activitiesWithGrades = (() => {
-        const activities = result.activities || [];
-        if (activities.length === 0) return activities;
-        
-        const avgDistance = activities.reduce((sum: number, a: any) => sum + (a.distance || 0), 0) / activities.length;
-        const validPaceActivities = activities.filter((a: any) => a.distance > 0 && a.movingTime > 0);
+        const allActivities = result.activities || [];
+        if (allActivities.length === 0) return allActivities;
+
+        // Calculate averages for fallback grade calculation
+        const avgDistance = allActivities.reduce((sum: number, a: any) => sum + (a.distance || 0), 0) / allActivities.length;
+        const validPaceActivities = allActivities.filter((a: any) => a.distance > 0 && a.movingTime > 0);
         const avgPaceValue = validPaceActivities.length > 0
           ? validPaceActivities.reduce((sum: number, a: any) => {
               const distKm = a.distance / 1000;
               return sum + (a.movingTime / 60) / distKm;
             }, 0) / validPaceActivities.length
           : 0;
-        
-        return activities.map((activity: any) => {
-          let grade: "A" | "B" | "C" | "D" | "F" = "C";
-          if (avgDistance > 0) {
+
+        return allActivities.map((activity: any) => {
+          // Use cached grade if available, otherwise calculate fallback
+          const grade = activity.cachedGrade || (() => {
+            if (avgDistance <= 0) return "C";
             let score = 70;
-            
             const distanceRatio = activity.distance / avgDistance;
             const distKm = activity.distance / 1000;
             const pacePerKm = distKm > 0 ? (activity.movingTime / 60) / distKm : 0;
@@ -2926,12 +2929,12 @@ ${allPages.map(page => `  <url>
             else if (distanceRatio < 0.5) score -= 15;
             else if (distanceRatio < 0.8) score -= 5;
             
-            if (score >= 90) grade = "A";
-            else if (score >= 80) grade = "B";
-            else if (score >= 70) grade = "C";
-            else if (score >= 60) grade = "D";
-            else grade = "F";
-          }
+            if (score >= 85) return "A";
+            if (score >= 75) return "B";
+            if (score >= 65) return "C";
+            if (score >= 55) return "D";
+            return "F";
+          })();
           return { ...activity, grade };
         });
       })();
@@ -3761,6 +3764,13 @@ ${allPages.map(page => `  <url>
       
       if (!verdict) {
         return res.status(404).json({ message: "Activity not found or not accessible" });
+      }
+
+      // Cache the grade on the activity for dashboard consistency
+      try {
+        await storage.updateActivityGrade(activityId, verdict.grade);
+      } catch (e) {
+        console.error('Failed to cache activity grade:', e);
       }
 
       setCachedResponse(cacheKey, verdict);
