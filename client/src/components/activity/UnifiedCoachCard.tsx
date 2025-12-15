@@ -29,6 +29,7 @@ interface CoachVerdictData {
 interface UnifiedCoachCardProps {
   verdictData: CoachVerdictData | null | undefined;
   isLoading?: boolean;
+  onAskCoach?: () => void;
 }
 
 const gradeConfig: Record<string, { gradient: string; text: string; bg: string; border: string }> = {
@@ -184,7 +185,8 @@ function ComparisonMetric({
 
 export default function UnifiedCoachCard({ 
   verdictData, 
-  isLoading 
+  isLoading,
+  onAskCoach 
 }: UnifiedCoachCardProps) {
   if (isLoading) {
     return (
@@ -331,12 +333,15 @@ export default function UnifiedCoachCard({
                     Training Plan
                   </Button>
                 </Link>
-                <Link href="/dashboard?openChat=new">
-                  <Button size="sm" className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white" data-testid="button-ask-coach">
-                    <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                    Ask Coach
-                  </Button>
-                </Link>
+                <Button 
+                  size="sm" 
+                  className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white" 
+                  data-testid="button-ask-coach"
+                  onClick={onAskCoach}
+                >
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                  Ask Coach
+                </Button>
               </div>
             </div>
           </div>

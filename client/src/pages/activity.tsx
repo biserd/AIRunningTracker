@@ -4,7 +4,7 @@ import { useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, Thermometer, BarChart3, Timer, Trophy, Mountain, Pause, Flag, Users, BookOpen, BarChart2, ChevronDown, ChevronUp, Loader2, Lock, Sparkles } from "lucide-react";
+import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, Thermometer, BarChart3, Timer, Trophy, Mountain, Pause, Flag, Users, BookOpen, BarChart2, ChevronDown, ChevronUp, Loader2, Lock, Sparkles, X, MessageCircle } from "lucide-react";
 import { Link } from "wouter";
 import AppHeader from "@/components/AppHeader";
 import RouteMap, { KeyMoment } from "@/components/RouteMap";
@@ -19,6 +19,7 @@ import InsightChips from "@/components/activity/InsightChips";
 import BenchmarkDrawer from "@/components/activity/BenchmarkDrawer";
 import EfficiencyDrawer from "@/components/activity/EfficiencyDrawer";
 import CompareDrawer from "@/components/activity/CompareDrawer";
+import { ChatPanel } from "@/components/ChatPanel";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { ViewOnStravaLink, StravaPoweredBy } from "@/components/StravaConnect";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -187,10 +188,11 @@ export default function ActivityPage() {
   const activityId = params?.id;
   const [viewMode, setViewMode] = useState<ViewMode>("story");
   const [activeChip, setActiveChip] = useState<"drift" | "pacing" | "quality" | "benchmark" | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const { isFree, isPro, isPremium, isLoading: subscriptionLoading } = useSubscription();
 
-  const { data: userData } = useQuery<{ activityViewMode?: string; unitPreference?: string }>({
+  const { data: userData } = useQuery<{ id?: number; activityViewMode?: string; unitPreference?: string }>({
     queryKey: ['/api/user'],
   });
 
@@ -680,6 +682,7 @@ export default function ActivityPage() {
                 <UnifiedCoachCard 
                   verdictData={verdictData}
                   isLoading={!verdictData && subscriptionReady && !isFree}
+                  onAskCoach={() => setIsChatOpen(true)}
                 />
               )}
             </div>
@@ -1018,6 +1021,27 @@ export default function ActivityPage() {
           </div>
         )}
       </div>
+
+      {/* AI Coach Chat Popup */}
+      {isChatOpen && userData?.id && (
+        <div 
+          className="fixed top-0 right-0 h-full w-full sm:w-96 bg-white dark:bg-slate-900 shadow-2xl z-50 transition-transform duration-300 translate-x-0"
+          aria-hidden={!isChatOpen}
+        >
+          <ChatPanel 
+            userId={userData.id} 
+            onClose={() => setIsChatOpen(false)}
+          />
+        </div>
+      )}
+
+      {/* Chat overlay backdrop */}
+      {isChatOpen && (
+        <div 
+          className="fixed inset-0 bg-black/30 z-40"
+          onClick={() => setIsChatOpen(false)}
+        />
+      )}
     </div>
   );
 }
