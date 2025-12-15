@@ -757,6 +757,9 @@ export default function ActivityPage() {
                               HR: {efficiencyData.firstHalfHr} → {efficiencyData.secondHalfHr} bpm
                             </p>
                           )}
+                          <p className="text-xs text-gray-400 mt-3 leading-relaxed">
+                            Measures how much your heart rate rises relative to pace. Lower is better — under 5% means strong aerobic fitness.
+                          </p>
                         </>
                       ) : (
                         <p className="text-sm text-gray-500">Insufficient data</p>
@@ -785,6 +788,9 @@ export default function ActivityPage() {
                           Split CV: {efficiencyData.splitVariance}%
                         </p>
                       )}
+                      <p className="text-xs text-gray-400 mt-3 leading-relaxed">
+                        Shows how consistent your split times were. Higher scores mean even pacing — key for race efficiency.
+                      </p>
                     </div>
 
                     {/* vs Baseline */}
@@ -810,6 +816,9 @@ export default function ActivityPage() {
                               HR: {verdictData.comparison.hrVsAvg >= 0 ? '+' : ''}{verdictData.comparison.hrVsAvg}% vs avg
                             </p>
                           )}
+                          <p className="text-xs text-gray-400 mt-3 leading-relaxed">
+                            Compares this run to your 6-week rolling average pace and heart rate.
+                          </p>
                         </>
                       ) : (
                         <p className="text-sm text-gray-500">Need more runs for baseline</p>
