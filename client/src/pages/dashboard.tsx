@@ -54,7 +54,11 @@ export default function Dashboard() {
     const params = new URLSearchParams(window.location.search);
     const chatId = params.get('openChat');
     if (chatId) {
-      setSelectedConversationId(parseInt(chatId));
+      if (chatId === 'new') {
+        setSelectedConversationId(undefined);
+      } else {
+        setSelectedConversationId(parseInt(chatId));
+      }
       setIsChatOpen(true);
       // Clean up URL
       window.history.replaceState({}, '', '/dashboard');
