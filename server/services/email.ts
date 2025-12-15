@@ -117,6 +117,12 @@ class EmailService {
           <a href="https://aitracker.run/dashboard" style="background: #e74c3c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Start Your Journey →</a>
         </div>
         
+        <div style="background: #fc4c02; background: linear-gradient(135deg, #fc4c02 0%, #e34402 100%); padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
+          <p style="color: white; margin: 0 0 10px 0; font-weight: bold;">🏃‍♂️ Join Our Strava Club!</p>
+          <p style="color: rgba(255,255,255,0.9); margin: 0 0 15px 0; font-size: 14px;">Connect with fellow RunAnalytics runners and share your achievements.</p>
+          <a href="https://www.strava.com/clubs/1868735" style="background: white; color: #fc4c02; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Join the Club →</a>
+        </div>
+        
         <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; color: #666; font-size: 14px;">
           <p>Need help getting started? Check out our <a href="https://aitracker.run/faq" style="color: #e74c3c;">FAQ page</a> or reply to this email.</p>
           <p>Happy running!<br>The RunAnalytics Team</p>
@@ -142,6 +148,10 @@ What You Get with RunAnalytics:
 • Comprehensive activity analysis and trends
 
 Start your journey: https://aitracker.run/dashboard
+
+🏃‍♂️ Join Our Strava Club!
+Connect with fellow RunAnalytics runners and share your achievements.
+Join here: https://www.strava.com/clubs/1868735
 
 Need help? Check our FAQ: https://aitracker.run/faq
 
