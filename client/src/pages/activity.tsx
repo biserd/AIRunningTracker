@@ -23,7 +23,8 @@ import { ChatPanel } from "@/components/ChatPanel";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { ViewOnStravaLink, StravaPoweredBy } from "@/components/StravaConnect";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useSubscription } from "@/hooks/useSubscription";
+import { useSubscription, useFeatureAccess } from "@/hooks/useSubscription";
+import { LockedFeatureTeaser, LockedOverlay, TierBadge as TierBadgeComponent } from "@/components/LockedFeatureTeaser";
 
 type ViewMode = "story" | "deep_dive";
 
@@ -191,6 +192,7 @@ export default function ActivityPage() {
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   const { isFree, isPro, isPremium, isLoading: subscriptionLoading } = useSubscription();
+  const featureAccess = useFeatureAccess();
 
   const { data: userData } = useQuery<{ id?: number; activityViewMode?: string; unitPreference?: string }>({
     queryKey: ['/api/user'],
@@ -672,19 +674,13 @@ export default function ActivityPage() {
           <>
             {/* 1. Unified Coach Card - Combines Verdict, Next 48 Hours, and Goal Alignment */}
             <div className="mb-6">
-              {isFree ? (
-                <LockedFeaturePanel 
-                  tier="pro"
-                  title="AI Coach Analysis"
-                  description="Get personalized AI-powered analysis of your run including grade, key takeaways, training consistency metrics, recovery guidance, and actionable recommendations."
-                />
-              ) : (
-                <UnifiedCoachCard 
-                  verdictData={verdictData}
-                  isLoading={!verdictData && subscriptionReady && !isFree}
-                  onAskCoach={() => setIsChatOpen(true)}
-                />
-              )}
+              <UnifiedCoachCard 
+                verdictData={verdictData}
+                isLoading={!verdictData && subscriptionReady}
+                onAskCoach={() => setIsChatOpen(true)}
+                mode={featureAccess.activity.coachVerdict as 'full' | 'basic'}
+                canAskCoach={featureAccess.activity.askCoach}
+              />
             </div>
             
             {/* 2. Route Map - Always visible with better sizing and key moments */}
@@ -726,7 +722,12 @@ export default function ActivityPage() {
         {viewMode === 'deep_dive' && (
           <div className="space-y-6">
             {/* Section 1: Performance Metrics - Drift, Pacing, Baseline */}
-            {!isFree && efficiencyData && (
+            {!featureAccess.activity.performanceMetrics ? (
+              <LockedFeatureTeaser 
+                tier="pro"
+                teaser="Unlock detailed Drift, Pacing, and Baseline comparison metrics"
+              />
+            ) : efficiencyData ? (
               <Card className="overflow-hidden">
                 <CardHeader className="pb-3 bg-gradient-to-r from-green-50 to-teal-50">
                   <CardTitle className="flex items-center gap-2 text-lg font-bold">
@@ -847,7 +848,7 @@ export default function ActivityPage() {
                   )}
                 </CardContent>
               </Card>
-            )}
+            ) : null}
 
             {/* Section 2: Run Timeline */}
             {isFree ? (

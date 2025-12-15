@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Award, TrendingUp, TrendingDown, Minus, CheckCircle2, XCircle, AlertCircle, Sparkles, Flag, ArrowRight, Clock, Calendar, Zap, Activity, Heart, Gauge, Route } from "lucide-react";
+import { Award, TrendingUp, TrendingDown, Minus, CheckCircle2, XCircle, AlertCircle, Sparkles, Flag, ArrowRight, Clock, Calendar, Zap, Activity, Heart, Gauge, Route, Lock } from "lucide-react";
 import { Link } from "wouter";
 
 interface VerdictEvidence {
@@ -30,6 +30,8 @@ interface UnifiedCoachCardProps {
   verdictData: CoachVerdictData | null | undefined;
   isLoading?: boolean;
   onAskCoach?: () => void;
+  mode?: 'full' | 'basic';
+  canAskCoach?: boolean;
 }
 
 const gradeConfig: Record<string, { gradient: string; text: string; bg: string; border: string }> = {
@@ -186,7 +188,9 @@ function ComparisonMetric({
 export default function UnifiedCoachCard({ 
   verdictData, 
   isLoading,
-  onAskCoach 
+  onAskCoach,
+  mode = 'full',
+  canAskCoach = true
 }: UnifiedCoachCardProps) {
   if (isLoading) {
     return (
@@ -264,12 +268,48 @@ export default function UnifiedCoachCard({
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
                 vs 42-Day Average
               </p>
-              <div className="space-y-2.5">
-                <ComparisonMetric icon={Gauge} label="Pace" value={comparison.paceVsAvg} type="pace" />
-                <ComparisonMetric icon={Heart} label="Heart Rate" value={comparison.hrVsAvg} type="hr" />
-                <ComparisonMetric icon={Activity} label="Effort" value={comparison.effortVsAvg} type="effort" />
-                <ComparisonMetric icon={Route} label="Distance" value={comparison.distanceVsAvg} type="distance" />
-              </div>
+              {mode === 'basic' ? (
+                <div className="relative">
+                  <div className="blur-sm pointer-events-none select-none opacity-50 space-y-2.5">
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-1.5 rounded-lg bg-white/70"><Gauge className="w-4 h-4 text-gray-400" /></div>
+                        <span className="text-sm font-medium text-gray-700">Pace</span>
+                      </div>
+                      <span className="text-base font-bold text-gray-600">--%</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-1.5 rounded-lg bg-white/70"><Heart className="w-4 h-4 text-gray-400" /></div>
+                        <span className="text-sm font-medium text-gray-700">Heart Rate</span>
+                      </div>
+                      <span className="text-base font-bold text-gray-600">--%</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-1.5 rounded-lg bg-white/70"><Activity className="w-4 h-4 text-gray-400" /></div>
+                        <span className="text-sm font-medium text-gray-700">Effort</span>
+                      </div>
+                      <span className="text-base font-bold text-gray-600">--%</span>
+                    </div>
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Link href="/pricing">
+                      <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white shadow-lg" data-testid="button-unlock-comparison">
+                        <Lock className="h-3.5 w-3.5 mr-1.5" />
+                        Unlock
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  <ComparisonMetric icon={Gauge} label="Pace" value={comparison.paceVsAvg} type="pace" />
+                  <ComparisonMetric icon={Heart} label="Heart Rate" value={comparison.hrVsAvg} type="hr" />
+                  <ComparisonMetric icon={Activity} label="Effort" value={comparison.effortVsAvg} type="effort" />
+                  <ComparisonMetric icon={Route} label="Distance" value={comparison.distanceVsAvg} type="distance" />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -333,15 +373,29 @@ export default function UnifiedCoachCard({
                     Training Plan
                   </Button>
                 </Link>
-                <Button 
-                  size="sm" 
-                  className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white" 
-                  data-testid="button-ask-coach"
-                  onClick={onAskCoach}
-                >
-                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                  Ask Coach
-                </Button>
+                {canAskCoach ? (
+                  <Button 
+                    size="sm" 
+                    className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white" 
+                    data-testid="button-ask-coach"
+                    onClick={onAskCoach}
+                  >
+                    <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                    Ask Coach
+                  </Button>
+                ) : (
+                  <Link href="/pricing">
+                    <Button 
+                      size="sm" 
+                      className="text-xs font-semibold bg-yellow-500 hover:bg-yellow-600 text-white" 
+                      data-testid="button-ask-coach-locked"
+                    >
+                      <Lock className="h-3.5 w-3.5 mr-1.5" />
+                      Ask Coach
+                      <span className="ml-1 text-[10px] bg-yellow-600/50 px-1 rounded">PREMIUM</span>
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           </div>
