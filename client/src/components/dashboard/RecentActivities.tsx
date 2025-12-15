@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Activity, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import { StravaPoweredBy } from "@/components/StravaConnect";
@@ -26,6 +27,14 @@ const gradeColors: Record<string, string> = {
   C: "bg-gradient-to-br from-yellow-500 to-amber-600",
   D: "bg-gradient-to-br from-orange-500 to-red-500",
   F: "bg-gradient-to-br from-red-600 to-rose-700"
+};
+
+const gradeDescriptions: Record<string, string> = {
+  A: "Excellent! Above average distance & pace",
+  B: "Great run, better than your typical effort",
+  C: "Solid effort, right at your average",
+  D: "Lighter session, below your usual",
+  F: "Recovery run or short session"
 };
 
 export default function RecentActivities({ activities, unitPreference }: RecentActivitiesProps) {
@@ -73,9 +82,19 @@ export default function RecentActivities({ activities, unitPreference }: RecentA
             <Link key={activity.id} href={`/activity/${activity.id}`}>
               <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" data-testid={`activity-row-${activity.id}`}>
                 {activity.grade ? (
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold text-white shadow-md ${gradeColors[activity.grade]}`} data-testid={`grade-badge-${activity.id}`}>
-                    {activity.grade}
-                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold text-white shadow-md cursor-help ${gradeColors[activity.grade]}`} data-testid={`grade-badge-${activity.id}`}>
+                          {activity.grade}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-xs">
+                        <p className="font-semibold">Run Score: {activity.grade}</p>
+                        <p className="text-xs text-muted-foreground">{gradeDescriptions[activity.grade]}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 ) : (
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getActivityIcon(index)}`}>
                     <Activity size={18} />
