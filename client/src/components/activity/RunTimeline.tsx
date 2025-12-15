@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Activity, Heart, TrendingUp, Zap, Mountain, Loader2 } from "lucide-react";
@@ -33,9 +32,26 @@ interface RunTimelineProps {
 
 type MetricType = "pace" | "heartrate" | "power" | "cadence";
 
+const METRIC_COLORS = {
+  pace: { stroke: "#8b5cf6", fill: "#8b5cf680" },
+  heartrate: { stroke: "#ef4444", fill: "#ef444480" },
+  power: { stroke: "#eab308", fill: "#eab30880" },
+  cadence: { stroke: "#6366f1", fill: "#6366f180" },
+};
+
 export default function RunTimeline({ streams, unitPreference = 'km', activityDistance, isHydrating = false }: RunTimelineProps) {
-  const [activeMetric, setActiveMetric] = useState<MetricType>("pace");
+  const [activeMetrics, setActiveMetrics] = useState<MetricType[]>(["pace"]);
   const [showElevation, setShowElevation] = useState(true);
+
+  const toggleMetric = (metric: MetricType) => {
+    setActiveMetrics(prev => {
+      if (prev.includes(metric)) {
+        if (prev.length === 1) return prev;
+        return prev.filter(m => m !== metric);
+      }
+      return [...prev, metric];
+    });
+  };
 
   if (!streams || !streams.distance?.data || !streams.time?.data) {
     return (
@@ -109,52 +125,49 @@ export default function RunTimeline({ streams, unitPreference = 'km', activityDi
       };
     });
 
-  const getMetricConfig = () => {
-    switch (activeMetric) {
+  const getMetricConfig = (metric: MetricType) => {
+    switch (metric) {
       case "pace":
         return {
           dataKey: "pace",
-          stroke: "#8b5cf6",
-          fill: "#8b5cf680",
+          stroke: METRIC_COLORS.pace.stroke,
+          fill: METRIC_COLORS.pace.fill,
           name: `Pace (/${distanceUnit})`,
-          domain: ['auto', 'auto'] as [string, string],
           reversed: true,
           formatter: (value: number) => `${Math.floor(value)}:${String(Math.round((value % 1) * 60)).padStart(2, '0')} /${distanceUnit}`,
         };
       case "heartrate":
         return {
           dataKey: "heartrate",
-          stroke: "#ef4444",
-          fill: "#ef444480",
+          stroke: METRIC_COLORS.heartrate.stroke,
+          fill: METRIC_COLORS.heartrate.fill,
           name: "Heart Rate (bpm)",
-          domain: ['auto', 'auto'] as [string, string],
           reversed: false,
           formatter: (value: number) => `${Math.round(value)} bpm`,
         };
       case "power":
         return {
           dataKey: "power",
-          stroke: "#eab308",
-          fill: "#eab30880",
+          stroke: METRIC_COLORS.power.stroke,
+          fill: METRIC_COLORS.power.fill,
           name: "Power (W)",
-          domain: ['auto', 'auto'] as [string, string],
           reversed: false,
           formatter: (value: number) => `${Math.round(value)} W`,
         };
       case "cadence":
         return {
           dataKey: "cadence",
-          stroke: "#6366f1",
-          fill: "#6366f180",
+          stroke: METRIC_COLORS.cadence.stroke,
+          fill: METRIC_COLORS.cadence.fill,
           name: "Cadence (spm)",
-          domain: ['auto', 'auto'] as [string, string],
           reversed: false,
           formatter: (value: number) => `${Math.round(value)} spm`,
         };
     }
   };
 
-  const metricConfig = getMetricConfig();
+  const primaryMetric = activeMetrics[0];
+  const primaryConfig = getMetricConfig(primaryMetric);
 
   // Detect AI pins for notable events in the run
   const detectAIPins = (): AIPin[] => {
@@ -303,37 +316,64 @@ export default function RunTimeline({ streams, unitPreference = 'km', activityDi
             Run Timeline
           </CardTitle>
           <div className="flex items-center gap-4">
-            <ToggleGroup 
-              type="single" 
-              value={activeMetric} 
-              onValueChange={(val) => val && setActiveMetric(val as MetricType)}
-              data-testid="toggle-timeline-metric"
-            >
+            <div className="flex gap-1" data-testid="toggle-timeline-metric">
               {hasPace && (
-                <ToggleGroupItem value="pace" aria-label="Pace" className="px-2 text-xs" data-testid="toggle-pace">
-                  <TrendingUp className="h-3.5 w-3.5 mr-1" />
+                <button 
+                  onClick={() => toggleMetric("pace")}
+                  className={`px-2 py-1 rounded text-xs flex items-center gap-1 transition-colors ${
+                    activeMetrics.includes("pace") 
+                      ? "bg-purple-100 text-purple-700 border border-purple-300" 
+                      : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200"
+                  }`}
+                  data-testid="toggle-pace"
+                >
+                  <TrendingUp className="h-3.5 w-3.5" />
                   Pace
-                </ToggleGroupItem>
+                </button>
               )}
               {hasHeartrate && (
-                <ToggleGroupItem value="heartrate" aria-label="Heart Rate" className="px-2 text-xs" data-testid="toggle-hr">
-                  <Heart className="h-3.5 w-3.5 mr-1" />
+                <button 
+                  onClick={() => toggleMetric("heartrate")}
+                  className={`px-2 py-1 rounded text-xs flex items-center gap-1 transition-colors ${
+                    activeMetrics.includes("heartrate") 
+                      ? "bg-red-100 text-red-700 border border-red-300" 
+                      : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200"
+                  }`}
+                  data-testid="toggle-hr"
+                >
+                  <Heart className="h-3.5 w-3.5" />
                   HR
-                </ToggleGroupItem>
+                </button>
               )}
               {hasPower && (
-                <ToggleGroupItem value="power" aria-label="Power" className="px-2 text-xs" data-testid="toggle-power">
-                  <Zap className="h-3.5 w-3.5 mr-1" />
+                <button 
+                  onClick={() => toggleMetric("power")}
+                  className={`px-2 py-1 rounded text-xs flex items-center gap-1 transition-colors ${
+                    activeMetrics.includes("power") 
+                      ? "bg-yellow-100 text-yellow-700 border border-yellow-300" 
+                      : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200"
+                  }`}
+                  data-testid="toggle-power"
+                >
+                  <Zap className="h-3.5 w-3.5" />
                   Power
-                </ToggleGroupItem>
+                </button>
               )}
               {hasCadence && (
-                <ToggleGroupItem value="cadence" aria-label="Cadence" className="px-2 text-xs" data-testid="toggle-cadence">
-                  <Activity className="h-3.5 w-3.5 mr-1" />
+                <button 
+                  onClick={() => toggleMetric("cadence")}
+                  className={`px-2 py-1 rounded text-xs flex items-center gap-1 transition-colors ${
+                    activeMetrics.includes("cadence") 
+                      ? "bg-indigo-100 text-indigo-700 border border-indigo-300" 
+                      : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200"
+                  }`}
+                  data-testid="toggle-cadence"
+                >
+                  <Activity className="h-3.5 w-3.5" />
                   Cadence
-                </ToggleGroupItem>
+                </button>
               )}
-            </ToggleGroup>
+            </div>
             {hasAltitude && (
               <div className="flex items-center gap-2">
                 <Switch
@@ -364,12 +404,23 @@ export default function RunTimeline({ streams, unitPreference = 'km', activityDi
               />
               <YAxis 
                 yAxisId="main"
-                domain={metricConfig.domain}
-                reversed={metricConfig.reversed}
-                tickFormatter={(val) => activeMetric === 'pace' ? `${Math.floor(val)}:${String(Math.round((val % 1) * 60)).padStart(2, '0')}` : String(Math.round(val))}
+                domain={['auto', 'auto']}
+                reversed={primaryConfig.reversed}
+                tickFormatter={(val) => primaryMetric === 'pace' ? `${Math.floor(val)}:${String(Math.round((val % 1) * 60)).padStart(2, '0')}` : String(Math.round(val))}
                 fontSize={11}
                 width={45}
               />
+              {activeMetrics.length > 1 && (
+                <YAxis 
+                  yAxisId="secondary"
+                  orientation="right"
+                  domain={['auto', 'auto']}
+                  tickFormatter={(val) => String(Math.round(val))}
+                  fontSize={10}
+                  width={40}
+                  stroke="#94a3b8"
+                />
+              )}
               {showElevation && hasAltitude && (
                 <YAxis 
                   yAxisId="elevation"
@@ -383,7 +434,10 @@ export default function RunTimeline({ streams, unitPreference = 'km', activityDi
               )}
               <Tooltip 
                 formatter={(value: number, name: string) => {
-                  if (name === metricConfig.name) return metricConfig.formatter(value);
+                  for (const metric of activeMetrics) {
+                    const config = getMetricConfig(metric);
+                    if (name === config.name) return config.formatter(value);
+                  }
                   if (name === 'Elevation') return `${Math.round(value)}m`;
                   return value;
                 }}
@@ -400,35 +454,41 @@ export default function RunTimeline({ streams, unitPreference = 'km', activityDi
                   name="Elevation"
                 />
               )}
-              <Line
-                yAxisId="main"
-                type="monotone"
-                dataKey={metricConfig.dataKey}
-                stroke={metricConfig.stroke}
-                strokeWidth={2}
-                dot={false}
-                name={metricConfig.name}
-              />
-              {/* AI Pins - show relevant pins based on active metric */}
+              {activeMetrics.map((metric, idx) => {
+                const config = getMetricConfig(metric);
+                return (
+                  <Line
+                    key={metric}
+                    yAxisId={idx === 0 ? "main" : "secondary"}
+                    type="monotone"
+                    dataKey={config.dataKey}
+                    stroke={config.stroke}
+                    strokeWidth={2}
+                    dot={false}
+                    name={config.name}
+                  />
+                );
+              })}
+              {/* AI Pins - show relevant pins based on active metrics */}
               {aiPins
                 .filter(pin => {
-                  // Show pace-related pins on pace view
-                  if (activeMetric === 'pace' && (pin.type === 'slowdown' || pin.type === 'drift' || pin.type === 'hill')) {
+                  // Show pace-related pins if pace is active
+                  if (activeMetrics.includes('pace') && (pin.type === 'slowdown' || pin.type === 'drift' || pin.type === 'hill')) {
                     return true;
                   }
-                  // Show HR spike on HR view
-                  if (activeMetric === 'heartrate' && pin.type === 'hr_spike') {
+                  // Show HR spike if HR is active
+                  if (activeMetrics.includes('heartrate') && pin.type === 'hr_spike') {
                     return true;
                   }
                   return false;
                 })
                 .map((pin, idx) => {
-                  // Get the correct Y value based on current metric
+                  // Get the correct Y value based on primary metric
                   const dataPoint = chartData.find(d => Math.abs(d.distance - pin.distance) < 0.1);
                   let yValue = pin.value;
-                  if (activeMetric === 'heartrate' && dataPoint?.heartrate) {
+                  if (primaryMetric === 'heartrate' && dataPoint?.heartrate) {
                     yValue = dataPoint.heartrate;
-                  } else if (activeMetric === 'pace' && dataPoint?.pace) {
+                  } else if (primaryMetric === 'pace' && dataPoint?.pace) {
                     yValue = dataPoint.pace;
                   }
                   

@@ -990,26 +990,7 @@ export default function ActivityPage() {
               </Card>
             </div>
 
-            {/* Section 5: Benchmark Comparison (Pro users) */}
-            {!isFree && verdictData?.comparison && (
-              <Card className="overflow-hidden">
-                <CardHeader className="pb-3 bg-gradient-to-r from-blue-50 to-purple-50">
-                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
-                    <Trophy className="w-5 h-5 text-blue-600" />
-                    Benchmark Comparison
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <BenchmarkDrawer 
-                    onClose={() => {}} 
-                    comparison={verdictData.comparison}
-                    embedded={true}
-                  />
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Section 6: Activity Comparison (Premium only) */}
+            {/* Section 5: Activity Comparison (Premium only) */}
             {isPremium ? (
               <Card className="overflow-hidden">
                 <CardHeader className="pb-3 bg-gradient-to-r from-yellow-50 to-amber-50">

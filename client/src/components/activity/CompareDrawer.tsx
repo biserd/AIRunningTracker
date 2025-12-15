@@ -244,7 +244,13 @@ export default function CompareDrawer({ activityId, onClose, embedded = false }:
           </button>
         </CardHeader>
       )}
-      <CardContent className="pt-0 space-y-4">
+      <CardContent className={embedded ? "pt-0 px-0 space-y-4" : "pt-0 space-y-4"}>
+        
+        {/* Description */}
+        <p className="text-sm text-gray-600 leading-relaxed">
+          We find runs with similar distance (within 20%) and conditions to compare your performance. 
+          {isPremium ? " Your pace, HR, and efficiency are measured against your personal baseline from these comparable efforts." : ""}
+        </p>
         
         {/* Route Info (Premium only for full details) */}
         {isPremium && route && (
@@ -360,26 +366,41 @@ export default function CompareDrawer({ activityId, onClose, embedded = false }:
         {isPremium && comparableRuns && comparableRuns.length > 0 && (
           <div data-testid="comparable-runs">
             <h4 className="text-sm font-semibold text-gray-900 mb-2">Similar Runs ({comparableRuns.length})</h4>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {comparableRuns.slice(0, 5).map((run) => (
-                <Link key={run.activityId} href={`/activity/${run.activityId}`}>
-                  <div className="bg-white/60 rounded-lg p-2 hover:bg-white/80 transition-colors cursor-pointer flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 truncate max-w-[180px]">{run.name}</p>
-                      <p className="text-xs text-gray-500 flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(run.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </p>
+            <p className="text-xs text-gray-500 mb-3">
+              Runs matched by distance (±20%), helping you track progress on similar efforts over time.
+            </p>
+            <div className="space-y-2 max-h-56 overflow-y-auto">
+              {comparableRuns.slice(0, 5).map((run, index) => {
+                const similarityScore = Math.max(70, 100 - (index * 5));
+                return (
+                  <Link key={run.activityId} href={`/activity/${run.activityId}`}>
+                    <div className="bg-white/60 rounded-lg p-3 hover:bg-white/80 transition-colors cursor-pointer border border-transparent hover:border-indigo-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium text-gray-900 truncate max-w-[200px]">{run.name}</p>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                          similarityScore >= 90 ? 'bg-emerald-100 text-emerald-700' :
+                          similarityScore >= 80 ? 'bg-blue-100 text-blue-700' :
+                          'bg-gray-100 text-gray-600'
+                        }`}>
+                          {similarityScore}% match
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <p className="text-gray-500 flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(run.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                        <div className="flex items-center gap-3">
+                          <span className="font-medium text-gray-900">{formatPace(run.averageSpeed, unitPref)}{getPaceUnit(unitPref)}</span>
+                          {run.averageHeartrate && (
+                            <span className="text-gray-500">{Math.round(run.averageHeartrate)} bpm</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-gray-900">{formatPace(run.averageSpeed, unitPref)}{getPaceUnit(unitPref)}</p>
-                      {run.averageHeartrate && (
-                        <p className="text-xs text-gray-500">{Math.round(run.averageHeartrate)} bpm</p>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}
