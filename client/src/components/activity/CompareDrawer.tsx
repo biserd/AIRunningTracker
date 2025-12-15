@@ -244,20 +244,19 @@ export default function CompareDrawer({ activityId, onClose, embedded = false }:
           </button>
         </CardHeader>
       )}
-      <CardContent className={embedded ? "pt-0 px-0 space-y-4" : "pt-0 space-y-4"}>
+      <CardContent className={embedded ? "pt-0 px-0 space-y-5" : "pt-0 space-y-5"}>
         
-        {/* Description */}
-        <p className="text-sm text-gray-600 leading-relaxed">
-          We find runs with similar distance (within 20%) and conditions to compare your performance. 
-          {isPremium ? " Your pace, HR, and efficiency are measured against your personal baseline from these comparable efforts." : ""}
+        {/* Description - more subtle */}
+        <p className="text-sm text-gray-500 leading-relaxed border-l-2 border-amber-200 pl-3 bg-amber-50/50 py-2 rounded-r-lg">
+          We compare this run against {comparableCount || comparableRuns?.length || 0} similar efforts (within 20% distance) to measure your progress.
         </p>
         
         {/* Route Info (Premium only for full details) */}
         {isPremium && route && (
-          <div className="bg-white/60 rounded-lg p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-medium text-gray-900">{route.name || "Your Route"}</span>
-              <span className="text-xs text-gray-500">{route.runCount} runs on this route</span>
+          <div className="bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 border border-gray-100">
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-semibold text-gray-900">{route.name || "Your Route"}</span>
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">{route.runCount} runs</span>
             </div>
             {routeMatch?.routeHistory && routeMatch.routeHistory.length > 1 && (
               <>
@@ -268,69 +267,71 @@ export default function CompareDrawer({ activityId, onClose, embedded = false }:
           </div>
         )}
 
-        {/* Delta Metrics - Show basic deltas for all, premium gets more context */}
+        {/* Delta Metrics - cleaner grid */}
         {deltas && (
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white/60 rounded-lg p-3" data-testid="compare-pace">
-              <div className="flex items-center gap-2 mb-1">
-                <Clock className="w-4 h-4 text-purple-600" />
-                <span className="text-sm font-medium text-gray-700">Pace</span>
+          <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border border-gray-100">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">Performance vs Baseline</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center" data-testid="compare-pace">
+                <div className="flex items-center justify-center gap-1.5 mb-1">
+                  <Clock className="w-4 h-4 text-purple-500" />
+                  <span className="text-xs font-medium text-gray-600">Pace</span>
+                </div>
+                <DeltaIndicator value={deltas.paceVsBaseline} inverted={true} />
               </div>
-              <DeltaIndicator value={deltas.paceVsBaseline} inverted={true} />
-              <p className="text-xs text-gray-500 mt-1">vs similar runs</p>
+              
+              {deltas.hrVsBaseline !== null && (
+                <div className="text-center" data-testid="compare-hr">
+                  <div className="flex items-center justify-center gap-1.5 mb-1">
+                    <Heart className="w-4 h-4 text-red-400" />
+                    <span className="text-xs font-medium text-gray-600">Heart Rate</span>
+                  </div>
+                  <DeltaIndicator value={deltas.hrVsBaseline} />
+                </div>
+              )}
+              
+              {isPremium && deltas.driftVsBaseline !== null && (
+                <div className="text-center" data-testid="compare-drift">
+                  <div className="flex items-center justify-center gap-1.5 mb-1">
+                    <Zap className="w-4 h-4 text-amber-500" />
+                    <span className="text-xs font-medium text-gray-600">Drift</span>
+                  </div>
+                  <DeltaIndicator value={deltas.driftVsBaseline} />
+                </div>
+              )}
+              
+              {isPremium && deltas.pacingVsBaseline !== null && (
+                <div className="text-center" data-testid="compare-pacing">
+                  <div className="flex items-center justify-center gap-1.5 mb-1">
+                    <TrendingUp className="w-4 h-4 text-blue-500" />
+                    <span className="text-xs font-medium text-gray-600">Pacing</span>
+                  </div>
+                  <DeltaIndicator value={deltas.pacingVsBaseline} />
+                </div>
+              )}
             </div>
-            
-            {deltas.hrVsBaseline !== null && (
-              <div className="bg-white/60 rounded-lg p-3" data-testid="compare-hr">
-                <div className="flex items-center gap-2 mb-1">
-                  <Heart className="w-4 h-4 text-red-500" />
-                  <span className="text-sm font-medium text-gray-700">Heart Rate</span>
-                </div>
-                <DeltaIndicator value={deltas.hrVsBaseline} />
-                <p className="text-xs text-gray-500 mt-1">vs similar runs</p>
-              </div>
-            )}
-            
-            {isPremium && deltas.driftVsBaseline !== null && (
-              <div className="bg-white/60 rounded-lg p-3" data-testid="compare-drift">
-                <div className="flex items-center gap-2 mb-1">
-                  <Zap className="w-4 h-4 text-amber-500" />
-                  <span className="text-sm font-medium text-gray-700">Drift</span>
-                </div>
-                <DeltaIndicator value={deltas.driftVsBaseline} />
-                <p className="text-xs text-gray-500 mt-1">aerobic efficiency</p>
-              </div>
-            )}
-            
-            {isPremium && deltas.pacingVsBaseline !== null && (
-              <div className="bg-white/60 rounded-lg p-3" data-testid="compare-pacing">
-                <div className="flex items-center gap-2 mb-1">
-                  <TrendingUp className="w-4 h-4 text-blue-500" />
-                  <span className="text-sm font-medium text-gray-700">Pacing</span>
-                </div>
-                <DeltaIndicator value={deltas.pacingVsBaseline} />
-                <p className="text-xs text-gray-500 mt-1">consistency</p>
-              </div>
-            )}
           </div>
         )}
 
-        {/* What Changed (Premium only) */}
+        {/* What Changed (Premium only) - cleaner pills */}
         {isPremium && whatChanged && (whatChanged.vsLastSameRoute?.length || whatChanged.vsComparableMedian?.length) && (
-          <div className="bg-white/80 rounded-lg p-3 border border-indigo-100" data-testid="what-changed">
-            <h4 className="text-sm font-semibold text-gray-900 mb-2">What Changed</h4>
+          <div className="bg-gradient-to-r from-indigo-50/80 to-purple-50/80 rounded-xl p-4 border border-indigo-100" data-testid="what-changed">
+            <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+              What Changed
+            </h4>
             
             {whatChanged.vsLastSameRoute && whatChanged.vsLastSameRoute.length > 0 && (
-              <div className="mb-2">
-                <p className="text-xs font-medium text-gray-500 mb-1">vs Last Run on This Route:</p>
+              <div className="mb-3">
+                <p className="text-xs text-gray-500 mb-2">vs Last Run on This Route:</p>
                 <div className="flex flex-wrap gap-2">
                   {whatChanged.vsLastSameRoute.map((item, i) => (
                     <span 
                       key={i} 
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        item.direction === 'better' ? 'bg-emerald-100 text-emerald-700' :
-                        item.direction === 'worse' ? 'bg-red-100 text-red-700' :
-                        'bg-gray-100 text-gray-600'
+                      className={`text-xs font-medium px-2.5 py-1 rounded-lg ${
+                        item.direction === 'better' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
+                        item.direction === 'worse' ? 'bg-red-100 text-red-700 border border-red-200' :
+                        'bg-gray-100 text-gray-600 border border-gray-200'
                       }`}
                     >
                       {item.metric}: {item.change}
@@ -342,15 +343,15 @@ export default function CompareDrawer({ activityId, onClose, embedded = false }:
             
             {whatChanged.vsComparableMedian && whatChanged.vsComparableMedian.length > 0 && (
               <div>
-                <p className="text-xs font-medium text-gray-500 mb-1">vs Similar Runs Baseline:</p>
+                <p className="text-xs text-gray-500 mb-2">vs Similar Runs Baseline:</p>
                 <div className="flex flex-wrap gap-2">
                   {whatChanged.vsComparableMedian.map((item, i) => (
                     <span 
                       key={i} 
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        item.direction === 'better' ? 'bg-emerald-100 text-emerald-700' :
-                        item.direction === 'worse' ? 'bg-red-100 text-red-700' :
-                        'bg-gray-100 text-gray-600'
+                      className={`text-xs font-medium px-2.5 py-1 rounded-lg ${
+                        item.direction === 'better' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
+                        item.direction === 'worse' ? 'bg-red-100 text-red-700 border border-red-200' :
+                        'bg-gray-100 text-gray-600 border border-gray-200'
                       }`}
                     >
                       {item.metric}: {item.change}
@@ -362,40 +363,54 @@ export default function CompareDrawer({ activityId, onClose, embedded = false }:
           </div>
         )}
 
-        {/* Comparable Runs List (Premium only) */}
+        {/* Comparable Runs List (Premium only) - table-like layout */}
         {isPremium && comparableRuns && comparableRuns.length > 0 && (
           <div data-testid="comparable-runs">
-            <h4 className="text-sm font-semibold text-gray-900 mb-2">Similar Runs ({comparableRuns.length})</h4>
-            <p className="text-xs text-gray-500 mb-3">
-              Runs matched by distance (±20%), helping you track progress on similar efforts over time.
-            </p>
-            <div className="space-y-2 max-h-56 overflow-y-auto">
-              {comparableRuns.slice(0, 5).map((run, index) => {
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold text-gray-800">Similar Runs</h4>
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">{comparableRuns.length} found</span>
+            </div>
+            
+            {/* Table header */}
+            <div className="grid grid-cols-12 gap-2 px-3 py-2 text-xs font-medium text-gray-500 border-b border-gray-200 mb-1">
+              <div className="col-span-5">Run</div>
+              <div className="col-span-3 text-right">Pace</div>
+              <div className="col-span-2 text-right">HR</div>
+              <div className="col-span-2 text-right">Match</div>
+            </div>
+            
+            {/* Table rows */}
+            <div className="space-y-1 max-h-64 overflow-y-auto">
+              {comparableRuns.slice(0, 8).map((run, index) => {
                 const similarityScore = Math.max(70, 100 - (index * 5));
                 return (
                   <Link key={run.activityId} href={`/activity/${run.activityId}`}>
-                    <div className="bg-white/60 rounded-lg p-3 hover:bg-white/80 transition-colors cursor-pointer border border-transparent hover:border-indigo-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm font-medium text-gray-900 truncate max-w-[200px]">{run.name}</p>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                          similarityScore >= 90 ? 'bg-emerald-100 text-emerald-700' :
-                          similarityScore >= 80 ? 'bg-blue-100 text-blue-700' :
+                    <div className="grid grid-cols-12 gap-2 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group">
+                      <div className="col-span-5">
+                        <p className="text-sm font-medium text-gray-900 truncate group-hover:text-indigo-600 transition-colors">{run.name}</p>
+                        <p className="text-xs text-gray-400">
+                          {new Date(run.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </p>
+                      </div>
+                      <div className="col-span-3 text-right self-center">
+                        <span className="text-sm font-medium text-gray-800">{formatPace(run.averageSpeed, unitPref)}</span>
+                        <span className="text-xs text-gray-400">{getPaceUnit(unitPref)}</span>
+                      </div>
+                      <div className="col-span-2 text-right self-center">
+                        {run.averageHeartrate ? (
+                          <span className="text-sm text-gray-600">{Math.round(run.averageHeartrate)}</span>
+                        ) : (
+                          <span className="text-xs text-gray-300">—</span>
+                        )}
+                      </div>
+                      <div className="col-span-2 text-right self-center">
+                        <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
+                          similarityScore >= 95 ? 'bg-emerald-100 text-emerald-700' :
+                          similarityScore >= 85 ? 'bg-blue-100 text-blue-700' :
                           'bg-gray-100 text-gray-600'
                         }`}>
-                          {similarityScore}% match
+                          {similarityScore}%
                         </span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <p className="text-gray-500 flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {new Date(run.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </p>
-                        <div className="flex items-center gap-3">
-                          <span className="font-medium text-gray-900">{formatPace(run.averageSpeed, unitPref)}{getPaceUnit(unitPref)}</span>
-                          {run.averageHeartrate && (
-                            <span className="text-gray-500">{Math.round(run.averageHeartrate)} bpm</span>
-                          )}
-                        </div>
                       </div>
                     </div>
                   </Link>
