@@ -142,13 +142,6 @@ export default function UnifiedCoachCard({
             </div>
           </div>
 
-          {/* Distance & Time Summary */}
-          {formattedDistance && formattedDuration && (
-            <div className="flex items-center gap-2 mt-4 text-sm text-gray-500">
-              <span>→</span>
-              <span>{formattedDistance}{distanceUnit} in {formattedDuration}</span>
-            </div>
-          )}
         </div>
 
         {/* Comparison Stats Section */}
@@ -217,21 +210,6 @@ export default function UnifiedCoachCard({
             </div>
           </div>
         </div>
-
-        {/* Next Steps Section */}
-        {nextSteps && nextSteps.length > 0 && (
-          <div className="px-5 py-4 border-b bg-gray-50/50">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Next Steps</p>
-            <ul className="space-y-1">
-              {nextSteps.map((step, index) => (
-                <li key={index} className="text-sm text-gray-700 flex items-start gap-2" data-testid={`next-step-${index}`}>
-                  <span className="text-gray-400">•</span>
-                  <span>{step}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
 
         {/* Bottom Section: Two Panels */}
         <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-100">
