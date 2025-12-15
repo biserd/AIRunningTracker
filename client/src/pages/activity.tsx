@@ -353,6 +353,7 @@ export default function ActivityPage() {
     const moments: KeyMoment[] = [];
     const laps = performanceData?.laps;
     const streams = performanceData?.streams;
+    const useMiles = userData?.unitPreference === 'miles';
     
     if (!laps || !Array.isArray(laps) || laps.length < 2) return moments;
     
@@ -401,19 +402,34 @@ export default function ActivityPage() {
       const coords = streams.latlng.data[streamIndex];
       return coords ? { lat: coords[0], lng: coords[1] } : null;
     };
+
+    // Format pace based on user preference
+    const formatPace = (movingTime: number, distanceMeters: number) => {
+      const distanceKm = distanceMeters / 1000;
+      const paceMinPerKm = movingTime / 60 / distanceKm;
+      
+      if (useMiles) {
+        // Convert to min/mile
+        const paceMinPerMile = paceMinPerKm / 0.621371;
+        return `${Math.floor(paceMinPerMile)}:${String(Math.round((paceMinPerMile % 1) * 60)).padStart(2, '0')}/mi`;
+      } else {
+        return `${Math.floor(paceMinPerKm)}:${String(Math.round((paceMinPerKm % 1) * 60)).padStart(2, '0')}/km`;
+      }
+    };
+
+    const splitLabel = useMiles ? 'Mile' : 'Km';
     
     // Add fastest lap moment
     const fastestIndex = laps.indexOf(fastestLap);
     const fastestCoords = getLatLngForLap(fastestLap, fastestIndex);
     if (fastestCoords) {
-      const paceMinPerKm = fastestLap.moving_time / 60 / (fastestLap.distance / 1000);
-      const paceStr = `${Math.floor(paceMinPerKm)}:${String(Math.round((paceMinPerKm % 1) * 60)).padStart(2, '0')}`;
+      const paceStr = formatPace(fastestLap.moving_time, fastestLap.distance);
       moments.push({
         type: 'fastest_km',
         label: `Fastest Split`,
         lat: fastestCoords.lat,
         lng: fastestCoords.lng,
-        description: `Km ${fastestIndex + 1}: ${paceStr}/km pace`,
+        description: `${splitLabel} ${fastestIndex + 1}: ${paceStr} pace`,
         icon: '⚡'
       });
     }
@@ -422,14 +438,13 @@ export default function ActivityPage() {
     const slowestIndex = laps.indexOf(slowestLap);
     const slowestCoords = getLatLngForLap(slowestLap, slowestIndex);
     if (slowestCoords && slowestIndex !== fastestIndex) {
-      const paceMinPerKm = slowestLap.moving_time / 60 / (slowestLap.distance / 1000);
-      const paceStr = `${Math.floor(paceMinPerKm)}:${String(Math.round((paceMinPerKm % 1) * 60)).padStart(2, '0')}`;
+      const paceStr = formatPace(slowestLap.moving_time, slowestLap.distance);
       moments.push({
         type: 'slowest_km',
         label: `Slowest Split`,
         lat: slowestCoords.lat,
         lng: slowestCoords.lng,
-        description: `Km ${slowestIndex + 1}: ${paceStr}/km pace`,
+        description: `${splitLabel} ${slowestIndex + 1}: ${paceStr} pace`,
         icon: '🐢'
       });
     }
@@ -457,7 +472,7 @@ export default function ActivityPage() {
     }
     
     return moments;
-  }, [performanceData?.laps, performanceData?.streams]);
+  }, [performanceData?.laps, performanceData?.streams, userData?.unitPreference]);
 
   if (isLoading) {
     return (
