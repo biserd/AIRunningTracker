@@ -508,7 +508,7 @@ export default function ActivityPage() {
                   consistencyLabel={verdictData.consistencyLabel}
                   effortScore={verdictData.effortScore}
                 />
-                <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
+                <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50" data-testid="card-goal-alignment">
                   <CardHeader className="pb-2">
                     <CardTitle className="flex items-center gap-2 text-base">
                       <Sparkles className="w-5 h-5 text-blue-600" />
@@ -533,6 +533,20 @@ export default function ActivityPage() {
                           {verdictData.comparison?.distanceVsAvg > 0 ? '+' : ''}{verdictData.comparison?.distanceVsAvg}%
                         </span>
                       </div>
+                    </div>
+                    <div className="flex gap-2 mt-4 pt-3 border-t border-blue-200">
+                      <Link href="/training-plans" className="flex-1">
+                        <Button variant="outline" size="sm" className="w-full text-xs border-blue-300 text-blue-700 hover:bg-blue-100" data-testid="button-view-training-plan">
+                          <Flag className="h-3 w-3 mr-1" />
+                          Training Plan
+                        </Button>
+                      </Link>
+                      <Link href="/coach" className="flex-1">
+                        <Button variant="outline" size="sm" className="w-full text-xs border-blue-300 text-blue-700 hover:bg-blue-100" data-testid="button-ask-coach">
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          Ask Coach
+                        </Button>
+                      </Link>
                     </div>
                   </CardContent>
                 </Card>
