@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, Thermometer, BarChart3, Timer, Trophy, Mountain, Pause, Flag, Users, BookOpen, BarChart2, ChevronDown, ChevronUp, Loader2, Lock, Sparkles } from "lucide-react";
 import { Link } from "wouter";
 import AppHeader from "@/components/AppHeader";
-import RouteMap from "../components/RouteMap";
+import RouteMap, { KeyMoment } from "../components/RouteMap";
 import DetailedSplitsAnalysis from "@/components/activity/DetailedSplitsAnalysis";
 import CoachVerdict from "@/components/activity/CoachVerdict";
 import TrainingConsistency from "@/components/activity/TrainingConsistency";
@@ -348,6 +348,117 @@ export default function ActivityPage() {
     hydrateMutation.mutate();
   }, [activity, needsHydration, isFree]);
 
+  // Generate key moments from performance data (laps/splits)
+  const keyMoments = useMemo((): KeyMoment[] => {
+    const moments: KeyMoment[] = [];
+    const laps = performanceData?.laps;
+    const streams = performanceData?.streams;
+    
+    if (!laps || !Array.isArray(laps) || laps.length < 2) return moments;
+    
+    // Find fastest and slowest laps by pace
+    const lapsWithPace = laps.filter((lap: any) => lap.distance > 0 && lap.moving_time > 0);
+    if (lapsWithPace.length < 2) return moments;
+    
+    // Sort by pace (lower = faster)
+    const sortedByPace = [...lapsWithPace].sort((a: any, b: any) => {
+      const paceA = a.moving_time / (a.distance / 1000);
+      const paceB = b.moving_time / (b.distance / 1000);
+      return paceA - paceB;
+    });
+    
+    const fastestLap = sortedByPace[0];
+    const slowestLap = sortedByPace[sortedByPace.length - 1];
+    
+    // Get coordinates from lap indices using streams
+    const getLatLngForLap = (lap: any, lapIndex: number) => {
+      if (!streams?.latlng?.data || streams.latlng.data.length === 0) {
+        return null;
+      }
+      
+      // Estimate the position in the stream based on lap distance
+      const totalDistance = streams.distance?.data?.[streams.distance.data.length - 1] || 0;
+      if (totalDistance === 0) return null;
+      
+      // Calculate cumulative distance up to this lap's midpoint
+      let cumulativeDistance = 0;
+      for (let i = 0; i < lapIndex; i++) {
+        cumulativeDistance += laps[i].distance || 0;
+      }
+      cumulativeDistance += (lap.distance || 0) / 2; // midpoint of current lap
+      
+      // Find corresponding index in latlng stream
+      const distanceData = streams.distance?.data || [];
+      let streamIndex = 0;
+      for (let i = 0; i < distanceData.length; i++) {
+        if (distanceData[i] >= cumulativeDistance) {
+          streamIndex = i;
+          break;
+        }
+        streamIndex = i;
+      }
+      
+      const coords = streams.latlng.data[streamIndex];
+      return coords ? { lat: coords[0], lng: coords[1] } : null;
+    };
+    
+    // Add fastest lap moment
+    const fastestIndex = laps.indexOf(fastestLap);
+    const fastestCoords = getLatLngForLap(fastestLap, fastestIndex);
+    if (fastestCoords) {
+      const paceMinPerKm = fastestLap.moving_time / 60 / (fastestLap.distance / 1000);
+      const paceStr = `${Math.floor(paceMinPerKm)}:${String(Math.round((paceMinPerKm % 1) * 60)).padStart(2, '0')}`;
+      moments.push({
+        type: 'fastest_km',
+        label: `Fastest Split`,
+        lat: fastestCoords.lat,
+        lng: fastestCoords.lng,
+        description: `Km ${fastestIndex + 1}: ${paceStr}/km pace`,
+        icon: '⚡'
+      });
+    }
+    
+    // Add slowest lap moment (only if noticeably slower)
+    const slowestIndex = laps.indexOf(slowestLap);
+    const slowestCoords = getLatLngForLap(slowestLap, slowestIndex);
+    if (slowestCoords && slowestIndex !== fastestIndex) {
+      const paceMinPerKm = slowestLap.moving_time / 60 / (slowestLap.distance / 1000);
+      const paceStr = `${Math.floor(paceMinPerKm)}:${String(Math.round((paceMinPerKm % 1) * 60)).padStart(2, '0')}`;
+      moments.push({
+        type: 'slowest_km',
+        label: `Slowest Split`,
+        lat: slowestCoords.lat,
+        lng: slowestCoords.lng,
+        description: `Km ${slowestIndex + 1}: ${paceStr}/km pace`,
+        icon: '🐢'
+      });
+    }
+    
+    // Add HR spike if significant
+    if (streams?.heartrate?.data && streams.latlng?.data) {
+      const hrData = streams.heartrate.data;
+      const avgHr = hrData.reduce((sum: number, hr: number) => sum + hr, 0) / hrData.length;
+      const maxHr = Math.max(...hrData);
+      
+      if (maxHr > avgHr * 1.15) { // 15% above average
+        const maxHrIndex = hrData.indexOf(maxHr);
+        const coords = streams.latlng.data[maxHrIndex];
+        if (coords) {
+          moments.push({
+            type: 'hr_spike',
+            label: `Max HR`,
+            lat: coords[0],
+            lng: coords[1],
+            description: `${maxHr} bpm - ${Math.round(((maxHr - avgHr) / avgHr) * 100)}% above average`,
+            icon: '❤️'
+          });
+        }
+      }
+    }
+    
+    return moments;
+  }, [performanceData?.laps, performanceData?.streams]);
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -563,17 +674,24 @@ export default function ActivityPage() {
               )}
             </div>
             
-            {/* 2. Route Map - Always visible with better sizing */}
+            {/* 2. Route Map - Always visible with better sizing and key moments */}
             <div className="mb-6">
               <Card className="overflow-hidden">
                 <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
-                    <MapPin className="w-6 h-6 text-blue-600" />
-                    Route
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-lg font-bold">
+                      <MapPin className="w-6 h-6 text-blue-600" />
+                      Route
+                    </CardTitle>
+                    {keyMoments.length > 0 && (
+                      <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                        {keyMoments.length} Key Moment{keyMoments.length > 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <div className="h-96 md:h-[400px]">
+                  <div className="h-[450px] md:h-[500px]">
                     <RouteMap 
                       polyline={activity.polyline}
                       startLat={activity.startLatitude}
@@ -581,6 +699,8 @@ export default function ActivityPage() {
                       endLat={activity.endLatitude}
                       endLng={activity.endLongitude}
                       strokeWeight={5}
+                      keyMoments={keyMoments}
+                      fillContainer={true}
                     />
                   </div>
                 </CardContent>

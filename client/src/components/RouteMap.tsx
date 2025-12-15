@@ -3,6 +3,15 @@ import { decode } from '@googlemaps/polyline-codec';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
+export interface KeyMoment {
+  type: 'fastest_km' | 'slowest_km' | 'hr_spike' | 'hill_climb' | 'pace_drop' | 'best_effort' | 'custom';
+  label: string;
+  lat: number;
+  lng: number;
+  description?: string;
+  icon?: string;
+}
+
 interface RouteMapProps {
   polyline?: string;
   startLat?: number;
@@ -11,9 +20,21 @@ interface RouteMapProps {
   endLng?: number;
   className?: string;
   strokeWeight?: number;
+  keyMoments?: KeyMoment[];
+  fillContainer?: boolean;
 }
 
-export default function RouteMap({ polyline, startLat, startLng, endLat, endLng, className = '', strokeWeight = 4 }: RouteMapProps) {
+const momentColors: Record<KeyMoment['type'], { bg: string; border: string; icon: string }> = {
+  fastest_km: { bg: '#10b981', border: '#059669', icon: '⚡' },
+  slowest_km: { bg: '#f59e0b', border: '#d97706', icon: '🐢' },
+  hr_spike: { bg: '#ef4444', border: '#dc2626', icon: '❤️' },
+  hill_climb: { bg: '#8b5cf6', border: '#7c3aed', icon: '⛰️' },
+  pace_drop: { bg: '#f97316', border: '#ea580c', icon: '📉' },
+  best_effort: { bg: '#3b82f6', border: '#2563eb', icon: '🏆' },
+  custom: { bg: '#6b7280', border: '#4b5563', icon: '📍' },
+};
+
+export default function RouteMap({ polyline, startLat, startLng, endLat, endLng, className = '', strokeWeight = 4, keyMoments = [], fillContainer = false }: RouteMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMapRef = useRef<L.Map | null>(null);
 
@@ -81,8 +102,61 @@ export default function RouteMap({ polyline, startLat, startLng, endLat, endLng,
           L.marker([lastCoord[0], lastCoord[1]], { icon: endIcon })
             .addTo(map);
 
+          // Add key moments markers
+          keyMoments.forEach((moment) => {
+            const colors = momentColors[moment.type] || momentColors.custom;
+            const momentIcon = L.divIcon({
+              className: 'key-moment-marker',
+              html: `
+                <div style="
+                  position: relative;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                ">
+                  <div style="
+                    background-color: ${colors.bg};
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    border: 3px solid white;
+                    box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 14px;
+                  ">${moment.icon || colors.icon}</div>
+                  <div style="
+                    background: white;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    font-size: 10px;
+                    font-weight: 600;
+                    margin-top: 2px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                    white-space: nowrap;
+                    color: #374151;
+                  ">${moment.label}</div>
+                </div>
+              `,
+              iconSize: [60, 50],
+              iconAnchor: [30, 14],
+            });
+            
+            const marker = L.marker([moment.lat, moment.lng], { icon: momentIcon });
+            if (moment.description) {
+              marker.bindPopup(`
+                <div style="text-align: center; padding: 4px;">
+                  <strong style="font-size: 14px;">${moment.label}</strong>
+                  <p style="margin: 4px 0 0 0; font-size: 12px; color: #6b7280;">${moment.description}</p>
+                </div>
+              `);
+            }
+            marker.addTo(map);
+          });
+
           // Fit map to show entire route with some padding
-          map.fitBounds(polylineLayer.getBounds(), { padding: [30, 30] });
+          map.fitBounds(polylineLayer.getBounds(), { padding: [40, 40] });
 
           // Add custom legend using custom control
           const LegendControl = L.Control.extend({
@@ -190,7 +264,11 @@ export default function RouteMap({ polyline, startLat, startLng, endLat, endLng,
         leafletMapRef.current = null;
       }
     };
-  }, [polyline, startLat, startLng, endLat, endLng]);
+  }, [polyline, startLat, startLng, endLat, endLng, keyMoments, strokeWeight]);
 
-  return <div ref={mapRef} className={`aspect-video rounded-lg overflow-hidden ${className}`} />;
+  const containerClass = fillContainer 
+    ? `w-full h-full rounded-lg overflow-hidden ${className}`
+    : `aspect-video rounded-lg overflow-hidden ${className}`;
+
+  return <div ref={mapRef} className={containerClass} />;
 }
