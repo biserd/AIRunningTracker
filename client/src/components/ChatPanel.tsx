@@ -29,9 +29,13 @@ interface ChatPanelProps {
   userId: number;
   onClose?: () => void;
   initialConversationId?: number;
+  activityContext?: {
+    activityId: number;
+    activityName?: string;
+  };
 }
 
-export function ChatPanel({ userId, onClose, initialConversationId }: ChatPanelProps) {
+export function ChatPanel({ userId, onClose, initialConversationId, activityContext }: ChatPanelProps) {
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(initialConversationId || null);
   const [inputMessage, setInputMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -111,7 +115,10 @@ export function ChatPanel({ userId, onClose, initialConversationId }: ChatPanelP
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ 
+          message,
+          context: activityContext ? { activityId: activityContext.activityId } : undefined
+        }),
       });
 
       if (!response.body) {

@@ -1031,6 +1031,10 @@ export default function ActivityPage() {
           <ChatPanel 
             userId={userData.id} 
             onClose={() => setIsChatOpen(false)}
+            activityContext={activity ? {
+              activityId: parseInt(activityId || '0'),
+              activityName: activity.name
+            } : undefined}
           />
         </div>
       )}

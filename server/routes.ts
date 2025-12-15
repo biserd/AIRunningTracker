@@ -1852,7 +1852,7 @@ ${allPages.map(page => `  <url>
   app.post("/api/chat/:conversationId/messages", authenticateJWT, async (req: any, res) => {
     try {
       const conversationId = parseInt(req.params.conversationId);
-      const { message } = req.body;
+      const { message, context } = req.body;
       
       if (isNaN(conversationId)) {
         return res.status(400).json({ message: "Invalid conversation ID" });
@@ -1890,7 +1890,7 @@ ${allPages.map(page => `  <url>
       };
 
       try {
-        const aiResponse = await chatService.chat(userId, conversationId, message, onStream);
+        const aiResponse = await chatService.chat(userId, conversationId, message, onStream, context);
         
         // Save AI message
         await storage.addMessage({

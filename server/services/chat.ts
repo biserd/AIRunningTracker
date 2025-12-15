@@ -170,13 +170,55 @@ ${upcomingWorkouts.map((d: any) =>
     userId: number,
     conversationId: number,
     userMessage: string,
-    onStream: (chunk: string) => void
+    onStream: (chunk: string) => void,
+    activityContext?: { activityId: number }
   ): Promise<string> {
     // Get conversation history
     const messages = await storage.getMessagesByConversationId(conversationId);
     
     // Assemble user context
-    const userContext = await this.assembleUserContext(userId);
+    let userContext = await this.assembleUserContext(userId);
+    
+    // Add specific activity context if provided
+    if (activityContext?.activityId) {
+      const activity = await storage.getActivityById(activityContext.activityId);
+      if (activity && activity.userId === userId) {
+        const user = await storage.getUser(userId);
+        const isMetric = user?.unitPreference !== "miles";
+        const distanceInKm = activity.distance / 1000;
+        const distanceDisplay = isMetric 
+          ? `${distanceInKm.toFixed(2)} km`
+          : `${(distanceInKm * 0.621371).toFixed(2)} mi`;
+        const pacePerKm = activity.distance > 0 ? (activity.movingTime / 60) / distanceInKm : 0;
+        const paceDisplay = isMetric
+          ? `${pacePerKm.toFixed(2)} min/km`
+          : `${(pacePerKm / 0.621371).toFixed(2)} min/mi`;
+        const durationMinutes = Math.floor(activity.movingTime / 60);
+        const durationSeconds = activity.movingTime % 60;
+        const elevationDisplay = isMetric
+          ? `${activity.totalElevationGain}m`
+          : `${Math.round(activity.totalElevationGain * 3.28084)}ft`;
+        
+        userContext += `
+
+**IMPORTANT: The user is currently viewing this specific activity. Any questions about "this run" or "this activity" refer to:**
+
+Current Activity Being Viewed:
+- Name: ${activity.name}
+- Date: ${activity.startDate.toDateString()}
+- Distance: ${distanceDisplay}
+- Duration: ${durationMinutes}:${durationSeconds.toString().padStart(2, '0')}
+- Average Pace: ${paceDisplay}
+- Elevation Gain: ${elevationDisplay}
+${activity.averageHeartrate ? `- Average Heart Rate: ${activity.averageHeartrate} bpm` : ''}
+${activity.maxHeartrate ? `- Max Heart Rate: ${activity.maxHeartrate} bpm` : ''}
+${activity.averageCadence ? `- Average Cadence: ${activity.averageCadence * 2} spm` : ''}
+${activity.averageWatts ? `- Average Power: ${Math.round(activity.averageWatts)} W` : ''}
+${activity.sufferScore ? `- Effort Score: ${activity.sufferScore}` : ''}
+
+When the user asks about "this run", "this activity", "my run", or similar, answer specifically about the activity above.`;
+      }
+    }
     
     // Build conversation history for GPT
     const conversationHistory = messages.map(msg => ({
