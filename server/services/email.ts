@@ -38,6 +38,10 @@ class EmailService {
     }
   }
 
+  isConfigured(): boolean {
+    return this.transporter !== null;
+  }
+
   async sendEmail(options: EmailOptions): Promise<boolean> {
     try {
       if (!this.transporter) {
@@ -698,6 +702,97 @@ Questions? Just reply to this email - we're here to help!
 
 Happy running!
 The RunAnalytics Team
+    `;
+    
+    return await this.sendEmail({
+      to: email,
+      subject,
+      html,
+      text
+    });
+  }
+
+  async sendCoachRecapEmail(
+    email: string,
+    name: string,
+    data: {
+      activityName: string;
+      recapBullets?: string[];
+      nextStep: string;
+      recapId?: number;
+      activityId?: number;
+    }
+  ): Promise<boolean> {
+    const nextStepLabels: Record<string, string> = {
+      rest: "🛌 Rest Day",
+      easy: "🚶 Easy Run",
+      workout: "⚡ Workout Day",
+      long_run: "🏃 Long Run",
+      recovery: "🧘 Active Recovery",
+    };
+
+    const nextStepLabel = nextStepLabels[data.nextStep] || "Easy Run";
+    const bullets = data.recapBullets || [];
+    const activityLink = data.activityId 
+      ? `https://aitracker.run/activity/${data.activityId}`
+      : "https://aitracker.run/dashboard";
+
+    const subject = `🏃 Coach Recap: ${data.activityName}`;
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #e74c3c; margin: 0;">🏃‍♂️ RunAnalytics</h1>
+          <p style="color: #666; margin: 5px 0;">AI Agent Coach</p>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #9333ea 0%, #3b82f6 100%); color: white; padding: 25px; border-radius: 10px; margin-bottom: 25px;">
+          <h2 style="margin: 0 0 5px 0; font-size: 14px; text-transform: uppercase; opacity: 0.9;">Post-Run Recap</h2>
+          <h3 style="margin: 0; font-size: 24px;">${data.activityName}</h3>
+        </div>
+        
+        <p style="font-size: 16px; line-height: 1.6;">Hey ${name}!</p>
+        
+        <p style="font-size: 16px; line-height: 1.6;">Your AI Coach has analyzed your latest run. Here's what stood out:</p>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h4 style="color: #2c3e50; margin-top: 0; margin-bottom: 15px;">📝 Coach Observations</h4>
+          <ul style="color: #2c3e50; line-height: 1.8; padding-left: 20px; margin: 0;">
+            ${bullets.map(bullet => `<li style="margin-bottom: 8px;">${bullet}</li>`).join('')}
+          </ul>
+        </div>
+        
+        <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #27ae60;">
+          <h4 style="color: #27ae60; margin: 0 0 10px 0;">👟 Next Step Recommendation</h4>
+          <p style="font-size: 18px; font-weight: bold; color: #2c3e50; margin: 0;">${nextStepLabel}</p>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${activityLink}" style="background: #e74c3c; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold;">View Full Recap →</a>
+        </div>
+        
+        <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; color: #666; font-size: 14px;">
+          <p>Keep running strong!<br>Your AI Coach at RunAnalytics</p>
+          <p style="font-size: 12px; color: #999;">You're receiving this because you have AI Agent Coach enabled. <a href="https://aitracker.run/coach/settings" style="color: #999;">Manage preferences</a></p>
+        </div>
+      </div>
+    `;
+    
+    const text = `
+Coach Recap: ${data.activityName}
+
+Hey ${name}!
+
+Your AI Coach has analyzed your latest run. Here's what stood out:
+
+${bullets.map(bullet => `• ${bullet}`).join('\n')}
+
+Next Step Recommendation: ${nextStepLabel}
+
+View full recap: ${activityLink}
+
+Keep running strong!
+Your AI Coach at RunAnalytics
     `;
     
     return await this.sendEmail({

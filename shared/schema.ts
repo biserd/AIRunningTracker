@@ -507,6 +507,8 @@ export const notificationOutbox = pgTable("notification_outbox", {
   dedupeKey: text("dedupe_key"), // e.g., "recap:user_123:activity_456"
   // User preferences check
   respectQuietHours: boolean("respect_quiet_hours").default(true),
+  // Read tracking for in-app notifications
+  readAt: timestamp("read_at"),
   // Timestamps
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({

@@ -5829,6 +5829,77 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // ============= NOTIFICATION ENDPOINTS =============
+  
+  // Admin: Process pending notifications (trigger email delivery)
+  app.post("/api/admin/notifications/process", authenticateAdmin, async (req: any, res) => {
+    try {
+      const { processNotifications } = await import('./services/notificationProcessor');
+      const limit = parseInt(req.query?.limit as string) || 50;
+      const result = await processNotifications(limit);
+      res.json(result);
+    } catch (error: any) {
+      console.error("Notification processing error:", error);
+      res.status(500).json({ message: error.message || "Failed to process notifications" });
+    }
+  });
+
+  // Get user's in-app notifications
+  app.get("/api/notifications", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      const limit = parseInt(req.query?.limit as string) || 20;
+      const notifications = await storage.getNotificationsByUserId(userId, limit);
+      const unreadCount = await storage.getUnreadNotificationsCount(userId);
+      res.json({ notifications, unreadCount });
+    } catch (error: any) {
+      console.error("Get notifications error:", error);
+      res.status(500).json({ message: error.message || "Failed to get notifications" });
+    }
+  });
+
+  // Get unread notification count (for badge)
+  app.get("/api/notifications/unread-count", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      const count = await storage.getUnreadNotificationsCount(userId);
+      res.json({ count });
+    } catch (error: any) {
+      console.error("Get unread count error:", error);
+      res.status(500).json({ message: error.message || "Failed to get unread count" });
+    }
+  });
+
+  // Mark single notification as read
+  app.post("/api/notifications/:notificationId/read", authenticateJWT, async (req: any, res) => {
+    try {
+      const notificationId = parseInt(req.params.notificationId);
+      const userId = req.user!.id;
+      
+      const success = await storage.markNotificationReadForUser(notificationId, userId);
+      if (!success) {
+        return res.status(404).json({ message: "Notification not found" });
+      }
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Mark notification read error:", error);
+      res.status(500).json({ message: error.message || "Failed to mark notification as read" });
+    }
+  });
+
+  // Mark all notifications as read
+  app.post("/api/notifications/read-all", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      await storage.markAllNotificationsRead(userId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Mark all notifications read error:", error);
+      res.status(500).json({ message: error.message || "Failed to mark notifications as read" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

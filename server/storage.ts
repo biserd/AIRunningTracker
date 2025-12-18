@@ -301,6 +301,8 @@ export interface IStorage {
   getPendingNotifications(limit?: number): Promise<NotificationOutbox[]>;
   markNotificationSent(notificationId: number): Promise<void>;
   markNotificationFailed(notificationId: number, error: string): Promise<void>;
+  markNotificationReadForUser(notificationId: number, userId: number): Promise<boolean>;
+  markAllNotificationsRead(userId: number): Promise<void>;
   getNotificationsByUserId(userId: number, limit?: number): Promise<NotificationOutbox[]>;
   getUnreadNotificationsCount(userId: number): Promise<number>;
   
@@ -2240,10 +2242,31 @@ export class DatabaseStorage implements IStorage {
       .from(notificationOutbox)
       .where(and(
         eq(notificationOutbox.userId, userId),
-        eq(notificationOutbox.channel, "in_app"),
-        eq(notificationOutbox.status, "sent")
+        sql`${notificationOutbox.readAt} IS NULL`,
+        eq(notificationOutbox.status, "sent"),
+        eq(notificationOutbox.channel, "in_app")
       ));
     return result[0]?.count ?? 0;
+  }
+
+  async markNotificationReadForUser(notificationId: number, userId: number): Promise<boolean> {
+    const result = await db.update(notificationOutbox)
+      .set({ readAt: new Date() })
+      .where(and(
+        eq(notificationOutbox.id, notificationId),
+        eq(notificationOutbox.userId, userId)
+      ))
+      .returning({ id: notificationOutbox.id });
+    return result.length > 0;
+  }
+
+  async markAllNotificationsRead(userId: number): Promise<void> {
+    await db.update(notificationOutbox)
+      .set({ readAt: new Date() })
+      .where(and(
+        eq(notificationOutbox.userId, userId),
+        sql`${notificationOutbox.readAt} IS NULL`
+      ));
   }
 
   // Coach preferences helpers
