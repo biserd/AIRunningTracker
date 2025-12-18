@@ -4461,6 +4461,17 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Admin: Agent runs statistics
+  app.get("/api/admin/agent-stats", authenticateAdmin, async (req, res) => {
+    try {
+      const agentStats = await storage.getAgentRunStats();
+      res.json(agentStats);
+    } catch (error: any) {
+      console.error('Admin agent stats error:', error);
+      res.status(500).json({ message: error.message || "Failed to get agent stats" });
+    }
+  });
+
   // ================== RUNNING SHOES API ==================
 
   // Get all shoes with optional filtering

@@ -206,6 +206,15 @@ export interface IStorage {
       responseBody?: string | null;
     }>;
   }>;
+  
+  getAgentRunStats(): Promise<{
+    totalRuns: number;
+    byStatus: { status: string; count: number }[];
+    byType: { runType: string; count: number }[];
+    recentRuns: AgentRun[];
+    last24Hours: number;
+    successRate: number;
+  }>;
 
   // Platform stats for landing page
   getPlatformStats(): Promise<{
@@ -1673,6 +1682,69 @@ export class DatabaseStorage implements IStorage {
       recentErrors,
       performanceTrend,
       slowRequests
+    };
+  }
+
+  async getAgentRunStats(): Promise<{
+    totalRuns: number;
+    byStatus: { status: string; count: number }[];
+    byType: { runType: string; count: number }[];
+    recentRuns: AgentRun[];
+    last24Hours: number;
+    successRate: number;
+  }> {
+    const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    // Total runs
+    const [totalResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(agentRuns);
+
+    // By status
+    const byStatusResult = await db
+      .select({
+        status: agentRuns.status,
+        count: sql<number>`count(*)::int`
+      })
+      .from(agentRuns)
+      .groupBy(agentRuns.status);
+
+    // By type
+    const byTypeResult = await db
+      .select({
+        runType: agentRuns.runType,
+        count: sql<number>`count(*)::int`
+      })
+      .from(agentRuns)
+      .groupBy(agentRuns.runType);
+
+    // Recent runs (last 20)
+    const recentRuns = await db
+      .select()
+      .from(agentRuns)
+      .orderBy(desc(agentRuns.createdAt))
+      .limit(20);
+
+    // Last 24 hours
+    const [last24HoursResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(agentRuns)
+      .where(gte(agentRuns.createdAt, twentyFourHoursAgo));
+
+    // Success rate
+    const completed = byStatusResult.find(s => s.status === 'completed')?.count || 0;
+    const failed = byStatusResult.find(s => s.status === 'failed')?.count || 0;
+    const total = completed + failed;
+    const successRate = total > 0 ? Math.round((completed / total) * 100) : 100;
+
+    return {
+      totalRuns: totalResult.count || 0,
+      byStatus: byStatusResult.filter(s => s.status !== null).map(s => ({ status: s.status!, count: s.count })),
+      byType: byTypeResult.filter(t => t.runType !== null).map(t => ({ runType: t.runType!, count: t.count })),
+      recentRuns,
+      last24Hours: last24HoursResult.count || 0,
+      successRate
     };
   }
 

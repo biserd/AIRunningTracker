@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Activity, TrendingUp, Calendar, Shield, Database, BarChart3, Clock, Target, Signal, Server, Cpu, HardDrive, AlertTriangle, CheckCircle, XCircle, ChevronLeft, ChevronRight, ShoppingBag, Layers, Mail, Send } from "lucide-react";
+import { Users, Activity, TrendingUp, Calendar, Shield, Database, BarChart3, Clock, Target, Signal, Server, Cpu, HardDrive, AlertTriangle, CheckCircle, XCircle, ChevronLeft, ChevronRight, ShoppingBag, Layers, Mail, Send, Bot, Zap, PlayCircle } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -111,6 +111,24 @@ interface SystemPerformance {
   }>;
 }
 
+interface AgentStats {
+  totalRuns: number;
+  byStatus: { status: string; count: number }[];
+  byType: { runType: string; count: number }[];
+  recentRuns: {
+    id: number;
+    userId: number;
+    runType: string;
+    triggeredBy: string;
+    status: string;
+    createdAt: string;
+    completedAt?: string;
+    errorMessage?: string;
+  }[];
+  last24Hours: number;
+  successRate: number;
+}
+
 export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -137,6 +155,13 @@ export default function AdminPage() {
     queryKey: ["/api/admin/performance"],
     enabled: !!user,
     refetchInterval: 30000, // Refresh every 30 seconds for real-time monitoring
+  });
+
+  // AI Agent stats
+  const { data: agentStats, isLoading: agentStatsLoading } = useQuery<AgentStats>({
+    queryKey: ["/api/admin/agent-stats"],
+    enabled: !!user,
+    refetchInterval: 30000,
   });
 
   // Launch email blast
@@ -448,6 +473,145 @@ export default function AdminPage() {
                       ))}
                     </div>
                   </details>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* AI Agent Coach Stats */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bot className="h-5 w-5 text-amber-500" />
+              AI Agent Coach Stats
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {agentStatsLoading ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-strava-orange mx-auto"></div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-4 border border-amber-200">
+                    <div className="flex items-center gap-2 mb-1">
+                      <PlayCircle className="h-4 w-4 text-amber-600" />
+                      <span className="text-sm font-medium text-gray-600">Total Runs</span>
+                    </div>
+                    <p className="text-2xl font-bold text-charcoal" data-testid="stat-total-agent-runs">
+                      {agentStats?.totalRuns || 0}
+                    </p>
+                  </div>
+                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-4 border border-blue-200">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Zap className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm font-medium text-gray-600">Last 24h</span>
+                    </div>
+                    <p className="text-2xl font-bold text-charcoal" data-testid="stat-agent-runs-24h">
+                      {agentStats?.last24Hours || 0}
+                    </p>
+                  </div>
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+                    <div className="flex items-center gap-2 mb-1">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <span className="text-sm font-medium text-gray-600">Success Rate</span>
+                    </div>
+                    <p className="text-2xl font-bold text-charcoal" data-testid="stat-agent-success-rate">
+                      {agentStats?.successRate || 100}%
+                    </p>
+                  </div>
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Activity className="h-4 w-4 text-purple-600" />
+                      <span className="text-sm font-medium text-gray-600">Run Types</span>
+                    </div>
+                    <p className="text-2xl font-bold text-charcoal" data-testid="stat-agent-run-types">
+                      {agentStats?.byType?.length || 0}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Status Breakdown */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">By Status</h4>
+                    <div className="space-y-2">
+                      {agentStats?.byStatus?.map((item) => (
+                        <div key={item.status} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            {item.status === 'completed' && <CheckCircle className="h-4 w-4 text-green-500" />}
+                            {item.status === 'failed' && <XCircle className="h-4 w-4 text-red-500" />}
+                            {item.status === 'running' && <PlayCircle className="h-4 w-4 text-blue-500" />}
+                            {item.status === 'pending' && <Clock className="h-4 w-4 text-yellow-500" />}
+                            {item.status === 'skipped' && <AlertTriangle className="h-4 w-4 text-gray-500" />}
+                            <span className="capitalize text-sm">{item.status}</span>
+                          </div>
+                          <Badge variant="outline">{item.count}</Badge>
+                        </div>
+                      )) || <p className="text-sm text-gray-500">No agent runs yet</p>}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">By Type</h4>
+                    <div className="space-y-2">
+                      {agentStats?.byType?.map((item) => (
+                        <div key={item.runType} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                          <span className="text-sm capitalize">{item.runType.replace(/_/g, ' ')}</span>
+                          <Badge variant="outline">{item.count}</Badge>
+                        </div>
+                      )) || <p className="text-sm text-gray-500">No agent runs yet</p>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recent Runs */}
+                {(agentStats?.recentRuns?.length || 0) > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Recent Agent Runs</h4>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>ID</TableHead>
+                            <TableHead>User</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Trigger</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Created</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {agentStats?.recentRuns?.slice(0, 10).map((run) => (
+                            <TableRow key={run.id}>
+                              <TableCell className="font-mono text-xs">{run.id}</TableCell>
+                              <TableCell>{run.userId}</TableCell>
+                              <TableCell className="capitalize text-xs">{run.runType.replace(/_/g, ' ')}</TableCell>
+                              <TableCell className="capitalize text-xs">{run.triggeredBy}</TableCell>
+                              <TableCell>
+                                <Badge 
+                                  variant="outline"
+                                  className={
+                                    run.status === 'completed' ? 'bg-green-50 text-green-700 border-green-200' :
+                                    run.status === 'failed' ? 'bg-red-50 text-red-700 border-red-200' :
+                                    run.status === 'running' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                    'bg-gray-50 text-gray-700 border-gray-200'
+                                  }
+                                >
+                                  {run.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-xs text-gray-500">
+                                {new Date(run.createdAt).toLocaleString()}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
