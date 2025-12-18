@@ -24,28 +24,93 @@ import { SEO } from "@/components/SEO";
 export default function AIAgentCoachBlogPost() {
   const structuredData = {
     "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    "headline": "AI Agent Coach: How Proactive AI Coaching Transforms Your Running",
-    "description": "Discover how AI Agent Coach analyzes every run and delivers personalized coaching recaps, next-step recommendations, and training insights without you asking.",
-    "author": {
-      "@type": "Organization",
-      "name": "RunAnalytics"
-    },
-    "publisher": {
-      "@type": "Organization",
-      "name": "RunAnalytics",
-      "logo": {
-        "@type": "ImageObject",
-        "url": "https://aitracker.run/logo.png"
+    "@graph": [
+      {
+        "@type": "BlogPosting",
+        "headline": "AI Agent Coach: How Proactive AI Coaching Transforms Your Running",
+        "description": "Discover how AI Agent Coach analyzes every run and delivers personalized coaching recaps, next-step recommendations, and training insights without you asking.",
+        "author": {
+          "@type": "Organization",
+          "name": "RunAnalytics"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "RunAnalytics",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://aitracker.run/logo.png"
+          }
+        },
+        "datePublished": "2026-01-18",
+        "dateModified": "2026-01-18",
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": "https://aitracker.run/blog/ai-agent-coach-proactive-coaching"
+        },
+        "keywords": "AI running coach, proactive coaching, automated training feedback, Strava AI analysis, post-run coaching, running analytics AI, personalized running advice, human coach vs AI coach"
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "How accurate is AI coaching compared to a human coach?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "AI Agent Coach analyzes the same data a human coach would—heart rate, pace, cadence, elevation—but processes it instantly and consistently. It excels at pattern recognition across your entire training history, identifying trends a human might miss. However, it can't observe your running form visually or understand external life factors affecting your training."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I use AI Agent Coach alongside a human running coach?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Absolutely! Many runners use both. AI Agent Coach provides immediate feedback after every run, while your human coach handles big-picture strategy, race planning, and personal motivation. The AI insights can actually help your human coach by providing detailed data summaries."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What data does AI Agent Coach analyze?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The AI analyzes all available data from your Strava activities: pace and splits, heart rate zones and trends, cadence, elevation gain, time in zones, effort distribution, and historical patterns. It also considers your stated goals, upcoming races, and training preferences."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How do I change my coaching preferences?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "You can update your coaching tone, goals, race dates, and available training days anytime in your Coach Settings. Changes take effect immediately for your next synced activity."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does AI Agent Coach work for non-running activities?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Currently, AI Agent Coach is optimized for running activities. It will analyze walks and hikes but provides the most detailed insights for runs. Support for cycling and other activities is on our roadmap."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is my training data private and secure?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Your data is encrypted in transit and at rest. AI analysis is performed securely using OpenAI's enterprise API with no data retention. We never share or sell your personal training data."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What if I disagree with the AI's recommendation?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "You're always in control. AI Agent Coach provides recommendations, not mandates. If you disagree, run how you feel is best—the AI will learn from your choices over time and adjust future suggestions based on outcomes."
+            }
+          }
+        ]
       }
-    },
-    "datePublished": "2026-01-18",
-    "dateModified": "2026-01-18",
-    "mainEntityOfPage": {
-      "@type": "WebPage",
-      "@id": "https://aitracker.run/blog/ai-agent-coach-proactive-coaching"
-    },
-    "keywords": "AI running coach, proactive coaching, automated training feedback, Strava AI analysis, post-run coaching, running analytics AI, personalized running advice"
+    ]
   };
 
   return (
@@ -286,6 +351,168 @@ export default function AIAgentCoachBlogPost() {
                 </div>
               </li>
             </ol>
+          </section>
+
+          <section className="mb-12" data-testid="section-comparison">
+            <h2 className="text-2xl font-bold text-charcoal dark:text-white mb-4" data-testid="heading-comparison">
+              Human Running Coach vs AI Running Coach
+            </h2>
+            <p className="text-gray-700 dark:text-gray-300 mb-6">
+              Both human and AI coaches have their strengths. Here's how they compare:
+            </p>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse rounded-xl overflow-hidden">
+                <thead>
+                  <tr className="bg-gray-100 dark:bg-slate-800">
+                    <th className="text-left p-4 font-semibold text-charcoal dark:text-white border-b border-gray-200 dark:border-slate-700">Feature</th>
+                    <th className="text-center p-4 font-semibold text-charcoal dark:text-white border-b border-gray-200 dark:border-slate-700">
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="text-2xl">👤</span>
+                        Human Coach
+                      </div>
+                    </th>
+                    <th className="text-center p-4 font-semibold text-charcoal dark:text-white border-b border-gray-200 dark:border-slate-700 bg-orange-50 dark:bg-orange-900/20">
+                      <div className="flex items-center justify-center gap-2">
+                        <Bot className="h-6 w-6 text-strava-orange" />
+                        AI Agent Coach
+                      </div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-slate-900">
+                  <tr className="border-b border-gray-100 dark:border-slate-800">
+                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">Cost</td>
+                    <td className="p-4 text-center text-gray-600 dark:text-gray-400">$100-$500/month</td>
+                    <td className="p-4 text-center text-green-600 dark:text-green-400 font-semibold bg-orange-50/50 dark:bg-orange-900/10">Included in Premium</td>
+                  </tr>
+                  <tr className="border-b border-gray-100 dark:border-slate-800">
+                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">Availability</td>
+                    <td className="p-4 text-center text-gray-600 dark:text-gray-400">Business hours, scheduled calls</td>
+                    <td className="p-4 text-center text-green-600 dark:text-green-400 font-semibold bg-orange-50/50 dark:bg-orange-900/10">24/7, after every run</td>
+                  </tr>
+                  <tr className="border-b border-gray-100 dark:border-slate-800">
+                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">Response Time</td>
+                    <td className="p-4 text-center text-gray-600 dark:text-gray-400">Hours to days</td>
+                    <td className="p-4 text-center text-green-600 dark:text-green-400 font-semibold bg-orange-50/50 dark:bg-orange-900/10">Seconds after sync</td>
+                  </tr>
+                  <tr className="border-b border-gray-100 dark:border-slate-800">
+                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">Data Analysis</td>
+                    <td className="p-4 text-center text-gray-600 dark:text-gray-400">Manual review of key metrics</td>
+                    <td className="p-4 text-center text-green-600 dark:text-green-400 font-semibold bg-orange-50/50 dark:bg-orange-900/10">Deep analysis of all data points</td>
+                  </tr>
+                  <tr className="border-b border-gray-100 dark:border-slate-800">
+                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">Consistency</td>
+                    <td className="p-4 text-center text-gray-600 dark:text-gray-400">Varies by coach availability</td>
+                    <td className="p-4 text-center text-green-600 dark:text-green-400 font-semibold bg-orange-50/50 dark:bg-orange-900/10">Every single activity</td>
+                  </tr>
+                  <tr className="border-b border-gray-100 dark:border-slate-800">
+                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">Emotional Support</td>
+                    <td className="p-4 text-center text-green-600 dark:text-green-400 font-semibold">Excellent, personal connection</td>
+                    <td className="p-4 text-center text-gray-600 dark:text-gray-400 bg-orange-50/50 dark:bg-orange-900/10">Good, adjustable tone</td>
+                  </tr>
+                  <tr className="border-b border-gray-100 dark:border-slate-800">
+                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">Race Day Experience</td>
+                    <td className="p-4 text-center text-green-600 dark:text-green-400 font-semibold">Can be there in person</td>
+                    <td className="p-4 text-center text-gray-600 dark:text-gray-400 bg-orange-50/50 dark:bg-orange-900/10">Virtual support only</td>
+                  </tr>
+                  <tr>
+                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">Pattern Recognition</td>
+                    <td className="p-4 text-center text-gray-600 dark:text-gray-400">Limited by time and memory</td>
+                    <td className="p-4 text-center text-green-600 dark:text-green-400 font-semibold bg-orange-50/50 dark:bg-orange-900/10">Analyzes full training history</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <p className="text-gray-600 dark:text-gray-400 text-sm mt-4 italic">
+              Many elite runners use both: a human coach for strategy and emotional support, and AI Agent Coach for immediate post-run feedback and daily accountability.
+            </p>
+          </section>
+
+          <section className="mb-12" data-testid="section-faq">
+            <h2 className="text-2xl font-bold text-charcoal dark:text-white mb-6" data-testid="heading-faq">
+              Frequently Asked Questions
+            </h2>
+            
+            <div className="space-y-4">
+              <Card className="border border-gray-200 dark:border-slate-700">
+                <CardContent className="pt-6">
+                  <h3 className="font-bold text-charcoal dark:text-white mb-2">
+                    How accurate is the AI coaching compared to a human coach?
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-300 text-sm">
+                    AI Agent Coach analyzes the same data a human coach would—heart rate, pace, cadence, elevation—but processes it instantly and consistently. It excels at pattern recognition across your entire training history, identifying trends a human might miss. However, it can't observe your running form visually or understand external life factors affecting your training.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-gray-200 dark:border-slate-700">
+                <CardContent className="pt-6">
+                  <h3 className="font-bold text-charcoal dark:text-white mb-2">
+                    Can I use AI Agent Coach alongside a human running coach?
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-300 text-sm">
+                    Absolutely! Many runners use both. AI Agent Coach provides immediate feedback after every run, while your human coach handles big-picture strategy, race planning, and personal motivation. The AI insights can actually help your human coach by providing detailed data summaries.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-gray-200 dark:border-slate-700">
+                <CardContent className="pt-6">
+                  <h3 className="font-bold text-charcoal dark:text-white mb-2">
+                    What data does AI Agent Coach analyze?
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-300 text-sm">
+                    The AI analyzes all available data from your Strava activities: pace and splits, heart rate zones and trends, cadence, elevation gain, time in zones, effort distribution, and historical patterns. It also considers your stated goals, upcoming races, and training preferences.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-gray-200 dark:border-slate-700">
+                <CardContent className="pt-6">
+                  <h3 className="font-bold text-charcoal dark:text-white mb-2">
+                    How do I change my coaching preferences?
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-300 text-sm">
+                    You can update your coaching tone, goals, race dates, and available training days anytime in your Coach Settings. Changes take effect immediately for your next synced activity.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-gray-200 dark:border-slate-700">
+                <CardContent className="pt-6">
+                  <h3 className="font-bold text-charcoal dark:text-white mb-2">
+                    Does AI Agent Coach work for non-running activities?
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-300 text-sm">
+                    Currently, AI Agent Coach is optimized for running activities. It will analyze walks and hikes but provides the most detailed insights for runs. Support for cycling and other activities is on our roadmap.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-gray-200 dark:border-slate-700">
+                <CardContent className="pt-6">
+                  <h3 className="font-bold text-charcoal dark:text-white mb-2">
+                    Is my training data private and secure?
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-300 text-sm">
+                    Yes. Your data is encrypted in transit and at rest. AI analysis is performed securely using OpenAI's enterprise API with no data retention. We never share or sell your personal training data.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-gray-200 dark:border-slate-700">
+                <CardContent className="pt-6">
+                  <h3 className="font-bold text-charcoal dark:text-white mb-2">
+                    What if I disagree with the AI's recommendation?
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-300 text-sm">
+                    You're always in control. AI Agent Coach provides recommendations, not mandates. If you disagree, run how you feel is best—the AI will learn from your choices over time and adjust future suggestions based on outcomes.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           </section>
 
           <section className="bg-gradient-to-r from-strava-orange to-amber-500 rounded-2xl p-8 text-white text-center" data-testid="section-cta">
