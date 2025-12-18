@@ -485,7 +485,7 @@ export const notificationOutbox = pgTable("notification_outbox", {
   userId: integer("user_id").notNull(),
   // Notification type
   type: text("type", { 
-    enum: ["activity_recap", "next_step", "weekly_summary", "plan_reminder"] 
+    enum: ["activity_recap", "next_step", "weekly_summary", "plan_reminder", "trial_reminder", "trial_expired"] 
   }).notNull(),
   channel: text("channel", { 
     enum: ["in_app", "email", "push"] 

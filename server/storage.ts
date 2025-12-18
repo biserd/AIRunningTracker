@@ -314,6 +314,7 @@ export interface IStorage {
   markAllNotificationsRead(userId: number): Promise<void>;
   getNotificationsByUserId(userId: number, limit?: number): Promise<NotificationOutbox[]>;
   getUnreadNotificationsCount(userId: number): Promise<number>;
+  getNotificationByDedupeKey(dedupeKey: string): Promise<NotificationOutbox | undefined>;
   
   // Coach preferences (updates handled via updateUser, but helper for Premium users)
   getPremiumUsersForCoaching(): Promise<User[]>;
@@ -2339,6 +2340,14 @@ export class DatabaseStorage implements IStorage {
         eq(notificationOutbox.userId, userId),
         sql`${notificationOutbox.readAt} IS NULL`
       ));
+  }
+
+  async getNotificationByDedupeKey(dedupeKey: string): Promise<NotificationOutbox | undefined> {
+    const [notification] = await db.select()
+      .from(notificationOutbox)
+      .where(eq(notificationOutbox.dedupeKey, dedupeKey))
+      .limit(1);
+    return notification || undefined;
   }
 
   // Coach preferences helpers

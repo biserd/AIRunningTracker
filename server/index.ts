@@ -106,13 +106,38 @@ async function processTrialEmails() {
   console.log('[Trial Scheduler] Processing trial emails...');
   try {
     let remindersSent = 0;
+    let remindersSkipped = 0;
     let expiredSent = 0;
+    let expiredSkipped = 0;
 
-    // 1. Send reminder emails (2 days before expiry)
+    // 1. Send reminder emails (2 days before expiry) - with dedupe check
     const usersNearingExpiry = await storage.getUsersWithTrialEndingSoon(2);
     for (const user of usersNearingExpiry) {
       try {
+        // Check if we already sent a trial reminder to this user
+        const dedupeKey = `trial_reminder_${user.id}`;
+        const existingNotification = await storage.getNotificationByDedupeKey(dedupeKey);
+        
+        if (existingNotification) {
+          remindersSkipped++;
+          console.log(`[Trial Scheduler] Skipping reminder for ${user.email} - already sent`);
+          continue;
+        }
+        
+        // Send the email
         await emailService.sendTrialReminderEmail(user.email, user.firstName || undefined, 2);
+        
+        // Track in notification_outbox to prevent future duplicates
+        const notification = await storage.createNotification({
+          userId: user.id,
+          type: 'trial_reminder',
+          channel: 'email',
+          title: 'Trial Reminder',
+          body: `Sent trial reminder email to ${user.email}`,
+          dedupeKey,
+        });
+        await storage.markNotificationSent(notification.id);
+        
         remindersSent++;
         console.log(`[Trial Scheduler] Sent reminder to ${user.email}`);
       } catch (err: any) {
@@ -120,11 +145,34 @@ async function processTrialEmails() {
       }
     }
 
-    // 2. Send expiry emails (trial just ended)
+    // 2. Send expiry emails (trial just ended) - with dedupe check
     const usersWithExpiredTrials = await storage.getUsersWithExpiredTrials();
     for (const user of usersWithExpiredTrials) {
       try {
+        // Check if we already sent a trial expired email to this user
+        const dedupeKey = `trial_expired_${user.id}`;
+        const existingNotification = await storage.getNotificationByDedupeKey(dedupeKey);
+        
+        if (existingNotification) {
+          expiredSkipped++;
+          console.log(`[Trial Scheduler] Skipping expiry email for ${user.email} - already sent`);
+          continue;
+        }
+        
+        // Send the email
         await emailService.sendTrialExpiredEmail(user.email, user.firstName || undefined);
+        
+        // Track in notification_outbox to prevent future duplicates
+        const notification = await storage.createNotification({
+          userId: user.id,
+          type: 'trial_expired',
+          channel: 'email',
+          title: 'Trial Expired',
+          body: `Sent trial expired email to ${user.email}`,
+          dedupeKey,
+        });
+        await storage.markNotificationSent(notification.id);
+        
         expiredSent++;
         console.log(`[Trial Scheduler] Sent expiry email to ${user.email}`);
       } catch (err: any) {
@@ -132,7 +180,7 @@ async function processTrialEmails() {
       }
     }
 
-    console.log(`[Trial Scheduler] Complete - Reminders: ${remindersSent}, Expiry: ${expiredSent}`);
+    console.log(`[Trial Scheduler] Complete - Reminders: ${remindersSent} sent, ${remindersSkipped} skipped | Expiry: ${expiredSent} sent, ${expiredSkipped} skipped`);
   } catch (error) {
     console.error('[Trial Scheduler] Error processing trial emails:', error);
   }
