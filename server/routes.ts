@@ -2329,6 +2329,29 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Get coach recaps for a user (Premium feature)
+  app.get("/api/coach-recaps", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      const limit = parseInt(req.query.limit as string) || 20;
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (user.subscriptionPlan !== "premium" || user.subscriptionStatus !== "active") {
+        return res.status(403).json({ message: "Premium subscription required for coach recaps" });
+      }
+      
+      const recaps = await storage.getCoachRecapsByUserId(userId, limit);
+      res.json({ recaps });
+    } catch (error: any) {
+      console.error('Coach recaps list error:', error);
+      res.status(500).json({ message: error.message || "Failed to fetch coach recaps" });
+    }
+  });
+
   // Mark coach recap as viewed (Premium feature)
   app.patch("/api/coach-recaps/:recapId/viewed", authenticateJWT, async (req: any, res) => {
     try {
