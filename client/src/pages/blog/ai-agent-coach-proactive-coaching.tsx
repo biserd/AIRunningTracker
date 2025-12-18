@@ -515,22 +515,27 @@ export default function AIAgentCoachBlogPost() {
             </div>
           </section>
 
-          <section className="bg-gradient-to-r from-strava-orange to-amber-500 rounded-2xl p-8 text-white text-center" data-testid="section-cta">
-            <h2 className="text-2xl font-bold mb-4" data-testid="heading-cta">
+          <section className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-8 sm:p-10 text-center shadow-xl border border-slate-700" data-testid="section-cta">
+            <div className="flex justify-center mb-4">
+              <div className="w-14 h-14 bg-gradient-to-r from-strava-orange to-amber-500 rounded-full flex items-center justify-center">
+                <Bot className="h-7 w-7 text-white" />
+              </div>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3" data-testid="heading-cta">
               Ready for an Always-On Running Coach?
             </h2>
-            <p className="text-lg text-orange-100 mb-6 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed">
               Transform passive data into active coaching. Get personalized feedback after every run with AI Agent Coach.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/ai-agent-coach">
-                <Button size="lg" className="bg-white text-strava-orange hover:bg-gray-100" data-testid="cta-learn-more">
+                <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-strava-orange to-amber-500 text-white hover:from-orange-600 hover:to-amber-600 font-semibold shadow-lg px-8 h-12" data-testid="cta-learn-more">
                   <Zap className="mr-2 h-5 w-5" />
-                  Learn More About AI Agent Coach
+                  Learn More
                 </Button>
               </Link>
               <Link href="/auth">
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10" data-testid="cta-get-started">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto border-2 border-gray-400 text-white hover:bg-white/10 hover:border-white font-semibold px-8 h-12" data-testid="cta-get-started">
                   Get Started Free
                 </Button>
               </Link>
