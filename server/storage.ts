@@ -1,4 +1,4 @@
-import { users, activities, aiInsights, trainingPlans, trainingPlansLegacy, athleteProfiles, planWeeks, planDays, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, apiKeys, refreshTokens, workoutCache, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ApiKey, type InsertApiKey, type RefreshToken, type InsertRefreshToken, type AthleteProfile, type InsertAthleteProfile, type PlanWeek, type InsertPlanWeek, type PlanDay, type InsertPlanDay, type WorkoutCache, type InsertWorkoutCache } from "@shared/schema";
+import { users, activities, aiInsights, trainingPlans, trainingPlansLegacy, athleteProfiles, planWeeks, planDays, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, apiKeys, refreshTokens, workoutCache, coachRecaps, agentRuns, notificationOutbox, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ApiKey, type InsertApiKey, type RefreshToken, type InsertRefreshToken, type AthleteProfile, type InsertAthleteProfile, type PlanWeek, type InsertPlanWeek, type PlanDay, type InsertPlanDay, type WorkoutCache, type InsertWorkoutCache, type CoachRecap, type InsertCoachRecap, type AgentRun, type InsertAgentRun, type NotificationOutbox, type InsertNotificationOutbox } from "@shared/schema";
 import crypto from "crypto";
 import { db } from "./db";
 import { eq, desc, and, sql, inArray, gte, gt, lt } from "drizzle-orm";
@@ -278,6 +278,35 @@ export interface IStorage {
   
   // Batch update methods for progressive persistence
   updatePlanDaysByWeek(weekId: number, updates: Array<{ dayOfWeek: string; updates: Partial<PlanDay> }>): Promise<void>;
+  
+  // AI Coach Agent methods
+  // Coach recaps
+  createCoachRecap(recap: InsertCoachRecap): Promise<CoachRecap>;
+  getCoachRecapByActivityId(activityId: number): Promise<CoachRecap | undefined>;
+  getCoachRecapsByUserId(userId: number, limit?: number): Promise<CoachRecap[]>;
+  getLatestCoachRecap(userId: number): Promise<CoachRecap | undefined>;
+  markCoachRecapViewed(recapId: number): Promise<void>;
+  markCoachRecapNotificationSent(recapId: number): Promise<void>;
+  getUnviewedCoachRecapsCount(userId: number): Promise<number>;
+  
+  // Agent runs
+  createAgentRun(run: InsertAgentRun): Promise<AgentRun>;
+  getAgentRunByDedupeKey(dedupeKey: string): Promise<AgentRun | undefined>;
+  updateAgentRun(runId: number, updates: Partial<AgentRun>): Promise<AgentRun | undefined>;
+  getAgentRunsByUserId(userId: number, limit?: number): Promise<AgentRun[]>;
+  getPendingAgentRuns(limit?: number): Promise<AgentRun[]>;
+  
+  // Notification outbox
+  createNotification(notification: InsertNotificationOutbox): Promise<NotificationOutbox>;
+  getPendingNotifications(limit?: number): Promise<NotificationOutbox[]>;
+  markNotificationSent(notificationId: number): Promise<void>;
+  markNotificationFailed(notificationId: number, error: string): Promise<void>;
+  getNotificationsByUserId(userId: number, limit?: number): Promise<NotificationOutbox[]>;
+  getUnreadNotificationsCount(userId: number): Promise<number>;
+  
+  // Coach preferences (updates handled via updateUser, but helper for Premium users)
+  getPremiumUsersForCoaching(): Promise<User[]>;
+  getUsersNeedingCoachSync(sinceDays?: number): Promise<User[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2070,6 +2099,176 @@ export class DatabaseStorage implements IStorage {
           eq(planDays.dayOfWeek, update.dayOfWeek)
         ));
     }
+  }
+
+  // ============== AI COACH AGENT METHODS ==============
+
+  // Coach recaps
+  async createCoachRecap(recap: InsertCoachRecap): Promise<CoachRecap> {
+    const [created] = await db.insert(coachRecaps).values(recap).returning();
+    return created;
+  }
+
+  async getCoachRecapByActivityId(activityId: number): Promise<CoachRecap | undefined> {
+    const [recap] = await db.select()
+      .from(coachRecaps)
+      .where(eq(coachRecaps.activityId, activityId))
+      .limit(1);
+    return recap || undefined;
+  }
+
+  async getCoachRecapsByUserId(userId: number, limit = 20): Promise<CoachRecap[]> {
+    return db.select()
+      .from(coachRecaps)
+      .where(eq(coachRecaps.userId, userId))
+      .orderBy(desc(coachRecaps.createdAt))
+      .limit(limit);
+  }
+
+  async getLatestCoachRecap(userId: number): Promise<CoachRecap | undefined> {
+    const [recap] = await db.select()
+      .from(coachRecaps)
+      .where(eq(coachRecaps.userId, userId))
+      .orderBy(desc(coachRecaps.createdAt))
+      .limit(1);
+    return recap || undefined;
+  }
+
+  async markCoachRecapViewed(recapId: number): Promise<void> {
+    await db.update(coachRecaps)
+      .set({ viewedAt: new Date() })
+      .where(eq(coachRecaps.id, recapId));
+  }
+
+  async markCoachRecapNotificationSent(recapId: number): Promise<void> {
+    await db.update(coachRecaps)
+      .set({ notificationSent: true })
+      .where(eq(coachRecaps.id, recapId));
+  }
+
+  async getUnviewedCoachRecapsCount(userId: number): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)::int` })
+      .from(coachRecaps)
+      .where(and(
+        eq(coachRecaps.userId, userId),
+        sql`${coachRecaps.viewedAt} IS NULL`
+      ));
+    return result[0]?.count ?? 0;
+  }
+
+  // Agent runs
+  async createAgentRun(run: InsertAgentRun): Promise<AgentRun> {
+    const [created] = await db.insert(agentRuns).values(run).returning();
+    return created;
+  }
+
+  async getAgentRunByDedupeKey(dedupeKey: string): Promise<AgentRun | undefined> {
+    const [run] = await db.select()
+      .from(agentRuns)
+      .where(eq(agentRuns.dedupeKey, dedupeKey))
+      .limit(1);
+    return run || undefined;
+  }
+
+  async updateAgentRun(runId: number, updates: Partial<AgentRun>): Promise<AgentRun | undefined> {
+    const [updated] = await db.update(agentRuns)
+      .set(updates)
+      .where(eq(agentRuns.id, runId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async getAgentRunsByUserId(userId: number, limit = 50): Promise<AgentRun[]> {
+    return db.select()
+      .from(agentRuns)
+      .where(eq(agentRuns.userId, userId))
+      .orderBy(desc(agentRuns.createdAt))
+      .limit(limit);
+  }
+
+  async getPendingAgentRuns(limit = 100): Promise<AgentRun[]> {
+    return db.select()
+      .from(agentRuns)
+      .where(eq(agentRuns.status, "pending"))
+      .orderBy(agentRuns.createdAt)
+      .limit(limit);
+  }
+
+  // Notification outbox
+  async createNotification(notification: InsertNotificationOutbox): Promise<NotificationOutbox> {
+    const [created] = await db.insert(notificationOutbox).values(notification).returning();
+    return created;
+  }
+
+  async getPendingNotifications(limit = 100): Promise<NotificationOutbox[]> {
+    return db.select()
+      .from(notificationOutbox)
+      .where(and(
+        eq(notificationOutbox.status, "pending"),
+        sql`${notificationOutbox.scheduledFor} <= NOW()`
+      ))
+      .orderBy(notificationOutbox.scheduledFor)
+      .limit(limit);
+  }
+
+  async markNotificationSent(notificationId: number): Promise<void> {
+    await db.update(notificationOutbox)
+      .set({ status: "sent", sentAt: new Date() })
+      .where(eq(notificationOutbox.id, notificationId));
+  }
+
+  async markNotificationFailed(notificationId: number, error: string): Promise<void> {
+    await db.update(notificationOutbox)
+      .set({ 
+        status: "failed", 
+        errorMessage: error,
+        retryCount: sql`${notificationOutbox.retryCount} + 1`
+      })
+      .where(eq(notificationOutbox.id, notificationId));
+  }
+
+  async getNotificationsByUserId(userId: number, limit = 50): Promise<NotificationOutbox[]> {
+    return db.select()
+      .from(notificationOutbox)
+      .where(eq(notificationOutbox.userId, userId))
+      .orderBy(desc(notificationOutbox.createdAt))
+      .limit(limit);
+  }
+
+  async getUnreadNotificationsCount(userId: number): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)::int` })
+      .from(notificationOutbox)
+      .where(and(
+        eq(notificationOutbox.userId, userId),
+        eq(notificationOutbox.channel, "in_app"),
+        eq(notificationOutbox.status, "sent")
+      ));
+    return result[0]?.count ?? 0;
+  }
+
+  // Coach preferences helpers
+  async getPremiumUsersForCoaching(): Promise<User[]> {
+    return db.select()
+      .from(users)
+      .where(and(
+        eq(users.subscriptionPlan, "premium"),
+        eq(users.stravaConnected, true),
+        eq(users.coachOnboardingCompleted, true)
+      ));
+  }
+
+  async getUsersNeedingCoachSync(sinceDays = 1): Promise<User[]> {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - sinceDays);
+    
+    return db.select()
+      .from(users)
+      .where(and(
+        eq(users.subscriptionPlan, "premium"),
+        eq(users.stravaConnected, true),
+        eq(users.coachOnboardingCompleted, true),
+        sql`(${users.lastCoachSyncAt} IS NULL OR ${users.lastCoachSyncAt} < ${cutoff})`
+      ));
   }
 }
 

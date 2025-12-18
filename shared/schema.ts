@@ -43,6 +43,23 @@ export const users = pgTable("users", {
   // Usage tracking for rate limits
   monthlyInsightCount: integer("monthly_insight_count").default(0),
   insightCountResetAt: timestamp("insight_count_reset_at"),
+  // AI Coach Agent preferences (Premium feature)
+  coachOnboardingCompleted: boolean("coach_onboarding_completed").default(false),
+  coachGoal: text("coach_goal", { 
+    enum: ["5k", "10k", "half_marathon", "marathon", "general_fitness"] 
+  }),
+  coachRaceDate: timestamp("coach_race_date"),
+  coachTargetTime: text("coach_target_time"),
+  coachDaysAvailable: text("coach_days_available").array(), // ["monday", "wednesday", "friday", "sunday"]
+  coachWeeklyMileageCap: real("coach_weekly_mileage_cap"), // Optional max km/week
+  coachTone: text("coach_tone", { 
+    enum: ["gentle", "direct", "data_nerd"] 
+  }).default("direct"),
+  coachNotifyRecap: boolean("coach_notify_recap").default(true),
+  coachNotifyWeeklySummary: boolean("coach_notify_weekly_summary").default(true),
+  coachQuietHoursStart: integer("coach_quiet_hours_start"), // 0-23 hour
+  coachQuietHoursEnd: integer("coach_quiet_hours_end"), // 0-23 hour
+  lastCoachSyncAt: timestamp("last_coach_sync_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -376,6 +393,129 @@ export const aiMessages = pgTable("ai_messages", {
   createdAtIdx: index("ai_messages_created_at_idx").on(table.createdAt),
 }));
 
+// ============== AI COACH AGENT TABLES ==============
+
+// Coach recaps - post-activity coaching outputs
+export const coachRecaps = pgTable("coach_recaps", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  activityId: integer("activity_id").notNull(),
+  stravaActivityId: text("strava_activity_id").notNull(),
+  // Coaching outputs
+  recapBullets: json("recap_bullets").$type<string[]>().notNull(), // 3-6 bullet summary
+  coachingCue: text("coaching_cue").notNull(), // Single focus item for next run
+  nextStep: text("next_step", { 
+    enum: ["rest", "easy", "workout", "long_run", "recovery"] 
+  }).notNull(),
+  nextStepRationale: text("next_step_rationale").notNull(), // Why this next step
+  confidenceFlags: json("confidence_flags").$type<string[]>(), // e.g., ["low_confidence_no_hr", "missing_pace_data"]
+  // Activity context snapshot
+  activityName: text("activity_name").notNull(),
+  activityDate: timestamp("activity_date").notNull(),
+  distanceKm: real("distance_km").notNull(),
+  durationMins: integer("duration_mins").notNull(),
+  // Coach tone used
+  coachTone: text("coach_tone", { 
+    enum: ["gentle", "direct", "data_nerd"] 
+  }).notNull(),
+  // Adherence matching
+  linkedPlanDayId: integer("linked_plan_day_id"),
+  adherenceNote: text("adherence_note"), // e.g., "planned easy, did tempo"
+  // Versioning for audit
+  promptVersion: text("prompt_version").notNull(),
+  modelVersion: text("model_version").notNull(),
+  // Status
+  notificationSent: boolean("notification_sent").default(false),
+  viewedAt: timestamp("viewed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("coach_recaps_user_id_idx").on(table.userId),
+  activityIdIdx: index("coach_recaps_activity_id_idx").on(table.activityId),
+  userActivityIdx: index("coach_recaps_user_activity_idx").on(table.userId, table.activityId),
+  createdAtIdx: index("coach_recaps_created_at_idx").on(table.createdAt),
+}));
+
+// Agent runs - audit log for every coach interaction
+export const agentRuns = pgTable("agent_runs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  runType: text("run_type", { 
+    enum: ["activity_recap", "weekly_summary", "plan_adjustment", "manual_chat"] 
+  }).notNull(),
+  // Trigger info
+  triggeredBy: text("triggered_by", { 
+    enum: ["sync", "app_open", "scheduled", "manual"] 
+  }).notNull(),
+  activityId: integer("activity_id"), // For activity-triggered runs
+  // Deduplication key
+  dedupeKey: text("dedupe_key").notNull().unique(), // e.g., "recap:user_123:activity_456:v1.0"
+  // Pipeline stages
+  status: text("status", { 
+    enum: ["pending", "running", "completed", "failed", "skipped"] 
+  }).default("pending"),
+  stagesCompleted: json("stages_completed").$type<string[]>(), // ["fetch", "metrics", "coaching", "persist", "notify"]
+  // Inputs snapshot (for debugging)
+  inputSnapshot: json("input_snapshot").$type<Record<string, unknown>>(),
+  // Outputs
+  outputRecapId: integer("output_recap_id"),
+  outputNotificationIds: json("output_notification_ids").$type<number[]>(),
+  // Versioning
+  promptVersion: text("prompt_version"),
+  metricsVersion: text("metrics_version"),
+  // Performance
+  durationMs: integer("duration_ms"),
+  tokensUsed: integer("tokens_used"),
+  // Error handling
+  errorMessage: text("error_message"),
+  retryCount: integer("retry_count").default(0),
+  // Timestamps
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("agent_runs_user_id_idx").on(table.userId),
+  dedupeKeyIdx: index("agent_runs_dedupe_key_idx").on(table.dedupeKey),
+  statusIdx: index("agent_runs_status_idx").on(table.status),
+  createdAtIdx: index("agent_runs_created_at_idx").on(table.createdAt),
+}));
+
+// Notification outbox - reliable delivery pattern
+export const notificationOutbox = pgTable("notification_outbox", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  // Notification type
+  type: text("type", { 
+    enum: ["activity_recap", "next_step", "weekly_summary", "plan_reminder"] 
+  }).notNull(),
+  channel: text("channel", { 
+    enum: ["in_app", "email", "push"] 
+  }).notNull(),
+  // Content
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  data: json("data").$type<Record<string, unknown>>(), // Additional data for rendering
+  // Scheduling
+  scheduledFor: timestamp("scheduled_for").defaultNow(),
+  // Delivery status
+  status: text("status", { 
+    enum: ["pending", "sent", "failed", "cancelled"] 
+  }).default("pending"),
+  sentAt: timestamp("sent_at"),
+  errorMessage: text("error_message"),
+  retryCount: integer("retry_count").default(0),
+  // Deduplication
+  dedupeKey: text("dedupe_key"), // e.g., "recap:user_123:activity_456"
+  // User preferences check
+  respectQuietHours: boolean("respect_quiet_hours").default(true),
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("notification_outbox_user_id_idx").on(table.userId),
+  statusIdx: index("notification_outbox_status_idx").on(table.status),
+  scheduledForIdx: index("notification_outbox_scheduled_for_idx").on(table.scheduledFor),
+  dedupeKeyIdx: index("notification_outbox_dedupe_key_idx").on(table.dedupeKey),
+}));
+
 export const runningShoes = pgTable("running_shoes", {
   id: serial("id").primaryKey(),
   brand: text("brand").notNull(), // Nike, Brooks, Hoka, Asics, New Balance, Saucony, On, Altra
@@ -665,6 +805,44 @@ export const insertSimilarRunsCacheSchema = createInsertSchema(similarRunsCache)
   computedAt: true,
 });
 
+// AI Coach Agent schemas
+export const insertCoachRecapSchema = createInsertSchema(coachRecaps).omit({
+  id: true,
+  createdAt: true,
+  notificationSent: true,
+  viewedAt: true,
+});
+
+export const insertAgentRunSchema = createInsertSchema(agentRuns).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+  retryCount: true,
+});
+
+export const insertNotificationOutboxSchema = createInsertSchema(notificationOutbox).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+  sentAt: true,
+  retryCount: true,
+});
+
+// Coach preferences update schema (for user settings)
+export const updateCoachPreferencesSchema = z.object({
+  coachGoal: z.enum(["5k", "10k", "half_marathon", "marathon", "general_fitness"]).optional(),
+  coachRaceDate: z.string().datetime().optional().nullable(),
+  coachTargetTime: z.string().optional().nullable(),
+  coachDaysAvailable: z.array(z.string()).optional(),
+  coachWeeklyMileageCap: z.number().positive().optional().nullable(),
+  coachTone: z.enum(["gentle", "direct", "data_nerd"]).optional(),
+  coachNotifyRecap: z.boolean().optional(),
+  coachNotifyWeeklySummary: z.boolean().optional(),
+  coachQuietHoursStart: z.number().min(0).max(23).optional().nullable(),
+  coachQuietHoursEnd: z.number().min(0).max(23).optional().nullable(),
+  coachOnboardingCompleted: z.boolean().optional(),
+});
+
 // Login schema for authentication
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -721,5 +899,12 @@ export type InsertActivityFeatures = z.infer<typeof insertActivityFeaturesSchema
 export type ActivityFeatures = typeof activityFeatures.$inferSelect;
 export type InsertSimilarRunsCache = z.infer<typeof insertSimilarRunsCacheSchema>;
 export type SimilarRunsCache = typeof similarRunsCache.$inferSelect;
+export type InsertCoachRecap = z.infer<typeof insertCoachRecapSchema>;
+export type CoachRecap = typeof coachRecaps.$inferSelect;
+export type InsertAgentRun = z.infer<typeof insertAgentRunSchema>;
+export type AgentRun = typeof agentRuns.$inferSelect;
+export type InsertNotificationOutbox = z.infer<typeof insertNotificationOutboxSchema>;
+export type NotificationOutbox = typeof notificationOutbox.$inferSelect;
+export type UpdateCoachPreferences = z.infer<typeof updateCoachPreferencesSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;
