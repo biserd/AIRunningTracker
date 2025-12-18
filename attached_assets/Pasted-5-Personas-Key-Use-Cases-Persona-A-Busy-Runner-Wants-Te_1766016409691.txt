@@ -1,0 +1,151 @@
+5) Personas & Key Use Cases
+Persona A: “Busy Runner”
+
+Wants: “Tell me what mattered and what I should do tomorrow.”
+
+Persona B: “Data Runner”
+
+Wants: deeper explanations + comparisons + trend-based adjustments.
+
+User stories (MVP)
+
+As a Premium user, after a run I receive a coach recap and next step.
+
+As a Premium user, I can set my goal + availability and the coach adapts.
+
+As a Premium user, I can view my next 7 days plan and see adherence.
+
+As a Premium user, I can change coach tone + notification settings.
+
+As an admin, I can debug “why did the coach say this?” via agent run logs.
+
+6) Functional Requirements
+FR1 — Agent Profile & Preferences
+
+UI
+
+Premium onboarding modal/page:
+
+Primary goal (5K/10K/HM/FM/general fitness)
+
+Race date + target time (optional)
+
+Days available (e.g., Mon/Wed/Fri/Sun)
+
+Weekly mileage cap (optional)
+
+Injury flags (optional)
+
+Coach tone: Gentle / Direct / Data-Nerd
+
+Notifications: recap on/off, weekly summary on/off, quiet hours
+
+Persistence
+
+Profile must be editable anytime.
+
+Profile changes should take effect on next agent run.
+
+FR2 — Activity Event Detection Without Webhooks
+
+Implement two triggers:
+
+Polling job (server scheduled)
+
+Every N minutes:
+
+for active Premium users, fetch latest activities since last_sync_at
+
+detect new activity IDs not in DB
+
+enqueue PROCESS_ACTIVITY(activity_id, user_id)
+
+App-open incremental sync
+
+When Premium user loads dashboard:
+
+fetch any new activities since last sync
+
+enqueue jobs for new activities
+
+Rules
+
+Must be idempotent: same activity should not produce duplicate agent runs.
+
+Must respect Strava rate limits via a central limiter.
+
+FR3 — Agent Run Orchestration (Pipeline)
+
+For each new activity (or batch):
+
+Fetch activity details (summary; streams optional if available)
+
+Compute/store derived metrics (versioned)
+
+Generate coaching outputs:
+
+Recap (3–6 bullets)
+
+One coaching cue (single focus item)
+
+Next step (rest/easy/workout suggestion)
+
+Confidence flags (e.g., “low confidence: no HR data”)
+
+Update memory facts (structured extraction)
+
+Update training plan items (next 7–14 days)
+
+Create notification(s) in outbox
+
+Required properties
+
+Retryable stages with exponential backoff
+
+Dedupe keys: (user_id, activity_id, job_type, metric_version, prompt_version)
+
+Audit logs for every agent run
+
+FR4 — Training Plan & Adherence
+
+Plan generation
+
+Maintain rolling plan items (7–14 days) with:
+
+date, type (easy/workout/long/rest)
+
+target (duration or distance; pace/HR zone if available)
+
+rationale (1 sentence)
+
+Adherence matching
+
+When an activity arrives:
+
+match to the nearest plan item on that date window
+
+mark as completed / partial / missed
+
+record deviation notes (e.g., “planned easy, did tempo”)
+
+FR5 — Notifications (In-app + Email)
+
+Outbox-based sending
+
+Store notifications in DB outbox then deliver via worker.
+
+Types:
+
+Post-activity recap
+
+Next-step suggestion
+
+Weekly summary (scheduled)
+
+Controls
+
+Quiet hours
+
+Frequency caps (e.g., max 2/day)
+
+Unsubscribe / disable per type
