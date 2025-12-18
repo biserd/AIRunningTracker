@@ -1,4 +1,4 @@
-export const VERSION = "2.7.7";
+export const VERSION = "2.8.0";
 
 export interface ReleaseNote {
   version: string;
@@ -12,6 +12,58 @@ export interface ReleaseNote {
 }
 
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "2.8.0",
+    date: "2025-12-18",
+    title: "AI Agent Coach - Your Proactive Running Coach",
+    description: "Introducing AI Agent Coach, a Premium-exclusive feature that transforms passive analytics into active coaching. After every Strava sync, AI Agent Coach automatically analyzes your run and delivers personalized coaching recaps with observations, next-step recommendations, and performance grades—without you asking.",
+    changes: [
+      {
+        type: "feature",
+        description: "AI Agent Coach - Proactive post-run coaching that automatically generates personalized recaps after every activity sync"
+      },
+      {
+        type: "feature",
+        description: "Coach Recap Cards - Each recap includes 3-5 observations about your run, a coaching cue to focus on, and a clear next-step recommendation (rest/easy run/workout/long run/recovery)"
+      },
+      {
+        type: "feature",
+        description: "Performance Grades - Every run receives a grade (A-F) based on pacing, heart rate, effort distribution, and adherence to training goals"
+      },
+      {
+        type: "feature",
+        description: "Personalized Onboarding Wizard - Set your goals (PR, distance, consistency, health), target race date, available training days, and preferred coaching tone (gentle/balanced/direct)"
+      },
+      {
+        type: "feature",
+        description: "Coach Settings - Customize notification preferences, quiet hours, and coaching style from the dedicated settings page"
+      },
+      {
+        type: "feature",
+        description: "AI Agent Coach Landing Page - New marketing page at /ai-agent-coach showcasing the proactive coaching system with testimonials and feature highlights"
+      },
+      {
+        type: "feature",
+        description: "SEO Blog Post - In-depth article about proactive AI running coaching at /blog/ai-agent-coach-proactive-coaching targeting runners searching for automated coaching solutions"
+      },
+      {
+        type: "improvement",
+        description: "Updated Pricing Page - AI Agent Coach now highlighted as Premium differentiator with 'New' badge"
+      },
+      {
+        type: "improvement",
+        description: "FAQ Section Update - Added 'AI Agent Coach (Premium)' section with 4 common questions about the feature"
+      },
+      {
+        type: "improvement",
+        description: "Footer Navigation - Added AI Agent Coach link to Product section for easy discovery"
+      },
+      {
+        type: "improvement",
+        description: "Sitemap Update - Added /ai-agent-coach and /blog/ai-agent-coach-proactive-coaching to sitemap.xml for search engine indexing"
+      }
+    ]
+  },
   {
     version: "2.7.7",
     date: "2025-11-28",

@@ -181,7 +181,9 @@ Sitemap: ${baseUrl}/sitemap.xml`;
         { url: "/blog/ai-running-coach-complete-guide-2025", changefreq: "monthly", priority: "0.9" },
         { url: "/blog/best-strava-analytics-tools-2025", changefreq: "monthly", priority: "0.9" },
         { url: "/blog/how-to-improve-running-pace", changefreq: "monthly", priority: "0.9" },
+        { url: "/blog/ai-agent-coach-proactive-coaching", changefreq: "monthly", priority: "0.9" },
         { url: "/ai-running-coach", changefreq: "weekly", priority: "0.9" },
+        { url: "/ai-agent-coach", changefreq: "weekly", priority: "0.9" },
         
         // Free Tools
         { url: "/tools", changefreq: "weekly", priority: "0.9" },
