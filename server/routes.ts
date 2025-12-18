@@ -1303,6 +1303,17 @@ ${allPages.map(page => `  <url>
           subscriptionPlan: user.subscriptionPlan || 'free',
           subscriptionStatus: user.subscriptionStatus || 'free',
           activityHistoryLimitDays: historyLimitDays,
+          coachOnboardingCompleted: user.coachOnboardingCompleted || false,
+          coachGoal: user.coachGoal,
+          coachRaceDate: user.coachRaceDate,
+          coachTargetTime: user.coachTargetTime,
+          coachDaysAvailable: user.coachDaysAvailable,
+          coachWeeklyMileageCap: user.coachWeeklyMileageCap,
+          coachTone: user.coachTone,
+          coachNotifyRecap: user.coachNotifyRecap ?? true,
+          coachNotifyWeeklySummary: user.coachNotifyWeeklySummary ?? true,
+          coachQuietHoursStart: user.coachQuietHoursStart,
+          coachQuietHoursEnd: user.coachQuietHoursEnd,
         },
         usage: usageStats,
         stats: {
@@ -2127,6 +2138,124 @@ ${allPages.map(page => `  <url>
     } catch (error: any) {
       console.error('Branding settings update error:', error);
       res.status(500).json({ message: error.message || "Failed to update branding settings" });
+    }
+  });
+
+  // Update AI Coach preferences (Premium feature)
+  app.patch("/api/users/:userId/coach-preferences", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      // Verify the user owns this resource
+      if (req.user.id !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Verify user has Premium subscription
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (user.subscriptionPlan !== "premium") {
+        return res.status(403).json({ message: "AI Coach is a Premium feature" });
+      }
+
+      const {
+        coachGoal,
+        coachRaceDate,
+        coachTargetTime,
+        coachDaysAvailable,
+        coachWeeklyMileageCap,
+        coachTone,
+        coachNotifyRecap,
+        coachNotifyWeeklySummary,
+        coachQuietHoursStart,
+        coachQuietHoursEnd,
+        coachOnboardingCompleted
+      } = req.body;
+
+      // Build update object with only provided fields
+      const updates: Record<string, any> = {};
+      
+      if (coachGoal !== undefined) {
+        const validGoals = ["5k", "10k", "half_marathon", "marathon", "general_fitness"];
+        if (!validGoals.includes(coachGoal)) {
+          return res.status(400).json({ message: "Invalid coach goal" });
+        }
+        updates.coachGoal = coachGoal;
+      }
+      
+      if (coachRaceDate !== undefined) {
+        if (coachRaceDate) {
+          const parsed = new Date(coachRaceDate);
+          if (isNaN(parsed.getTime())) {
+            return res.status(400).json({ message: "Invalid race date format" });
+          }
+          updates.coachRaceDate = parsed;
+        } else {
+          updates.coachRaceDate = null;
+        }
+      }
+      
+      if (coachTargetTime !== undefined) {
+        updates.coachTargetTime = coachTargetTime || null;
+      }
+      
+      if (coachDaysAvailable !== undefined) {
+        updates.coachDaysAvailable = coachDaysAvailable;
+      }
+      
+      if (coachWeeklyMileageCap !== undefined) {
+        updates.coachWeeklyMileageCap = coachWeeklyMileageCap;
+      }
+      
+      if (coachTone !== undefined) {
+        const validTones = ["gentle", "direct", "data_nerd"];
+        if (!validTones.includes(coachTone)) {
+          return res.status(400).json({ message: "Invalid coach tone" });
+        }
+        updates.coachTone = coachTone;
+      }
+      
+      if (coachNotifyRecap !== undefined) {
+        updates.coachNotifyRecap = coachNotifyRecap;
+      }
+      
+      if (coachNotifyWeeklySummary !== undefined) {
+        updates.coachNotifyWeeklySummary = coachNotifyWeeklySummary;
+      }
+      
+      if (coachQuietHoursStart !== undefined) {
+        updates.coachQuietHoursStart = coachQuietHoursStart;
+      }
+      
+      if (coachQuietHoursEnd !== undefined) {
+        updates.coachQuietHoursEnd = coachQuietHoursEnd;
+      }
+      
+      if (coachOnboardingCompleted !== undefined) {
+        updates.coachOnboardingCompleted = coachOnboardingCompleted;
+      }
+
+      const updatedUser = await storage.updateUser(userId, updates);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Invalidate cached dashboard
+      deleteCachedResponse(`dashboard:${userId}`);
+      console.log(`[Coach] Updated coach preferences for user ${userId}`);
+
+      res.json({ success: true, user: updatedUser });
+    } catch (error: any) {
+      console.error('Coach preferences update error:', error);
+      res.status(500).json({ message: error.message || "Failed to update coach preferences" });
     }
   });
 

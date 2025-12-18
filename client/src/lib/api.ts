@@ -12,6 +12,17 @@ export interface DashboardData {
     subscriptionPlan?: string;
     subscriptionStatus?: string;
     activityHistoryLimitDays?: number | null;
+    coachOnboardingCompleted?: boolean;
+    coachGoal?: string | null;
+    coachRaceDate?: string | null;
+    coachTargetTime?: string | null;
+    coachDaysAvailable?: string[] | null;
+    coachWeeklyMileageCap?: number | null;
+    coachTone?: string | null;
+    coachNotifyRecap?: boolean;
+    coachNotifyWeeklySummary?: boolean;
+    coachQuietHoursStart?: number | null;
+    coachQuietHoursEnd?: number | null;
   };
   stats: {
     totalDistance: string;

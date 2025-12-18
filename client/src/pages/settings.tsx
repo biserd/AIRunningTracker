@@ -23,7 +23,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Save, Unlink, Trash2, Crown, Star, Zap, CreditCard, ExternalLink, Loader2, Share2, Check, AlertTriangle } from "lucide-react";
+import { Settings, Save, Unlink, Trash2, Crown, Star, Zap, CreditCard, ExternalLink, Loader2, Share2, Check, AlertTriangle, MessageSquare, Target, Calendar, Bell } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 
@@ -449,6 +449,104 @@ function SettingsPageContent() {
                   >
                     <Share2 className="h-4 w-4 mr-2" />
                     Grant Write Permission
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {isPremium && (
+          <Card className="border-yellow-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Crown className="h-5 w-5 text-yellow-600" />
+                AI Coach Settings
+                <Badge className="bg-yellow-100 text-yellow-700">Premium</Badge>
+              </CardTitle>
+              <CardDescription>
+                Configure your personalized AI running coach
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {dashboardData?.user?.coachOnboardingCompleted ? (
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Target className="h-4 w-4 text-strava-orange" />
+                        <Label className="font-medium">Current Goal</Label>
+                      </div>
+                      <p className="text-gray-700 capitalize">
+                        {dashboardData.user.coachGoal?.replace("_", " ") || "Not set"}
+                      </p>
+                      {dashboardData.user.coachRaceDate && (
+                        <p className="text-sm text-gray-500 mt-1">
+                          Race: {new Date(dashboardData.user.coachRaceDate).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <MessageSquare className="h-4 w-4 text-strava-orange" />
+                        <Label className="font-medium">Coaching Style</Label>
+                      </div>
+                      <p className="text-gray-700 capitalize">
+                        {dashboardData.user.coachTone?.replace("_", " ") || "Direct"}
+                      </p>
+                    </div>
+                    
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calendar className="h-4 w-4 text-strava-orange" />
+                        <Label className="font-medium">Training Days</Label>
+                      </div>
+                      <p className="text-gray-700">
+                        {dashboardData.user.coachDaysAvailable?.length 
+                          ? dashboardData.user.coachDaysAvailable.map(d => d.slice(0, 3)).join(", ")
+                          : "Not configured"}
+                      </p>
+                    </div>
+                    
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Bell className="h-4 w-4 text-strava-orange" />
+                        <Label className="font-medium">Notifications</Label>
+                      </div>
+                      <p className="text-gray-700">
+                        {dashboardData.user.coachNotifyRecap ? "Recaps on" : "Recaps off"}
+                        {dashboardData.user.coachNotifyWeeklySummary ? ", Weekly on" : ", Weekly off"}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    variant="outline"
+                    onClick={() => setLocation('/coach/settings')}
+                    className="flex items-center gap-2"
+                    data-testid="button-edit-coach-settings"
+                  >
+                    <Settings className="h-4 w-4" />
+                    Edit Coach Preferences
+                  </Button>
+                </>
+              ) : (
+                <div className="text-center py-4">
+                  <div className="p-3 bg-yellow-100 rounded-full w-fit mx-auto mb-4">
+                    <Crown className="h-6 w-6 text-yellow-600" />
+                  </div>
+                  <h3 className="font-semibold text-lg mb-2">Set Up Your AI Coach</h3>
+                  <p className="text-sm text-gray-600 mb-4 max-w-md mx-auto">
+                    Complete the onboarding wizard to start receiving personalized coaching feedback after every run.
+                  </p>
+                  <Button 
+                    onClick={() => setLocation('/coach/onboarding')}
+                    className="bg-yellow-600 hover:bg-yellow-700"
+                    data-testid="button-start-coach-onboarding"
+                  >
+                    <Crown className="h-4 w-4 mr-2" />
+                    Start Coach Setup
                   </Button>
                 </div>
               )}
