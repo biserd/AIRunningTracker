@@ -2259,6 +2259,98 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Get coach recaps for user (Premium feature)
+  app.get("/api/users/:userId/coach-recaps", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Authorization check: user can only fetch their own recaps
+      if (req.user?.id !== userId && !req.user?.isAdmin) {
+        return res.status(403).json({ message: "Not authorized to view this user's recaps" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (user.subscriptionPlan !== "premium" || user.subscriptionStatus !== "active") {
+        return res.status(403).json({ message: "Premium subscription required for coach recaps" });
+      }
+
+      const recaps = await storage.getCoachRecapsByUserId(userId, limit);
+      res.json({ recaps });
+    } catch (error: any) {
+      console.error('Coach recaps fetch error:', error);
+      res.status(500).json({ message: error.message || "Failed to fetch coach recaps" });
+    }
+  });
+
+  // Get coach recap for specific activity (Premium feature)
+  app.get("/api/activities/:activityId/coach-recap", authenticateJWT, async (req: any, res) => {
+    try {
+      const activityId = parseInt(req.params.activityId);
+      
+      if (isNaN(activityId)) {
+        return res.status(400).json({ message: "Invalid activity ID" });
+      }
+      
+      const activity = await storage.getActivityById(activityId);
+      if (!activity) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
+      
+      // Authorization check: user can only fetch recaps for their own activities
+      if (req.user?.id !== activity.userId && !req.user?.isAdmin) {
+        return res.status(403).json({ message: "Not authorized to view this activity's recap" });
+      }
+      
+      const user = await storage.getUser(activity.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (user.subscriptionPlan !== "premium" || user.subscriptionStatus !== "active") {
+        return res.status(403).json({ message: "Premium subscription required for coach recaps" });
+      }
+
+      const recap = await storage.getCoachRecapByActivityId(activityId);
+      res.json({ recap: recap || null });
+    } catch (error: any) {
+      console.error('Coach recap fetch error:', error);
+      res.status(500).json({ message: error.message || "Failed to fetch coach recap" });
+    }
+  });
+
+  // Mark coach recap as viewed (Premium feature)
+  app.patch("/api/coach-recaps/:recapId/viewed", authenticateJWT, async (req: any, res) => {
+    try {
+      const recapId = parseInt(req.params.recapId);
+      
+      if (isNaN(recapId)) {
+        return res.status(400).json({ message: "Invalid recap ID" });
+      }
+      
+      // Get the recap to verify ownership
+      const recaps = await storage.getCoachRecapsByUserId(req.user?.id, 100);
+      const recap = recaps.find(r => r.id === recapId);
+      if (!recap && !req.user?.isAdmin) {
+        return res.status(403).json({ message: "Not authorized to update this recap" });
+      }
+      
+      await storage.markCoachRecapViewed(recapId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Coach recap mark viewed error:', error);
+      res.status(500).json({ message: error.message || "Failed to mark recap as viewed" });
+    }
+  });
+
   // Disconnect Strava
   app.post("/api/strava/disconnect/:userId", async (req, res) => {
     try {

@@ -20,10 +20,12 @@ import BenchmarkDrawer from "@/components/activity/BenchmarkDrawer";
 import EfficiencyDrawer from "@/components/activity/EfficiencyDrawer";
 import CompareDrawer from "@/components/activity/CompareDrawer";
 import { ChatPanel } from "@/components/ChatPanel";
+import { CoachRecapCard } from "@/components/CoachRecapCard";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { ViewOnStravaLink, StravaPoweredBy } from "@/components/StravaConnect";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useSubscription, useFeatureAccess } from "@/hooks/useSubscription";
+import type { CoachRecap } from "@shared/schema";
 import { LockedFeatureTeaser, LockedOverlay, TierBadge as TierBadgeComponent } from "@/components/LockedFeatureTeaser";
 
 type ViewMode = "story" | "deep_dive";
@@ -279,6 +281,19 @@ export default function ActivityPage() {
       return res.json();
     },
     enabled: !!activityId && subscriptionReady && !isFree,
+    retry: false
+  });
+
+  const { data: coachRecapData } = useQuery<{ recap: CoachRecap | null }>({
+    queryKey: ['/api/activities', activityId, 'coach-recap'],
+    queryFn: async () => {
+      const res = await fetch(`/api/activities/${activityId}/coach-recap`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+      });
+      if (!res.ok) return { recap: null };
+      return res.json();
+    },
+    enabled: !!activityId && subscriptionReady && isPremium,
     retry: false
   });
 
@@ -682,6 +697,13 @@ export default function ActivityPage() {
                 canAskCoach={featureAccess.activity.askCoach}
               />
             </div>
+
+            {/* AI Agent Coach Recap (Premium only) */}
+            {isPremium && coachRecapData?.recap && (
+              <div className="mb-6" data-testid="coach-recap-section">
+                <CoachRecapCard recap={coachRecapData.recap} />
+              </div>
+            )}
             
             {/* 2. Route Map - Always visible with better sizing and key moments */}
             <div className="mb-6">

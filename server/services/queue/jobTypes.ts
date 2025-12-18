@@ -2,7 +2,7 @@
  * Strava Job Queue - Job Type Definitions
  */
 
-export type JobType = 'LIST_ACTIVITIES' | 'HYDRATE_ACTIVITY';
+export type JobType = 'LIST_ACTIVITIES' | 'HYDRATE_ACTIVITY' | 'GENERATE_COACH_RECAP';
 
 export interface BaseJob {
   id: string;
@@ -37,7 +37,15 @@ export interface HydrateActivityJob extends BaseJob {
   };
 }
 
-export type Job = ListActivitiesJob | HydrateActivityJob;
+export interface GenerateCoachRecapJob extends BaseJob {
+  type: 'GENERATE_COACH_RECAP';
+  data: {
+    activityId: number;
+    stravaId: string;
+  };
+}
+
+export type Job = ListActivitiesJob | HydrateActivityJob | GenerateCoachRecapJob;
 
 export interface JobResult {
   success: boolean;
@@ -92,6 +100,25 @@ export function createHydrateActivityJob(
       stravaId,
       fetchStreams,
       fetchLaps,
+    },
+  };
+}
+
+export function createCoachRecapJob(
+  userId: number,
+  activityId: number,
+  stravaId: string,
+  priority = 5
+): Omit<GenerateCoachRecapJob, 'id' | 'createdAt' | 'status' | 'attempts'> {
+  return {
+    type: 'GENERATE_COACH_RECAP',
+    userId,
+    priority,
+    scheduledAt: new Date(),
+    maxAttempts: 2,
+    data: {
+      activityId,
+      stravaId,
     },
   };
 }

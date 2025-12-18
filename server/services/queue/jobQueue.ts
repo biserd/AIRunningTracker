@@ -2,10 +2,11 @@
  * Strava Job Queue - In-Memory Priority Queue with Delayed Retries
  */
 
-import { Job, JobResult, createJobId } from './jobTypes';
+import { Job, JobResult, createJobId, createCoachRecapJob } from './jobTypes';
 import { stravaClient, isRateLimitError } from '../stravaClient';
 import { storage } from '../../storage';
 import { metrics } from './metrics';
+import { processCoachRecapJob } from '../coachingService';
 
 // Track users with active sync operations
 const activeSyncs = new Map<number, { startedAt: Date; totalActivities: number; processedActivities: number }>();
@@ -194,6 +195,8 @@ class JobQueue {
         return await this.executeListActivities(job);
       case 'HYDRATE_ACTIVITY':
         return await this.executeHydrateActivity(job);
+      case 'GENERATE_COACH_RECAP':
+        return await this.executeCoachRecap(job);
       default:
         return { success: false, error: `Unknown job type: ${(job as any).type}` };
     }
@@ -391,6 +394,19 @@ class JobQueue {
       await storage.updateActivity(activityId, updates);
     }
 
+    const newJobs: Omit<Job, 'id' | 'createdAt' | 'status' | 'attempts'>[] = [];
+    
+    const user = await storage.getUser(job.userId);
+    if (user?.subscriptionPlan === 'premium' && 
+        user?.subscriptionStatus === 'active' && 
+        user?.coachOnboardingCompleted) {
+      const activity = await storage.getActivityById(activityId);
+      if (activity?.type?.toLowerCase().includes('run')) {
+        newJobs.push(createCoachRecapJob(job.userId, activityId, stravaId));
+        console.log(`[JobQueue] Queued coach recap for Premium user ${job.userId}, activity ${activityId}`);
+      }
+    }
+
     this.notifyProgress(job.userId, `Hydrated activity ${stravaId}`, { 
       activityId, 
       updated: Object.keys(updates),
@@ -401,8 +417,34 @@ class JobQueue {
       data: { 
         activityId, 
         updated: Object.keys(updates),
-      } 
+      },
+      newJobs,
     };
+  }
+
+  private async executeCoachRecap(job: Job): Promise<JobResult> {
+    if (job.type !== 'GENERATE_COACH_RECAP') {
+      return { success: false, error: 'Invalid job type' };
+    }
+
+    const { activityId, stravaId } = job.data;
+    
+    try {
+      const result = await processCoachRecapJob(job.userId, activityId, stravaId);
+      
+      if (result.success) {
+        this.notifyProgress(job.userId, `Generated coach recap for activity ${stravaId}`, { 
+          activityId,
+          recapId: result.recapId,
+        });
+        return { success: true, data: { activityId, recapId: result.recapId } };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error: any) {
+      console.error(`[JobQueue] Coach recap generation failed:`, error.message);
+      return { success: false, error: error.message };
+    }
   }
 
   start(): void {
