@@ -43,8 +43,8 @@ import ShoeFinder from "@/pages/tools/shoe-finder";
 import RotationPlanner from "@/pages/tools/rotation-planner";
 import ChatHistory from "@/pages/chat-history";
 import BlogIndex from "@/pages/blog/index";
-import AIRunningCoachGuide from "@/pages/blog/ai-running-coach-complete-guide-2025";
-import BestStravaTools from "@/pages/blog/best-strava-analytics-tools-2025";
+import AIRunningCoachGuide from "@/pages/blog/ai-running-coach-complete-guide-2026";
+import BestStravaTools from "@/pages/blog/best-strava-analytics-tools-2026";
 import ImproveRunningPace from "@/pages/blog/how-to-improve-running-pace";
 import HowToPickTrainingPlan from "@/pages/blog/how-to-pick-a-training-plan";
 import AICoachLanding from "@/pages/ai-running-coach";
@@ -112,8 +112,8 @@ function Router() {
       
       {/* Blog Routes */}
       <Route path="/blog" component={BlogIndex} />
-      <Route path="/blog/ai-running-coach-complete-guide-2025" component={AIRunningCoachGuide} />
-      <Route path="/blog/best-strava-analytics-tools-2025" component={BestStravaTools} />
+      <Route path="/blog/ai-running-coach-complete-guide-2026" component={AIRunningCoachGuide} />
+      <Route path="/blog/best-strava-analytics-tools-2026" component={BestStravaTools} />
       <Route path="/blog/how-to-improve-running-pace" component={ImproveRunningPace} />
       <Route path="/blog/how-to-pick-a-training-plan" component={HowToPickTrainingPlan} />
       <Route path="/blog/ai-agent-coach-proactive-coaching" component={AIAgentCoachBlogPost} />

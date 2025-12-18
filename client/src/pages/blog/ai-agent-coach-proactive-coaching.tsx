@@ -39,8 +39,8 @@ export default function AIAgentCoachBlogPost() {
         "url": "https://aitracker.run/logo.png"
       }
     },
-    "datePublished": "2025-12-18",
-    "dateModified": "2025-12-18",
+    "datePublished": "2026-01-18",
+    "dateModified": "2026-01-18",
     "mainEntityOfPage": {
       "@type": "WebPage",
       "@id": "https://aitracker.run/blog/ai-agent-coach-proactive-coaching"
@@ -89,7 +89,7 @@ export default function AIAgentCoachBlogPost() {
             <div className="flex items-center gap-6 text-sm text-gray-500 dark:text-gray-400">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                <span>December 18, 2025</span>
+                <span>January 18, 2026</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />

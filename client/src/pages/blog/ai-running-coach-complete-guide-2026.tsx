@@ -26,8 +26,8 @@ export default function AIRunningCoachGuide() {
   const blogPostingSchema = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    "headline": "AI Running Coach: Complete Guide 2025",
-    "description": "Discover everything about AI running coaches in 2025. Learn how AI-powered coaching works, benefits vs human coaches, and how to maximize your training with RunAnalytics AI Coach.",
+    "headline": "AI Running Coach: Complete Guide 2026",
+    "description": "Discover everything about AI running coaches in 2026. Learn how AI-powered coaching works, benefits vs human coaches, and how to maximize your training with RunAnalytics AI Coach.",
     "image": "https://aitracker.run/og-image.jpg",
     "author": {
       "@type": "Organization",
@@ -41,11 +41,11 @@ export default function AIRunningCoachGuide() {
         "url": "https://aitracker.run/og-image.jpg"
       }
     },
-    "datePublished": "2025-11-21",
-    "dateModified": "2025-11-21",
+    "datePublished": "2026-01-15",
+    "dateModified": "2026-01-15",
     "mainEntityOfPage": {
       "@type": "WebPage",
-      "@id": "https://aitracker.run/blog/ai-running-coach-complete-guide-2025"
+      "@id": "https://aitracker.run/blog/ai-running-coach-complete-guide-2026"
     },
     "keywords": "AI running coach, artificial intelligence running, AI coaching, personalized running coach, virtual running coach, AI fitness coach, machine learning running"
   };
@@ -53,10 +53,10 @@ export default function AIRunningCoachGuide() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <SEO
-        title="AI Running Coach: Complete Guide 2025 | RunAnalytics"
-        description="Discover everything about AI running coaches in 2025. Learn how AI-powered coaching works, benefits vs human coaches, and how to maximize your training with RunAnalytics AI Coach."
+        title="AI Running Coach: Complete Guide 2026 | RunAnalytics"
+        description="Discover everything about AI running coaches in 2026. Learn how AI-powered coaching works, benefits vs human coaches, and how to maximize your training with RunAnalytics AI Coach."
         keywords="AI running coach, artificial intelligence running, AI coaching, personalized running coach, virtual running coach, AI fitness coach, machine learning running"
-        url="https://aitracker.run/blog/ai-running-coach-complete-guide-2025"
+        url="https://aitracker.run/blog/ai-running-coach-complete-guide-2026"
         type="article"
         structuredData={blogPostingSchema}
       />
@@ -68,12 +68,12 @@ export default function AIRunningCoachGuide() {
           <div className="mb-8">
             <Badge className="mb-4">AI & Technology</Badge>
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-charcoal dark:text-white mb-4">
-              AI Running Coach: Complete Guide 2025
+              AI Running Coach: Complete Guide 2026
             </h1>
             <div className="flex items-center gap-4 text-gray-600 dark:text-gray-400 text-sm mb-6">
               <div className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
-                <span>November 21, 2025</span>
+                <span>January 15, 2026</span>
               </div>
               <div className="flex items-center gap-1">
                 <Clock className="h-4 w-4" />
@@ -81,7 +81,7 @@ export default function AIRunningCoachGuide() {
               </div>
             </div>
             <p className="text-xl text-gray-700 dark:text-gray-300 leading-relaxed">
-              Artificial intelligence is revolutionizing how runners train, recover, and achieve their goals. This comprehensive guide explores everything you need to know about AI running coaches in 2025.
+              Artificial intelligence is revolutionizing how runners train, recover, and achieve their goals. This comprehensive guide explores everything you need to know about AI running coaches in 2026.
             </p>
           </div>
 
