@@ -49,7 +49,7 @@ export default function AIAgentCoachBlogPost() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <SEO
         title="AI Agent Coach: Proactive AI Coaching for Runners | RunAnalytics"
         description="Learn how AI Agent Coach automatically analyzes your runs and delivers personalized coaching recaps, next-step recommendations, and training cues. Transform passive tracking into active coaching."
@@ -71,7 +71,7 @@ export default function AIAgentCoachBlogPost() {
         <article className="prose prose-lg dark:prose-invert max-w-none">
           <header className="mb-8">
             <div className="flex items-center gap-3 mb-4">
-              <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200">
+              <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200">
                 <Bot className="mr-1 h-3 w-3" />
                 Premium Feature
               </Badge>
@@ -98,9 +98,9 @@ export default function AIAgentCoachBlogPost() {
             </div>
           </header>
 
-          <div className="bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 rounded-2xl p-6 mb-8">
+          <div className="bg-gradient-to-r from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 rounded-2xl p-6 mb-8">
             <h3 className="text-lg font-semibold text-charcoal dark:text-white mb-3 flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-purple-600" />
+              <Sparkles className="h-5 w-5 text-orange-600" />
               What You'll Learn
             </h3>
             <ul className="space-y-2 text-gray-700 dark:text-gray-300">
@@ -147,9 +147,9 @@ export default function AIAgentCoachBlogPost() {
             </p>
             
             <div className="grid md:grid-cols-2 gap-6 mb-6">
-              <Card className="border-2 border-purple-200 dark:border-purple-800">
+              <Card className="border-2 border-orange-200 dark:border-orange-800">
                 <CardContent className="pt-6">
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-amber-600 rounded-xl flex items-center justify-center mb-4">
                     <Brain className="h-6 w-6 text-white" />
                   </div>
                   <h3 className="font-bold text-charcoal dark:text-white mb-2">Automatic Analysis</h3>
@@ -265,21 +265,21 @@ export default function AIAgentCoachBlogPost() {
             </p>
             <ol className="space-y-4 mb-6">
               <li className="flex items-start gap-3">
-                <span className="inline-flex items-center justify-center w-8 h-8 bg-purple-100 text-purple-700 rounded-full text-sm font-bold flex-shrink-0">1</span>
+                <span className="inline-flex items-center justify-center w-8 h-8 bg-orange-100 text-orange-700 rounded-full text-sm font-bold flex-shrink-0">1</span>
                 <div>
                   <strong className="text-charcoal dark:text-white">Upgrade to Premium:</strong>
                   <span className="text-gray-600 dark:text-gray-300"> AI Agent Coach is available exclusively on the Premium plan.</span>
                 </div>
               </li>
               <li className="flex items-start gap-3">
-                <span className="inline-flex items-center justify-center w-8 h-8 bg-purple-100 text-purple-700 rounded-full text-sm font-bold flex-shrink-0">2</span>
+                <span className="inline-flex items-center justify-center w-8 h-8 bg-orange-100 text-orange-700 rounded-full text-sm font-bold flex-shrink-0">2</span>
                 <div>
                   <strong className="text-charcoal dark:text-white">Complete the Onboarding Wizard:</strong>
                   <span className="text-gray-600 dark:text-gray-300"> Set your goal, race date (optional), available training days, and preferred coaching tone.</span>
                 </div>
               </li>
               <li className="flex items-start gap-3">
-                <span className="inline-flex items-center justify-center w-8 h-8 bg-purple-100 text-purple-700 rounded-full text-sm font-bold flex-shrink-0">3</span>
+                <span className="inline-flex items-center justify-center w-8 h-8 bg-orange-100 text-orange-700 rounded-full text-sm font-bold flex-shrink-0">3</span>
                 <div>
                   <strong className="text-charcoal dark:text-white">Sync Your Activities:</strong>
                   <span className="text-gray-600 dark:text-gray-300"> After your next run syncs from Strava, you'll receive your first coaching recap automatically.</span>
@@ -288,16 +288,16 @@ export default function AIAgentCoachBlogPost() {
             </ol>
           </section>
 
-          <section className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-8 text-white text-center" data-testid="section-cta">
+          <section className="bg-gradient-to-r from-strava-orange to-amber-500 rounded-2xl p-8 text-white text-center" data-testid="section-cta">
             <h2 className="text-2xl font-bold mb-4" data-testid="heading-cta">
               Ready for an Always-On Running Coach?
             </h2>
-            <p className="text-lg text-purple-100 mb-6 max-w-2xl mx-auto">
+            <p className="text-lg text-orange-100 mb-6 max-w-2xl mx-auto">
               Transform passive data into active coaching. Get personalized feedback after every run with AI Agent Coach.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/ai-agent-coach">
-                <Button size="lg" className="bg-white text-purple-700 hover:bg-gray-100" data-testid="cta-learn-more">
+                <Button size="lg" className="bg-white text-strava-orange hover:bg-gray-100" data-testid="cta-learn-more">
                   <Zap className="mr-2 h-5 w-5" />
                   Learn More About AI Agent Coach
                 </Button>
