@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, ArrowRight, Brain, TrendingUp, BarChart, Target } from "lucide-react";
+import { Calendar, Clock, ArrowRight, Brain, TrendingUp, BarChart, Target, Bot } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
@@ -18,6 +18,16 @@ interface BlogPost {
 }
 
 const blogPosts: BlogPost[] = [
+  {
+    slug: "ai-agent-coach-proactive-coaching",
+    title: "AI Agent Coach: How Proactive AI Coaching Transforms Your Running",
+    description: "Discover how AI Agent Coach analyzes every run and delivers personalized coaching recaps, next-step recommendations, and training insights without you asking.",
+    date: "December 18, 2025",
+    readTime: "10 min read",
+    category: "Premium Features",
+    icon: Bot,
+    gradient: "from-purple-600 to-blue-600"
+  },
   {
     slug: "how-to-pick-a-training-plan",
     title: "How to Pick a Training Plan: Complete Guide",

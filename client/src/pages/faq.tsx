@@ -1,4 +1,4 @@
-import { HelpCircle, Zap, Target, BarChart, Shield, Clock } from "lucide-react";
+import { HelpCircle, Zap, Target, BarChart, Shield, Clock, Bot } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import PublicHeader from "@/components/PublicHeader";
@@ -220,6 +220,53 @@ export default function FAQPage() {
                     Yes, you can export your analytics data, insights, and reports in various formats. Your original 
                     running data remains in your Strava account, and our generated insights can be downloaded from 
                     your dashboard.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section className="bg-white rounded-lg p-6 border border-gray-200">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <Bot className="h-4 w-4 text-purple-600" />
+                </div>
+                <h2 className="text-xl font-semibold text-charcoal">AI Agent Coach (Premium)</h2>
+              </div>
+              
+              <div className="space-y-6 text-gray-700">
+                <div>
+                  <h3 className="font-semibold text-charcoal mb-2">What is AI Agent Coach?</h3>
+                  <p>
+                    AI Agent Coach is a Premium feature that proactively analyzes every run after it syncs from 
+                    Strava. Instead of waiting for you to check dashboards, it delivers personalized coaching 
+                    recaps, observations, and next-step recommendations automatically.
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-charcoal mb-2">How is it different from the AI Coach Chat?</h3>
+                  <p>
+                    AI Coach Chat is reactive—you ask questions and get answers. AI Agent Coach is proactive—it 
+                    analyzes your runs automatically and delivers coaching insights without you asking. Think of 
+                    it as having a coach who reviews every run and leaves you notes.
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-charcoal mb-2">What kind of insights does AI Agent Coach provide?</h3>
+                  <p>
+                    Each recap includes 3-5 personalized observations about your run (pacing, heart rate, effort 
+                    distribution), a coaching cue to focus on, and a clear next-step recommendation (rest, easy run, 
+                    workout, long run, or recovery).
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-charcoal mb-2">Can I customize the coaching style?</h3>
+                  <p>
+                    Yes! During onboarding, you choose your preferred coaching tone: gentle (encouraging and 
+                    supportive), balanced (mix of encouragement and direct feedback), or direct (no-nonsense, 
+                    data-driven feedback for competitive athletes).
                   </p>
                 </div>
               </div>

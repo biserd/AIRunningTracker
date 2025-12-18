@@ -48,6 +48,8 @@ import BestStravaTools from "@/pages/blog/best-strava-analytics-tools-2025";
 import ImproveRunningPace from "@/pages/blog/how-to-improve-running-pace";
 import HowToPickTrainingPlan from "@/pages/blog/how-to-pick-a-training-plan";
 import AICoachLanding from "@/pages/ai-running-coach";
+import AIAgentCoachLanding from "@/pages/ai-agent-coach";
+import AIAgentCoachBlogPost from "@/pages/blog/ai-agent-coach-proactive-coaching";
 import DevelopersPage from "@/pages/developers";
 import ApiDocsPage from "@/pages/developers/api-docs";
 import YearRecapPage from "@/pages/year-recap";
@@ -114,7 +116,9 @@ function Router() {
       <Route path="/blog/best-strava-analytics-tools-2025" component={BestStravaTools} />
       <Route path="/blog/how-to-improve-running-pace" component={ImproveRunningPace} />
       <Route path="/blog/how-to-pick-a-training-plan" component={HowToPickTrainingPlan} />
+      <Route path="/blog/ai-agent-coach-proactive-coaching" component={AIAgentCoachBlogPost} />
       <Route path="/ai-running-coach" component={AICoachLanding} />
+      <Route path="/ai-agent-coach" component={AIAgentCoachLanding} />
       
       {/* Developer Routes */}
       <Route path="/developers" component={DevelopersPage} />

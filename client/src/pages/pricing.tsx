@@ -56,6 +56,7 @@ const features: PlanFeature[] = [
   { name: "Injury Risk Analysis", free: false, pro: true, premium: true },
   { name: "Fitness / Fatigue / Form Charts", free: false, pro: true, premium: true },
   { name: "AI Coach Chat (across your training)", free: false, pro: false, premium: true },
+  { name: "AI Agent Coach (proactive post-run recaps)", free: false, pro: false, premium: true, isNew: true },
   
   // Benchmarking & Comparisons Section (Premium differentiator)
   { name: "Benchmarking & Comparisons", free: "", pro: "", premium: "", isSection: true },
