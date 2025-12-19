@@ -35,7 +35,7 @@ export default function LandingPage() {
   };
 
   const StatSkeleton = () => (
-    <div className="h-8 w-16 bg-gray-200 rounded animate-pulse" />
+    <div className="h-8 min-w-[60px] bg-gray-200 rounded animate-pulse" />
   );
   const structuredData = {
     "@context": "https://schema.org",
@@ -112,53 +112,53 @@ export default function LandingPage() {
           {/* Social Proof with Real Stats */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 mb-6 sm:mb-8 mx-4">
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 sm:gap-6">
-              <div className="text-center">
+              <div className="text-center min-h-[72px]">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <Users className="h-5 w-5 text-strava-orange" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center">
+                <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center h-8 min-w-[60px]">
                   {statsLoading ? <StatSkeleton /> : (
                     <><AnimatedCounter end={(stats?.totalUsers || 0) * 5} className="text-strava-orange" />+</>
                   )}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600 font-medium">Active Runners</div>
               </div>
-              <div className="text-center">
+              <div className="text-center min-h-[72px]">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <Bot className="h-5 w-5 text-purple-600" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center">
+                <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center h-8 min-w-[60px]">
                   <span className="text-purple-600">23</span>+
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600 font-medium">AI Agents</div>
               </div>
-              <div className="text-center">
+              <div className="text-center min-h-[72px]">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <Brain className="h-5 w-5 text-blue-600" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center">
+                <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center h-8 min-w-[60px]">
                   {statsLoading ? <StatSkeleton /> : (
                     <><AnimatedCounter end={(stats?.totalInsights || 0) * 5} className="text-blue-600" />+</>
                   )}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600 font-medium">AI Insights</div>
               </div>
-              <div className="text-center">
+              <div className="text-center min-h-[72px]">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <Activity className="h-5 w-5 text-green-600" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center">
+                <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center h-8 min-w-[60px]">
                   {statsLoading ? <StatSkeleton /> : (
                     <><AnimatedCounter end={stats?.totalActivities || 0} className="text-green-600" />+</>
                   )}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600 font-medium">Activities Tracked</div>
               </div>
-              <div className="text-center">
+              <div className="text-center min-h-[72px]">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <TrendingUp className="h-5 w-5 text-cyan-600" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center">
+                <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center h-8 min-w-[60px]">
                   {statsLoading ? <StatSkeleton /> : (
                     <><AnimatedCounter end={Math.round((stats?.totalDistance || 0) / 1609.34)} className="text-cyan-600" />+</>
                   )}

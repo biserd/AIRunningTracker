@@ -182,6 +182,7 @@ Sitemap: ${baseUrl}/sitemap.xml`;
         { url: "/blog/best-strava-analytics-tools-2026", changefreq: "monthly", priority: "0.9" },
         { url: "/blog/how-to-improve-running-pace", changefreq: "monthly", priority: "0.9" },
         { url: "/blog/ai-agent-coach-proactive-coaching", changefreq: "monthly", priority: "0.9" },
+        { url: "/blog/how-to-pick-a-training-plan", changefreq: "monthly", priority: "0.9" },
         { url: "/ai-running-coach", changefreq: "weekly", priority: "0.9" },
         { url: "/ai-agent-coach", changefreq: "weekly", priority: "0.9" },
         
