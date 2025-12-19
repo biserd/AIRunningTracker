@@ -1,0 +1,1984 @@
+{
+  "shoe_models": [
+    {
+      "model_name": "ASICS GEL-Nimbus 27",
+      "model_name_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "weight_grams": 306,
+      "weight_grams_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "retail_price_usd": 165,
+      "retail_price_usd_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide"
+    },
+    {
+      "model_name": "Brooks Ghost 17",
+      "model_name_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "weight_grams": 286,
+      "weight_grams_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "retail_price_usd": 150,
+      "retail_price_usd_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide"
+    },
+    {
+      "model_name": "HOKA Clifton 10",
+      "model_name_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "weight_grams": 278,
+      "weight_grams_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "retail_price_usd": 155,
+      "retail_price_usd_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide"
+    },
+    {
+      "model_name": "Karhu Ikoni 3.0",
+      "model_name_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "weight_grams": 272,
+      "weight_grams_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "retail_price_usd": 155,
+      "retail_price_usd_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide"
+    },
+    {
+      "model_name": "New Balance Fresh Foam 1080 v14",
+      "model_name_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "weight_grams": 295,
+      "weight_grams_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "retail_price_usd": 165,
+      "retail_price_usd_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide"
+    },
+    {
+      "model_name": "Mizuno Wave Rider 29",
+      "model_name_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "weight_grams": 264,
+      "weight_grams_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "retail_price_usd": 150,
+      "retail_price_usd_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide"
+    },
+    {
+      "model_name": "On Cloudmonster 2",
+      "model_name_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "weight_grams": 295,
+      "weight_grams_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "heel_to_toe_drop_mm": 5.5,
+      "heel_to_toe_drop_mm_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "retail_price_usd": 180,
+      "retail_price_usd_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide"
+    },
+    {
+      "model_name": "Saucony Ride 18",
+      "model_name_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "weight_grams": 258,
+      "weight_grams_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "retail_price_usd": 145,
+      "retail_price_usd_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide"
+    },
+    {
+      "model_name": "Altra Lone Peak 9",
+      "model_name_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "weight_grams": 318,
+      "weight_grams_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "heel_to_toe_drop_mm": 0,
+      "heel_to_toe_drop_mm_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "retail_price_usd": 145,
+      "retail_price_usd_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide"
+    },
+    {
+      "model_name": "Nike Air Zoom Pegasus 41",
+      "model_name_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "weight_grams": 295,
+      "weight_grams_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide",
+      "retail_price_usd": 145,
+      "retail_price_usd_citation": "https://www.fleetfeet.com/running-shoe-buyers-guide"
+    },
+    {
+      "model_name": "Adidas Supernova Rise",
+      "model_name_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "weight_grams": 277.8,
+      "weight_grams_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "retail_price_usd": 180,
+      "retail_price_usd_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/"
+    },
+    {
+      "model_name": "Altra Experience Flow",
+      "model_name_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "weight_grams": 238.1,
+      "weight_grams_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "heel_to_toe_drop_mm": 4,
+      "heel_to_toe_drop_mm_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "retail_price_usd": 180,
+      "retail_price_usd_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/"
+    },
+    {
+      "model_name": "ASICS Novablast 4",
+      "model_name_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "weight_grams": 218.3,
+      "weight_grams_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "retail_price_usd": 180,
+      "retail_price_usd_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/"
+    },
+    {
+      "model_name": "ASICS Gel Nimbus 26",
+      "model_name_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "weight_grams": 292,
+      "weight_grams_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "retail_price_usd": 210,
+      "retail_price_usd_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/"
+    },
+    {
+      "model_name": "Adidas Adizero Adios Pro 4",
+      "model_name_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "weight_grams": 201.3,
+      "weight_grams_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "retail_price_usd": 300,
+      "retail_price_usd_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/"
+    },
+    {
+      "model_name": "Altra FWD VIA",
+      "model_name_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "weight_grams": 235.3,
+      "weight_grams_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "heel_to_toe_drop_mm": 4,
+      "heel_to_toe_drop_mm_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "retail_price_usd": 200,
+      "retail_price_usd_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/"
+    },
+    {
+      "model_name": "Altra Torin 8",
+      "model_name_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "weight_grams": 292,
+      "weight_grams_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "heel_to_toe_drop_mm": 0,
+      "heel_to_toe_drop_mm_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "retail_price_usd": 190,
+      "retail_price_usd_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/"
+    },
+    {
+      "model_name": "ASICS Novablast 5",
+      "model_name_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "weight_grams": 224,
+      "weight_grams_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "retail_price_usd": 180,
+      "retail_price_usd_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/"
+    },
+    {
+      "model_name": "Brooks Glycerin 22",
+      "model_name_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "weight_grams": 258,
+      "weight_grams_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "retail_price_usd": 210,
+      "retail_price_usd_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/"
+    },
+    {
+      "model_name": "Craft Nordlite Tempo",
+      "model_name_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "weight_grams": 255.1,
+      "weight_grams_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "retail_price_usd": 230,
+      "retail_price_usd_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/"
+    },
+    {
+      "model_name": "Kiprun KD 900X.2",
+      "model_name_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "weight_grams": 181.4,
+      "weight_grams_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "retail_price_usd": 185,
+      "retail_price_usd_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/"
+    },
+    {
+      "model_name": "Kiprun KD900X LD+",
+      "model_name_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "weight_grams": 226.8,
+      "weight_grams_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "heel_to_toe_drop_mm": 4,
+      "heel_to_toe_drop_mm_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "retail_price_usd": 240,
+      "retail_price_usd_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/"
+    },
+    {
+      "model_name": "Mizuno Neo Zen",
+      "model_name_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "weight_grams": 241,
+      "weight_grams_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "retail_price_usd": 190,
+      "retail_price_usd_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/"
+    },
+    {
+      "model_name": "New Balance Fresh Foam X 1080v14",
+      "model_name_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "weight_grams": 235.3,
+      "weight_grams_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "retail_price_usd": 209.99,
+      "retail_price_usd_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/"
+    },
+    {
+      "model_name": "New Balance FuelCell Rebel v4",
+      "model_name_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "weight_grams": 197.6,
+      "weight_grams_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "retail_price_usd": 179.99,
+      "retail_price_usd_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/"
+    },
+    {
+      "model_name": "Nike Vomero",
+      "model_name_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "weight_grams": 243.8,
+      "weight_grams_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "retail_price_usd": 190,
+      "retail_price_usd_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/"
+    },
+    {
+      "model_name": "Nike Vomero 18",
+      "model_name_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "weight_grams": 326,
+      "weight_grams_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "retail_price_usd": 190,
+      "retail_price_usd_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/"
+    },
+    {
+      "model_name": "Puma ForeverRun Nitro 2",
+      "model_name_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "weight_grams": 255.1,
+      "weight_grams_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "retail_price_usd": 200,
+      "retail_price_usd_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/"
+    },
+    {
+      "model_name": "Puma Deviate Nitro 3",
+      "model_name_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "weight_grams": 286.3,
+      "weight_grams_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "retail_price_usd": 220,
+      "retail_price_usd_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/"
+    },
+    {
+      "model_name": "On Cloudsurfer 2",
+      "model_name_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "weight_grams": 255.1,
+      "weight_grams_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "heel_to_toe_drop_mm": 9,
+      "heel_to_toe_drop_mm_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "retail_price_usd": 200,
+      "retail_price_usd_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/"
+    },
+    {
+      "model_name": "Reebok Floatzig X1",
+      "model_name_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "weight_grams": 277.8,
+      "weight_grams_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/",
+      "retail_price_usd": 240,
+      "retail_price_usd_citation": "https://impactmagazine.ca/gear/gear-reviews/2025-road-running-shoe-review/"
+    },
+    {
+      "model_name": "Saucony Peregrine 15",
+      "model_name_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "weight_grams": 286.6,
+      "weight_grams_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 4,
+      "heel_to_toe_drop_mm_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "retail_price_usd": 145,
+      "retail_price_usd_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes"
+    },
+    {
+      "model_name": "Hoka Torrent 4",
+      "model_name_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "weight_grams": 266.5,
+      "weight_grams_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 5,
+      "heel_to_toe_drop_mm_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "retail_price_usd": 130,
+      "retail_price_usd_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes"
+    },
+    {
+      "model_name": "Salomon Speedcross 6",
+      "model_name_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "weight_grams": 314.1,
+      "weight_grams_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 12,
+      "heel_to_toe_drop_mm_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "retail_price_usd": 145,
+      "retail_price_usd_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes"
+    },
+    {
+      "model_name": "La Sportiva Bushido III",
+      "model_name_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "weight_grams": 258.3,
+      "weight_grams_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 7,
+      "heel_to_toe_drop_mm_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes"
+    },
+    {
+      "model_name": "Hoka Speedgoat 6",
+      "model_name_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "weight_grams": 299.9,
+      "weight_grams_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "retail_price_usd": 155,
+      "retail_price_usd_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes"
+    },
+    {
+      "model_name": "Topo Ultraventure 4",
+      "model_name_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "weight_grams": 224,
+      "weight_grams_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 7,
+      "heel_to_toe_drop_mm_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "retail_price_usd": 155,
+      "retail_price_usd_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes"
+    },
+    {
+      "model_name": "Nnormal Kjerag",
+      "model_name_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "weight_grams": 228.2,
+      "weight_grams_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "retail_price_usd": 195,
+      "retail_price_usd_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes"
+    },
+    {
+      "model_name": "La Sportiva Prodigio Pro",
+      "model_name_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "weight_grams": 277.5,
+      "weight_grams_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 5,
+      "heel_to_toe_drop_mm_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes",
+      "retail_price_usd": 225,
+      "retail_price_usd_citation": "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-trail-running-shoes"
+    },
+    {
+      "model_name": "Altra Olympus 275",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "weight_grams": 306,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "heel_to_toe_drop_mm": 0,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "retail_price_usd": 185,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Brooks Cascadia 19",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "retail_price_usd": 150,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Brooks Catamount 4",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "weight_grams": 269,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "retail_price_usd": 170,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Hoka Mafate X",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": 5,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "retail_price_usd": 250,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Merrell MTL Adapt",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "retail_price_usd": 180,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Mount to Coast T1",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "weight_grams": 240,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "heel_to_toe_drop_mm": 4,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "retail_price_usd": 180,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Nnormal Kjerag 2.0",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "retail_price_usd": 195,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Norda 005",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "weight_grams": 214,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 320,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "On Cloudultra Pro",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "retail_price_usd": 260,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Puma Deviate Elite Trail",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "weight_grams": 265,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "retail_price_usd": 230,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Rabbit Highcountry",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": 5,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "retail_price_usd": 170,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Salomon S/Lab Ultraglide",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "retail_price_usd": 250,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Satisfy theROCKER",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "weight_grams": 280,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "heel_to_toe_drop_mm": 5,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "retail_price_usd": 280,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "The North Face Flight Vectiv Pro 3",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "weight_grams": 294,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "retail_price_usd": 250,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "The North Face Flight Vectiv Sky 2",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "weight_grams": 238,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "retail_price_usd": 200,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Topo Athletic Vista",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "weight_grams": 309,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "heel_to_toe_drop_mm": 5,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "retail_price_usd": 170,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "VJ Ultra 3",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "weight_grams": 265,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "retail_price_usd": 190,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "X-Bionic Terraskin X00/C",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "weight_grams": 310,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "heel_to_toe_drop_mm": 5,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/",
+      "retail_price_usd": 300,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/most-exciting-trail-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Hoka Tecton X 3",
+      "model_name_citation": "https://www.irunfar.com/best-trail-running-shoes",
+      "weight_grams": 265,
+      "weight_grams_citation": "https://www.irunfar.com/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 5,
+      "heel_to_toe_drop_mm_citation": "https://www.irunfar.com/best-trail-running-shoes",
+      "retail_price_usd": 275,
+      "retail_price_usd_citation": "https://www.irunfar.com/best-trail-running-shoes"
+    },
+    {
+      "model_name": "La Sportiva Akasha II",
+      "model_name_citation": "https://www.irunfar.com/best-trail-running-shoes",
+      "weight_grams": 325,
+      "weight_grams_citation": "https://www.irunfar.com/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://www.irunfar.com/best-trail-running-shoes",
+      "retail_price_usd": 195,
+      "retail_price_usd_citation": "https://www.irunfar.com/best-trail-running-shoes"
+    },
+    {
+      "model_name": "Inov8 TrailTalon",
+      "model_name_citation": "https://www.irunfar.com/best-trail-running-shoes",
+      "weight_grams": 276,
+      "weight_grams_citation": "https://www.irunfar.com/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://www.irunfar.com/best-trail-running-shoes",
+      "retail_price_usd": 150,
+      "retail_price_usd_citation": "https://www.irunfar.com/best-trail-running-shoes"
+    },
+    {
+      "model_name": "Nike Pegasus Trail 5",
+      "model_name_citation": "https://www.irunfar.com/best-trail-running-shoes",
+      "weight_grams": 290,
+      "weight_grams_citation": "https://www.irunfar.com/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 9.5,
+      "heel_to_toe_drop_mm_citation": "https://www.irunfar.com/best-trail-running-shoes",
+      "retail_price_usd": 155,
+      "retail_price_usd_citation": "https://www.irunfar.com/best-trail-running-shoes"
+    },
+    {
+      "model_name": "Altra Experience Wild 2",
+      "model_name_citation": "https://www.irunfar.com/best-trail-running-shoes",
+      "weight_grams": 274,
+      "weight_grams_citation": "https://www.irunfar.com/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 4,
+      "heel_to_toe_drop_mm_citation": "https://www.irunfar.com/best-trail-running-shoes",
+      "retail_price_usd": 140,
+      "retail_price_usd_citation": "https://www.irunfar.com/best-trail-running-shoes"
+    },
+    {
+      "model_name": "Adidas Adizero Evo SL",
+      "model_name_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+      "weight_grams": 224,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+      "heel_to_toe_drop_mm": 7,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+      "retail_price_usd": 150,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/"
+    },
+    {
+      "model_name": "Under Armour Sonic 7",
+      "model_name_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+      "weight_grams": 258,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+      "retail_price_usd": 110,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/"
+    },
+    {
+      "model_name": "Hoka Bondi 9",
+      "model_name_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+      "weight_grams": 297.7,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+      "heel_to_toe_drop_mm": 5,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+      "retail_price_usd": 175,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/"
+    },
+    {
+      "model_name": "Nike Vaporfly 4",
+      "model_name_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+      "weight_grams": 189.9,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+      "retail_price_usd": 270,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/"
+    },
+    {
+      "model_name": "Saucony Endorphin Elite 2",
+      "model_name_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+      "weight_grams": 198.5,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+      "retail_price_usd": 290,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/"
+    },
+    {
+      "model_name": "Brooks Caldera 8",
+      "model_name_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+      "weight_grams": 306.2,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+      "retail_price_usd": 150,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/"
+    },
+    {
+      "model_name": "lululemon Wildfeel",
+      "model_name_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+      "weight_grams": 334.5,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+      "heel_to_toe_drop_mm": 7.5,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+      "retail_price_usd": 168,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/"
+    },
+    {
+      "model_name": "Saucony Endorphin Speed 5",
+      "model_name_citation": "https://www.irunfar.com/best-saucony-running-shoes",
+      "weight_grams": 235.3,
+      "weight_grams_citation": "https://www.irunfar.com/best-saucony-running-shoes",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://www.irunfar.com/best-saucony-running-shoes",
+      "retail_price_usd": 175,
+      "retail_price_usd_citation": "https://www.irunfar.com/best-saucony-running-shoes"
+    },
+    {
+      "model_name": "Saucony Endorphin Pro 4",
+      "model_name_citation": "https://www.irunfar.com/best-saucony-running-shoes",
+      "weight_grams": 212.6,
+      "weight_grams_citation": "https://www.irunfar.com/best-saucony-running-shoes",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://www.irunfar.com/best-saucony-running-shoes",
+      "retail_price_usd": 240,
+      "retail_price_usd_citation": "https://www.irunfar.com/best-saucony-running-shoes"
+    },
+    {
+      "model_name": "Saucony Triumph 23",
+      "model_name_citation": "https://www.irunfar.com/best-saucony-running-shoes",
+      "weight_grams": 260.8,
+      "weight_grams_citation": "https://www.irunfar.com/best-saucony-running-shoes",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://www.irunfar.com/best-saucony-running-shoes",
+      "retail_price_usd": 170,
+      "retail_price_usd_citation": "https://www.irunfar.com/best-saucony-running-shoes"
+    },
+    {
+      "model_name": "Saucony Guide 18",
+      "model_name_citation": "https://www.irunfar.com/best-saucony-running-shoes",
+      "weight_grams": 272.2,
+      "weight_grams_citation": "https://www.irunfar.com/best-saucony-running-shoes",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://www.irunfar.com/best-saucony-running-shoes",
+      "retail_price_usd": 140,
+      "retail_price_usd_citation": "https://www.irunfar.com/best-saucony-running-shoes"
+    },
+    {
+      "model_name": "Adidas Supernova Rise 2",
+      "model_name_citation": "https://theruntesters.com/the-best-adidas-running-shoes/",
+      "weight_grams": 268,
+      "weight_grams_citation": "https://theruntesters.com/the-best-adidas-running-shoes/",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://theruntesters.com/the-best-adidas-running-shoes/",
+      "retail_price_usd": 140,
+      "retail_price_usd_citation": "https://theruntesters.com/the-best-adidas-running-shoes/"
+    },
+    {
+      "model_name": "Adidas Boston 13",
+      "model_name_citation": "https://theruntesters.com/the-best-adidas-running-shoes/",
+      "weight_grams": 264,
+      "weight_grams_citation": "https://theruntesters.com/the-best-adidas-running-shoes/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://theruntesters.com/the-best-adidas-running-shoes/",
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://theruntesters.com/the-best-adidas-running-shoes/"
+    },
+    {
+      "model_name": "Adidas Ultraboost 5",
+      "model_name_citation": "https://theruntesters.com/the-best-adidas-running-shoes/",
+      "weight_grams": 294,
+      "weight_grams_citation": "https://theruntesters.com/the-best-adidas-running-shoes/",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://theruntesters.com/the-best-adidas-running-shoes/",
+      "retail_price_usd": 180,
+      "retail_price_usd_citation": "https://theruntesters.com/the-best-adidas-running-shoes/"
+    },
+    {
+      "model_name": "Adidas Adizero SL 2",
+      "model_name_citation": "https://theruntesters.com/the-best-adidas-running-shoes/",
+      "weight_grams": 240,
+      "weight_grams_citation": "https://theruntesters.com/the-best-adidas-running-shoes/",
+      "heel_to_toe_drop_mm": 9,
+      "heel_to_toe_drop_mm_citation": "https://theruntesters.com/the-best-adidas-running-shoes/",
+      "retail_price_usd": 130,
+      "retail_price_usd_citation": "https://theruntesters.com/the-best-adidas-running-shoes/"
+    },
+    {
+      "model_name": "Adidas Terrex Agravic Speed Ultra",
+      "model_name_citation": "https://theruntesters.com/the-best-adidas-running-shoes/",
+      "weight_grams": 274,
+      "weight_grams_citation": "https://theruntesters.com/the-best-adidas-running-shoes/",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://theruntesters.com/the-best-adidas-running-shoes/",
+      "retail_price_usd": 230,
+      "retail_price_usd_citation": "https://theruntesters.com/the-best-adidas-running-shoes/"
+    },
+    {
+      "model_name": "Nike Pegasus 41",
+      "model_name_citation": "https://www.irunfar.com/best-nike-running-shoes",
+      "weight_grams": 289,
+      "weight_grams_citation": "https://www.irunfar.com/best-nike-running-shoes",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://www.irunfar.com/best-nike-running-shoes",
+      "retail_price_usd": 130,
+      "retail_price_usd_citation": "https://www.irunfar.com/best-nike-running-shoes"
+    },
+    {
+      "model_name": "Nike Terra Kiger 10",
+      "model_name_citation": "https://www.irunfar.com/best-nike-running-shoes",
+      "weight_grams": 276,
+      "weight_grams_citation": "https://www.irunfar.com/best-nike-running-shoes",
+      "heel_to_toe_drop_mm": 5,
+      "heel_to_toe_drop_mm_citation": "https://www.irunfar.com/best-nike-running-shoes",
+      "retail_price_usd": 170,
+      "retail_price_usd_citation": "https://www.irunfar.com/best-nike-running-shoes"
+    },
+    {
+      "model_name": "Nike Alphafly 3",
+      "model_name_citation": "https://www.irunfar.com/best-nike-running-shoes",
+      "weight_grams": 202,
+      "weight_grams_citation": "https://www.irunfar.com/best-nike-running-shoes",
+      "heel_to_toe_drop_mm": 8.5,
+      "heel_to_toe_drop_mm_citation": "https://www.irunfar.com/best-nike-running-shoes",
+      "retail_price_usd": 285,
+      "retail_price_usd_citation": "https://www.irunfar.com/best-nike-running-shoes"
+    },
+    {
+      "model_name": "Nike Ultrafly",
+      "model_name_citation": "https://www.irunfar.com/best-nike-running-shoes",
+      "weight_grams": 300,
+      "weight_grams_citation": "https://www.irunfar.com/best-nike-running-shoes",
+      "heel_to_toe_drop_mm": 8.5,
+      "heel_to_toe_drop_mm_citation": "https://www.irunfar.com/best-nike-running-shoes",
+      "retail_price_usd": 260,
+      "retail_price_usd_citation": "https://www.irunfar.com/best-nike-running-shoes"
+    },
+    {
+      "model_name": "Nike Structure 25",
+      "model_name_citation": "https://www.irunfar.com/best-nike-running-shoes",
+      "weight_grams": 322,
+      "weight_grams_citation": "https://www.irunfar.com/best-nike-running-shoes",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://www.irunfar.com/best-nike-running-shoes",
+      "retail_price_usd": 140,
+      "retail_price_usd_citation": "https://www.irunfar.com/best-nike-running-shoes"
+    },
+    {
+      "model_name": "Nike Winflo 11",
+      "model_name_citation": "https://www.irunfar.com/best-nike-running-shoes",
+      "weight_grams": 332,
+      "weight_grams_citation": "https://www.irunfar.com/best-nike-running-shoes",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://www.irunfar.com/best-nike-running-shoes",
+      "retail_price_usd": 105,
+      "retail_price_usd_citation": "https://www.irunfar.com/best-nike-running-shoes"
+    },
+    {
+      "model_name": "Saucony Excursion TR17",
+      "model_name_citation": "https://www.runnersworld.com/gear/a22115120/best-trail-running-shoes/",
+      "weight_grams": 286.3,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a22115120/best-trail-running-shoes/",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a22115120/best-trail-running-shoes/",
+      "retail_price_usd": 70,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a22115120/best-trail-running-shoes/"
+    },
+    {
+      "model_name": "Altra Lone Peak 9+",
+      "model_name_citation": "https://www.runnersworld.com/gear/a22115120/best-trail-running-shoes/",
+      "weight_grams": 300.5,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a22115120/best-trail-running-shoes/",
+      "heel_to_toe_drop_mm": 0,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a22115120/best-trail-running-shoes/",
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a22115120/best-trail-running-shoes/"
+    },
+    {
+      "model_name": "Merrell Antora 4",
+      "model_name_citation": "https://www.runnersworld.com/gear/a22115120/best-trail-running-shoes/",
+      "weight_grams": 263,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a22115120/best-trail-running-shoes/",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a22115120/best-trail-running-shoes/",
+      "retail_price_usd": 140,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a22115120/best-trail-running-shoes/"
+    },
+    {
+      "model_name": "Hoka Challenger 8",
+      "model_name_citation": "https://www.irunfar.com/best-road-to-trail-shoes",
+      "weight_grams": 264,
+      "weight_grams_citation": "https://www.irunfar.com/best-road-to-trail-shoes",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://www.irunfar.com/best-road-to-trail-shoes",
+      "retail_price_usd": 155,
+      "retail_price_usd_citation": "https://www.irunfar.com/best-road-to-trail-shoes"
+    },
+    {
+      "model_name": "Inov8 Trailfly",
+      "model_name_citation": "https://www.irunfar.com/best-road-to-trail-shoes",
+      "weight_grams": 274,
+      "weight_grams_citation": "https://www.irunfar.com/best-road-to-trail-shoes",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://www.irunfar.com/best-road-to-trail-shoes",
+      "retail_price_usd": 150,
+      "retail_price_usd_citation": "https://www.irunfar.com/best-road-to-trail-shoes"
+    },
+    {
+      "model_name": "Altra Mont Blanc Carbon",
+      "model_name_citation": "https://www.irunfar.com/best-road-to-trail-shoes",
+      "weight_grams": 266,
+      "weight_grams_citation": "https://www.irunfar.com/best-road-to-trail-shoes",
+      "heel_to_toe_drop_mm": 0,
+      "heel_to_toe_drop_mm_citation": "https://www.irunfar.com/best-road-to-trail-shoes",
+      "retail_price_usd": 260,
+      "retail_price_usd_citation": "https://www.irunfar.com/best-road-to-trail-shoes"
+    },
+    {
+      "model_name": "Salomon S/Lab Pulsar 4",
+      "model_name_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "weight_grams": 499,
+      "weight_grams_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "retail_price_usd": 220,
+      "retail_price_usd_citation": "https://www.switchbacktravel.com/best-trail-running-shoes"
+    },
+    {
+      "model_name": "Brooks Divide 5",
+      "model_name_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "weight_grams": 595,
+      "weight_grams_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "retail_price_usd": 110,
+      "retail_price_usd_citation": "https://www.switchbacktravel.com/best-trail-running-shoes"
+    },
+    {
+      "model_name": "La Sportiva Prodigio Max",
+      "model_name_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "weight_grams": 590,
+      "weight_grams_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "retail_price_usd": 185,
+      "retail_price_usd_citation": "https://www.switchbacktravel.com/best-trail-running-shoes"
+    },
+    {
+      "model_name": "Salomon S/Lab Ultra Glide 1.5",
+      "model_name_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "weight_grams": 567,
+      "weight_grams_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "retail_price_usd": 250,
+      "retail_price_usd_citation": "https://www.switchbacktravel.com/best-trail-running-shoes"
+    },
+    {
+      "model_name": "On Cloudultra 3",
+      "model_name_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "weight_grams": 590,
+      "weight_grams_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "retail_price_usd": 190,
+      "retail_price_usd_citation": "https://www.switchbacktravel.com/best-trail-running-shoes"
+    },
+    {
+      "model_name": "Topo Athletic Mtn Racer 4",
+      "model_name_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "weight_grams": 590,
+      "weight_grams_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 5,
+      "heel_to_toe_drop_mm_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "retail_price_usd": 155,
+      "retail_price_usd_citation": "https://www.switchbacktravel.com/best-trail-running-shoes"
+    },
+    {
+      "model_name": "NNormal Tomir 2.0",
+      "model_name_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "weight_grams": 575,
+      "weight_grams_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "retail_price_usd": 180,
+      "retail_price_usd_citation": "https://www.switchbacktravel.com/best-trail-running-shoes"
+    },
+    {
+      "model_name": "The North Face Vectiv Enduris 4",
+      "model_name_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "weight_grams": 573,
+      "weight_grams_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://www.switchbacktravel.com/best-trail-running-shoes",
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://www.switchbacktravel.com/best-trail-running-shoes"
+    },
+    {
+      "model_name": "Nike Zegama 2",
+      "model_name_citation": "https://runrepeat.com/guides/best-trail-running-shoes",
+      "weight_grams": 302,
+      "weight_grams_citation": "https://runrepeat.com/guides/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": null,
+      "retail_price_usd_citation": null
+    },
+    {
+      "model_name": "ASICS Metafuji Trail",
+      "model_name_citation": "https://runrepeat.com/guides/best-trail-running-shoes",
+      "weight_grams": 258,
+      "weight_grams_citation": "https://runrepeat.com/guides/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 10.3,
+      "heel_to_toe_drop_mm_citation": "https://runrepeat.com/guides/best-trail-running-shoes",
+      "retail_price_usd": null,
+      "retail_price_usd_citation": null
+    },
+    {
+      "model_name": "New Balance FuelCell SuperComp Trail",
+      "model_name_citation": "https://runrepeat.com/guides/best-trail-running-shoes",
+      "weight_grams": 248,
+      "weight_grams_citation": "https://runrepeat.com/guides/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 13,
+      "heel_to_toe_drop_mm_citation": "https://runrepeat.com/guides/best-trail-running-shoes",
+      "retail_price_usd": null,
+      "retail_price_usd_citation": null
+    },
+    {
+      "model_name": "Hoka Zinal 2",
+      "model_name_citation": "https://runrepeat.com/guides/best-trail-running-shoes",
+      "weight_grams": 213,
+      "weight_grams_citation": "https://runrepeat.com/guides/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": null,
+      "retail_price_usd_citation": null
+    },
+    {
+      "model_name": "Merrell Morphlite",
+      "model_name_citation": "https://runrepeat.com/guides/best-trail-running-shoes",
+      "weight_grams": 237,
+      "weight_grams_citation": "https://runrepeat.com/guides/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 100,
+      "retail_price_usd_citation": "https://runrepeat.com/guides/best-trail-running-shoes"
+    },
+    {
+      "model_name": "Brooks Catamount 3",
+      "model_name_citation": "https://runrepeat.com/guides/best-trail-running-shoes",
+      "weight_grams": 255,
+      "weight_grams_citation": "https://runrepeat.com/guides/best-trail-running-shoes",
+      "heel_to_toe_drop_mm": 6.8,
+      "heel_to_toe_drop_mm_citation": "https://runrepeat.com/guides/best-trail-running-shoes",
+      "retail_price_usd": null,
+      "retail_price_usd_citation": null
+    },
+    {
+      "model_name": "ASICS Gel Excite Trail 2",
+      "model_name_citation": "https://runrepeat.com/guides/best-trail-running-shoes",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 85,
+      "retail_price_usd_citation": "https://runrepeat.com/guides/best-trail-running-shoes"
+    },
+    {
+      "model_name": "ASICS Gel Venture 10",
+      "model_name_citation": "https://runrepeat.com/guides/best-trail-running-shoes",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 80,
+      "retail_price_usd_citation": "https://runrepeat.com/guides/best-trail-running-shoes"
+    },
+    {
+      "model_name": "Puma Fast-R Nitro Elite 3",
+      "model_name_citation": "https://theruntesters.com/running-shoes/the-best-running-shoes-to-buy/",
+      "weight_grams": 187,
+      "weight_grams_citation": "https://theruntesters.com/running-shoes/the-best-running-shoes-to-buy/",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://theruntesters.com/running-shoes/the-best-running-shoes-to-buy/",
+      "retail_price_usd": 300,
+      "retail_price_usd_citation": "https://theruntesters.com/running-shoes/the-best-running-shoes-to-buy/"
+    },
+    {
+      "model_name": "Nike Vomero Plus",
+      "model_name_citation": "https://theruntesters.com/running-shoes/the-best-running-shoes-to-buy/",
+      "weight_grams": 300,
+      "weight_grams_citation": "https://theruntesters.com/running-shoes/the-best-running-shoes-to-buy/",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://theruntesters.com/running-shoes/the-best-running-shoes-to-buy/",
+      "retail_price_usd": 180,
+      "retail_price_usd_citation": "https://theruntesters.com/running-shoes/the-best-running-shoes-to-buy/"
+    },
+    {
+      "model_name": "New Balance Rebel v5",
+      "model_name_citation": "https://theruntesters.com/running-shoes/the-best-running-shoes-to-buy/",
+      "weight_grams": 225,
+      "weight_grams_citation": "https://theruntesters.com/running-shoes/the-best-running-shoes-to-buy/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://theruntesters.com/running-shoes/the-best-running-shoes-to-buy/",
+      "retail_price_usd": 140,
+      "retail_price_usd_citation": "https://theruntesters.com/running-shoes/the-best-running-shoes-to-buy/"
+    },
+    {
+      "model_name": "Puma Velocity Nitro 4",
+      "model_name_citation": "https://theruntesters.com/running-shoes/the-best-running-shoes-to-buy/",
+      "weight_grams": 247,
+      "weight_grams_citation": "https://theruntesters.com/running-shoes/the-best-running-shoes-to-buy/",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://theruntesters.com/running-shoes/the-best-running-shoes-to-buy/",
+      "retail_price_usd": 140,
+      "retail_price_usd_citation": "https://theruntesters.com/running-shoes/the-best-running-shoes-to-buy/"
+    },
+    {
+      "model_name": "Hoka Arahi 8",
+      "model_name_citation": "https://theruntesters.com/running-shoes/the-best-running-shoes-to-buy/",
+      "weight_grams": 270,
+      "weight_grams_citation": "https://theruntesters.com/running-shoes/the-best-running-shoes-to-buy/",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://theruntesters.com/running-shoes/the-best-running-shoes-to-buy/",
+      "retail_price_usd": 150,
+      "retail_price_usd_citation": "https://theruntesters.com/running-shoes/the-best-running-shoes-to-buy/"
+    },
+    {
+      "model_name": "Mizuno Neo Vista 2",
+      "model_name_citation": "https://www.rtings.com/running-shoes/reviews/best/running",
+      "weight_grams": 263.4,
+      "weight_grams_citation": "https://www.rtings.com/running-shoes/reviews/best/running",
+      "heel_to_toe_drop_mm": 9.8,
+      "heel_to_toe_drop_mm_citation": "https://www.rtings.com/running-shoes/reviews/best/running",
+      "retail_price_usd": null,
+      "retail_price_usd_citation": null
+    },
+    {
+      "model_name": "ASICS SUPERBLAST 2",
+      "model_name_citation": "https://www.rtings.com/running-shoes/reviews/best/running",
+      "weight_grams": 247.5,
+      "weight_grams_citation": "https://www.rtings.com/running-shoes/reviews/best/running",
+      "heel_to_toe_drop_mm": 9.1,
+      "heel_to_toe_drop_mm_citation": "https://www.rtings.com/running-shoes/reviews/best/running",
+      "retail_price_usd": null,
+      "retail_price_usd_citation": null
+    },
+    {
+      "model_name": "ASICS Nimbus 27",
+      "model_name_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/",
+      "weight_grams": 320,
+      "weight_grams_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/",
+      "retail_price_usd": 175,
+      "retail_price_usd_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/"
+    },
+    {
+      "model_name": "ASICS MegaBlast",
+      "model_name_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/",
+      "weight_grams": 230,
+      "weight_grams_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/",
+      "retail_price_usd": 225,
+      "retail_price_usd_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/"
+    },
+    {
+      "model_name": "Nike Pegasus Plus",
+      "model_name_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/",
+      "weight_grams": 245,
+      "weight_grams_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/",
+      "retail_price_usd": 190,
+      "retail_price_usd_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/"
+    },
+    {
+      "model_name": "Brooks Hyperion Max 3",
+      "model_name_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/",
+      "weight_grams": 280.7,
+      "weight_grams_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/",
+      "retail_price_usd": 200,
+      "retail_price_usd_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/"
+    },
+    {
+      "model_name": "Nike Pegasus Premium",
+      "model_name_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/",
+      "weight_grams": 325,
+      "weight_grams_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/",
+      "retail_price_usd": 220,
+      "retail_price_usd_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/"
+    },
+    {
+      "model_name": "ASICS MetaSpeed Tokyo",
+      "model_name_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/",
+      "weight_grams": 163,
+      "weight_grams_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/",
+      "heel_to_toe_drop_mm": 5,
+      "heel_to_toe_drop_mm_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/",
+      "retail_price_usd": 270,
+      "retail_price_usd_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/"
+    },
+    {
+      "model_name": "Adidas Adizero Adios Pro Evo 2",
+      "model_name_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/",
+      "weight_grams": 138,
+      "weight_grams_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/",
+      "heel_to_toe_drop_mm": 3,
+      "heel_to_toe_drop_mm_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/",
+      "retail_price_usd": 500,
+      "retail_price_usd_citation": "https://marathonhandbook.com/best-running-shoes-reviewed/"
+    },
+    {
+      "model_name": "Asics Metaspeed Ray",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "weight_grams": 129,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "heel_to_toe_drop_mm": 5,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "retail_price_usd": 300,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "New Balance SC Elite v5",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 250,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Asics Sonicblast",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "weight_grams": 282,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "retail_price_usd": 170,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Nike Vomero Premium",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "weight_grams": 363,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "retail_price_usd": 230,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Nike Streakfly 2",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "weight_grams": 145,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "heel_to_toe_drop_mm": 4,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "retail_price_usd": 190,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Nike Structure 26",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "weight_grams": 320,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "retail_price_usd": 145,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "R.A.D UFO",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "weight_grams": 249,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "retail_price_usd": 200,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Salomon Aero Glide 3",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "weight_grams": 243.8,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Mount to Coast H1",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "weight_grams": 242,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "TYR Maverick Runner",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 150,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Saucony Hurricane 25",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 170,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Norda 008",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 145,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Hoka Ora Primo EXT",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Adidas Prime X Strung 3",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 300,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "New Balance 880v15",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 150,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "New Balance More v6",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Tracksmith Eliot Racer",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 280,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Hoka Cielo X1 2.0",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 275,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/best-road-running-shoes-of-2025/"
+    },
+    {
+      "model_name": "Hoka Mach 6",
+      "model_name_citation": "https://www.runnersworld.com/gear/a22515179/the-10-best-hoka-one-one-running-shoes/",
+      "weight_grams": 232.5,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a22515179/the-10-best-hoka-one-one-running-shoes/",
+      "heel_to_toe_drop_mm": 5,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a22515179/the-10-best-hoka-one-one-running-shoes/",
+      "retail_price_usd": 140,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a22515179/the-10-best-hoka-one-one-running-shoes/"
+    },
+    {
+      "model_name": "Hoka Rincon 4",
+      "model_name_citation": "https://www.runnersworld.com/gear/a22515179/the-10-best-hoka-one-one-running-shoes/",
+      "weight_grams": 226.8,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a22515179/the-10-best-hoka-one-one-running-shoes/",
+      "heel_to_toe_drop_mm": 5,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a22515179/the-10-best-hoka-one-one-running-shoes/",
+      "retail_price_usd": 125,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a22515179/the-10-best-hoka-one-one-running-shoes/"
+    },
+    {
+      "model_name": "Hoka Skyward X",
+      "model_name_citation": "https://www.runnersworld.com/gear/a22515179/the-10-best-hoka-one-one-running-shoes/",
+      "weight_grams": 320.4,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a22515179/the-10-best-hoka-one-one-running-shoes/",
+      "heel_to_toe_drop_mm": 5,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a22515179/the-10-best-hoka-one-one-running-shoes/",
+      "retail_price_usd": 225,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a22515179/the-10-best-hoka-one-one-running-shoes/"
+    },
+    {
+      "model_name": "Hoka Rocket X 3",
+      "model_name_citation": "https://www.runnersworld.com/gear/a22515179/the-10-best-hoka-one-one-running-shoes/",
+      "weight_grams": 232,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a22515179/the-10-best-hoka-one-one-running-shoes/",
+      "heel_to_toe_drop_mm": 7,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a22515179/the-10-best-hoka-one-one-running-shoes/",
+      "retail_price_usd": 250,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a22515179/the-10-best-hoka-one-one-running-shoes/"
+    },
+    {
+      "model_name": "Hoka Mach X3",
+      "model_name_citation": "https://theruntesters.com/the-best-hoka-running-shoes/",
+      "weight_grams": 274,
+      "weight_grams_citation": "https://theruntesters.com/the-best-hoka-running-shoes/",
+      "heel_to_toe_drop_mm": 5,
+      "heel_to_toe_drop_mm_citation": "https://theruntesters.com/the-best-hoka-running-shoes/",
+      "retail_price_usd": 190,
+      "retail_price_usd_citation": "https://theruntesters.com/the-best-hoka-running-shoes/"
+    },
+    {
+      "model_name": "Hoka Skyflow",
+      "model_name_citation": "https://theruntesters.com/the-best-hoka-running-shoes/",
+      "weight_grams": 285,
+      "weight_grams_citation": "https://theruntesters.com/the-best-hoka-running-shoes/",
+      "heel_to_toe_drop_mm": 5,
+      "heel_to_toe_drop_mm_citation": "https://theruntesters.com/the-best-hoka-running-shoes/",
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://theruntesters.com/the-best-hoka-running-shoes/"
+    },
+    {
+      "model_name": "Hoka Cielo Road",
+      "model_name_citation": "https://theruntesters.com/the-best-hoka-running-shoes/",
+      "weight_grams": 185,
+      "weight_grams_citation": "https://theruntesters.com/the-best-hoka-running-shoes/",
+      "heel_to_toe_drop_mm": 3,
+      "heel_to_toe_drop_mm_citation": "https://theruntesters.com/the-best-hoka-running-shoes/",
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://theruntesters.com/the-best-hoka-running-shoes/"
+    },
+    {
+      "model_name": "Hoka Gaviota 5",
+      "model_name_citation": "https://runrepeat.com/guides/best-hoka-running-shoes",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": 2.2,
+      "heel_to_toe_drop_mm_citation": "https://runrepeat.com/guides/best-hoka-running-shoes",
+      "retail_price_usd": 175,
+      "retail_price_usd_citation": "https://runrepeat.com/guides/best-hoka-running-shoes"
+    },
+    {
+      "model_name": "Hoka Kawana 2",
+      "model_name_citation": "https://runrepeat.com/guides/best-hoka-running-shoes",
+      "weight_grams": 298,
+      "weight_grams_citation": "https://runrepeat.com/guides/best-hoka-running-shoes",
+      "heel_to_toe_drop_mm": 5.2,
+      "heel_to_toe_drop_mm_citation": "https://runrepeat.com/guides/best-hoka-running-shoes",
+      "retail_price_usd": null,
+      "retail_price_usd_citation": null
+    },
+    {
+      "model_name": "Hoka Transport X",
+      "model_name_citation": "https://runrepeat.com/guides/best-hoka-running-shoes",
+      "weight_grams": 274,
+      "weight_grams_citation": "https://runrepeat.com/guides/best-hoka-running-shoes",
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": null,
+      "retail_price_usd_citation": null
+    },
+    {
+      "model_name": "Hoka Stinson 7",
+      "model_name_citation": "https://runrepeat.com/guides/best-hoka-running-shoes",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": 7,
+      "heel_to_toe_drop_mm_citation": "https://runrepeat.com/guides/best-hoka-running-shoes",
+      "retail_price_usd": null,
+      "retail_price_usd_citation": null
+    },
+    {
+      "model_name": "Brooks Glycerin Max",
+      "model_name_citation": "https://theruntesters.com/the-best-brooks-running-shoes/",
+      "weight_grams": 319,
+      "weight_grams_citation": "https://theruntesters.com/the-best-brooks-running-shoes/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://theruntesters.com/the-best-brooks-running-shoes/",
+      "retail_price_usd": 200,
+      "retail_price_usd_citation": "https://theruntesters.com/the-best-brooks-running-shoes/"
+    },
+    {
+      "model_name": "Brooks Ghost Max 2",
+      "model_name_citation": "https://theruntesters.com/the-best-brooks-running-shoes/",
+      "weight_grams": 318,
+      "weight_grams_citation": "https://theruntesters.com/the-best-brooks-running-shoes/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://theruntesters.com/the-best-brooks-running-shoes/",
+      "retail_price_usd": 150,
+      "retail_price_usd_citation": "https://theruntesters.com/the-best-brooks-running-shoes/"
+    },
+    {
+      "model_name": "Brooks Hyperion Max 2",
+      "model_name_citation": "https://theruntesters.com/the-best-brooks-running-shoes/",
+      "weight_grams": 271,
+      "weight_grams_citation": "https://theruntesters.com/the-best-brooks-running-shoes/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://theruntesters.com/the-best-brooks-running-shoes/",
+      "retail_price_usd": 180,
+      "retail_price_usd_citation": "https://theruntesters.com/the-best-brooks-running-shoes/"
+    },
+    {
+      "model_name": "Brooks Revel 8",
+      "model_name_citation": "https://www.runnersworld.com/gear/a20866339/best-brooks-running-shoes/",
+      "weight_grams": 246.6,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a20866339/best-brooks-running-shoes/",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a20866339/best-brooks-running-shoes/",
+      "retail_price_usd": 100,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a20866339/best-brooks-running-shoes/"
+    },
+    {
+      "model_name": "Brooks Glycerin GTS 22",
+      "model_name_citation": "https://www.runnersworld.com/gear/a20866339/best-brooks-running-shoes/",
+      "weight_grams": 297.7,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a20866339/best-brooks-running-shoes/",
+      "heel_to_toe_drop_mm": 12,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a20866339/best-brooks-running-shoes/",
+      "retail_price_usd": 165,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a20866339/best-brooks-running-shoes/"
+    },
+    {
+      "model_name": "Brooks Adrenaline GTS 25",
+      "model_name_citation": "https://www.runnersworld.com/gear/a20866339/best-brooks-running-shoes/",
+      "weight_grams": 300.5,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a20866339/best-brooks-running-shoes/",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a20866339/best-brooks-running-shoes/",
+      "retail_price_usd": 155,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a20866339/best-brooks-running-shoes/"
+    },
+    {
+      "model_name": "Brooks Hyperion 3",
+      "model_name_citation": "https://www.runnersworld.com/gear/a20866339/best-brooks-running-shoes/",
+      "weight_grams": 241,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a20866339/best-brooks-running-shoes/",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a20866339/best-brooks-running-shoes/",
+      "retail_price_usd": 140,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a20866339/best-brooks-running-shoes/"
+    },
+    {
+      "model_name": "Brooks Hyperion 2",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/best-brooks-running-shoes/",
+      "weight_grams": 193,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/best-brooks-running-shoes/",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/best-brooks-running-shoes/",
+      "retail_price_usd": 140,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/best-brooks-running-shoes/"
+    },
+    {
+      "model_name": "Brooks Launch 10",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/best-brooks-running-shoes/",
+      "weight_grams": 232,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/best-brooks-running-shoes/",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/best-brooks-running-shoes/",
+      "retail_price_usd": 110,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/best-brooks-running-shoes/"
+    },
+    {
+      "model_name": "Brooks Catamount Agil",
+      "model_name_citation": "https://believeintherun.com/shoe-reviews/best-brooks-running-shoes/",
+      "weight_grams": 218,
+      "weight_grams_citation": "https://believeintherun.com/shoe-reviews/best-brooks-running-shoes/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://believeintherun.com/shoe-reviews/best-brooks-running-shoes/",
+      "retail_price_usd": 180,
+      "retail_price_usd_citation": "https://believeintherun.com/shoe-reviews/best-brooks-running-shoes/"
+    },
+    {
+      "model_name": "Brooks Adrenaline GTS 24",
+      "model_name_citation": "https://runrepeat.com/guides/best-brooks-running-shoes",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": 13.5,
+      "heel_to_toe_drop_mm_citation": "https://runrepeat.com/guides/best-brooks-running-shoes",
+      "retail_price_usd": null,
+      "retail_price_usd_citation": null
+    },
+    {
+      "model_name": "Brooks Ghost Max 3",
+      "model_name_citation": "https://runrepeat.com/guides/best-brooks-running-shoes",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": 7.3,
+      "heel_to_toe_drop_mm_citation": "https://runrepeat.com/guides/best-brooks-running-shoes",
+      "retail_price_usd": null,
+      "retail_price_usd_citation": null
+    },
+    {
+      "model_name": "Brooks Revel 7",
+      "model_name_citation": "https://runrepeat.com/guides/best-brooks-running-shoes",
+      "weight_grams": 258,
+      "weight_grams_citation": "https://runrepeat.com/guides/best-brooks-running-shoes",
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 100,
+      "retail_price_usd_citation": "https://runrepeat.com/guides/best-brooks-running-shoes"
+    },
+    {
+      "model_name": "On Cloudsurfer Next",
+      "model_name_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/",
+      "weight_grams": 272.2,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/",
+      "retail_price_usd": 150,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/"
+    },
+    {
+      "model_name": "On Cloudsurfer Max",
+      "model_name_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/",
+      "weight_grams": 292,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/",
+      "retail_price_usd": 180,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/"
+    },
+    {
+      "model_name": "On Cloudboom Max",
+      "model_name_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/",
+      "weight_grams": 294.8,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/",
+      "heel_to_toe_drop_mm": 8,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/",
+      "retail_price_usd": 230,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/"
+    },
+    {
+      "model_name": "On Cloudboom Strike",
+      "model_name_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/",
+      "weight_grams": 209.8,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/",
+      "heel_to_toe_drop_mm": 4,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/",
+      "retail_price_usd": 280,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/"
+    },
+    {
+      "model_name": "On Cloudflow 5",
+      "model_name_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/",
+      "weight_grams": 277.8,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/",
+      "retail_price_usd": 180,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/"
+    },
+    {
+      "model_name": "On Cloudrunner 2",
+      "model_name_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/",
+      "weight_grams": 277.8,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/",
+      "heel_to_toe_drop_mm": 10,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/",
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/"
+    },
+    {
+      "model_name": "On Cloudvista 2",
+      "model_name_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/",
+      "weight_grams": 306.2,
+      "weight_grams_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/",
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/",
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a22739511/best-on-running-shoes/"
+    },
+    {
+      "model_name": "On Cloudswift 4",
+      "model_name_citation": "https://runrepeat.com/guides/best-on-running-shoes",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": 10.4,
+      "heel_to_toe_drop_mm_citation": "https://runrepeat.com/guides/best-on-running-shoes",
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://runrepeat.com/guides/best-on-running-shoes"
+    },
+    {
+      "model_name": "On Cloudeclipse",
+      "model_name_citation": "https://runrepeat.com/guides/best-on-running-shoes",
+      "weight_grams": 272,
+      "weight_grams_citation": "https://runrepeat.com/guides/best-on-running-shoes",
+      "heel_to_toe_drop_mm": 9.4,
+      "heel_to_toe_drop_mm_citation": "https://runrepeat.com/guides/best-on-running-shoes",
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://runrepeat.com/guides/best-on-running-shoes"
+    },
+    {
+      "model_name": "On Cloudsurfer Trail",
+      "model_name_citation": "https://runrepeat.com/guides/best-on-running-shoes",
+      "weight_grams": 272,
+      "weight_grams_citation": "https://runrepeat.com/guides/best-on-running-shoes",
+      "heel_to_toe_drop_mm": 10.7,
+      "heel_to_toe_drop_mm_citation": "https://runrepeat.com/guides/best-on-running-shoes",
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://runrepeat.com/guides/best-on-running-shoes"
+    },
+    {
+      "model_name": "On Cloudflow 4",
+      "model_name_citation": "https://runrepeat.com/guides/best-on-running-shoes",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": 7.9,
+      "heel_to_toe_drop_mm_citation": "https://runrepeat.com/guides/best-on-running-shoes",
+      "retail_price_usd": 140,
+      "retail_price_usd_citation": "https://runrepeat.com/guides/best-on-running-shoes"
+    },
+    {
+      "model_name": "On Cloudmonster Hyper",
+      "model_name_citation": "https://runrepeat.com/guides/best-on-running-shoes",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": 6.7,
+      "heel_to_toe_drop_mm_citation": "https://runrepeat.com/guides/best-on-running-shoes",
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://runrepeat.com/guides/best-on-running-shoes"
+    },
+    {
+      "model_name": "On Cloudspark",
+      "model_name_citation": "https://runrepeat.com/guides/best-on-running-shoes",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": 8.6,
+      "heel_to_toe_drop_mm_citation": "https://runrepeat.com/guides/best-on-running-shoes",
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://runrepeat.com/guides/best-on-running-shoes"
+    },
+    {
+      "model_name": "On Cloud 5",
+      "model_name_citation": "https://runrepeat.com/guides/best-on-running-shoes",
+      "weight_grams": 238,
+      "weight_grams_citation": "https://runrepeat.com/guides/best-on-running-shoes",
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://runrepeat.com/guides/best-on-running-shoes"
+    },
+    {
+      "model_name": "On Cloudflyer 5",
+      "model_name_citation": "https://runrepeat.com/guides/best-on-running-shoes",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": 7.9,
+      "heel_to_toe_drop_mm_citation": "https://runrepeat.com/guides/best-on-running-shoes",
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://runrepeat.com/guides/best-on-running-shoes"
+    },
+    {
+      "model_name": "Adidas Supernova 2",
+      "model_name_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 140,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/"
+    },
+    {
+      "model_name": "Altra Paradigm 8",
+      "model_name_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/"
+    },
+    {
+      "model_name": "Altra Experience Flow 2",
+      "model_name_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 140,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/"
+    },
+    {
+      "model_name": "Brooks Launch 11",
+      "model_name_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 120,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/"
+    },
+    {
+      "model_name": "Craft Kype Pro",
+      "model_name_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 299,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/"
+    },
+    {
+      "model_name": "Diadora Nucleo Gr",
+      "model_name_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 170,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/"
+    },
+    {
+      "model_name": "Hoka Cielo X1 2",
+      "model_name_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 275,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/"
+    },
+    {
+      "model_name": "Merrell Pro Morph",
+      "model_name_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 150,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/"
+    },
+    {
+      "model_name": "The North Face Vectiv Pro 3",
+      "model_name_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 250,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/"
+    },
+    {
+      "model_name": "The North Face Sky 2",
+      "model_name_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 200,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/"
+    },
+    {
+      "model_name": "The North Face Infinite 3",
+      "model_name_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": 6,
+      "heel_to_toe_drop_mm_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/"
+    },
+    {
+      "model_name": "Puma Fast-RB Nitro Elite",
+      "model_name_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 350,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/"
+    },
+    {
+      "model_name": "Salomon Aero Glide 3 Grvl",
+      "model_name_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/"
+    },
+    {
+      "model_name": "Scarpa Spin Ultra",
+      "model_name_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 179,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/"
+    },
+    {
+      "model_name": "Teva Aventrail Shoe",
+      "model_name_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/"
+    },
+    {
+      "model_name": "Topo Athletic Aura",
+      "model_name_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 165,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/"
+    },
+    {
+      "model_name": "Topo Athletic Cyclone 3",
+      "model_name_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 150,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/"
+    },
+    {
+      "model_name": "Topo Athletic Phantom 4",
+      "model_name_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 145,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/"
+    },
+    {
+      "model_name": "Under Armour Infinite Mega",
+      "model_name_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 250,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/"
+    },
+    {
+      "model_name": "Under Armour Infinite Elite 2",
+      "model_name_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/"
+    },
+    {
+      "model_name": "VJ Flow",
+      "model_name_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/",
+      "weight_grams": null,
+      "weight_grams_citation": null,
+      "heel_to_toe_drop_mm": null,
+      "heel_to_toe_drop_mm_citation": null,
+      "retail_price_usd": 160,
+      "retail_price_usd_citation": "https://www.runnersworld.com/gear/a62988298/2025-running-shoe-preview/"
+    }
+  ]
+}

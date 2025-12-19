@@ -1,0 +1,642 @@
+{
+  "runningShoes": [
+    {
+      "brand": "Nike",
+      "brand_citation": "https://runrepeat.com/nike-pegasus-41",
+      "model": "Pegasus 41",
+      "model_citation": "https://runrepeat.com/nike-pegasus-41",
+      "seriesName": "Pegasus",
+      "seriesName_citation": "https://runrepeat.com/nike-pegasus-41",
+      "version": "41",
+      "version_citation": "https://runrepeat.com/nike-pegasus-41",
+      "category": "road",
+      "category_citation": "https://runrepeat.com/nike-pegasus-41",
+      "weightOunces": 10.4,
+      "weightOunces_citation": "https://www.solereview.com/nike-pegasus-41-review/",
+      "stackHeights": {
+        "heel": 37,
+        "heel_citation": "https://www.solereview.com/nike-pegasus-41-review/",
+        "forefoot": 27,
+        "forefoot_citation": "https://www.solereview.com/nike-pegasus-41-review/"
+      },
+      "heelToToeDrop": 10,
+      "heelToToeDrop_citation": "https://www.solereview.com/nike-pegasus-41-review/",
+      "cushioningLevel": "moderate",
+      "cushioningLevel_citation": "https://runrepeat.com/nike-pegasus-41",
+      "stabilityType": "neutral",
+      "stabilityType_citation": "https://runrepeat.com/nike-pegasus-41",
+      "carbonPlate": false,
+      "carbonPlate_citation": "https://www.solereview.com/nike-pegasus-41-review/",
+      "superFoam": true,
+      "superFoam_citation": "https://runrepeat.com/nike-pegasus-41",
+      "price": 140,
+      "price_citation": "https://run.outsideonline.com/gear/road-shoes/nike-pegasus-41-first-run-review/",
+      "durabilityRating": 3.5,
+      "durabilityRating_citation": "https://runrepeat.com/nike-pegasus-41",
+      "responsivenessRating": 3,
+      "responsivenessRating_citation": "https://runrepeat.com/nike-pegasus-41",
+      "comfortRating": 4.4,
+      "comfortRating_citation": "https://runrepeat.com/nike-pegasus-41",
+      "runnerWeightRange": "all weights, especially heel strikers",
+      "runnerWeightRange_citation": "https://runrepeat.com/nike-pegasus-41",
+      "bestUseCases": [
+        {
+          "value": "daily_training",
+          "value_citation": "https://runrepeat.com/nike-pegasus-41"
+        },
+        {
+          "value": "tempo_runs",
+          "value_citation": "https://www.solereview.com/nike-pegasus-41-review/"
+        },
+        {
+          "value": "easy_runs",
+          "value_citation": "https://run.outsideonline.com/gear/road-shoes/nike-pegasus-41-first-run-review/"
+        },
+        {
+          "value": "half_marathon",
+          "value_citation": "https://www.solereview.com/nike-pegasus-41-review/"
+        }
+      ]
+    },
+    {
+      "brand": "Saucony",
+      "brand_citation": "https://runrepeat.com/saucony-endorphin-pro-4",
+      "model": "Endorphin Pro 4",
+      "model_citation": "https://runrepeat.com/saucony-endorphin-pro-4",
+      "seriesName": "Endorphin",
+      "seriesName_citation": "https://runrepeat.com/saucony-endorphin-pro-4",
+      "version": "4",
+      "version_citation": "https://runrepeat.com/saucony-endorphin-pro-4",
+      "category": "racing",
+      "category_citation": "https://runrepeat.com/saucony-endorphin-pro-4",
+      "weightOunces": 7.5,
+      "weightOunces_citation": "https://www.saucony.com/en/endorphin-pro-4/58850M.html",
+      "stackHeights": {
+        "heel": 39.5,
+        "heel_citation": "https://findmyfootwear.com/saucony-endorphin-pro-4-review-the-racy-carbon-cruiser/",
+        "forefoot": 31.5,
+        "forefoot_citation": "https://findmyfootwear.com/saucony-endorphin-pro-4-review-the-racy-carbon-cruiser/"
+      },
+      "heelToToeDrop": 8,
+      "heelToToeDrop_citation": "https://findmyfootwear.com/saucony-endorphin-pro-4-review-the-racy-carbon-cruiser/",
+      "cushioningLevel": "max",
+      "cushioningLevel_citation": "https://findmyfootwear.com/saucony-endorphin-pro-4-review-the-racy-carbon-cruiser/",
+      "stabilityType": "neutral",
+      "stabilityType_citation": "https://runrepeat.com/saucony-endorphin-pro-4",
+      "carbonPlate": true,
+      "carbonPlate_citation": "https://runrepeat.com/saucony-endorphin-pro-4",
+      "superFoam": true,
+      "superFoam_citation": "https://runrepeat.com/saucony-endorphin-pro-4",
+      "price": 240,
+      "price_citation": "https://www.saucony.com/en/endorphin-pro-4/58850M.html",
+      "durabilityRating": 3,
+      "durabilityRating_citation": "https://runrepeat.com/saucony-endorphin-pro-4",
+      "responsivenessRating": 4.5,
+      "responsivenessRating_citation": "https://findmyfootwear.com/saucony-endorphin-pro-4-review-the-racy-carbon-cruiser/",
+      "comfortRating": 4.3,
+      "comfortRating_citation": "https://runrepeat.com/saucony-endorphin-pro-4",
+      "runnerWeightRange": null,
+      "runnerWeightRange_citation": null,
+      "bestUseCases": [
+        {
+          "value": "marathon",
+          "value_citation": "https://runrepeat.com/saucony-endorphin-pro-4"
+        },
+        {
+          "value": "half_marathon",
+          "value_citation": "https://findmyfootwear.com/saucony-endorphin-pro-4-review-the-racy-carbon-cruiser/"
+        },
+        {
+          "value": "racing",
+          "value_citation": "https://runrepeat.com/saucony-endorphin-pro-4"
+        },
+        {
+          "value": "fast_training",
+          "value_citation": "https://findmyfootwear.com/saucony-endorphin-pro-4-review-the-racy-carbon-cruiser/"
+        }
+      ]
+    },
+    {
+      "brand": "HOKA",
+      "brand_citation": "https://runrepeat.com/hoka-clifton-9",
+      "model": "Clifton 9",
+      "model_citation": "https://runrepeat.com/hoka-clifton-9",
+      "seriesName": "Clifton",
+      "seriesName_citation": "https://runrepeat.com/hoka-clifton-9",
+      "version": "9",
+      "version_citation": "https://runrepeat.com/hoka-clifton-9",
+      "category": "road",
+      "category_citation": "https://runrepeat.com/hoka-clifton-9",
+      "weightOunces": 8.8,
+      "weightOunces_citation": "https://runrepeat.com/hoka-clifton-9",
+      "stackHeights": {
+        "heel": 32,
+        "heel_citation": "https://runrepeat.com/hoka-clifton-9",
+        "forefoot": 27,
+        "forefoot_citation": "https://runrepeat.com/hoka-clifton-9"
+      },
+      "heelToToeDrop": 5,
+      "heelToToeDrop_citation": "https://www.hoka.com/en/us/mens-everyday-running-shoes/clifton-9/1127895.html",
+      "cushioningLevel": "max",
+      "cushioningLevel_citation": "https://runrepeat.com/hoka-clifton-9",
+      "stabilityType": "neutral",
+      "stabilityType_citation": "https://runrepeat.com/hoka-clifton-9",
+      "carbonPlate": false,
+      "carbonPlate_citation": "https://runrepeat.com/hoka-clifton-9",
+      "superFoam": false,
+      "superFoam_citation": "https://runrepeat.com/hoka-clifton-9",
+      "price": 145,
+      "price_citation": "https://runrepeat.com/hoka-clifton-9",
+      "durabilityRating": 4,
+      "durabilityRating_citation": "https://runrepeat.com/hoka-clifton-9",
+      "responsivenessRating": 2.5,
+      "responsivenessRating_citation": "https://runrepeat.com/hoka-clifton-9",
+      "comfortRating": 4.3,
+      "comfortRating_citation": "https://runrepeat.com/hoka-clifton-9",
+      "runnerWeightRange": null,
+      "runnerWeightRange_citation": null,
+      "bestUseCases": [
+        {
+          "value": "easy_runs",
+          "value_citation": "https://runrepeat.com/hoka-clifton-9"
+        },
+        {
+          "value": "recovery_runs",
+          "value_citation": "https://runrepeat.com/hoka-clifton-9"
+        },
+        {
+          "value": "long_runs",
+          "value_citation": "https://runrepeat.com/hoka-clifton-9"
+        },
+        {
+          "value": "daily_training",
+          "value_citation": "https://runrepeat.com/hoka-clifton-9"
+        }
+      ]
+    },
+    {
+      "brand": "Adidas",
+      "brand_citation": "https://runrepeat.com/adidas-adizero-boston-12",
+      "model": "Adizero Boston 12",
+      "model_citation": "https://runrepeat.com/adidas-adizero-boston-12",
+      "seriesName": "Adizero",
+      "seriesName_citation": "https://runrepeat.com/adidas-adizero-boston-12",
+      "version": "12",
+      "version_citation": "https://runrepeat.com/adidas-adizero-boston-12",
+      "category": "road",
+      "category_citation": "https://runrepeat.com/adidas-adizero-boston-12",
+      "weightOunces": 9.2,
+      "weightOunces_citation": "https://runrepeat.com/adidas-adizero-boston-12",
+      "stackHeights": {
+        "heel": 37,
+        "heel_citation": "https://www.solereview.com/adidas-boston-12-review/",
+        "forefoot": 30.5,
+        "forefoot_citation": "https://runrepeat.com/adidas-adizero-boston-12"
+      },
+      "heelToToeDrop": 6.5,
+      "heelToToeDrop_citation": "https://runrepeat.com/adidas-adizero-boston-12",
+      "cushioningLevel": "moderate",
+      "cushioningLevel_citation": "https://runrepeat.com/adidas-adizero-boston-12",
+      "stabilityType": "neutral",
+      "stabilityType_citation": "https://runrepeat.com/adidas-adizero-boston-12",
+      "carbonPlate": false,
+      "carbonPlate_citation": "https://runrepeat.com/adidas-adizero-boston-12",
+      "superFoam": true,
+      "superFoam_citation": "https://runrepeat.com/adidas-adizero-boston-12",
+      "price": 160,
+      "price_citation": "https://www.adidas.com/us/adizero-boston-12-running-shoes/IF8173.html",
+      "durabilityRating": 2,
+      "durabilityRating_citation": "https://runrepeat.com/adidas-adizero-boston-12",
+      "responsivenessRating": 4,
+      "responsivenessRating_citation": "https://runrepeat.com/adidas-adizero-boston-12",
+      "comfortRating": 4.4,
+      "comfortRating_citation": "https://runrepeat.com/adidas-adizero-boston-12",
+      "runnerWeightRange": "lightweight runners",
+      "runnerWeightRange_citation": "https://runrepeat.com/adidas-adizero-boston-12",
+      "bestUseCases": [
+        {
+          "value": "tempo_runs",
+          "value_citation": "https://www.solereview.com/adidas-boston-12-review/"
+        },
+        {
+          "value": "speedwork",
+          "value_citation": "https://www.solereview.com/adidas-boston-12-review/"
+        },
+        {
+          "value": "half_marathon",
+          "value_citation": "https://www.solereview.com/adidas-boston-12-review/"
+        },
+        {
+          "value": "daily_training",
+          "value_citation": "https://runrepeat.com/adidas-adizero-boston-12"
+        }
+      ]
+    },
+    {
+      "brand": "Brooks",
+      "brand_citation": "https://runrepeat.com/brooks-ghost-16",
+      "model": "Ghost 16",
+      "model_citation": "https://runrepeat.com/brooks-ghost-16",
+      "seriesName": "Ghost",
+      "seriesName_citation": "https://runrepeat.com/brooks-ghost-16",
+      "version": "16",
+      "version_citation": "https://runrepeat.com/brooks-ghost-16",
+      "category": "road",
+      "category_citation": "https://runrepeat.com/brooks-ghost-16",
+      "weightOunces": 9.5,
+      "weightOunces_citation": "https://runrepeat.com/brooks-ghost-16",
+      "stackHeights": {
+        "heel": 36,
+        "heel_citation": "https://runrepeat.com/brooks-ghost-16",
+        "forefoot": 24,
+        "forefoot_citation": "https://runrepeat.com/brooks-ghost-16"
+      },
+      "heelToToeDrop": 12,
+      "heelToToeDrop_citation": "https://runrepeat.com/brooks-ghost-16",
+      "cushioningLevel": "moderate",
+      "cushioningLevel_citation": "https://runrepeat.com/brooks-ghost-16",
+      "stabilityType": "neutral",
+      "stabilityType_citation": "https://runrepeat.com/brooks-ghost-16",
+      "carbonPlate": false,
+      "carbonPlate_citation": "https://runrepeat.com/brooks-ghost-16",
+      "superFoam": true,
+      "superFoam_citation": "https://runrepeat.com/brooks-ghost-16",
+      "price": 140,
+      "price_citation": "https://runrepeat.com/brooks-ghost-16",
+      "durabilityRating": 3.5,
+      "durabilityRating_citation": "https://runrepeat.com/brooks-ghost-16",
+      "responsivenessRating": 3,
+      "responsivenessRating_citation": "https://runrepeat.com/brooks-ghost-16",
+      "comfortRating": 4,
+      "comfortRating_citation": "https://runrepeat.com/brooks-ghost-16",
+      "runnerWeightRange": "heavier runners",
+      "runnerWeightRange_citation": "https://runrepeat.com/brooks-ghost-16",
+      "bestUseCases": [
+        {
+          "value": "daily_training",
+          "value_citation": "https://runrepeat.com/brooks-ghost-16"
+        },
+        {
+          "value": "easy_runs",
+          "value_citation": "https://www.runningwarehouse.com/Brooks_Ghost_16/descpage-B16MGH2.html"
+        },
+        {
+          "value": "walking",
+          "value_citation": "https://runrepeat.com/brooks-ghost-16"
+        },
+        {
+          "value": "beginners",
+          "value_citation": "https://runrepeat.com/brooks-ghost-16"
+        }
+      ]
+    },
+    {
+      "brand": "New Balance",
+      "brand_citation": "https://runrepeat.com/new-balance-fuel-cell-super-comp-elite-v-4",
+      "model": "FuelCell SuperComp Elite v4",
+      "model_citation": "https://runrepeat.com/new-balance-fuel-cell-super-comp-elite-v-4",
+      "seriesName": "FuelCell SuperComp Elite",
+      "seriesName_citation": "https://runrepeat.com/new-balance-fuel-cell-super-comp-elite-v-4",
+      "version": "v4",
+      "version_citation": "https://runrepeat.com/new-balance-fuel-cell-super-comp-elite-v-4",
+      "category": "racing",
+      "category_citation": "https://runrepeat.com/new-balance-fuel-cell-super-comp-elite-v-4",
+      "weightOunces": 8.1,
+      "weightOunces_citation": "https://www.runningwarehouse.com/New_Balance_FuelCell_SuperComp_Elite_v4/descpage-N4SCEM2.html",
+      "stackHeights": {
+        "heel": 40,
+        "heel_citation": "https://www.runningwarehouse.com/New_Balance_FuelCell_SuperComp_Elite_v4/descpage-N4SCEM2.html",
+        "forefoot": 36,
+        "forefoot_citation": "https://www.runningwarehouse.com/New_Balance_FuelCell_SuperComp_Elite_v4/descpage-N4SCEM2.html"
+      },
+      "heelToToeDrop": 4,
+      "heelToToeDrop_citation": "https://www.runningwarehouse.com/New_Balance_FuelCell_SuperComp_Elite_v4/descpage-N4SCEM2.html",
+      "cushioningLevel": "max",
+      "cushioningLevel_citation": "https://runrepeat.com/new-balance-fuel-cell-super-comp-elite-v-4",
+      "stabilityType": "neutral",
+      "stabilityType_citation": "https://runrepeat.com/new-balance-fuel-cell-super-comp-elite-v-4",
+      "carbonPlate": true,
+      "carbonPlate_citation": "https://runrepeat.com/new-balance-fuel-cell-super-comp-elite-v-4",
+      "superFoam": true,
+      "superFoam_citation": "https://runrepeat.com/new-balance-fuel-cell-super-comp-elite-v-4",
+      "price": 250,
+      "price_citation": "https://runrepeat.com/new-balance-fuel-cell-super-comp-elite-v-4",
+      "durabilityRating": 2.5,
+      "durabilityRating_citation": "https://runrepeat.com/new-balance-fuel-cell-super-comp-elite-v-4",
+      "responsivenessRating": 4.5,
+      "responsivenessRating_citation": "https://runrepeat.com/new-balance-fuel-cell-super-comp-elite-v-4",
+      "comfortRating": 4.5,
+      "comfortRating_citation": "https://runrepeat.com/new-balance-fuel-cell-super-comp-elite-v-4",
+      "runnerWeightRange": null,
+      "runnerWeightRange_citation": null,
+      "bestUseCases": [
+        {
+          "value": "marathon",
+          "value_citation": "https://runrepeat.com/new-balance-fuel-cell-super-comp-elite-v-4"
+        },
+        {
+          "value": "half_marathon",
+          "value_citation": "https://runrepeat.com/new-balance-fuel-cell-super-comp-elite-v-4"
+        },
+        {
+          "value": "racing",
+          "value_citation": "https://www.runningwarehouse.com/New_Balance_FuelCell_SuperComp_Elite_v4/descpage-N4SCEM2.html"
+        },
+        {
+          "value": "fast_training",
+          "value_citation": "https://runrepeat.com/new-balance-fuel-cell-super-comp-elite-v-4"
+        }
+      ]
+    },
+    {
+      "brand": "ASICS",
+      "brand_citation": "https://runrepeat.com/asics-gel-nimbus-26",
+      "model": "Gel Nimbus 26",
+      "model_citation": "https://runrepeat.com/asics-gel-nimbus-26",
+      "seriesName": "Gel Nimbus",
+      "seriesName_citation": "https://runrepeat.com/asics-gel-nimbus-26",
+      "version": "26",
+      "version_citation": "https://runrepeat.com/asics-gel-nimbus-26",
+      "category": "road",
+      "category_citation": "https://runrepeat.com/asics-gel-nimbus-26",
+      "weightOunces": 10.7,
+      "weightOunces_citation": "https://runrepeat.com/asics-gel-nimbus-26",
+      "stackHeights": {
+        "heel": 42,
+        "heel_citation": "https://runrepeat.com/asics-gel-nimbus-26",
+        "forefoot": 34,
+        "forefoot_citation": "https://runrepeat.com/asics-gel-nimbus-26"
+      },
+      "heelToToeDrop": 8,
+      "heelToToeDrop_citation": "https://runrepeat.com/asics-gel-nimbus-26",
+      "cushioningLevel": "max",
+      "cushioningLevel_citation": "https://runrepeat.com/asics-gel-nimbus-26",
+      "stabilityType": "neutral",
+      "stabilityType_citation": "https://runrepeat.com/asics-gel-nimbus-26",
+      "carbonPlate": false,
+      "carbonPlate_citation": "https://runrepeat.com/asics-gel-nimbus-26",
+      "superFoam": false,
+      "superFoam_citation": "https://runrepeat.com/asics-gel-nimbus-26",
+      "price": 160,
+      "price_citation": "https://runrepeat.com/asics-gel-nimbus-26",
+      "durabilityRating": 4,
+      "durabilityRating_citation": "https://runrepeat.com/asics-gel-nimbus-26",
+      "responsivenessRating": 2.5,
+      "responsivenessRating_citation": "https://runrepeat.com/asics-gel-nimbus-26",
+      "comfortRating": 4.5,
+      "comfortRating_citation": "https://runrepeat.com/asics-gel-nimbus-26",
+      "runnerWeightRange": "all weights",
+      "runnerWeightRange_citation": "https://runrepeat.com/asics-gel-nimbus-26",
+      "bestUseCases": [
+        {
+          "value": "easy_runs",
+          "value_citation": "https://runrepeat.com/asics-gel-nimbus-26"
+        },
+        {
+          "value": "long_runs",
+          "value_citation": "https://runrepeat.com/asics-gel-nimbus-26"
+        },
+        {
+          "value": "daily_training",
+          "value_citation": "https://runrepeat.com/asics-gel-nimbus-26"
+        },
+        {
+          "value": "walking",
+          "value_citation": "https://runrepeat.com/asics-gel-nimbus-26"
+        }
+      ]
+    },
+    {
+      "brand": "On",
+      "brand_citation": "https://runrepeat.com/on-cloudmonster-2",
+      "model": "Cloudmonster 2",
+      "model_citation": "https://runrepeat.com/on-cloudmonster-2",
+      "seriesName": "Cloudmonster",
+      "seriesName_citation": "https://www.solereview.com/on-cloudmonster-2-review/",
+      "version": "2",
+      "version_citation": "https://runrepeat.com/on-cloudmonster-2",
+      "category": "road",
+      "category_citation": "https://runrepeat.com/on-cloudmonster-2",
+      "weightOunces": 10.4,
+      "weightOunces_citation": "https://runrepeat.com/on-cloudmonster-2",
+      "stackHeights": {
+        "heel": 35,
+        "heel_citation": "https://www.solereview.com/on-cloudmonster-2-review/",
+        "forefoot": 29,
+        "forefoot_citation": "https://www.solereview.com/on-cloudmonster-2-review/"
+      },
+      "heelToToeDrop": 6,
+      "heelToToeDrop_citation": "https://www.solereview.com/on-cloudmonster-2-review/",
+      "cushioningLevel": "max",
+      "cushioningLevel_citation": "https://runrepeat.com/on-cloudmonster-2",
+      "stabilityType": "neutral",
+      "stabilityType_citation": "https://runrepeat.com/on-cloudmonster-2",
+      "carbonPlate": false,
+      "carbonPlate_citation": "https://www.solereview.com/on-cloudmonster-2-review/",
+      "superFoam": false,
+      "superFoam_citation": "https://runrepeat.com/on-cloudmonster-2",
+      "price": 180,
+      "price_citation": "https://runrepeat.com/on-cloudmonster-2",
+      "durabilityRating": 4,
+      "durabilityRating_citation": "https://runrepeat.com/on-cloudmonster-2",
+      "responsivenessRating": 3,
+      "responsivenessRating_citation": "https://runrepeat.com/on-cloudmonster-2",
+      "comfortRating": 4,
+      "comfortRating_citation": "https://www.solereview.com/on-cloudmonster-2-review/",
+      "runnerWeightRange": null,
+      "runnerWeightRange_citation": null,
+      "bestUseCases": [
+        {
+          "value": "long_runs",
+          "value_citation": "https://runrepeat.com/on-cloudmonster-2"
+        },
+        {
+          "value": "daily_training",
+          "value_citation": "https://runrepeat.com/on-cloudmonster-2"
+        },
+        {
+          "value": "marathon",
+          "value_citation": "https://www.solereview.com/on-cloudmonster-2-review/"
+        },
+        {
+          "value": "easy_runs",
+          "value_citation": "https://www.solereview.com/on-cloudmonster-2-review/"
+        }
+      ]
+    },
+    {
+      "brand": "Mizuno",
+      "brand_citation": "https://runrepeat.com/mizuno-wave-rider-27",
+      "model": "Wave Rider 27",
+      "model_citation": "https://runrepeat.com/mizuno-wave-rider-27",
+      "seriesName": "Wave Rider",
+      "seriesName_citation": "https://runrepeat.com/mizuno-wave-rider-27",
+      "version": "27",
+      "version_citation": "https://runrepeat.com/mizuno-wave-rider-27",
+      "category": "road",
+      "category_citation": "https://runrepeat.com/mizuno-wave-rider-27",
+      "weightOunces": 9.9,
+      "weightOunces_citation": "https://runrepeat.com/mizuno-wave-rider-27",
+      "stackHeights": {
+        "heel": 38.5,
+        "heel_citation": "https://runrepeat.com/mizuno-wave-rider-27",
+        "forefoot": 26.5,
+        "forefoot_citation": "https://runrepeat.com/mizuno-wave-rider-27"
+      },
+      "heelToToeDrop": 12,
+      "heelToToeDrop_citation": "https://runrepeat.com/mizuno-wave-rider-27",
+      "cushioningLevel": "moderate",
+      "cushioningLevel_citation": "https://runrepeat.com/mizuno-wave-rider-27",
+      "stabilityType": "neutral",
+      "stabilityType_citation": "https://runrepeat.com/mizuno-wave-rider-27",
+      "carbonPlate": false,
+      "carbonPlate_citation": "https://runrepeat.com/mizuno-wave-rider-27",
+      "superFoam": false,
+      "superFoam_citation": "https://runrepeat.com/mizuno-wave-rider-27",
+      "price": 140,
+      "price_citation": "https://runrepeat.com/mizuno-wave-rider-27",
+      "durabilityRating": 3.5,
+      "durabilityRating_citation": "https://runrepeat.com/mizuno-wave-rider-27",
+      "responsivenessRating": 2.5,
+      "responsivenessRating_citation": "https://runrepeat.com/mizuno-wave-rider-27",
+      "comfortRating": 4.6,
+      "comfortRating_citation": "https://runrepeat.com/mizuno-wave-rider-27",
+      "runnerWeightRange": "all weights including heavier runners",
+      "runnerWeightRange_citation": "https://runrepeat.com/mizuno-wave-rider-27",
+      "bestUseCases": [
+        {
+          "value": "daily_training",
+          "value_citation": "https://runrepeat.com/mizuno-wave-rider-27"
+        },
+        {
+          "value": "easy_runs",
+          "value_citation": "https://runrepeat.com/mizuno-wave-rider-27"
+        },
+        {
+          "value": "beginners",
+          "value_citation": "https://runrepeat.com/mizuno-wave-rider-27"
+        },
+        {
+          "value": "treadmill",
+          "value_citation": "https://runrepeat.com/mizuno-wave-rider-27"
+        }
+      ]
+    },
+    {
+      "brand": "ASICS",
+      "brand_citation": "https://runrepeat.com/asics-metaspeed-sky-plus",
+      "model": "Metaspeed Sky+",
+      "model_citation": "https://runrepeat.com/asics-metaspeed-sky-plus",
+      "seriesName": "Metaspeed",
+      "seriesName_citation": "https://runrepeat.com/asics-metaspeed-sky-plus",
+      "version": "Plus",
+      "version_citation": "https://runrepeat.com/asics-metaspeed-sky-plus",
+      "category": "racing",
+      "category_citation": "https://runrepeat.com/asics-metaspeed-sky-plus",
+      "weightOunces": 7.2,
+      "weightOunces_citation": "https://runrepeat.com/asics-metaspeed-sky-plus",
+      "stackHeights": {
+        "heel": 39,
+        "heel_citation": "https://runrepeat.com/asics-metaspeed-sky-plus",
+        "forefoot": 34,
+        "forefoot_citation": "https://runrepeat.com/asics-metaspeed-sky-plus"
+      },
+      "heelToToeDrop": 5,
+      "heelToToeDrop_citation": "https://runrepeat.com/asics-metaspeed-sky-plus",
+      "cushioningLevel": "max",
+      "cushioningLevel_citation": "https://runrepeat.com/asics-metaspeed-sky-plus",
+      "stabilityType": "neutral",
+      "stabilityType_citation": "https://runrepeat.com/asics-metaspeed-sky-plus",
+      "carbonPlate": true,
+      "carbonPlate_citation": "https://runrepeat.com/asics-metaspeed-sky-plus",
+      "superFoam": true,
+      "superFoam_citation": "https://runrepeat.com/asics-metaspeed-sky-plus",
+      "price": 250,
+      "price_citation": "https://runrepeat.com/asics-metaspeed-sky-plus",
+      "durabilityRating": 3.5,
+      "durabilityRating_citation": "https://runrepeat.com/asics-metaspeed-sky-plus",
+      "responsivenessRating": 4.5,
+      "responsivenessRating_citation": "https://runrepeat.com/asics-metaspeed-sky-plus",
+      "comfortRating": 4,
+      "comfortRating_citation": "https://runrepeat.com/asics-metaspeed-sky-plus",
+      "runnerWeightRange": null,
+      "runnerWeightRange_citation": null,
+      "bestUseCases": [
+        {
+          "value": "marathon",
+          "value_citation": "https://runrepeat.com/asics-metaspeed-sky-plus"
+        },
+        {
+          "value": "half_marathon",
+          "value_citation": "https://runrepeat.com/asics-metaspeed-sky-plus"
+        },
+        {
+          "value": "racing",
+          "value_citation": "https://runrepeat.com/asics-metaspeed-sky-plus"
+        },
+        {
+          "value": "tempo_runs",
+          "value_citation": "https://runrepeat.com/asics-metaspeed-sky-plus"
+        }
+      ]
+    },
+    {
+      "brand": "Hoka",
+      "brand_citation": "https://runrepeat.com/hoka-mach-6",
+      "model": "Mach 6",
+      "model_citation": "https://runrepeat.com/hoka-mach-6",
+      "seriesName": "Mach",
+      "seriesName_citation": "https://runrepeat.com/hoka-mach-6",
+      "version": "6",
+      "version_citation": "https://runrepeat.com/hoka-mach-6",
+      "category": "road",
+      "category_citation": "https://runrepeat.com/hoka-mach-6",
+      "weightOunces": 8.3,
+      "weightOunces_citation": "https://www.runningwarehouse.com/HOKA_Mach_6/descpage-HO6MM00.html",
+      "stackHeights": {
+        "heel": 37,
+        "heel_citation": "https://www.runningwarehouse.com/HOKA_Mach_6/descpage-HO6MM00.html",
+        "forefoot": 32,
+        "forefoot_citation": "https://www.runningwarehouse.com/HOKA_Mach_6/descpage-HO6MM00.html"
+      },
+      "heelToToeDrop": 5,
+      "heelToToeDrop_citation": "https://www.runningwarehouse.com/HOKA_Mach_6/descpage-HO6MM00.html",
+      "cushioningLevel": "moderate",
+      "cushioningLevel_citation": "https://runrepeat.com/hoka-mach-6",
+      "stabilityType": "neutral",
+      "stabilityType_citation": "https://runrepeat.com/hoka-mach-6",
+      "carbonPlate": false,
+      "carbonPlate_citation": "https://runrepeat.com/hoka-mach-6",
+      "superFoam": false,
+      "superFoam_citation": "https://runrepeat.com/hoka-mach-6",
+      "price": 140,
+      "price_citation": "https://runrepeat.com/hoka-mach-6",
+      "durabilityRating": 3.5,
+      "durabilityRating_citation": "https://runrepeat.com/hoka-mach-6",
+      "responsivenessRating": 4,
+      "responsivenessRating_citation": "https://runrepeat.com/hoka-mach-6",
+      "comfortRating": 4,
+      "comfortRating_citation": "https://runrepeat.com/hoka-mach-6",
+      "runnerWeightRange": "heavier runners",
+      "runnerWeightRange_citation": "https://runrepeat.com/hoka-mach-6",
+      "bestUseCases": [
+        {
+          "value": "daily_training",
+          "value_citation": "https://runrepeat.com/hoka-mach-6"
+        },
+        {
+          "value": "tempo_runs",
+          "value_citation": "https://runrepeat.com/hoka-mach-6"
+        },
+        {
+          "value": "long_runs",
+          "value_citation": "https://runrepeat.com/hoka-mach-6"
+        },
+        {
+          "value": "speed_work",
+          "value_citation": "https://www.runningwarehouse.com/HOKA_Mach_6/descpage-HO6MM00.html"
+        }
+      ]
+    }
+  ]
+}
