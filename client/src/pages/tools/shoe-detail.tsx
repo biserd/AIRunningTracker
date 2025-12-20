@@ -607,6 +607,9 @@ export default function ShoeDetailPage() {
               </CardContent>
             </Card>
 
+            {/* Series Comparison Chart */}
+            {hasSeriesData && <SeriesComparisonChart seriesShoes={seriesShoes} />}
+
             {/* FAQ Section */}
             {shoe.aiFaq && (() => {
               try {
@@ -647,9 +650,6 @@ export default function ShoeDetailPage() {
                 return null;
               }
             })()}
-
-            {/* Series Comparison Chart */}
-            {hasSeriesData && <SeriesComparisonChart seriesShoes={seriesShoes} />}
           </div>
 
           {/* Sidebar */}

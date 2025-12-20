@@ -172,6 +172,8 @@ function ShoeCard({ shoe, isInCompare, onToggleCompare, canAddMore }: ShoeCardPr
   );
 }
 
+const SHOES_PER_PAGE = 24;
+
 export default function ShoeDatabasePage() {
   const { isAuthenticated } = useAuth();
   const [selectedBrand, setSelectedBrand] = useState<string>("all");
@@ -179,6 +181,7 @@ export default function ShoeDatabasePage() {
   const [selectedStability, setSelectedStability] = useState<string>("all");
   const [hasCarbonPlate, setHasCarbonPlate] = useState<string>("all");
   const [compareList, setCompareListState] = useState<string[]>([]);
+  const [displayedCount, setDisplayedCount] = useState(SHOES_PER_PAGE);
 
   // Load compare list from localStorage on mount
   useEffect(() => {
@@ -229,6 +232,9 @@ export default function ShoeDatabasePage() {
     return bTime - aTime;
   })) || [];
 
+  const displayedShoes = filteredShoes.slice(0, displayedCount);
+  const hasMore = displayedCount < filteredShoes.length;
+
   const hasActiveFilters = selectedBrand !== "all" || selectedCategory !== "all" || 
                             selectedStability !== "all" || hasCarbonPlate !== "all";
 
@@ -237,7 +243,12 @@ export default function ShoeDatabasePage() {
     setSelectedCategory("all");
     setSelectedStability("all");
     setHasCarbonPlate("all");
+    setDisplayedCount(SHOES_PER_PAGE);
   };
+
+  useEffect(() => {
+    setDisplayedCount(SHOES_PER_PAGE);
+  }, [selectedBrand, selectedCategory, selectedStability, hasCarbonPlate]);
 
   const canAddMore = compareList.length < MAX_COMPARE_SHOES;
   const compareUrl = `/tools/shoes/compare?shoes=${compareList.join(',')}`;
@@ -390,7 +401,7 @@ export default function ShoeDatabasePage() {
 
           <div className="flex items-center justify-between mb-6">
             <p className="text-gray-600">
-              Showing <span className="font-medium">{filteredShoes.length}</span> shoes
+              Showing <span className="font-medium">{displayedShoes.length}</span> of <span className="font-medium">{filteredShoes.length}</span> shoes
               {hasActiveFilters && <span className="text-gray-400"> (filtered)</span>}
             </p>
             <p className="text-sm text-gray-500">
@@ -423,17 +434,31 @@ export default function ShoeDatabasePage() {
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredShoes.map(shoe => (
-                <ShoeCard 
-                  key={shoe.id} 
-                  shoe={shoe} 
-                  isInCompare={shoe.slug ? compareList.includes(shoe.slug) : false}
-                  onToggleCompare={handleToggleCompare}
-                  canAddMore={canAddMore}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {displayedShoes.map(shoe => (
+                  <ShoeCard 
+                    key={shoe.id} 
+                    shoe={shoe} 
+                    isInCompare={shoe.slug ? compareList.includes(shoe.slug) : false}
+                    onToggleCompare={handleToggleCompare}
+                    canAddMore={canAddMore}
+                  />
+                ))}
+              </div>
+              {hasMore && (
+                <div className="flex justify-center mt-12">
+                  <Button 
+                    onClick={() => setDisplayedCount(prev => prev + SHOES_PER_PAGE)}
+                    variant="outline"
+                    size="lg"
+                    data-testid="button-load-more"
+                  >
+                    Load More Shoes
+                  </Button>
+                </div>
+              )}
+            </>
           )}
 
           <div className="mt-12 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
