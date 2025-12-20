@@ -443,7 +443,7 @@ function AIAgentCoachTab({ user }: { user: User }) {
           ) : (
             <div className="space-y-4">
               {recaps.slice(0, 5).map((recap) => (
-                <Link key={recap.id} href={`/activities/${recap.activityId}`}>
+                <Link key={recap.id} href={`/activity/${recap.activityId}`}>
                   <div className="bg-gray-50 hover:bg-gray-100 rounded-lg p-4 transition-colors cursor-pointer border border-gray-100" data-testid={`recap-card-${recap.id}`}>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
