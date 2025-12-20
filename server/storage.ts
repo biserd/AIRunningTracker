@@ -132,6 +132,7 @@ export interface IStorage {
   addMessage(message: InsertAIMessage): Promise<AIMessage>;
   getMessagesByConversationId(conversationId: number, limit?: number): Promise<AIMessage[]>;
   updateMessageFeedback(messageId: number, feedback: "positive" | "negative" | null): Promise<AIMessage | undefined>;
+  verifyMessageOwnership(messageId: number, userId: number): Promise<boolean>;
   
   // User account management
   deleteAccount(userId: number): Promise<void>;
@@ -1219,6 +1220,18 @@ export class DatabaseStorage implements IStorage {
       .where(eq(aiMessages.id, messageId))
       .returning();
     return updated || undefined;
+  }
+
+  async verifyMessageOwnership(messageId: number, userId: number): Promise<boolean> {
+    // Join message -> conversation -> check userId
+    const result = await db
+      .select({ conversationUserId: aiConversations.userId })
+      .from(aiMessages)
+      .innerJoin(aiConversations, eq(aiMessages.conversationId, aiConversations.id))
+      .where(eq(aiMessages.id, messageId))
+      .limit(1);
+    
+    return result.length > 0 && result[0].conversationUserId === userId;
   }
 
   // Admin methods

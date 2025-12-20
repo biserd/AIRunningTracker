@@ -1997,6 +1997,7 @@ ${allPages.map(page => `  <url>
     try {
       const messageId = parseInt(req.params.messageId);
       const { feedback } = req.body;
+      const userId = req.user.id;
       
       if (isNaN(messageId)) {
         return res.status(400).json({ message: "Invalid message ID" });
@@ -2005,6 +2006,12 @@ ${allPages.map(page => `  <url>
       // Validate feedback value
       if (feedback !== null && feedback !== "positive" && feedback !== "negative") {
         return res.status(400).json({ message: "Feedback must be 'positive', 'negative', or null" });
+      }
+
+      // Verify ownership: check the message belongs to a conversation owned by this user
+      const ownsMessage = await storage.verifyMessageOwnership(messageId, userId);
+      if (!ownsMessage) {
+        return res.status(403).json({ message: "Access denied" });
       }
 
       const updated = await storage.updateMessageFeedback(messageId, feedback);

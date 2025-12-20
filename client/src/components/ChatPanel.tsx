@@ -150,6 +150,10 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
   // Fetch conversations
   const { data: conversations = [] } = useQuery<Conversation[]>({
     queryKey: ["/api/chat/conversations", userId],
+    queryFn: () => fetch(`/api/chat/conversations/${userId}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("auth_token")}` }
+    }).then(res => res.ok ? res.json() : []),
+    enabled: !!userId,
   });
 
   // Fetch messages for current conversation
