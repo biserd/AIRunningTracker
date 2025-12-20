@@ -312,9 +312,18 @@ export default function ShoeDatabasePage() {
 
               <div className="flex flex-wrap justify-center gap-2">
                 {brands?.map(brand => (
-                  <Badge key={brand} variant="outline" className="bg-white px-3 py-1">
+                  <button
+                    key={brand}
+                    onClick={() => setSelectedBrand(brand)}
+                    className={`px-3 py-1 rounded-full font-medium text-sm transition-all cursor-pointer ${
+                      selectedBrand === brand
+                        ? 'bg-strava-orange text-white'
+                        : 'bg-white text-gray-700 border border-gray-300 hover:border-strava-orange hover:text-strava-orange'
+                    }`}
+                    data-testid={`brand-filter-${brand}`}
+                  >
                     {brand}
-                  </Badge>
+                  </button>
                 ))}
               </div>
             </div>
