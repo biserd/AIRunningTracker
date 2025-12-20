@@ -17,6 +17,7 @@ import {
   Activity,
   Gauge,
   BadgeCheck,
+  HelpCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import AppHeader from "@/components/AppHeader";
 import Footer from "@/components/Footer";
 import {
@@ -604,6 +606,45 @@ export default function ShoeDetailPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* FAQ Section */}
+            {shoe.aiFaq && (() => {
+              try {
+                const faqData = JSON.parse(shoe.aiFaq) as { q: string; a: string }[];
+                if (faqData.length === 0) return null;
+                return (
+                  <Card data-testid="faq-section">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <HelpCircle className="h-5 w-5 text-strava-orange" />
+                        Frequently Asked Questions
+                      </CardTitle>
+                      <p className="text-sm text-gray-500">
+                        Common questions about the {shoe.brand} {shoe.model}
+                      </p>
+                    </CardHeader>
+                    <CardContent>
+                      <Accordion type="single" collapsible className="w-full">
+                        {faqData.map((faq, index) => (
+                          <AccordionItem key={index} value={`faq-${index}`} data-testid={`faq-item-${index}`}>
+                            <AccordionTrigger className="text-left hover:no-underline">
+                              <span className="font-medium text-gray-900 dark:text-white pr-4">
+                                {faq.q}
+                              </span>
+                            </AccordionTrigger>
+                            <AccordionContent className="text-gray-600 dark:text-gray-400">
+                              {faq.a}
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
+                    </CardContent>
+                  </Card>
+                );
+              } catch {
+                return null;
+              }
+            })()}
 
             {/* Series Comparison Chart */}
             {hasSeriesData && <SeriesComparisonChart seriesShoes={seriesShoes} />}
