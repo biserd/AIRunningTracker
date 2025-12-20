@@ -387,6 +387,7 @@ export const aiMessages = pgTable("ai_messages", {
   conversationId: integer("conversation_id").notNull(),
   role: text("role", { enum: ["user", "assistant"] }).notNull(),
   content: text("content").notNull(),
+  feedback: text("feedback", { enum: ["positive", "negative"] }),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
   conversationIdIdx: index("ai_messages_conversation_id_idx").on(table.conversationId),
