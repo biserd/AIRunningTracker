@@ -216,14 +216,18 @@ export default function ShoeDatabasePage() {
     setCompareList([]);
   };
 
-  const filteredShoes = shoes?.filter(shoe => {
+  const filteredShoes = (shoes?.filter(shoe => {
     if (selectedBrand !== "all" && shoe.brand !== selectedBrand) return false;
     if (selectedCategory !== "all" && shoe.category !== selectedCategory) return false;
     if (selectedStability !== "all" && shoe.stability !== selectedStability) return false;
     if (hasCarbonPlate === "yes" && !shoe.hasCarbonPlate) return false;
     if (hasCarbonPlate === "no" && shoe.hasCarbonPlate) return false;
     return true;
-  }) || [];
+  })?.sort((a, b) => {
+    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return bTime - aTime;
+  })) || [];
 
   const hasActiveFilters = selectedBrand !== "all" || selectedCategory !== "all" || 
                             selectedStability !== "all" || hasCarbonPlate !== "all";
