@@ -610,8 +610,9 @@ export default function ShoeDetailPage() {
             {/* FAQ Section */}
             {shoe.aiFaq && (() => {
               try {
-                const faqData = JSON.parse(shoe.aiFaq) as { q: string; a: string }[];
-                if (faqData.length === 0) return null;
+                const faqData = typeof shoe.aiFaq === 'string' ? JSON.parse(shoe.aiFaq) : shoe.aiFaq;
+                if (!Array.isArray(faqData) || faqData.length === 0) return null;
+                
                 return (
                   <Card data-testid="faq-section">
                     <CardHeader>
@@ -619,20 +620,20 @@ export default function ShoeDetailPage() {
                         <HelpCircle className="h-5 w-5 text-strava-orange" />
                         Frequently Asked Questions
                       </CardTitle>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-500 mt-1">
                         Common questions about the {shoe.brand} {shoe.model}
                       </p>
                     </CardHeader>
                     <CardContent>
                       <Accordion type="single" collapsible className="w-full">
-                        {faqData.map((faq, index) => (
+                        {faqData.map((faq: any, index: number) => (
                           <AccordionItem key={index} value={`faq-${index}`} data-testid={`faq-item-${index}`}>
-                            <AccordionTrigger className="text-left hover:no-underline">
-                              <span className="font-medium text-gray-900 dark:text-white pr-4">
+                            <AccordionTrigger className="text-left">
+                              <span className="font-medium text-gray-900 dark:text-white">
                                 {faq.q}
                               </span>
                             </AccordionTrigger>
-                            <AccordionContent className="text-gray-600 dark:text-gray-400">
+                            <AccordionContent className="text-gray-600 dark:text-gray-400 pt-2">
                               {faq.a}
                             </AccordionContent>
                           </AccordionItem>
@@ -641,7 +642,8 @@ export default function ShoeDetailPage() {
                     </CardContent>
                   </Card>
                 );
-              } catch {
+              } catch (err) {
+                console.error("FAQ parsing error:", err);
                 return null;
               }
             })()}
