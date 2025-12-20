@@ -1992,6 +1992,33 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Update message feedback (thumbs up/down)
+  app.patch("/api/chat/messages/:messageId/feedback", authenticateJWT, async (req: any, res) => {
+    try {
+      const messageId = parseInt(req.params.messageId);
+      const { feedback } = req.body;
+      
+      if (isNaN(messageId)) {
+        return res.status(400).json({ message: "Invalid message ID" });
+      }
+
+      // Validate feedback value
+      if (feedback !== null && feedback !== "positive" && feedback !== "negative") {
+        return res.status(400).json({ message: "Feedback must be 'positive', 'negative', or null" });
+      }
+
+      const updated = await storage.updateMessageFeedback(messageId, feedback);
+      if (!updated) {
+        return res.status(404).json({ message: "Message not found" });
+      }
+
+      res.json(updated);
+    } catch (error: any) {
+      console.error('Update message feedback error:', error);
+      res.status(500).json({ message: error.message || "Failed to update message feedback" });
+    }
+  });
+
   // Logout endpoint
   app.get("/api/logout", (req, res) => {
     res.redirect("/");

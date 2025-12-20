@@ -131,6 +131,7 @@ export interface IStorage {
   deleteConversation(conversationId: number): Promise<void>;
   addMessage(message: InsertAIMessage): Promise<AIMessage>;
   getMessagesByConversationId(conversationId: number, limit?: number): Promise<AIMessage[]>;
+  updateMessageFeedback(messageId: number, feedback: "positive" | "negative" | null): Promise<AIMessage | undefined>;
   
   // User account management
   deleteAccount(userId: number): Promise<void>;
@@ -1209,6 +1210,15 @@ export class DatabaseStorage implements IStorage {
       .where(eq(aiMessages.conversationId, conversationId))
       .orderBy(aiMessages.createdAt)
       .limit(limit);
+  }
+
+  async updateMessageFeedback(messageId: number, feedback: "positive" | "negative" | null): Promise<AIMessage | undefined> {
+    const [updated] = await db
+      .update(aiMessages)
+      .set({ feedback })
+      .where(eq(aiMessages.id, messageId))
+      .returning();
+    return updated || undefined;
   }
 
   // Admin methods
