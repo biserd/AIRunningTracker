@@ -1624,7 +1624,7 @@ ${allPages.map(page => `  <url>
         } else {
           // Group by week for 30days, 3months, and 6months views
           const weekStart = new Date(activityDate);
-          weekStart.setDate(activityDate.getDate() - activityDate.getDay()); // Start of week (Sunday)
+          weekStart.setDate(activityDate.getDate() - ((activityDate.getDay() + 6) % 7)); // Start of week (Monday)
           groupKey = weekStart.toISOString().split('T')[0]; // YYYY-MM-DD format
         }
         
