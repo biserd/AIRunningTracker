@@ -51,7 +51,7 @@ function DayCell({ day, maxDistance, unitPreference }: { day: HeatmapDay; maxDis
   if (!hasActivities) {
     return (
       <div 
-        className={`w-3 h-3 rounded-sm ${colorClass} cursor-default`}
+        className={`aspect-square rounded-sm ${colorClass} cursor-default`}
         title={`${formatDate(day.date)}: Rest day`}
         data-testid={`heatmap-cell-${day.date}`}
       />
@@ -62,7 +62,7 @@ function DayCell({ day, maxDistance, unitPreference }: { day: HeatmapDay; maxDis
     <HoverCard openDelay={100} closeDelay={200}>
       <HoverCardTrigger asChild>
         <div 
-          className={`w-3 h-3 rounded-sm ${colorClass} cursor-pointer hover:ring-2 hover:ring-strava-orange hover:ring-offset-1 transition-all`}
+          className={`aspect-square rounded-sm ${colorClass} cursor-pointer hover:ring-2 hover:ring-strava-orange hover:ring-offset-1 transition-all`}
           data-testid={`heatmap-cell-${day.date}`}
         />
       </HoverCardTrigger>
@@ -207,9 +207,7 @@ export default function ActivityHeatmap() {
   };
   
   const monthLabels = getMonthLabels();
-  const cellSize = 12;
-  const cellGap = 4;
-  const weekWidth = cellSize + cellGap;
+  const weekCount = weeks.length;
 
   return (
     <Card>
@@ -217,62 +215,68 @@ export default function ActivityHeatmap() {
         <CardTitle className="text-xl font-semibold text-charcoal">Activity Calendar</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <div className="min-w-fit">
-            <div className="relative h-5 ml-8">
-              {monthLabels.map((label, i) => (
-                <span 
-                  key={i} 
-                  className="absolute text-xs text-gray-500"
-                  style={{ left: `${label.weekIndex * weekWidth}px` }}
-                >
-                  {label.month}
-                </span>
+        <div className="w-full">
+          <div className="flex">
+            <div className="w-8 shrink-0" />
+            <div 
+              className="flex-1 grid h-5"
+              style={{ gridTemplateColumns: `repeat(${weekCount}, minmax(0, 1fr))` }}
+            >
+              {weeks.map((week, weekIndex) => {
+                const label = monthLabels.find(l => l.weekIndex === weekIndex);
+                return (
+                  <div key={weekIndex} className="text-xs text-gray-500 truncate">
+                    {label?.month || ''}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          
+          <div className="flex">
+            <div className="w-8 shrink-0 flex flex-col justify-between text-xs text-gray-500 pr-2">
+              {dayLabels.filter((_, i) => i % 2 === 1).map((day) => (
+                <span key={day} className="flex items-center">{day}</span>
               ))}
             </div>
             
-            <div className="flex">
-              <div className="flex flex-col justify-between text-xs text-gray-500 pr-2" style={{ height: `${7 * weekWidth - cellGap}px` }}>
-                {dayLabels.filter((_, i) => i % 2 === 1).map((day) => (
-                  <span key={day} className="h-3 flex items-center">{day}</span>
-                ))}
-              </div>
-              
-              <div className="flex gap-1">
-                {weeks.map((week, weekIndex) => (
-                  <div key={weekIndex} className="flex flex-col gap-1">
-                    {week.map((day, dayIndex) => (
-                      day.totalDistanceKm === -1 ? (
-                        <div key={dayIndex} className="w-3 h-3" />
-                      ) : (
-                        <DayCell
-                          key={day.date || dayIndex}
-                          day={day}
-                          maxDistance={data.maxDistance}
-                          unitPreference={data.unitPreference}
-                        />
-                      )
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <span>Less</span>
-                <div className="flex gap-1">
-                  <div className="w-3 h-3 rounded-sm bg-gray-100 dark:bg-gray-800" />
-                  <div className="w-3 h-3 rounded-sm bg-green-200 dark:bg-green-900" />
-                  <div className="w-3 h-3 rounded-sm bg-green-400 dark:bg-green-700" />
-                  <div className="w-3 h-3 rounded-sm bg-green-500 dark:bg-green-600" />
-                  <div className="w-3 h-3 rounded-sm bg-green-600 dark:bg-green-500" />
+            <div 
+              className="flex-1 grid gap-[2px]"
+              style={{ gridTemplateColumns: `repeat(${weekCount}, minmax(0, 1fr))` }}
+            >
+              {weeks.map((week, weekIndex) => (
+                <div key={weekIndex} className="grid grid-rows-7 gap-[2px]">
+                  {week.map((day, dayIndex) => (
+                    day.totalDistanceKm === -1 ? (
+                      <div key={dayIndex} className="aspect-square" />
+                    ) : (
+                      <DayCell
+                        key={day.date || dayIndex}
+                        day={day}
+                        maxDistance={data.maxDistance}
+                        unitPreference={data.unitPreference}
+                      />
+                    )
+                  ))}
                 </div>
-                <span>More</span>
-                <span className="ml-2 text-gray-400">({unit})</span>
-              </div>
-              <StravaPoweredBy variant="orange" size="sm" />
+              ))}
             </div>
+          </div>
+          
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <span>Less</span>
+              <div className="flex gap-1">
+                <div className="w-3 h-3 rounded-sm bg-gray-100 dark:bg-gray-800" />
+                <div className="w-3 h-3 rounded-sm bg-green-200 dark:bg-green-900" />
+                <div className="w-3 h-3 rounded-sm bg-green-400 dark:bg-green-700" />
+                <div className="w-3 h-3 rounded-sm bg-green-500 dark:bg-green-600" />
+                <div className="w-3 h-3 rounded-sm bg-green-600 dark:bg-green-500" />
+              </div>
+              <span>More</span>
+              <span className="ml-2 text-gray-400">({unit})</span>
+            </div>
+            <StravaPoweredBy variant="orange" size="sm" />
           </div>
         </div>
       </CardContent>
