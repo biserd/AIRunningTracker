@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Flame, Shield, Activity, Brain, Target, Heart, AlertTriangle, Gauge, Bot, Settings, Calendar, MessageSquare, ChevronRight, Sparkles, Clock } from "lucide-react";
+import { Flame, Shield, Activity, Brain, Target, Heart, AlertTriangle, Gauge, Bot, Settings, Calendar, MessageSquare, ChevronRight, Sparkles, Clock, CheckCircle, XCircle, Timer, TrendingDown } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -64,7 +64,125 @@ function formatDays(days: string[] | null | undefined): string {
   return days.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(", ");
 }
 
-function InsightsTab({ user, batchData, isDataLoading }: { user: User; batchData: any; isDataLoading: boolean }) {
+interface RecoveryState {
+  daysSinceLastRun: number;
+  lastRunDate: string | null;
+  lastRunName: string | null;
+  acuteLoadKm: number;
+  chronicLoadKm: number;
+  acuteChronicRatio: number;
+  freshnessScore: number;
+  riskLevel: "low" | "moderate" | "high" | "critical";
+  originalRiskLevel: "low" | "moderate" | "high" | "critical";
+  riskReduced: boolean;
+  readyToRun: boolean;
+  recommendedNextStep: "rest" | "easy" | "workout" | "long_run" | "recovery";
+  statusMessage: string;
+  recoveryMessage: string;
+}
+
+function RecoveryStatusCard({ recovery, isLoading }: { recovery: RecoveryState | null; isLoading: boolean }) {
+  if (isLoading) {
+    return (
+      <div className="mb-6 bg-white rounded-xl border-2 border-gray-200 p-6 animate-pulse">
+        <div className="h-6 bg-gray-100 rounded w-1/3 mb-4"></div>
+        <div className="h-4 bg-gray-100 rounded w-2/3"></div>
+      </div>
+    );
+  }
+
+  if (!recovery) return null;
+
+  const getRiskStyles = () => {
+    if (recovery.readyToRun) {
+      return {
+        border: "border-emerald-300",
+        bg: "bg-gradient-to-r from-emerald-50 to-green-50",
+        icon: <CheckCircle className="text-emerald-600" size={28} />,
+        badge: "bg-emerald-100 text-emerald-700 border-emerald-300"
+      };
+    }
+    switch (recovery.riskLevel) {
+      case "critical":
+        return {
+          border: "border-red-300",
+          bg: "bg-gradient-to-r from-red-50 to-orange-50",
+          icon: <XCircle className="text-red-600" size={28} />,
+          badge: "bg-red-100 text-red-700 border-red-300"
+        };
+      case "high":
+        return {
+          border: "border-orange-300",
+          bg: "bg-gradient-to-r from-orange-50 to-amber-50",
+          icon: <AlertTriangle className="text-orange-600" size={28} />,
+          badge: "bg-orange-100 text-orange-700 border-orange-300"
+        };
+      case "moderate":
+        return {
+          border: "border-amber-300",
+          bg: "bg-gradient-to-r from-amber-50 to-yellow-50",
+          icon: <Timer className="text-amber-600" size={28} />,
+          badge: "bg-amber-100 text-amber-700 border-amber-300"
+        };
+      default:
+        return {
+          border: "border-emerald-300",
+          bg: "bg-gradient-to-r from-emerald-50 to-green-50",
+          icon: <CheckCircle className="text-emerald-600" size={28} />,
+          badge: "bg-emerald-100 text-emerald-700 border-emerald-300"
+        };
+    }
+  };
+
+  const styles = getRiskStyles();
+  const nextStepLabels: Record<string, string> = {
+    rest: "Take a rest day",
+    easy: "Easy run",
+    workout: "Quality workout",
+    long_run: "Long run",
+    recovery: "Recovery run"
+  };
+
+  return (
+    <div className={`mb-6 rounded-xl border-2 ${styles.border} ${styles.bg} p-5`} data-testid="recovery-status-card">
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0 mt-1">
+          {styles.icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 mb-2 flex-wrap">
+            <h3 className="text-lg font-bold text-charcoal">
+              {recovery.readyToRun ? "Ready to Run" : "Recovery Needed"}
+            </h3>
+            {recovery.riskReduced && (
+              <Badge className="text-xs bg-blue-100 text-blue-700 border-blue-300 flex items-center gap-1">
+                <TrendingDown size={12} />
+                Risk reduced by rest
+              </Badge>
+            )}
+          </div>
+          
+          <p className="text-gray-700 mb-3">{recovery.statusMessage}</p>
+          
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <Clock size={14} className="text-gray-500" />
+              <span className="text-gray-600">{recovery.recoveryMessage}</span>
+            </div>
+            <div className={`px-3 py-1 rounded-full border ${styles.badge} font-medium`}>
+              Next: {nextStepLabels[recovery.recommendedNextStep]}
+            </div>
+            <div className="text-gray-500">
+              Freshness: <span className="font-semibold text-charcoal">{recovery.freshnessScore}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InsightsTab({ user, batchData, isDataLoading, recoveryData, isRecoveryLoading }: { user: User; batchData: any; isDataLoading: boolean; recoveryData: RecoveryState | null; isRecoveryLoading: boolean }) {
   const scrollToSection = (sectionId: string) => {
     document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -76,6 +194,9 @@ function InsightsTab({ user, batchData, isDataLoading }: { user: User; batchData
 
   return (
     <>
+      {/* Recovery Status Card - Time-aware freshness indicator */}
+      <RecoveryStatusCard recovery={recoveryData} isLoading={isRecoveryLoading} />
+
       {/* Anchor Navigation Bar */}
       <div className="flex items-center gap-4 mb-6" data-testid="anchor-nav">
         <button
@@ -494,6 +615,21 @@ export default function CoachInsightsPage() {
     enabled: !!user?.id,
     staleTime: 60000,
   });
+
+  const { data: recoveryData, isLoading: isRecoveryLoading } = useQuery<RecoveryState>({
+    queryKey: ['/api/performance/recovery', user?.id],
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/performance/recovery/${user!.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch recovery state');
+      return res.json();
+    },
+    enabled: !!user?.id,
+    staleTime: 30000,
+    refetchInterval: 60000,
+  });
   
   if (isLoading) {
     return (
@@ -544,7 +680,7 @@ export default function CoachInsightsPage() {
             </TabsList>
             
             <TabsContent value="insights" className="mt-6">
-              <InsightsTab user={user} batchData={batchData} isDataLoading={isDataLoading} />
+              <InsightsTab user={user} batchData={batchData} isDataLoading={isDataLoading} recoveryData={recoveryData || null} isRecoveryLoading={isRecoveryLoading} />
             </TabsContent>
             
             <TabsContent value="agent-coach" className="mt-6">
