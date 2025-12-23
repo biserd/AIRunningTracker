@@ -106,11 +106,6 @@ function DayCell({ day, maxDistance, unitPreference }: { day: HeatmapDay; maxDis
                 </Link>
               );
             })}
-            <Link href="/activities">
-              <div className="text-xs text-strava-orange hover:text-strava-orange/80 font-medium pt-2 cursor-pointer">
-                View all activities →
-              </div>
-            </Link>
           </div>
         </div>
       </HoverCardContent>
@@ -286,17 +281,24 @@ export default function ActivityHeatmap() {
           </div>
           
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <span>Less</span>
-              <div className="flex gap-1">
-                <div className="w-3 h-3 rounded-sm bg-gray-100 dark:bg-gray-800" />
-                <div className="w-3 h-3 rounded-sm bg-green-200 dark:bg-green-900" />
-                <div className="w-3 h-3 rounded-sm bg-green-400 dark:bg-green-700" />
-                <div className="w-3 h-3 rounded-sm bg-green-500 dark:bg-green-600" />
-                <div className="w-3 h-3 rounded-sm bg-green-600 dark:bg-green-500" />
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <span>Less</span>
+                <div className="flex gap-1">
+                  <div className="w-3 h-3 rounded-sm bg-gray-100 dark:bg-gray-800" />
+                  <div className="w-3 h-3 rounded-sm bg-green-200 dark:bg-green-900" />
+                  <div className="w-3 h-3 rounded-sm bg-green-400 dark:bg-green-700" />
+                  <div className="w-3 h-3 rounded-sm bg-green-500 dark:bg-green-600" />
+                  <div className="w-3 h-3 rounded-sm bg-green-600 dark:bg-green-500" />
+                </div>
+                <span>More</span>
+                <span className="ml-2 text-gray-400">({unit})</span>
               </div>
-              <span>More</span>
-              <span className="ml-2 text-gray-400">({unit})</span>
+              <Link href="/activities">
+                <div className="text-xs text-strava-orange hover:text-strava-orange/80 font-medium cursor-pointer">
+                  View all →
+                </div>
+              </Link>
             </div>
             <StravaPoweredBy variant="orange" size="sm" />
           </div>
