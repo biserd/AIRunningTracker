@@ -143,7 +143,7 @@ export default function ActivityHeatmap() {
     );
   }
 
-  if (data.days.length === 0 || data.maxDistance === 0) {
+  if (!data.days || data.days.length === 0 || data.maxDistance === 0) {
     return (
       <Card>
         <CardHeader>
