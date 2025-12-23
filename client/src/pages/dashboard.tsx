@@ -135,6 +135,23 @@ export default function Dashboard() {
     queryKey: [`/api/dashboard/${user.id}`],
   });
 
+  // Recovery status query
+  const { data: recoveryData } = useQuery<{
+    daysSinceLastRun: number;
+    freshnessScore: number;
+    riskLevel: string;
+    riskReduced: boolean;
+    originalRiskLevel: string;
+    readyToRun: boolean;
+    recommendedNextStep: string;
+    statusMessage: string;
+    recoveryMessage: string;
+  }>({
+    queryKey: [`/api/performance/recovery/${user.id}`],
+    enabled: !!user?.id,
+    staleTime: 30000,
+  });
+
   // Chart data query with time range
   const { data: chartData } = useQuery({
     queryKey: ['/api/chart', user.id, chartTimeRange],
@@ -481,7 +498,7 @@ export default function Dashboard() {
           </div>
         )}
         
-        <QuickStats stats={dashboardData?.stats || { totalDistance: "0.0", avgPace: "0:00", trainingLoad: 0, recovery: "Unknown" }} />
+        <QuickStats stats={dashboardData?.stats || { totalDistance: "0.0", avgPace: "0:00", trainingLoad: 0, recovery: "Unknown" }} recoveryData={recoveryData} />
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">

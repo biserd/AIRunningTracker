@@ -1,7 +1,19 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Route, Timer, TrendingUp, Heart, ArrowUp, ArrowDown, Calendar, Clock } from "lucide-react";
+import { Route, Timer, TrendingUp, Heart, ArrowUp, ArrowDown, Calendar, Clock, Shield } from "lucide-react";
+
+interface RecoveryData {
+  daysSinceLastRun: number;
+  freshnessScore: number;
+  riskLevel: string;
+  riskReduced: boolean;
+  originalRiskLevel: string;
+  readyToRun: boolean;
+  recommendedNextStep: string;
+  statusMessage: string;
+  recoveryMessage: string;
+}
 
 interface QuickStatsProps {
   stats: {
@@ -39,9 +51,10 @@ interface QuickStatsProps {
     activitiesChange?: number | null;
     trainingLoadChange?: number | null;
   };
+  recoveryData?: RecoveryData | null;
 }
 
-export default function QuickStats({ stats }: QuickStatsProps) {
+export default function QuickStats({ stats, recoveryData }: QuickStatsProps) {
   const [comparisonPeriod, setComparisonPeriod] = useState<'weekly' | 'monthly'>('monthly');
 
   // Helper functions to get period-specific values
@@ -171,21 +184,67 @@ export default function QuickStats({ stats }: QuickStatsProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Recovery Status</p>
-                <p className="text-3xl font-bold text-charcoal">{stats.recovery}</p>
-                <p className="text-sm text-gray-500">{getCurrentActivities()} runs {getPeriodLabel()}</p>
+                {recoveryData ? (
+                  <>
+                    <p className="text-3xl font-bold text-charcoal">{recoveryData.freshnessScore}%</p>
+                    <p className="text-sm text-gray-500">
+                      {recoveryData.daysSinceLastRun === 0 
+                        ? "Ran today" 
+                        : recoveryData.daysSinceLastRun === 1 
+                          ? "1 day rest" 
+                          : `${recoveryData.daysSinceLastRun} days rest`}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold text-charcoal">{stats.recovery}</p>
+                    <p className="text-sm text-gray-500">{getCurrentActivities()} runs {getPeriodLabel()}</p>
+                  </>
+                )}
               </div>
-              <div className="w-12 h-12 bg-achievement-green/10 rounded-full flex items-center justify-center">
-                <Heart className="text-achievement-green" size={20} />
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                recoveryData?.readyToRun 
+                  ? 'bg-achievement-green/10' 
+                  : recoveryData?.riskLevel === 'critical' || recoveryData?.riskLevel === 'high'
+                    ? 'bg-red-100'
+                    : 'bg-yellow-100'
+              }`}>
+                <Heart className={`${
+                  recoveryData?.readyToRun 
+                    ? 'text-achievement-green' 
+                    : recoveryData?.riskLevel === 'critical' || recoveryData?.riskLevel === 'high'
+                      ? 'text-red-500'
+                      : 'text-yellow-600'
+                }`} size={20} />
               </div>
             </div>
-            <div className="mt-4 flex items-center text-sm">
-              <span className={`font-medium ${
-                stats.recovery === 'Good' ? 'text-achievement-green' : 
-                stats.recovery === 'Moderate' ? 'text-yellow-600' : 'text-red-500'
-              }`}>
-                {stats.recovery === 'Good' ? 'Ready to train' : 
-                 stats.recovery === 'Moderate' ? 'Consider rest' : 'Take a break'}
-              </span>
+            <div className="mt-4 space-y-1">
+              {recoveryData ? (
+                <>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className={`font-medium ${
+                      recoveryData.readyToRun ? 'text-achievement-green' : 
+                      recoveryData.riskLevel === 'critical' || recoveryData.riskLevel === 'high' ? 'text-red-500' : 'text-yellow-600'
+                    }`}>
+                      {recoveryData.statusMessage}
+                    </span>
+                  </div>
+                  {recoveryData.riskReduced && (
+                    <div className="flex items-center gap-1 text-xs text-achievement-green">
+                      <Shield size={12} />
+                      <span>Risk reduced by rest</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <span className={`font-medium text-sm ${
+                  stats.recovery === 'Good' ? 'text-achievement-green' : 
+                  stats.recovery === 'Moderate' ? 'text-yellow-600' : 'text-red-500'
+                }`}>
+                  {stats.recovery === 'Good' ? 'Ready to train' : 
+                   stats.recovery === 'Moderate' ? 'Consider rest' : 'Take a break'}
+                </span>
+              )}
             </div>
           </CardContent>
         </Card>
