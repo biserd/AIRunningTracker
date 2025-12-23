@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { storage } from "../storage";
 import type { Activity, User, CoachRecap } from "@shared/schema";
+import { getRecoveryState, type RecoveryState } from "./recoveryService";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -52,8 +53,9 @@ export async function generateCoachRecap(
 
   const recentActivities = await storage.getActivitiesByUserId(userId, 10);
   const trainingPlan = await storage.getActiveTrainingPlan(userId);
+  const recoveryState = await getRecoveryState(userId);
   
-  const recapContent = await generateRecapWithAI(user, activity, recentActivities, trainingPlan);
+  const recapContent = await generateRecapWithAI(user, activity, recentActivities, trainingPlan, recoveryState);
   
   if (!recapContent) {
     console.log(`[Coach] Failed to generate recap content for activity ${activityId}`);
@@ -121,7 +123,8 @@ async function generateRecapWithAI(
   user: User,
   activity: Activity,
   recentActivities: Activity[],
-  trainingPlan: any
+  trainingPlan: any,
+  recoveryState: RecoveryState | null
 ): Promise<RecapContent | null> {
   try {
     const unitLabel = user.unitPreference === "miles" ? "mi" : "km";
@@ -157,6 +160,17 @@ async function generateRecapWithAI(
     if (!activity.averageCadence) confidenceFlags.push("missing_cadence_data");
     if (!activity.streamsData) confidenceFlags.push("no_detailed_streams");
 
+    const recoveryContext = recoveryState ? `
+CURRENT RECOVERY STATUS (as of today):
+- Days since last run: ${recoveryState.daysSinceLastRun}
+- Acute/Chronic Load Ratio: ${recoveryState.acuteChronicRatio.toFixed(2)} (${recoveryState.acuteChronicRatio >= 1.3 ? 'elevated' : recoveryState.acuteChronicRatio >= 1.1 ? 'moderate' : 'balanced'})
+- Freshness Score: ${recoveryState.freshnessScore}%
+- Current Risk Level: ${recoveryState.riskLevel}${recoveryState.riskReduced ? ' (reduced from ' + recoveryState.originalRiskLevel + ' due to rest)' : ''}
+- Ready to run: ${recoveryState.readyToRun ? 'Yes' : 'No'}
+- System recommendation: ${recoveryState.recommendedNextStep}
+
+IMPORTANT: Use this recovery data to inform your "nextStep" recommendation. If the athlete has taken rest days and their risk has reduced, acknowledge their recovery. If load is high, prioritize rest or easy running.` : '';
+
     const prompt = `You are an expert running coach providing a post-activity recap for an athlete.
 
 ${toneInstruction}
@@ -180,6 +194,7 @@ RECENT TRAINING (last 5 activities):
 ${recentStats.map(r => `- ${r.name}: ${r.distance}km on ${r.date}`).join("\n")}
 
 ${trainingPlan ? `CURRENT TRAINING PLAN: Week ${trainingPlan.currentWeek || 1} of ${trainingPlan.totalWeeks || 12}` : ""}
+${recoveryContext}
 
 Generate a coaching recap in JSON format:
 {

@@ -134,17 +134,17 @@ function adjustRiskForRest(
   let riskReduced = false;
   
   if (daysSinceLastRun >= 1) {
-    if (originalRisk === "critical" && daysSinceLastRun >= 2) {
+    if (originalRisk === "critical" && daysSinceLastRun >= 3) {
+      adjustedRisk = "moderate";
+      riskReduced = true;
+    } else if (originalRisk === "critical" && daysSinceLastRun >= 2) {
       adjustedRisk = "high";
-      riskReduced = true;
-    } else if (originalRisk === "critical" && daysSinceLastRun >= 3) {
-      adjustedRisk = "moderate";
-      riskReduced = true;
-    } else if (originalRisk === "high" && daysSinceLastRun >= 1) {
-      adjustedRisk = "moderate";
       riskReduced = true;
     } else if (originalRisk === "high" && daysSinceLastRun >= 2) {
       adjustedRisk = "low";
+      riskReduced = true;
+    } else if (originalRisk === "high" && daysSinceLastRun >= 1) {
+      adjustedRisk = "moderate";
       riskReduced = true;
     } else if (originalRisk === "moderate" && daysSinceLastRun >= 1) {
       adjustedRisk = "low";
