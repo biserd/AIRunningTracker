@@ -17,6 +17,7 @@ import { autoLinkActivitiesForPlan } from "./services/activityLinker";
 import { calculateYearlyStats, reverseGeocode } from "./services/yearEndRecap";
 import { effortScoreService } from "./services/effortScore";
 import { coachVerdictService } from "./services/coachVerdict";
+import { getRecoveryState } from "./services/recoveryService";
 import { dataQualityService } from "./services/dataQuality";
 import { efficiencyService } from "./services/efficiency";
 import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, emailWaitlist, type Activity, type RunningShoe } from "@shared/schema";
@@ -4005,6 +4006,39 @@ ${allPages.map(page => `  <url>
     } catch (error: any) {
       console.error('Error calculating baseline:', error);
       res.status(500).json({ message: error.message || "Failed to calculate baseline" });
+    }
+  });
+
+  // Get user recovery state (time-aware freshness and injury risk)
+  app.get("/api/performance/recovery/:userId", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      if (req.user.id !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const cacheKey = `recovery:${userId}`;
+      const cached = getCachedResponse(cacheKey, 30);
+      if (cached) {
+        return res.json(cached);
+      }
+
+      const recoveryState = await getRecoveryState(userId);
+      
+      if (!recoveryState) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      setCachedResponse(cacheKey, recoveryState);
+      res.json(recoveryState);
+    } catch (error: any) {
+      console.error('Error getting recovery state:', error);
+      res.status(500).json({ message: error.message || "Failed to get recovery state" });
     }
   });
 
