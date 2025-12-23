@@ -110,6 +110,8 @@ export default function Dashboard() {
     mutationFn: () => apiRequest(`/api/strava/sync/${user.id}`, "POST"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user.id}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/activities/heatmap?range=3m`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/activities/heatmap?range=6m`] });
       toast({
         title: "Activities synced",
         description: "Activities synced and AI insights generated successfully",
@@ -186,6 +188,8 @@ export default function Dashboard() {
       // Clear URL parameters and refresh data
       window.history.replaceState({}, document.title, window.location.pathname);
       queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user.id}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/activities/heatmap?range=3m`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/activities/heatmap?range=6m`] });
     } else if (urlParams.get('error')) {
       toast({
         title: "Connection Failed",
@@ -242,8 +246,10 @@ export default function Dashboard() {
                 activityName: 'Already up to date!',
                 status: 'complete'
               });
-              // Refresh dashboard to update last sync time
+              // Refresh dashboard and heatmap to update last sync time
               queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user.id}`] });
+              queryClient.invalidateQueries({ queryKey: [`/api/activities/heatmap?range=3m`] });
+              queryClient.invalidateQueries({ queryKey: [`/api/activities/heatmap?range=6m`] });
               setTimeout(() => {
                 setSyncProgress(null);
               }, 2000);
@@ -260,8 +266,10 @@ export default function Dashboard() {
             setSyncProgress(prev => prev ? { ...prev, status: 'insights' } : null);
           } else if (data.type === 'insights_complete') {
             eventSource.close();
-            // Refresh data and close progress
+            // Refresh data, heatmap, and close progress
             queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user.id}`] });
+            queryClient.invalidateQueries({ queryKey: [`/api/activities/heatmap?range=3m`] });
+            queryClient.invalidateQueries({ queryKey: [`/api/activities/heatmap?range=6m`] });
             setTimeout(() => {
               setSyncProgress(null);
               window.location.reload();
