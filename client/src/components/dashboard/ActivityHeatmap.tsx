@@ -6,6 +6,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import { Activity, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
 import { StravaPoweredBy } from "@/components/StravaConnect";
+import { getQueryFn } from "@/lib/queryClient";
 
 interface HeatmapDay {
   date: string;
@@ -101,8 +102,8 @@ export default function ActivityHeatmap() {
   const [range, setRange] = useState<"3m" | "6m">("3m");
 
   const { data, isLoading, error } = useQuery<HeatmapData>({
-    queryKey: ['/api/activities/heatmap', range],
-    queryFn: () => fetch(`/api/activities/heatmap?range=${range}`, { credentials: 'include' }).then(res => res.json()),
+    queryKey: [`/api/activities/heatmap?range=${range}`],
+    queryFn: getQueryFn({ on401: "throw" }),
     staleTime: 60000,
   });
 
