@@ -106,6 +106,11 @@ function DayCell({ day, maxDistance, unitPreference }: { day: HeatmapDay; maxDis
                 </Link>
               );
             })}
+            <Link href="/activities">
+              <div className="text-xs text-strava-orange hover:text-strava-orange/80 font-medium pt-2 cursor-pointer">
+                View all activities →
+              </div>
+            </Link>
           </div>
         </div>
       </HoverCardContent>
