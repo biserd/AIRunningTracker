@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import AppHeader from "@/components/AppHeader";
 import QuickStats from "@/components/dashboard/QuickStats";
 import PerformanceChart from "@/components/dashboard/PerformanceChart";
-import RecentActivities from "@/components/dashboard/RecentActivities";
+import ActivityHeatmap from "@/components/dashboard/ActivityHeatmap";
 import AIInsights from "@/components/dashboard/AIInsights";
 import TrainingRecommendations from "@/components/dashboard/TrainingRecommendations";
 import FitnessTrends from "@/components/dashboard/FitnessTrends";
@@ -511,7 +511,7 @@ export default function Dashboard() {
             <FitnessChart userId={user?.id!} />
             <RunnerScoreRadar />
             <HistoricalRunnerScore />
-            <RecentActivities activities={dashboardData?.activities || []} unitPreference={dashboardData?.user?.unitPreference} />
+            <ActivityHeatmap />
           </div>
           
           <div className="space-y-6">

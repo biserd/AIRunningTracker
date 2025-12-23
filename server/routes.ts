@@ -3140,6 +3140,85 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Get activities heatmap data (GitHub-style contribution graph)
+  app.get("/api/activities/heatmap", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      const range = (req.query.range as string) || "3m"; // "3m" or "6m"
+      
+      const user = await storage.getUser(userId);
+      const unitPreference = user?.unitPreference || 'km';
+      
+      // Calculate date range
+      const endDate = new Date();
+      const startDate = new Date();
+      if (range === "6m") {
+        startDate.setMonth(startDate.getMonth() - 6);
+      } else {
+        startDate.setMonth(startDate.getMonth() - 3);
+      }
+      
+      // Fetch activities within the date range
+      const activities = await storage.getActivitiesByUserId(userId, 1000, startDate);
+      
+      // Aggregate activities by day
+      const dailyData: Map<string, { totalDistanceKm: number; activities: Array<{ id: number; name: string; distanceKm: number }> }> = new Map();
+      
+      for (const activity of activities) {
+        if (activity.type !== 'Run') continue;
+        
+        const activityDate = new Date(activity.startDate);
+        if (activityDate < startDate || activityDate > endDate) continue;
+        
+        const dateKey = activityDate.toISOString().split('T')[0]; // YYYY-MM-DD
+        const distanceKm = activity.distance / 1000;
+        
+        if (!dailyData.has(dateKey)) {
+          dailyData.set(dateKey, { totalDistanceKm: 0, activities: [] });
+        }
+        
+        const dayData = dailyData.get(dateKey)!;
+        dayData.totalDistanceKm += distanceKm;
+        dayData.activities.push({
+          id: activity.id,
+          name: activity.name,
+          distanceKm: distanceKm
+        });
+      }
+      
+      // Generate all days in range with empty days filled
+      const result: Array<{ date: string; totalDistanceKm: number; activities: Array<{ id: number; name: string; distanceKm: number }> }> = [];
+      const current = new Date(startDate);
+      
+      while (current <= endDate) {
+        const dateKey = current.toISOString().split('T')[0];
+        const dayData = dailyData.get(dateKey);
+        
+        result.push({
+          date: dateKey,
+          totalDistanceKm: dayData?.totalDistanceKm || 0,
+          activities: dayData?.activities || []
+        });
+        
+        current.setDate(current.getDate() + 1);
+      }
+      
+      // Calculate max distance for color scaling
+      const maxDistance = Math.max(...result.map(d => d.totalDistanceKm), 0);
+      
+      res.json({
+        days: result,
+        maxDistance,
+        rangeStart: startDate.toISOString().split('T')[0],
+        rangeEnd: endDate.toISOString().split('T')[0],
+        unitPreference
+      });
+    } catch (error: any) {
+      console.error('Get activities heatmap error:', error);
+      res.status(500).json({ message: error.message || "Failed to fetch heatmap data" });
+    }
+  });
+
   // Get all activities for a user with pagination and filtering
   app.get("/api/activities", authenticateJWT, async (req: any, res) => {
     try {
