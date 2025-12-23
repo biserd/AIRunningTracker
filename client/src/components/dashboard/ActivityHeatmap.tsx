@@ -1,7 +1,5 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Activity, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
@@ -99,10 +97,8 @@ function DayCell({ day, maxDistance, unitPreference }: { day: HeatmapDay; maxDis
 }
 
 export default function ActivityHeatmap() {
-  const [range, setRange] = useState<"3m" | "6m">("3m");
-
   const { data, isLoading, error } = useQuery<HeatmapData>({
-    queryKey: [`/api/activities/heatmap?range=${range}`],
+    queryKey: [`/api/activities/heatmap?range=6m`],
     queryFn: getQueryFn({ on401: "throw" }),
     staleTime: 60000,
   });
@@ -218,29 +214,7 @@ export default function ActivityHeatmap() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-semibold text-charcoal">Activity Calendar</CardTitle>
-          <div className="flex items-center gap-2">
-            <Button
-              variant={range === "3m" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setRange("3m")}
-              className={range === "3m" ? "bg-strava-orange hover:bg-strava-orange/90" : ""}
-              data-testid="button-range-3m"
-            >
-              3 Months
-            </Button>
-            <Button
-              variant={range === "6m" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setRange("6m")}
-              className={range === "6m" ? "bg-strava-orange hover:bg-strava-orange/90" : ""}
-              data-testid="button-range-6m"
-            >
-              6 Months
-            </Button>
-          </div>
-        </div>
+        <CardTitle className="text-xl font-semibold text-charcoal">Activity Calendar</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
