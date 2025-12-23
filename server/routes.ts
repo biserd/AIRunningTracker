@@ -3162,7 +3162,7 @@ ${allPages.map(page => `  <url>
       const activities = await storage.getActivitiesByUserId(userId, 1000, startDate);
       
       // Aggregate activities by day
-      const dailyData: Map<string, { totalDistanceKm: number; activities: Array<{ id: number; name: string; distanceKm: number }> }> = new Map();
+      const dailyData: Map<string, { totalDistanceKm: number; activities: Array<{ id: number; name: string; distanceKm: number; grade?: string }> }> = new Map();
       
       for (const activity of activities) {
         if (activity.type !== 'Run') continue;
@@ -3182,12 +3182,13 @@ ${allPages.map(page => `  <url>
         dayData.activities.push({
           id: activity.id,
           name: activity.name,
-          distanceKm: distanceKm
+          distanceKm: distanceKm,
+          grade: activity.cachedGrade || undefined
         });
       }
       
       // Generate all days in range with empty days filled
-      const result: Array<{ date: string; totalDistanceKm: number; activities: Array<{ id: number; name: string; distanceKm: number }> }> = [];
+      const result: Array<{ date: string; totalDistanceKm: number; activities: Array<{ id: number; name: string; distanceKm: number; grade?: string }> }> = [];
       const current = new Date(startDate);
       
       while (current <= endDate) {

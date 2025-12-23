@@ -9,7 +9,7 @@ import { getQueryFn } from "@/lib/queryClient";
 interface HeatmapDay {
   date: string;
   totalDistanceKm: number;
-  activities: Array<{ id: number; name: string; distanceKm: number }>;
+  activities: Array<{ id: number; name: string; distanceKm: number; grade?: string }>;
 }
 
 interface HeatmapData {
@@ -77,6 +77,18 @@ function DayCell({ day, maxDistance, unitPreference }: { day: HeatmapDay; maxDis
               const activityDistance = unitPreference === 'miles'
                 ? (activity.distanceKm * 0.621371).toFixed(1)
                 : activity.distanceKm.toFixed(1);
+              
+              const getGradeColor = (grade?: string) => {
+                switch (grade) {
+                  case 'A': return 'bg-green-500 text-white';
+                  case 'B': return 'bg-blue-500 text-white';
+                  case 'C': return 'bg-yellow-500 text-white';
+                  case 'D': return 'bg-orange-500 text-white';
+                  case 'F': return 'bg-red-500 text-white';
+                  default: return 'bg-gray-300 text-gray-700';
+                }
+              };
+              
               return (
                 <Link key={activity.id} href={`/activity/${activity.id}`}>
                   <div className="flex items-center justify-between p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer group">
@@ -84,6 +96,11 @@ function DayCell({ day, maxDistance, unitPreference }: { day: HeatmapDay; maxDis
                       <p className="text-sm font-medium truncate">{activity.name}</p>
                       <p className="text-xs text-gray-500">{activityDistance} {unit}</p>
                     </div>
+                    {activity.grade && (
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${getGradeColor(activity.grade)} flex-shrink-0 mx-2`}>
+                        {activity.grade}
+                      </div>
+                    )}
                     <ExternalLink size={14} className="text-gray-400 group-hover:text-strava-orange flex-shrink-0 ml-2" />
                   </div>
                 </Link>
