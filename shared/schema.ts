@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, real, timestamp, json, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, real, timestamp, json, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -60,6 +60,9 @@ export const users = pgTable("users", {
   coachQuietHoursStart: integer("coach_quiet_hours_start"), // 0-23 hour
   coachQuietHoursEnd: integer("coach_quiet_hours_end"), // 0-23 hour
   lastCoachSyncAt: timestamp("last_coach_sync_at"),
+  // Recovery state caching (24hr TTL, invalidated on sync)
+  cachedRecoveryState: jsonb("cached_recovery_state"),
+  recoveryCalculatedAt: timestamp("recovery_calculated_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

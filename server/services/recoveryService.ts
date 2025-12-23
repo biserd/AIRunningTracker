@@ -1,5 +1,10 @@
 import { storage } from "../storage";
+import { db } from "../db";
+import { users } from "@shared/schema";
+import { eq } from "drizzle-orm";
 import type { Activity, User } from "@shared/schema";
+
+const CACHE_TTL_HOURS = 24;
 
 export interface RecoveryState {
   daysSinceLastRun: number;
@@ -24,12 +29,57 @@ export interface RecoveryState {
 const DAYS_IN_WEEK = 7;
 const DAYS_IN_MONTH = 28;
 
-export async function getRecoveryState(userId: number): Promise<RecoveryState | null> {
+function isCacheValid(recoveryCalculatedAt: Date | null): boolean {
+  if (!recoveryCalculatedAt) return false;
+  const now = new Date();
+  const hoursSinceCalc = (now.getTime() - recoveryCalculatedAt.getTime()) / (1000 * 60 * 60);
+  return hoursSinceCalc < CACHE_TTL_HOURS;
+}
+
+export async function getRecoveryState(userId: number, forceRefresh: boolean = false): Promise<RecoveryState | null> {
   const user = await storage.getUser(userId);
   if (!user) {
     return null;
   }
 
+  // Check cache validity (24hr TTL)
+  if (!forceRefresh && user.cachedRecoveryState && isCacheValid(user.recoveryCalculatedAt)) {
+    console.log(`[Recovery] Returning cached state for user ${userId}`);
+    const cached = user.cachedRecoveryState as RecoveryState;
+    // Rehydrate lastRunDate from JSON string to Date object
+    if (cached.lastRunDate) {
+      cached.lastRunDate = new Date(cached.lastRunDate);
+    }
+    return cached;
+  }
+
+  console.log(`[Recovery] Calculating fresh state for user ${userId}`);
+  const recoveryState = await calculateRecoveryState(user, userId);
+  
+  // Cache the result
+  if (recoveryState) {
+    await db.update(users)
+      .set({ 
+        cachedRecoveryState: recoveryState as any,
+        recoveryCalculatedAt: new Date()
+      })
+      .where(eq(users.id, userId));
+  }
+
+  return recoveryState;
+}
+
+export async function invalidateRecoveryCache(userId: number): Promise<void> {
+  console.log(`[Recovery] Invalidating cache for user ${userId}`);
+  await db.update(users)
+    .set({ 
+      cachedRecoveryState: null,
+      recoveryCalculatedAt: null
+    })
+    .where(eq(users.id, userId));
+}
+
+async function calculateRecoveryState(user: User, userId: number): Promise<RecoveryState | null> {
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   

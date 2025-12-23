@@ -2,6 +2,7 @@ import { storage } from "../storage";
 import { runnerScoreService } from "./runnerScore";
 import { jobQueue } from "./queue";
 import { createHydrateActivityJob } from "./queue/jobTypes";
+import { invalidateRecoveryCache } from "./recoveryService";
 
 interface StravaActivity {
   id: number;
@@ -569,6 +570,11 @@ export class StravaService {
       await storage.updateUser(userId, {
         lastSyncAt: new Date(),
       });
+      
+      // Invalidate recovery cache since activities changed
+      if (syncedCount > 0) {
+        await invalidateRecoveryCache(userId);
+      }
       
       return { syncedCount, totalActivities: stravaActivities.length };
     } catch (error) {
