@@ -663,7 +663,7 @@ export default function ActivityPage() {
                 <div className="w-px h-5 bg-gray-200" />
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <Activity className="h-4 w-4 text-indigo-600" />
-                  <span className="text-base font-bold text-gray-900">{Math.round(activity.averageCadence * 2)}</span>
+                  <span className="text-base font-bold text-gray-900">{Math.round(activity.averageCadence)}</span>
                   <span className="text-xs text-gray-500">spm</span>
                 </div>
               </>
@@ -1170,7 +1170,7 @@ function CadenceChart({ activity, streams }: { activity: any, streams?: any }) {
       
       cadenceData.push({
         time: `${timeMinutes}min`,
-        cadence: Math.round(cadenceStream[i] * 2), // Strava stores cadence as half (steps per leg)
+        cadence: Math.round(cadenceStream[i]), // Already doubled at API level
         target: 180
       });
     }

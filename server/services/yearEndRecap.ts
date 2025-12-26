@@ -225,7 +225,7 @@ export function calculateYearlyStats(activities: Activity[], year: number): Year
     mostActiveMonthRuns: mostActiveMonth[1],
     streakDays,
     mostRunLocation,
-    averageCadence: avgCadence ? Math.round(avgCadence * 2) : null, // Convert to steps per minute (Strava gives half cadence)
+    averageCadence: avgCadence ? Math.round(avgCadence) : null, // Already doubled during Strava sync
     zone2Hours: zone2Hours ? Math.round(zone2Hours * 10) / 10 : null,
     estimatedVO2Max,
     trainingDistribution,

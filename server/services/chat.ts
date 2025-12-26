@@ -212,7 +212,7 @@ Current Activity Being Viewed:
 - Elevation Gain: ${elevationDisplay}
 ${activity.averageHeartrate ? `- Average Heart Rate: ${activity.averageHeartrate} bpm` : ''}
 ${activity.maxHeartrate ? `- Max Heart Rate: ${activity.maxHeartrate} bpm` : ''}
-${activity.averageCadence ? `- Average Cadence: ${activity.averageCadence * 2} spm` : ''}
+${activity.averageCadence ? `- Average Cadence: ${Math.round(activity.averageCadence)} spm` : ''}
 ${activity.averageWatts ? `- Average Power: ${Math.round(activity.averageWatts)} W` : ''}
 ${activity.sufferScore ? `- Effort Score: ${activity.sufferScore}` : ''}
 

@@ -188,7 +188,7 @@ TODAY'S ACTIVITY:
 - Pace: ${paceFormatted} min/${unitLabel}
 - Elevation gain: ${activity.totalElevationGain}m
 ${activity.averageHeartrate ? `- Avg HR: ${activity.averageHeartrate} bpm` : ""}
-${activity.averageCadence ? `- Cadence: ${Math.round(activity.averageCadence * 2)} spm` : ""}
+${activity.averageCadence ? `- Cadence: ${Math.round(activity.averageCadence)} spm` : ""}
 
 RECENT TRAINING (last 5 activities):
 ${recentStats.map(r => `- ${r.name}: ${r.distance}km on ${r.date}`).join("\n")}
