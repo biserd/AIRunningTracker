@@ -198,6 +198,7 @@ Sitemap: ${baseUrl}/sitemap.xml`;
         
         // Running Shoe Hub
         { url: "/tools/shoes", changefreq: "weekly", priority: "0.9" },
+        { url: "/tools/shoes/compare", changefreq: "weekly", priority: "0.8" },
         { url: "/tools/shoe-finder", changefreq: "weekly", priority: "0.8" },
         { url: "/tools/rotation-planner", changefreq: "weekly", priority: "0.8" },
         
@@ -222,7 +223,15 @@ Sitemap: ${baseUrl}/sitemap.xml`;
         priority: "0.7"
       }));
 
-      const allPages = [...staticPages, ...shoePages];
+      // Fetch all shoe comparisons for comparison pages
+      const comparisons = await storage.getShoeComparisons({});
+      const comparisonPages = comparisons.map(comparison => ({
+        url: `/tools/shoes/compare/${comparison.slug}`,
+        changefreq: "monthly",
+        priority: "0.7"
+      }));
+
+      const allPages = [...staticPages, ...shoePages, ...comparisonPages];
 
       const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -5009,6 +5018,22 @@ ${allPages.map(page => `  <url>
     } catch (error: any) {
       console.error('Seed shoes error:', error);
       res.status(500).json({ message: error.message || "Failed to seed shoes" });
+    }
+  });
+
+  // Generate shoe comparisons (admin only)
+  app.post("/api/shoes/comparisons/generate", authenticateAdmin, async (req: any, res) => {
+    try {
+      const { generateAllComparisons } = await import("./services/shoeComparisonGenerator");
+      const result = await generateAllComparisons();
+      
+      res.json({
+        message: "Successfully generated shoe comparisons",
+        ...result
+      });
+    } catch (error: any) {
+      console.error('Generate comparisons error:', error);
+      res.status(500).json({ message: error.message || "Failed to generate comparisons" });
     }
   });
 
