@@ -1,4 +1,4 @@
-import { users, activities, aiInsights, trainingPlans, trainingPlansLegacy, athleteProfiles, planWeeks, planDays, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, apiKeys, refreshTokens, workoutCache, coachRecaps, agentRuns, notificationOutbox, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ApiKey, type InsertApiKey, type RefreshToken, type InsertRefreshToken, type AthleteProfile, type InsertAthleteProfile, type PlanWeek, type InsertPlanWeek, type PlanDay, type InsertPlanDay, type WorkoutCache, type InsertWorkoutCache, type CoachRecap, type InsertCoachRecap, type AgentRun, type InsertAgentRun, type NotificationOutbox, type InsertNotificationOutbox } from "@shared/schema";
+import { users, activities, aiInsights, trainingPlans, trainingPlansLegacy, athleteProfiles, planWeeks, planDays, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, shoeComparisons, apiKeys, refreshTokens, workoutCache, coachRecaps, agentRuns, notificationOutbox, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ShoeComparison, type InsertShoeComparison, type ApiKey, type InsertApiKey, type RefreshToken, type InsertRefreshToken, type AthleteProfile, type InsertAthleteProfile, type PlanWeek, type InsertPlanWeek, type PlanDay, type InsertPlanDay, type WorkoutCache, type InsertWorkoutCache, type CoachRecap, type InsertCoachRecap, type AgentRun, type InsertAgentRun, type NotificationOutbox, type InsertNotificationOutbox } from "@shared/schema";
 import crypto from "crypto";
 import { db } from "./db";
 import { eq, desc, and, sql, inArray, gte, gt, lt } from "drizzle-orm";
@@ -244,6 +244,14 @@ export interface IStorage {
   getShoesBySeries(brand: string, seriesName: string): Promise<RunningShoe[]>;
   createShoe(shoe: InsertRunningShoe): Promise<RunningShoe>;
   clearAllShoes(): Promise<void>;
+  
+  // Shoe Comparison methods
+  getShoeComparisons(filters?: { type?: string; limit?: number }): Promise<ShoeComparison[]>;
+  getShoeComparisonBySlug(slug: string): Promise<ShoeComparison | undefined>;
+  getShoeComparisonsByShoeId(shoeId: number): Promise<ShoeComparison[]>;
+  createShoeComparison(comparison: InsertShoeComparison): Promise<ShoeComparison>;
+  incrementComparisonViewCount(comparisonId: number): Promise<void>;
+  clearAllShoeComparisons(): Promise<void>;
   
   // API Key methods
   createApiKey(userId: number, name: string, scopes: string[]): Promise<{ apiKey: ApiKey; rawKey: string }>;
@@ -1907,6 +1915,54 @@ export class DatabaseStorage implements IStorage {
 
   async clearAllShoes(): Promise<void> {
     await db.delete(runningShoes);
+  }
+
+  // Shoe Comparison methods
+  async getShoeComparisons(filters?: { type?: string; limit?: number }): Promise<ShoeComparison[]> {
+    let query = db.select().from(shoeComparisons);
+    
+    const conditions = [];
+    if (filters?.type) {
+      conditions.push(eq(shoeComparisons.comparisonType, filters.type as any));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    query = query.orderBy(desc(shoeComparisons.viewCount)) as any;
+    
+    if (filters?.limit) {
+      query = query.limit(filters.limit) as any;
+    }
+    
+    return query;
+  }
+
+  async getShoeComparisonBySlug(slug: string): Promise<ShoeComparison | undefined> {
+    const [comparison] = await db.select().from(shoeComparisons).where(eq(shoeComparisons.slug, slug));
+    return comparison || undefined;
+  }
+
+  async getShoeComparisonsByShoeId(shoeId: number): Promise<ShoeComparison[]> {
+    return db.select().from(shoeComparisons)
+      .where(sql`${shoeComparisons.shoe1Id} = ${shoeId} OR ${shoeComparisons.shoe2Id} = ${shoeId}`)
+      .orderBy(desc(shoeComparisons.viewCount));
+  }
+
+  async createShoeComparison(comparison: InsertShoeComparison): Promise<ShoeComparison> {
+    const [newComparison] = await db.insert(shoeComparisons).values(comparison).returning();
+    return newComparison;
+  }
+
+  async incrementComparisonViewCount(comparisonId: number): Promise<void> {
+    await db.update(shoeComparisons)
+      .set({ viewCount: sql`${shoeComparisons.viewCount} + 1` })
+      .where(eq(shoeComparisons.id, comparisonId));
+  }
+
+  async clearAllShoeComparisons(): Promise<void> {
+    await db.delete(shoeComparisons);
   }
 
   // API Key methods

@@ -4882,6 +4882,81 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Shoe Comparison endpoints (pre-generated comparisons for SEO)
+  app.get("/api/shoes/comparisons", async (req, res) => {
+    try {
+      const { type, limit } = req.query;
+      const comparisons = await storage.getShoeComparisons({
+        type: type as string | undefined,
+        limit: limit ? parseInt(limit as string) : undefined
+      });
+      
+      // Fetch shoe details for each comparison
+      const comparisonsWithShoes = await Promise.all(
+        comparisons.map(async (comparison) => {
+          const [shoe1, shoe2] = await Promise.all([
+            storage.getShoeById(comparison.shoe1Id),
+            storage.getShoeById(comparison.shoe2Id)
+          ]);
+          return { ...comparison, shoe1, shoe2 };
+        })
+      );
+      
+      res.json(comparisonsWithShoes);
+    } catch (error: any) {
+      console.error('Get shoe comparisons error:', error);
+      res.status(500).json({ message: error.message || "Failed to get comparisons" });
+    }
+  });
+
+  app.get("/api/shoes/comparisons/by-slug/:slug", async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const comparison = await storage.getShoeComparisonBySlug(slug);
+      
+      if (!comparison) {
+        return res.status(404).json({ message: "Comparison not found" });
+      }
+      
+      // Increment view count
+      await storage.incrementComparisonViewCount(comparison.id);
+      
+      // Fetch full shoe details
+      const [shoe1, shoe2] = await Promise.all([
+        storage.getShoeById(comparison.shoe1Id),
+        storage.getShoeById(comparison.shoe2Id)
+      ]);
+      
+      res.json({ ...comparison, shoe1, shoe2 });
+    } catch (error: any) {
+      console.error('Get comparison by slug error:', error);
+      res.status(500).json({ message: error.message || "Failed to get comparison" });
+    }
+  });
+
+  app.get("/api/shoes/comparisons/for-shoe/:shoeId", async (req, res) => {
+    try {
+      const shoeId = parseInt(req.params.shoeId);
+      const comparisons = await storage.getShoeComparisonsByShoeId(shoeId);
+      
+      // Fetch shoe details for each comparison
+      const comparisonsWithShoes = await Promise.all(
+        comparisons.map(async (comparison) => {
+          const [shoe1, shoe2] = await Promise.all([
+            storage.getShoeById(comparison.shoe1Id),
+            storage.getShoeById(comparison.shoe2Id)
+          ]);
+          return { ...comparison, shoe1, shoe2 };
+        })
+      );
+      
+      res.json(comparisonsWithShoes);
+    } catch (error: any) {
+      console.error('Get comparisons for shoe error:', error);
+      res.status(500).json({ message: error.message || "Failed to get comparisons" });
+    }
+  });
+
   // Get a single shoe by ID (must be after specific routes like /recommend and /rotation)
   app.get("/api/shoes/:id", async (req, res) => {
     try {
