@@ -574,6 +574,30 @@ export const runningShoes = pgTable("running_shoes", {
   seriesIdx: index("running_shoes_series_idx").on(table.seriesName),
 }));
 
+export const shoeComparisons = pgTable("shoe_comparisons", {
+  id: serial("id").primaryKey(),
+  slug: text("slug").unique().notNull(), // URL-friendly: "nike-alphafly-3-vs-saucony-endorphin-pro-4"
+  shoe1Id: integer("shoe1_id").notNull().references(() => runningShoes.id),
+  shoe2Id: integer("shoe2_id").notNull().references(() => runningShoes.id),
+  comparisonType: text("comparison_type", {
+    enum: ["evolution", "category_rival", "popular"]
+  }).notNull(),
+  title: text("title").notNull(), // "Nike Alphafly 3 vs Saucony Endorphin Pro 4"
+  metaDescription: text("meta_description"), // SEO meta description
+  verdict: text("verdict"), // AI-generated verdict text
+  verdictWinner: text("verdict_winner"), // "shoe1", "shoe2", "tie", or null
+  verdictReason: text("verdict_reason"), // Brief reason for the verdict
+  keyDifferences: text("key_differences"), // JSON array of key differences
+  bestFor: text("best_for"), // JSON object: { shoe1: "speedwork", shoe2: "daily training" }
+  viewCount: integer("view_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  slugIdx: index("shoe_comparisons_slug_idx").on(table.slug),
+  shoe1Idx: index("shoe_comparisons_shoe1_idx").on(table.shoe1Id),
+  shoe2Idx: index("shoe_comparisons_shoe2_idx").on(table.shoe2Id),
+  typeIdx: index("shoe_comparisons_type_idx").on(table.comparisonType),
+}));
+
 export const apiKeys = pgTable("api_keys", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
@@ -741,6 +765,12 @@ export const insertRunningShoeSchema = createInsertSchema(runningShoes).omit({
   createdAt: true,
 });
 
+export const insertShoeComparisonSchema = createInsertSchema(shoeComparisons).omit({
+  id: true,
+  createdAt: true,
+  viewCount: true,
+});
+
 export const insertApiKeySchema = createInsertSchema(apiKeys).omit({
   id: true,
   createdAt: true,
@@ -885,6 +915,8 @@ export type InsertAIMessage = z.infer<typeof insertAIMessageSchema>;
 export type AIMessage = typeof aiMessages.$inferSelect;
 export type InsertRunningShoe = z.infer<typeof insertRunningShoeSchema>;
 export type RunningShoe = typeof runningShoes.$inferSelect;
+export type InsertShoeComparison = z.infer<typeof insertShoeComparisonSchema>;
+export type ShoeComparison = typeof shoeComparisons.$inferSelect;
 export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
 export type ApiKey = typeof apiKeys.$inferSelect;
 export type InsertRefreshToken = z.infer<typeof insertRefreshTokenSchema>;
