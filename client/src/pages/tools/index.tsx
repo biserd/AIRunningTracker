@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
-import { Activity, TrendingDown, Calculator, BarChart3, ArrowRight, Zap, MapPin, ShoppingBag, Target, RefreshCw } from "lucide-react";
+import { Activity, TrendingDown, Calculator, BarChart3, ArrowRight, Zap, MapPin, ShoppingBag, Target, RefreshCw, GitCompare } from "lucide-react";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { Helmet } from "react-helmet";
@@ -143,6 +143,21 @@ const tools = [
       "Role-based recommendations",
       "Runner-weight optimized",
       "Usage guidelines"
+    ]
+  },
+  {
+    id: "shoe-comparisons",
+    title: "Shoe Comparisons",
+    description: "Browse 160+ pre-built side-by-side comparisons of popular running shoes with detailed specs and expert verdicts.",
+    icon: GitCompare,
+    url: "/tools/shoes/compare",
+    status: "available",
+    ctaLabel: "Browse Comparisons",
+    features: [
+      "160+ comparisons",
+      "Side-by-side specs",
+      "Expert verdicts",
+      "Evolution & rivals"
     ]
   }
 ];

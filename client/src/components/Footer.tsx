@@ -42,6 +42,7 @@ export default function Footer() {
               <li><Link href="/tools/cadence-analyzer" className="hover:text-white transition-colors" data-testid="link-tool-cadence">Form Stability</Link></li>
               <li><Link href="/tools/shoes" className="hover:text-white transition-colors" data-testid="link-tool-shoes">Running Shoe Hub</Link></li>
               <li><Link href="/tools/shoe-finder" className="hover:text-white transition-colors" data-testid="link-tool-shoe-finder">Shoe Finder</Link></li>
+              <li><Link href="/tools/shoes/compare" className="hover:text-white transition-colors" data-testid="link-tool-shoe-comparisons">Shoe Comparisons</Link></li>
               <li><Link href="/tools/rotation-planner" className="hover:text-white transition-colors" data-testid="link-tool-rotation">Rotation Planner</Link></li>
               <li><Link href="/tools/heatmap" className="hover:text-white transition-colors" data-testid="link-tool-heatmap">Running Heatmap</Link></li>
             </ul>
