@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Activity, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
 import { StravaPoweredBy } from "@/components/StravaConnect";
@@ -59,14 +59,14 @@ function DayCell({ day, maxDistance, unitPreference }: { day: HeatmapDay; maxDis
   }
 
   return (
-    <HoverCard openDelay={100} closeDelay={200}>
-      <HoverCardTrigger asChild>
+    <Popover>
+      <PopoverTrigger asChild>
         <div 
           className={`aspect-square rounded-sm ${colorClass} cursor-pointer hover:ring-2 hover:ring-strava-orange hover:ring-offset-1 transition-all`}
           data-testid={`heatmap-cell-${day.date}`}
         />
-      </HoverCardTrigger>
-      <HoverCardContent className="w-64 p-3" side="top">
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-3" side="top">
         <div className="space-y-2">
           <div className="font-semibold text-sm">{formatDate(day.date)}</div>
           <div className="text-xs text-gray-500">
@@ -108,8 +108,8 @@ function DayCell({ day, maxDistance, unitPreference }: { day: HeatmapDay; maxDis
             })}
           </div>
         </div>
-      </HoverCardContent>
-    </HoverCard>
+      </PopoverContent>
+    </Popover>
   );
 }
 
