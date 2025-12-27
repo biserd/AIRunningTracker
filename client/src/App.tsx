@@ -39,6 +39,8 @@ import RunningHeatmap from "@/pages/tools/heatmap";
 import ShoeDatabase from "@/pages/tools/shoes";
 import ShoeDetail from "@/pages/tools/shoe-detail";
 import ShoeCompare from "@/pages/tools/shoe-compare";
+import ShoeComparisonList from "@/pages/tools/shoe-comparison-list";
+import ShoeComparisonDetail from "@/pages/tools/shoe-comparison-detail";
 import ShoeFinder from "@/pages/tools/shoe-finder";
 import RotationPlanner from "@/pages/tools/rotation-planner";
 import ChatHistory from "@/pages/chat-history";
@@ -105,7 +107,9 @@ function Router() {
       <Route path="/tools/race-predictor" component={RacePredictor} />
       <Route path="/tools/cadence-analyzer" component={CadenceAnalyzer} />
       <Route path="/tools/shoes" component={ShoeDatabase} />
-      <Route path="/tools/shoes/compare" component={ShoeCompare} />
+      <Route path="/tools/shoes/compare" component={ShoeComparisonList} />
+      <Route path="/tools/shoes/compare/:slug" component={ShoeComparisonDetail} />
+      <Route path="/tools/shoe-compare" component={ShoeCompare} />
       <Route path="/tools/shoes/:slug" component={ShoeDetail} />
       <Route path="/tools/shoe-finder" component={ShoeFinder} />
       <Route path="/tools/rotation-planner" component={RotationPlanner} />
