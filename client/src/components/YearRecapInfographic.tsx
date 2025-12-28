@@ -26,6 +26,8 @@ interface YearlyStats {
   longestRunKm: number;
   fastestPaceMinPerKm: number;
   fastestPaceMinPerMile: number;
+  averagePaceMinPerKm: number;
+  averagePaceMinPerMile: number;
   totalElevationFeet: number;
   totalElevationMeters: number;
   mostActiveMonth: string;
@@ -95,6 +97,7 @@ const YearRecapInfographic = forwardRef<YearRecapInfographicRef, YearRecapInfogr
 
     const hours = formatHours(stats.totalTimeSeconds);
     const fastestPace = formatPace(isMetric ? stats.fastestPaceMinPerKm : stats.fastestPaceMinPerMile);
+    const averagePace = formatPace(isMetric ? stats.averagePaceMinPerKm : stats.averagePaceMinPerMile);
     const totalDistance = isMetric ? stats.totalDistanceKm : stats.totalDistanceMiles;
     const longestRun = isMetric ? (stats.longestRunKm || stats.longestRunMiles * 1.60934) : stats.longestRunMiles;
     const distanceUnit = isMetric ? 'km' : 'mi';
@@ -153,12 +156,25 @@ const YearRecapInfographic = forwardRef<YearRecapInfographicRef, YearRecapInfogr
           </div>
         )}
 
-        <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 mb-3">
-          <div className="flex items-center gap-3">
-            <Zap className="w-5 h-5 opacity-80" />
-            <div>
-              <p className="text-xs opacity-70 uppercase tracking-wide">Fastest Pace</p>
-              <p className="text-xl font-bold">{fastestPace} /{distanceUnit}</p>
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4">
+            <div className="flex items-center gap-2">
+              <Zap className="w-5 h-5 opacity-80" />
+              <div>
+                <p className="text-xs opacity-70 uppercase tracking-wide">Fastest</p>
+                <p className="text-xl font-bold">{fastestPace}</p>
+                <p className="text-xs opacity-70">/{distanceUnit}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 opacity-80" />
+              <div>
+                <p className="text-xs opacity-70 uppercase tracking-wide">Average</p>
+                <p className="text-xl font-bold">{averagePace}</p>
+                <p className="text-xs opacity-70">/{distanceUnit}</p>
+              </div>
             </div>
           </div>
         </div>

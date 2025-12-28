@@ -27,6 +27,7 @@ interface YearlyStats {
   totalElevationFeet: number;
   longestRunMeters: number;
   longestRunMiles: number;
+  longestRunKm: number;
   fastestPaceMinPerMile: number;
   fastestPaceMinPerKm: number;
   averagePaceMinPerMile: number;
