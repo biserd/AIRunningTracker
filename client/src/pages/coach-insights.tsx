@@ -619,7 +619,7 @@ export default function CoachInsightsPage() {
   const { data: recoveryData, isLoading: isRecoveryLoading } = useQuery<RecoveryState>({
     queryKey: ['/api/performance/recovery', user?.id],
     queryFn: async () => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const res = await fetch(`/api/performance/recovery/${user!.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
