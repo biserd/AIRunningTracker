@@ -1,4 +1,5 @@
-// Using Resend integration for email delivery
+// Custom Resend email service
+// Uses RESEND_API_KEY secret and RESEND_FROM_EMAIL environment variable
 import { Resend } from 'resend';
 
 interface EmailOptions {
@@ -8,64 +9,35 @@ interface EmailOptions {
   text?: string;
 }
 
-// Resend integration - get fresh client for each request
-let connectionSettings: any;
-
-async function getResendCredentials() {
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY 
-    ? 'repl ' + process.env.REPL_IDENTITY 
-    : process.env.WEB_REPL_RENEWAL 
-    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
-    : null;
-
-  if (!xReplitToken || !hostname) {
-    return null;
-  }
-
-  try {
-    connectionSettings = await fetch(
-      'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=resend',
-      {
-        headers: {
-          'Accept': 'application/json',
-          'X_REPLIT_TOKEN': xReplitToken
-        }
-      }
-    ).then(res => res.json()).then(data => data.items?.[0]);
-
-    if (!connectionSettings || !connectionSettings.settings?.api_key) {
-      return null;
-    }
-    return {
-      apiKey: connectionSettings.settings.api_key,
-      fromEmail: connectionSettings.settings.from_email
-    };
-  } catch (error) {
-    console.error('📧 Failed to get Resend credentials:', error);
-    return null;
-  }
-}
-
 class EmailService {
+  private resend: Resend | null = null;
+  private fromEmail: string;
+
+  constructor() {
+    const apiKey = process.env.RESEND_API_KEY;
+    this.fromEmail = process.env.RESEND_FROM_EMAIL || 'RunAnalytics <noreply@aitracker.run>';
+    
+    if (apiKey) {
+      this.resend = new Resend(apiKey);
+      console.log('📧 Resend email service initialized');
+    } else {
+      console.log('📧 RESEND_API_KEY not configured - emails will be logged only');
+    }
+  }
+
   isConfigured(): boolean {
-    // Resend is configured via Replit integration
-    return !!process.env.REPLIT_CONNECTORS_HOSTNAME;
+    return this.resend !== null;
   }
 
   async sendEmail(options: EmailOptions): Promise<boolean> {
     try {
-      const credentials = await getResendCredentials();
-      
-      if (!credentials) {
+      if (!this.resend) {
         console.log('📧 Resend not configured - would send:', options.subject, 'to:', options.to);
         return false;
       }
 
-      const resend = new Resend(credentials.apiKey);
-      
-      await resend.emails.send({
-        from: credentials.fromEmail || 'RunAnalytics <noreply@aitracker.run>',
+      await this.resend.emails.send({
+        from: this.fromEmail,
         to: options.to,
         subject: options.subject,
         html: options.html,
