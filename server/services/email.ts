@@ -1,4 +1,5 @@
-import nodemailer from 'nodemailer';
+// Using Resend integration for email delivery
+import { Resend } from 'resend';
 
 interface EmailOptions {
   to: string;
@@ -7,50 +8,64 @@ interface EmailOptions {
   text?: string;
 }
 
-class EmailService {
-  private transporter: any;
-  
-  constructor() {
-    // Check if email is configured
-    if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
-      // Use Gmail SMTP (free) - requires app password
-      this.transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASSWORD
-        }
-      });
-    } else if (process.env.SMTP_HOST) {
-      // Alternative: use any SMTP service
-      this.transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || '587'),
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASSWORD
-        }
-      });
-    } else {
-      // No email configured - will log instead
-      this.transporter = null;
-    }
+// Resend integration - get fresh client for each request
+let connectionSettings: any;
+
+async function getResendCredentials() {
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  const xReplitToken = process.env.REPL_IDENTITY 
+    ? 'repl ' + process.env.REPL_IDENTITY 
+    : process.env.WEB_REPL_RENEWAL 
+    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
+    : null;
+
+  if (!xReplitToken || !hostname) {
+    return null;
   }
 
+  try {
+    connectionSettings = await fetch(
+      'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=resend',
+      {
+        headers: {
+          'Accept': 'application/json',
+          'X_REPLIT_TOKEN': xReplitToken
+        }
+      }
+    ).then(res => res.json()).then(data => data.items?.[0]);
+
+    if (!connectionSettings || !connectionSettings.settings?.api_key) {
+      return null;
+    }
+    return {
+      apiKey: connectionSettings.settings.api_key,
+      fromEmail: connectionSettings.settings.from_email
+    };
+  } catch (error) {
+    console.error('📧 Failed to get Resend credentials:', error);
+    return null;
+  }
+}
+
+class EmailService {
   isConfigured(): boolean {
-    return this.transporter !== null;
+    // Resend is configured via Replit integration
+    return !!process.env.REPLIT_CONNECTORS_HOSTNAME;
   }
 
   async sendEmail(options: EmailOptions): Promise<boolean> {
     try {
-      if (!this.transporter) {
-        console.log('📧 Email not configured - would send:', options.subject, 'to:', options.to);
+      const credentials = await getResendCredentials();
+      
+      if (!credentials) {
+        console.log('📧 Resend not configured - would send:', options.subject, 'to:', options.to);
         return false;
       }
 
-      await this.transporter.sendMail({
-        from: process.env.EMAIL_USER || process.env.SMTP_USER,
+      const resend = new Resend(credentials.apiKey);
+      
+      await resend.emails.send({
+        from: credentials.fromEmail || 'RunAnalytics <noreply@aitracker.run>',
         to: options.to,
         subject: options.subject,
         html: options.html,
