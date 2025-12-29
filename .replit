@@ -42,3 +42,4 @@ integrations = ["javascript_stripe:1.0.0", "stripe:2.0.0", "javascript_gemini_ai
 
 [userenv.shared]
 VITE_MAINTENANCE_MODE = "false"
+RESEND_FROM_EMAIL = "RunAnalytics <hello@aitracker.run>"
