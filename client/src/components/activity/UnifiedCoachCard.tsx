@@ -159,8 +159,13 @@ function ComparisonMetric({
   value: number; 
   type: "pace" | "hr" | "effort" | "distance" 
 }) {
+  // For pace and HR: negative raw value means improvement (faster/more efficient)
+  // For effort and distance: positive raw value means improvement (more)
   const isPositive = type === "pace" ? value < 0 : type === "hr" ? value < 0 : value > 0;
   const isNegative = type === "pace" ? value > 0 : type === "hr" ? value > 0 : value < 0;
+  
+  // Invert display value for pace and HR so "+" means improvement
+  const displayValue = (type === "pace" || type === "hr") ? -value : value;
   
   const bgColor = isPositive ? "bg-emerald-50" : isNegative ? "bg-red-50" : "bg-gray-50";
   const textColor = isPositive ? "text-emerald-600" : isNegative ? "text-red-600" : "text-gray-600";
@@ -178,7 +183,7 @@ function ComparisonMetric({
       <div className="flex items-center gap-1.5">
         <TrendIcon className={`w-4 h-4 ${iconColor}`} />
         <span className={`text-base font-bold ${textColor}`}>
-          {value > 0 ? "+" : ""}{value}%
+          {displayValue > 0 ? "+" : ""}{displayValue}%
         </span>
       </div>
     </div>
