@@ -6,22 +6,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription, useManageSubscription } from "@/hooks/useSubscription";
 import type { DashboardData } from "@/lib/api";
 import AppHeader from "@/components/AppHeader";
+import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Settings, Save, Unlink, Trash2, Crown, Star, Zap, CreditCard, ExternalLink, Loader2, Share2, Check, AlertTriangle, MessageSquare, Target, Calendar, Bell } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
@@ -42,6 +32,7 @@ function SettingsPageContent() {
   const [unitPreference, setUnitPreference] = useState("km");
   const [stravaBrandingEnabled, setStravaBrandingEnabled] = useState(false);
   const [stravaBrandingTemplate, setStravaBrandingTemplate] = useState("🏃 Runner Score: {score} | {insight} — Analyzed with AITracker.run");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     if (dashboardData?.user?.unitPreference) {
@@ -117,30 +108,6 @@ function SettingsPageContent() {
       toast({
         title: "Update failed",
         description: error.message || "Failed to update branding settings",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteAccountMutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest(`/api/user`, "DELETE");
-    },
-    onSuccess: (data: any) => {
-      toast({
-        title: "Account deleted",
-        description: data.message || "Your account has been permanently deleted. A confirmation email has been sent.",
-      });
-      // Clear local storage and redirect to home
-      localStorage.removeItem("token");
-      setTimeout(() => {
-        setLocation("/");
-      }, 2000);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Delete failed",
-        description: error.message || "Failed to delete account",
         variant: "destructive",
       });
     },
@@ -582,45 +549,22 @@ function SettingsPageContent() {
               </p>
             </div>
 
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button 
-                  variant="destructive" 
-                  className="flex items-center gap-2"
-                  disabled={deleteAccountMutation.isPending}
-                  data-testid="button-delete-account"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  {deleteAccountMutation.isPending ? "Deleting Account..." : "Delete My Account"}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription className="space-y-3">
-                    <p>
-                      This action <strong className="text-red-600">cannot be undone</strong>. This will permanently delete your account and remove all your data from our servers.
-                    </p>
-                    <p>
-                      All your running activities, insights, training plans, and goals will be lost forever.
-                    </p>
-                    <p className="font-medium">
-                      Are you sure you want to proceed with deleting your account?
-                    </p>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => deleteAccountMutation.mutate()}
-                    className="bg-red-600 hover:bg-red-700"
-                    data-testid="button-confirm-delete"
-                  >
-                    Yes, Delete My Account
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Button 
+              variant="destructive" 
+              className="flex items-center gap-2"
+              onClick={() => setDeleteDialogOpen(true)}
+              data-testid="button-delete-account"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete My Account
+            </Button>
+
+            <DeleteAccountDialog
+              open={deleteDialogOpen}
+              onOpenChange={setDeleteDialogOpen}
+              userEmail={user?.email || ""}
+              subscriptionPlan={plan || "free"}
+            />
           </CardContent>
         </Card>
       </div>

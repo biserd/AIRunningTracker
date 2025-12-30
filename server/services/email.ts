@@ -370,6 +370,77 @@ The RunAnalytics Team
     });
   }
 
+  async sendAccountDeletionWithFeedback(
+    email: string, 
+    userId: number, 
+    reason: string, 
+    details?: string,
+    subscriptionPlan?: string,
+    accountAgeInDays?: number
+  ): Promise<void> {
+    const reasonLabels: Record<string, string> = {
+      too_expensive: "Too expensive for my budget",
+      not_using: "I'm not using it enough",
+      missing_features: "Missing features I need",
+      found_alternative: "Found a better alternative",
+      technical_issues: "Technical issues or bugs",
+      privacy_concerns: "Privacy concerns",
+      other: "Other reason",
+    };
+
+    const subject = '⚠️ User Account Deleted with Feedback - RunAnalytics';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #e74c3c;">User Account Deleted</h2>
+        <p>A user has deleted their RunAnalytics account and provided feedback:</p>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: #2c3e50;">Account Details</h3>
+          <ul style="list-style: none; padding: 0;">
+            <li><strong>User ID:</strong> ${userId}</li>
+            <li><strong>Email:</strong> ${email}</li>
+            <li><strong>Subscription Plan:</strong> ${subscriptionPlan || 'Unknown'}</li>
+            <li><strong>Account Age:</strong> ${accountAgeInDays || 0} days</li>
+            <li><strong>Deletion Date:</strong> ${new Date().toLocaleString()}</li>
+          </ul>
+        </div>
+        
+        <div style="background: #fff3cd; padding: 20px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: #856404;">Deletion Reason</h3>
+          <p style="font-size: 16px; color: #856404; margin-bottom: 5px;">
+            <strong>${reasonLabels[reason] || reason}</strong>
+          </p>
+          ${details ? `<p style="color: #856404; margin: 0;"><em>Additional details: "${details}"</em></p>` : ''}
+        </div>
+        
+        <p style="color: #666; font-size: 14px;">
+          This feedback has been stored in the deletion_feedback table for analysis.
+        </p>
+      </div>
+    `;
+
+    const text = `User Account Deleted with Feedback
+
+Account Details:
+- User ID: ${userId}
+- Email: ${email}
+- Subscription Plan: ${subscriptionPlan || 'Unknown'}
+- Account Age: ${accountAgeInDays || 0} days
+- Deletion Date: ${new Date().toLocaleString()}
+
+Deletion Reason: ${reasonLabels[reason] || reason}
+${details ? `Additional details: "${details}"` : ''}
+
+This feedback has been stored in the deletion_feedback table for analysis.`;
+    
+    await this.sendEmail({
+      to: 'hello@bigappledigital.nyc',
+      subject,
+      html,
+      text
+    });
+  }
+
   // ============== REVERSE TRIAL EMAILS ==============
 
   async sendTrialWelcomeEmail(email: string, firstName?: string): Promise<void> {

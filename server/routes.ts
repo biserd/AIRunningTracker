@@ -637,6 +637,70 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Delete user account with feedback (new flow)
+  app.post("/api/user/delete-with-feedback", authenticateJWT, async (req: any, res) => {
+    try {
+      const feedbackSchema = z.object({
+        reason: z.enum(["too_expensive", "not_using", "missing_features", "found_alternative", "technical_issues", "privacy_concerns", "other"]),
+        details: z.string().optional(),
+      });
+
+      const parseResult = feedbackSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid feedback data", 
+          errors: parseResult.error.flatten().fieldErrors 
+        });
+      }
+
+      const { reason, details } = parseResult.data;
+
+      const user = await storage.getUser(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const userEmail = user.email;
+      const userId = req.user.id;
+      const subscriptionPlan = user.subscriptionPlan || "free";
+      
+      // Calculate account age
+      const accountAgeInDays = user.createdAt 
+        ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+        : 0;
+
+      // Store feedback before deletion
+      await storage.createDeletionFeedback({
+        userId,
+        userEmail,
+        reason,
+        details: details || null,
+        wasRetained: false,
+        subscriptionPlan,
+        accountAgeInDays,
+      });
+
+      // Delete all user data
+      await storage.deleteAccount(userId);
+
+      // Send confirmation email to user
+      await emailService.sendAccountDeletionConfirmation(userEmail);
+
+      // Send notification to admin with feedback
+      await emailService.sendAccountDeletionWithFeedback(userEmail, userId, reason, details, subscriptionPlan, accountAgeInDays);
+
+      console.log(`[API POST /api/user/delete-with-feedback] Account deleted for user ID: ${userId}, email: ${userEmail}, reason: ${reason}`);
+      
+      res.json({ 
+        success: true, 
+        message: "Your account and all associated data have been permanently deleted. A confirmation email has been sent." 
+      });
+    } catch (error: any) {
+      console.error('Delete account with feedback error:', error);
+      res.status(500).json({ message: error.message || "Failed to delete account" });
+    }
+  });
+
   app.get("/api/logout", (req, res) => {
     // Clear any server-side session data if needed
     res.redirect("/");
