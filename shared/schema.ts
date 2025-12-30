@@ -857,7 +857,6 @@ export const insertCoachRecapSchema = createInsertSchema(coachRecaps).omit({
 export const insertAgentRunSchema = createInsertSchema(agentRuns).omit({
   id: true,
   createdAt: true,
-  status: true,
   retryCount: true,
 });
 

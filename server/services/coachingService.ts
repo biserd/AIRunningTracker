@@ -90,12 +90,14 @@ export async function generateCoachRecap(
     userId,
     runType: "activity_recap",
     triggeredBy: "sync",
+    status: "completed",
     activityId,
     dedupeKey,
     inputSnapshot: { activityId, stravaId, distanceKm, durationMins },
     outputRecapId: recap.id,
     promptVersion: "v1.0",
     stagesCompleted: ["fetch", "metrics", "coaching", "persist"],
+    completedAt: new Date(),
   });
 
   if (user.coachNotifyRecap && user.email) {
