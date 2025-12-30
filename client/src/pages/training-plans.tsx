@@ -564,7 +564,20 @@ export default function TrainingPlans() {
         )}
       </main>
       
-      {user && <FloatingAICoach userId={user.id} />}
+      {user && (
+        <FloatingAICoach 
+          userId={user.id} 
+          pageContext={{
+            pageName: "Training Plans",
+            pageDescription: "Page for creating and managing AI-generated training plans for races and fitness goals",
+            relevantData: {
+              hasPlans: (plans?.length || 0) > 0,
+              planCount: plans?.length || 0,
+              showingWizard: showWizard
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

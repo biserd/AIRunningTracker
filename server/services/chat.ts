@@ -171,7 +171,14 @@ ${upcomingWorkouts.map((d: any) =>
     conversationId: number,
     userMessage: string,
     onStream: (chunk: string) => void,
-    activityContext?: { activityId: number }
+    context?: { 
+      activityId?: number;
+      page?: {
+        pageName: string;
+        pageDescription?: string;
+        relevantData?: Record<string, any>;
+      };
+    }
   ): Promise<string> {
     // Get conversation history
     const messages = await storage.getMessagesByConversationId(conversationId);
@@ -179,9 +186,23 @@ ${upcomingWorkouts.map((d: any) =>
     // Assemble user context
     let userContext = await this.assembleUserContext(userId);
     
+    // Add page context if provided
+    if (context?.page) {
+      const pageInfo = context.page;
+      userContext += `
+
+**CURRENT PAGE CONTEXT: The user is currently viewing the "${pageInfo.pageName}" page.**
+${pageInfo.pageDescription ? `Page description: ${pageInfo.pageDescription}` : ''}
+${pageInfo.relevantData ? `
+Available data on this page:
+${JSON.stringify(pageInfo.relevantData, null, 2)}` : ''}
+
+When the user asks questions, they may be referring to data or features visible on this page.`;
+    }
+
     // Add specific activity context if provided
-    if (activityContext?.activityId) {
-      const activity = await storage.getActivityById(activityContext.activityId);
+    if (context?.activityId) {
+      const activity = await storage.getActivityById(context.activityId);
       if (activity && activity.userId === userId) {
         const user = await storage.getUser(userId);
         const isMetric = user?.unitPreference !== "miles";

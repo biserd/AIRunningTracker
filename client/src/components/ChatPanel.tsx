@@ -30,6 +30,12 @@ interface Conversation {
   updatedAt: Date;
 }
 
+interface PageContext {
+  pageName: string;
+  pageDescription?: string;
+  relevantData?: Record<string, any>;
+}
+
 interface ChatPanelProps {
   userId: number;
   onClose?: () => void;
@@ -38,6 +44,7 @@ interface ChatPanelProps {
     activityId: number;
     activityName?: string;
   };
+  pageContext?: PageContext;
 }
 
 // Typing indicator component with animated dots
@@ -139,7 +146,7 @@ function FollowUpSuggestions({
   );
 }
 
-export function ChatPanel({ userId, onClose, initialConversationId, activityContext }: ChatPanelProps) {
+export function ChatPanel({ userId, onClose, initialConversationId, activityContext, pageContext }: ChatPanelProps) {
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(initialConversationId || null);
   const [inputMessage, setInputMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -237,7 +244,10 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
         },
         body: JSON.stringify({ 
           message,
-          context: activityContext ? { activityId: activityContext.activityId } : undefined
+          context: {
+            ...(activityContext ? { activityId: activityContext.activityId } : {}),
+            ...(pageContext ? { page: pageContext } : {})
+          }
         }),
       });
 

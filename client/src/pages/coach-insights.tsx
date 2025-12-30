@@ -691,7 +691,17 @@ export default function CoachInsightsPage() {
         </div>
       </main>
       
-      <FloatingAICoach userId={user.id} />
+      <FloatingAICoach 
+        userId={user.id} 
+        pageContext={{
+          pageName: "Coach Insights",
+          pageDescription: "AI-powered analysis page showing race predictions, VO2 max, heart rate zones, injury risk, and running efficiency metrics",
+          relevantData: {
+            activeTab: activeTab,
+            hasCoachSetup: !!user.coachGoal
+          }
+        }}
+      />
     </div>
   );
 }

@@ -5,61 +5,59 @@ import { Button } from "@/components/ui/button";
 import { ChatPanel } from "@/components/ChatPanel";
 import { cn } from "@/lib/utils";
 
+export interface PageContext {
+  pageName: string;
+  pageDescription?: string;
+  relevantData?: Record<string, any>;
+}
+
 interface FloatingAICoachProps {
   userId: number;
   className?: string;
+  pageContext?: PageContext;
 }
 
-export function FloatingAICoach({ userId, className }: FloatingAICoachProps) {
+export function FloatingAICoach({ userId, className, pageContext }: FloatingAICoachProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
       <AnimatePresence>
         {isOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
-              onClick={() => setIsOpen(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ type: "spring", duration: 0.3 }}
-              className={cn(
-                "fixed bottom-24 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[420px] h-[500px] sm:h-[600px] max-h-[calc(100vh-8rem)]",
-                "bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-purple-200 dark:border-purple-800 overflow-hidden"
-              )}
-            >
-              <div className="flex items-center justify-between p-3 border-b border-purple-100 dark:border-purple-800 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950 dark:to-blue-950">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center">
-                    <Sparkles className="w-4 h-4 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm text-slate-800 dark:text-white">AI Running Coach</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Ask me anything about your training</p>
-                  </div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ type: "spring", duration: 0.3 }}
+            className={cn(
+              "fixed bottom-24 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[420px] h-[500px] sm:h-[600px] max-h-[calc(100vh-8rem)]",
+              "bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-purple-200 dark:border-purple-800 overflow-hidden"
+            )}
+          >
+            <div className="flex items-center justify-between p-3 border-b border-purple-100 dark:border-purple-800 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950 dark:to-blue-950">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-white" />
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsOpen(false)}
-                  className="h-8 w-8 rounded-full hover:bg-purple-100 dark:hover:bg-purple-900"
-                  data-testid="button-close-chat"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
+                <div>
+                  <p className="font-semibold text-sm text-slate-800 dark:text-white">AI Running Coach</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Ask me anything about your training</p>
+                </div>
               </div>
-              <div className="h-[calc(100%-56px)]">
-                <ChatPanel userId={userId} onClose={() => setIsOpen(false)} />
-              </div>
-            </motion.div>
-          </>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsOpen(false)}
+                className="h-8 w-8 rounded-full hover:bg-purple-100 dark:hover:bg-purple-900"
+                data-testid="button-close-chat"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="h-[calc(100%-56px)]">
+              <ChatPanel userId={userId} onClose={() => setIsOpen(false)} pageContext={pageContext} />
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 

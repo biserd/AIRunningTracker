@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { StravaConnectButton, StravaPoweredBy } from "@/components/StravaConnect";
 import { ChatPanel } from "@/components/ChatPanel";
+import { FloatingAICoach } from "@/components/FloatingAICoach";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import RecentConversations from "@/components/RecentConversations";
 import TrialBadge from "@/components/TrialBadge";
@@ -555,6 +556,23 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+      
+      {user && (
+        <FloatingAICoach 
+          userId={user.id} 
+          pageContext={{
+            pageName: "Dashboard",
+            pageDescription: "Main dashboard showing running performance overview, charts, and quick stats",
+            relevantData: {
+              totalDistance: dashboardData?.stats?.totalDistance,
+              avgPace: dashboardData?.stats?.avgPace,
+              trainingLoad: dashboardData?.stats?.trainingLoad,
+              recovery: dashboardData?.stats?.recovery,
+              recentActivities: dashboardData?.activities?.length || 0
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
