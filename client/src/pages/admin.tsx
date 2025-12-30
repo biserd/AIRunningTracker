@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Activity, TrendingUp, Calendar, Shield, Database, BarChart3, Clock, Target, Signal, Server, Cpu, HardDrive, AlertTriangle, CheckCircle, XCircle, ChevronLeft, ChevronRight, ShoppingBag, Layers, Mail, Send, Bot, Zap, PlayCircle } from "lucide-react";
+import { Users, Activity, TrendingUp, Calendar, Shield, Database, BarChart3, Clock, Target, Signal, Server, Cpu, HardDrive, AlertTriangle, CheckCircle, XCircle, ChevronLeft, ChevronRight, ShoppingBag, Layers, Mail, Send, Bot, Zap, PlayCircle, Power, MailOpen, UserX, UserCheck, UserMinus } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -129,6 +129,24 @@ interface AgentStats {
   successRate: number;
 }
 
+interface CampaignWorkerStatus {
+  isRunning: boolean;
+  lastRunAt: string | null;
+  jobsProcessed: number;
+  jobsFailed: number;
+  workerActive: boolean;
+  campaignsEnabled: boolean;
+}
+
+interface SegmentStats {
+  segment_a: number;
+  segment_b: number;
+  segment_c: number;
+  segment_d: number;
+  paid: number;
+  total: number;
+}
+
 export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -162,6 +180,37 @@ export default function AdminPage() {
     queryKey: ["/api/admin/agent-stats"],
     enabled: !!user,
     refetchInterval: 30000,
+  });
+
+  // Drip Campaign stats
+  const { data: campaignWorkerStatus, isLoading: campaignWorkerLoading } = useQuery<CampaignWorkerStatus>({
+    queryKey: ["/api/admin/campaigns/worker-status"],
+    enabled: !!user,
+    refetchInterval: 10000,
+  });
+
+  const { data: segmentStats, isLoading: segmentStatsLoading } = useQuery<SegmentStats>({
+    queryKey: ["/api/admin/campaigns/segment-stats"],
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
+
+  const toggleCampaignsMutation = useMutation({
+    mutationFn: (enabled: boolean) => apiRequest("/api/admin/campaigns/toggle", "POST", { enabled }),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns/worker-status"] });
+      toast({
+        title: data.campaignsEnabled ? "Campaigns Enabled" : "Campaigns Disabled",
+        description: data.message,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Toggle Failed",
+        description: error.message || "Could not toggle campaigns",
+        variant: "destructive",
+      });
+    },
   });
 
   // Launch email blast
@@ -613,6 +662,165 @@ export default function AdminPage() {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Drip Campaigns Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MailOpen className="h-5 w-5 text-indigo-500" />
+                Drip Campaigns
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-normal text-gray-500">
+                  {campaignWorkerStatus?.campaignsEnabled ? "Enabled" : "Disabled"}
+                </span>
+                <Button
+                  size="sm"
+                  variant={campaignWorkerStatus?.campaignsEnabled ? "default" : "outline"}
+                  onClick={() => toggleCampaignsMutation.mutate(!campaignWorkerStatus?.campaignsEnabled)}
+                  disabled={toggleCampaignsMutation.isPending || campaignWorkerLoading}
+                  className={campaignWorkerStatus?.campaignsEnabled 
+                    ? "bg-green-600 hover:bg-green-700" 
+                    : "border-red-300 text-red-600 hover:bg-red-50"
+                  }
+                  data-testid="btn-toggle-campaigns"
+                >
+                  <Power className="h-4 w-4 mr-1" />
+                  {campaignWorkerStatus?.campaignsEnabled ? "ON" : "OFF"}
+                </Button>
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(campaignWorkerLoading || segmentStatsLoading) ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500 mx-auto"></div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Segment Stats */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">User Segments</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-lg p-3 border border-red-200">
+                      <div className="flex items-center gap-1 mb-1">
+                        <UserX className="h-3 w-3 text-red-500" />
+                        <span className="text-xs font-medium text-gray-600">Segment A</span>
+                      </div>
+                      <p className="text-xl font-bold text-charcoal" data-testid="stat-segment-a">
+                        {segmentStats?.segment_a || 0}
+                      </p>
+                      <p className="text-xs text-gray-500">Not Connected</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg p-3 border border-yellow-200">
+                      <div className="flex items-center gap-1 mb-1">
+                        <Activity className="h-3 w-3 text-yellow-600" />
+                        <span className="text-xs font-medium text-gray-600">Segment B</span>
+                      </div>
+                      <p className="text-xl font-bold text-charcoal" data-testid="stat-segment-b">
+                        {segmentStats?.segment_b || 0}
+                      </p>
+                      <p className="text-xs text-gray-500">Not Activated</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-3 border border-blue-200">
+                      <div className="flex items-center gap-1 mb-1">
+                        <UserCheck className="h-3 w-3 text-blue-600" />
+                        <span className="text-xs font-medium text-gray-600">Segment C</span>
+                      </div>
+                      <p className="text-xl font-bold text-charcoal" data-testid="stat-segment-c">
+                        {segmentStats?.segment_c || 0}
+                      </p>
+                      <p className="text-xs text-gray-500">Active Free</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-lg p-3 border border-gray-200">
+                      <div className="flex items-center gap-1 mb-1">
+                        <UserMinus className="h-3 w-3 text-gray-500" />
+                        <span className="text-xs font-medium text-gray-600">Segment D</span>
+                      </div>
+                      <p className="text-xl font-bold text-charcoal" data-testid="stat-segment-d">
+                        {segmentStats?.segment_d || 0}
+                      </p>
+                      <p className="text-xs text-gray-500">Inactive 7d+</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-3 border border-green-200">
+                      <div className="flex items-center gap-1 mb-1">
+                        <CheckCircle className="h-3 w-3 text-green-600" />
+                        <span className="text-xs font-medium text-gray-600">Paid</span>
+                      </div>
+                      <p className="text-xl font-bold text-charcoal" data-testid="stat-paid-users">
+                        {segmentStats?.paid || 0}
+                      </p>
+                      <p className="text-xs text-gray-500">Subscribed</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-3 border border-purple-200">
+                      <div className="flex items-center gap-1 mb-1">
+                        <Users className="h-3 w-3 text-purple-600" />
+                        <span className="text-xs font-medium text-gray-600">Total</span>
+                      </div>
+                      <p className="text-xl font-bold text-charcoal" data-testid="stat-total-users-campaigns">
+                        {segmentStats?.total || 0}
+                      </p>
+                      <p className="text-xs text-gray-500">All Users</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Worker Status */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Worker Status</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <span className="text-xs text-gray-500">Status</span>
+                      <div className="flex items-center gap-1 mt-1">
+                        {campaignWorkerStatus?.workerActive ? (
+                          <>
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span className="text-sm font-medium text-green-700">Active</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="h-4 w-4 text-red-500" />
+                            <span className="text-sm font-medium text-red-700">Inactive</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <span className="text-xs text-gray-500">Last Run</span>
+                      <p className="text-sm font-medium mt-1">
+                        {campaignWorkerStatus?.lastRunAt 
+                          ? new Date(campaignWorkerStatus.lastRunAt).toLocaleTimeString()
+                          : "Never"
+                        }
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <span className="text-xs text-gray-500">Jobs Processed</span>
+                      <p className="text-sm font-medium mt-1 text-green-600">
+                        {campaignWorkerStatus?.jobsProcessed || 0}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <span className="text-xs text-gray-500">Jobs Failed</span>
+                      <p className="text-sm font-medium mt-1 text-red-600">
+                        {campaignWorkerStatus?.jobsFailed || 0}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Segment Legend */}
+                <div className="text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
+                  <p><strong>A:</strong> Registered but not connected to Strava (2 emails)</p>
+                  <p><strong>B:</strong> Connected but not activated - hasn't viewed dashboard (7 emails over 14 days)</p>
+                  <p><strong>C:</strong> Activated free users - target for conversion (4 emails over 14 days)</p>
+                  <p><strong>D:</strong> Inactive 7+ days - re-engagement (2 emails)</p>
+                </div>
               </div>
             )}
           </CardContent>

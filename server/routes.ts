@@ -6346,6 +6346,47 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Admin: Get segment stats for campaigns
+  app.get("/api/admin/campaigns/segment-stats", authenticateAdmin, async (req: any, res) => {
+    try {
+      // Count users in each segment based on current state
+      const allUsers = await storage.getAllUsers();
+      
+      const segmentCounts = {
+        segment_a: 0, // Not connected
+        segment_b: 0, // Connected, not activated
+        segment_c: 0, // Activated, free
+        segment_d: 0, // Inactive 7+ days
+        paid: 0,      // Paid users (excluded from campaigns)
+        total: allUsers.length,
+      };
+      
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      
+      for (const user of allUsers) {
+        if (user.subscriptionPlan !== 'free') {
+          segmentCounts.paid++;
+          continue;
+        }
+        
+        if (!user.stravaConnected) {
+          segmentCounts.segment_a++;
+        } else if (!user.activationAt) {
+          segmentCounts.segment_b++;
+        } else if (user.lastSeenAt && new Date(user.lastSeenAt) < sevenDaysAgo) {
+          segmentCounts.segment_d++;
+        } else {
+          segmentCounts.segment_c++;
+        }
+      }
+      
+      res.json(segmentCounts);
+    } catch (error: any) {
+      console.error("Segment stats error:", error);
+      res.status(500).json({ message: error.message || "Failed to get segment stats" });
+    }
+  });
+
   // Admin: Get pending email jobs
   app.get("/api/admin/campaigns/pending-jobs", authenticateAdmin, async (req: any, res) => {
     try {
