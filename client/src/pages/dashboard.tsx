@@ -23,12 +23,11 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { StravaConnectButton, StravaPoweredBy } from "@/components/StravaConnect";
-import { ChatPanel } from "@/components/ChatPanel";
 import { FloatingAICoach } from "@/components/FloatingAICoach";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import RecentConversations from "@/components/RecentConversations";
 import TrialBadge from "@/components/TrialBadge";
-import { MessageCircle, X, Gift, ChevronRight, Crown, Lock } from "lucide-react";
+import { Gift, ChevronRight, Crown } from "lucide-react";
 import { Link } from "wouter";
 import { useFeatureAccess, useSubscription } from "@/hooks/useSubscription";
 
@@ -369,72 +368,6 @@ export default function Dashboard() {
         isStravaConnected={dashboardData?.user?.stravaConnected || false}
       />
 
-      {/* AI Coach Chat Floating Button */}
-      {canAccessAICoachChat ? (
-        <button
-          onClick={() => setIsChatOpen(!isChatOpen)}
-          className="group fixed bottom-6 right-6 z-50 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-full shadow-lg transition-all duration-200 hover:shadow-xl flex items-center gap-3 px-6 py-4"
-          data-testid="button-toggle-chat"
-          aria-label="Toggle AI Chat"
-          title="AI Running Coach Chat"
-        >
-          {isChatOpen ? (
-            <>
-              <X className="w-6 h-6" />
-              <span className="font-medium hidden sm:inline">Close Chat</span>
-            </>
-          ) : (
-            <>
-              <MessageCircle className="w-6 h-6" />
-              <span className="font-medium hidden sm:inline">AI Coach</span>
-            </>
-          )}
-        </button>
-      ) : (
-        <Link href="/pricing">
-          <button
-            className="group fixed bottom-6 right-6 z-50 bg-gradient-to-r from-gray-400 to-gray-500 hover:from-strava-orange hover:to-orange-600 text-white rounded-full shadow-lg transition-all duration-200 hover:shadow-xl flex items-center gap-3 px-6 py-4"
-            data-testid="button-upgrade-chat"
-            aria-label="Upgrade to Premium for AI Chat"
-            title="AI Coach Chat - Premium Feature"
-          >
-            <Lock className="w-5 h-5" />
-            <MessageCircle className="w-6 h-6" />
-            <span className="font-medium hidden sm:inline">AI Coach</span>
-            <Crown className="w-4 h-4 text-yellow-300" />
-          </button>
-        </Link>
-      )}
-
-      {/* AI Chat Sidebar - Premium Only */}
-      {canAccessAICoachChat && (
-        <>
-          <div
-            className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-white dark:bg-slate-900 shadow-2xl z-50 transition-transform duration-300 ${
-              isChatOpen ? 'translate-x-0' : 'translate-x-full'
-            }`}
-            aria-hidden={!isChatOpen}
-          >
-            <ChatPanel 
-              userId={user.id} 
-              onClose={() => {
-                setIsChatOpen(false);
-                setSelectedConversationId(undefined);
-              }}
-              initialConversationId={selectedConversationId}
-            />
-          </div>
-
-          {/* Overlay for mobile */}
-          {isChatOpen && (
-            <div
-              className="fixed inset-0 bg-black bg-opacity-50 z-40 sm:hidden"
-              onClick={() => setIsChatOpen(false)}
-              data-testid="overlay-chat-mobile"
-            />
-          )}
-        </>
-      )}
       
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* AI Chat Announcement Banner - Only for Premium Users */}

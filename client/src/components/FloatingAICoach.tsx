@@ -34,29 +34,7 @@ export function FloatingAICoach({ userId, className, pageContext }: FloatingAICo
               "bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-purple-200 dark:border-purple-800 overflow-hidden"
             )}
           >
-            <div className="flex items-center justify-between p-3 border-b border-purple-100 dark:border-purple-800 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950 dark:to-blue-950">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="font-semibold text-sm text-slate-800 dark:text-white">AI Running Coach</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Ask me anything about your training</p>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsOpen(false)}
-                className="h-8 w-8 rounded-full hover:bg-purple-100 dark:hover:bg-purple-900"
-                data-testid="button-close-chat"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="h-[calc(100%-56px)]">
-              <ChatPanel userId={userId} onClose={() => setIsOpen(false)} pageContext={pageContext} />
-            </div>
+            <ChatPanel userId={userId} onClose={() => setIsOpen(false)} pageContext={pageContext} />
           </motion.div>
         )}
       </AnimatePresence>
