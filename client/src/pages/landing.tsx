@@ -111,7 +111,7 @@ export default function LandingPage() {
 
           {/* Social Proof with Real Stats */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 mb-6 sm:mb-8 mx-4">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
               <div className="text-center min-h-[72px]">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <Users className="h-5 w-5 text-strava-orange" />
@@ -122,15 +122,6 @@ export default function LandingPage() {
                   )}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600 font-medium">Active Runners</div>
-              </div>
-              <div className="text-center min-h-[72px]">
-                <div className="flex items-center justify-center gap-1 mb-1">
-                  <Bot className="h-5 w-5 text-purple-600" />
-                </div>
-                <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center h-8 min-w-[60px]">
-                  <span className="text-purple-600">23</span>+
-                </div>
-                <div className="text-xs sm:text-sm text-gray-600 font-medium">AI Agents</div>
               </div>
               <div className="text-center min-h-[72px]">
                 <div className="flex items-center justify-center gap-1 mb-1">
