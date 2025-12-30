@@ -5,8 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Users, Activity, TrendingUp, Calendar, Shield, Database, BarChart3, Clock, Target, Signal, Server, Cpu, HardDrive, AlertTriangle, CheckCircle, XCircle, ChevronLeft, ChevronRight, ShoppingBag, Layers, Mail, Send, Bot, Zap, PlayCircle, Power, MailOpen, UserX, UserCheck, UserMinus } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -706,68 +707,102 @@ export default function AdminPage() {
                 {/* Segment Stats */}
                 <div>
                   <h4 className="text-sm font-semibold text-gray-700 mb-3">User Segments</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                    <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-lg p-3 border border-red-200">
-                      <div className="flex items-center gap-1 mb-1">
-                        <UserX className="h-3 w-3 text-red-500" />
-                        <span className="text-xs font-medium text-gray-600">Segment A</span>
+                  <TooltipProvider>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-lg p-3 border border-red-200 cursor-help">
+                            <div className="flex items-center gap-1 mb-1">
+                              <UserX className="h-3 w-3 text-red-500" />
+                              <span className="text-xs font-medium text-gray-600">Segment A</span>
+                            </div>
+                            <p className="text-xl font-bold text-charcoal" data-testid="stat-segment-a">
+                              {segmentStats?.segment_a || 0}
+                            </p>
+                            <p className="text-xs text-gray-500">Not Connected</p>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="font-medium">Segment A: Not Connected</p>
+                          <p className="text-xs text-gray-400">Users who registered but haven't connected Strava yet. Receives 2 emails encouraging connection.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg p-3 border border-yellow-200 cursor-help">
+                            <div className="flex items-center gap-1 mb-1">
+                              <Activity className="h-3 w-3 text-yellow-600" />
+                              <span className="text-xs font-medium text-gray-600">Segment B</span>
+                            </div>
+                            <p className="text-xl font-bold text-charcoal" data-testid="stat-segment-b">
+                              {segmentStats?.segment_b || 0}
+                            </p>
+                            <p className="text-xs text-gray-500">Not Activated</p>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="font-medium">Segment B: Connected but Not Activated</p>
+                          <p className="text-xs text-gray-400">Users connected to Strava but haven't visited the dashboard. Receives 7 emails over 14 days.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-3 border border-blue-200 cursor-help">
+                            <div className="flex items-center gap-1 mb-1">
+                              <UserCheck className="h-3 w-3 text-blue-600" />
+                              <span className="text-xs font-medium text-gray-600">Segment C</span>
+                            </div>
+                            <p className="text-xl font-bold text-charcoal" data-testid="stat-segment-c">
+                              {segmentStats?.segment_c || 0}
+                            </p>
+                            <p className="text-xs text-gray-500">Active Free</p>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="font-medium">Segment C: Active Free Users</p>
+                          <p className="text-xs text-gray-400">Activated free users - target for conversion. Receives 4 emails over 14 days promoting Pro/Premium.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-lg p-3 border border-gray-200 cursor-help">
+                            <div className="flex items-center gap-1 mb-1">
+                              <UserMinus className="h-3 w-3 text-gray-500" />
+                              <span className="text-xs font-medium text-gray-600">Segment D</span>
+                            </div>
+                            <p className="text-xl font-bold text-charcoal" data-testid="stat-segment-d">
+                              {segmentStats?.segment_d || 0}
+                            </p>
+                            <p className="text-xs text-gray-500">Inactive 7d+</p>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="font-medium">Segment D: Inactive Users</p>
+                          <p className="text-xs text-gray-400">Users inactive for 7+ days. Receives 2 re-engagement emails to bring them back.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-3 border border-green-200">
+                        <div className="flex items-center gap-1 mb-1">
+                          <CheckCircle className="h-3 w-3 text-green-600" />
+                          <span className="text-xs font-medium text-gray-600">Paid</span>
+                        </div>
+                        <p className="text-xl font-bold text-charcoal" data-testid="stat-paid-users">
+                          {segmentStats?.paid || 0}
+                        </p>
+                        <p className="text-xs text-gray-500">Subscribed</p>
                       </div>
-                      <p className="text-xl font-bold text-charcoal" data-testid="stat-segment-a">
-                        {segmentStats?.segment_a || 0}
-                      </p>
-                      <p className="text-xs text-gray-500">Not Connected</p>
-                    </div>
-                    <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg p-3 border border-yellow-200">
-                      <div className="flex items-center gap-1 mb-1">
-                        <Activity className="h-3 w-3 text-yellow-600" />
-                        <span className="text-xs font-medium text-gray-600">Segment B</span>
+                      <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-3 border border-purple-200">
+                        <div className="flex items-center gap-1 mb-1">
+                          <Users className="h-3 w-3 text-purple-600" />
+                          <span className="text-xs font-medium text-gray-600">Total</span>
+                        </div>
+                        <p className="text-xl font-bold text-charcoal" data-testid="stat-total-users-campaigns">
+                          {segmentStats?.total || 0}
+                        </p>
+                        <p className="text-xs text-gray-500">All Users</p>
                       </div>
-                      <p className="text-xl font-bold text-charcoal" data-testid="stat-segment-b">
-                        {segmentStats?.segment_b || 0}
-                      </p>
-                      <p className="text-xs text-gray-500">Not Activated</p>
                     </div>
-                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-3 border border-blue-200">
-                      <div className="flex items-center gap-1 mb-1">
-                        <UserCheck className="h-3 w-3 text-blue-600" />
-                        <span className="text-xs font-medium text-gray-600">Segment C</span>
-                      </div>
-                      <p className="text-xl font-bold text-charcoal" data-testid="stat-segment-c">
-                        {segmentStats?.segment_c || 0}
-                      </p>
-                      <p className="text-xs text-gray-500">Active Free</p>
-                    </div>
-                    <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-lg p-3 border border-gray-200">
-                      <div className="flex items-center gap-1 mb-1">
-                        <UserMinus className="h-3 w-3 text-gray-500" />
-                        <span className="text-xs font-medium text-gray-600">Segment D</span>
-                      </div>
-                      <p className="text-xl font-bold text-charcoal" data-testid="stat-segment-d">
-                        {segmentStats?.segment_d || 0}
-                      </p>
-                      <p className="text-xs text-gray-500">Inactive 7d+</p>
-                    </div>
-                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-3 border border-green-200">
-                      <div className="flex items-center gap-1 mb-1">
-                        <CheckCircle className="h-3 w-3 text-green-600" />
-                        <span className="text-xs font-medium text-gray-600">Paid</span>
-                      </div>
-                      <p className="text-xl font-bold text-charcoal" data-testid="stat-paid-users">
-                        {segmentStats?.paid || 0}
-                      </p>
-                      <p className="text-xs text-gray-500">Subscribed</p>
-                    </div>
-                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-3 border border-purple-200">
-                      <div className="flex items-center gap-1 mb-1">
-                        <Users className="h-3 w-3 text-purple-600" />
-                        <span className="text-xs font-medium text-gray-600">Total</span>
-                      </div>
-                      <p className="text-xl font-bold text-charcoal" data-testid="stat-total-users-campaigns">
-                        {segmentStats?.total || 0}
-                      </p>
-                      <p className="text-xs text-gray-500">All Users</p>
-                    </div>
-                  </div>
+                  </TooltipProvider>
                 </div>
 
                 {/* Worker Status */}
@@ -814,13 +849,6 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {/* Segment Legend */}
-                <div className="text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
-                  <p><strong>A:</strong> Registered but not connected to Strava (2 emails)</p>
-                  <p><strong>B:</strong> Connected but not activated - hasn't viewed dashboard (7 emails over 14 days)</p>
-                  <p><strong>C:</strong> Activated free users - target for conversion (4 emails over 14 days)</p>
-                  <p><strong>D:</strong> Inactive 7+ days - re-engagement (2 emails)</p>
-                </div>
               </div>
             )}
           </CardContent>
@@ -983,7 +1011,7 @@ export default function AdminPage() {
                         tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       />
                       <YAxis />
-                      <Tooltip 
+                      <RechartsTooltip 
                         labelFormatter={(value) => new Date(value).toLocaleDateString()}
                         formatter={(value: any) => [value, 'New Users']}
                       />
@@ -1022,7 +1050,7 @@ export default function AdminPage() {
                         tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       />
                       <YAxis />
-                      <Tooltip 
+                      <RechartsTooltip 
                         labelFormatter={(value) => new Date(value).toLocaleDateString()}
                         formatter={(value: any) => [value, 'Activities']}
                       />
@@ -1040,69 +1068,6 @@ export default function AdminPage() {
             </Card>
           </div>
 
-          {/* Top Activity Types */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Top Activity Types
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {analyticsLoading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange mx-auto mb-4"></div>
-                  <p>Loading activity types...</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    {analytics?.topActivityTypes.map((type, index) => (
-                      <div key={type.type} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div 
-                            className="w-4 h-4 rounded-full"
-                            style={{ 
-                              backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 5] 
-                            }}
-                          />
-                          <span className="font-medium" data-testid={`activity-type-${type.type.toLowerCase()}`}>
-                            {type.type}
-                          </span>
-                        </div>
-                        <span className="text-lg font-bold text-gray-900" data-testid={`activity-count-${type.type.toLowerCase()}`}>
-                          {type.count}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-center">
-                    <ResponsiveContainer width="100%" height={200}>
-                      <PieChart>
-                        <Pie
-                          data={analytics?.topActivityTypes}
-                          dataKey="count"
-                          nameKey="type"
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={80}
-                          label={({ type, percent }) => `${type} ${(percent * 100).toFixed(0)}%`}
-                        >
-                          {analytics?.topActivityTypes.map((entry, index) => (
-                            <Cell 
-                              key={`cell-${index}`} 
-                              fill={['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 5]} 
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
 
         {/* Performance Monitoring Section */}
@@ -1279,7 +1244,7 @@ export default function AdminPage() {
                     />
                     <YAxis yAxisId="responseTime" orientation="left" />
                     <YAxis yAxisId="requests" orientation="right" />
-                    <Tooltip 
+                    <RechartsTooltip 
                       labelFormatter={(value) => new Date(value).toLocaleTimeString()}
                       formatter={(value: any, name: string) => {
                         if (name === 'responseTime') return [`${value}ms`, 'Response Time'];
@@ -1585,46 +1550,6 @@ export default function AdminPage() {
         </Card>
 
 
-        {/* Recent Activities */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Recent Activities
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange mx-auto mb-4"></div>
-                <p>Loading activities...</p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Activity</TableHead>
-                    <TableHead>User ID</TableHead>
-                    <TableHead>Distance</TableHead>
-                    <TableHead>Duration</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {stats?.recentActivities.map((activity) => (
-                    <TableRow key={activity.id}>
-                      <TableCell className="font-medium">{activity.name}</TableCell>
-                      <TableCell>{activity.userId}</TableCell>
-                      <TableCell>{formatDistance(activity.distance)}</TableCell>
-                      <TableCell>{formatDuration(activity.movingTime)}</TableCell>
-                      <TableCell>{formatDate(activity.startDate)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
