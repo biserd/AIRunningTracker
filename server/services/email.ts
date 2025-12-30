@@ -860,6 +860,148 @@ Your AI Coach at RunAnalytics
       text
     });
   }
+
+  async sendDripEmail(options: {
+    to: string;
+    subject: string;
+    previewText: string;
+    ctaText: string;
+    ctaUrl: string;
+    userName: string;
+    step: string;
+    campaign: string;
+  }): Promise<boolean> {
+    const { to, subject, previewText, ctaText, ctaUrl, userName, step, campaign } = options;
+    
+    const segmentLabels: Record<string, string> = {
+      segment_a: "Get started with your running analysis",
+      segment_b: "Unlock your running potential",
+      segment_c: "Take your training to the next level",
+      segment_d: "Welcome back to your training",
+    };
+    
+    const headline = segmentLabels[campaign] || "Your running insights await";
+    
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; padding: 20px 0; border-bottom: 1px solid #eee;">
+          <h1 style="color: #e74c3c; font-size: 24px; margin: 0;">RunAnalytics</h1>
+        </div>
+        
+        <div style="padding: 30px 0;">
+          <h2 style="color: #2c3e50; font-size: 22px; margin-bottom: 20px;">Hey ${userName}! 👋</h2>
+          
+          <p style="color: #34495e; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+            ${headline}
+          </p>
+          
+          <p style="color: #34495e; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
+            ${previewText}
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${ctaUrl}" style="background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block;">${ctaText}</a>
+          </div>
+          
+          <p style="color: #7f8c8d; font-size: 14px; text-align: center; margin-top: 30px;">
+            Or copy this link: <a href="${ctaUrl}" style="color: #e74c3c;">${ctaUrl}</a>
+          </p>
+        </div>
+        
+        <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; color: #666; font-size: 14px;">
+          <p>Happy running!<br>The RunAnalytics Team</p>
+          <p style="font-size: 12px; color: #999;">
+            You're receiving this because you signed up for RunAnalytics. 
+            <a href="https://aitracker.run/settings?unsubscribe=marketing" style="color: #999;">Unsubscribe from marketing emails</a>
+          </p>
+        </div>
+      </div>
+    `;
+    
+    const text = `
+Hey ${userName}!
+
+${headline}
+
+${previewText}
+
+${ctaText}: ${ctaUrl}
+
+Happy running!
+The RunAnalytics Team
+
+---
+You're receiving this because you signed up for RunAnalytics.
+Unsubscribe: https://aitracker.run/settings?unsubscribe=marketing
+    `;
+    
+    console.log(`[Email] Sending drip email ${step} (${campaign}) to ${to}`);
+    
+    return await this.sendEmail({
+      to,
+      subject,
+      html,
+      text
+    });
+  }
+
+  async sendActivityReadyEmail(options: {
+    to: string;
+    userName: string;
+    activityName: string;
+    activityId: number;
+  }): Promise<boolean> {
+    const { to, userName, activityName, activityId } = options;
+    const activityUrl = `https://aitracker.run/activities/${activityId}?source=activity_ready`;
+    
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; padding: 20px 0; border-bottom: 1px solid #eee;">
+          <h1 style="color: #e74c3c; font-size: 24px; margin: 0;">RunAnalytics</h1>
+        </div>
+        
+        <div style="padding: 30px 0;">
+          <h2 style="color: #2c3e50; font-size: 22px; margin-bottom: 20px;">Your run analysis is ready! 🏃</h2>
+          
+          <p style="color: #34495e; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+            Hey ${userName}, we just finished analyzing <strong>${activityName}</strong>.
+          </p>
+          
+          <p style="color: #34495e; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
+            See your splits, pacing analysis, heart rate zones, and AI-powered insights.
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${activityUrl}" style="background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block;">View Run Analysis</a>
+          </div>
+        </div>
+        
+        <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; color: #666; font-size: 14px;">
+          <p>Keep running strong!<br>The RunAnalytics Team</p>
+        </div>
+      </div>
+    `;
+    
+    const text = `
+Your run analysis is ready!
+
+Hey ${userName}, we just finished analyzing "${activityName}".
+
+See your splits, pacing analysis, heart rate zones, and AI-powered insights.
+
+View Run Analysis: ${activityUrl}
+
+Keep running strong!
+The RunAnalytics Team
+    `;
+    
+    return await this.sendEmail({
+      to,
+      subject: `Your run analysis is ready: ${activityName}`,
+      html,
+      text
+    });
+  }
 }
 
 export const emailService = new EmailService();
