@@ -1,4 +1,4 @@
-import { users, activities, aiInsights, trainingPlans, trainingPlansLegacy, athleteProfiles, planWeeks, planDays, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, shoeComparisons, apiKeys, refreshTokens, workoutCache, coachRecaps, agentRuns, notificationOutbox, deletionFeedback, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ShoeComparison, type InsertShoeComparison, type ApiKey, type InsertApiKey, type RefreshToken, type InsertRefreshToken, type AthleteProfile, type InsertAthleteProfile, type PlanWeek, type InsertPlanWeek, type PlanDay, type InsertPlanDay, type WorkoutCache, type InsertWorkoutCache, type CoachRecap, type InsertCoachRecap, type AgentRun, type InsertAgentRun, type NotificationOutbox, type InsertNotificationOutbox, type DeletionFeedback, type InsertDeletionFeedback } from "@shared/schema";
+import { users, activities, aiInsights, trainingPlans, trainingPlansLegacy, athleteProfiles, planWeeks, planDays, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, shoeComparisons, apiKeys, refreshTokens, workoutCache, coachRecaps, agentRuns, notificationOutbox, deletionFeedback, userCampaigns, emailJobs, emailClicks, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ShoeComparison, type InsertShoeComparison, type ApiKey, type InsertApiKey, type RefreshToken, type InsertRefreshToken, type AthleteProfile, type InsertAthleteProfile, type PlanWeek, type InsertPlanWeek, type PlanDay, type InsertPlanDay, type WorkoutCache, type InsertWorkoutCache, type CoachRecap, type InsertCoachRecap, type AgentRun, type InsertAgentRun, type NotificationOutbox, type InsertNotificationOutbox, type DeletionFeedback, type InsertDeletionFeedback, type UserCampaign, type InsertUserCampaign, type EmailJob, type InsertEmailJob, type EmailClick, type InsertEmailClick } from "@shared/schema";
 import crypto from "crypto";
 import { db } from "./db";
 import { eq, desc, and, sql, inArray, gte, gt, lt } from "drizzle-orm";
@@ -138,6 +138,34 @@ export interface IStorage {
   deleteAccount(userId: number): Promise<void>;
   createDeletionFeedback(feedback: InsertDeletionFeedback): Promise<DeletionFeedback>;
   getDeletionFeedback(limit?: number): Promise<DeletionFeedback[]>;
+  
+  // Drip campaign methods
+  getUserCampaign(userId: number, campaign: string): Promise<UserCampaign | undefined>;
+  getActiveCampaigns(userId: number): Promise<UserCampaign[]>;
+  createUserCampaign(campaign: InsertUserCampaign): Promise<UserCampaign>;
+  updateUserCampaign(id: number, updates: Partial<UserCampaign>): Promise<UserCampaign | undefined>;
+  exitUserCampaign(id: number, exitReason: string): Promise<void>;
+  
+  createEmailJob(job: InsertEmailJob): Promise<EmailJob>;
+  getPendingEmailJobs(limit?: number): Promise<EmailJob[]>;
+  getEmailJobByDedupeKey(dedupeKey: string): Promise<EmailJob | undefined>;
+  updateEmailJob(id: number, updates: Partial<EmailJob>): Promise<EmailJob | undefined>;
+  cancelEmailJobsForUser(userId: number): Promise<void>;
+  
+  createEmailClick(click: InsertEmailClick): Promise<EmailClick>;
+  getEmailClicksByUser(userId: number, limit?: number): Promise<EmailClick[]>;
+  getCampaignAnalytics(): Promise<{
+    totalSent: number;
+    totalClicked: number;
+    byCampaign: Array<{ campaign: string; sent: number; clicked: number }>;
+    byStep: Array<{ step: string; sent: number; clicked: number }>;
+  }>;
+  
+  // User activation tracking
+  updateUserActivation(userId: number, activationAt: Date): Promise<void>;
+  updateUserLastSeen(userId: number): Promise<void>;
+  getInactiveUsers(daysSinceLastSeen: number): Promise<User[]>;
+  getUsersNeedingCampaign(segment: string): Promise<User[]>;
   
   // Admin methods
   getAdminStats(): Promise<{
@@ -1336,6 +1364,276 @@ export class DatabaseStorage implements IStorage {
       .from(deletionFeedback)
       .orderBy(desc(deletionFeedback.createdAt))
       .limit(limit);
+  }
+
+  // ============== DRIP CAMPAIGN METHODS ==============
+
+  async getUserCampaign(userId: number, campaign: string): Promise<UserCampaign | undefined> {
+    const [result] = await db
+      .select()
+      .from(userCampaigns)
+      .where(and(eq(userCampaigns.userId, userId), eq(userCampaigns.campaign, campaign as any)));
+    return result;
+  }
+
+  async getActiveCampaigns(userId: number): Promise<UserCampaign[]> {
+    return await db
+      .select()
+      .from(userCampaigns)
+      .where(and(eq(userCampaigns.userId, userId), eq(userCampaigns.state, "active")));
+  }
+
+  async createUserCampaign(campaign: InsertUserCampaign): Promise<UserCampaign> {
+    const [result] = await db
+      .insert(userCampaigns)
+      .values(campaign)
+      .returning();
+    return result;
+  }
+
+  async updateUserCampaign(id: number, updates: Partial<UserCampaign>): Promise<UserCampaign | undefined> {
+    const [result] = await db
+      .update(userCampaigns)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(userCampaigns.id, id))
+      .returning();
+    return result;
+  }
+
+  async exitUserCampaign(id: number, exitReason: string): Promise<void> {
+    await db
+      .update(userCampaigns)
+      .set({ 
+        state: "exited", 
+        exitedAt: new Date(), 
+        exitReason,
+        updatedAt: new Date() 
+      })
+      .where(eq(userCampaigns.id, id));
+  }
+
+  async createEmailJob(job: InsertEmailJob): Promise<EmailJob> {
+    const [result] = await db
+      .insert(emailJobs)
+      .values(job)
+      .returning();
+    return result;
+  }
+
+  async getPendingEmailJobs(limit = 100): Promise<EmailJob[]> {
+    const now = new Date();
+    return await db
+      .select()
+      .from(emailJobs)
+      .where(and(
+        eq(emailJobs.status, "pending"),
+        lt(emailJobs.scheduledAt, now)
+      ))
+      .orderBy(emailJobs.scheduledAt)
+      .limit(limit);
+  }
+
+  async getEmailJobByDedupeKey(dedupeKey: string): Promise<EmailJob | undefined> {
+    const [result] = await db
+      .select()
+      .from(emailJobs)
+      .where(eq(emailJobs.dedupeKey, dedupeKey));
+    return result;
+  }
+
+  async updateEmailJob(id: number, updates: Partial<EmailJob>): Promise<EmailJob | undefined> {
+    const [result] = await db
+      .update(emailJobs)
+      .set(updates)
+      .where(eq(emailJobs.id, id))
+      .returning();
+    return result;
+  }
+
+  async cancelEmailJobsForUser(userId: number): Promise<void> {
+    await db
+      .update(emailJobs)
+      .set({ status: "cancelled" })
+      .where(and(eq(emailJobs.userId, userId), eq(emailJobs.status, "pending")));
+  }
+
+  async createEmailClick(click: InsertEmailClick): Promise<EmailClick> {
+    const [result] = await db
+      .insert(emailClicks)
+      .values(click)
+      .returning();
+    return result;
+  }
+
+  async getEmailClicksByUser(userId: number, limit = 50): Promise<EmailClick[]> {
+    return await db
+      .select()
+      .from(emailClicks)
+      .where(eq(emailClicks.userId, userId))
+      .orderBy(desc(emailClicks.clickedAt))
+      .limit(limit);
+  }
+
+  async getCampaignAnalytics(): Promise<{
+    totalSent: number;
+    totalClicked: number;
+    byCampaign: Array<{ campaign: string; sent: number; clicked: number }>;
+    byStep: Array<{ step: string; sent: number; clicked: number }>;
+  }> {
+    // Total sent emails
+    const [sentResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(emailJobs)
+      .where(eq(emailJobs.status, "sent"));
+    
+    // Total clicks
+    const [clickResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(emailClicks);
+    
+    // Sent by campaign
+    const sentByCampaign = await db
+      .select({ 
+        campaign: emailJobs.campaign,
+        count: sql<number>`count(*)` 
+      })
+      .from(emailJobs)
+      .where(eq(emailJobs.status, "sent"))
+      .groupBy(emailJobs.campaign);
+    
+    // Clicks by campaign
+    const clicksByCampaign = await db
+      .select({ 
+        campaign: emailClicks.campaign,
+        count: sql<number>`count(*)` 
+      })
+      .from(emailClicks)
+      .groupBy(emailClicks.campaign);
+
+    // Sent by step
+    const sentByStep = await db
+      .select({ 
+        step: emailJobs.step,
+        count: sql<number>`count(*)` 
+      })
+      .from(emailJobs)
+      .where(eq(emailJobs.status, "sent"))
+      .groupBy(emailJobs.step);
+    
+    // Clicks by step
+    const clicksByStep = await db
+      .select({ 
+        step: emailClicks.step,
+        count: sql<number>`count(*)` 
+      })
+      .from(emailClicks)
+      .groupBy(emailClicks.step);
+
+    // Merge sent and clicked data by campaign
+    const campaignMap = new Map<string, { sent: number; clicked: number }>();
+    for (const row of sentByCampaign) {
+      if (row.campaign) {
+        campaignMap.set(row.campaign, { sent: Number(row.count), clicked: 0 });
+      }
+    }
+    for (const row of clicksByCampaign) {
+      if (row.campaign) {
+        const existing = campaignMap.get(row.campaign) || { sent: 0, clicked: 0 };
+        existing.clicked = Number(row.count);
+        campaignMap.set(row.campaign, existing);
+      }
+    }
+
+    // Merge sent and clicked data by step
+    const stepMap = new Map<string, { sent: number; clicked: number }>();
+    for (const row of sentByStep) {
+      if (row.step) {
+        stepMap.set(row.step, { sent: Number(row.count), clicked: 0 });
+      }
+    }
+    for (const row of clicksByStep) {
+      if (row.step) {
+        const existing = stepMap.get(row.step) || { sent: 0, clicked: 0 };
+        existing.clicked = Number(row.count);
+        stepMap.set(row.step, existing);
+      }
+    }
+
+    return {
+      totalSent: Number(sentResult?.count || 0),
+      totalClicked: Number(clickResult?.count || 0),
+      byCampaign: Array.from(campaignMap.entries()).map(([campaign, data]) => ({ campaign, ...data })),
+      byStep: Array.from(stepMap.entries()).map(([step, data]) => ({ step, ...data })),
+    };
+  }
+
+  async updateUserActivation(userId: number, activationAt: Date): Promise<void> {
+    await db
+      .update(users)
+      .set({ activationAt })
+      .where(eq(users.id, userId));
+  }
+
+  async updateUserLastSeen(userId: number): Promise<void> {
+    await db
+      .update(users)
+      .set({ lastSeenAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+
+  async getInactiveUsers(daysSinceLastSeen: number): Promise<User[]> {
+    const cutoff = new Date(Date.now() - daysSinceLastSeen * 24 * 60 * 60 * 1000);
+    return await db
+      .select()
+      .from(users)
+      .where(and(
+        lt(users.lastSeenAt, cutoff),
+        eq(users.marketingOptOut, false)
+      ));
+  }
+
+  async getUsersNeedingCampaign(segment: string): Promise<User[]> {
+    // Get users based on segment rules
+    switch (segment) {
+      case "segment_a": // Not Connected
+        return await db
+          .select()
+          .from(users)
+          .where(and(
+            eq(users.stravaConnected, false),
+            eq(users.marketingOptOut, false)
+          ));
+      case "segment_b": // Connected, Not Activated
+        return await db
+          .select()
+          .from(users)
+          .where(and(
+            eq(users.stravaConnected, true),
+            sql`${users.activationAt} IS NULL`,
+            eq(users.marketingOptOut, false)
+          ));
+      case "segment_c": // Activated, Not Paid
+        return await db
+          .select()
+          .from(users)
+          .where(and(
+            sql`${users.activationAt} IS NOT NULL`,
+            eq(users.subscriptionPlan, "free"),
+            eq(users.marketingOptOut, false)
+          ));
+      case "segment_d": // Inactive (7+ days)
+        const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        return await db
+          .select()
+          .from(users)
+          .where(and(
+            lt(users.lastSeenAt, cutoff),
+            eq(users.subscriptionPlan, "free"),
+            eq(users.marketingOptOut, false)
+          ));
+      default:
+        return [];
+    }
   }
 
   async getUserAnalytics(): Promise<{

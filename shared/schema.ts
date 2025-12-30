@@ -63,6 +63,11 @@ export const users = pgTable("users", {
   // Recovery state caching (24hr TTL, invalidated on sync)
   cachedRecoveryState: jsonb("cached_recovery_state"),
   recoveryCalculatedAt: timestamp("recovery_calculated_at"),
+  // Lifecycle/drip campaign tracking
+  activationAt: timestamp("activation_at"), // When user first hits aha moment (snapshot/story/coach)
+  lastSeenAt: timestamp("last_seen_at"), // Last app interaction
+  marketingOptOut: boolean("marketing_opt_out").default(false), // User opted out of lifecycle emails
+  coachQuestionsCount7d: integer("coach_questions_count_7d").default(0), // Rolling 7-day coach question count
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -899,6 +904,97 @@ export const insertDeletionFeedbackSchema = createInsertSchema(deletionFeedback)
   createdAt: true,
 });
 
+// ============== DRIP CAMPAIGN SYSTEM ==============
+
+// User campaigns - tracks which campaign a user is in and their progress
+export const userCampaigns = pgTable("user_campaigns", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  campaign: text("campaign", { 
+    enum: ["segment_a", "segment_b", "segment_c", "segment_d"] 
+  }).notNull(),
+  state: text("state", { 
+    enum: ["active", "completed", "exited", "cancelled"] 
+  }).default("active"),
+  currentStep: integer("current_step").default(1), // A1=1, A2=2, B1=1, B2=2, etc.
+  enteredAt: timestamp("entered_at").defaultNow(),
+  exitedAt: timestamp("exited_at"),
+  exitReason: text("exit_reason"), // "converted", "subscribed", "unsubscribed", "completed", "segment_change"
+  lastEmailSentAt: timestamp("last_email_sent_at"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("user_campaigns_user_id_idx").on(table.userId),
+  campaignIdx: index("user_campaigns_campaign_idx").on(table.campaign),
+  stateIdx: index("user_campaigns_state_idx").on(table.state),
+  userCampaignUniqueIdx: index("user_campaigns_user_campaign_unique_idx").on(table.userId, table.campaign),
+}));
+
+// Email jobs - scheduled emails with deduplication
+export const emailJobs = pgTable("email_jobs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  jobType: text("job_type", { 
+    enum: ["drip", "transactional", "activity_ready"] 
+  }).notNull(),
+  campaign: text("campaign"), // segment_a, segment_b, etc.
+  step: text("step"), // A1, A2, B1, B2, etc.
+  scheduledAt: timestamp("scheduled_at").notNull(),
+  status: text("status", { 
+    enum: ["pending", "sent", "cancelled", "failed"] 
+  }).default("pending"),
+  dedupeKey: text("dedupe_key").notNull(), // user_id + campaign + step
+  metadata: json("metadata").$type<{
+    ctaUrl?: string;
+    activityId?: number;
+    compareA1?: number;
+    compareA2?: number;
+    subject?: string;
+    previewText?: string;
+  }>(),
+  sentAt: timestamp("sent_at"),
+  errorMessage: text("error_message"),
+  retryCount: integer("retry_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("email_jobs_user_id_idx").on(table.userId),
+  statusIdx: index("email_jobs_status_idx").on(table.status),
+  scheduledAtIdx: index("email_jobs_scheduled_at_idx").on(table.scheduledAt),
+  dedupeKeyIdx: index("email_jobs_dedupe_key_idx").on(table.dedupeKey),
+}));
+
+// Email click tracking - for campaign analytics
+export const emailClicks = pgTable("email_clicks", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  campaign: text("campaign"),
+  step: text("step"),
+  ctaKey: text("cta_key"), // "connect_strava", "view_snapshot", "upgrade", etc.
+  clickedAt: timestamp("clicked_at").defaultNow(),
+  source: text("source"), // From URL param ?source=B1
+}, (table) => ({
+  userIdIdx: index("email_clicks_user_id_idx").on(table.userId),
+  campaignStepIdx: index("email_clicks_campaign_step_idx").on(table.campaign, table.step),
+}));
+
+export const insertUserCampaignSchema = createInsertSchema(userCampaigns).omit({
+  id: true,
+  enteredAt: true,
+  updatedAt: true,
+});
+
+export const insertEmailJobSchema = createInsertSchema(emailJobs).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+  sentAt: true,
+  retryCount: true,
+});
+
+export const insertEmailClickSchema = createInsertSchema(emailClicks).omit({
+  id: true,
+  clickedAt: true,
+});
+
 // Login schema for authentication
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -968,3 +1064,9 @@ export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;
 export type InsertDeletionFeedback = z.infer<typeof insertDeletionFeedbackSchema>;
 export type DeletionFeedback = typeof deletionFeedback.$inferSelect;
+export type InsertUserCampaign = z.infer<typeof insertUserCampaignSchema>;
+export type UserCampaign = typeof userCampaigns.$inferSelect;
+export type InsertEmailJob = z.infer<typeof insertEmailJobSchema>;
+export type EmailJob = typeof emailJobs.$inferSelect;
+export type InsertEmailClick = z.infer<typeof insertEmailClickSchema>;
+export type EmailClick = typeof emailClicks.$inferSelect;
