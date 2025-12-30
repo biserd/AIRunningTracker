@@ -566,7 +566,7 @@ export default function TrainingPlans() {
         )}
       </main>
       
-      {user && canAccessAICoachChat && (
+      {user && (
         <FloatingAICoach 
           userId={user.id} 
           pageContext={{

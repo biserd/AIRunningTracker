@@ -490,7 +490,7 @@ export default function Dashboard() {
         </div>
       </main>
       
-      {user && canAccessAICoachChat && (
+      {user && (
         <FloatingAICoach 
           userId={user.id} 
           pageContext={{
