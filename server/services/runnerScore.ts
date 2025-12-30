@@ -64,11 +64,12 @@ export class RunnerScoreService {
     };
   }
 
-  private calculateScoreComponents(activities: Activity[]): RunnerScoreComponents {
-    const consistency = this.calculateConsistencyScore(activities);
-    const performance = this.calculatePerformanceScore(activities);
-    const volume = this.calculateVolumeScore(activities);
-    const improvement = this.calculateImprovementScore(activities);
+  private calculateScoreComponents(activities: Activity[], referenceDate?: Date): RunnerScoreComponents {
+    const refDate = referenceDate || new Date();
+    const consistency = this.calculateConsistencyScore(activities, refDate);
+    const performance = this.calculatePerformanceScore(activities, refDate);
+    const volume = this.calculateVolumeScore(activities, refDate);
+    const improvement = this.calculateImprovementScore(activities, refDate);
 
     return { consistency, performance, volume, improvement };
   }
@@ -76,12 +77,14 @@ export class RunnerScoreService {
   /**
    * Consistency Score (0-25): Regularity of training
    */
-  private calculateConsistencyScore(activities: Activity[]): number {
+  private calculateConsistencyScore(activities: Activity[], referenceDate: Date): number {
     if (activities.length < 2) return 5;
 
-    const last30Days = activities.filter(a => 
-      new Date(a.startDate) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-    );
+    const refTime = referenceDate.getTime();
+    const last30Days = activities.filter(a => {
+      const activityTime = new Date(a.startDate).getTime();
+      return activityTime > refTime - 30 * 24 * 60 * 60 * 1000 && activityTime <= refTime;
+    });
 
     const runsPerWeek = last30Days.length / 4.3;
     
@@ -94,18 +97,28 @@ export class RunnerScoreService {
   }
 
   /**
-   * Performance Score (0-25): Based on pace and efficiency
+   * Performance Score (0-25): Based on pace and efficiency in recent period
    */
-  private calculatePerformanceScore(activities: Activity[]): number {
+  private calculatePerformanceScore(activities: Activity[], referenceDate: Date): number {
     if (activities.length === 0) return 5;
 
+    // Focus on recent 30-day performance for more dynamic scoring
+    const refTime = referenceDate.getTime();
+    const recentActivities = activities.filter(a => {
+      const activityTime = new Date(a.startDate).getTime();
+      return activityTime > refTime - 30 * 24 * 60 * 60 * 1000 && activityTime <= refTime;
+    });
+
+    const activitiesToScore = recentActivities.length >= 3 ? recentActivities : activities.slice(-10);
+
     // Calculate average pace from speed (averageSpeed is in m/s)
-    const avgPace = activities.reduce((sum, a) => {
-      if (!a.averageSpeed || a.averageSpeed === 0) return sum;
-      // Convert m/s to minutes per mile: (1609.34 / speed) / 60
-      const paceMinPerMile = (1609.34 / a.averageSpeed) / 60;
+    const validActivities = activitiesToScore.filter(a => a.averageSpeed && a.averageSpeed > 0);
+    if (validActivities.length === 0) return 5;
+
+    const avgPace = validActivities.reduce((sum, a) => {
+      const paceMinPerMile = (1609.34 / a.averageSpeed!) / 60;
       return sum + paceMinPerMile;
-    }, 0) / activities.filter(a => a.averageSpeed && a.averageSpeed > 0).length;
+    }, 0) / validActivities.length;
     
     // Convert pace to score (lower pace = higher score)
     if (avgPace <= 6) return 25; // Elite pace
@@ -120,12 +133,14 @@ export class RunnerScoreService {
   /**
    * Volume Score (0-25): Weekly mileage and distance progression
    */
-  private calculateVolumeScore(activities: Activity[]): number {
+  private calculateVolumeScore(activities: Activity[], referenceDate: Date): number {
     if (activities.length === 0) return 5;
 
-    const last30Days = activities.filter(a => 
-      new Date(a.startDate) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-    );
+    const refTime = referenceDate.getTime();
+    const last30Days = activities.filter(a => {
+      const activityTime = new Date(a.startDate).getTime();
+      return activityTime > refTime - 30 * 24 * 60 * 60 * 1000 && activityTime <= refTime;
+    });
 
     const totalDistance = last30Days.reduce((sum, a) => sum + (a.distance || 0), 0);
     const weeklyDistance = totalDistance / 4.3;
@@ -142,27 +157,45 @@ export class RunnerScoreService {
   }
 
   /**
-   * Improvement Score (0-25): Progress over time
+   * Improvement Score (0-25): Progress over time - compares recent vs older performance
    */
-  private calculateImprovementScore(activities: Activity[]): number {
-    if (activities.length < 10) return 15; // Default for new runners
+  private calculateImprovementScore(activities: Activity[], referenceDate: Date): number {
+    if (activities.length < 6) return 15; // Default for new runners
 
-    const sorted = activities.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-    const firstHalf = sorted.slice(0, Math.floor(sorted.length / 2));
-    const secondHalf = sorted.slice(Math.floor(sorted.length / 2));
+    const refTime = referenceDate.getTime();
+    const sorted = activities
+      .filter(a => new Date(a.startDate).getTime() <= refTime)
+      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
-    // Calculate average pace for each half (convert from m/s to min/mile)
-    const firstHalfAvgPace = firstHalf.reduce((sum, a) => {
-      if (!a.averageSpeed || a.averageSpeed === 0) return sum;
-      return sum + ((1609.34 / a.averageSpeed) / 60);
-    }, 0) / firstHalf.filter(a => a.averageSpeed && a.averageSpeed > 0).length;
+    if (sorted.length < 6) return 15;
 
-    const secondHalfAvgPace = secondHalf.reduce((sum, a) => {
-      if (!a.averageSpeed || a.averageSpeed === 0) return sum;
-      return sum + ((1609.34 / a.averageSpeed) / 60);
-    }, 0) / secondHalf.filter(a => a.averageSpeed && a.averageSpeed > 0).length;
+    // Compare last 30 days vs previous 30 days (relative to reference date)
+    const recent30Days = sorted.filter(a => {
+      const t = new Date(a.startDate).getTime();
+      return t > refTime - 30 * 24 * 60 * 60 * 1000 && t <= refTime;
+    });
+    
+    const previous30Days = sorted.filter(a => {
+      const t = new Date(a.startDate).getTime();
+      return t > refTime - 60 * 24 * 60 * 60 * 1000 && t <= refTime - 30 * 24 * 60 * 60 * 1000;
+    });
 
-    const improvement = firstHalfAvgPace - secondHalfAvgPace; // Positive = faster
+    // Fall back to halving if not enough data in 30-day windows
+    const recentPeriod = recent30Days.length >= 3 ? recent30Days : sorted.slice(Math.floor(sorted.length / 2));
+    const olderPeriod = previous30Days.length >= 3 ? previous30Days : sorted.slice(0, Math.floor(sorted.length / 2));
+
+    const getAvgPace = (acts: Activity[]) => {
+      const valid = acts.filter(a => a.averageSpeed && a.averageSpeed > 0);
+      if (valid.length === 0) return NaN;
+      return valid.reduce((sum, a) => sum + ((1609.34 / a.averageSpeed!) / 60), 0) / valid.length;
+    };
+
+    const recentAvgPace = getAvgPace(recentPeriod);
+    const olderAvgPace = getAvgPace(olderPeriod);
+
+    if (isNaN(recentAvgPace) || isNaN(olderAvgPace)) return 15;
+
+    const improvement = olderAvgPace - recentAvgPace; // Positive = getting faster
 
     if (improvement >= 1) return 25; // Significant improvement
     if (improvement >= 0.5) return 22; // Good improvement
@@ -277,7 +310,7 @@ export class RunnerScoreService {
 
   /**
    * Calculate historical runner scores by simulating scores at different time periods
-   * Now generates weekly data points for more granular progression tracking
+   * Generates weekly data points for 6 months of granular progression tracking
    */
   async calculateHistoricalRunnerScore(userId: number): Promise<HistoricalScorePoint[]> {
     const activities = await storage.getActivitiesByUserId(userId, 500); // Get more activities for history
@@ -290,8 +323,8 @@ export class RunnerScoreService {
     const now = new Date();
     const historicalPoints: HistoricalScorePoint[] = [];
 
-    // Generate weekly score snapshots for the last 12 weeks (3 months) for better granularity
-    for (let weeksAgo = 12; weeksAgo >= 0; weeksAgo--) {
+    // Generate weekly score snapshots for the last 26 weeks (6 months)
+    for (let weeksAgo = 26; weeksAgo >= 0; weeksAgo--) {
       const cutoffDate = new Date(now.getTime() - (weeksAgo * 7 * 24 * 60 * 60 * 1000));
       
       // Get activities up to this point in time
@@ -300,7 +333,8 @@ export class RunnerScoreService {
       );
 
       if (activitiesUpToCutoff.length >= 3) {
-        const components = this.calculateScoreComponents(activitiesUpToCutoff);
+        // Pass cutoffDate as reference so scores are calculated relative to that point in time
+        const components = this.calculateScoreComponents(activitiesUpToCutoff, cutoffDate);
         const totalScore = Math.round(components.consistency + components.performance + components.volume + components.improvement);
         const grade = this.getGrade(totalScore);
         
@@ -313,11 +347,8 @@ export class RunnerScoreService {
       }
     }
 
-    // Keep points that show meaningful change (>1 point difference) or are endpoints
-    return historicalPoints.filter((point, index, array) => {
-      if (index === 0 || index === array.length - 1) return true;
-      return Math.abs(point.totalScore - array[index - 1].totalScore) >= 1;
-    });
+    // Keep all points for the chart - users want to see the full history
+    return historicalPoints;
   }
 
   private getDefaultScore(): RunnerScoreData {
