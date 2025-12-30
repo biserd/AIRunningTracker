@@ -994,6 +994,17 @@ export const insertEmailClickSchema = createInsertSchema(emailClicks).omit({
   clickedAt: true,
 });
 
+// System settings - global key-value configuration
+export const systemSettings = pgTable("system_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSystemSettingSchema = createInsertSchema(systemSettings).omit({
+  updatedAt: true,
+});
+
 // Login schema for authentication
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -1069,3 +1080,5 @@ export type InsertEmailJob = z.infer<typeof insertEmailJobSchema>;
 export type EmailJob = typeof emailJobs.$inferSelect;
 export type InsertEmailClick = z.infer<typeof insertEmailClickSchema>;
 export type EmailClick = typeof emailClicks.$inferSelect;
+export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
+export type SystemSetting = typeof systemSettings.$inferSelect;
