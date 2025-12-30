@@ -20,6 +20,8 @@ import { coachVerdictService } from "./services/coachVerdict";
 import { getRecoveryState } from "./services/recoveryService";
 import { dataQualityService } from "./services/dataQuality";
 import { efficiencyService } from "./services/efficiency";
+import { dripCampaignService } from "./services/dripCampaign";
+import { dripCampaignWorker } from "./services/dripCampaignWorker";
 import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, emailWaitlist, type Activity, type RunningShoe } from "@shared/schema";
 import { shoeData } from "./shoe-data";
 import { validateAllShoes, getPipelineStats, findDuplicates, getShoeDataWithMetadata, getShoesWithMetadataFromStorage, getEnrichedShoeData, enrichShoeWithAIData } from "./shoe-pipeline";
@@ -1022,6 +1024,14 @@ ${allPages.map(page => `  <url>
         stravaAthleteId: tokenData.athlete.id.toString(),
         stravaConnected: true,
       });
+
+      // Trigger drip campaign for Strava connection
+      try {
+        await dripCampaignService.onStravaConnected(userId);
+        console.log('Drip campaign triggered for Strava connection');
+      } catch (campaignError) {
+        console.error('Drip campaign trigger failed:', campaignError);
+      }
 
       // Auto-sync activities and generate insights after connecting
       try {
@@ -6246,6 +6256,134 @@ ${allPages.map(page => `  <url>
       res.status(500).json({ message: error.message || "Failed to mark notifications as read" });
     }
   });
+
+  // ============= DRIP CAMPAIGN ENDPOINTS =============
+
+  // Track email click (public endpoint with token validation)
+  app.get("/api/track/click", async (req: any, res) => {
+    try {
+      const { userId, campaign, step, redirect, source } = req.query;
+      
+      if (userId && campaign && step) {
+        await storage.createEmailClick({
+          userId: parseInt(userId),
+          campaign,
+          step,
+          source: source || null,
+          ctaKey: null,
+        });
+      }
+      
+      // Redirect to the target URL or dashboard
+      const targetUrl = redirect || '/dashboard';
+      res.redirect(302, targetUrl);
+    } catch (error) {
+      console.error("Track click error:", error);
+      res.redirect(302, '/dashboard');
+    }
+  });
+
+  // Admin: Get campaign analytics
+  app.get("/api/admin/campaigns/analytics", authenticateAdmin, async (req: any, res) => {
+    try {
+      const analytics = await storage.getCampaignAnalytics();
+      res.json(analytics);
+    } catch (error: any) {
+      console.error("Campaign analytics error:", error);
+      res.status(500).json({ message: error.message || "Failed to get analytics" });
+    }
+  });
+
+  // Admin: Get drip campaign worker status
+  app.get("/api/admin/campaigns/worker-status", authenticateAdmin, async (req: any, res) => {
+    try {
+      const status = dripCampaignWorker.getStatus();
+      res.json(status);
+    } catch (error: any) {
+      console.error("Worker status error:", error);
+      res.status(500).json({ message: error.message || "Failed to get worker status" });
+    }
+  });
+
+  // Admin: Trigger manual drip campaign worker run
+  app.post("/api/admin/campaigns/process", authenticateAdmin, async (req: any, res) => {
+    try {
+      await dripCampaignWorker.runNow();
+      res.json({ success: true, message: "Worker run triggered" });
+    } catch (error: any) {
+      console.error("Worker trigger error:", error);
+      res.status(500).json({ message: error.message || "Failed to trigger worker" });
+    }
+  });
+
+  // Admin: Get pending email jobs
+  app.get("/api/admin/campaigns/pending-jobs", authenticateAdmin, async (req: any, res) => {
+    try {
+      const limit = parseInt(req.query?.limit as string) || 50;
+      const jobs = await storage.getPendingEmailJobs(limit);
+      res.json({ jobs, count: jobs.length });
+    } catch (error: any) {
+      console.error("Pending jobs error:", error);
+      res.status(500).json({ message: error.message || "Failed to get pending jobs" });
+    }
+  });
+
+  // User: Opt out of marketing emails
+  app.post("/api/users/:userId/marketing-optout", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (req.user.id !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      await storage.updateUser(userId, { marketingOptOut: true });
+      await dripCampaignService.exitCampaignForUser(userId, "user_optout");
+      
+      res.json({ success: true, message: "Successfully unsubscribed from marketing emails" });
+    } catch (error: any) {
+      console.error("Marketing optout error:", error);
+      res.status(500).json({ message: error.message || "Failed to opt out" });
+    }
+  });
+
+  // Update user's last seen timestamp on dashboard load
+  app.post("/api/users/:userId/heartbeat", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (req.user.id !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      await dripCampaignService.recordLastSeen(userId);
+      res.json({ success: true });
+    } catch (error: any) {
+      // Silent failure for heartbeat
+      res.json({ success: false });
+    }
+  });
+
+  // Record user activation event
+  app.post("/api/users/:userId/activation", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { activationType } = req.body;
+      
+      if (req.user.id !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      await dripCampaignService.recordActivation(userId, activationType || "dashboard_view");
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Activation recording error:", error);
+      res.status(500).json({ message: error.message || "Failed to record activation" });
+    }
+  });
+
+  // Start the drip campaign worker
+  dripCampaignWorker.start();
 
   const httpServer = createServer(app);
   return httpServer;
