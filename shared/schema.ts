@@ -879,6 +879,26 @@ export const updateCoachPreferencesSchema = z.object({
   coachOnboardingCompleted: z.boolean().optional(),
 });
 
+// Deletion feedback table - tracks why users delete their accounts
+export const deletionFeedback = pgTable("deletion_feedback", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"), // Nullable since user will be deleted
+  userEmail: text("user_email").notNull(),
+  reason: text("reason", { 
+    enum: ["too_expensive", "not_using", "missing_features", "found_alternative", "technical_issues", "privacy_concerns", "other"] 
+  }).notNull(),
+  details: text("details"), // Optional additional details
+  wasRetained: boolean("was_retained").default(false), // Did they stay after seeing retention offer?
+  subscriptionPlan: text("subscription_plan"), // What plan were they on?
+  accountAgeInDays: integer("account_age_in_days"), // How long were they a user?
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertDeletionFeedbackSchema = createInsertSchema(deletionFeedback).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Login schema for authentication
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -946,3 +966,5 @@ export type NotificationOutbox = typeof notificationOutbox.$inferSelect;
 export type UpdateCoachPreferences = z.infer<typeof updateCoachPreferencesSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;
+export type InsertDeletionFeedback = z.infer<typeof insertDeletionFeedbackSchema>;
+export type DeletionFeedback = typeof deletionFeedback.$inferSelect;

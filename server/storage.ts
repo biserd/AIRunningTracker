@@ -1,4 +1,4 @@
-import { users, activities, aiInsights, trainingPlans, trainingPlansLegacy, athleteProfiles, planWeeks, planDays, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, shoeComparisons, apiKeys, refreshTokens, workoutCache, coachRecaps, agentRuns, notificationOutbox, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ShoeComparison, type InsertShoeComparison, type ApiKey, type InsertApiKey, type RefreshToken, type InsertRefreshToken, type AthleteProfile, type InsertAthleteProfile, type PlanWeek, type InsertPlanWeek, type PlanDay, type InsertPlanDay, type WorkoutCache, type InsertWorkoutCache, type CoachRecap, type InsertCoachRecap, type AgentRun, type InsertAgentRun, type NotificationOutbox, type InsertNotificationOutbox } from "@shared/schema";
+import { users, activities, aiInsights, trainingPlans, trainingPlansLegacy, athleteProfiles, planWeeks, planDays, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, shoeComparisons, apiKeys, refreshTokens, workoutCache, coachRecaps, agentRuns, notificationOutbox, deletionFeedback, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ShoeComparison, type InsertShoeComparison, type ApiKey, type InsertApiKey, type RefreshToken, type InsertRefreshToken, type AthleteProfile, type InsertAthleteProfile, type PlanWeek, type InsertPlanWeek, type PlanDay, type InsertPlanDay, type WorkoutCache, type InsertWorkoutCache, type CoachRecap, type InsertCoachRecap, type AgentRun, type InsertAgentRun, type NotificationOutbox, type InsertNotificationOutbox, type DeletionFeedback, type InsertDeletionFeedback } from "@shared/schema";
 import crypto from "crypto";
 import { db } from "./db";
 import { eq, desc, and, sql, inArray, gte, gt, lt } from "drizzle-orm";
@@ -136,6 +136,8 @@ export interface IStorage {
   
   // User account management
   deleteAccount(userId: number): Promise<void>;
+  createDeletionFeedback(feedback: InsertDeletionFeedback): Promise<DeletionFeedback>;
+  getDeletionFeedback(limit?: number): Promise<DeletionFeedback[]>;
   
   // Admin methods
   getAdminStats(): Promise<{
@@ -1318,6 +1320,22 @@ export class DatabaseStorage implements IStorage {
     
     // Finally, delete the user record
     await db.delete(users).where(eq(users.id, userId));
+  }
+
+  async createDeletionFeedback(feedbackData: InsertDeletionFeedback): Promise<DeletionFeedback> {
+    const [result] = await db
+      .insert(deletionFeedback)
+      .values(feedbackData)
+      .returning();
+    return result;
+  }
+
+  async getDeletionFeedback(limit = 100): Promise<DeletionFeedback[]> {
+    return await db
+      .select()
+      .from(deletionFeedback)
+      .orderBy(desc(deletionFeedback.createdAt))
+      .limit(limit);
   }
 
   async getUserAnalytics(): Promise<{
