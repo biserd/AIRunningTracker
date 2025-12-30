@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import AppHeader from "@/components/AppHeader";
+import { FloatingAICoach } from "@/components/FloatingAICoach";
 import RacePredictions from "@/components/dashboard/RacePredictions";
 import VO2MaxTracker from "@/components/dashboard/VO2MaxTracker";
 import HeartRateZones from "@/components/dashboard/HeartRateZones";
@@ -689,6 +690,8 @@ export default function CoachInsightsPage() {
           </Tabs>
         </div>
       </main>
+      
+      <FloatingAICoach userId={user.id} />
     </div>
   );
 }

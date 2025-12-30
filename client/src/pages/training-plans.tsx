@@ -3,6 +3,7 @@ import { useState } from "react";
 import { queryClient, apiRequest, getQueryFn } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import AppHeader from "@/components/AppHeader";
+import { FloatingAICoach } from "@/components/FloatingAICoach";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -562,6 +563,8 @@ export default function TrainingPlans() {
           </div>
         )}
       </main>
+      
+      {user && <FloatingAICoach userId={user.id} />}
     </div>
   );
 }
