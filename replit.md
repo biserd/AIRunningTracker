@@ -2,7 +2,7 @@
 
 ## Overview
 
-RunAnalytics is an AI-powered platform for runners that integrates with Strava to offer personalized insights, performance tracking, and training recommendations. It features tools like a Race Predictor, Form Stability Analyzer, Aerobic Decoupling Calculator, Training Split Analyzer, Marathon Fueling Planner, Running Heatmap, and an AI Running Coach Chat. The platform operates on a freemium model with Free, Pro, and Premium subscription tiers. The business vision is to provide comprehensive, AI-driven running analytics to a broad market, helping runners of all levels improve performance and prevent injuries.
+RunAnalytics is an AI-powered platform designed for runners, integrating with Strava to provide personalized insights, performance tracking, and training recommendations. Key features include a Race Predictor, Form Stability Analyzer, Aerobic Decoupling Calculator, Training Split Analyzer, Marathon Fueling Planner, Running Heatmap, and an AI Running Coach Chat. The platform operates on a freemium model (Free, Pro, Premium tiers) with the business vision of offering comprehensive, AI-driven running analytics to help runners of all levels improve performance and prevent injuries.
 
 ## User Preferences
 
@@ -10,72 +10,48 @@ Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Frontend
-- **Framework**: React with TypeScript
-- **Styling**: Tailwind CSS with shadcn/ui
-- **State Management**: TanStack Query
-- **Routing**: Wouter
-- **Build Tool**: Vite
-- **UI/UX**: Intuitive design with simplified UI, interactive Recharts visualizations (trend lines, gauge charts, stacked area, ternary bar charts), gradient-themed cards, and comprehensive user support.
-
-### Backend
-- **Runtime**: Node.js with Express
-- **Database**: PostgreSQL with Drizzle ORM
-- **Authentication**: JWT-based with bcrypt hashing
-- **API Integration**: Strava API
-- **AI Services**: OpenAI GPT-5.1 for insights, training plans, and conversational AI.
+### UI/UX Decisions
+- **Frontend**: React with TypeScript, styled using Tailwind CSS and shadcn/ui.
+- **Visualizations**: Interactive Recharts for trend lines, gauge charts, stacked area, and ternary bar charts.
+- **Design**: Intuitive UI with gradient-themed cards and comprehensive user support.
+- **Mapping**: Interactive Leaflet maps for visualizing running routes.
 
 ### Technical Implementations
-- **Strava Sync**: Two-phase architecture for API efficiency. Phase 1 (List) fetches activity summaries only (200 per page, max 500 activities) - no streams/laps calls. Phase 2 (Hydrate) enqueues background jobs to fetch streams/laps for recent activities (last 10 weeks) with priority ordering. New activities marked `hydrationStatus=pending`. On-demand hydration via `POST /api/activities/:activityId/hydrate`. This reduces initial sync from ~400 API calls to 1-2 calls.
-- **Strava Rate Limiter & Queue** (`server/services/stravaClient.ts`, `server/services/queue/`): Global rate limiting tracking X-RateLimit headers, auto-pause at 80/100 threshold, in-memory job queue with 2 concurrent workers, delayed retry with exponential backoff for rate limit errors, and locked token refresh to prevent concurrent refresh failures. Endpoints: `GET /api/strava/queue/status` (admin-only monitoring), `POST /api/strava/queue/sync/:userId` (queue-based sync), `POST /api/strava/queue/repair/:userId` (smart repair: checks sync state to decide list vs hydrate), `GET /api/strava/sync-status` (user sync progress polling).
-- **Per-User Sync State Tracking**: Database fields (syncStatus, syncProgress, syncTotal, syncError, lastSyncAt, lastIncrementalSince) enable progress bars, error recovery prompts, and smarter repair decisions. Job queue automatically tracks sync start/completion and updates progress as activities are processed.
-- **Queue Observability & Metrics** (`server/services/queue/metrics.ts`): In-memory metrics registry tracking jobs_processed_total by type, jobs_failed_total by type, rate_limit_hits_total, timestamps (lastRateLimitPauseAt, lastJobFailureAt), and recent events log (last 50). Structured JSON logging for rate limit pauses/resumes. Admin-only Queue Dashboard at `/admin/queue` with real-time auto-refresh displaying queue health, rate limiter status, and event history.
-- **AI Engine**: Utilizes GPT-5.1 with OpenAI Responses API for enhanced training plan generation and insights, featuring strict JSON schema enforcement, streaming responses, and optimized token limits.
-- **Goals & Training Tracking**: Allows conversion of AI recommendations into trackable goals.
-- **Free Tools Section**: Dedicated `/tools` section with SEO-optimized calculators and analyzers, supporting Strava auto-fetch or manual entry.
-- **Running Shoe Hub**: Comprehensive database and recommendation system with personalized shoe finder, rotation planner, and comparison tool. Includes detailed shoe specifications, AI-generated insights (Resilience Score, estimated lifespan, target usage), and Series Evolution charts.
-- **Running Heatmap**: Interactive Leaflet map visualizing recent Strava activities, highlighting frequently used routes.
-- **AI Running Coach Chat**: Real-time conversational interface using GPT-5.1 with SSE for streaming responses, providing contextual data analysis. Now includes training plan awareness, injecting current week context, adherence stats, and upcoming workouts into AI conversations.
-- **AI Training Plans**: Comprehensive personalized training plan generator with athlete profile computation (from Strava history), guardrail validation (max weekly increase, recovery weeks, intensity balance), LLM-powered workout generation, plan adaptation based on adherence, and weekly progress tracking. Schema: training_plans, plan_weeks, plan_days tables with status tracking (pending/completed/partial/missed/skipped), activity linking, and weekly adaptation logic. Key fields: weekType (build/peak/taper/recovery), plannedDistanceKm, status, linkedActivityId. Pages: /training-plans (list with creation wizard), /training-plans/:planId (detail view with week cards).
-- **Skeleton Generator** (`server/services/skeletonGenerator.ts`): Deterministic training plan structure generator that creates fixed distances/dates before LLM fills coaching content. Features: experience-based long run clamping (beginner +10km, intermediate +14km, advanced +16km max delta from longestRecentRunKm), qualityLevel (1-5) for intensity scaling, `computePlanRealism()` for plan warnings (aggressive volume >2x, insufficient weeks, large long run jumps), and `runSkeletonInvariantTests()` for validation. LLM prompt explicitly locks distance/workoutType fields.
-- **Fitness/Fatigue/Form Chart (CTL/ATL/TSB)**: Dashboard visualization of training load metrics, with detailed explanations and time range selection.
-- **SEO & Content Marketing**: Blog system, dedicated landing pages, and SEO-optimized content with JSON-LD schemas and meta tags.
-- **Mobile Authentication**: JWT-based authentication for native mobile apps, including refresh tokens and session management.
-- **Stripe Subscription System**: Full freemium model management with Stripe for payments, checkout sessions, and customer portal integration.
-- **Reverse Trial System**: 7-day Pro access for new users without credit card. Automatically downgrades to Free tier after trial. Includes trial badge UI component, email notifications (welcome, day 5 reminder, expiry CTA), and admin endpoints for email processing.
-- **Strava Activity Branding**: Feature to append customizable branding text to Strava activity descriptions post-sync, with user opt-in and template support.
-- **Year End Recap**: Personalized yearly running summary with AI-generated infographics using Nano Banana (Gemini 2.5 Flash Image). Features comprehensive stats including total distance/time/elevation, longest run, fastest pace, longest streak, plus advanced metrics: estimated VO2 Max (Jack Daniels formula), average cadence, Zone 2 training hours, heart rate data, and training distribution (easy/moderate/hard). Generates epic, Nike/Adidas-style infographic images with bold typography and dramatic visuals for social sharing.
-- **Coach Insights Page**: Unified analytics page at `/coach-insights` combining performance metrics into two themed sections: "The Engine" (orange/red theme - Race Predictions, VO2 Max, Heart Rate Zones) for cardiovascular power, and "The Mechanics" (green/blue theme - Injury Risk, Running Efficiency) for form stability. Includes contextual bridge text between sections. Previous routes `/ml-insights` and `/performance` redirect here.
-- **Activity Story Mode**: Two-tier activity view system with user preference persistence. Story Mode (default): Compact KPI ribbon + Coach Verdict (Pro) + Run Timeline + collapsible drawers for route/charts. Deep Dive Mode: Scrollable layout with all sections permanently visible - no tabs. Sections include: Unified Coach Card, Performance Metrics (Drift, Pacing, vs Baseline in gradient tiles), Route Map with Key Moments, Run Timeline, Splits Analysis, Heart Rate/Cadence/Power grid, Benchmark Comparison, and Activity Comparison (Premium). Features include: Effort Score calculation (weighted HR zone time score), Training Consistency badge (Recovery/Easier/Consistent/Harder/Much Harder), Coach Verdict card (grade A-F with evidence bullets and performance comparisons), and Run Timeline with AI pins. Preferences persist via `activityViewMode` user field. API endpoints: `GET /api/performance/baseline/:userId` (6-week rolling averages), `GET /api/activities/:id/verdict` (Pro tier only). Run Timeline (`client/src/components/activity/RunTimeline.tsx`): Interactive time-series chart with toggleable metrics (Pace, HR, Power, Cadence), elevation overlay, and AI-detected event pins (drift onset, biggest slowdown, HR spike, hill impact). All units respect user's km/mi preference. Route Map with Key Moments: Enhanced map display (450-500px height) with colored overlay pins for fastest split (⚡), slowest split (🐢), and max HR spike (❤️) locations calculated from laps/streams data. Grade caching system persists verdict grades to `cachedGrade` field for consistency across dashboard, activities list, and detail views.
-- **AI Agent Coach (Premium)**: Proactive coaching system that generates post-activity recaps with personalized feedback. Architecture: Hooks into Strava sync pipeline after activity hydration completes via job queue (`GENERATE_COACH_RECAP` job type). Features: Personalized onboarding wizard (goal, race date, training days, coaching tone), multi-table persistence (coach_recaps, agent_runs, notification_outbox), dedupe keys for idempotent processing, and audit trail. Coach preferences stored in users table (coachGoal, coachRaceDate, coachDaysAvailable, coachTone, coachNotify*, coachQuietHours*). Recaps include: 3-5 bullet observations, coaching cue, next step recommendation (rest/easy/workout/long_run/recovery), grade (A-F), confidence flags. Notification outbox pattern for email delivery. Routes: `/coach/onboarding` (Premium onboarding wizard), `/coach/settings` (preferences editor). API: `PATCH /api/users/:userId/coach-preferences`.
-- **Time-Aware Recovery System** (`server/services/recoveryService.ts`): Dynamic recovery analysis that adapts recommendations based on rest days taken. Calculates: days since last run, acute load (7-day rolling km), chronic load (28-day rolling km), acute/chronic ratio for injury risk, and freshness score (improves with rest, 15 points per day up to 60 bonus). Risk level adjustment: critical→high after 2 days rest, critical→moderate after 3 days, high→moderate after 1 day, high→low after 2 days, any risk→low after 4 days. Caches results for 30 seconds. Displayed on Coach Insights page with color-coded status card showing readiness, "Risk reduced by rest" badge when applicable, and time-aware next-step recommendations. Integrated into AI Agent Coach recap prompts for context-aware advice. API: `GET /api/performance/recovery/:userId`.
-- **Drip Campaign System** (`server/services/dripCampaign.ts`, `server/services/dripCampaignWorker.ts`): Lifecycle email marketing system for user conversion and engagement. Features 4 user segments based on behavior: Segment A (not connected to Strava, 2 emails), Segment B (connected but not activated, 7 emails), Segment C (activated but free tier, 4 emails), Segment D (inactive 7+ days, 2 emails). Each segment has timed email steps with unique CTAs. Architecture: Background worker processes email jobs every 5 minutes with 24-hour frequency cap per user. Deduplication via unique keys (`userId:campaign:step`). Auto-exits when user upgrades to paid or changes segments. Tracks: user_campaigns (enrollment state), email_jobs (scheduled/sent emails), email_clicks (engagement). User fields: `activationAt` (first meaningful action), `lastSeenAt` (heartbeat tracking), `marketingOptOut` (unsubscribe). Triggers: Registration enters Segment A, Strava connect transitions to Segment B, dashboard view marks activation. Admin endpoints: `GET /api/admin/campaigns/analytics`, `GET /api/admin/campaigns/worker-status`, `POST /api/admin/campaigns/process`. User endpoints: `POST /api/users/:userId/heartbeat`, `POST /api/users/:userId/activation`, `POST /api/users/:userId/marketing-optout`, `GET /api/track/click` (redirect with tracking).
+- **Backend**: Node.js with Express, PostgreSQL database via Drizzle ORM.
+- **Authentication**: JWT-based with bcrypt hashing.
+- **Strava Integration**: Two-phase sync architecture (List & Hydrate) for efficiency, with a robust rate limiter and in-memory job queue for activity processing. Per-user sync state tracking for progress and error recovery.
+- **AI Engine**: Utilizes OpenAI GPT-5.1 for personalized insights, training plan generation, and conversational AI, incorporating strict JSON schema enforcement and streaming responses.
+- **Training Plans**: AI-generated, personalized training plans with athlete profile computation, guardrail validation, plan adaptation based on adherence, and a deterministic skeleton generator.
+- **AI Running Coach Chat**: Real-time conversational interface using GPT-5.1 with SSE, providing contextual data analysis and training plan awareness.
+- **Activity Analysis**: "Activity Story Mode" for a compact view with Coach Verdict and Run Timeline, and "Deep Dive Mode" for detailed analysis including performance metrics, route maps with key moments, splits analysis, and benchmark comparisons. Includes Effort Score, Training Consistency badges, and AI-detected event pins.
+- **Proactive Coaching**: AI Agent Coach (Premium) provides post-activity recaps with personalized feedback, integrating with user-defined goals and preferences.
+- **Recovery System**: Time-aware recovery analysis providing dynamic recommendations based on rest days and training load (acute/chronic load, freshness score).
+- **Running Shoe Hub**: Database and recommendation system with personalized shoe finder, rotation planning, and AI-generated insights.
+- **Year End Recap**: Personalized yearly running summaries with AI-generated infographics for social sharing.
+- **Coach Insights Page**: Unified analytics dashboard categorizing performance metrics into "The Engine" (cardiovascular power) and "The Mechanics" (form stability).
+- **Marketing & Engagement**: Drip campaign system for user lifecycle email marketing, SEO optimization, and a reverse trial system for new users.
+- **Strava Activity Branding**: User-opt-in feature to append customizable branding text to Strava activity descriptions.
 
 ### System Design Choices
-- **Database Schema**: Users, Activities, AI Insights, Training Plans, Email Waitlist, AI Conversations, AI Messages, Running Shoes, Refresh Tokens.
-- **Authentication**: JWT token-based, secure password hashing, protected routes, admin roles.
-- **Strava Integration**: OAuth, periodic activity fetching, real-time data, automatic refresh token management. Syncs all activity types, filtering for running-specific metrics where applicable.
-- **AI Analytics Engine**: OpenAI GPT-5.1 integration for performance insights, ML-powered race predictions, injury risk analysis, personalized training plans, Runner Score, conversational coaching, and gear recommendations.
-- **Performance Analytics**: VO2 Max estimation, heart rate zone calculations, running efficiency, training load analysis, progress tracking.
-- **Deployment Strategy**: Replit-optimized development, Vite/ESBuild for production, Neon for PostgreSQL, request logging, error tracking, and performance monitoring.
+- **Database Schema**: Comprehensive schema covering users, activities, AI insights, training plans, shoes, and more.
+- **Deployment**: Replit-optimized development, Vite/ESBuild for production, Neon for PostgreSQL.
+- **Performance Analytics**: Includes VO2 Max estimation, HR zone calculations, running efficiency, and training load analysis.
 
 ## External Dependencies
 
 ### Core Services
-- **Neon Database**: PostgreSQL hosting
-- **OpenAI API**: GPT-5
-- **Strava API**: Activity data synchronization
-- **Stripe**: Payment processing
-- **SMTP (Gmail, Outlook, Yahoo)**: Email services
+- **Neon Database**: PostgreSQL hosting.
+- **OpenAI API**: GPT-5.1 for AI capabilities.
+- **Strava API**: Activity data synchronization.
+- **Stripe**: Payment processing for subscriptions.
+- **SMTP**: For email services (Gmail, Outlook, Yahoo).
 
-### Development Tools
-- **Drizzle Kit**: Database migrations
-- **TypeScript**: Type safety
-
-### UI Libraries
-- **Radix UI**: Accessible component primitives
-- **Lucide React**: Icon system
-- **Recharts**: Data visualization
-- **React Hook Form**: Form management with Zod validation
-- **Leaflet**: Interactive mapping
-- **Google Polyline Codec**: Decoding Strava polyline data
+### Development Tools & Libraries
+- **Drizzle Kit**: Database migrations.
+- **TypeScript**: For type safety.
+- **Radix UI**: Accessible component primitives.
+- **Lucide React**: Icon system.
+- **Recharts**: Data visualization library.
+- **React Hook Form**: Form management with Zod validation.
+- **Leaflet**: Interactive mapping library.
+- **Google Polyline Codec**: Decoding Strava polyline data.

@@ -6324,6 +6324,28 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Admin: Toggle drip campaigns ON/OFF
+  app.post("/api/admin/campaigns/toggle", authenticateAdmin, async (req: any, res) => {
+    try {
+      const { enabled } = req.body;
+      
+      if (typeof enabled !== 'boolean') {
+        return res.status(400).json({ message: "enabled must be a boolean" });
+      }
+      
+      dripCampaignWorker.setCampaignsEnabled(enabled);
+      
+      res.json({ 
+        success: true, 
+        campaignsEnabled: dripCampaignWorker.isCampaignsEnabled(),
+        message: `Drip campaigns ${enabled ? 'ENABLED' : 'DISABLED'}`
+      });
+    } catch (error: any) {
+      console.error("Campaign toggle error:", error);
+      res.status(500).json({ message: error.message || "Failed to toggle campaigns" });
+    }
+  });
+
   // Admin: Get pending email jobs
   app.get("/api/admin/campaigns/pending-jobs", authenticateAdmin, async (req: any, res) => {
     try {

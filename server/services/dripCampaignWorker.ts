@@ -12,6 +12,7 @@ class DripCampaignWorker {
   private lastRunAt: Date | null = null;
   private jobsProcessed = 0;
   private jobsFailed = 0;
+  private campaignsEnabled = true; // Global ON/OFF switch
 
   start(): void {
     if (this.intervalId) {
@@ -37,6 +38,11 @@ class DripCampaignWorker {
   async processJobs(): Promise<void> {
     if (this.isRunning) {
       console.log("[DripWorker] Already processing, skipping");
+      return;
+    }
+
+    if (!this.campaignsEnabled) {
+      console.log("[DripWorker] Campaigns disabled, skipping");
       return;
     }
 
@@ -132,6 +138,7 @@ class DripCampaignWorker {
     jobsProcessed: number;
     jobsFailed: number;
     workerActive: boolean;
+    campaignsEnabled: boolean;
   } {
     return {
       isRunning: this.isRunning,
@@ -139,11 +146,21 @@ class DripCampaignWorker {
       jobsProcessed: this.jobsProcessed,
       jobsFailed: this.jobsFailed,
       workerActive: this.intervalId !== null,
+      campaignsEnabled: this.campaignsEnabled,
     };
   }
 
   async runNow(): Promise<void> {
     await this.processJobs();
+  }
+
+  setCampaignsEnabled(enabled: boolean): void {
+    this.campaignsEnabled = enabled;
+    console.log(`[DripWorker] Campaigns ${enabled ? 'ENABLED' : 'DISABLED'}`);
+  }
+
+  isCampaignsEnabled(): boolean {
+    return this.campaignsEnabled;
   }
 }
 
