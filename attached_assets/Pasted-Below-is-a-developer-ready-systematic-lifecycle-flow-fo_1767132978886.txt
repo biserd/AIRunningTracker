@@ -1,0 +1,345 @@
+Below is a **developer-ready, systematic lifecycle flow** for AITracker: segmentation rules, triggers, drip steps, CTAs, urgency, and when to paywall. Treat it like a mini-BRD.
+
+---
+
+# AITracker Lifecycle Drip System (Segmentation + CTAs + Urgency)
+
+## 0) Goal
+
+Convert “signed up + Strava connected” users into **activated → retained → paid** by:
+
+* pushing users to an “aha” moment within **first session / first 24h**
+* using **feature-led emails** with **single, focused CTAs**
+* placing **upgrade prompts at the moment of value** (coach chat / compare / plan)
+
+---
+
+## 1) Required Tracking (Events + User State)
+
+### 1.1 Core events (log these)
+
+* `signup_completed(user_id)`
+* `strava_connected(user_id)`
+* `snapshot_viewed(user_id)` (your “Running Snapshot / Coach Grade” landing)
+* `activity_story_viewed(user_id, activity_id)`
+* `coach_question_asked(user_id)` (count it)
+* `compare_opened(user_id, a1, a2)`
+* `plan_generated(user_id)`
+* `subscription_started(user_id, plan)` / `subscription_active(user_id)` / `subscription_canceled(user_id)`
+* `email_clicked(user_id, campaign_step, cta_key)`
+
+### 1.2 Derived fields (daily batch or on write)
+
+* `last_seen_at`
+* `last_activity_synced_at`
+* `coach_questions_count_7d`
+* `activation_at` (set when user hits **ANY**: snapshot_viewed OR story_viewed OR coach_question_asked)
+* `is_paid`
+* `campaign_state` + `campaign_step`
+
+---
+
+## 2) Segmentation Rules (Simple + Deterministic)
+
+### Segment A — Not Connected
+
+**Definition**
+
+* `strava_connected = false`
+
+**Objective**
+
+* Get Strava connected (single goal)
+
+---
+
+### Segment B — Connected, Not Activated (Highest priority)
+
+**Definition**
+
+* `strava_connected = true AND activation_at IS NULL`
+
+**Objective**
+
+* Force the “aha” moment (snapshot/story/coach)
+
+---
+
+### Segment C — Activated, Not Paid
+
+**Definition**
+
+* `activation_at IS NOT NULL AND is_paid = false`
+
+**Objective**
+
+* Drive users into a paid moment (coach >1 question, compare, plans)
+
+---
+
+### Segment D — Inactive / At-risk
+
+**Definition**
+
+* `last_seen_at <= now()-7d AND is_paid=false` (use 7d; optionally 3d for faster app)
+
+**Objective**
+
+* Reconnect habit loop (new activity → analysis ready, weekly recap, streak)
+
+---
+
+## 3) Email Types (Compliance + Intent)
+
+* **Transactional**: “analysis ready”, “password/login”, “billing”, “trial ending”
+* **Lifecycle marketing**: onboarding/drip, weekly recap, feature education
+  → must include unsubscribe link and frequency caps.
+
+---
+
+## 4) Campaign Engine (Job Queue + Gating)
+
+### 4.1 Tables (minimum)
+
+**`email_jobs`**
+
+* `id, user_id, job_type, campaign, step, scheduled_at, status(pending/sent/canceled), dedupe_key, metadata(json), created_at, sent_at`
+
+**`user_campaigns`**
+
+* `user_id, campaign, state, current_step, entered_at, updated_at, exit_reason`
+
+### 4.2 Worker logic (runs every 5–10 minutes)
+
+For each `email_jobs where status=pending and scheduled_at<=now()`:
+
+1. Recompute user segment and eligibility
+2. If user no longer matches segment OR already completed step objective → `cancel job`
+3. Else send via Resend
+4. Mark sent + schedule next step based on segment & user behavior
+
+### 4.3 Frequency caps + dedupe
+
+* Max **1 lifecycle email/day** (excluding transactional “analysis ready”)
+* `dedupe_key = user_id + campaign + step`
+* If `subscription_active` → cancel all lifecycle jobs
+
+---
+
+## 5) Deep Links + CTA Rules (Single CTA per email)
+
+### Required deep link behavior
+
+Every email links to **one page** that:
+
+* loads in <2 seconds
+* shows a **personalized insight immediately**
+* has one next action (button)
+
+### CTA routing (use placeholders)
+
+* Snapshot/Coach grade: `/app/snapshot`
+* Last activity story: `/app/activities/{last_activity_id}/story`
+* Compare: `/app/compare?a1={id1}&a2={id2}`
+* Coach chat: `/app/coach?context={last_activity_id}`
+* Pricing: `/pricing?source=email&step={step}`
+
+---
+
+## 6) The Drip Sequences (By Segment)
+
+## Segment A — Not Connected (2 touches max)
+
+**A1 (Immediately after signup, +5 min)**
+
+* CTA: **Connect Strava**
+* Link: `/connect/strava?source=emailA1`
+
+**A2 (Day 2, if still not connected)**
+
+* CTA: **Connect Strava (30 seconds)**
+* Link: `/connect/strava?source=emailA2`
+
+**Exit Segment A** when `strava_connected`.
+
+---
+
+## Segment B — Connected, Not Activated (7 steps, 14 days)
+
+**Entry trigger:** `strava_connected`
+
+**B1 (+1 hour after connect)**
+
+* Objective: get `snapshot_viewed`
+* CTA: **View your Coach Grade**
+* Link: `/app/snapshot?source=B1`
+* Urgency: “Your first report is ready now.”
+
+**B2 (Next morning 8am local, if still not activated)**
+
+* Objective: `snapshot_viewed OR story_viewed`
+* CTA: **Today’s recommendation**
+* Link: `/app/recommendation/today?source=B2`
+
+**B3 (Day 3)**
+
+* Objective: `activity_story_viewed`
+* CTA: **See your last run’s 30-second Story**
+* Link: `/app/activities/{last}/story?source=B3`
+
+**B4 (Day 5)**
+
+* Objective: `coach_question_asked`
+* CTA: **Ask the Coach (1 free question)**
+* Link: `/app/coach?context={last}&source=B4`
+* Paywall rule: allow 1 free question → upsell after answer (see Section 7)
+
+**B5 (Day 7)**
+
+* Objective: `weekly_review_viewed`
+* CTA: **Your Week in Review**
+* Link: `/app/weekly-review?source=B5`
+
+**B6 (Day 10)**
+
+* Objective: `compare_opened`
+* CTA: **Compare two similar runs**
+* Link: `/app/compare?a1={auto}&a2={auto}&source=B6`
+* Paywall rule: compare is Premium gate (or show teaser then gate)
+
+**B7 (Day 14)**
+
+* Objective: upgrade click or plan generate
+* CTA: **Unlock unlimited Coach + comparisons**
+* Link: `/pricing?source=B7`
+
+**Exit Segment B** immediately when `activation_at` is set → move to Segment C.
+
+---
+
+## Segment C — Activated, Not Paid (Conversion-focused, fewer emails)
+
+**Entry trigger:** `activation_at set AND is_paid=false`
+
+**C1 (Day 2 after activation)**
+
+* CTA: **Unlock unlimited Coach questions**
+* Link: `/app/coach?source=C1`
+* Include usage proof: “You’ve generated X insights so far.”
+
+**C2 (Day 5 after activation)**
+
+* CTA: **Compare runs + training insights**
+* Link: `/app/compare?...&source=C2` (auto-pick runs)
+
+**C3 (Day 10 after activation)**
+
+* CTA: **Generate a simple plan for this week**
+* Link: `/app/plans/new?source=C3`
+
+**C4 (Day 14 after activation)**
+
+* CTA: **Start Premium trial** (if you implement card-trial)
+* Link: `/pricing?source=C4`
+
+---
+
+## Segment D — Inactive / At-risk (Reactivation loop)
+
+**Trigger D0:** `last_seen_at <= now()-7d`
+
+**D1 (when condition hits)**
+
+* CTA: **See what changed since your last run**
+* Link: `/app/snapshot?source=D1`
+
+**D2 (3 days later if still inactive)**
+
+* CTA: **Your new week plan**
+* Link: `/app/recommendation/today?source=D2`
+
+**Always-on trigger (best reactivation): New Activity Synced**
+
+* Send transactional within 5–10 min:
+* CTA: **Your run analysis is ready**
+* Link: `/app/activities/{new}/story?source=TRIGGER_ACTIVITY`
+
+---
+
+## 7) Paywall Moments (Where “normal urgency” feels natural)
+
+### Rule P1 — Coach Chat Credit (best)
+
+* Free users get **1 free Coach question** total (or per week)
+* After showing the answer, display:
+
+  * “Unlock unlimited questions + history” → **Upgrade**
+* Email + in-product prompt tie together (B4 / C1)
+
+### Rule P2 — Compare Runs
+
+* Allow preview of top 1–2 deltas (teaser)
+* Gate full comparison + trends behind Premium
+* Email B6 / C2 goes directly here
+
+### Rule P3 — Plans / Exports
+
+* Let them generate a preview plan
+* Gate “save/export/calendar sync” behind Pro/Premium
+
+### Trial urgency (if you introduce card-required Premium trial)
+
+* Day 5 of trial: “2 days left”
+* Day 6: “Ends tomorrow”
+* Day 7 morning: “Ends today”
+  All are transactional/billing-type (still include unsubscribe if marketing rules apply in your region).
+
+---
+
+## 8) Auto-Selection Logic (So CTAs always work)
+
+When building deep links, compute:
+
+* `{last_activity_id}` = most recent running activity
+* `{auto compare pair}` = two runs within similar distance (±10%) or same route tag, last 30 days
+* If none found: fall back to Snapshot or Story
+
+Never send a Compare email if you can’t populate `a1/a2`.
+
+---
+
+## 9) Safety + UX Guardrails
+
+* Cancel drip if:
+
+  * user becomes paid
+  * user unsubscribes from marketing
+  * user has not synced any activity in 30 days (switch to lighter cadence)
+* Do not send more than **3 emails in first 72 hours**.
+* Always show a “why you got this” footer: “You’re receiving this because you connected Strava to AITracker.”
+
+---
+
+## 10) KPIs (What dev should expose)
+
+* Activation rate (Connected → Snapshot/Story/Coach within 24h)
+* D1 / D7 return after connect
+* Email open/click → feature completion rate
+* Upgrade rate by paywall moment (Coach/Compare/Plan)
+* Revenue per activated user
+
+---
+
+## 11) Implementation Checklist (Developer Tasks)
+
+1. Add event logging + derived fields
+2. Build `email_jobs` + `user_campaigns`
+3. Implement worker + scheduler + dedupe + caps
+4. Build deep link routes that render “instant insight”
+5. Implement paywall moments (Coach credit, Compare gate, Plan gate)
+6. Add “analysis ready” trigger on new activity sync
+7. Add campaign analytics dashboard
+
+---
+
+If you paste your current main app routes (or screenshots of the post-connect page), I can map the **exact** deep links and recommend which features should be **Pro vs Premium** so the paywalls align with the drip CTAs.
