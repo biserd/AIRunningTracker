@@ -5,6 +5,7 @@ import type { EmailJob } from "@shared/schema";
 
 const WORKER_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const MAX_JOBS_PER_RUN = 50;
+const SETTING_KEY = "drip_campaigns_enabled";
 
 class DripCampaignWorker {
   private intervalId: NodeJS.Timeout | null = null;
@@ -12,12 +13,22 @@ class DripCampaignWorker {
   private lastRunAt: Date | null = null;
   private jobsProcessed = 0;
   private jobsFailed = 0;
-  private campaignsEnabled = true; // Global ON/OFF switch
+  private campaignsEnabled = true; // In-memory cache of DB setting
 
-  start(): void {
+  async start(): Promise<void> {
     if (this.intervalId) {
       console.log("[DripWorker] Already running");
       return;
+    }
+
+    // Load setting from database on startup
+    try {
+      const setting = await storage.getSystemSetting(SETTING_KEY);
+      this.campaignsEnabled = setting !== "false"; // Default to true if not set
+      console.log(`[DripWorker] Loaded campaigns enabled: ${this.campaignsEnabled}`);
+    } catch (error) {
+      console.error("[DripWorker] Error loading setting, defaulting to enabled:", error);
+      this.campaignsEnabled = true;
     }
 
     console.log("[DripWorker] Starting worker with interval:", WORKER_INTERVAL_MS / 1000, "seconds");
@@ -154,9 +165,16 @@ class DripCampaignWorker {
     await this.processJobs();
   }
 
-  setCampaignsEnabled(enabled: boolean): void {
+  async setCampaignsEnabled(enabled: boolean): Promise<void> {
     this.campaignsEnabled = enabled;
-    console.log(`[DripWorker] Campaigns ${enabled ? 'ENABLED' : 'DISABLED'}`);
+    // Persist to database
+    try {
+      await storage.setSystemSetting(SETTING_KEY, enabled.toString());
+      console.log(`[DripWorker] Campaigns ${enabled ? 'ENABLED' : 'DISABLED'} (saved to DB)`);
+    } catch (error) {
+      console.error("[DripWorker] Error saving setting to DB:", error);
+      throw error;
+    }
   }
 
   isCampaignsEnabled(): boolean {

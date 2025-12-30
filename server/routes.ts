@@ -6333,7 +6333,7 @@ ${allPages.map(page => `  <url>
         return res.status(400).json({ message: "enabled must be a boolean" });
       }
       
-      dripCampaignWorker.setCampaignsEnabled(enabled);
+      await dripCampaignWorker.setCampaignsEnabled(enabled);
       
       res.json({ 
         success: true, 
@@ -6453,8 +6453,10 @@ ${allPages.map(page => `  <url>
     }
   });
 
-  // Start the drip campaign worker
-  dripCampaignWorker.start();
+  // Start the drip campaign worker (async, loads settings from DB)
+  dripCampaignWorker.start().catch(err => 
+    console.error("[DripWorker] Failed to start:", err)
+  );
 
   const httpServer = createServer(app);
   return httpServer;
