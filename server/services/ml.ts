@@ -101,13 +101,14 @@ export class MLService {
   }
 
   /**
-   * Predict race times using training data analysis
+   * Predict race times using actual race data (workout_type=1) with Riegel formula
+   * Falls back to training pace analysis if no races found
    */
   async predictRacePerformance(userId: number): Promise<RacePrediction[]> {
     const user = await storage.getUser(userId);
     if (!user) throw new Error('User not found');
 
-    const allActivities = await storage.getActivitiesByUserId(userId, 50);
+    const allActivities = await storage.getActivitiesByUserId(userId, 100);
     const activities = allActivities.filter(a => RUNNING_TYPES.includes(a.type));
     if (activities.length < 5) {
       return [{
@@ -118,59 +119,183 @@ export class MLService {
       }];
     }
 
-    const metrics = this.analyzeTrainingData(activities);
-    const recentPace = metrics.avgPaces.slice(-4).reduce((a, b) => a + b, 0) / 4;
-    const isMetric = user.unitPreference !== "miles";
+    // Look for actual races (Strava workout_type = 1) within last 90 days
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const recentRaces = activities.filter(a => 
+      a.workoutType === 1 && 
+      new Date(a.startDate) >= ninetyDaysAgo &&
+      a.distance >= 1000 // At least 1km
+    );
 
-    // The pace is already calculated as min/km in analyzeTrainingData, no conversion needed
-    const paceForPrediction = recentPace; // Already in min/km
+    // If we have race data, use the Riegel formula for predictions
+    if (recentRaces.length > 0) {
+      console.log(`[Race Predictor] Found ${recentRaces.length} races for user ${userId}`);
+      return this.predictFromRaces(recentRaces, activities.length);
+    }
+
+    // Fallback: No races found, use training pace analysis
+    console.log(`[Race Predictor] No races found for user ${userId}, using training pace fallback`);
+    return this.predictFromTrainingPace(activities);
+  }
+
+  /**
+   * Predict race times using the Riegel formula from actual race performances
+   * Formula: T2 = T1 × (D2/D1)^1.06
+   */
+  private predictFromRaces(races: Activity[], totalActivities: number): RacePrediction[] {
+    // Group races by approximate distance category and find best performance in each
+    const racesByCategory = {
+      '5K': races.filter(r => r.distance >= 4500 && r.distance <= 6000),
+      '10K': races.filter(r => r.distance >= 9000 && r.distance <= 11000),
+      'Half': races.filter(r => r.distance >= 20000 && r.distance <= 22000),
+      'Marathon': races.filter(r => r.distance >= 40000 && r.distance <= 44000),
+    };
+
+    // Find the best (fastest pace) race to use as reference
+    let bestRace: Activity | null = null;
+    let bestPacePerKm = Infinity;
+
+    for (const race of races) {
+      const pacePerKm = (race.movingTime / 60) / (race.distance / 1000);
+      if (pacePerKm < bestPacePerKm) {
+        bestPacePerKm = pacePerKm;
+        bestRace = race;
+      }
+    }
+
+    if (!bestRace) {
+      return this.predictFromTrainingPace(races);
+    }
+
+    const refDistanceKm = bestRace.distance / 1000;
+    const refTimeMinutes = bestRace.movingTime / 60;
+    
+    console.log(`[Race Predictor] Using best race: ${bestRace.name} - ${refDistanceKm.toFixed(2)}km in ${this.formatTime(refTimeMinutes)}`);
 
     const predictions: RacePrediction[] = [];
+    const targetDistances = [
+      { name: "5K", km: 5 },
+      { name: "10K", km: 10 },
+      { name: "Half Marathon", km: 21.0975 },
+      { name: "Marathon", km: 42.195 },
+    ];
 
-    // Convert training pace to realistic race paces using proven formulas
-    // Training pace is in min/km, convert to race predictions
+    for (const target of targetDistances) {
+      // Check if we have an actual race at this distance
+      const categoryKey = target.name === "Half Marathon" ? "Half" : target.name;
+      const actualRaces = racesByCategory[categoryKey as keyof typeof racesByCategory] || [];
+      
+      let predictedTime: number;
+      let confidence: number;
+      let recommendation: string;
+
+      if (actualRaces.length > 0) {
+        // Use actual best race time for this distance
+        const bestAtDistance = actualRaces.reduce((best, r) => 
+          r.movingTime < best.movingTime ? r : best
+        );
+        predictedTime = bestAtDistance.movingTime / 60;
+        confidence = Math.min(95, 80 + actualRaces.length * 5);
+        recommendation = `Based on your actual ${target.name} race on ${new Date(bestAtDistance.startDate).toLocaleDateString()}`;
+      } else {
+        // Use Riegel formula: T2 = T1 × (D2/D1)^1.06
+        const distanceRatio = target.km / refDistanceKm;
+        predictedTime = refTimeMinutes * Math.pow(distanceRatio, 1.06);
+        confidence = Math.min(85, 60 + totalActivities);
+        
+        // Adjust confidence based on how far we're extrapolating
+        if (distanceRatio > 4) confidence -= 15; // Large extrapolation penalty
+        else if (distanceRatio > 2) confidence -= 5;
+        
+        recommendation = this.getRaceRecommendation(target.name, predictedTime / target.km);
+      }
+
+      predictions.push({
+        distance: target.name,
+        predictedTime: this.formatTime(predictedTime),
+        confidence: Math.max(50, confidence),
+        recommendation
+      });
+    }
+
+    return predictions;
+  }
+
+  /**
+   * Fallback: Predict race times from training pace when no races available
+   */
+  private predictFromTrainingPace(activities: Activity[]): RacePrediction[] {
+    const metrics = this.analyzeTrainingData(activities);
+    const recentPaces = metrics.avgPaces.slice(-4);
+    if (recentPaces.length === 0) {
+      return [{
+        distance: "5K",
+        predictedTime: "Need more data",
+        confidence: 0,
+        recommendation: "Complete more runs with consistent pacing"
+      }];
+    }
     
-    // 5K Prediction - typically 15-20 seconds per km faster than tempo pace
-    const fiveKPacePerKm = Math.max(3.5, paceForPrediction - 0.3); // Conservative speed increase
-    const fiveKTimeMinutes = fiveKPacePerKm * 5;
+    const recentPace = recentPaces.reduce((a, b) => a + b, 0) / recentPaces.length;
+    const predictions: RacePrediction[] = [];
+
+    // 5K Prediction - race pace typically 0.3-0.5 min/km faster than training
+    const fiveKPacePerKm = Math.max(3.5, recentPace - 0.4);
     predictions.push({
       distance: "5K",
-      predictedTime: this.formatTime(fiveKTimeMinutes),
-      confidence: Math.min(85, 60 + activities.length * 2),
-      recommendation: fiveKPacePerKm < 4.0 ? "Focus on speed work and intervals" : "Build more base fitness"
+      predictedTime: this.formatTime(fiveKPacePerKm * 5),
+      confidence: Math.min(70, 50 + activities.length),
+      recommendation: "Mark your next race in Strava for more accurate predictions"
     });
 
-    // 10K Prediction - typically 10-15 seconds per km faster than tempo
-    const tenKPacePerKm = Math.max(3.8, paceForPrediction - 0.2);
-    const tenKTimeMinutes = tenKPacePerKm * 10;
+    // 10K Prediction
+    const tenKPacePerKm = Math.max(3.8, recentPace - 0.3);
     predictions.push({
       distance: "10K",
-      predictedTime: this.formatTime(tenKTimeMinutes),
-      confidence: Math.min(90, 55 + activities.length * 2),
+      predictedTime: this.formatTime(tenKPacePerKm * 10),
+      confidence: Math.min(65, 45 + activities.length),
       recommendation: "Add tempo runs and threshold work"
     });
 
-    // Half Marathon Prediction - typically 5-10 seconds per km slower than tempo
-    const halfPacePerKm = paceForPrediction + 0.1;
-    const halfTimeMinutes = halfPacePerKm * 21.1;
+    // Half Marathon Prediction
+    const halfPacePerKm = recentPace - 0.1;
     predictions.push({
-      distance: "Half Marathon", 
-      predictedTime: this.formatTime(halfTimeMinutes),
-      confidence: Math.min(80, 50 + activities.length * 2),
+      distance: "Half Marathon",
+      predictedTime: this.formatTime(halfPacePerKm * 21.0975),
+      confidence: Math.min(60, 40 + activities.length),
       recommendation: "Focus on long runs and aerobic base building"
     });
 
-    // Full Marathon Prediction - typically 15-25 seconds per km slower than tempo
-    const marathonPacePerKm = paceForPrediction + 0.35;
-    const marathonTimeMinutes = marathonPacePerKm * 42.195;
+    // Marathon Prediction
+    const marathonPacePerKm = recentPace + 0.1;
     predictions.push({
-      distance: "Marathon", 
-      predictedTime: this.formatTime(marathonTimeMinutes),
-      confidence: Math.min(75, 45 + activities.length * 2),
+      distance: "Marathon",
+      predictedTime: this.formatTime(marathonPacePerKm * 42.195),
+      confidence: Math.min(55, 35 + activities.length),
       recommendation: "Build endurance with consistent long runs of 25-32km"
     });
 
     return predictions;
+  }
+
+  /**
+   * Get contextual recommendation based on race distance and predicted pace
+   */
+  private getRaceRecommendation(distance: string, pacePerKm: number): string {
+    switch (distance) {
+      case "5K":
+        return pacePerKm < 4.0 
+          ? "Focus on speed work and VO2 max intervals" 
+          : "Build aerobic base with easy runs";
+      case "10K":
+        return "Add tempo runs at threshold pace";
+      case "Half Marathon":
+        return "Focus on long runs and marathon-pace workouts";
+      case "Marathon":
+        return "Build endurance with progressive long runs of 25-35km";
+      default:
+        return "Continue consistent training";
+    }
   }
 
   /**
