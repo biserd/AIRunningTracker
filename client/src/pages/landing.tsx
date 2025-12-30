@@ -167,7 +167,7 @@ export default function LandingPage() {
                 className="w-full sm:w-auto bg-gradient-to-r from-strava-orange via-orange-500 to-red-500 text-white hover:from-orange-600 hover:via-orange-500 hover:to-red-600 h-14 px-8 sm:px-12 text-base sm:text-lg font-bold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-200 ring-2 ring-orange-300/50"
                 data-testid="hero-cta-getstarted"
               >
-                Get Started Free
+                Get My Free Strava Analysis
               </Button>
             </Link>
             
