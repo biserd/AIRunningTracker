@@ -277,6 +277,7 @@ export class RunnerScoreService {
 
   /**
    * Calculate historical runner scores by simulating scores at different time periods
+   * Now generates weekly data points for more granular progression tracking
    */
   async calculateHistoricalRunnerScore(userId: number): Promise<HistoricalScorePoint[]> {
     const activities = await storage.getActivitiesByUserId(userId, 500); // Get more activities for history
@@ -289,8 +290,8 @@ export class RunnerScoreService {
     const now = new Date();
     const historicalPoints: HistoricalScorePoint[] = [];
 
-    // Generate score snapshots for the last 6 months, weekly
-    for (let weeksAgo = 24; weeksAgo >= 0; weeksAgo -= 2) {
+    // Generate weekly score snapshots for the last 12 weeks (3 months) for better granularity
+    for (let weeksAgo = 12; weeksAgo >= 0; weeksAgo--) {
       const cutoffDate = new Date(now.getTime() - (weeksAgo * 7 * 24 * 60 * 60 * 1000));
       
       // Get activities up to this point in time
@@ -312,10 +313,10 @@ export class RunnerScoreService {
       }
     }
 
+    // Keep points that show meaningful change (>1 point difference) or are endpoints
     return historicalPoints.filter((point, index, array) => {
-      // Remove duplicate scores that don't show meaningful change
-      if (index === 0) return true;
-      return Math.abs(point.totalScore - array[index - 1].totalScore) > 2;
+      if (index === 0 || index === array.length - 1) return true;
+      return Math.abs(point.totalScore - array[index - 1].totalScore) >= 1;
     });
   }
 
