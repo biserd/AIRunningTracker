@@ -194,7 +194,7 @@ export default function ToolsPage() {
                 </Link>
                 <Link href="/auth">
                   <Button className="bg-strava-orange text-white hover:bg-strava-orange/90" size="sm" data-testid="button-sign-in">
-                    Sign In
+                    Get My Free Analysis
                   </Button>
                 </Link>
               </div>
@@ -228,7 +228,7 @@ export default function ToolsPage() {
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   <Link href="/auth">
                     <Button size="lg" className="bg-strava-orange text-white hover:bg-strava-orange/90 w-full sm:w-auto" data-testid="button-get-started">
-                      Get Started Free
+                      Get My Free Strava Analysis
                     </Button>
                   </Link>
                   <p className="text-sm text-gray-500">or scroll down to use tools without signing in</p>
