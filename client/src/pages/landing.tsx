@@ -767,10 +767,10 @@ export default function LandingPage() {
       <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-gradient-to-r from-blue-50 to-orange-50">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 text-charcoal px-4">
-            Ready to Transform Your Running?
+            Get your Strava report in 60 seconds
           </h2>
           <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 text-gray-700 px-4">
-            Start analyzing your performance today with AI-powered insights and your personal Runner Score.
+            Personal Runner Score + 3 next actions based on your last 30 days.
           </p>
           
           {/* Social Proof */}
@@ -785,21 +785,13 @@ export default function LandingPage() {
             </span>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
+          <div className="flex justify-center px-4">
             <Link href="/auth" className="w-full sm:w-auto">
               <Button
                 className="w-full sm:w-auto bg-gradient-to-r from-strava-orange via-orange-500 to-red-500 text-white hover:from-orange-600 hover:via-orange-500 hover:to-red-600 h-14 sm:h-12 px-8 sm:px-10 text-base sm:text-lg font-bold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-200 ring-2 ring-orange-300/50"
                 data-testid="bottom-cta-getstarted"
               >
-                Create Free Account
-              </Button>
-            </Link>
-            <Link href="/auth" className="w-full sm:w-auto">
-              <Button
-                className="w-full sm:w-auto bg-charcoal text-white hover:bg-gray-800 h-14 sm:h-12 px-8 sm:px-10 text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-                data-testid="bottom-cta-signin"
-              >
-                Sign In
+                Connect Strava & See My Score
               </Button>
             </Link>
           </div>
