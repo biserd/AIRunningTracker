@@ -65,6 +65,22 @@ export default function Dashboard() {
     }
   }, []);
 
+  // Send heartbeat to track user activity and record activation
+  useEffect(() => {
+    if (user?.id) {
+      // Send heartbeat for lastSeen tracking
+      apiRequest('POST', `/api/users/${user.id}/heartbeat`).catch(() => {});
+      
+      // Record activation when user views dashboard (one-time event)
+      const activationKey = `activation_recorded_${user.id}`;
+      if (!localStorage.getItem(activationKey)) {
+        apiRequest('POST', `/api/users/${user.id}/activation`, { activationType: 'dashboard_view' })
+          .then(() => localStorage.setItem(activationKey, 'true'))
+          .catch(() => {});
+      }
+    }
+  }, [user?.id]);
+
   // Show welcome toast for reverse trial users on first visit
   useEffect(() => {
     if (isReverseTrial && user?.id) {
