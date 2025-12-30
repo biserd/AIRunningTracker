@@ -2,6 +2,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { queryClient, apiRequest, getQueryFn } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureAccess } from "@/hooks/useSubscription";
 import AppHeader from "@/components/AppHeader";
 import { FloatingAICoach } from "@/components/FloatingAICoach";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,7 @@ type WizardStep = "goal" | "preferences" | "generating" | "preview";
 
 export default function TrainingPlans() {
   const { user, isLoading: authLoading } = useAuth();
+  const { canAccessAICoachChat } = useFeatureAccess();
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [showWizard, setShowWizard] = useState(false);
@@ -564,7 +566,7 @@ export default function TrainingPlans() {
         )}
       </main>
       
-      {user && (
+      {user && canAccessAICoachChat && (
         <FloatingAICoach 
           userId={user.id} 
           pageContext={{
