@@ -45,9 +45,7 @@ export default function ChatHistory() {
   const { data: messages, isLoading: isLoadingMessages } = useQuery<Message[]>({
     queryKey: ['/api/chat', selectedConversationId, 'messages'],
     queryFn: async () => {
-      const res = await fetch(`/api/chat/${selectedConversationId}/messages`, { credentials: 'include' });
-      if (!res.ok) throw new Error('Failed to fetch messages');
-      return res.json();
+      return await apiRequest(`/api/chat/${selectedConversationId}/messages`);
     },
     enabled: !!selectedConversationId,
   });
