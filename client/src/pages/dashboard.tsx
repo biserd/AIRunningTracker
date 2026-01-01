@@ -509,6 +509,9 @@ export default function Dashboard() {
       {user && (
         <FloatingAICoach 
           userId={user.id} 
+          isOpen={isChatOpen}
+          onOpenChange={setIsChatOpen}
+          initialConversationId={selectedConversationId}
           pageContext={{
             pageName: "Dashboard",
             pageDescription: "Main dashboard showing running performance overview, charts, and quick stats",

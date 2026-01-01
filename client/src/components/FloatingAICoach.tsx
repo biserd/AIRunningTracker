@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquare, X, Sparkles, Crown, Zap, Brain, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,11 +17,31 @@ interface FloatingAICoachProps {
   userId: number;
   className?: string;
   pageContext?: PageContext;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  initialConversationId?: number;
 }
 
-export function FloatingAICoach({ userId, className, pageContext }: FloatingAICoachProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function FloatingAICoach({ userId, className, pageContext, isOpen: controlledIsOpen, onOpenChange, initialConversationId }: FloatingAICoachProps) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
   const { canAccessAICoachChat } = useFeatureAccess();
+  
+  // Use controlled state if provided, otherwise use internal state
+  const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
+  const setIsOpen = (open: boolean) => {
+    if (onOpenChange) {
+      onOpenChange(open);
+    } else {
+      setInternalIsOpen(open);
+    }
+  };
+  
+  // Sync internal state with controlled state
+  useEffect(() => {
+    if (controlledIsOpen !== undefined) {
+      setInternalIsOpen(controlledIsOpen);
+    }
+  }, [controlledIsOpen]);
 
   return (
     <>
@@ -38,7 +58,7 @@ export function FloatingAICoach({ userId, className, pageContext }: FloatingAICo
             )}
           >
             {canAccessAICoachChat ? (
-              <ChatPanel userId={userId} onClose={() => setIsOpen(false)} pageContext={pageContext} />
+              <ChatPanel userId={userId} onClose={() => setIsOpen(false)} pageContext={pageContext} initialConversationId={initialConversationId} />
             ) : (
               <div className="h-full flex flex-col">
                 <div className="flex items-center justify-between p-4 border-b border-purple-100 dark:border-purple-800 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950 dark:to-blue-950">
