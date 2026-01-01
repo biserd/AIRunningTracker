@@ -13,7 +13,7 @@ class DripCampaignWorker {
   private lastRunAt: Date | null = null;
   private jobsProcessed = 0;
   private jobsFailed = 0;
-  private campaignsEnabled = true; // In-memory cache of DB setting
+  private campaignsEnabled = false; // In-memory cache of DB setting (defaults to OFF)
 
   async start(): Promise<void> {
     if (this.intervalId) {
@@ -24,11 +24,11 @@ class DripCampaignWorker {
     // Load setting from database on startup
     try {
       const setting = await storage.getSystemSetting(SETTING_KEY);
-      this.campaignsEnabled = setting !== "false"; // Default to true if not set
+      this.campaignsEnabled = setting === "true"; // Default to false if not set
       console.log(`[DripWorker] Loaded campaigns enabled: ${this.campaignsEnabled}`);
     } catch (error) {
-      console.error("[DripWorker] Error loading setting, defaulting to enabled:", error);
-      this.campaignsEnabled = true;
+      console.error("[DripWorker] Error loading setting, defaulting to disabled:", error);
+      this.campaignsEnabled = false;
     }
 
     console.log("[DripWorker] Starting worker with interval:", WORKER_INTERVAL_MS / 1000, "seconds");
