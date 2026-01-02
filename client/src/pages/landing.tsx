@@ -80,18 +80,6 @@ export default function LandingPage() {
         structuredData={structuredData}
       />
       
-      {/* 2025 Running Wrapped Notification Bar */}
-      <Link href="/auth">
-        <div className="bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 py-2 px-4 cursor-pointer hover:opacity-95 transition-opacity" data-testid="banner-wrapped-promo">
-          <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 sm:gap-3 text-white text-sm sm:text-base">
-            <Sparkles className="h-4 w-4 text-yellow-300 flex-shrink-0" />
-            <span className="font-semibold">2025 Running Wrapped is here!</span>
-            <span className="hidden sm:inline text-white/80">See your year in review</span>
-            <ArrowRight className="h-4 w-4 flex-shrink-0" />
-          </div>
-        </div>
-      </Link>
-
       <PublicHeader />
 
       {/* Hero Section */}
