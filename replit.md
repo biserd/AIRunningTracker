@@ -30,6 +30,7 @@ Preferred communication style: Simple, everyday language.
 - **Year End Recap**: Personalized yearly running summaries with AI-generated infographics for social sharing.
 - **Coach Insights Page**: Unified analytics dashboard categorizing performance metrics into "The Engine" (cardiovascular power) and "The Mechanics" (form stability).
 - **Marketing & Engagement**: Drip campaign system for user lifecycle email marketing, SEO optimization, and a reverse trial system for new users.
+- **SEO & Dynamic Rendering**: Crawler-optimized HTML served to search engines (Googlebot, Bingbot, etc.) with full meta tags, Open Graph, Twitter Cards, and structured data. Regular users receive the SPA. Pre-render script available for static HTML generation.
 - **Strava Activity Branding**: User-opt-in feature to append customizable branding text to Strava activity descriptions.
 
 ### System Design Choices
