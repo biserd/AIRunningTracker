@@ -248,6 +248,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       title: "AI Agent Coach | Proactive Training Intelligence | RunAnalytics",
       description: "Premium AI coaching that proactively analyzes your runs and provides personalized recommendations before you ask. The future of running coaching.",
       keywords: "AI agent coach, proactive coaching, premium running coach, AI training"
+    },
+    // Additional pages from sitemap
+    "/about": {
+      title: "About RunAnalytics | AI-Powered Running Analytics",
+      description: "Learn about RunAnalytics - the AI-powered platform helping runners improve with personalized insights, training analytics, and smart coaching.",
+      keywords: "about RunAnalytics, running analytics company, AI running platform"
+    },
+    "/auth": {
+      title: "Sign In or Sign Up | RunAnalytics",
+      description: "Sign in to RunAnalytics to access your personalized running insights, or create a free account to get started with AI-powered analytics.",
+      keywords: "login, sign up, create account, running app"
+    },
+    "/subscribe": {
+      title: "Subscribe | Get Pro or Premium | RunAnalytics",
+      description: "Upgrade to Pro or Premium for advanced running analytics, AI coaching, unlimited insights, and personalized training recommendations.",
+      keywords: "subscribe, upgrade, pro plan, premium plan, running subscription"
+    },
+    "/faq": {
+      title: "FAQ | Frequently Asked Questions | RunAnalytics",
+      description: "Get answers to common questions about RunAnalytics, Strava integration, AI coaching, subscriptions, and how to get the most from your training data.",
+      keywords: "FAQ, frequently asked questions, help, support, running analytics help"
+    },
+    "/contact": {
+      title: "Contact Us | RunAnalytics Support",
+      description: "Get in touch with the RunAnalytics team. We're here to help with questions about your running analytics, account, or technical support.",
+      keywords: "contact, support, help, customer service, running analytics support"
+    },
+    "/privacy": {
+      title: "Privacy Policy | RunAnalytics",
+      description: "Read the RunAnalytics privacy policy. Learn how we protect your running data, Strava information, and personal details.",
+      keywords: "privacy policy, data protection, GDPR, running data privacy"
+    },
+    "/terms": {
+      title: "Terms of Service | RunAnalytics",
+      description: "Read the RunAnalytics terms of service. Understand your rights and responsibilities when using our running analytics platform.",
+      keywords: "terms of service, terms and conditions, user agreement"
+    },
+    "/release-notes": {
+      title: "Release Notes | What's New | RunAnalytics",
+      description: "See the latest updates, new features, and improvements to RunAnalytics. Stay up to date with our running analytics platform.",
+      keywords: "release notes, updates, changelog, new features, running app updates"
+    },
+    "/runner-score": {
+      title: "Runner Score | Your Running Performance Index | RunAnalytics",
+      description: "Discover your Runner Score - a comprehensive metric combining fitness, consistency, and progression. Share your score and track improvement.",
+      keywords: "runner score, running performance, fitness score, running index"
+    },
+    "/developers": {
+      title: "Developer Portal | RunAnalytics API",
+      description: "Build with RunAnalytics. Access our API documentation, integration guides, and developer resources for running analytics.",
+      keywords: "API, developers, integration, running API, developer portal"
+    },
+    "/developers/api": {
+      title: "API Documentation | RunAnalytics Developers",
+      description: "Complete API documentation for RunAnalytics. Learn how to integrate running analytics, access activity data, and build custom solutions.",
+      keywords: "API documentation, REST API, running data API, developer docs"
+    },
+    "/tools/shoes/compare": {
+      title: "Compare Running Shoes | Side-by-Side Comparison | RunAnalytics",
+      description: "Compare running shoes side-by-side. See specs, features, and AI insights to find the best shoes for your running style.",
+      keywords: "compare running shoes, shoe comparison, running shoe specs"
     }
   };
 
@@ -285,57 +346,58 @@ Sitemap: ${baseUrl}/sitemap.xml`;
     res.send(robotsTxt);
   });
 
-  // SEO: Sitemap (dynamic with shoe pages)
+  // SEO: Sitemap (dynamic with shoe pages and lastmod timestamps)
   app.get("/sitemap.xml", async (req, res) => {
     try {
       const baseUrl = "https://aitracker.run";
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
       
       const staticPages = [
-        { url: "/", changefreq: "daily", priority: "1.0" },
-        { url: "/auth", changefreq: "monthly", priority: "0.8" },
-        { url: "/forgot-password", changefreq: "yearly", priority: "0.4" },
-        { url: "/reset-password", changefreq: "yearly", priority: "0.3" },
-        { url: "/about", changefreq: "monthly", priority: "0.7" },
-        { url: "/features", changefreq: "monthly", priority: "0.8" },
-        { url: "/pricing", changefreq: "weekly", priority: "0.9" },
-        { url: "/subscribe", changefreq: "weekly", priority: "0.8" },
+        { url: "/", changefreq: "daily", priority: "1.0", lastmod: today },
+        { url: "/auth", changefreq: "monthly", priority: "0.8", lastmod: "2026-01-01" },
+        { url: "/forgot-password", changefreq: "yearly", priority: "0.4", lastmod: "2025-12-01" },
+        { url: "/reset-password", changefreq: "yearly", priority: "0.3", lastmod: "2025-12-01" },
+        { url: "/about", changefreq: "monthly", priority: "0.7", lastmod: "2026-01-01" },
+        { url: "/features", changefreq: "monthly", priority: "0.8", lastmod: today },
+        { url: "/pricing", changefreq: "weekly", priority: "0.9", lastmod: today },
+        { url: "/subscribe", changefreq: "weekly", priority: "0.8", lastmod: today },
         
         // Blog & Content Marketing
-        { url: "/blog", changefreq: "weekly", priority: "0.9" },
-        { url: "/blog/ai-running-coach-complete-guide-2026", changefreq: "monthly", priority: "0.9" },
-        { url: "/blog/best-strava-analytics-tools-2026", changefreq: "monthly", priority: "0.9" },
-        { url: "/blog/how-to-improve-running-pace", changefreq: "monthly", priority: "0.9" },
-        { url: "/blog/ai-agent-coach-proactive-coaching", changefreq: "monthly", priority: "0.9" },
-        { url: "/blog/how-to-pick-a-training-plan", changefreq: "monthly", priority: "0.9" },
-        { url: "/ai-running-coach", changefreq: "weekly", priority: "0.9" },
-        { url: "/ai-agent-coach", changefreq: "weekly", priority: "0.9" },
+        { url: "/blog", changefreq: "weekly", priority: "0.9", lastmod: today },
+        { url: "/blog/ai-running-coach-complete-guide-2026", changefreq: "monthly", priority: "0.9", lastmod: "2026-01-05" },
+        { url: "/blog/best-strava-analytics-tools-2026", changefreq: "monthly", priority: "0.9", lastmod: "2026-01-05" },
+        { url: "/blog/how-to-improve-running-pace", changefreq: "monthly", priority: "0.9", lastmod: "2026-01-03" },
+        { url: "/blog/ai-agent-coach-proactive-coaching", changefreq: "monthly", priority: "0.9", lastmod: "2026-01-06" },
+        { url: "/blog/how-to-pick-a-training-plan", changefreq: "monthly", priority: "0.9", lastmod: "2026-01-04" },
+        { url: "/ai-running-coach", changefreq: "weekly", priority: "0.9", lastmod: today },
+        { url: "/ai-agent-coach", changefreq: "weekly", priority: "0.9", lastmod: today },
         
         // Free Tools
-        { url: "/tools", changefreq: "weekly", priority: "0.9" },
-        { url: "/tools/aerobic-decoupling-calculator", changefreq: "weekly", priority: "0.8" },
-        { url: "/tools/training-split-analyzer", changefreq: "weekly", priority: "0.8" },
-        { url: "/tools/marathon-fueling", changefreq: "weekly", priority: "0.8" },
-        { url: "/tools/race-predictor", changefreq: "weekly", priority: "0.8" },
-        { url: "/tools/cadence-analyzer", changefreq: "weekly", priority: "0.8" },
-        { url: "/tools/heatmap", changefreq: "weekly", priority: "0.7" },
+        { url: "/tools", changefreq: "weekly", priority: "0.9", lastmod: today },
+        { url: "/tools/aerobic-decoupling-calculator", changefreq: "weekly", priority: "0.8", lastmod: today },
+        { url: "/tools/training-split-analyzer", changefreq: "weekly", priority: "0.8", lastmod: today },
+        { url: "/tools/marathon-fueling", changefreq: "weekly", priority: "0.8", lastmod: today },
+        { url: "/tools/race-predictor", changefreq: "weekly", priority: "0.8", lastmod: today },
+        { url: "/tools/cadence-analyzer", changefreq: "weekly", priority: "0.8", lastmod: today },
+        { url: "/tools/heatmap", changefreq: "weekly", priority: "0.7", lastmod: today },
         
         // Running Shoe Hub
-        { url: "/tools/shoes", changefreq: "weekly", priority: "0.9" },
-        { url: "/tools/shoes/compare", changefreq: "weekly", priority: "0.8" },
-        { url: "/tools/shoe-finder", changefreq: "weekly", priority: "0.8" },
-        { url: "/tools/rotation-planner", changefreq: "weekly", priority: "0.8" },
+        { url: "/tools/shoes", changefreq: "weekly", priority: "0.9", lastmod: today },
+        { url: "/tools/shoes/compare", changefreq: "weekly", priority: "0.8", lastmod: today },
+        { url: "/tools/shoe-finder", changefreq: "weekly", priority: "0.8", lastmod: today },
+        { url: "/tools/rotation-planner", changefreq: "weekly", priority: "0.8", lastmod: today },
         
         // Developer API
-        { url: "/developers", changefreq: "weekly", priority: "0.8" },
-        { url: "/developers/api", changefreq: "weekly", priority: "0.8" },
+        { url: "/developers", changefreq: "weekly", priority: "0.8", lastmod: "2026-01-01" },
+        { url: "/developers/api", changefreq: "weekly", priority: "0.8", lastmod: "2026-01-01" },
         
         // Other Pages
-        { url: "/runner-score", changefreq: "weekly", priority: "0.7" },
-        { url: "/faq", changefreq: "monthly", priority: "0.6" },
-        { url: "/contact", changefreq: "monthly", priority: "0.5" },
-        { url: "/privacy", changefreq: "yearly", priority: "0.3" },
-        { url: "/terms", changefreq: "yearly", priority: "0.3" },
-        { url: "/release-notes", changefreq: "weekly", priority: "0.7" },
+        { url: "/runner-score", changefreq: "weekly", priority: "0.7", lastmod: today },
+        { url: "/faq", changefreq: "monthly", priority: "0.6", lastmod: "2026-01-01" },
+        { url: "/contact", changefreq: "monthly", priority: "0.5", lastmod: "2025-12-01" },
+        { url: "/privacy", changefreq: "yearly", priority: "0.3", lastmod: "2025-11-01" },
+        { url: "/terms", changefreq: "yearly", priority: "0.3", lastmod: "2025-11-01" },
+        { url: "/release-notes", changefreq: "weekly", priority: "0.7", lastmod: today },
       ];
 
       // Fetch all shoes for individual shoe pages
@@ -343,7 +405,8 @@ Sitemap: ${baseUrl}/sitemap.xml`;
       const shoePages = shoes.map(shoe => ({
         url: `/tools/shoes/${shoe.slug}`,
         changefreq: "monthly",
-        priority: "0.7"
+        priority: "0.7",
+        lastmod: shoe.createdAt ? new Date(shoe.createdAt).toISOString().split('T')[0] : today
       }));
 
       // Fetch all shoe comparisons for comparison pages
@@ -351,7 +414,8 @@ Sitemap: ${baseUrl}/sitemap.xml`;
       const comparisonPages = comparisons.map(comparison => ({
         url: `/tools/shoes/compare/${comparison.slug}`,
         changefreq: "monthly",
-        priority: "0.7"
+        priority: "0.7",
+        lastmod: comparison.createdAt ? new Date(comparison.createdAt).toISOString().split('T')[0] : today
       }));
 
       const allPages = [...staticPages, ...shoePages, ...comparisonPages];
@@ -360,6 +424,7 @@ Sitemap: ${baseUrl}/sitemap.xml`;
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${allPages.map(page => `  <url>
     <loc>${baseUrl}${page.url}</loc>
+    <lastmod>${page.lastmod}</lastmod>
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
   </url>`).join('\n')}
@@ -463,6 +528,73 @@ ${allPages.map(page => `  <url>
         next();
       }
     });
+  });
+
+  // Dynamic SEO rendering for individual shoe pages
+  app.get("/tools/shoes/:slug", async (req: any, res, next) => {
+    const userAgent = req.get('user-agent') || '';
+    
+    // Only serve pre-rendered HTML to crawlers
+    if (isCrawler(userAgent)) {
+      try {
+        const { slug } = req.params;
+        const shoe = await storage.getShoeBySlug(slug);
+        
+        if (shoe) {
+          const shoeName = `${shoe.brand} ${shoe.model}`;
+          const pageMeta = {
+            title: `${shoeName} | Running Shoe Review & Specs | RunAnalytics`,
+            description: `${shoeName}. ${shoe.category} running shoe with ${shoe.weight}oz weight, ${shoe.heelToToeDrop}mm drop. ${shoe.description?.substring(0, 100) || 'See detailed specs, reviews, and AI insights.'}`,
+            keywords: `${shoeName}, ${shoe.brand} running shoes, ${shoe.category} shoes, running shoe review`
+          };
+          
+          console.log(`[SEO] Serving pre-rendered HTML for shoe: ${slug}`);
+          res.setHeader('Content-Type', 'text/html');
+          res.setHeader('X-Robots-Tag', 'index, follow');
+          res.send(generateSEOHtml(pageMeta, `/tools/shoes/${slug}`));
+        } else {
+          next();
+        }
+      } catch (error) {
+        console.error('[SEO] Error generating shoe page:', error);
+        next();
+      }
+    } else {
+      next();
+    }
+  });
+
+  // Dynamic SEO rendering for shoe comparison pages
+  app.get("/tools/shoes/compare/:slug", async (req: any, res, next) => {
+    const userAgent = req.get('user-agent') || '';
+    
+    // Only serve pre-rendered HTML to crawlers
+    if (isCrawler(userAgent)) {
+      try {
+        const { slug } = req.params;
+        const comparison = await storage.getShoeComparisonBySlug(slug);
+        
+        if (comparison) {
+          const pageMeta = {
+            title: `${comparison.title} | Running Shoe Comparison | RunAnalytics`,
+            description: comparison.metaDescription || `Compare ${comparison.title}. See detailed specs, features, pros and cons to find the best shoe for your running.`,
+            keywords: `compare running shoes, ${comparison.title}, running shoe comparison, shoe vs shoe`
+          };
+          
+          console.log(`[SEO] Serving pre-rendered HTML for comparison: ${slug}`);
+          res.setHeader('Content-Type', 'text/html');
+          res.setHeader('X-Robots-Tag', 'index, follow');
+          res.send(generateSEOHtml(pageMeta, `/tools/shoes/compare/${slug}`));
+        } else {
+          next();
+        }
+      } catch (error) {
+        console.error('[SEO] Error generating comparison page:', error);
+        next();
+      }
+    } else {
+      next();
+    }
   });
 
   // Waitlist for email capture (public endpoint)
