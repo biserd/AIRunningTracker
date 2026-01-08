@@ -10,7 +10,7 @@ import { Link } from "wouter";
 import { ArrowRight, RefreshCw, Scale, Timer, Star, DollarSign, Ruler, Zap, Lightbulb, Check } from "lucide-react";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
-import { Helmet } from "react-helmet";
+import { SEO } from "@/components/SEO";
 import AppHeader from "@/components/AppHeader";
 import type { RunningShoe } from "@shared/schema";
 
@@ -75,16 +75,21 @@ export default function RotationPlannerPage() {
 
   return (
     <>
-      <Helmet>
-        <title>Running Shoe Rotation Planner - Build Your Perfect Training Setup | RunAnalytics</title>
-        <meta name="description" content="Build the optimal running shoe rotation for your training. Get personalized recommendations from 100+ verified shoes for daily trainers, speed work, long runs, racing, and recovery." />
-        <meta name="keywords" content="shoe rotation planner, running shoe rotation, training shoe setup, best shoes for daily training, racing shoes vs training shoes" />
-        <meta property="og:title" content="Running Shoe Rotation Planner | RunAnalytics" />
-        <meta property="og:description" content="Build a complete shoe rotation tailored to your weight and mileage. Expert recommendations for every type of run from 100+ verified shoes." />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://aitracker.run/tools/rotation-planner" />
-        <link rel="canonical" href="https://aitracker.run/tools/rotation-planner" />
-      </Helmet>
+      <SEO
+        title="Running Shoe Rotation Planner | Build Your Shoe Lineup | RunAnalytics"
+        description="Plan the perfect running shoe rotation. Get AI recommendations for daily trainers, speed shoes & race day options."
+        keywords="shoe rotation, running shoe lineup, multiple running shoes, shoe rotation planner"
+        url="https://aitracker.run/tools/rotation-planner"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "Running Shoe Rotation Planner",
+          "applicationCategory": "HealthApplication",
+          "operatingSystem": "Web",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+          "description": "Plan the perfect running shoe rotation. Get AI recommendations for daily trainers, speed shoes & race day options."
+        }}
+      />
 
       <div className="min-h-screen bg-light-grey">
         {isAuthenticated ? (

@@ -9,7 +9,7 @@ import { Link } from "wouter";
 import { ArrowRight, TrendingDown, Info, Calculator, Activity as ActivityIcon } from "lucide-react";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
-import { Helmet } from "react-helmet";
+import { SEO } from "@/components/SEO";
 import AppHeader from "@/components/AppHeader";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -235,15 +235,21 @@ export default function AerobicDecouplingCalculator() {
 
   return (
     <>
-      <Helmet>
-        <title>Aerobic Decoupling Calculator - Free Running Efficiency Analysis | RunAnalytics</title>
-        <meta name="description" content="Measure cardiovascular drift and aerobic efficiency with our free aerobic decoupling calculator. Analyze your long runs and improve endurance training." />
-        <meta name="keywords" content="aerobic decoupling calculator, cardiovascular drift, running efficiency, endurance training, aerobic fitness" />
-        <meta property="og:title" content="Aerobic Decoupling Calculator - Free Running Efficiency Analysis | RunAnalytics" />
-        <meta property="og:description" content="Measure cardiovascular drift and aerobic efficiency with our free aerobic decoupling calculator. Analyze your long runs and improve endurance training." />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://aitracker.run/tools/aerobic-decoupling-calculator" />
-      </Helmet>
+      <SEO
+        title="Aerobic Decoupling Calculator | Running Endurance Test | RunAnalytics"
+        description="Measure aerobic fade on long runs. Calculate your Pa:HR ratio and endurance efficiency score. Free tool with Strava import."
+        keywords="aerobic decoupling, running endurance test, cardiac drift calculator, Pa:HR ratio, aerobic fitness test"
+        url="https://aitracker.run/tools/aerobic-decoupling-calculator"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "Aerobic Decoupling Calculator",
+          "applicationCategory": "HealthApplication",
+          "operatingSystem": "Web",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+          "description": "Measure aerobic fade on long runs. Calculate your Pa:HR ratio and endurance efficiency score. Free tool with Strava import."
+        }}
+      />
       <FAQSchema faqs={AEROBIC_DECOUPLING_FAQS} />
 
       <div className="min-h-screen bg-light-grey">

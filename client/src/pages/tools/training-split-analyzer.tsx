@@ -9,7 +9,7 @@ import { Link } from "wouter";
 import { ArrowRight, TrendingUp, Info, Calculator, Activity as ActivityIcon, Target, Heart } from "lucide-react";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
-import { Helmet } from "react-helmet";
+import { SEO } from "@/components/SEO";
 import AppHeader from "@/components/AppHeader";
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -251,13 +251,21 @@ export default function TrainingSplitAnalyzer() {
 
   return (
     <>
-      <Helmet>
-        <title>Training Split Analyzer - Free HR Zone Distribution Tool | RunAnalytics</title>
-        <meta name="description" content="Analyze your training intensity distribution. Free tool to check if your training follows polarized or pyramidal model. Optimize your heart rate zones." />
-        <meta name="keywords" content="training split analyzer, polarized training, pyramidal training, heart rate zones, training intensity" />
-        <meta property="og:title" content="Training Split Analyzer - Free HR Zone Distribution Tool | RunAnalytics" />
-        <meta property="og:description" content="Analyze your training intensity distribution. Free tool to check if your training follows polarized or pyramidal model. Optimize your heart rate zones." />
-      </Helmet>
+      <SEO
+        title="Training Split Analyzer | Polarized vs Pyramidal Training | RunAnalytics"
+        description="Analyze your running intensity distribution. Discover if you're training polarized, pyramidal, or threshold-heavy. Free with Strava sync."
+        keywords="training split analyzer, polarized training, pyramidal training, running zones, training intensity distribution"
+        url="https://aitracker.run/tools/training-split-analyzer"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "Training Split Analyzer",
+          "applicationCategory": "HealthApplication",
+          "operatingSystem": "Web",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+          "description": "Analyze your running intensity distribution. Discover if you're training polarized, pyramidal, or threshold-heavy. Free with Strava sync."
+        }}
+      />
       <FAQSchema faqs={TRAINING_SPLIT_FAQS} />
 
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">

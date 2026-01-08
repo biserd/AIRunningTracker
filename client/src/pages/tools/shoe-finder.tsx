@@ -12,7 +12,7 @@ import { Link } from "wouter";
 import { ArrowRight, Target, Scale, Zap, Star, DollarSign, Ruler, TrendingUp, Check } from "lucide-react";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
-import { Helmet } from "react-helmet";
+import { SEO } from "@/components/SEO";
 import AppHeader from "@/components/AppHeader";
 import type { RunningShoe } from "@shared/schema";
 
@@ -74,16 +74,21 @@ export default function ShoeFinderPage() {
 
   return (
     <>
-      <Helmet>
-        <title>Personalized Running Shoe Finder - Get Custom Recommendations | RunAnalytics</title>
-        <meta name="description" content="Get personalized running shoe recommendations based on your weight, running goals, and foot type. Find your perfect match from 100+ verified shoes across 16 top brands." />
-        <meta name="keywords" content="running shoe finder, personalized shoe recommendations, best running shoes for me, running shoe quiz, shoe matching tool" />
-        <meta property="og:title" content="Personalized Running Shoe Finder | RunAnalytics" />
-        <meta property="og:description" content="Answer three simple questions and get AI-powered running shoe recommendations tailored to your body and running goals." />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://aitracker.run/tools/shoe-finder" />
-        <link rel="canonical" href="https://aitracker.run/tools/shoe-finder" />
-      </Helmet>
+      <SEO
+        title="Running Shoe Finder | Personalized Shoe Recommendations | RunAnalytics"
+        description="Find your perfect running shoe based on foot type, running style & goals. AI-powered recommendations from 100+ models."
+        keywords="running shoe finder, best running shoes, shoe recommendations, running shoe quiz"
+        url="https://aitracker.run/tools/shoe-finder"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "Running Shoe Finder",
+          "applicationCategory": "HealthApplication",
+          "operatingSystem": "Web",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+          "description": "Find your perfect running shoe based on foot type, running style & goals. AI-powered recommendations from 100+ models."
+        }}
+      />
 
       <div className="min-h-screen bg-light-grey">
         {isAuthenticated ? (

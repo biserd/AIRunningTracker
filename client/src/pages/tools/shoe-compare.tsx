@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Helmet } from "react-helmet";
+import { SEO } from "@/components/SEO";
 import AppHeader from "@/components/AppHeader";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
@@ -215,18 +215,31 @@ export default function ShoeComparePage() {
     ? `Compare ${shoes.length} running shoes side-by-side: ${shoes.map(s => `${s.brand} ${s.model}`).join(', ')}. View specs, ratings, and find the best shoe for you.`
     : 'Compare running shoes side-by-side. View weight, drop, cushioning, price, and ratings to find the perfect shoe for your running needs.';
 
+  const seoTitle = shoes.length > 0 
+    ? `Compare: ${shoes.map(s => `${s.brand} ${s.model}`).join(' vs ')} | RunAnalytics`
+    : "Running Shoe Comparison | Side-by-Side Analysis | RunAnalytics";
+  
+  const seoDescription = shoes.length > 0
+    ? `Compare ${shoes.length} running shoes side-by-side: ${shoes.map(s => `${s.brand} ${s.model}`).join(', ')}. View specs, ratings, and find the best shoe for you.`
+    : "Compare running shoes head-to-head. See specs, features & AI analysis to find your best match.";
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <Helmet>
-        <title>{pageTitle}</title>
-        <meta name="description" content={pageDescription} />
-        <meta property="og:title" content={pageTitle} />
-        <meta property="og:description" content={pageDescription} />
-        <meta property="og:type" content="website" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={pageTitle} />
-        <meta name="twitter:description" content={pageDescription} />
-      </Helmet>
+      <SEO
+        title={seoTitle}
+        description={seoDescription}
+        keywords="compare running shoes, shoe comparison, running shoe vs"
+        url="https://aitracker.run/tools/shoes/compare"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "Running Shoe Comparison",
+          "applicationCategory": "HealthApplication",
+          "operatingSystem": "Web",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+          "description": "Compare running shoes head-to-head. See specs, features & AI analysis to find your best match."
+        }}
+      />
 
       <AppHeader />
 

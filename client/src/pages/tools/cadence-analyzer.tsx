@@ -6,7 +6,7 @@ import { Link } from "wouter";
 import { ArrowRight, Info, Activity as ActivityIcon, TrendingUp, TrendingDown, Footprints, Target, CheckCircle2 } from "lucide-react";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
-import { Helmet } from "react-helmet";
+import { SEO } from "@/components/SEO";
 import AppHeader from "@/components/AppHeader";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -128,15 +128,21 @@ export default function CadenceAnalyzer() {
 
   return (
     <>
-      <Helmet>
-        <title>Running Cadence Analyzer - Free Form Stability Calculator | RunAnalytics</title>
-        <meta name="description" content="Analyze running cadence drift and form stability. Free tool to measure cadence consistency and improve running efficiency throughout your runs." />
-        <meta name="keywords" content="cadence analyzer, running cadence, form stability, cadence drift, running form analysis" />
-        <meta property="og:title" content="Running Cadence Analyzer - Free Form Stability Calculator | RunAnalytics" />
-        <meta property="og:description" content="Analyze running cadence drift and form stability. Free tool to measure cadence consistency and improve running efficiency throughout your runs." />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://aitracker.run/tools/cadence-analyzer" />
-      </Helmet>
+      <SEO
+        title="Running Cadence Analyzer | Form Stability Score | RunAnalytics"
+        description="Detect running form fade with cadence and stride analysis. Get your Form Stability Score and identify late-run form breakdown."
+        keywords="running cadence analyzer, form stability, stride length, running form analysis, cadence tracking"
+        url="https://aitracker.run/tools/cadence-analyzer"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "Running Cadence Analyzer",
+          "applicationCategory": "HealthApplication",
+          "operatingSystem": "Web",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+          "description": "Detect running form fade with cadence and stride analysis. Get your Form Stability Score and identify late-run form breakdown."
+        }}
+      />
       <FAQSchema faqs={CADENCE_ANALYZER_FAQS} />
 
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">

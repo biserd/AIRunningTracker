@@ -11,7 +11,7 @@ import { Link } from "wouter";
 import { ArrowRight, Trophy, Info, Calculator, Activity as ActivityIcon, Target, TrendingUp, Zap } from "lucide-react";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
-import { Helmet } from "react-helmet";
+import { SEO } from "@/components/SEO";
 import AppHeader from "@/components/AppHeader";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -194,14 +194,21 @@ export default function RacePredictor() {
 
   return (
     <>
-      <Helmet>
-        <title>Race Time Predictor Calculator - Free 5K, 10K, Marathon Predictions | RunAnalytics</title>
-        <meta name="description" content="Free AI-powered race time predictor. Calculate your 5K, 10K, half marathon, and marathon times based on your training data. Accurate predictions using Riegel formula." />
-        <meta name="keywords" content="race time predictor, race calculator, marathon time predictor, 5K time calculator, running race predictor" />
-        <meta property="og:title" content="Race Time Predictor Calculator - Free 5K, 10K, Marathon Predictions | RunAnalytics" />
-        <meta property="og:description" content="Free AI-powered race time predictor. Calculate your 5K, 10K, half marathon, and marathon times based on your training data. Accurate predictions using Riegel formula." />
-        <meta property="og:type" content="website" />
-      </Helmet>
+      <SEO
+        title="Race Time Predictor | Free 5K to Marathon Calculator | RunAnalytics"
+        description="Predict your 5K, 10K, half marathon & marathon times using the Riegel formula. Import Strava data for personalized race predictions. Free calculator."
+        keywords="race time predictor, marathon time calculator, running pace calculator, Riegel formula, race prediction, 5K time predictor"
+        url="https://aitracker.run/tools/race-predictor"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "Race Time Predictor",
+          "applicationCategory": "HealthApplication",
+          "operatingSystem": "Web",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+          "description": "Predict your 5K, 10K, half marathon & marathon times using the Riegel formula. Import Strava data for personalized race predictions. Free calculator."
+        }}
+      />
       <FAQSchema faqs={RACE_PREDICTOR_FAQS} />
 
       <div className="min-h-screen bg-light-grey">

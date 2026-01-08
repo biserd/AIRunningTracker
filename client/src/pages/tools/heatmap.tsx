@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link, useLocation } from "wouter";
 import { MapPin, Activity, ArrowLeft, Info } from "lucide-react";
-import { Helmet } from "react-helmet";
+import { SEO } from "@/components/SEO";
 import AppHeader from "@/components/AppHeader";
 import Footer from "@/components/Footer";
 import L from "leaflet";
@@ -176,9 +176,21 @@ export default function RunningHeatmapPage() {
   if (authLoading || isLoading) {
     return (
       <>
-        <Helmet>
-          <title>Running Heatmap | RunAnalytics</title>
-        </Helmet>
+        <SEO
+          title="Running Heatmap | Visualize Your Training Routes | RunAnalytics"
+          description="See your most-run routes on an interactive heatmap. Discover training patterns and favorite paths from your Strava activities."
+          keywords="running heatmap, training routes, Strava heatmap, route visualization, running patterns"
+          url="https://aitracker.run/tools/heatmap"
+          structuredData={{
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "Running Heatmap",
+            "applicationCategory": "HealthApplication",
+            "operatingSystem": "Web",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "description": "See your most-run routes on an interactive heatmap. Discover training patterns and favorite paths from your Strava activities."
+          }}
+        />
         <div className="min-h-screen bg-light-grey">
           <AppHeader />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -195,13 +207,21 @@ export default function RunningHeatmapPage() {
 
   return (
     <>
-      <Helmet>
-        <title>Running Heatmap - Visualize Your Strava Routes | RunAnalytics</title>
-        <meta name="description" content="Create an interactive heatmap of your running routes. Visualize all your Strava activities on one map to discover training patterns and favorite routes." />
-        <meta name="keywords" content="running heatmap, Strava heatmap, route visualization, running routes map, activity heatmap" />
-        <meta property="og:title" content="Running Heatmap - Visualize Your Strava Routes | RunAnalytics" />
-        <meta property="og:description" content="Create an interactive heatmap of your running routes. Visualize all your Strava activities on one map to discover training patterns and favorite routes." />
-      </Helmet>
+      <SEO
+        title="Running Heatmap | Visualize Your Training Routes | RunAnalytics"
+        description="See your most-run routes on an interactive heatmap. Discover training patterns and favorite paths from your Strava activities."
+        keywords="running heatmap, training routes, Strava heatmap, route visualization, running patterns"
+        url="https://aitracker.run/tools/heatmap"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "Running Heatmap",
+          "applicationCategory": "HealthApplication",
+          "operatingSystem": "Web",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+          "description": "See your most-run routes on an interactive heatmap. Discover training patterns and favorite paths from your Strava activities."
+        }}
+      />
       <FAQSchema faqs={HEATMAP_FAQS} />
 
       <div className="min-h-screen bg-light-grey">

@@ -5,7 +5,7 @@ import { Link } from "wouter";
 import { Activity, TrendingDown, Calculator, BarChart3, ArrowRight, Zap, MapPin, ShoppingBag, Target, RefreshCw, GitCompare } from "lucide-react";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
-import { Helmet } from "react-helmet";
+import { SEO } from "@/components/SEO";
 import AppHeader from "@/components/AppHeader";
 
 const tools = [
@@ -167,16 +167,31 @@ export default function ToolsPage() {
 
   return (
     <>
-      <Helmet>
-        <title>Free Running Tools - Shoe Finder, Race Predictor, Training Analyzer | RunAnalytics</title>
-        <meta name="description" content="Free running analysis tools for every runner. Find your perfect shoe from 100+ verified options, predict race times, analyze training zones, and monitor form stability. Works with or without Strava." />
-        <meta name="keywords" content="running tools, running shoe finder, race time predictor, training analyzer, aerobic decoupling calculator, running heatmap" />
-        <meta property="og:title" content="Free Running Analysis Tools | RunAnalytics" />
-        <meta property="og:description" content="Professional running analysis tools accessible to everyone. Shoe finder, race prediction, training analysis, and more." />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://aitracker.run/tools" />
-        <link rel="canonical" href="https://aitracker.run/tools" />
-      </Helmet>
+      <SEO
+        title="Free Running Tools & Calculators | RunAnalytics"
+        description="Free running calculators: race predictor, marathon fueling, aerobic decoupling, cadence analysis & more. No signup required."
+        keywords="running tools, running calculators, free running apps, marathon calculator, running analysis"
+        url="https://aitracker.run/tools"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          "name": "Free Running Tools & Calculators",
+          "description": "Free running calculators: race predictor, marathon fueling, aerobic decoupling, cadence analysis & more. No signup required.",
+          "numberOfItems": 10,
+          "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "Running Heatmap", "url": "https://aitracker.run/tools/heatmap" },
+            { "@type": "ListItem", "position": 2, "name": "Aerobic Decoupling Calculator", "url": "https://aitracker.run/tools/aerobic-decoupling-calculator" },
+            { "@type": "ListItem", "position": 3, "name": "Training Split Analyzer", "url": "https://aitracker.run/tools/training-split-analyzer" },
+            { "@type": "ListItem", "position": 4, "name": "Marathon Fueling Planner", "url": "https://aitracker.run/tools/marathon-fueling" },
+            { "@type": "ListItem", "position": 5, "name": "Race Time Predictor", "url": "https://aitracker.run/tools/race-predictor" },
+            { "@type": "ListItem", "position": 6, "name": "Cadence Analyzer", "url": "https://aitracker.run/tools/cadence-analyzer" },
+            { "@type": "ListItem", "position": 7, "name": "Running Shoe Database", "url": "https://aitracker.run/tools/shoes" },
+            { "@type": "ListItem", "position": 8, "name": "Shoe Finder", "url": "https://aitracker.run/tools/shoe-finder" },
+            { "@type": "ListItem", "position": 9, "name": "Rotation Planner", "url": "https://aitracker.run/tools/rotation-planner" },
+            { "@type": "ListItem", "position": 10, "name": "Shoe Comparisons", "url": "https://aitracker.run/tools/shoes/compare" }
+          ]
+        }}
+      />
 
       <div className="min-h-screen bg-light-grey">
         {/* Header */}

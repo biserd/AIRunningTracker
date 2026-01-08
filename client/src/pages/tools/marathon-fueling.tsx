@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Helmet } from 'react-helmet';
+import { SEO } from "@/components/SEO";
 import { Link } from 'wouter';
 import { ArrowLeft, Zap, Droplets, Calculator, AlertTriangle, CheckCircle2, TrendingUp, Sparkles } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
@@ -160,14 +160,21 @@ export default function MarathonFuelingPlanner() {
 
   return (
     <>
-      <Helmet>
-        <title>Marathon Fueling Calculator - Free Race Nutrition Planner | RunAnalytics</title>
-        <meta name="description" content="Plan your marathon nutrition strategy with our free fueling calculator. Calculate carb intake, gel timing, hydration, and sodium needs for race day success." />
-        <meta name="keywords" content="marathon fueling calculator, race nutrition planner, marathon nutrition, gel calculator, hydration calculator" />
-        <meta property="og:title" content="Marathon Fueling Calculator - Free Race Nutrition Planner | RunAnalytics" />
-        <meta property="og:description" content="Plan your marathon nutrition strategy with our free fueling calculator. Calculate carb intake, gel timing, hydration, and sodium needs for race day success." />
-        <meta property="og:type" content="website" />
-      </Helmet>
+      <SEO
+        title="Marathon Fueling Calculator | Gel Timing & Nutrition Plan | RunAnalytics"
+        description="Calculate your marathon nutrition plan with exact gel timing, carb targets & sodium needs. Get a personalized race fueling strategy in minutes."
+        keywords="marathon fueling, gel timing calculator, marathon nutrition plan, race nutrition, running gel schedule"
+        url="https://aitracker.run/tools/marathon-fueling"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "Marathon Fueling Calculator",
+          "applicationCategory": "HealthApplication",
+          "operatingSystem": "Web",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+          "description": "Calculate your marathon nutrition plan with exact gel timing, carb targets & sodium needs. Get a personalized race fueling strategy in minutes."
+        }}
+      />
       <FAQSchema faqs={MARATHON_FUELING_FAQS} />
 
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">

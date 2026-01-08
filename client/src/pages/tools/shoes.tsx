@@ -9,7 +9,7 @@ import { Link } from "wouter";
 import { ArrowRight, ShoppingBag, Zap, Scale, Ruler, DollarSign, Star, Filter, X, Check, GitCompare, Plus, Minus } from "lucide-react";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
-import { Helmet } from "react-helmet";
+import { SEO } from "@/components/SEO";
 import AppHeader from "@/components/AppHeader";
 import type { RunningShoe } from "@shared/schema";
 
@@ -259,16 +259,21 @@ export default function ShoeDatabasePage() {
 
   return (
     <>
-      <Helmet>
-        <title>Running Shoe Database - 100+ Verified Shoes from 16 Brands | RunAnalytics</title>
-        <meta name="description" content="Browse our comprehensive running shoe database with 100+ verified shoes from Nike, Brooks, Hoka, Asics, New Balance, Saucony, On, Altra, Adidas, Puma, Mizuno, Salomon, and more. Compare specs, cushioning, stability, and find your perfect running shoe." />
-        <meta name="keywords" content="running shoes database, best running shoes 2025, running shoe comparison, Nike running shoes, Hoka running shoes, Brooks running shoes, trail running shoes, racing flats" />
-        <meta property="og:title" content="Running Shoe Database - 100+ Verified Running Shoes | RunAnalytics" />
-        <meta property="og:description" content="Browse 100+ verified running shoes from 16 top brands. Filter by category, stability, and features to find your perfect shoe." />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://aitracker.run/tools/shoes" />
-        <link rel="canonical" href="https://aitracker.run/tools/shoes" />
-      </Helmet>
+      <SEO
+        title="Running Shoe Database | Compare 100+ Running Shoes | RunAnalytics"
+        description="Browse and compare 100+ running shoes with specs, reviews & AI insights. Find the best shoes for your running needs."
+        keywords="running shoes database, compare running shoes, best running shoes 2026, running shoe reviews"
+        url="https://aitracker.run/tools/shoes"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "Running Shoe Database",
+          "applicationCategory": "HealthApplication",
+          "operatingSystem": "Web",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+          "description": "Browse and compare 100+ running shoes with specs, reviews & AI insights. Find the best shoes for your running needs."
+        }}
+      />
 
       <div className="min-h-screen bg-light-grey">
         {isAuthenticated ? (
