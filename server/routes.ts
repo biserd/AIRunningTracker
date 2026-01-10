@@ -571,14 +571,23 @@ ${allPages.map(page => `  <url>
     });
   });
 
-  // SSG for blog posts - serves pre-rendered static files with SSR fallback
+  // SSG for blog posts - serves to crawlers only for SEO, regular users get SPA
   app.get("/blog/:slug", (req: any, res, next) => {
+    const userAgent = req.get('user-agent') || '';
+    const isCrawlerRequest = /googlebot|bingbot|yandex|baiduspider|duckduckbot|slurp|facebookexternalhit|twitterbot|linkedinbot|pinterest|semrush|ahrefsbot|mj12bot|dotbot|petalbot|rogerbot|dataforseo/i.test(userAgent);
+    
+    // Only serve SSG to crawlers - regular users get the rich SPA
+    if (!isCrawlerRequest) {
+      next();
+      return;
+    }
+    
     const { slug } = req.params;
     const staticFilePath = path.join(process.cwd(), 'dist', 'prerender', `blog-${slug}.html`);
     
     // Try to serve pre-rendered static file first (SSG)
     if (fs.existsSync(staticFilePath)) {
-      console.log(`[SSG] Serving static blog post: ${slug}`);
+      console.log(`[SSG] Serving static blog post to crawler: ${slug}`);
       res.setHeader('Content-Type', 'text/html');
       res.setHeader('X-Robots-Tag', 'index, follow');
       res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hour cache
@@ -590,7 +599,7 @@ ${allPages.map(page => `  <url>
     // Fallback to SSR if static file doesn't exist
     const html = renderBlogPost(slug);
     if (html) {
-      console.log(`[SSR] Fallback: serving server-rendered blog post: ${slug}`);
+      console.log(`[SSR] Fallback: serving server-rendered blog post to crawler: ${slug}`);
       res.setHeader('Content-Type', 'text/html');
       res.setHeader('X-Robots-Tag', 'index, follow');
       res.setHeader('Cache-Control', 'public, max-age=86400');
@@ -601,14 +610,23 @@ ${allPages.map(page => `  <url>
     }
   });
 
-  // SSG for individual shoe pages - serves pre-rendered static files with SSR fallback
+  // SSG for individual shoe pages - serves to crawlers only for SEO, regular users get SPA
   app.get("/tools/shoes/:slug", async (req: any, res, next) => {
+    const userAgent = req.get('user-agent') || '';
+    const isCrawlerRequest = /googlebot|bingbot|yandex|baiduspider|duckduckbot|slurp|facebookexternalhit|twitterbot|linkedinbot|pinterest|semrush|ahrefsbot|mj12bot|dotbot|petalbot|rogerbot|dataforseo/i.test(userAgent);
+    
+    // Only serve SSG to crawlers - regular users get the rich SPA
+    if (!isCrawlerRequest) {
+      next();
+      return;
+    }
+    
     const { slug } = req.params;
     const staticFilePath = path.join(process.cwd(), 'dist', 'prerender', `shoes-${slug}.html`);
     
     // Try to serve pre-rendered static file first (SSG)
     if (fs.existsSync(staticFilePath)) {
-      console.log(`[SSG] Serving static shoe page: ${slug}`);
+      console.log(`[SSG] Serving static shoe page to crawler: ${slug}`);
       res.setHeader('Content-Type', 'text/html');
       res.setHeader('X-Robots-Tag', 'index, follow');
       res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
@@ -622,7 +640,7 @@ ${allPages.map(page => `  <url>
       const shoe = await storage.getShoeBySlug(slug);
       
       if (shoe) {
-        console.log(`[SSR] Fallback: serving server-rendered shoe page: ${slug}`);
+        console.log(`[SSR] Fallback: serving server-rendered shoe page to crawler: ${slug}`);
         res.setHeader('Content-Type', 'text/html');
         res.setHeader('X-Robots-Tag', 'index, follow');
         res.setHeader('Cache-Control', 'public, max-age=3600');
