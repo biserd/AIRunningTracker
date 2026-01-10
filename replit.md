@@ -30,7 +30,7 @@ Preferred communication style: Simple, everyday language.
 - **Year End Recap**: Personalized yearly running summaries with AI-generated infographics for social sharing.
 - **Coach Insights Page**: Unified analytics dashboard categorizing performance metrics into "The Engine" (cardiovascular power) and "The Mechanics" (form stability).
 - **Marketing & Engagement**: Drip campaign system for user lifecycle email marketing, SEO optimization, and a reverse trial system for new users.
-- **SEO & Dynamic Rendering**: Crawler-optimized HTML served to search engines (Googlebot, Bingbot, etc.) with full meta tags, Open Graph, Twitter Cards, and structured data. Regular users receive the SPA. Pre-render script available for static HTML generation.
+- **SEO & Hybrid SSR**: Server-side rendering for public content pages (blog posts, shoe pages, comparisons) serves identical HTML to ALL users with React hydration for progressive enhancement. Blog pages include full article content with table of contents (BlogPosting schema, 24h cache). Shoe pages include complete specifications (Product schema, 1h cache). Comparison pages include side-by-side comparison tables (WebPage schema, 1h cache). SSR renderers in server/ssr/renderer.ts, blog content in server/ssr/blogContent.ts. Pre-render script available for static HTML generation.
 - **Strava Activity Branding**: User-opt-in feature to append customizable branding text to Strava activity descriptions.
 
 ### System Design Choices
