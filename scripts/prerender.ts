@@ -16,9 +16,10 @@ import * as path from 'path';
 const BASE_URL = "https://aitracker.run";
 const OUTPUT_DIR = path.join(process.cwd(), 'dist', 'prerender');
 
-import { renderHomepage } from '../server/ssr/renderer';
-import { renderBlogPost } from '../server/ssr/renderer';
+import { renderHomepage, renderBlogPost, renderShoePage } from '../server/ssr/renderer';
 import { getAllBlogPosts } from '../server/ssr/blogContent';
+import { shoeData } from '../server/shoe-data';
+import { generateSlug } from '../server/shoe-pipeline';
 
 interface PageMeta {
   title: string;
@@ -236,7 +237,38 @@ async function prerender() {
     }
   }
 
-  // 3. Generate static pages (meta-only, React hydrates)
+  // 3. Generate all shoe pages with FULL content
+  console.log('\n=== Generating Shoe Pages (Full SSG) ===');
+  for (const shoe of shoeData) {
+    try {
+      const slug = generateSlug(shoe.brand, shoe.model);
+      const shoeHtml = renderShoePage(slug, {
+        brand: shoe.brand,
+        model: shoe.model,
+        category: shoe.category || 'daily_trainer',
+        weight: shoe.weight || null,
+        heelToToeDrop: shoe.heelToToeDrop || null,
+        heelStackHeight: shoe.heelStackHeight || null,
+        forefootStackHeight: shoe.forefootStackHeight || null,
+        cushioningLevel: shoe.cushioningLevel || null,
+        stability: shoe.stability || null,
+        hasCarbonPlate: shoe.hasCarbonPlate || false,
+        hasSuperFoam: shoe.hasSuperFoam || false,
+        price: shoe.price || null,
+        bestFor: shoe.bestFor || [],
+        description: shoe.description || null
+      });
+      const fileName = `shoes-${slug}.html`;
+      const filePath = path.join(OUTPUT_DIR, fileName);
+      fs.writeFileSync(filePath, shoeHtml, 'utf-8');
+      console.log(`Generated: ${fileName} (/tools/shoes/${slug}) - FULL CONTENT`);
+      count++;
+    } catch (error) {
+      console.error(`Error generating shoe page ${shoe.brand} ${shoe.model}:`, error);
+    }
+  }
+
+  // 4. Generate static pages (meta-only, React hydrates)
   console.log('\n=== Generating Static Pages (Meta + Hydration) ===');
   for (const [route, meta] of Object.entries(STATIC_PAGES)) {
     const html = generateSimpleSeoHtml(meta, route);
@@ -253,7 +285,8 @@ async function prerender() {
   console.log('\nFull SSG pages (complete content):');
   console.log('  - Homepage (/)');
   console.log('  - Blog posts (/blog/*)');
-  console.log('\nNote: Shoe pages and comparisons use SSR for dynamic data.');
+  console.log('  - Shoe pages (/tools/shoes/*)');
+  console.log('\nNote: Comparison pages use SSR for dynamic data.');
   console.log('Configure your server to serve these files for fastest load times.');
 }
 

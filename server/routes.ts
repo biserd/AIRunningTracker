@@ -601,17 +601,31 @@ ${allPages.map(page => `  <url>
     }
   });
 
-  // SSR for individual shoe pages - serves to ALL users for better SEO and Core Web Vitals
+  // SSG for individual shoe pages - serves pre-rendered static files with SSR fallback
   app.get("/tools/shoes/:slug", async (req: any, res, next) => {
+    const { slug } = req.params;
+    const staticFilePath = path.join(process.cwd(), 'dist', 'prerender', `shoes-${slug}.html`);
+    
+    // Try to serve pre-rendered static file first (SSG)
+    if (fs.existsSync(staticFilePath)) {
+      console.log(`[SSG] Serving static shoe page: ${slug}`);
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('X-Robots-Tag', 'index, follow');
+      res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
+      const html = fs.readFileSync(staticFilePath, 'utf-8');
+      res.send(html);
+      return;
+    }
+    
+    // Fallback to SSR if static file doesn't exist
     try {
-      const { slug } = req.params;
       const shoe = await storage.getShoeBySlug(slug);
       
       if (shoe) {
-        console.log(`[SSR] Serving server-rendered shoe page: ${slug}`);
+        console.log(`[SSR] Fallback: serving server-rendered shoe page: ${slug}`);
         res.setHeader('Content-Type', 'text/html');
         res.setHeader('X-Robots-Tag', 'index, follow');
-        res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
+        res.setHeader('Cache-Control', 'public, max-age=3600');
         const html = renderShoePage(slug, {
           brand: shoe.brand,
           model: shoe.model,
