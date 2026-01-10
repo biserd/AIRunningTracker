@@ -1,13 +1,13 @@
 /**
- * Pre-render Script for SEO
+ * Pre-render Script for Static Site Generation (SSG)
  * 
- * This script generates static HTML files for SEO-critical pages.
- * These files can be deployed alongside the SPA for better search engine crawling.
+ * This script generates static HTML files for SEO-critical pages at build time.
+ * Pages are pre-rendered with full content for fastest possible load times.
  * 
  * Usage: npx tsx scripts/prerender.ts
  * 
  * The generated files are placed in dist/prerender/ directory.
- * Configure your web server to serve these for crawler user agents.
+ * Configure your web server to serve these static files.
  */
 
 import * as fs from 'fs';
@@ -16,13 +16,17 @@ import * as path from 'path';
 const BASE_URL = "https://aitracker.run";
 const OUTPUT_DIR = path.join(process.cwd(), 'dist', 'prerender');
 
-// SEO page definitions (mirrors server/routes.ts SEO_PAGES constant)
-const SEO_PAGES: Record<string, { title: string; description: string; keywords?: string }> = {
-  "/": {
-    title: "RunAnalytics - AI-Powered Running Insights & Analytics",
-    description: "Get personalized running analytics with AI coaching, race predictions, and training insights. Connect Strava for free and unlock your running potential.",
-    keywords: "running analytics, AI running coach, Strava analytics, runner score, race predictions"
-  },
+import { renderHomepage } from '../server/ssr/renderer';
+import { renderBlogPost } from '../server/ssr/renderer';
+import { getAllBlogPosts } from '../server/ssr/blogContent';
+
+interface PageMeta {
+  title: string;
+  description: string;
+  keywords?: string;
+}
+
+const STATIC_PAGES: Record<string, PageMeta> = {
   "/tools": {
     title: "Free Running Tools & Calculators | RunAnalytics",
     description: "Free running calculators: race predictor, marathon fueling, aerobic decoupling, cadence analysis & more. No signup required.",
@@ -73,40 +77,10 @@ const SEO_PAGES: Record<string, { title: string; description: string; keywords?:
     description: "Plan the perfect running shoe rotation. Get AI recommendations for daily trainers, speed shoes & race day options.",
     keywords: "shoe rotation, running shoe lineup, multiple running shoes"
   },
-  "/tools/shoes/compare": {
-    title: "Compare Running Shoes | Side-by-Side Comparison | RunAnalytics",
-    description: "Compare running shoes side-by-side. See specs, features, and AI insights to find the best shoes for your running style.",
-    keywords: "compare running shoes, shoe comparison, running shoe specs"
-  },
   "/blog": {
     title: "Running Blog | Training Tips & AI Coaching Insights | RunAnalytics",
     description: "Expert running advice, training tips, and AI coaching insights. Learn how to improve your pace, pick training plans, and run smarter.",
     keywords: "running blog, training tips, running advice, AI running coach"
-  },
-  "/blog/ai-running-coach-complete-guide-2026": {
-    title: "AI Running Coach Complete Guide 2026 | RunAnalytics Blog",
-    description: "Everything you need to know about AI running coaches in 2026. Compare features, benefits, and find the best AI coach for your training.",
-    keywords: "AI running coach, AI training, running coach app, AI fitness"
-  },
-  "/blog/best-strava-analytics-tools-2026": {
-    title: "Best Strava Analytics Tools 2026 | RunAnalytics Blog",
-    description: "Compare the best Strava analytics tools for runners in 2026. Find deeper insights, better visualizations, and smarter training analysis.",
-    keywords: "Strava analytics, Strava tools, running analytics, Strava apps"
-  },
-  "/blog/how-to-improve-running-pace": {
-    title: "How to Improve Your Running Pace | RunAnalytics Blog",
-    description: "Proven strategies to get faster: interval training, tempo runs, and pace improvement techniques for runners of all levels.",
-    keywords: "improve running pace, run faster, speed training, running tips"
-  },
-  "/blog/ai-agent-coach-proactive-coaching": {
-    title: "AI Agent Coach: Proactive Coaching That Knows You | RunAnalytics Blog",
-    description: "Discover how AI Agent Coach provides personalized, proactive coaching based on your training patterns and goals. Premium feature spotlight.",
-    keywords: "AI agent coach, proactive coaching, personalized training, running AI"
-  },
-  "/blog/how-to-pick-a-training-plan": {
-    title: "How to Pick a Training Plan | RunAnalytics Blog",
-    description: "Choose the right training plan for your goals, experience level, and schedule. Expert guidance for 5K to marathon training.",
-    keywords: "training plan, marathon training, 5K plan, running schedule"
   },
   "/pricing": {
     title: "Pricing | Free, Pro & Premium Plans | RunAnalytics",
@@ -123,11 +97,6 @@ const SEO_PAGES: Record<string, { title: string; description: string; keywords?:
     description: "Get personalized running advice from an AI coach that knows your training. Ask questions, get insights, and improve your running.",
     keywords: "AI running coach, running advice, AI training, personalized coaching"
   },
-  "/ai-agent-coach": {
-    title: "AI Agent Coach | Proactive Training Intelligence | RunAnalytics",
-    description: "Premium AI coaching that proactively analyzes your runs and provides personalized recommendations before you ask. The future of running coaching.",
-    keywords: "AI agent coach, proactive coaching, premium running coach, AI training"
-  },
   "/about": {
     title: "About RunAnalytics | AI-Powered Running Analytics",
     description: "Learn about RunAnalytics - the AI-powered platform helping runners improve with personalized insights, training analytics, and smart coaching.",
@@ -137,11 +106,6 @@ const SEO_PAGES: Record<string, { title: string; description: string; keywords?:
     title: "Sign In or Sign Up | RunAnalytics",
     description: "Sign in to RunAnalytics to access your personalized running insights, or create a free account to get started with AI-powered analytics.",
     keywords: "login, sign up, create account, running app"
-  },
-  "/subscribe": {
-    title: "Subscribe | Get Pro or Premium | RunAnalytics",
-    description: "Upgrade to Pro or Premium for advanced running analytics, AI coaching, unlimited insights, and personalized training recommendations.",
-    keywords: "subscribe, upgrade, pro plan, premium plan, running subscription"
   },
   "/faq": {
     title: "FAQ | Frequently Asked Questions | RunAnalytics",
@@ -162,30 +126,10 @@ const SEO_PAGES: Record<string, { title: string; description: string; keywords?:
     title: "Terms of Service | RunAnalytics",
     description: "Read the RunAnalytics terms of service. Understand your rights and responsibilities when using our running analytics platform.",
     keywords: "terms of service, terms and conditions, user agreement"
-  },
-  "/release-notes": {
-    title: "Release Notes | What's New | RunAnalytics",
-    description: "See the latest updates, new features, and improvements to RunAnalytics. Stay up to date with our running analytics platform.",
-    keywords: "release notes, updates, changelog, new features, running app updates"
-  },
-  "/runner-score": {
-    title: "Runner Score | Your Running Performance Index | RunAnalytics",
-    description: "Discover your Runner Score - a comprehensive metric combining fitness, consistency, and progression. Share your score and track improvement.",
-    keywords: "runner score, running performance, fitness score, running index"
-  },
-  "/developers": {
-    title: "Developer Portal | RunAnalytics API",
-    description: "Build with RunAnalytics. Access our API documentation, integration guides, and developer resources for running analytics.",
-    keywords: "API, developers, integration, running API, developer portal"
-  },
-  "/developers/api": {
-    title: "API Documentation | RunAnalytics Developers",
-    description: "Complete API documentation for RunAnalytics. Learn how to integrate running analytics, access activity data, and build custom solutions.",
-    keywords: "API documentation, REST API, running data API, developer docs"
   }
 };
 
-function generateSEOHtml(pageMeta: { title: string; description: string; keywords?: string }, url: string): string {
+function generateSimpleSeoHtml(pageMeta: PageMeta, url: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -198,7 +142,6 @@ function generateSEOHtml(pageMeta: { title: string; description: string; keyword
   <meta name="theme-color" content="#fc4c02" />
   <link rel="canonical" href="${BASE_URL}${url}" />
   
-  <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="${BASE_URL}${url}" />
   <meta property="og:title" content="${pageMeta.title}" />
@@ -206,14 +149,12 @@ function generateSEOHtml(pageMeta: { title: string; description: string; keyword
   <meta property="og:image" content="${BASE_URL}/og-image.jpg" />
   <meta property="og:site_name" content="RunAnalytics" />
   
-  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:url" content="${BASE_URL}${url}" />
   <meta name="twitter:title" content="${pageMeta.title}" />
   <meta name="twitter:description" content="${pageMeta.description}" />
   <meta name="twitter:image" content="${BASE_URL}/og-image.jpg" />
   
-  <!-- Structured Data -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -232,11 +173,10 @@ function generateSEOHtml(pageMeta: { title: string; description: string; keyword
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=optional" rel="stylesheet">
 </head>
 <body>
   <div id="root">
-    <main>
+    <main style="max-width: 800px; margin: 0 auto; padding: 40px 20px; font-family: system-ui, sans-serif;">
       <h1>${pageMeta.title}</h1>
       <p>${pageMeta.description}</p>
       <noscript>
@@ -257,17 +197,49 @@ function routeToFilePath(route: string): string {
 }
 
 async function prerender() {
-  console.log('Starting pre-render process...\n');
+  console.log('Starting Static Site Generation (SSG)...\n');
 
-  // Ensure output directory exists
   if (!fs.existsSync(OUTPUT_DIR)) {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
     console.log(`Created output directory: ${OUTPUT_DIR}\n`);
   }
 
   let count = 0;
-  for (const [route, meta] of Object.entries(SEO_PAGES)) {
-    const html = generateSEOHtml(meta, route);
+
+  // 1. Generate homepage with FULL content
+  console.log('=== Generating Homepage (Full SSG) ===');
+  try {
+    const homepageHtml = renderHomepage();
+    const homepagePath = path.join(OUTPUT_DIR, 'index.html');
+    fs.writeFileSync(homepagePath, homepageHtml, 'utf-8');
+    console.log(`Generated: index.html (/) - FULL CONTENT`);
+    count++;
+  } catch (error) {
+    console.error('Error generating homepage:', error);
+  }
+
+  // 2. Generate all blog posts with FULL content
+  console.log('\n=== Generating Blog Posts (Full SSG) ===');
+  const blogPosts = getAllBlogPosts();
+  for (const post of blogPosts) {
+    try {
+      const blogHtml = renderBlogPost(post.slug);
+      if (blogHtml) {
+        const fileName = `blog-${post.slug}.html`;
+        const filePath = path.join(OUTPUT_DIR, fileName);
+        fs.writeFileSync(filePath, blogHtml, 'utf-8');
+        console.log(`Generated: ${fileName} (/blog/${post.slug}) - FULL CONTENT`);
+        count++;
+      }
+    } catch (error) {
+      console.error(`Error generating blog post ${post.slug}:`, error);
+    }
+  }
+
+  // 3. Generate static pages (meta-only, React hydrates)
+  console.log('\n=== Generating Static Pages (Meta + Hydration) ===');
+  for (const [route, meta] of Object.entries(STATIC_PAGES)) {
+    const html = generateSimpleSeoHtml(meta, route);
     const fileName = routeToFilePath(route);
     const filePath = path.join(OUTPUT_DIR, fileName);
     
@@ -276,10 +248,13 @@ async function prerender() {
     count++;
   }
 
-  console.log(`\nPre-rendered ${count} pages to ${OUTPUT_DIR}`);
-  console.log('\nNote: These files are used by the dynamic rendering middleware in server/routes.ts');
-  console.log('Crawlers receive SEO-optimized HTML automatically.');
-  console.log('\nDynamic shoe pages and comparison pages are rendered dynamically by the server.');
+  console.log(`\n=== SSG Complete ===`);
+  console.log(`Generated ${count} static HTML files to ${OUTPUT_DIR}`);
+  console.log('\nFull SSG pages (complete content):');
+  console.log('  - Homepage (/)');
+  console.log('  - Blog posts (/blog/*)');
+  console.log('\nNote: Shoe pages and comparisons use SSR for dynamic data.');
+  console.log('Configure your server to serve these files for fastest load times.');
 }
 
 prerender().catch(console.error);

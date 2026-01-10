@@ -1,4 +1,5 @@
 import { getBlogPostBySlug, BlogPostContent } from './blogContent';
+import { homepageContent, HomepageContent } from './homepageContent';
 
 const BASE_URL = "https://aitracker.run";
 
@@ -374,6 +375,227 @@ export function renderComparisonPage(slug: string, comparison: ComparisonData): 
         </div>
       </article>
     </main>
+  </div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>`;
+}
+
+export function renderHomepage(): string {
+  const content = homepageContent;
+  const meta: PageMeta = {
+    title: "RunAnalytics - AI Running Coach & Performance Analytics",
+    description: "Chat with your personal AI Running Coach powered by GPT-5.1. Get instant training advice, race predictions, Runner Score (0-100), and comprehensive performance analytics. Free with Strava integration.",
+    keywords: "AI running coach, running analytics, Strava analytics, runner score, race predictions, VO2 max, running performance, training insights, running app, marathon training, AI coach chat",
+    type: 'website'
+  };
+  
+  const structuredData = JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "name": "RunAnalytics",
+        "applicationCategory": "HealthApplication",
+        "operatingSystem": "Web",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.8",
+          "ratingCount": "1250"
+        },
+        "description": "AI-powered running analytics platform with Runner Score, race predictions, and personalized training insights"
+      },
+      {
+        "@type": "Organization",
+        "name": "RunAnalytics",
+        "url": "https://aitracker.run",
+        "logo": "https://aitracker.run/logo.png",
+        "description": "AI-powered running analytics and coaching platform"
+      }
+    ]
+  }, null, 2);
+  
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5, user-scalable=yes" />
+  <title>${escapeHtml(meta.title)}</title>
+  <meta name="description" content="${escapeHtml(meta.description)}" />
+  <meta name="keywords" content="${escapeHtml(meta.keywords || '')}" />
+  <meta name="author" content="RunAnalytics" />
+  <meta name="theme-color" content="#fc4c02" />
+  <link rel="canonical" href="${BASE_URL}/" />
+  
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="${BASE_URL}/" />
+  <meta property="og:title" content="${escapeHtml(meta.title)}" />
+  <meta property="og:description" content="${escapeHtml(meta.description)}" />
+  <meta property="og:image" content="${BASE_URL}/og-image.jpg" />
+  <meta property="og:site_name" content="RunAnalytics" />
+  
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="${BASE_URL}/" />
+  <meta name="twitter:title" content="${escapeHtml(meta.title)}" />
+  <meta name="twitter:description" content="${escapeHtml(meta.description)}" />
+  <meta name="twitter:image" content="${BASE_URL}/og-image.jpg" />
+  
+  <script type="application/ld+json">
+  ${structuredData}
+  </script>
+  
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #1a1a2e; margin: 0; padding: 0; }
+    .ssg-hero { background: linear-gradient(135deg, #eff6ff, #fff, #fff7ed); padding: 60px 20px; text-align: center; }
+    .ssg-hero h1 { font-size: 2.5rem; font-weight: 700; margin: 0 0 1rem; }
+    .ssg-hero h1 span { color: #fc4c02; }
+    .ssg-hero p { font-size: 1.1rem; color: #4b5563; max-width: 600px; margin: 0 auto 1.5rem; }
+    .ssg-cta { display: inline-block; background: linear-gradient(135deg, #fc4c02, #ea580c); color: white; padding: 16px 32px; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 1.1rem; }
+    .ssg-cta:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(252, 76, 2, 0.3); }
+    .ssg-trust { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-top: 30px; font-size: 0.9rem; color: #6b7280; }
+    .ssg-trust span { display: flex; align-items: center; gap: 6px; }
+    .ssg-section { padding: 60px 20px; max-width: 1200px; margin: 0 auto; }
+    .ssg-section-alt { background: #f9fafb; }
+    .ssg-section h2 { font-size: 2rem; text-align: center; margin-bottom: 1rem; }
+    .ssg-section-subtitle { text-align: center; font-size: 1.1rem; color: #6b7280; max-width: 700px; margin: 0 auto 2rem; }
+    .ssg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 30px; }
+    .ssg-card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .ssg-card h3 { font-size: 1.25rem; margin: 0 0 0.5rem; }
+    .ssg-card p { color: #6b7280; margin: 0; }
+    .ssg-features-list { list-style: none; padding: 0; margin: 1rem 0; }
+    .ssg-features-list li { padding: 8px 0; display: flex; align-items: flex-start; gap: 8px; }
+    .ssg-features-list li::before { content: "✓"; color: #22c55e; font-weight: bold; }
+    .ssg-pricing { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+    .ssg-plan { background: white; border-radius: 12px; padding: 30px; text-align: center; border: 2px solid #e5e7eb; }
+    .ssg-plan.highlighted { border-color: #fc4c02; box-shadow: 0 4px 20px rgba(252, 76, 2, 0.15); }
+    .ssg-plan h3 { font-size: 1.5rem; margin: 0; }
+    .ssg-plan .price { font-size: 2.5rem; font-weight: 700; color: #1a1a2e; margin: 10px 0; }
+    .ssg-plan p { color: #6b7280; margin-bottom: 1rem; }
+    .ssg-testimonials { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+    .ssg-testimonial { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .ssg-testimonial blockquote { font-style: italic; margin: 0 0 1rem; }
+    .ssg-testimonial cite { display: block; font-weight: 600; font-style: normal; }
+    .ssg-testimonial .role { color: #6b7280; font-size: 0.9rem; }
+    .ssg-final-cta { background: linear-gradient(135deg, #fc4c02, #ea580c); color: white; padding: 60px 20px; text-align: center; }
+    .ssg-final-cta h2 { color: white; margin-bottom: 1rem; }
+    .ssg-final-cta p { color: rgba(255,255,255,0.9); max-width: 500px; margin: 0 auto 1.5rem; }
+    .ssg-final-cta a { display: inline-block; background: white; color: #fc4c02; padding: 16px 32px; border-radius: 8px; font-weight: 600; text-decoration: none; }
+    .ssg-tools { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+    .ssg-tool { display: block; background: white; border-radius: 8px; padding: 16px; text-decoration: none; color: inherit; border: 1px solid #e5e7eb; transition: all 0.2s; }
+    .ssg-tool:hover { border-color: #fc4c02; box-shadow: 0 4px 12px rgba(252, 76, 2, 0.1); }
+    .ssg-tool h4 { margin: 0 0 4px; color: #1a1a2e; }
+    .ssg-tool p { margin: 0; font-size: 0.9rem; color: #6b7280; }
+    @media (max-width: 768px) {
+      .ssg-hero h1 { font-size: 1.75rem; }
+      .ssg-section h2 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <section class="ssg-hero">
+      <h1>${escapeHtml(content.hero.title.replace('for Strava', ''))}<span>for Strava</span></h1>
+      <p><strong>${escapeHtml(content.hero.subtitle)}</strong></p>
+      <p>${escapeHtml(content.hero.description)}</p>
+      <a href="${content.hero.cta.href}" class="ssg-cta">${escapeHtml(content.hero.cta.text)}</a>
+      <div class="ssg-trust">
+        ${content.hero.trustIndicators.map(t => `<span>✓ ${escapeHtml(t)}</span>`).join('')}
+      </div>
+    </section>
+    
+    <section class="ssg-section">
+      <h2>${escapeHtml(content.aiCoach.title)}</h2>
+      <p class="ssg-section-subtitle"><strong>${escapeHtml(content.aiCoach.subtitle)}</strong> ${escapeHtml(content.aiCoach.description)}</p>
+      <ul class="ssg-features-list" style="max-width: 600px; margin: 0 auto;">
+        ${content.aiCoach.features.map(f => `<li><strong>${escapeHtml(f.title)}</strong>${f.description ? ' ' + escapeHtml(f.description) : ''}</li>`).join('')}
+      </ul>
+      <div style="text-align: center; margin-top: 24px;">
+        <a href="${content.aiCoach.cta.href}" class="ssg-cta" style="background: linear-gradient(135deg, #3b82f6, #06b6d4);">${escapeHtml(content.aiCoach.cta.text)}</a>
+      </div>
+    </section>
+    
+    <section class="ssg-section ssg-section-alt">
+      <h2>${escapeHtml(content.runnerScore.title)}</h2>
+      <p class="ssg-section-subtitle"><strong>${escapeHtml(content.runnerScore.subtitle)}</strong> ${escapeHtml(content.runnerScore.description)}</p>
+      <ul class="ssg-features-list" style="max-width: 600px; margin: 0 auto;">
+        ${content.runnerScore.features.map(f => `<li><strong>${escapeHtml(f.title)}</strong>${f.description ? ' ' + escapeHtml(f.description) : ''}</li>`).join('')}
+      </ul>
+      <div style="text-align: center; margin-top: 24px;">
+        <a href="${content.runnerScore.cta.href}" class="ssg-cta">${escapeHtml(content.runnerScore.cta.text)}</a>
+      </div>
+    </section>
+    
+    <section class="ssg-section">
+      <h2>Why Runners Love Us</h2>
+      <div class="ssg-grid">
+        ${content.coreFeatures.map(f => `
+        <article class="ssg-card">
+          <h3>${escapeHtml(f.title)}</h3>
+          <p>${escapeHtml(f.description)}</p>
+          ${f.sample ? `<p style="margin-top: 12px; padding: 12px; background: #f3f4f6; border-radius: 6px; font-size: 0.9rem;"><em>${escapeHtml(f.sample)}</em></p>` : ''}
+        </article>
+        `).join('')}
+      </div>
+    </section>
+    
+    <section class="ssg-section ssg-section-alt">
+      <h2>Free Running Tools</h2>
+      <p class="ssg-section-subtitle">Powerful calculators and analyzers, no signup required</p>
+      <div class="ssg-tools">
+        ${content.freeTools.map(t => `
+        <a href="${t.href}" class="ssg-tool">
+          <h4>${escapeHtml(t.title)}${t.badge ? ` <span style="background: #fc4c02; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px;">${escapeHtml(t.badge)}</span>` : ''}</h4>
+          <p>${escapeHtml(t.description)}</p>
+        </a>
+        `).join('')}
+      </div>
+    </section>
+    
+    <section class="ssg-section">
+      <h2>${escapeHtml(content.pricing.title)}</h2>
+      <p class="ssg-section-subtitle">${escapeHtml(content.pricing.subtitle)}</p>
+      <div class="ssg-pricing">
+        ${content.pricing.plans.map(plan => `
+        <div class="ssg-plan${plan.highlighted ? ' highlighted' : ''}">
+          <h3>${escapeHtml(plan.name)}</h3>
+          <div class="price">${escapeHtml(plan.price)}</div>
+          <p>${escapeHtml(plan.description)}</p>
+          <ul class="ssg-features-list">
+            ${plan.features.map(f => `<li>${escapeHtml(f)}</li>`).join('')}
+          </ul>
+          <a href="${plan.cta.href}" class="ssg-cta" style="${plan.highlighted ? '' : 'background: #1a1a2e;'}">${escapeHtml(plan.cta.text)}</a>
+        </div>
+        `).join('')}
+      </div>
+    </section>
+    
+    <section class="ssg-section ssg-section-alt">
+      <h2>What Runners Are Saying</h2>
+      <div class="ssg-testimonials">
+        ${content.testimonials.map(t => `
+        <article class="ssg-testimonial">
+          <blockquote>"${escapeHtml(t.quote)}"</blockquote>
+          <cite>${escapeHtml(t.author)}</cite>
+          <span class="role">${escapeHtml(t.role)}</span>
+        </article>
+        `).join('')}
+      </div>
+    </section>
+    
+    <section class="ssg-final-cta">
+      <h2>${escapeHtml(content.finalCta.title)}</h2>
+      <p>${escapeHtml(content.finalCta.description)}</p>
+      <a href="${content.finalCta.href}">${escapeHtml(content.finalCta.buttonText)}</a>
+    </section>
   </div>
   <script type="module" src="/src/main.tsx"></script>
 </body>

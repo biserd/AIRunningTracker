@@ -30,7 +30,7 @@ import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClie
 import { db } from "./db";
 import { sql, eq, isNull } from "drizzle-orm";
 import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getActivityHistoryLimit, RATE_LIMITS } from "./rateLimits";
-import { renderBlogPost, renderShoePage, renderComparisonPage } from "./ssr/renderer";
+import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage } from "./ssr/renderer";
 import { getAllBlogPosts } from "./ssr/blogContent";
 
 // Authentication middleware
@@ -514,8 +514,40 @@ ${allPages.map(page => `  <url>
 </html>`;
   };
 
+  // SSG for homepage - serves to crawlers only for SEO
+  // All other users get the SPA (app uses client-side JWT, not server sessions)
+  app.get("/", (req: any, res, next) => {
+    const userAgent = req.get('user-agent') || '';
+    
+    // Only serve SSG to search engine crawlers for SEO benefits
+    const isCrawlerRequest = /googlebot|bingbot|yandex|baiduspider|duckduckbot|slurp|facebookexternalhit|twitterbot|linkedinbot|pinterest|semrush|ahrefsbot|mj12bot|dotbot|petalbot|rogerbot|dataforseo/i.test(userAgent);
+    
+    if (isCrawlerRequest) {
+      try {
+        console.log(`[SSG] Serving static-generated homepage to crawler: ${userAgent.substring(0, 50)}`);
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('X-Robots-Tag', 'index, follow');
+        res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
+        const html = renderHomepage();
+        res.send(html);
+        return;
+      } catch (error) {
+        console.error('[SSG] Error serving homepage:', error);
+        next();
+        return;
+      }
+    }
+    
+    // All regular users get the SPA
+    next();
+  });
+
   // Middleware to handle crawler requests for SEO pages (static marketing/tool pages)
   Object.entries(SEO_PAGES).forEach(([route, meta]) => {
+    // Skip homepage - it gets full SSG above
+    if (route === '/') {
+      return;
+    }
     // Skip blog posts - they get full SSR below
     if (route.startsWith('/blog/') && route !== '/blog') {
       return;
