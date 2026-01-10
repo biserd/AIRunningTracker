@@ -1,5 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import * as fs from "fs";
+import * as path from "path";
 import { storage } from "./storage";
 import { stravaService } from "./services/strava";
 import { stravaClient } from "./services/stravaClient";
@@ -569,16 +571,29 @@ ${allPages.map(page => `  <url>
     });
   });
 
-  // SSR for blog posts - serves to ALL users for better SEO and Core Web Vitals
+  // SSG for blog posts - serves pre-rendered static files with SSR fallback
   app.get("/blog/:slug", (req: any, res, next) => {
     const { slug } = req.params;
-    const html = renderBlogPost(slug);
+    const staticFilePath = path.join(process.cwd(), 'dist', 'prerender', `blog-${slug}.html`);
     
-    if (html) {
-      console.log(`[SSR] Serving server-rendered blog post: ${slug}`);
+    // Try to serve pre-rendered static file first (SSG)
+    if (fs.existsSync(staticFilePath)) {
+      console.log(`[SSG] Serving static blog post: ${slug}`);
       res.setHeader('Content-Type', 'text/html');
       res.setHeader('X-Robots-Tag', 'index, follow');
-      res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hour cache for blog posts
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hour cache
+      const html = fs.readFileSync(staticFilePath, 'utf-8');
+      res.send(html);
+      return;
+    }
+    
+    // Fallback to SSR if static file doesn't exist
+    const html = renderBlogPost(slug);
+    if (html) {
+      console.log(`[SSR] Fallback: serving server-rendered blog post: ${slug}`);
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('X-Robots-Tag', 'index, follow');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
       res.send(html);
     } else {
       // Blog post not found, let React handle it
