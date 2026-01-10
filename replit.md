@@ -32,7 +32,7 @@ Preferred communication style: Simple, everyday language.
 - **Marketing & Engagement**: Drip campaign system for user lifecycle email marketing, SEO optimization, and a reverse trial system for new users.
 - **SEO & Hybrid SSR/SSG**: 
   - **Homepage SSG**: Static-generated marketing homepage served to crawlers only (Googlebot, Bingbot, etc.) for optimal SEO. Regular users get the SPA for client-side JWT authentication. Content includes hero, AI coach features, Runner Score, pricing, and testimonials. WebApplication + Organization structured data. (1h cache)
-  - **Blog SSR**: Server-side rendering for all blog posts serves identical HTML to ALL users with React hydration. Full article content with table of contents. BlogPosting schema. (24h cache)
+  - **Blog SSG**: True static site generation - pre-rendered HTML files served directly from disk with SSR fallback. Full article content with table of contents. BlogPosting schema. (24h cache)
   - **Shoe Pages SSR**: Complete specifications with Product schema. (1h cache)
   - **Comparison Pages SSR**: Side-by-side comparison tables with WebPage schema. (1h cache)
   - **Renderers**: server/ssr/renderer.ts (renderHomepage, renderBlogPost, etc.), server/ssr/homepageContent.ts, server/ssr/blogContent.ts
