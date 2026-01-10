@@ -30,6 +30,8 @@ import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClie
 import { db } from "./db";
 import { sql, eq, isNull } from "drizzle-orm";
 import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getActivityHistoryLimit, RATE_LIMITS } from "./rateLimits";
+import { renderBlogPost, renderShoePage, renderComparisonPage } from "./ssr/renderer";
+import { getAllBlogPosts } from "./ssr/blogContent";
 
 // Authentication middleware
 const authenticateJWT = async (req: any, res: Response, next: NextFunction) => {
@@ -512,12 +514,17 @@ ${allPages.map(page => `  <url>
 </html>`;
   };
 
-  // Middleware to handle crawler requests for SEO pages
+  // Middleware to handle crawler requests for SEO pages (static marketing/tool pages)
   Object.entries(SEO_PAGES).forEach(([route, meta]) => {
+    // Skip blog posts - they get full SSR below
+    if (route.startsWith('/blog/') && route !== '/blog') {
+      return;
+    }
+    
     app.get(route, (req: any, res, next) => {
       const userAgent = req.get('user-agent') || '';
       
-      // Only serve pre-rendered HTML to crawlers
+      // Only serve pre-rendered HTML to crawlers for non-blog pages
       if (isCrawler(userAgent)) {
         console.log(`[SEO] Serving pre-rendered HTML for crawler on ${route}: ${userAgent.substring(0, 50)}`);
         res.setHeader('Content-Type', 'text/html');
@@ -530,69 +537,103 @@ ${allPages.map(page => `  <url>
     });
   });
 
-  // Dynamic SEO rendering for individual shoe pages
-  app.get("/tools/shoes/:slug", async (req: any, res, next) => {
-    const userAgent = req.get('user-agent') || '';
+  // SSR for blog posts - serves to ALL users for better SEO and Core Web Vitals
+  app.get("/blog/:slug", (req: any, res, next) => {
+    const { slug } = req.params;
+    const html = renderBlogPost(slug);
     
-    // Only serve pre-rendered HTML to crawlers
-    if (isCrawler(userAgent)) {
-      try {
-        const { slug } = req.params;
-        const shoe = await storage.getShoeBySlug(slug);
-        
-        if (shoe) {
-          const shoeName = `${shoe.brand} ${shoe.model}`;
-          const pageMeta = {
-            title: `${shoeName} | Running Shoe Review & Specs | RunAnalytics`,
-            description: `${shoeName}. ${shoe.category} running shoe with ${shoe.weight}oz weight, ${shoe.heelToToeDrop}mm drop. ${shoe.description?.substring(0, 100) || 'See detailed specs, reviews, and AI insights.'}`,
-            keywords: `${shoeName}, ${shoe.brand} running shoes, ${shoe.category} shoes, running shoe review`
-          };
-          
-          console.log(`[SEO] Serving pre-rendered HTML for shoe: ${slug}`);
-          res.setHeader('Content-Type', 'text/html');
-          res.setHeader('X-Robots-Tag', 'index, follow');
-          res.send(generateSEOHtml(pageMeta, `/tools/shoes/${slug}`));
-        } else {
-          next();
-        }
-      } catch (error) {
-        console.error('[SEO] Error generating shoe page:', error);
-        next();
-      }
+    if (html) {
+      console.log(`[SSR] Serving server-rendered blog post: ${slug}`);
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('X-Robots-Tag', 'index, follow');
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hour cache for blog posts
+      res.send(html);
     } else {
+      // Blog post not found, let React handle it
       next();
     }
   });
 
-  // Dynamic SEO rendering for shoe comparison pages
-  app.get("/tools/shoes/compare/:slug", async (req: any, res, next) => {
-    const userAgent = req.get('user-agent') || '';
-    
-    // Only serve pre-rendered HTML to crawlers
-    if (isCrawler(userAgent)) {
-      try {
-        const { slug } = req.params;
-        const comparison = await storage.getShoeComparisonBySlug(slug);
-        
-        if (comparison) {
-          const pageMeta = {
-            title: `${comparison.title} | Running Shoe Comparison | RunAnalytics`,
-            description: comparison.metaDescription || `Compare ${comparison.title}. See detailed specs, features, pros and cons to find the best shoe for your running.`,
-            keywords: `compare running shoes, ${comparison.title}, running shoe comparison, shoe vs shoe`
-          };
-          
-          console.log(`[SEO] Serving pre-rendered HTML for comparison: ${slug}`);
-          res.setHeader('Content-Type', 'text/html');
-          res.setHeader('X-Robots-Tag', 'index, follow');
-          res.send(generateSEOHtml(pageMeta, `/tools/shoes/compare/${slug}`));
-        } else {
-          next();
-        }
-      } catch (error) {
-        console.error('[SEO] Error generating comparison page:', error);
+  // SSR for individual shoe pages - serves to ALL users for better SEO and Core Web Vitals
+  app.get("/tools/shoes/:slug", async (req: any, res, next) => {
+    try {
+      const { slug } = req.params;
+      const shoe = await storage.getShoeBySlug(slug);
+      
+      if (shoe) {
+        console.log(`[SSR] Serving server-rendered shoe page: ${slug}`);
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('X-Robots-Tag', 'index, follow');
+        res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
+        const html = renderShoePage(slug, {
+          brand: shoe.brand,
+          model: shoe.model,
+          category: shoe.category,
+          weight: shoe.weight,
+          heelToToeDrop: shoe.heelToToeDrop,
+          heelStackHeight: shoe.heelStackHeight,
+          forefootStackHeight: shoe.forefootStackHeight,
+          description: shoe.description,
+          cushioningLevel: shoe.cushioningLevel,
+          stability: shoe.stability,
+          bestFor: shoe.bestFor,
+          price: shoe.price,
+          hasCarbonPlate: shoe.hasCarbonPlate,
+          hasSuperFoam: shoe.hasSuperFoam
+        });
+        res.send(html);
+      } else {
         next();
       }
-    } else {
+    } catch (error) {
+      console.error('[SSR] Error generating shoe page:', error);
+      next();
+    }
+  });
+
+  // SSR for shoe comparison pages - serves to ALL users for better SEO and Core Web Vitals
+  app.get("/tools/shoes/compare/:slug", async (req: any, res, next) => {
+    try {
+      const { slug } = req.params;
+      const comparison = await storage.getShoeComparisonBySlug(slug);
+      
+      if (comparison) {
+        console.log(`[SSR] Serving server-rendered comparison page: ${slug}`);
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('X-Robots-Tag', 'index, follow');
+        res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
+        
+        // Fetch shoe specs for comparison table by their IDs
+        const shoe1 = await storage.getShoeById(comparison.shoe1Id);
+        const shoe2 = await storage.getShoeById(comparison.shoe2Id);
+        
+        const html = renderComparisonPage(slug, {
+          title: comparison.title,
+          metaDescription: comparison.metaDescription,
+          verdict: comparison.verdict,
+          shoe1: shoe1 ? {
+            brand: shoe1.brand,
+            model: shoe1.model,
+            weight: shoe1.weight,
+            heelToToeDrop: shoe1.heelToToeDrop,
+            category: shoe1.category,
+            price: shoe1.price
+          } : null,
+          shoe2: shoe2 ? {
+            brand: shoe2.brand,
+            model: shoe2.model,
+            weight: shoe2.weight,
+            heelToToeDrop: shoe2.heelToToeDrop,
+            category: shoe2.category,
+            price: shoe2.price
+          } : null
+        });
+        res.send(html);
+      } else {
+        next();
+      }
+    } catch (error) {
+      console.error('[SSR] Error generating comparison page:', error);
       next();
     }
   });
