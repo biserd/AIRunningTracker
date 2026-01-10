@@ -66,8 +66,9 @@ function calculateEnhancedSplits(activity: any, streams?: any, laps?: any[], uni
         ? ((lapPace - avgPace) / avgPace) * 100 
         : 0;
       
+      // Use "Lap X" for Strava laps since they can be any distance (auto-lap, manual, custom)
       return {
-        split: `${index + 1}${unitLabel}`,
+        split: `Lap ${index + 1}`,
         splitNumber: index + 1,
         pace: lapPace,
         paceFormatted: isFinite(lapPace) && lapPace > 0 
