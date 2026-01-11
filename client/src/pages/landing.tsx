@@ -75,7 +75,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
       <SEO
         title="RunAnalytics - AI Running Coach & Performance Analytics"
-        description="Chat with your personal AI Running Coach powered by GPT-5.1. Get instant training advice, race predictions, Runner Score (0-100), and comprehensive performance analytics. Free with Strava integration."
+        description="Chat with your personal Running Coach powered by GPT-5.1. Get instant training advice, race predictions, Runner Score (0-100), and comprehensive performance analytics. Free to start."
         keywords="AI running coach, running analytics, Strava analytics, runner score, race predictions, VO2 max, running performance, training insights, running app, marathon training, AI coach chat"
         structuredData={structuredData}
       />
@@ -87,11 +87,11 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-charcoal mb-4 sm:mb-6 leading-tight">
             The Missing Analytics Layer
-            <span className="text-strava-orange"> for Strava</span>
+            <span className="text-strava-orange"> for Runners</span>
           </h1>
           
           <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4 mb-3">
-            Strava tracks your miles. We tell you how to run them faster and stay healthy.
+            Your watch tracks your miles. We tell you how to run them faster and stay healthy.
           </p>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
             Don't just log your runs, learn from them. Sync your history instantly to unlock the AI coaching, race predictions, and deep insights that your dashboard is missing.
@@ -154,7 +154,7 @@ export default function LandingPage() {
                 className="w-full sm:w-auto bg-gradient-to-r from-strava-orange via-orange-500 to-red-500 text-white hover:from-orange-600 hover:via-orange-500 hover:to-red-600 h-14 px-8 sm:px-12 text-base sm:text-lg font-bold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-200 ring-2 ring-orange-300/50"
                 data-testid="hero-cta-getstarted"
               >
-                Get My Free Strava Analysis
+                Get My Free Running Analysis
               </Button>
             </Link>
           </div>
@@ -189,7 +189,7 @@ export default function LandingPage() {
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-charcoal">Your 24/7 Running Strategist</h2>
               </div>
               <p className="text-lg sm:text-xl md:text-2xl font-semibold text-charcoal mb-3">
-                Strava gives you charts. We give you answers.
+                Apps give you charts. We give you answers.
               </p>
               <p className="text-base sm:text-lg text-gray-600 mb-6">
                 Stop staring at graphs wondering if you're improving. Just ask. From "Am I overtraining?" to "What's my marathon pace?", get instant advice based on your actual history.
@@ -202,7 +202,7 @@ export default function LandingPage() {
                 <div className="flex items-start gap-3">
                   <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
                   <div className="text-sm sm:text-base text-gray-700">
-                    <strong>100% Personal Context.</strong> Unlike generic chatbots, we analyze your last 12 months of Strava logs before answering.
+                    <strong>100% Personal Context.</strong> Unlike generic chatbots, we analyze your last 12 months of running data before answering.
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -315,7 +315,7 @@ export default function LandingPage() {
               Quantify Your Fitness in One Number
             </h2>
             <p className="text-lg sm:text-xl font-semibold text-charcoal mb-2 px-4">
-              Strava shows you the miles. This score shows you the truth.
+              Your apps show you miles. This score shows you the truth.
             </p>
             <p className="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto px-4">
               Stop guessing if you're actually getting fitter. We distill your volume, consistency, and speed into a single Runner Score™.
@@ -755,7 +755,7 @@ export default function LandingPage() {
       <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-gradient-to-r from-blue-50 to-orange-50">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 text-charcoal px-4">
-            Get your Strava report in 60 seconds
+            Get your running report in 60 seconds
           </h2>
           <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 text-gray-700 px-4">
             Personal Runner Score + 3 next actions based on your last 30 days.
@@ -779,7 +779,7 @@ export default function LandingPage() {
                 className="w-full sm:w-auto bg-gradient-to-r from-strava-orange via-orange-500 to-red-500 text-white hover:from-orange-600 hover:via-orange-500 hover:to-red-600 h-14 sm:h-12 px-8 sm:px-10 text-base sm:text-lg font-bold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-200 ring-2 ring-orange-300/50"
                 data-testid="bottom-cta-getstarted"
               >
-                Connect Strava & See My Score
+                Get Started & See My Score
               </Button>
             </Link>
           </div>
