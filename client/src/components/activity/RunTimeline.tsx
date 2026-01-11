@@ -513,7 +513,7 @@ export default function RunTimeline({ streams, unitPreference = 'km', activityDi
         {aiPins.length > 0 && (
           <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800" data-testid="ai-pins-legend">
             <div className="flex flex-wrap gap-3 text-xs text-gray-600 dark:text-gray-400">
-              <span className="font-medium text-gray-700 dark:text-gray-300">AI Insights:</span>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Key Insights:</span>
               {aiPins.map((pin, idx) => (
                 <div key={`legend-${idx}`} className="flex items-center gap-1.5" data-testid={`legend-${pin.type}`}>
                   <span 

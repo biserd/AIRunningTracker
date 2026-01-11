@@ -119,7 +119,7 @@ const ONBOARDING_STEPS = [
     ),
   },
   {
-    title: "AI Insights & Predictions",
+    title: "Key Insights & Predictions",
     description: "Unlock the power of machine learning for your training",
     icon: Sparkles,
     content: (

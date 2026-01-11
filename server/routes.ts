@@ -1632,9 +1632,9 @@ ${allPages.map(page => `  <url>
       // Auto-generate AI insights after sync if there were new activities
       if (result.syncedCount > 0) {
         try {
-          res.write(`data: ${JSON.stringify({ type: 'insights', message: 'Generating AI insights...' })}\n\n`);
+          res.write(`data: ${JSON.stringify({ type: 'insights', message: 'Generating insights...' })}\n\n`);
           await aiService.generateInsights(userId);
-          res.write(`data: ${JSON.stringify({ type: 'insights_complete', message: 'AI insights generated' })}\n\n`);
+          res.write(`data: ${JSON.stringify({ type: 'insights_complete', message: 'Insights generated' })}\n\n`);
         } catch (insightError) {
           console.error('AI insight generation failed after sync:', insightError);
         }

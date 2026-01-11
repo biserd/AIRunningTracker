@@ -120,7 +120,7 @@ export default function LandingPage() {
                     <><AnimatedCounter end={(stats?.totalInsights || 0) * 5} className="text-blue-600" />+</>
                   )}
                 </div>
-                <div className="text-xs sm:text-sm text-gray-600 font-medium">AI Insights</div>
+                <div className="text-xs sm:text-sm text-gray-600 font-medium">Key Insights</div>
               </div>
               <div className="text-center min-h-[72px]">
                 <div className="flex items-center justify-center gap-1 mb-1">

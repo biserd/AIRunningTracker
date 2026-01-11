@@ -342,7 +342,7 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <div className="min-w-0">
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">AI Running Coach</h2>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Running Coach</h2>
                 {currentConversation && (
                   <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                     {currentConversation.title || "Conversation"} • {format(new Date(currentConversation.createdAt), 'MMM d')}
@@ -381,7 +381,7 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
                 <div className="flex gap-3">
                   <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
                   <div className="space-y-2 text-xs text-amber-900 dark:text-amber-200">
-                    <p className="font-semibold">Welcome! I'm your AI Running Coach</p>
+                    <p className="font-semibold">Welcome! I'm your Running Coach</p>
                     <p>
                       I'm an automated assistant powered by AI, not a human coach. I provide general running tips and suggestions, 
                       but I can make mistakes. Please verify important advice with qualified professionals and use at your own risk.

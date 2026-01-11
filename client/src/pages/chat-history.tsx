@@ -97,7 +97,7 @@ export default function ChatHistory() {
     <div className="min-h-screen bg-light-grey">
       <SEO
         title="Chat History - RunAnalytics"
-        description="View and manage your AI Running Coach conversation history"
+        description="View and manage your Running Coach conversation history"
       />
       <AppHeader />
 
@@ -105,7 +105,7 @@ export default function ChatHistory() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-charcoal mb-2">Chat History</h1>
           <p className="text-gray-600">
-            View and manage your conversations with the AI Running Coach
+            View and manage your conversations with the Running Coach
           </p>
         </div>
 
@@ -151,7 +151,7 @@ export default function ChatHistory() {
                   <p className="text-gray-600 text-sm mb-4">
                     {searchQuery
                       ? "Try a different search term"
-                      : "Start chatting with your AI Running Coach"}
+                      : "Start chatting with your Running Coach"}
                   </p>
                   {!searchQuery && (
                     <Button
