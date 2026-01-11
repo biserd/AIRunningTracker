@@ -16,7 +16,7 @@ export default function Footer() {
               <h3 className="text-xl font-bold">RunAnalytics</h3>
             </div>
             <p className="text-gray-400 mb-4">
-              Turning your raw Strava data into your next Personal Record. Stop guessing how to train and start running with confidence.
+              Turning your raw running data into your next Personal Record. Stop guessing how to train and start running with confidence.
             </p>
           </div>
           
