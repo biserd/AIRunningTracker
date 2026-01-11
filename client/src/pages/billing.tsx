@@ -182,17 +182,17 @@ export default function BillingPage() {
             <Card className="border-2 border-strava-orange">
               <CardHeader>
                 <CardTitle className="text-strava-orange">Upgrade to Pro or Premium</CardTitle>
-                <CardDescription>Unlock advanced features and AI-powered insights</CardDescription>
+                <CardDescription>Unlock advanced features and personalized insights</CardDescription>
               </CardHeader>
               <CardContent>
                 <ul className="grid md:grid-cols-2 gap-3 mb-6">
                   <li className="flex items-center gap-2 text-sm">
                     <CheckCircle className="h-4 w-4 text-green-500" />
-                    Unlimited AI Performance Insights
+                    Unlimited Performance Insights
                   </li>
                   <li className="flex items-center gap-2 text-sm">
                     <CheckCircle className="h-4 w-4 text-green-500" />
-                    AI-Generated Training Plans
+                    Coach-Generated Training Plans
                   </li>
                   <li className="flex items-center gap-2 text-sm">
                     <CheckCircle className="h-4 w-4 text-green-500" />
@@ -242,11 +242,11 @@ export default function BillingPage() {
                     <>
                       <li className="flex items-center gap-2 text-sm">
                         <Check className="h-4 w-4 text-strava-orange" />
-                        <span className="text-strava-orange font-medium">Unlimited AI Insights</span>
+                        <span className="text-strava-orange font-medium">Unlimited Key Insights</span>
                       </li>
                       <li className="flex items-center gap-2 text-sm">
                         <Check className="h-4 w-4 text-strava-orange" />
-                        <span className="text-strava-orange font-medium">AI Training Plans</span>
+                        <span className="text-strava-orange font-medium">Coach Training Plans</span>
                       </li>
                       <li className="flex items-center gap-2 text-sm">
                         <Check className="h-4 w-4 text-strava-orange" />
@@ -259,7 +259,7 @@ export default function BillingPage() {
                     <>
                       <li className="flex items-center gap-2 text-sm">
                         <Check className="h-4 w-4 text-yellow-500" />
-                        <span className="text-yellow-600 font-medium">AI Running Coach Chat</span>
+                        <span className="text-yellow-600 font-medium">Running Coach Chat</span>
                       </li>
                       <li className="flex items-center gap-2 text-sm">
                         <Check className="h-4 w-4 text-yellow-500" />

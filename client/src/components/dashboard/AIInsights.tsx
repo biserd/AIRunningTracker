@@ -34,7 +34,7 @@ export default function AIInsights({ insights, userId }: AIInsightsProps) {
               <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-performance-blue rounded-lg flex items-center justify-center">
                 <Brain className="text-white" size={16} />
               </div>
-              <CardTitle className="text-xl font-semibold text-charcoal">AI Insights</CardTitle>
+              <CardTitle className="text-xl font-semibold text-charcoal">Key Insights</CardTitle>
             </div>
             {!canAccessAdvancedInsights && (
               <Badge variant="secondary" className="bg-strava-orange/10 text-strava-orange">
@@ -65,7 +65,7 @@ export default function AIInsights({ insights, userId }: AIInsightsProps) {
               <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-performance-blue rounded-lg flex items-center justify-center">
                 <Brain className="text-white" size={16} />
               </div>
-              <CardTitle className="text-xl font-semibold text-charcoal">AI Insights</CardTitle>
+              <CardTitle className="text-xl font-semibold text-charcoal">Key Insights</CardTitle>
             </div>
             <Badge variant="secondary" className="bg-strava-orange/10 text-strava-orange">
               <Crown className="h-3 w-3 mr-1" />
@@ -128,7 +128,7 @@ export default function AIInsights({ insights, userId }: AIInsightsProps) {
           <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-performance-blue rounded-lg flex items-center justify-center">
             <Brain className="text-white" size={16} />
           </div>
-          <CardTitle className="text-xl font-semibold text-charcoal">AI Insights</CardTitle>
+          <CardTitle className="text-xl font-semibold text-charcoal">Key Insights</CardTitle>
         </div>
       </CardHeader>
       <CardContent>

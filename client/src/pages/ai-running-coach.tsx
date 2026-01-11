@@ -166,7 +166,7 @@ export default function AICoachLanding() {
                 <div className="w-14 h-14 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center mb-4">
                   <Brain className="text-white" size={28} />
                 </div>
-                <CardTitle className="text-xl dark:text-white">Personalized AI Insights</CardTitle>
+                <CardTitle className="text-xl dark:text-white">Personalized Key Insights</CardTitle>
               </CardHeader>
               <CardContent className="text-gray-700 dark:text-gray-300">
                 Get training advice tailored to your unique running history, fitness level, and goals. The AI analyzes your Strava data to provide recommendations that actually work for you.

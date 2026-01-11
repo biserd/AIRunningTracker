@@ -67,7 +67,7 @@ export default function DevelopersPage() {
               <Card className="border-2 hover:border-strava-orange transition-colors">
                 <CardHeader>
                   <Brain className="h-10 w-10 text-strava-orange mb-2" />
-                  <CardTitle>AI Insights</CardTitle>
+                  <CardTitle>Key Insights</CardTitle>
                   <CardDescription>
                     Get AI-generated performance analysis and recommendations
                   </CardDescription>
