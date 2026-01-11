@@ -59,6 +59,19 @@ export default function Footer() {
             </ul>
           </div>
         </div>
+
+        <div className="grid md:grid-cols-5 gap-8 mt-8">
+          <div className="md:col-span-5">
+            <h4 className="font-semibold mb-4">Blog</h4>
+            <ul className="grid md:grid-cols-3 gap-2 text-gray-400">
+              <li><Link href="/blog/ai-agent-coach-proactive-coaching" className="hover:text-white transition-colors">AI Agent Coach: Proactive Coaching</Link></li>
+              <li><Link href="/blog/how-to-pick-a-training-plan" className="hover:text-white transition-colors">How to Pick a Training Plan</Link></li>
+              <li><Link href="/blog/ai-running-coach-complete-guide-2026" className="hover:text-white transition-colors">AI Running Coach Guide 2026</Link></li>
+              <li><Link href="/blog/best-strava-analytics-tools-2026" className="hover:text-white transition-colors">Best Strava Analytics Tools 2026</Link></li>
+              <li><Link href="/blog/how-to-improve-running-pace" className="hover:text-white transition-colors">How to Improve Running Pace</Link></li>
+            </ul>
+          </div>
+        </div>
         
         <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
           <div className="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
