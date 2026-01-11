@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
@@ -15,7 +15,9 @@ import {
   Bot,
   Bell,
   Sparkles,
-  Award
+  Award,
+  ChevronRight,
+  Home
 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
@@ -126,12 +128,19 @@ export default function AIAgentCoachBlogPost() {
       <PublicHeader />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        <Link href="/blog">
-          <Button variant="ghost" className="mb-6" data-testid="btn-back-blog">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Blog
-          </Button>
-        </Link>
+        {/* Breadcrumbs */}
+        <nav className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6" aria-label="Breadcrumb">
+          <Link href="/" className="flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>Home</span>
+          </Link>
+          <ChevronRight className="h-4 w-4" />
+          <Link href="/blog" className="hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+            Blog
+          </Link>
+          <ChevronRight className="h-4 w-4" />
+          <span className="text-gray-900 dark:text-white font-medium">AI Agent Coach</span>
+        </nav>
 
         <article className="prose prose-lg dark:prose-invert max-w-none">
           <header className="mb-8">
@@ -538,6 +547,53 @@ export default function AIAgentCoachBlogPost() {
                 <Button size="lg" className="w-full sm:w-auto bg-strava-orange text-white hover:bg-orange-600 font-semibold px-8 h-12 shadow-md" data-testid="cta-get-started">
                   Get Started Free
                 </Button>
+              </Link>
+            </div>
+          </section>
+
+          {/* Related Articles */}
+          <section className="mt-12 pt-8 border-t dark:border-slate-700">
+            <h3 className="text-2xl font-bold text-charcoal dark:text-white mb-6">Related Articles</h3>
+            <div className="grid md:grid-cols-2 gap-6">
+              <Link href="/blog/ai-running-coach-complete-guide-2026">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:border-slate-700">
+                  <CardHeader className="p-4">
+                    <h4 className="text-lg font-semibold dark:text-white">AI Running Coach: Complete Guide 2026</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Everything you need to know about AI-powered running coaches
+                    </p>
+                  </CardHeader>
+                </Card>
+              </Link>
+              <Link href="/blog/how-to-pick-a-training-plan">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:border-slate-700">
+                  <CardHeader className="p-4">
+                    <h4 className="text-lg font-semibold dark:text-white">How to Pick a Training Plan</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Find the perfect running program for your goals
+                    </p>
+                  </CardHeader>
+                </Card>
+              </Link>
+              <Link href="/blog/best-strava-analytics-tools-2026">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:border-slate-700">
+                  <CardHeader className="p-4">
+                    <h4 className="text-lg font-semibold dark:text-white">Best Strava Analytics Tools 2026</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Compare the top analytics platforms for runners
+                    </p>
+                  </CardHeader>
+                </Card>
+              </Link>
+              <Link href="/blog/how-to-improve-running-pace">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:border-slate-700">
+                  <CardHeader className="p-4">
+                    <h4 className="text-lg font-semibold dark:text-white">How to Improve Running Pace</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Proven strategies to run faster
+                    </p>
+                  </CardHeader>
+                </Card>
               </Link>
             </div>
           </section>

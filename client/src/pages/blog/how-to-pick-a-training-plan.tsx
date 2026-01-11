@@ -22,7 +22,10 @@ import {
   Heart,
   Timer,
   MessageSquare,
-  UserCheck
+  UserCheck,
+  ChevronRight,
+  Home,
+  Bot
 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
@@ -113,6 +116,20 @@ export default function HowToPickTrainingPlan() {
       <PublicHeader />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+        {/* Breadcrumbs */}
+        <nav className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6" aria-label="Breadcrumb">
+          <Link href="/" className="flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>Home</span>
+          </Link>
+          <ChevronRight className="h-4 w-4" />
+          <Link href="/blog" className="hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+            Blog
+          </Link>
+          <ChevronRight className="h-4 w-4" />
+          <span className="text-gray-900 dark:text-white font-medium">How to Pick a Training Plan</span>
+        </nav>
+
         <article className="prose prose-lg max-w-none">
           {/* Article Header */}
           <div className="mb-8">
@@ -755,15 +772,43 @@ export default function HowToPickTrainingPlan() {
                 </Card>
               </Link>
 
-              <Link href="/blog/ai-running-coach-complete-guide-2025" data-testid="link-related-ai-coach">
+              <Link href="/blog/ai-running-coach-complete-guide-2026" data-testid="link-related-ai-coach">
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:border-slate-700">
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2 dark:text-white">
                       <Brain className="text-purple-600" size={20} />
-                      AI Running Coach: Complete Guide
+                      AI Running Coach: Complete Guide 2026
                     </CardTitle>
                     <CardDescription className="dark:text-gray-400">
                       Everything you need to know about AI-powered running coaches and how they work.
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+
+              <Link href="/blog/ai-agent-coach-proactive-coaching">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2 dark:text-white">
+                      <Bot className="text-amber-600" size={20} />
+                      AI Agent Coach: Proactive Coaching
+                    </CardTitle>
+                    <CardDescription className="dark:text-gray-400">
+                      Get automatic coaching feedback after every run.
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+
+              <Link href="/blog/best-strava-analytics-tools-2026">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2 dark:text-white">
+                      <BarChart3 className="text-blue-600" size={20} />
+                      Best Strava Analytics Tools 2026
+                    </CardTitle>
+                    <CardDescription className="dark:text-gray-400">
+                      Compare the top analytics platforms for runners.
                     </CardDescription>
                   </CardHeader>
                 </Card>

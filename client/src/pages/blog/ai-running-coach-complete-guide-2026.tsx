@@ -16,7 +16,9 @@ import {
   AlertCircle,
   ArrowRight,
   Smartphone,
-  BarChart3
+  BarChart3,
+  ChevronRight,
+  Home
 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
@@ -63,6 +65,20 @@ export default function AIRunningCoachGuide() {
       <PublicHeader />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+        {/* Breadcrumbs */}
+        <nav className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6" aria-label="Breadcrumb">
+          <Link href="/" className="flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>Home</span>
+          </Link>
+          <ChevronRight className="h-4 w-4" />
+          <Link href="/blog" className="hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+            Blog
+          </Link>
+          <ChevronRight className="h-4 w-4" />
+          <span className="text-gray-900 dark:text-white font-medium">AI Running Coach Guide</span>
+        </nav>
+
         {/* Article Header */}
         <article className="prose prose-lg max-w-none">
           <div className="mb-8">
@@ -606,10 +622,30 @@ export default function AIRunningCoachGuide() {
           <section className="mt-12 pt-8 border-t dark:border-slate-700">
             <h3 className="text-2xl font-bold text-charcoal dark:text-white mb-6">Related Articles</h3>
             <div className="grid md:grid-cols-2 gap-6">
-              <Link href="/blog/best-strava-analytics-tools-2025">
+              <Link href="/blog/ai-agent-coach-proactive-coaching">
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:border-slate-700">
                   <CardHeader>
-                    <CardTitle className="text-lg dark:text-white">Best Strava Analytics Tools 2025</CardTitle>
+                    <CardTitle className="text-lg dark:text-white">AI Agent Coach: Proactive Coaching</CardTitle>
+                    <CardDescription className="dark:text-gray-400">
+                      Get automatic coaching feedback after every run
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+              <Link href="/blog/how-to-pick-a-training-plan">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-lg dark:text-white">How to Pick a Training Plan</CardTitle>
+                    <CardDescription className="dark:text-gray-400">
+                      Find the perfect running program for your goals
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+              <Link href="/blog/best-strava-analytics-tools-2026">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-lg dark:text-white">Best Strava Analytics Tools 2026</CardTitle>
                     <CardDescription className="dark:text-gray-400">
                       Compare the top analytics platforms for runners
                     </CardDescription>

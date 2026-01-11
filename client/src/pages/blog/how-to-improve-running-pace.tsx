@@ -18,7 +18,11 @@ import {
   Footprints,
   Brain,
   ArrowRight,
-  BarChart3
+  BarChart3,
+  ChevronRight,
+  Home,
+  HelpCircle,
+  Bot
 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
@@ -65,6 +69,20 @@ export default function ImproveRunningPace() {
       <PublicHeader />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+        {/* Breadcrumbs */}
+        <nav className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6" aria-label="Breadcrumb">
+          <Link href="/" className="flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>Home</span>
+          </Link>
+          <ChevronRight className="h-4 w-4" />
+          <Link href="/blog" className="hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+            Blog
+          </Link>
+          <ChevronRight className="h-4 w-4" />
+          <span className="text-gray-900 dark:text-white font-medium">How to Improve Running Pace</span>
+        </nav>
+
         <article className="prose prose-lg max-w-none">
           {/* Article Header */}
           <div className="mb-8">
@@ -826,24 +844,86 @@ export default function ImproveRunningPace() {
             </Card>
           </section>
 
+          {/* FAQ Section */}
+          <section id="faq" className="mb-12">
+            <h2 className="text-3xl font-bold text-charcoal dark:text-white mb-6 flex items-center gap-3">
+              <HelpCircle className="text-blue-600" size={32} />
+              Frequently Asked Questions
+            </h2>
+            <div className="space-y-4">
+              <Card className="dark:border-slate-700">
+                <CardHeader>
+                  <CardTitle className="text-lg dark:text-white">How long does it take to improve running pace?</CardTitle>
+                </CardHeader>
+                <CardContent className="text-gray-700 dark:text-gray-300">
+                  Most runners see measurable improvements within 8-12 weeks of consistent training. However, significant pace improvements typically require 3-6 months of structured training with proper periodization.
+                </CardContent>
+              </Card>
+              <Card className="dark:border-slate-700">
+                <CardHeader>
+                  <CardTitle className="text-lg dark:text-white">Should I run every day to get faster?</CardTitle>
+                </CardHeader>
+                <CardContent className="text-gray-700 dark:text-gray-300">
+                  Not necessarily. Quality matters more than quantity. Most recreational runners benefit from 3-5 running days per week with rest days for recovery. Overtraining can actually slow your progress and increase injury risk.
+                </CardContent>
+              </Card>
+              <Card className="dark:border-slate-700">
+                <CardHeader>
+                  <CardTitle className="text-lg dark:text-white">What's the best workout for improving pace?</CardTitle>
+                </CardHeader>
+                <CardContent className="text-gray-700 dark:text-gray-300">
+                  There's no single "best" workout—improvement comes from variety. Tempo runs build lactate threshold, intervals develop speed, and long runs build endurance. A well-rounded plan includes all three workout types.
+                </CardContent>
+              </Card>
+              <Card className="dark:border-slate-700">
+                <CardHeader>
+                  <CardTitle className="text-lg dark:text-white">Can older runners still improve their pace?</CardTitle>
+                </CardHeader>
+                <CardContent className="text-gray-700 dark:text-gray-300">
+                  Absolutely! While age-related decline is natural, many runners continue setting personal records into their 40s, 50s, and beyond. Smart training, adequate recovery, and strength work become increasingly important as we age.
+                </CardContent>
+              </Card>
+            </div>
+          </section>
+
           {/* Related Articles */}
           <section className="mt-12 pt-8 border-t dark:border-slate-700">
             <h3 className="text-2xl font-bold text-charcoal dark:text-white mb-6">Related Articles</h3>
             <div className="grid md:grid-cols-2 gap-6">
-              <Link href="/blog/ai-running-coach-complete-guide-2025">
+              <Link href="/blog/ai-running-coach-complete-guide-2026">
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:border-slate-700">
                   <CardHeader>
-                    <CardTitle className="text-lg dark:text-white">AI Running Coach: Complete Guide</CardTitle>
+                    <CardTitle className="text-lg dark:text-white">AI Running Coach: Complete Guide 2026</CardTitle>
                     <CardDescription className="dark:text-gray-400">
                       How AI-powered coaching can accelerate your improvement
                     </CardDescription>
                   </CardHeader>
                 </Card>
               </Link>
-              <Link href="/blog/best-strava-analytics-tools-2025">
+              <Link href="/blog/ai-agent-coach-proactive-coaching">
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:border-slate-700">
                   <CardHeader>
-                    <CardTitle className="text-lg dark:text-white">Best Strava Analytics Tools</CardTitle>
+                    <CardTitle className="text-lg dark:text-white">AI Agent Coach: Proactive Coaching</CardTitle>
+                    <CardDescription className="dark:text-gray-400">
+                      Get automatic coaching feedback after every run
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+              <Link href="/blog/how-to-pick-a-training-plan">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-lg dark:text-white">How to Pick a Training Plan</CardTitle>
+                    <CardDescription className="dark:text-gray-400">
+                      Find the perfect running program for your goals
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+              <Link href="/blog/best-strava-analytics-tools-2026">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-lg dark:text-white">Best Strava Analytics Tools 2026</CardTitle>
                     <CardDescription className="dark:text-gray-400">
                       Find the right platform to track your progress
                     </CardDescription>
