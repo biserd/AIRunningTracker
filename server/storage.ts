@@ -1,7 +1,7 @@
 import { users, activities, aiInsights, trainingPlans, trainingPlansLegacy, athleteProfiles, planWeeks, planDays, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, shoeComparisons, apiKeys, refreshTokens, workoutCache, coachRecaps, agentRuns, notificationOutbox, deletionFeedback, userCampaigns, emailJobs, emailClicks, systemSettings, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ShoeComparison, type InsertShoeComparison, type ApiKey, type InsertApiKey, type RefreshToken, type InsertRefreshToken, type AthleteProfile, type InsertAthleteProfile, type PlanWeek, type InsertPlanWeek, type PlanDay, type InsertPlanDay, type WorkoutCache, type InsertWorkoutCache, type CoachRecap, type InsertCoachRecap, type AgentRun, type InsertAgentRun, type NotificationOutbox, type InsertNotificationOutbox, type DeletionFeedback, type InsertDeletionFeedback, type UserCampaign, type InsertUserCampaign, type EmailJob, type InsertEmailJob, type EmailClick, type InsertEmailClick } from "@shared/schema";
 import crypto from "crypto";
 import { db } from "./db";
-import { eq, desc, and, sql, inArray, gte, gt, lt } from "drizzle-orm";
+import { eq, desc, and, sql, inArray, gte, gt, lt, ne } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 export interface IStorage {
@@ -165,6 +165,11 @@ export interface IStorage {
     segment_b: number;
     segment_c: number;
     segment_d: number;
+  }>;
+  getUserCountsBySubscription(): Promise<{
+    total: number;
+    paid: number;
+    free: number;
   }>;
   
   // User activation tracking
@@ -1607,6 +1612,30 @@ export class DatabaseStorage implements IStorage {
     }
 
     return result;
+  }
+
+  async getUserCountsBySubscription(): Promise<{
+    total: number;
+    paid: number;
+    free: number;
+  }> {
+    const [totalResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users);
+
+    const [paidResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(ne(users.subscriptionPlan, "free"));
+
+    const total = Number(totalResult?.count || 0);
+    const paid = Number(paidResult?.count || 0);
+
+    return {
+      total,
+      paid,
+      free: total - paid,
+    };
   }
 
   async getSystemSetting(key: string): Promise<string | undefined> {

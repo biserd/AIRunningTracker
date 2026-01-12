@@ -6825,17 +6825,16 @@ ${allPages.map(page => `  <url>
       // Get actual enrollment counts from user_campaigns table
       const segmentStats = await storage.getSegmentStatsFromCampaigns();
       
-      // Get paid user count separately
-      const allUsers = await storage.getAllUsers();
-      const paidCount = allUsers.filter(u => u.subscriptionPlan !== 'free').length;
+      // Get user counts using proper count queries (no limit)
+      const userCounts = await storage.getUserCountsBySubscription();
       
       res.json({
         segment_a: segmentStats.segment_a || 0,
         segment_b: segmentStats.segment_b || 0,
         segment_c: segmentStats.segment_c || 0,
         segment_d: segmentStats.segment_d || 0,
-        paid: paidCount,
-        total: allUsers.length,
+        paid: userCounts.paid,
+        total: userCounts.total,
       });
     } catch (error: any) {
       console.error("Segment stats error:", error);
