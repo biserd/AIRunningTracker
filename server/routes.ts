@@ -6819,41 +6819,24 @@ ${allPages.map(page => `  <url>
     }
   });
 
-  // Admin: Get segment stats for campaigns
+  // Admin: Get segment stats for campaigns (reads from user_campaigns table)
   app.get("/api/admin/campaigns/segment-stats", authenticateAdmin, async (req: any, res) => {
     try {
-      // Count users in each segment based on current state
+      // Get actual enrollment counts from user_campaigns table
+      const segmentStats = await storage.getSegmentStatsFromCampaigns();
+      
+      // Get paid user count separately
       const allUsers = await storage.getAllUsers();
+      const paidCount = allUsers.filter(u => u.subscriptionPlan !== 'free').length;
       
-      const segmentCounts = {
-        segment_a: 0, // Not connected
-        segment_b: 0, // Connected, not activated
-        segment_c: 0, // Activated, free
-        segment_d: 0, // Inactive 7+ days
-        paid: 0,      // Paid users (excluded from campaigns)
+      res.json({
+        segment_a: segmentStats.segment_a || 0,
+        segment_b: segmentStats.segment_b || 0,
+        segment_c: segmentStats.segment_c || 0,
+        segment_d: segmentStats.segment_d || 0,
+        paid: paidCount,
         total: allUsers.length,
-      };
-      
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      
-      for (const user of allUsers) {
-        if (user.subscriptionPlan !== 'free') {
-          segmentCounts.paid++;
-          continue;
-        }
-        
-        if (!user.stravaConnected) {
-          segmentCounts.segment_a++;
-        } else if (!user.activationAt) {
-          segmentCounts.segment_b++;
-        } else if (user.lastSeenAt && new Date(user.lastSeenAt) < sevenDaysAgo) {
-          segmentCounts.segment_d++;
-        } else {
-          segmentCounts.segment_c++;
-        }
-      }
-      
-      res.json(segmentCounts);
+      });
     } catch (error: any) {
       console.error("Segment stats error:", error);
       res.status(500).json({ message: error.message || "Failed to get segment stats" });

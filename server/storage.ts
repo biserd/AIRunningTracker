@@ -160,6 +160,12 @@ export interface IStorage {
     byCampaign: Array<{ campaign: string; sent: number; clicked: number }>;
     byStep: Array<{ step: string; sent: number; clicked: number }>;
   }>;
+  getSegmentStatsFromCampaigns(): Promise<{
+    segment_a: number;
+    segment_b: number;
+    segment_c: number;
+    segment_d: number;
+  }>;
   
   // User activation tracking
   updateUserActivation(userId: number, activationAt: Date): Promise<void>;
@@ -1569,6 +1575,38 @@ export class DatabaseStorage implements IStorage {
       byCampaign: Array.from(campaignMap.entries()).map(([campaign, data]) => ({ campaign, ...data })),
       byStep: Array.from(stepMap.entries()).map(([step, data]) => ({ step, ...data })),
     };
+  }
+
+  async getSegmentStatsFromCampaigns(): Promise<{
+    segment_a: number;
+    segment_b: number;
+    segment_c: number;
+    segment_d: number;
+  }> {
+    const counts = await db
+      .select({
+        campaign: userCampaigns.campaign,
+        count: sql<number>`count(*)`,
+      })
+      .from(userCampaigns)
+      .where(eq(userCampaigns.state, "active"))
+      .groupBy(userCampaigns.campaign);
+
+    const result = {
+      segment_a: 0,
+      segment_b: 0,
+      segment_c: 0,
+      segment_d: 0,
+    };
+
+    for (const row of counts) {
+      if (row.campaign === "segment_a") result.segment_a = Number(row.count);
+      if (row.campaign === "segment_b") result.segment_b = Number(row.count);
+      if (row.campaign === "segment_c") result.segment_c = Number(row.count);
+      if (row.campaign === "segment_d") result.segment_d = Number(row.count);
+    }
+
+    return result;
   }
 
   async getSystemSetting(key: string): Promise<string | undefined> {
