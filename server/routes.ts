@@ -4194,6 +4194,14 @@ ${allPages.map(page => `  <url>
         stravaHasWriteScope: true,
       });
 
+      // Trigger drip campaign transition from segment_a to segment_b
+      try {
+        await dripCampaignService.onStravaConnected(userId);
+        console.log(`[DripCampaign] Strava callback triggered segment transition for user ${userId}`);
+      } catch (campaignError) {
+        console.error('Drip campaign trigger failed in Strava callback:', campaignError);
+      }
+
       res.redirect("/dashboard?connected=true");
     } catch (error: any) {
       console.error('Strava callback error:', error);
