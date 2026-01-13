@@ -197,7 +197,8 @@ export default function RunningHeatmapPage() {
   }
 
   // For non-authenticated users, show the empty map with CTA
-  const showSignUpCTA = !isAuthenticated;
+  // Only show CTA if auth is explicitly finished and we are NOT authenticated
+  const showSignUpCTA = !authLoading && !isAuthenticated;
 
   return (
     <>
