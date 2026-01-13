@@ -327,6 +327,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return crawlerPatterns.some(pattern => pattern.test(userAgent));
   };
 
+  // SEO: 301 redirects for renamed blog posts (preserve indexed URLs)
+  app.get("/blog/best-strava-analytics-tools-2025", (req, res) => {
+    res.redirect(301, "/blog/best-strava-analytics-tools-2026");
+  });
+
   // SEO: robots.txt
   app.get("/robots.txt", (req, res) => {
     const baseUrl = "https://aitracker.run";
