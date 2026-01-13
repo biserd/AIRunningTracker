@@ -231,7 +231,27 @@ export default function RunningHeatmapPage() {
       <FAQSchema faqs={HEATMAP_FAQS} />
 
       <div className="min-h-screen bg-light-grey">
-        <AppHeader />
+        {isAuthenticated ? (
+          <AppHeader />
+        ) : (
+          <div className="bg-white shadow-sm border-b border-gray-200">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+              <div className="flex items-center justify-between">
+                <Link href="/">
+                  <Button variant="ghost" size="sm" className="px-2 sm:px-4" data-testid="button-back-home">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    <span className="hidden sm:inline">Back to Home</span>
+                  </Button>
+                </Link>
+                <Link href="/auth">
+                  <Button className="bg-strava-orange text-white hover:bg-strava-orange/90" size="sm" data-testid="button-sign-in">
+                    Get My Free Analysis
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           {/* Header */}
@@ -242,6 +262,26 @@ export default function RunningHeatmapPage() {
                 Back to Tools
               </Button>
             </Link>
+
+            {/* Public CTA */}
+            {showSignUpCTA && (
+              <div className="mb-8 p-6 bg-blue-50 border border-blue-100 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <MapPin className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Register to see your running heatmap</h3>
+                    <p className="text-sm text-gray-600">Connect Strava to visualize your favorite routes and patterns.</p>
+                  </div>
+                </div>
+                <Link href="/auth">
+                  <Button className="bg-blue-600 text-white hover:bg-blue-700 whitespace-nowrap">
+                    Register Now
+                  </Button>
+                </Link>
+              </div>
+            )}
             
             <div className="flex items-start justify-between">
               <div>
@@ -326,65 +366,36 @@ export default function RunningHeatmapPage() {
           {/* Map Container */}
           <Card className="overflow-hidden">
             <CardContent className="p-0">
-              {showSignUpCTA ? (
-                /* Empty map with CTA for non-authenticated users */
-                <div className="relative h-[500px] sm:h-[600px]">
-                  <div 
-                    ref={mapContainerRef} 
-                    className="h-full w-full"
-                    data-testid="map-container"
-                  />
-                  {/* CTA Overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
-                    <div className="text-center space-y-4 px-6 py-8 bg-white rounded-xl shadow-2xl max-w-md mx-4">
-                      <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto">
-                        <MapPin className="h-8 w-8 text-blue-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-2xl font-bold text-gray-900 mb-2">Register to see your running heatmap</h3>
-                        <p className="text-gray-600 mb-6">
-                          Connect your Strava account to visualize all your routes on an interactive heatmap. 
-                          Discover your most-run paths and explore new territory.
-                        </p>
-                        <Link href="/auth">
-                          <Button size="lg" className="bg-blue-600 text-white hover:bg-blue-700 w-full sm:w-auto" data-testid="button-sign-up-cta">
-                            Register Now
-                          </Button>
-                        </Link>
-                        <p className="text-sm text-gray-500 mt-3">
-                          Already have an account? <Link href="/auth" className="text-blue-600 hover:underline">Log in</Link>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : routes.length === 0 ? (
-                <div className="h-[500px] flex items-center justify-center bg-gray-50">
-                  <div className="text-center space-y-4 px-4">
-                    <Activity className="h-16 w-16 text-gray-400 mx-auto" />
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-700 mb-2">No Routes Found</h3>
-                      <p className="text-gray-600 mb-4">
-                        {user?.stravaConnected 
-                          ? "Sync your Strava activities to see your running heatmap"
-                          : "Connect Strava and sync your activities to visualize your routes"
-                        }
-                      </p>
-                      <Link href="/settings">
-                        <Button className="bg-blue-600 text-white hover:bg-blue-700" data-testid="button-go-settings">
-                          Go to Settings
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              ) : (
+              <div className="relative h-[500px] sm:h-[600px]">
                 <div 
                   ref={mapContainerRef} 
-                  className="h-[500px] sm:h-[600px] w-full"
+                  className="h-full w-full"
                   data-testid="map-container"
                 />
-              )}
+                
+                {/* No Routes Empty State (only for logged in users) */}
+                {isAuthenticated && routes.length === 0 && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-50/80 backdrop-blur-sm">
+                    <div className="text-center space-y-4 px-4">
+                      <Activity className="h-16 w-16 text-gray-400 mx-auto" />
+                      <div>
+                        <h3 className="text-xl font-semibold text-gray-700 mb-2">No Routes Found</h3>
+                        <p className="text-gray-600 mb-4">
+                          {user?.stravaConnected 
+                            ? "Sync your Strava activities to see your running heatmap"
+                            : "Connect Strava and sync your activities to visualize your routes"
+                          }
+                        </p>
+                        <Link href="/settings">
+                          <Button className="bg-blue-600 text-white hover:bg-blue-700" data-testid="button-go-settings">
+                            Go to Settings
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
 
