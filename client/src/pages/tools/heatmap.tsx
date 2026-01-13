@@ -168,7 +168,7 @@ export default function RunningHeatmapPage() {
   }, [routes]);
 
   // Show skeleton only for authenticated users while loading their data
-  if (authLoading || (isAuthenticated && isLoading)) {
+  if (authLoading) {
     return (
       <>
         <SEO
@@ -196,9 +196,20 @@ export default function RunningHeatmapPage() {
     );
   }
 
+  // Show skeleton for authenticated users while loading their routes
+  if (isAuthenticated && isLoading) {
+    return (
+      <div className="min-h-screen bg-light-grey">
+        <AppHeader />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          <Skeleton className="h-[600px] w-full" />
+        </div>
+      </div>
+    );
+  }
+
   // For non-authenticated users, show the empty map with CTA
-  // Only show CTA if auth is explicitly finished and we are NOT authenticated
-  const showSignUpCTA = !authLoading && !isAuthenticated;
+  const showSignUpCTA = !isAuthenticated;
 
   return (
     <>
