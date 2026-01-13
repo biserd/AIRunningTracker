@@ -16,7 +16,7 @@ const tools = [
     icon: MapPin,
     url: "/tools/heatmap",
     status: "available",
-    authRequired: true,
+    authRequired: false,
     ctaLabel: "View Heatmap",
     features: [
       "Interactive route visualization",

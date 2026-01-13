@@ -128,10 +128,8 @@ function Router() {
       <Route path="/developers" component={DevelopersPage} />
       <Route path="/developers/api" component={ApiDocsPage} />
       
-      {/* Protected Tool Routes */}
-      <Route path="/tools/heatmap">
-        <ProtectedRoute component={RunningHeatmap} />
-      </Route>
+      {/* Tool Routes */}
+      <Route path="/tools/heatmap" component={RunningHeatmap} />
       
       {/* Protected Routes */}
       <Route path="/chat-history">
