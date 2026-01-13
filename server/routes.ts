@@ -867,6 +867,7 @@ ${allPages.map(page => `  <url>
         payment_method_types: ['card'],
         line_items: [{ price: priceId, quantity: 1 }],
         mode: 'subscription',
+        allow_promotion_codes: true,
         success_url: `${protocol}://${domain}/billing?success=true`,
         cancel_url: `${protocol}://${domain}/pricing?canceled=true`,
         metadata: { userId: String(userId) }
