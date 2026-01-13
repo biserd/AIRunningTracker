@@ -89,7 +89,7 @@ export default function AIInsights({ insights, userId }: AIInsightsProps) {
                 <div className="text-center">
                   <Lock className="h-6 w-6 text-gray-500 mx-auto mb-2" />
                   <p className="text-sm font-medium text-gray-700 mb-2">Advanced Insights Locked</p>
-                  <Link href="/subscribe">
+                  <Link href="/pricing">
                     <Button size="sm" className="bg-strava-orange hover:bg-strava-orange/90" data-testid="button-unlock-insights">
                       <Crown className="h-3 w-3 mr-1" />
                       Upgrade to Pro

@@ -27,7 +27,6 @@ import AboutPage from "@/pages/about";
 import TermsPage from "@/pages/terms";
 import FeaturesPage from "@/pages/features";
 import PricingPage from "@/pages/pricing";
-import SubscribePage from "@/pages/subscribe";
 import BillingPage from "@/pages/billing";
 import ToolsPage from "@/pages/tools";
 import AerobicDecouplingCalculator from "@/pages/tools/aerobic-decoupling-calculator";
@@ -94,7 +93,6 @@ function Router() {
       <Route path="/terms" component={TermsPage} />
       <Route path="/features" component={FeaturesPage} />
       <Route path="/pricing" component={PricingPage} />
-      <Route path="/subscribe" component={SubscribePage} />
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/contact" component={ContactPage} />
       <Route path="/faq" component={FAQPage} />

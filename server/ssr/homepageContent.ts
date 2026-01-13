@@ -149,7 +149,7 @@ export const homepageContent: HomepageContent = {
           "Training plans",
           "Priority support"
         ],
-        cta: { text: "Start Pro Trial", href: "/subscribe" },
+        cta: { text: "Start Pro Trial", href: "/pricing" },
         highlighted: true
       },
       {
@@ -163,7 +163,7 @@ export const homepageContent: HomepageContent = {
           "Goal tracking",
           "Custom insights"
         ],
-        cta: { text: "Go Premium", href: "/subscribe" }
+        cta: { text: "Go Premium", href: "/pricing" }
       }
     ]
   },

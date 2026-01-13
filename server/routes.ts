@@ -264,11 +264,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       description: "Sign in to RunAnalytics to access your personalized running insights, or create a free account to get started with AI-powered analytics.",
       keywords: "login, sign up, create account, running app"
     },
-    "/subscribe": {
-      title: "Subscribe | Get Pro or Premium | RunAnalytics",
-      description: "Upgrade to Pro or Premium for advanced running analytics, AI coaching, unlimited insights, and personalized training recommendations.",
-      keywords: "subscribe, upgrade, pro plan, premium plan, running subscription"
-    },
     "/faq": {
       title: "FAQ | Frequently Asked Questions | RunAnalytics",
       description: "Get answers to common questions about RunAnalytics, Strava integration, AI coaching, subscriptions, and how to get the most from your training data.",
@@ -369,7 +364,6 @@ Sitemap: ${baseUrl}/sitemap.xml`;
         { url: "/about", changefreq: "monthly", priority: "0.7", lastmod: "2026-01-01" },
         { url: "/features", changefreq: "monthly", priority: "0.8", lastmod: today },
         { url: "/pricing", changefreq: "weekly", priority: "0.9", lastmod: today },
-        { url: "/subscribe", changefreq: "weekly", priority: "0.8", lastmod: today },
         
         // Blog & Content Marketing
         { url: "/blog", changefreq: "weekly", priority: "0.9", lastmod: today },
