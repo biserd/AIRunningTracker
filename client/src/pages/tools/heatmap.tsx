@@ -329,14 +329,14 @@ export default function RunningHeatmapPage() {
                         <MapPin className="h-8 w-8 text-blue-600" />
                       </div>
                       <div>
-                        <h3 className="text-2xl font-bold text-gray-900 mb-2">See Your Running Heatmap</h3>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">Register to see your running heatmap</h3>
                         <p className="text-gray-600 mb-6">
                           Connect your Strava account to visualize all your routes on an interactive heatmap. 
                           Discover your most-run paths and explore new territory.
                         </p>
                         <Link href="/auth">
                           <Button size="lg" className="bg-blue-600 text-white hover:bg-blue-700 w-full sm:w-auto" data-testid="button-sign-up-cta">
-                            Sign Up Free
+                            Register Now
                           </Button>
                         </Link>
                         <p className="text-sm text-gray-500 mt-3">
