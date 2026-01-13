@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { MapPin, Activity, ArrowLeft, Info } from "lucide-react";
 import { SEO } from "@/components/SEO";
 import AppHeader from "@/components/AppHeader";
@@ -54,16 +54,8 @@ const HEATMAP_FAQS = [
 
 export default function RunningHeatmapPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const [, setLocation] = useLocation();
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      setLocation("/auth");
-    }
-  }, [isAuthenticated, authLoading, setLocation]);
 
   const { data, isLoading, error } = useQuery<{ routes: ActivityRoute[]; count: number }>({
     queryKey: ["/api/activities/routes", user?.id],
@@ -78,7 +70,9 @@ export default function RunningHeatmapPage() {
 
   // Initialize map once container is rendered
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current || isLoading) return;
+    if (!mapContainerRef.current || mapRef.current) return;
+    // For authenticated users, wait for loading to finish; for unauthenticated, show immediately
+    if (isAuthenticated && isLoading) return;
 
     // Start with default center - will be updated when routes load
     const map = L.map(mapContainerRef.current, {
@@ -98,7 +92,7 @@ export default function RunningHeatmapPage() {
       map.remove();
       mapRef.current = null;
     };
-  }, [isLoading]); // Run when loading finishes and container is rendered
+  }, [isLoading, isAuthenticated]); // Run when loading finishes and container is rendered
 
   // Render routes on map
   useEffect(() => {
@@ -173,7 +167,8 @@ export default function RunningHeatmapPage() {
     }
   }, [routes]);
 
-  if (authLoading || isLoading) {
+  // Show skeleton only for authenticated users while loading their data
+  if (authLoading || (isAuthenticated && isLoading)) {
     return (
       <>
         <SEO
@@ -201,9 +196,8 @@ export default function RunningHeatmapPage() {
     );
   }
 
-  if (!isAuthenticated || !user) {
-    return null;
-  }
+  // For non-authenticated users, show the empty map with CTA
+  const showSignUpCTA = !isAuthenticated;
 
   return (
     <>
@@ -246,61 +240,67 @@ export default function RunningHeatmapPage() {
                   <div>
                     <h1 className="text-3xl font-bold text-charcoal">Running Heatmap</h1>
                     <p className="text-gray-600">Visualize where you run most frequently. 
-                    Discover more <Link href="/blog/best-strava-analytics-tools-2025" className="text-blue-600 hover:text-blue-800 underline">Strava analytics tools</Link>.</p>
+                    Discover more <Link href="/blog/best-strava-analytics-tools-2026" className="text-blue-600 hover:text-blue-800 underline">Strava analytics tools</Link>.</p>
                   </div>
                 </div>
               </div>
               
-              {/* Stats */}
-              <div className="hidden sm:flex items-center space-x-4">
-                <div className="text-right">
-                  <p className="text-sm text-gray-600">Routes Shown</p>
-                  <p className="text-2xl font-bold text-blue-600" data-testid="text-routes-count">
-                    {routes.length}
-                  </p>
+              {/* Stats - only show for authenticated users */}
+              {isAuthenticated && (
+                <div className="hidden sm:flex items-center space-x-4">
+                  <div className="text-right">
+                    <p className="text-sm text-gray-600">Routes Shown</p>
+                    <p className="text-2xl font-bold text-blue-600" data-testid="text-routes-count">
+                      {routes.length}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-600">Total Distance</p>
+                    <p className="text-2xl font-bold text-blue-600" data-testid="text-total-distance">
+                      {unitPreference === "miles" 
+                        ? `${distanceInMiles.toFixed(1)} mi`
+                        : `${distanceInKm.toFixed(1)} km`
+                      }
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
+              )}
+            </div>
+          </div>
+
+          {/* Mobile Stats - only show for authenticated users */}
+          {isAuthenticated && (
+            <div className="sm:hidden grid grid-cols-2 gap-4 mb-6">
+              <Card>
+                <CardContent className="pt-4 text-center">
+                  <p className="text-sm text-gray-600">Routes Shown</p>
+                  <p className="text-xl font-bold text-blue-600">{routes.length}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4 text-center">
                   <p className="text-sm text-gray-600">Total Distance</p>
-                  <p className="text-2xl font-bold text-blue-600" data-testid="text-total-distance">
+                  <p className="text-xl font-bold text-blue-600">
                     {unitPreference === "miles" 
                       ? `${distanceInMiles.toFixed(1)} mi`
                       : `${distanceInKm.toFixed(1)} km`
                     }
                   </p>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
-          </div>
+          )}
 
-          {/* Mobile Stats */}
-          <div className="sm:hidden grid grid-cols-2 gap-4 mb-6">
-            <Card>
-              <CardContent className="pt-4 text-center">
-                <p className="text-sm text-gray-600">Routes Shown</p>
-                <p className="text-xl font-bold text-blue-600">{routes.length}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-4 text-center">
-                <p className="text-sm text-gray-600">Total Distance</p>
-                <p className="text-xl font-bold text-blue-600">
-                  {unitPreference === "miles" 
-                    ? `${distanceInMiles.toFixed(1)} mi`
-                    : `${distanceInKm.toFixed(1)} km`
-                  }
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Info Alert */}
-          <Alert className="mb-6 border-blue-200 bg-blue-50">
-            <Info className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-sm text-blue-900">
-              Showing your last 30 runs with GPS data. Brighter routes indicate more recent activities. 
-              Click on any route to see details.
-            </AlertDescription>
-          </Alert>
+          {/* Info Alert - only show for authenticated users */}
+          {isAuthenticated && (
+            <Alert className="mb-6 border-blue-200 bg-blue-50">
+              <Info className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-sm text-blue-900">
+                Showing your last 30 runs with GPS data. Brighter routes indicate more recent activities. 
+                Click on any route to see details.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Error Display */}
           {error && (
@@ -314,7 +314,39 @@ export default function RunningHeatmapPage() {
           {/* Map Container */}
           <Card className="overflow-hidden">
             <CardContent className="p-0">
-              {routes.length === 0 ? (
+              {showSignUpCTA ? (
+                /* Empty map with CTA for non-authenticated users */
+                <div className="relative h-[500px] sm:h-[600px]">
+                  <div 
+                    ref={mapContainerRef} 
+                    className="h-full w-full"
+                    data-testid="map-container"
+                  />
+                  {/* CTA Overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
+                    <div className="text-center space-y-4 px-6 py-8 bg-white rounded-xl shadow-2xl max-w-md mx-4">
+                      <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto">
+                        <MapPin className="h-8 w-8 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">See Your Running Heatmap</h3>
+                        <p className="text-gray-600 mb-6">
+                          Connect your Strava account to visualize all your routes on an interactive heatmap. 
+                          Discover your most-run paths and explore new territory.
+                        </p>
+                        <Link href="/auth">
+                          <Button size="lg" className="bg-blue-600 text-white hover:bg-blue-700 w-full sm:w-auto" data-testid="button-sign-up-cta">
+                            Sign Up Free
+                          </Button>
+                        </Link>
+                        <p className="text-sm text-gray-500 mt-3">
+                          Already have an account? <Link href="/auth" className="text-blue-600 hover:underline">Log in</Link>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : routes.length === 0 ? (
                 <div className="h-[500px] flex items-center justify-center bg-gray-50">
                   <div className="text-center space-y-4 px-4">
                     <Activity className="h-16 w-16 text-gray-400 mx-auto" />
@@ -344,8 +376,8 @@ export default function RunningHeatmapPage() {
             </CardContent>
           </Card>
 
-          {/* Legend */}
-          {routes.length > 0 && (
+          {/* Legend - only show for authenticated users with routes */}
+          {isAuthenticated && routes.length > 0 && (
             <Card className="mt-6">
               <CardHeader>
                 <CardTitle className="text-lg">Map Legend</CardTitle>
