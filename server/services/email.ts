@@ -1013,7 +1013,7 @@ The RunAnalytics Team
         
         <p>I've texted with many of you already, and I'm truly grateful for the feedback, what you like, what's confusing, and what you want next. That kind of early input is invaluable for a startup, and it's helping shape AITracker.run every week.</p>
         
-        <p><strong>A quick intro and the "why" behind this project:</strong> I'm a runner too (<a href="https://www.strava.com/athletes/23786606" style="color: #fc4c02;">Strava: Biser</a>). While training for the NYC Marathon 2025, I realized I wasn't fully satisfied with the tools I was using. The training plan didn't feel right, routes weren't great, and even the suggested distances often felt off. Instead of complaining, I started building something small that solved my own problems. The idea was simple: if it genuinely helps me, it'll probably help others too. And now it's growing into something bigger.</p>
+        <p><strong>A quick intro and the "why" behind this project:</strong> I'm a runner too (<a href="https://www.strava.com/athletes/23786606" style="color: #fc4c02;">Strava: Biser</a>). While training for the NYC Marathon 2025, I realized I wasn't fully satisfied with the tools I was using. The training plan didn't feel right, routes weren't great, and even the suggested distances often felt off. Instead of complaining, I started building something small that solved my own problems. The idea was simple: if it genuinely helps me, it'll likely help other runners too. That's how AITracker.run was born.</p>
         
         <p><strong>A few features I'm especially proud of so far:</strong></p>
         <ul style="margin: 15px 0; padding-left: 25px;">
@@ -1075,7 +1075,7 @@ Thank you for being part of our early journey.
 
 I've texted with many of you already, and I'm truly grateful for the feedback, what you like, what's confusing, and what you want next. That kind of early input is invaluable for a startup, and it's helping shape AITracker.run every week.
 
-A quick intro and the "why" behind this project: I'm a runner too (Strava: https://www.strava.com/athletes/23786606). While training for the NYC Marathon 2025, I realized I wasn't fully satisfied with the tools I was using. The training plan didn't feel right, routes weren't great, and even the suggested distances often felt off. Instead of complaining, I started building something small that solved my own problems. The idea was simple: if it genuinely helps me, it'll probably help others too. And now it's growing into something bigger.
+A quick intro and the "why" behind this project: I'm a runner too (Strava: https://www.strava.com/athletes/23786606). While training for the NYC Marathon 2025, I realized I wasn't fully satisfied with the tools I was using. The training plan didn't feel right, routes weren't great, and even the suggested distances often felt off. Instead of complaining, I started building something small that solved my own problems. The idea was simple: if it genuinely helps me, it'll likely help other runners too. That's how AITracker.run was born.
 
 A few features I'm especially proud of so far:
 - Coach Insights that explain what's happening in your training (and what to do next)
