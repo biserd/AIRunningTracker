@@ -35,7 +35,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 const manualInputSchema = z.object({
   baseDistance: z.coerce.number().min(1000, "Minimum 1000m").max(50000, "Maximum 50km"),
-  baseTime: z.coerce.number().min(180, "Minimum 3 minutes").max(18000, "Maximum 5 hours"),
+  baseTimeHours: z.coerce.number().min(0, "Invalid hours").max(10, "Maximum 10 hours"),
+  baseTimeMinutes: z.coerce.number().min(0, "Invalid minutes").max(59, "Maximum 59 minutes"),
+  baseTimeSeconds: z.coerce.number().min(0, "Invalid seconds").max(59, "Maximum 59 seconds"),
   targetDistance: z.coerce.number().min(5000, "Invalid target distance"),
   weeklyMileage: z.coerce.number().min(10, "Minimum 10 km/week").max(200, "Maximum 200 km/week"),
   trainingConsistency: z.coerce.number().min(0, "Minimum 0").max(1, "Maximum 1"),
@@ -96,7 +98,9 @@ export default function RacePredictor() {
     resolver: zodResolver(manualInputSchema),
     defaultValues: {
       baseDistance: 10000,
-      baseTime: 2700,
+      baseTimeHours: 0,
+      baseTimeMinutes: 45,
+      baseTimeSeconds: 0,
       targetDistance: 42195,
       weeklyMileage: 50,
       trainingConsistency: 0.7,
@@ -122,10 +126,19 @@ export default function RacePredictor() {
   });
 
   const onSubmit = (data: ManualInputFormData) => {
+    const totalSeconds = (data.baseTimeHours * 3600) + (data.baseTimeMinutes * 60) + data.baseTimeSeconds;
+    if (totalSeconds < 180) {
+      toast({
+        title: "Invalid Time",
+        description: "Finish time must be at least 3 minutes",
+        variant: "destructive"
+      });
+      return;
+    }
     const input: RacePredictionInput = {
       baseEffort: {
         distance: data.baseDistance,
-        time: data.baseTime,
+        time: totalSeconds,
       },
       targetDistance: data.targetDistance,
       weeklyMileage: data.weeklyMileage,
@@ -307,24 +320,78 @@ export default function RacePredictor() {
                             )}
                           />
 
-                          <FormField
-                            control={form.control}
-                            name="baseTime"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Time (seconds)</FormLabel>
-                                <FormControl>
-                                  <Input 
-                                    type="number"
-                                    {...field}
-                                    data-testid="input-base-time"
-                                  />
-                                </FormControl>
-                                <FormDescription>Your finish time in seconds</FormDescription>
-                                <FormMessage />
-                              </FormItem>
+                          <FormItem>
+                            <FormLabel>Finish Time</FormLabel>
+                            <div className="flex items-center gap-2">
+                              <FormField
+                                control={form.control}
+                                name="baseTimeHours"
+                                render={({ field, fieldState }) => (
+                                  <div className="flex flex-col items-center">
+                                    <FormControl>
+                                      <Input 
+                                        type="number"
+                                        min={0}
+                                        max={10}
+                                        className={`w-16 text-center ${fieldState.error ? 'border-red-500' : ''}`}
+                                        {...field}
+                                        data-testid="input-base-time-hours"
+                                      />
+                                    </FormControl>
+                                    <span className="text-xs text-gray-500 mt-1">hours</span>
+                                  </div>
+                                )}
+                              />
+                              <span className="text-xl font-bold text-gray-400">:</span>
+                              <FormField
+                                control={form.control}
+                                name="baseTimeMinutes"
+                                render={({ field, fieldState }) => (
+                                  <div className="flex flex-col items-center">
+                                    <FormControl>
+                                      <Input 
+                                        type="number"
+                                        min={0}
+                                        max={59}
+                                        className={`w-16 text-center ${fieldState.error ? 'border-red-500' : ''}`}
+                                        {...field}
+                                        data-testid="input-base-time-minutes"
+                                      />
+                                    </FormControl>
+                                    <span className="text-xs text-gray-500 mt-1">min</span>
+                                  </div>
+                                )}
+                              />
+                              <span className="text-xl font-bold text-gray-400">:</span>
+                              <FormField
+                                control={form.control}
+                                name="baseTimeSeconds"
+                                render={({ field, fieldState }) => (
+                                  <div className="flex flex-col items-center">
+                                    <FormControl>
+                                      <Input 
+                                        type="number"
+                                        min={0}
+                                        max={59}
+                                        className={`w-16 text-center ${fieldState.error ? 'border-red-500' : ''}`}
+                                        {...field}
+                                        data-testid="input-base-time-seconds"
+                                      />
+                                    </FormControl>
+                                    <span className="text-xs text-gray-500 mt-1">sec</span>
+                                  </div>
+                                )}
+                              />
+                            </div>
+                            <FormDescription>Your race finish time (e.g., 0:45:00 for a 10K)</FormDescription>
+                            {(form.formState.errors.baseTimeHours || form.formState.errors.baseTimeMinutes || form.formState.errors.baseTimeSeconds) && (
+                              <p className="text-sm font-medium text-destructive">
+                                {form.formState.errors.baseTimeHours?.message || 
+                                 form.formState.errors.baseTimeMinutes?.message || 
+                                 form.formState.errors.baseTimeSeconds?.message}
+                              </p>
                             )}
-                          />
+                          </FormItem>
                         </div>
                       </div>
 
