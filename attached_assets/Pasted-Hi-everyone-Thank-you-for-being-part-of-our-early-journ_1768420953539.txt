@@ -1,0 +1,27 @@
+Hi everyone,
+Thank you for being part of our early journey.
+I’ve texted with many of you already, and I’m truly grateful for the feedback, what you like, what’s confusing, and what you want next. That kind of early input is invaluable for a startup, and it’s helping shape AITracker.run every week.
+A quick intro and the “why” behind this project: I’m a runner too (Strava: https://www.strava.com/athletes/23786606). While training for the NYC Marathon 2025, I realized I wasn’t fully satisfied with the tools I was using. The training plan didn’t feel right, routes weren’t great, and even the suggested distances often felt off. Instead of complaining, I started building something small that solved my own problems. The idea was simple: if it genuinely helps me, it’ll likely help other runners too. That’s how AITracker.run was born.
+A few features I’m especially proud of so far:
+Coach Insights that explain what’s happening in your training (and what to do next)
+A new rating system that makes progress easy to see
+Similar-run visualization so you can compare efforts over time
+Training plans that support a primary and secondary race and account for both in the plan
+The main reason I’m emailing (beyond saying hello) is to invite you to our Early Founders Club.
+As part of this group:
+You’ll get early access to new tools and beta features before general release
+You can request features and get priority support
+I’ll mark your account as an early adopter so you’re always first in line as we ship
+A few things coming soon:
+Direct Garmin integration
+Smarter route suggestions
+iOS/Android apps (starting with the essentials)
+Quick tip: to see the “WOW” fastest, connect Strava, sync, then open your most recent run and check the Story tab. That’s the quickest way to see the verdict and what to do next.
+Open AITracker.run here: https://aitracker.run/auth
+Also, I’d love to learn a bit about you. If you hit reply, tell me what you’re training for right now (race + date), and what your biggest running challenge is. I read every reply, and I use that feedback to prioritize what we build next.
+To welcome you in, I’m offering 25% off the Yearly Premium plan forever. Your discounted price will remain active as long as your subscription stays active.
+You can claim it here: https://aitracker.run/pricing
+Use code AITRACKERFOUNDERS at Stripe checkout.
+Thank you again for being here early. I’m excited to build this alongside you.
+Kind regards,
+Biser
