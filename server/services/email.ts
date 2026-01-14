@@ -1002,6 +1002,122 @@ The RunAnalytics Team
       text
     });
   }
+
+  async sendFoundersWelcomeEmail(to: string): Promise<boolean> {
+    const subject = 'Welcome to AITracker.run and thank you for being early';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333; line-height: 1.7;">
+        <p>Hi everyone,</p>
+        
+        <p>Thank you for being part of our early journey.</p>
+        
+        <p>I've texted with many of you already, and I'm truly grateful for the feedback, what you like, what's confusing, and what you want next. That kind of early input is invaluable for a startup, and it's helping shape AITracker.run every week.</p>
+        
+        <p><strong>A quick intro and the "why" behind this project:</strong> I'm a runner too (<a href="https://www.strava.com/athletes/23786606" style="color: #fc4c02;">Strava: Biser</a>). While training for the NYC Marathon 2025, I realized I wasn't fully satisfied with the tools I was using. The training plan didn't feel right, routes weren't great, and even the suggested distances often felt off. Instead of complaining, I started building something small that solved my own problems. The idea was simple: if it genuinely helps me, it'll probably help others too. And now it's growing into something bigger.</p>
+        
+        <p><strong>A few features I'm especially proud of so far:</strong></p>
+        <ul style="margin: 15px 0; padding-left: 25px;">
+          <li>Coach Insights that explain what's happening in your training (and what to do next)</li>
+          <li>A new rating system that makes progress easy to see</li>
+          <li>Similar-run visualization so you can compare efforts over time</li>
+          <li>Training plans that support a primary and secondary race and account for both in the plan</li>
+        </ul>
+        
+        <p><strong>The main reason I'm emailing (beyond saying hello) is to invite you to our Early Founders Club.</strong></p>
+        
+        <p>As part of this group:</p>
+        <ul style="margin: 15px 0; padding-left: 25px;">
+          <li>You'll get early access to new tools and beta features before general release</li>
+          <li>You can request features and get priority support</li>
+          <li>I'll mark your account as an early adopter so you're always first in line as we ship</li>
+        </ul>
+        
+        <p><strong>A few things coming soon:</strong></p>
+        <ul style="margin: 15px 0; padding-left: 25px;">
+          <li>Direct Garmin integration</li>
+          <li>Smarter route suggestions</li>
+          <li>iOS/Android apps (starting with the essentials)</li>
+        </ul>
+        
+        <p><strong>Quick tip:</strong> to see the "WOW" fastest, connect Strava, sync, then open your most recent run and check the Story tab. That's the quickest way to see the verdict and what to do next.</p>
+        
+        <p style="margin: 25px 0;">
+          <a href="https://aitracker.run/auth" style="background: #fc4c02; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Open AITracker.run →</a>
+        </p>
+        
+        <p>Also, I'd love to learn a bit about you. If you hit reply, tell me what you're training for right now (race + date), and what your biggest running challenge is. I read every reply, and I use that feedback to prioritize what we build next.</p>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #fc4c02;">
+          <p style="margin: 0 0 10px 0; font-weight: bold;">🎁 Exclusive Offer for Early Founders</p>
+          <p style="margin: 0 0 15px 0;">To welcome you in, I'm offering <strong>25% off the Yearly Premium plan forever</strong>. Your discounted price will remain active as long as your subscription stays active.</p>
+          <p style="margin: 0 0 15px 0;">
+            <a href="https://aitracker.run/pricing" style="color: #fc4c02; font-weight: bold;">Claim it here: https://aitracker.run/pricing</a>
+          </p>
+          <p style="margin: 0; font-size: 14px; color: #666;">Use code <strong>AITRACKERFOUNDERS</strong> at Stripe checkout.</p>
+        </div>
+        
+        <p>Thank you again for being here early. I'm excited to build this alongside you.</p>
+        
+        <p style="margin-top: 30px;">
+          Kind regards,<br>
+          <strong>Biser</strong>
+        </p>
+        
+        <div style="border-top: 1px solid #eee; padding-top: 15px; margin-top: 30px; font-size: 12px; color: #999;">
+          <p>You're receiving this because you signed up for AITracker.run</p>
+        </div>
+      </div>
+    `;
+
+    const text = `Hi everyone,
+
+Thank you for being part of our early journey.
+
+I've texted with many of you already, and I'm truly grateful for the feedback, what you like, what's confusing, and what you want next. That kind of early input is invaluable for a startup, and it's helping shape AITracker.run every week.
+
+A quick intro and the "why" behind this project: I'm a runner too (Strava: https://www.strava.com/athletes/23786606). While training for the NYC Marathon 2025, I realized I wasn't fully satisfied with the tools I was using. The training plan didn't feel right, routes weren't great, and even the suggested distances often felt off. Instead of complaining, I started building something small that solved my own problems. The idea was simple: if it genuinely helps me, it'll probably help others too. And now it's growing into something bigger.
+
+A few features I'm especially proud of so far:
+- Coach Insights that explain what's happening in your training (and what to do next)
+- A new rating system that makes progress easy to see
+- Similar-run visualization so you can compare efforts over time
+- Training plans that support a primary and secondary race and account for both in the plan
+
+The main reason I'm emailing (beyond saying hello) is to invite you to our Early Founders Club.
+
+As part of this group:
+- You'll get early access to new tools and beta features before general release
+- You can request features and get priority support
+- I'll mark your account as an early adopter so you're always first in line as we ship
+
+A few things coming soon:
+- Direct Garmin integration
+- Smarter route suggestions
+- iOS/Android apps (starting with the essentials)
+
+Quick tip: to see the "WOW" fastest, connect Strava, sync, then open your most recent run and check the Story tab. That's the quickest way to see the verdict and what to do next.
+
+Open AITracker.run here: https://aitracker.run/auth
+
+Also, I'd love to learn a bit about you. If you hit reply, tell me what you're training for right now (race + date), and what your biggest running challenge is. I read every reply, and I use that feedback to prioritize what we build next.
+
+To welcome you in, I'm offering 25% off the Yearly Premium plan forever. Your discounted price will remain active as long as your subscription stays active.
+
+You can claim it here: https://aitracker.run/pricing
+Use code AITRACKERFOUNDERS at Stripe checkout.
+
+Thank you again for being here early. I'm excited to build this alongside you.
+
+Kind regards,
+Biser`;
+
+    return await this.sendEmail({
+      to,
+      subject,
+      html,
+      text
+    });
+  }
 }
 
 export const emailService = new EmailService();

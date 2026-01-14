@@ -178,6 +178,14 @@ export interface IStorage {
   getInactiveUsers(daysSinceLastSeen: number): Promise<User[]>;
   getUsersNeedingCampaign(segment: string): Promise<User[]>;
   
+  // Welcome campaign methods
+  getWelcomeCampaignStats(): Promise<{
+    total: number;
+    sent: number;
+    pending: number;
+  }>;
+  getUsersWithoutWelcomeEmail(): Promise<User[]>;
+  
   // System settings methods
   getSystemSetting(key: string): Promise<string | undefined>;
   setSystemSetting(key: string, value: string): Promise<void>;
@@ -1723,6 +1731,38 @@ export class DatabaseStorage implements IStorage {
       default:
         return [];
     }
+  }
+
+  async getWelcomeCampaignStats(): Promise<{
+    total: number;
+    sent: number;
+    pending: number;
+  }> {
+    const [totalResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users);
+    
+    const [sentResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(sql`${users.welcomeEmailSentAt} IS NOT NULL`);
+    
+    const total = Number(totalResult?.count || 0);
+    const sent = Number(sentResult?.count || 0);
+    
+    return {
+      total,
+      sent,
+      pending: total - sent
+    };
+  }
+
+  async getUsersWithoutWelcomeEmail(): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(sql`${users.welcomeEmailSentAt} IS NULL`)
+      .orderBy(users.id);
   }
 
   async getUserAnalytics(): Promise<{

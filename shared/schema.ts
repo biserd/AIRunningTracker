@@ -68,6 +68,7 @@ export const users = pgTable("users", {
   lastSeenAt: timestamp("last_seen_at"), // Last app interaction
   marketingOptOut: boolean("marketing_opt_out").default(false), // User opted out of lifecycle emails
   coachQuestionsCount7d: integer("coach_questions_count_7d").default(0), // Rolling 7-day coach question count
+  welcomeEmailSentAt: timestamp("welcome_email_sent_at"), // When the welcome campaign email was sent
   createdAt: timestamp("created_at").defaultNow(),
 });
 

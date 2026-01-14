@@ -6854,6 +6854,99 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Admin: Get welcome email campaign stats
+  app.get("/api/admin/welcome-campaign/stats", authenticateAdmin, async (req: any, res) => {
+    try {
+      const stats = await storage.getWelcomeCampaignStats();
+      res.json(stats);
+    } catch (error: any) {
+      console.error("Welcome campaign stats error:", error);
+      res.status(500).json({ message: error.message || "Failed to get stats" });
+    }
+  });
+
+  // Admin: Send test welcome email to current admin
+  app.post("/api/admin/welcome-campaign/test", authenticateAdmin, async (req: any, res) => {
+    try {
+      const adminUser = await storage.getUser(req.user.id);
+      if (!adminUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const success = await emailService.sendFoundersWelcomeEmail(adminUser.email);
+      res.json({ 
+        success, 
+        message: success ? `Test email sent to ${adminUser.email}` : "Failed to send email" 
+      });
+    } catch (error: any) {
+      console.error("Test welcome email error:", error);
+      res.status(500).json({ message: error.message || "Failed to send test email" });
+    }
+  });
+
+  // Admin: Send welcome emails to all users (rate-limited batch)
+  app.post("/api/admin/welcome-campaign/send-all", authenticateAdmin, async (req: any, res) => {
+    try {
+      // Get all users who haven't received the welcome email yet
+      const users = await storage.getUsersWithoutWelcomeEmail();
+      
+      if (users.length === 0) {
+        return res.json({ 
+          success: true, 
+          sent: 0, 
+          failed: 0, 
+          total: 0,
+          message: "No users need the welcome email" 
+        });
+      }
+      
+      let sent = 0;
+      let failed = 0;
+      const batchSize = 5;
+      const delayMs = 1500; // 1.5 seconds between batches
+      
+      for (let i = 0; i < users.length; i += batchSize) {
+        const batch = users.slice(i, i + batchSize);
+        
+        // Process batch in parallel
+        const results = await Promise.all(
+          batch.map(async (user: { id: number; email: string }) => {
+            try {
+              const success = await emailService.sendFoundersWelcomeEmail(user.email);
+              if (success) {
+                await storage.updateUser(user.id, { welcomeEmailSentAt: new Date() });
+                return true;
+              }
+              return false;
+            } catch (err) {
+              console.error(`Failed to send welcome email to ${user.email}:`, err);
+              return false;
+            }
+          })
+        );
+        
+        sent += results.filter((r: boolean) => r).length;
+        failed += results.filter((r: boolean) => !r).length;
+        
+        // Delay between batches (except for last batch)
+        if (i + batchSize < users.length) {
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+      }
+      
+      res.json({ 
+        success: true, 
+        sent, 
+        failed, 
+        total: users.length,
+        message: `Sent ${sent} welcome emails, ${failed} failed` 
+      });
+    } catch (error: any) {
+      console.error("Bulk welcome email error:", error);
+      res.status(500).json({ message: error.message || "Failed to send emails" });
+    }
+  });
+
   // User: Opt out of marketing emails
   app.post("/api/users/:userId/marketing-optout", authenticateJWT, async (req: any, res) => {
     try {

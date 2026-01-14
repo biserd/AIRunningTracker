@@ -243,6 +243,62 @@ export default function AdminPage() {
     },
   });
 
+  // Welcome Campaign
+  const { data: welcomeCampaignStats, isLoading: welcomeCampaignLoading } = useQuery<{
+    total: number;
+    sent: number;
+    pending: number;
+  }>({
+    queryKey: ["/api/admin/welcome-campaign/stats"],
+    enabled: !!user,
+  });
+
+  const [welcomeEmailResult, setWelcomeEmailResult] = useState<{
+    sent: number;
+    failed: number;
+    total: number;
+    message: string;
+  } | null>(null);
+  const [showConfirmWelcome, setShowConfirmWelcome] = useState(false);
+
+  const sendTestWelcomeEmailMutation = useMutation({
+    mutationFn: () => apiRequest("/api/admin/welcome-campaign/test", "POST"),
+    onSuccess: (data: any) => {
+      toast({
+        title: data.success ? "Test Email Sent" : "Failed",
+        description: data.message,
+        variant: data.success ? "default" : "destructive",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Send",
+        description: error.message || "Could not send test email",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const sendAllWelcomeEmailsMutation = useMutation({
+    mutationFn: () => apiRequest("/api/admin/welcome-campaign/send-all", "POST"),
+    onSuccess: (data: any) => {
+      setWelcomeEmailResult(data);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/welcome-campaign/stats"] });
+      toast({
+        title: "Welcome Emails Sent",
+        description: data.message,
+      });
+      setShowConfirmWelcome(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Send",
+        description: error.message || "Could not send welcome emails",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Check if user is admin
   useEffect(() => {
     if (!authLoading && user && !user.isAdmin) {
@@ -661,6 +717,98 @@ export default function AdminPage() {
                         </TableBody>
                       </Table>
                     </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Welcome Campaign Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5 text-orange-500" />
+              Welcome Campaign (Founders Email)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {welcomeCampaignLoading ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500 mx-auto"></div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold text-charcoal">{welcomeCampaignStats?.total || 0}</p>
+                    <p className="text-sm text-gray-500">Total Users</p>
+                  </div>
+                  <div className="bg-green-50 rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold text-green-600">{welcomeCampaignStats?.sent || 0}</p>
+                    <p className="text-sm text-gray-500">Already Sent</p>
+                  </div>
+                  <div className="bg-orange-50 rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold text-orange-600">{welcomeCampaignStats?.pending || 0}</p>
+                    <p className="text-sm text-gray-500">Pending</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => sendTestWelcomeEmailMutation.mutate()}
+                    disabled={sendTestWelcomeEmailMutation.isPending}
+                  >
+                    {sendTestWelcomeEmailMutation.isPending ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
+                    ) : (
+                      <Mail className="h-4 w-4 mr-2" />
+                    )}
+                    Send Test to Me
+                  </Button>
+
+                  {!showConfirmWelcome ? (
+                    <Button
+                      onClick={() => setShowConfirmWelcome(true)}
+                      disabled={(welcomeCampaignStats?.pending || 0) === 0}
+                      className="bg-orange-600 hover:bg-orange-700"
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      Send to All ({welcomeCampaignStats?.pending || 0} users)
+                    </Button>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-red-600 font-medium">Are you sure?</span>
+                      <Button
+                        onClick={() => sendAllWelcomeEmailsMutation.mutate()}
+                        disabled={sendAllWelcomeEmailsMutation.isPending}
+                        variant="destructive"
+                      >
+                        {sendAllWelcomeEmailsMutation.isPending ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                        ) : null}
+                        Yes, Send All
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowConfirmWelcome(false)}
+                        disabled={sendAllWelcomeEmailsMutation.isPending}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {welcomeEmailResult && (
+                  <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                    <p className="text-sm text-blue-800">
+                      <strong>Result:</strong> {welcomeEmailResult.message}
+                    </p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      Sent: {welcomeEmailResult.sent} | Failed: {welcomeEmailResult.failed}
+                    </p>
                   </div>
                 )}
               </div>
