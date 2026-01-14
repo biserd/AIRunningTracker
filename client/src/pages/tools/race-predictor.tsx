@@ -34,7 +34,8 @@ import { FAQSchema } from "@/components/FAQSchema";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const manualInputSchema = z.object({
-  baseDistance: z.coerce.number().min(1000, "Minimum 1000m").max(50000, "Maximum 50km"),
+  baseDistance: z.coerce.number().min(0.5, "Minimum 0.5").max(50, "Maximum 50"),
+  baseDistanceUnit: z.enum(["km", "miles"]),
   baseTimeHours: z.coerce.number().min(0, "Invalid hours").max(10, "Maximum 10 hours"),
   baseTimeMinutes: z.coerce.number().min(0, "Invalid minutes").max(59, "Maximum 59 minutes"),
   baseTimeSeconds: z.coerce.number().min(0, "Invalid seconds").max(59, "Maximum 59 seconds"),
@@ -97,7 +98,8 @@ export default function RacePredictor() {
   const form = useForm<ManualInputFormData>({
     resolver: zodResolver(manualInputSchema),
     defaultValues: {
-      baseDistance: 10000,
+      baseDistance: 10,
+      baseDistanceUnit: "km",
       baseTimeHours: 0,
       baseTimeMinutes: 45,
       baseTimeSeconds: 0,
@@ -135,9 +137,20 @@ export default function RacePredictor() {
       });
       return;
     }
+    const distanceInMeters = data.baseDistanceUnit === "km" 
+      ? data.baseDistance * 1000 
+      : data.baseDistance * 1609.34;
+    if (distanceInMeters < 1000) {
+      toast({
+        title: "Invalid Distance",
+        description: "Distance must be at least 1km or 0.6 miles",
+        variant: "destructive"
+      });
+      return;
+    }
     const input: RacePredictionInput = {
       baseEffort: {
-        distance: data.baseDistance,
+        distance: distanceInMeters,
         time: totalSeconds,
       },
       targetDistance: data.targetDistance,
@@ -301,24 +314,45 @@ export default function RacePredictor() {
                       <div className="border-b pb-6">
                         <h3 className="text-sm font-semibold text-charcoal mb-4">Base Race Effort</h3>
                         <div className="grid sm:grid-cols-2 gap-6">
-                          <FormField
-                            control={form.control}
-                            name="baseDistance"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Distance (meters)</FormLabel>
-                                <FormControl>
-                                  <Input 
-                                    type="number" 
-                                    {...field}
-                                    data-testid="input-base-distance"
-                                  />
-                                </FormControl>
-                                <FormDescription>Your recent race distance</FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                          <FormItem>
+                            <FormLabel>Distance</FormLabel>
+                            <div className="flex gap-2">
+                              <FormField
+                                control={form.control}
+                                name="baseDistance"
+                                render={({ field }) => (
+                                  <FormControl>
+                                    <Input 
+                                      type="number"
+                                      step="0.1"
+                                      className="flex-1"
+                                      {...field}
+                                      data-testid="input-base-distance"
+                                    />
+                                  </FormControl>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="baseDistanceUnit"
+                                render={({ field }) => (
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger className="w-24" data-testid="select-distance-unit">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="km">km</SelectItem>
+                                      <SelectItem value="miles">miles</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              />
+                            </div>
+                            <FormDescription>Your recent race distance</FormDescription>
+                            <FormMessage />
+                          </FormItem>
 
                           <FormItem>
                             <FormLabel>Finish Time</FormLabel>
