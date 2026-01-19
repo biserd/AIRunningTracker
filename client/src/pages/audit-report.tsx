@@ -139,11 +139,12 @@ function PaymentForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
   const stripe = useStripe();
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || !isReady) return;
 
     setIsProcessing(true);
     setError(null);
@@ -166,7 +167,7 @@ function PaymentForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <PaymentElement />
+      <PaymentElement onReady={() => setIsReady(true)} />
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
           {error}
@@ -174,7 +175,7 @@ function PaymentForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
       )}
       <Button 
         type="submit" 
-        disabled={!stripe || isProcessing}
+        disabled={!stripe || !isReady || isProcessing}
         className="w-full bg-strava-orange hover:bg-orange-600 text-white py-3"
       >
         {isProcessing ? (
@@ -183,7 +184,7 @@ function PaymentForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
             Processing...
           </div>
         ) : (
-          "Start Free Trial & Unlock"
+          "Start 14-Day Free Trial"
         )}
       </Button>
       <button
@@ -241,9 +242,6 @@ function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModalProps) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-        <h2 className="text-2xl font-bold text-charcoal mb-2">Unlock Your Full Audit & Plan</h2>
-        <p className="text-gray-600 mb-6">Start 14-day free trial. Cancel anytime.</p>
-        
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-12">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-strava-orange mb-4" />
