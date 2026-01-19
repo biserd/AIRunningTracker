@@ -11,6 +11,8 @@ export interface AuthUser {
   email: string;
   firstName?: string;
   lastName?: string;
+  subscriptionPlan?: string;
+  subscriptionStatus?: string;
 }
 
 export class AuthService {
@@ -74,6 +76,8 @@ export class AuthService {
         email: user.email,
         firstName: user.firstName || undefined,
         lastName: user.lastName || undefined,
+        subscriptionPlan: user.subscriptionPlan || 'free',
+        subscriptionStatus: user.subscriptionStatus || 'free',
       },
       token,
     };

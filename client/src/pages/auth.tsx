@@ -44,7 +44,11 @@ export default function AuthPage() {
         title: "Welcome back!",
         description: "Successfully logged in",
       });
-      setLocation("/dashboard");
+      // Free users go to audit page, subscribed users go to dashboard
+      const isPaid = response.user?.subscriptionPlan && 
+                     response.user.subscriptionPlan !== 'free' && 
+                     response.user.subscriptionStatus === 'active';
+      setLocation(isPaid ? "/dashboard" : "/audit-report");
     },
     onError: (error: any) => {
       toast({
