@@ -58,6 +58,7 @@ import TrainingPlansPage from "@/pages/training-plans";
 import TrainingPlanDetailPage from "@/pages/training-plan-detail";
 import CoachOnboardingPage from "@/pages/coach-onboarding";
 import CoachSettingsPage from "@/pages/coach-settings";
+import AuditReportPage from "@/pages/audit-report";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -184,6 +185,9 @@ function Router() {
       </Route>
       <Route path="/coach/settings">
         <ProtectedRoute component={CoachSettingsPage} />
+      </Route>
+      <Route path="/audit-report">
+        <ProtectedRoute component={AuditReportPage} />
       </Route>
       
       <Route component={NotFound} />

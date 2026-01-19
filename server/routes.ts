@@ -930,6 +930,49 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Create trial setup intent for Audit Report paywall
+  app.post("/api/stripe/create-trial-setup", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const stripe = await getUncachableStripeClient();
+
+      // Create or get Stripe customer
+      let customerId = user.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: user.email,
+          metadata: { userId: String(userId) }
+        });
+        await storage.updateStripeCustomerId(userId, customer.id);
+        customerId = customer.id;
+      }
+
+      // Create a SetupIntent for collecting payment method
+      const setupIntent = await stripe.setupIntents.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+        metadata: {
+          userId: String(userId),
+          flow: 'audit_report_trial'
+        }
+      });
+
+      // After setup intent is confirmed, create subscription with trial
+      // This will be handled by the webhook or by a follow-up call
+
+      res.json({ clientSecret: setupIntent.client_secret });
+    } catch (error: any) {
+      console.error('Trial setup intent error:', error);
+      res.status(500).json({ message: "Failed to create trial setup" });
+    }
+  });
+
   // Create customer portal session
   app.post("/api/stripe/create-portal-session", authenticateJWT, async (req: any, res) => {
     try {
