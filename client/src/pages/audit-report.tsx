@@ -150,7 +150,7 @@ function useAuditCheckout() {
 
 export default function AuditReportPage() {
   const { isAuthenticated, user } = useAuth();
-  const { hasActiveSubscription, isLoading: subLoading } = useSubscription();
+  const { hasActiveSubscription, isReverseTrial, isLoading: subLoading } = useSubscription();
   const [, navigate] = useLocation();
   const [isUnlocked, setIsUnlocked] = useState(false);
   const checkout = useAuditCheckout();
@@ -161,10 +161,12 @@ export default function AuditReportPage() {
   });
 
   useEffect(() => {
-    if (!subLoading && hasActiveSubscription) {
+    // Only unlock for PAID subscribers, not reverse trial users
+    // Reverse trial users should still see the paywall
+    if (!subLoading && hasActiveSubscription && !isReverseTrial) {
       setIsUnlocked(true);
     }
-  }, [hasActiveSubscription, subLoading]);
+  }, [hasActiveSubscription, isReverseTrial, subLoading]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
