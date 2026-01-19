@@ -35,8 +35,8 @@ interface AuditData {
     easyRunsAreTooFast: boolean;
     optimalEasyPaceKm: string;
     optimalEasyPaceMiles: string;
-    currentEasyPaceDiffKm: number;
-    currentEasyPaceDiffMiles: number;
+    currentEasyPaceKm: string;
+    currentEasyPaceMiles: string;
   };
 }
 
@@ -233,7 +233,7 @@ export default function AuditReportPage() {
 
   const runnerIQ = auditData?.runnerIQ || { score: 71, grade: 'B', components: { consistency: 15, performance: 18, volume: 20, improvement: 18 }, volumeGrade: 'A', performanceGrade: 'B', hasGap: true };
   const trainingLoad = auditData?.trainingLoad || { change: 22, isCritical: true, thisWeekActivities: 5, lastWeekActivities: 4 };
-  const greyZone = auditData?.greyZone || { percentage: 30, activityCount: 142, easyRunsAreTooFast: true, optimalEasyPaceKm: '5:45 - 6:15', optimalEasyPaceMiles: '9:15 - 10:03', currentEasyPaceDiffKm: 18, currentEasyPaceDiffMiles: 29 };
+  const greyZone = auditData?.greyZone || { percentage: 30, activityCount: 142, easyRunsAreTooFast: true, optimalEasyPaceKm: '5:45 - 6:15', optimalEasyPaceMiles: '9:15 - 10:03', currentEasyPaceKm: '5:25', currentEasyPaceMiles: '8:43' };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-orange-50 pb-28">
@@ -274,7 +274,7 @@ export default function AuditReportPage() {
                 </div>
                 <p className="text-gray-700 leading-relaxed">
                   You are putting in <strong className="text-orange-600">Grade {runnerIQ.volumeGrade} effort</strong> (Volume), but getting <strong className="text-orange-600">Grade {runnerIQ.performanceGrade} results</strong> (Performance). 
-                  Our analysis detects that <strong>{greyZone.percentage}% of your recent mileage was 'Junk Mileage'</strong>—too fast to recover, too slow to build speed.
+                  Our analysis detects that <strong>{greyZone.percentage}% of your recent mileage was 'Junk Mileage'</strong> - too fast to recover, too slow to build speed.
                 </p>
                 <p className="text-sm text-orange-700 mt-3 font-medium">
                   • You are working harder than you need to.
@@ -341,7 +341,7 @@ export default function AuditReportPage() {
                   We analyzed your pace distribution across <strong>{greyZone.activityCount} activities</strong>.
                 </p>
                 <p className="text-gray-700 leading-relaxed mt-2">
-                  <strong>The Problem:</strong> Your 'Easy' runs are <strong>{greyZone.currentEasyPaceDiffMiles} seconds/mile too fast</strong> ({greyZone.currentEasyPaceDiffKm} sec/km).
+                  <strong>The Problem:</strong> Your easy days are averaging <strong>{greyZone.currentEasyPaceMiles}/mile</strong> ({greyZone.currentEasyPaceKm}/km), but they should be slower.
                   You think you are recovering, but you are actually burning glycogen reserves needed for your long runs.
                 </p>
 

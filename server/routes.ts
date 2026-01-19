@@ -2817,16 +2817,25 @@ ${allPages.map(page => `  <url>
         ['Run', 'TrailRun', 'VirtualRun'].includes(a.type)
       );
       
-      // Calculate training load change (similar to dashboard)
+      // Calculate training load change using calendar weeks (Monday-Sunday)
       const now = new Date();
-      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+      
+      // Get start of current week (Monday at 00:00:00)
+      const startOfThisWeek = new Date(now);
+      const dayOfWeek = startOfThisWeek.getDay();
+      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday = 6 days back, otherwise dayOfWeek - 1
+      startOfThisWeek.setDate(startOfThisWeek.getDate() - daysToMonday);
+      startOfThisWeek.setHours(0, 0, 0, 0);
+      
+      // Get start of last week (previous Monday)
+      const startOfLastWeek = new Date(startOfThisWeek);
+      startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
       
       const thisWeekActivities = runningActivities.filter(a => 
-        new Date(a.startDate) >= oneWeekAgo
+        new Date(a.startDate) >= startOfThisWeek
       );
       const lastWeekActivities = runningActivities.filter(a => 
-        new Date(a.startDate) >= twoWeeksAgo && new Date(a.startDate) < oneWeekAgo
+        new Date(a.startDate) >= startOfLastWeek && new Date(a.startDate) < startOfThisWeek
       );
       
       const thisWeekLoad = thisWeekActivities.length * 85;
@@ -2841,7 +2850,7 @@ ${allPages.map(page => `  <url>
       let easyRunsAreTooFast = false;
       let optimalEasyPaceMin = 5.75; // Default 5:45/km
       let optimalEasyPaceMax = 6.25; // Default 6:15/km
-      let currentEasyPaceDiff = 18; // Default seconds too fast
+      let currentAvgEasyPace = 5.42; // Default current easy pace (min/km)
       
       if (activitiesWithHR.length > 5) {
         // Estimate max HR (220 - age, or use highest recorded)
@@ -2864,14 +2873,13 @@ ${allPages.map(page => `  <url>
         if (easyRuns.length > 0) {
           const validEasyRuns = easyRuns.filter(a => a.averageSpeed && a.averageSpeed > 0);
           if (validEasyRuns.length > 0) {
-            const avgEasyPace = validEasyRuns.reduce((sum, a) => {
+            currentAvgEasyPace = validEasyRuns.reduce((sum, a) => {
               return sum + (1000 / a.averageSpeed!) / 60; // min/km
             }, 0) / validEasyRuns.length;
             
-            easyRunsAreTooFast = avgEasyPace < 5.5;
-            optimalEasyPaceMin = avgEasyPace + 0.33;
-            optimalEasyPaceMax = avgEasyPace + 0.67;
-            currentEasyPaceDiff = Math.round((optimalEasyPaceMin - avgEasyPace) * 60);
+            easyRunsAreTooFast = currentAvgEasyPace < 5.5;
+            optimalEasyPaceMin = currentAvgEasyPace + 0.33;
+            optimalEasyPaceMax = currentAvgEasyPace + 0.67;
           }
         }
       }
@@ -2888,7 +2896,7 @@ ${allPages.map(page => `  <url>
       
       const optimalEasyPaceMinMiles = kmToMilesPace(optimalEasyPaceMin);
       const optimalEasyPaceMaxMiles = kmToMilesPace(optimalEasyPaceMax);
-      const currentEasyPaceDiffMiles = Math.round(currentEasyPaceDiff * 1.60934);
+      const currentAvgEasyPaceMiles = kmToMilesPace(currentAvgEasyPace);
       
       // Determine volume vs performance gap
       const volumeGrade = runnerScore.components.volume >= 20 ? 'A' : 
@@ -2919,8 +2927,8 @@ ${allPages.map(page => `  <url>
           easyRunsAreTooFast,
           optimalEasyPaceKm: `${formatPace(optimalEasyPaceMin)} - ${formatPace(optimalEasyPaceMax)}`,
           optimalEasyPaceMiles: `${formatPace(optimalEasyPaceMinMiles)} - ${formatPace(optimalEasyPaceMaxMiles)}`,
-          currentEasyPaceDiffKm: currentEasyPaceDiff,
-          currentEasyPaceDiffMiles: currentEasyPaceDiffMiles,
+          currentEasyPaceKm: formatPace(currentAvgEasyPace),
+          currentEasyPaceMiles: formatPace(currentAvgEasyPaceMiles),
         }
       });
     } catch (error: any) {
