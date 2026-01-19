@@ -2883,6 +2883,13 @@ ${allPages.map(page => `  <url>
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
       };
       
+      // Convert km pace to miles pace (1 mile = 1.60934 km)
+      const kmToMilesPace = (kmPace: number) => kmPace * 1.60934;
+      
+      const optimalEasyPaceMinMiles = kmToMilesPace(optimalEasyPaceMin);
+      const optimalEasyPaceMaxMiles = kmToMilesPace(optimalEasyPaceMax);
+      const currentEasyPaceDiffMiles = Math.round(currentEasyPaceDiff * 1.60934);
+      
       // Determine volume vs performance gap
       const volumeGrade = runnerScore.components.volume >= 20 ? 'A' : 
                           runnerScore.components.volume >= 15 ? 'B' : 
@@ -2910,8 +2917,10 @@ ${allPages.map(page => `  <url>
           percentage: greyZonePercentage,
           activityCount: runningActivities.length,
           easyRunsAreTooFast,
-          optimalEasyPace: `${formatPace(optimalEasyPaceMin)} - ${formatPace(optimalEasyPaceMax)} /km`,
-          currentEasyPaceDiff,
+          optimalEasyPaceKm: `${formatPace(optimalEasyPaceMin)} - ${formatPace(optimalEasyPaceMax)}`,
+          optimalEasyPaceMiles: `${formatPace(optimalEasyPaceMinMiles)} - ${formatPace(optimalEasyPaceMaxMiles)}`,
+          currentEasyPaceDiffKm: currentEasyPaceDiff,
+          currentEasyPaceDiffMiles: currentEasyPaceDiffMiles,
         }
       });
     } catch (error: any) {

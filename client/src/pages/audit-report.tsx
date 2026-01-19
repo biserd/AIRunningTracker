@@ -33,8 +33,10 @@ interface AuditData {
     percentage: number;
     activityCount: number;
     easyRunsAreTooFast: boolean;
-    optimalEasyPace: string;
-    currentEasyPaceDiff: number;
+    optimalEasyPaceKm: string;
+    optimalEasyPaceMiles: string;
+    currentEasyPaceDiffKm: number;
+    currentEasyPaceDiffMiles: number;
   };
 }
 
@@ -231,7 +233,7 @@ export default function AuditReportPage() {
 
   const runnerIQ = auditData?.runnerIQ || { score: 71, grade: 'B', components: { consistency: 15, performance: 18, volume: 20, improvement: 18 }, volumeGrade: 'A', performanceGrade: 'B', hasGap: true };
   const trainingLoad = auditData?.trainingLoad || { change: 22, isCritical: true, thisWeekActivities: 5, lastWeekActivities: 4 };
-  const greyZone = auditData?.greyZone || { percentage: 30, activityCount: 142, easyRunsAreTooFast: true, optimalEasyPace: '5:45 - 6:15 /km', currentEasyPaceDiff: 18 };
+  const greyZone = auditData?.greyZone || { percentage: 30, activityCount: 142, easyRunsAreTooFast: true, optimalEasyPaceKm: '5:45 - 6:15', optimalEasyPaceMiles: '9:15 - 10:03', currentEasyPaceDiffKm: 18, currentEasyPaceDiffMiles: 29 };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-orange-50 pb-28">
@@ -339,14 +341,17 @@ export default function AuditReportPage() {
                   We analyzed your pace distribution across <strong>{greyZone.activityCount} activities</strong>.
                 </p>
                 <p className="text-gray-700 leading-relaxed mt-2">
-                  <strong>The Problem:</strong> Your 'Easy' runs are <strong>{greyZone.currentEasyPaceDiff} seconds/km too fast</strong>.
+                  <strong>The Problem:</strong> Your 'Easy' runs are <strong>{greyZone.currentEasyPaceDiffMiles} seconds/mile too fast</strong> ({greyZone.currentEasyPaceDiffKm} sec/km).
                   You think you are recovering, but you are actually burning glycogen reserves needed for your long runs.
                 </p>
 
                 <div className="relative mt-4">
                   <div className={`bg-white rounded-lg p-4 border border-purple-200 ${!isUnlocked ? 'blur-sm' : ''}`}>
                     <p className="text-lg font-semibold text-charcoal">
-                      Optimal Easy Pace: {greyZone.optimalEasyPace}
+                      Optimal Easy Pace: {greyZone.optimalEasyPaceMiles} /mile
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      ({greyZone.optimalEasyPaceKm} /km)
                     </p>
                   </div>
                   
