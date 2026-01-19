@@ -63,7 +63,7 @@ export default function AuthPage() {
         title: "Welcome to RunAnalytics!",
         description: "Account created successfully",
       });
-      setLocation("/dashboard");
+      setLocation("/audit-report");
     },
     onError: (error: any) => {
       toast({
