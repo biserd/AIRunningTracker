@@ -2706,6 +2706,132 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Audit Report endpoint - provides user-specific audit data for the paywall page
+  app.get("/api/audit-report/:userId", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      // Verify the user owns this resource
+      if (req.user.id !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Get runner score data
+      const runnerScore = await runnerScoreService.calculateRunnerScore(userId);
+      
+      // Get activities for additional analysis
+      const activities = await storage.getActivitiesByUserId(userId, 100);
+      const runningActivities = activities.filter(a => 
+        ['Run', 'TrailRun', 'VirtualRun'].includes(a.type)
+      );
+      
+      // Calculate training load change (similar to dashboard)
+      const now = new Date();
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+      
+      const thisWeekActivities = runningActivities.filter(a => 
+        new Date(a.startDate) >= oneWeekAgo
+      );
+      const lastWeekActivities = runningActivities.filter(a => 
+        new Date(a.startDate) >= twoWeeksAgo && new Date(a.startDate) < oneWeekAgo
+      );
+      
+      const thisWeekLoad = thisWeekActivities.length * 85;
+      const lastWeekLoad = lastWeekActivities.length * 85;
+      const loadChange = lastWeekLoad > 0 
+        ? Math.round(((thisWeekLoad - lastWeekLoad) / lastWeekLoad) * 100) 
+        : null;
+      
+      // Calculate grey zone analysis - runs that are too fast for easy, too slow for tempo
+      const activitiesWithHR = runningActivities.filter(a => a.averageHeartrate && a.averageHeartrate > 0);
+      let greyZonePercentage = 30; // Default fallback
+      let easyRunsAreTooFast = false;
+      let optimalEasyPaceMin = 5.75; // Default 5:45/km
+      let optimalEasyPaceMax = 6.25; // Default 6:15/km
+      let currentEasyPaceDiff = 18; // Default seconds too fast
+      
+      if (activitiesWithHR.length > 5) {
+        // Estimate max HR (220 - age, or use highest recorded)
+        const maxRecordedHR = Math.max(...activitiesWithHR.map(a => a.maxHeartrate || a.averageHeartrate || 0));
+        const estimatedMaxHR = Math.max(maxRecordedHR, 180);
+        
+        // Count grey zone runs (70-80% of max HR)
+        const greyZoneRuns = activitiesWithHR.filter(a => {
+          const hrPercent = (a.averageHeartrate! / estimatedMaxHR) * 100;
+          return hrPercent >= 70 && hrPercent <= 80;
+        });
+        greyZonePercentage = Math.round((greyZoneRuns.length / activitiesWithHR.length) * 100);
+        
+        // Check if easy runs are too fast
+        const easyRuns = activitiesWithHR.filter(a => {
+          const hrPercent = (a.averageHeartrate! / estimatedMaxHR) * 100;
+          return hrPercent < 70;
+        });
+        
+        if (easyRuns.length > 0) {
+          const validEasyRuns = easyRuns.filter(a => a.averageSpeed && a.averageSpeed > 0);
+          if (validEasyRuns.length > 0) {
+            const avgEasyPace = validEasyRuns.reduce((sum, a) => {
+              return sum + (1000 / a.averageSpeed!) / 60; // min/km
+            }, 0) / validEasyRuns.length;
+            
+            easyRunsAreTooFast = avgEasyPace < 5.5;
+            optimalEasyPaceMin = avgEasyPace + 0.33;
+            optimalEasyPaceMax = avgEasyPace + 0.67;
+            currentEasyPaceDiff = Math.round((optimalEasyPaceMin - avgEasyPace) * 60);
+          }
+        }
+      }
+      
+      // Format pace for display
+      const formatPace = (pace: number) => {
+        const minutes = Math.floor(pace);
+        const seconds = Math.round((pace - minutes) * 60);
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      };
+      
+      // Determine volume vs performance gap
+      const volumeGrade = runnerScore.components.volume >= 20 ? 'A' : 
+                          runnerScore.components.volume >= 15 ? 'B' : 
+                          runnerScore.components.volume >= 10 ? 'C' : 'D';
+      const performanceGrade = runnerScore.components.performance >= 20 ? 'A' : 
+                               runnerScore.components.performance >= 15 ? 'B' : 
+                               runnerScore.components.performance >= 10 ? 'C' : 'D';
+      
+      res.json({
+        runnerIQ: {
+          score: runnerScore.totalScore,
+          grade: runnerScore.grade,
+          components: runnerScore.components,
+          volumeGrade,
+          performanceGrade,
+          hasGap: volumeGrade < performanceGrade || (volumeGrade === 'A' && performanceGrade !== 'A'),
+        },
+        trainingLoad: {
+          change: loadChange,
+          isCritical: loadChange !== null && loadChange > 20,
+          thisWeekActivities: thisWeekActivities.length,
+          lastWeekActivities: lastWeekActivities.length,
+        },
+        greyZone: {
+          percentage: greyZonePercentage,
+          activityCount: runningActivities.length,
+          easyRunsAreTooFast,
+          optimalEasyPace: `${formatPace(optimalEasyPaceMin)} - ${formatPace(optimalEasyPaceMax)} /km`,
+          currentEasyPaceDiff,
+        }
+      });
+    } catch (error: any) {
+      console.error('Audit report error:', error);
+      res.status(500).json({ message: error.message || "Failed to generate audit report" });
+    }
+  });
+
   // Update user settings
   app.patch("/api/users/:userId/settings", authenticateJWT, async (req: any, res) => {
     try {
