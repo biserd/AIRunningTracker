@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { apiRequest } from "@/lib/queryClient";
 import { SEO } from "@/components/SEO";
+import { StravaConnectButton } from "@/components/StravaConnect";
 import confetti from "canvas-confetti";
 
 interface AuditData {
@@ -158,12 +159,15 @@ export default function AuditReportPage() {
   // Check if user has connected Strava
   const isStravaConnected = !!(user as any)?.stravaAthleteId;
 
-  // Redirect to dashboard (which has Strava connect flow) if not connected
-  useEffect(() => {
-    if (!authLoading && user && !isStravaConnected) {
-      navigate('/dashboard');
-    }
-  }, [authLoading, user, isStravaConnected, navigate]);
+  const handleStravaConnect = () => {
+    const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID;
+    const redirectUri = `${window.location.origin}/strava/callback`;
+    const scope = "read,activity:read_all,activity:write";
+    const state = `${user?.id || ''}_audit`;
+    
+    const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&approval_prompt=force&scope=${scope}&state=${state}`;
+    window.location.href = stravaAuthUrl;
+  };
 
   const { data: auditData, isLoading: auditLoading } = useQuery<AuditData>({
     queryKey: [`/api/audit-report/${user?.id}`],
@@ -230,7 +234,51 @@ export default function AuditReportPage() {
     return "bg-red-100 text-red-800";
   };
 
-  if (auditLoading || subLoading) {
+  if (authLoading || subLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-orange-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-strava-orange mx-auto mb-4" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show Strava connect screen if not connected
+  if (!isStravaConnected) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-orange-50 flex items-center justify-center">
+        <SEO 
+          title="Connect Strava | AITracker.run"
+          description="Connect your Strava account to get personalized training insights."
+        />
+        <div className="max-w-md mx-auto px-4 text-center">
+          <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="w-10 h-10 text-strava-orange" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.599h4.172L10.463 0l-7 13.828h4.172"/>
+            </svg>
+          </div>
+          <h1 className="text-3xl font-bold text-charcoal mb-4">
+            Connect Your Strava
+          </h1>
+          <p className="text-gray-600 mb-8">
+            We need access to your running data to analyze your training and provide personalized insights.
+          </p>
+          <StravaConnectButton 
+            onClick={handleStravaConnect}
+            variant="orange"
+            size="lg"
+          />
+          <p className="text-sm text-gray-500 mt-4">
+            We only read your activity data. We never post on your behalf.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (auditLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-orange-50 flex items-center justify-center">
         <div className="text-center">
