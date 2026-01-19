@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { AlertTriangle, Target, Lock, ArrowRight, CheckCircle } from "lucide-react";
+import { AlertTriangle, Target, Lock, ArrowRight, CheckCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { apiRequest } from "@/lib/queryClient";
 import { SEO } from "@/components/SEO";
+import confetti from "canvas-confetti";
 
 interface AuditData {
   runnerIQ: {
@@ -165,9 +166,36 @@ export default function AuditReportPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('success') === 'true') {
+    if (params.get('upgraded') === 'true') {
       setIsUnlocked(true);
       window.history.replaceState({}, '', '/audit-report');
+      
+      // Trigger confetti celebration
+      const duration = 3000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+
+      const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+      const interval = setInterval(() => {
+        const timeLeft = animationEnd - Date.now();
+        if (timeLeft <= 0) {
+          clearInterval(interval);
+          return;
+        }
+
+        const particleCount = 50 * (timeLeft / duration);
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+        });
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+        });
+      }, 250);
     }
   }, []);
 
@@ -361,7 +389,8 @@ export default function AuditReportPage() {
               onClick={handleGoToDashboard}
               className="w-full bg-white text-strava-orange hover:bg-gray-100 font-bold py-3 rounded-xl"
             >
-              Go to Dashboard
+              <Sparkles className="h-5 w-5 mr-2" />
+              Go to Training Dashboard
               <ArrowRight className="h-5 w-5 ml-2" />
             </Button>
           ) : (

@@ -960,7 +960,7 @@ ${allPages.map(page => `  <url>
         subscription_data: {
           trial_period_days: 14,
         },
-        success_url: `${protocol}://${domain}/audit-report?success=true`,
+        success_url: `${protocol}://${domain}/audit-report?upgraded=true`,
         cancel_url: `${protocol}://${domain}/audit-report?canceled=true`,
         metadata: { userId: String(userId), source: 'audit-report' }
       });
