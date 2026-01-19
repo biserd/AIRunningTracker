@@ -1,16 +1,12 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { AlertTriangle, Target, Lock, ArrowRight, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { apiRequest } from "@/lib/queryClient";
 import { SEO } from "@/components/SEO";
-
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 interface AuditData {
   runnerIQ: {
@@ -135,139 +131,26 @@ function MiniRadarChart({ data }: { data: AuditData['runnerIQ']['components'] })
   );
 }
 
-function PaymentForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: () => void }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isReady, setIsReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stripe || !elements || !isReady) return;
-
-    setIsProcessing(true);
-    setError(null);
-
-    const { error: submitError } = await stripe.confirmSetup({
-      elements,
-      confirmParams: {
-        return_url: window.location.origin + "/audit-report?success=true",
-      },
-      redirect: "if_required",
-    });
-
-    if (submitError) {
-      setError(submitError.message || "An error occurred");
-      setIsProcessing(false);
-    } else {
-      onSuccess();
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <PaymentElement onReady={() => setIsReady(true)} />
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-          {error}
-        </div>
-      )}
-      <Button 
-        type="submit" 
-        disabled={!stripe || !isReady || isProcessing}
-        className="w-full bg-strava-orange hover:bg-orange-600 text-white py-3"
-      >
-        {isProcessing ? (
-          <div className="flex items-center gap-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-            Processing...
-          </div>
-        ) : (
-          "Start 14-Day Free Trial"
-        )}
-      </Button>
-      <button
-        type="button"
-        onClick={onClose}
-        className="w-full text-center text-gray-500 hover:text-gray-700 text-sm"
-      >
-        Cancel
-      </button>
-    </form>
-  );
-}
-
-interface PaymentModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
-}
-
-function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModalProps) {
-  const { user } = useAuth();
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (isOpen && user) {
-      setIsLoading(true);
-      setError(null);
-      apiRequest("/api/stripe/create-trial-setup", "POST")
-        .then((data) => {
-          setClientSecret((data as { clientSecret: string }).clientSecret);
-          setIsLoading(false);
-        })
-        .catch((err) => {
-          console.error('Failed to create setup intent:', err);
-          setError("Failed to load payment form. Please try again.");
-          setIsLoading(false);
-        });
-    }
-  }, [isOpen, user]);
-
-  if (!isOpen) return null;
-
-  const options = clientSecret ? {
-    clientSecret,
-    appearance: {
-      theme: 'stripe' as const,
-      variables: {
-        colorPrimary: '#fc4c02',
-      },
+function useAuditCheckout() {
+  return useMutation({
+    mutationFn: async () => {
+      const data = await apiRequest("/api/stripe/create-audit-checkout", "POST");
+      return data as { url: string };
     },
-  } : undefined;
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-strava-orange mb-4" />
-            <p className="text-gray-600">Loading payment form...</p>
-          </div>
-        ) : error ? (
-          <div className="text-center py-8">
-            <p className="text-red-600 mb-4">{error}</p>
-            <Button onClick={onClose} variant="outline">Close</Button>
-          </div>
-        ) : clientSecret && options ? (
-          <Elements stripe={stripePromise} options={options}>
-            <PaymentForm onSuccess={onSuccess} onClose={onClose} />
-          </Elements>
-        ) : null}
-      </div>
-    </div>
-  );
+    onSuccess: (data) => {
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+  });
 }
 
 export default function AuditReportPage() {
   const { isAuthenticated, user } = useAuth();
   const { hasActiveSubscription, isLoading: subLoading } = useSubscription();
   const [, navigate] = useLocation();
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const checkout = useAuditCheckout();
 
   const { data: auditData, isLoading: auditLoading } = useQuery<AuditData>({
     queryKey: [`/api/audit-report/${user?.id}`],
@@ -288,17 +171,12 @@ export default function AuditReportPage() {
     }
   }, []);
 
-  const handleOpenPayment = () => {
+  const handleUpgrade = () => {
     if (!isAuthenticated) {
       navigate('/auth');
       return;
     }
-    setShowPaymentModal(true);
-  };
-
-  const handlePaymentSuccess = () => {
-    setShowPaymentModal(false);
-    setIsUnlocked(true);
+    checkout.mutate();
   };
 
   const handleGoToDashboard = () => {
@@ -446,12 +324,13 @@ export default function AuditReportPage() {
                   
                   {!isUnlocked && (
                     <button
-                      onClick={handleOpenPayment}
+                      onClick={handleUpgrade}
+                      disabled={checkout.isPending}
                       className="absolute inset-0 flex items-center justify-center bg-white/60 rounded-lg cursor-pointer hover:bg-white/70 transition-colors"
                     >
                       <div className="flex items-center gap-2 text-purple-700 font-semibold">
                         <Lock className="h-5 w-5" />
-                        Unlock to reveal
+                        {checkout.isPending ? "Redirecting..." : "Unlock to reveal"}
                       </div>
                     </button>
                   )}
@@ -487,21 +366,25 @@ export default function AuditReportPage() {
             </Button>
           ) : (
             <Button
-              onClick={handleOpenPayment}
+              onClick={handleUpgrade}
+              disabled={checkout.isPending}
               className="w-full bg-white text-strava-orange hover:bg-gray-100 font-bold py-3 rounded-xl"
             >
-              Reveal My Optimal Paces & Fix My Plan
-              <ArrowRight className="h-5 w-5 ml-2" />
+              {checkout.isPending ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-strava-orange" />
+                  Redirecting to checkout...
+                </div>
+              ) : (
+                <>
+                  Reveal My Optimal Paces & Fix My Plan
+                  <ArrowRight className="h-5 w-5 ml-2" />
+                </>
+              )}
             </Button>
           )}
         </div>
       </div>
-
-      <PaymentModal
-        isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        onSuccess={handlePaymentSuccess}
-      />
     </div>
   );
 }

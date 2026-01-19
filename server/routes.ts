@@ -886,6 +886,88 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Create audit checkout session (with 14-day trial for Pro plan)
+  app.post("/api/stripe/create-audit-checkout", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const stripe = await getUncachableStripeClient();
+
+      // Create or get Stripe customer
+      let customerId = user.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: user.email,
+          metadata: { userId: String(userId) }
+        });
+        await storage.updateStripeCustomerId(userId, customer.id);
+        customerId = customer.id;
+      }
+
+      // Get the Pro monthly price from Stripe
+      const prices = await stripe.prices.list({
+        active: true,
+        type: 'recurring',
+        limit: 10,
+      });
+      
+      // Find Pro monthly price (look for 'pro' in product metadata or name)
+      let proPriceId: string | null = null;
+      for (const price of prices.data) {
+        if (price.recurring?.interval === 'month') {
+          const product = await stripe.products.retrieve(price.product as string);
+          if (product.name?.toLowerCase().includes('pro') || 
+              product.metadata?.tier === 'pro') {
+            proPriceId = price.id;
+            break;
+          }
+        }
+      }
+      
+      if (!proPriceId) {
+        // Fallback to first monthly price if no Pro price found
+        const monthlyPrice = prices.data.find(p => p.recurring?.interval === 'month');
+        if (monthlyPrice) {
+          proPriceId = monthlyPrice.id;
+        } else {
+          return res.status(400).json({ message: "No subscription price found" });
+        }
+      }
+
+      // Get the domain
+      const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
+      const domain = isProduction ? 'aitracker.run' : (process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000');
+      const protocol = domain.includes('localhost') ? 'http' : 'https';
+
+      // Create checkout session with 14-day trial
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+        line_items: [{ price: proPriceId, quantity: 1 }],
+        mode: 'subscription',
+        allow_promotion_codes: true,
+        subscription_data: {
+          trial_period_days: 14,
+        },
+        success_url: `${protocol}://${domain}/audit-report?success=true`,
+        cancel_url: `${protocol}://${domain}/audit-report?canceled=true`,
+        metadata: { userId: String(userId), source: 'audit-report' }
+      });
+
+      res.json({ url: session.url });
+    } catch (error: any) {
+      console.error('Audit checkout session error:', error);
+      res.status(500).json({ 
+        message: error.message || "Failed to create checkout session"
+      });
+    }
+  });
+
   // Get user subscription status
   app.get("/api/stripe/subscription", authenticateJWT, async (req: any, res) => {
     try {
