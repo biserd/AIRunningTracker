@@ -1,0 +1,119 @@
+Here is a comprehensive specification prompt you can send directly to your developer. It covers the logic, the specific copy, the visual design, and the Stripe integration.
+
+---
+
+### **Task: Build "Audit Report" Page & Paywall Modal**
+
+**Context:**
+We are changing the user onboarding flow. After a user logs in and syncs with Strava, they should **NOT** see the main dashboard. Instead, they must land on a "Free Audit" page that diagnoses their training issues and asks them to subscribe to fix them.
+
+This page acts as the "Home" for all free/non-subscribed users.
+
+---
+
+### **1. Routing & Logic**
+
+* **Post-Sync Redirect:** Immediately after the "Syncing..." spinner finishes, redirect the user to `/audit-report`.
+* **Returning User Logic:** If a user logs in and `subscription_status != active`, redirect them to `/audit-report`. Do not let them access the main dashboard.
+* **Dashboard Protection:** All other routes (`/dashboard`, `/insights`, etc.) should be protected. If a free user tries to access them, redirect back to `/audit-report`.
+
+---
+
+### **2. UI Layout & Copy (Reference Attached Design)**
+
+Please implement the layout based on the attached mockup.
+
+**A. Page Header**
+
+* **Headline:** "We found a gap in your training."
+* **Sub-header:** "Your Effort is High, but your Efficiency is Low."
+* **Tag/Badge (Top):** "Audit Complete" (Orange/Light Orange pill).
+
+**B. Card 1: The Ego Hook (Top Card)**
+
+* **Icon:** Use a small version of our **Radar Chart** (Spider web chart) instead of a generic graph icon.
+* **Headline:** "Your 'Runner IQ' is 71" (Badge: "Grade B")
+* **Body Text:**
+> "You are putting in **Grade A effort** (Volume), but getting **Grade B results** (Performance). Our analysis detects that **30% of your recent mileage was 'Junk Mileage'**—too fast to recover, too slow to build speed."
+
+
+* **Footer Bullet:** "• You are working harder than you need to."
+* **Style:** Light orange background for the text box.
+
+**C. Card 2: The Risk Hook (Middle Card)**
+
+* **Icon:** Warning Triangle (Red).
+* **Headline:** "Load Warning: +22% Spike" (Badge: "Critical" - Dark Red bg, White text).
+* **Body Text:**
+> "**Critical Imbalance Detected.**
+> In the last 10 days, your fatigue accumulation has outpaced your fitness gains by a **factor of 2:1**.
+> **Translation:** You are not getting fitter right now; you are just breaking your body down."
+
+
+* **Footer Alert:** "⚠ You need a specific recovery protocol immediately to avoid a setback."
+* **Style:** Ensure the red text has high contrast for readability.
+
+**D. Card 3: The Insight Hook (Bottom Card - The "Lock")**
+
+* **Icon:** Bullseye/Target (Purple).
+* **Headline:** "The 'Grey Zone' Trap" (Badge: "Insight" - Purple).
+* **Body Text:**
+> "We analyzed your pace distribution across **142 activities**.
+> **The Problem:** Your 'Easy' runs are **18 seconds/km too fast**.
+> You think you are recovering, but you are actually burning glycogen reserves needed for your long runs."
+
+
+* **The Blurred Section (Crucial):**
+* Below the text, create a container that looks like a data result.
+* Inside, place dummy text: "Optimal Easy Pace: 5:45 - 6:15 /km".
+* **Apply a heavy CSS Blur** (`filter: blur(6px)`) to this text.
+* **Overlay:** On top of the blur, place a button/link that says: **"🔒 Unlock to reveal"**.
+* **Action:** Clicking this overlay triggers the Stripe Modal (see Section 3).
+
+
+* **Footer Text:** "We have calculated your actual optimal easy pace based on your physiological profile."
+
+**E. Sticky Footer (The CTA)**
+
+* **Background:** Brand Orange (Full width).
+* **Headline:** "Stop guessing. Start training efficiently."
+* **Sub-text:** "Get your personalized training plan optimized for your unique physiology."
+* **Button:** White Button, Orange Text.
+* **Button Copy:** "Reveal My Optimal Paces & Fix My Plan →"
+* **Action:** Triggers the Stripe Modal (see Section 3).
+
+---
+
+### **3. Payment Implementation (Stripe Elements Modal)**
+
+We are using **Stripe Elements** inside a modal, not a redirect.
+
+* **Trigger:** Clicking the main Footer button OR the "Unlock" overlay on Card 3.
+* **Modal Behavior:**
+1. Open a centered modal.
+2. **Header:** "Unlock Your Full Audit & Plan".
+3. **Subheader:** "Start 14-day free trial. Cancel anytime."
+4. **Body:** Mount the `<PaymentElement />` (Stripe) here.
+5. **Submit Button:** "Start Free Trial & Unlock".
+
+
+* **Logic:**
+* On trigger, create a Subscription/SetupIntent on the backend.
+* Pass `client_secret` to the frontend.
+* On success (`stripe.confirmPayment`):
+1. **Do NOT reload the page.**
+2. Close the modal.
+3. **State Change:** Remove the blur from Card 3 (reveal the data).
+4. Change the Footer Button text to: "Go to Dashboard".
+5. Update the user's local state to `subscribed`.
+
+
+
+
+
+---
+
+### **4. Technical Notes**
+
+* **Mobile Responsiveness:** Ensure the Sticky Footer stays pinned to the bottom on mobile devices.
+* **Loading State:** If the user is a returning free user, do not show the "Syncing Strava" animation again. Load this Audit page immediately.
