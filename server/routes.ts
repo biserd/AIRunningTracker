@@ -909,33 +909,39 @@ ${allPages.map(page => `  <url>
         customerId = customer.id;
       }
 
-      // Get the Pro monthly price from Stripe
+      // Get the Premium yearly price from Stripe
       const prices = await stripe.prices.list({
         active: true,
         type: 'recurring',
-        limit: 10,
+        limit: 20,
       });
       
-      // Find Pro monthly price (look for 'pro' in product metadata or name)
-      let proPriceId: string | null = null;
+      // Find Premium yearly price (look for 'premium' in product metadata or name, with yearly interval)
+      let premiumPriceId: string | null = null;
       for (const price of prices.data) {
-        if (price.recurring?.interval === 'month') {
+        if (price.recurring?.interval === 'year') {
           const product = await stripe.products.retrieve(price.product as string);
-          if (product.name?.toLowerCase().includes('pro') || 
-              product.metadata?.tier === 'pro') {
-            proPriceId = price.id;
+          if (product.name?.toLowerCase().includes('premium') || 
+              product.metadata?.tier === 'premium') {
+            premiumPriceId = price.id;
             break;
           }
         }
       }
       
-      if (!proPriceId) {
-        // Fallback to first monthly price if no Pro price found
-        const monthlyPrice = prices.data.find(p => p.recurring?.interval === 'month');
-        if (monthlyPrice) {
-          proPriceId = monthlyPrice.id;
+      if (!premiumPriceId) {
+        // Fallback to first yearly price if no Premium price found
+        const yearlyPrice = prices.data.find(p => p.recurring?.interval === 'year');
+        if (yearlyPrice) {
+          premiumPriceId = yearlyPrice.id;
         } else {
-          return res.status(400).json({ message: "No subscription price found" });
+          // Final fallback to any recurring price
+          const anyPrice = prices.data[0];
+          if (anyPrice) {
+            premiumPriceId = anyPrice.id;
+          } else {
+            return res.status(400).json({ message: "No subscription price found" });
+          }
         }
       }
 
@@ -948,7 +954,7 @@ ${allPages.map(page => `  <url>
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
         payment_method_types: ['card'],
-        line_items: [{ price: proPriceId, quantity: 1 }],
+        line_items: [{ price: premiumPriceId, quantity: 1 }],
         mode: 'subscription',
         allow_promotion_codes: true,
         subscription_data: {

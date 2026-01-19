@@ -365,23 +365,28 @@ export default function AuditReportPage() {
               <ArrowRight className="h-5 w-5 ml-2" />
             </Button>
           ) : (
-            <Button
-              onClick={handleUpgrade}
-              disabled={checkout.isPending}
-              className="w-full bg-white text-strava-orange hover:bg-gray-100 font-bold py-3 rounded-xl"
-            >
-              {checkout.isPending ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-strava-orange" />
-                  Redirecting to checkout...
-                </div>
-              ) : (
-                <>
-                  Reveal My Optimal Paces & Fix My Plan
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                </>
-              )}
-            </Button>
+            <div className="space-y-2">
+              <Button
+                onClick={handleUpgrade}
+                disabled={checkout.isPending}
+                className="w-full bg-white text-strava-orange hover:bg-gray-100 font-bold py-3 rounded-xl"
+              >
+                {checkout.isPending ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-strava-orange" />
+                    Redirecting to checkout...
+                  </div>
+                ) : (
+                  <>
+                    Reveal My Optimal Paces & Fix My Plan
+                    <ArrowRight className="h-5 w-5 ml-2" />
+                  </>
+                )}
+              </Button>
+              <p className="text-center text-white/90 text-sm font-medium">
+                14-Day Free Trial. Cancel anytime.
+              </p>
+            </div>
           )}
         </div>
       </div>
