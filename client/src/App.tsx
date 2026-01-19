@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
 import MaintenancePage from "@/pages/maintenance";
 import Dashboard from "@/pages/dashboard";
 import SettingsPage from "@/pages/settings";
@@ -61,7 +62,7 @@ import CoachSettingsPage from "@/pages/coach-settings";
 import AuditReportPage from "@/pages/audit-report";
 import NotFound from "@/pages/not-found";
 
-function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+function ProtectedRoute({ component: Component, requiresSubscription = false }: { component: React.ComponentType; requiresSubscription?: boolean }) {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
@@ -77,6 +78,35 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 
   if (!isAuthenticated) {
     window.location.href = "/auth";
+    return null;
+  }
+
+  return <Component />;
+}
+
+function PremiumProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  const { hasActiveSubscription, isLoading: subLoading, isReverseTrial } = useSubscription();
+
+  if (isLoading || subLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    window.location.href = "/auth";
+    return null;
+  }
+
+  // Allow access if user has active subscription OR is on reverse trial
+  if (!hasActiveSubscription && !isReverseTrial) {
+    window.location.href = "/audit-report";
     return null;
   }
 
@@ -130,15 +160,15 @@ function Router() {
       {/* Tool Routes */}
       <Route path="/tools/heatmap" component={RunningHeatmap} />
       
-      {/* Protected Routes */}
+      {/* Protected Routes - Premium features require subscription */}
       <Route path="/chat-history">
-        <ProtectedRoute component={ChatHistory} />
+        <PremiumProtectedRoute component={ChatHistory} />
       </Route>
       <Route path="/dashboard">
-        <ProtectedRoute component={Dashboard} />
+        <PremiumProtectedRoute component={Dashboard} />
       </Route>
       <Route path="/coach-insights">
-        <ProtectedRoute component={CoachInsightsPage} />
+        <PremiumProtectedRoute component={CoachInsightsPage} />
       </Route>
       {/* Redirects for old routes */}
       <Route path="/ml-insights">
@@ -154,10 +184,10 @@ function Router() {
         <ProtectedRoute component={BillingPage} />
       </Route>
       <Route path="/activities">
-        <ProtectedRoute component={ActivitiesPage} />
+        <PremiumProtectedRoute component={ActivitiesPage} />
       </Route>
       <Route path="/activity/:id">
-        <ProtectedRoute component={ActivityPage} />
+        <PremiumProtectedRoute component={ActivityPage} />
       </Route>
       <Route path="/admin">
         <ProtectedRoute component={AdminPage} />
@@ -172,19 +202,19 @@ function Router() {
         <ProtectedRoute component={QueueDashboard} />
       </Route>
       <Route path="/year-recap">
-        <ProtectedRoute component={YearRecapPage} />
+        <PremiumProtectedRoute component={YearRecapPage} />
       </Route>
       <Route path="/training-plans">
-        <ProtectedRoute component={TrainingPlansPage} />
+        <PremiumProtectedRoute component={TrainingPlansPage} />
       </Route>
       <Route path="/training-plans/:planId">
-        <ProtectedRoute component={TrainingPlanDetailPage} />
+        <PremiumProtectedRoute component={TrainingPlanDetailPage} />
       </Route>
       <Route path="/coach/onboarding">
-        <ProtectedRoute component={CoachOnboardingPage} />
+        <PremiumProtectedRoute component={CoachOnboardingPage} />
       </Route>
       <Route path="/coach/settings">
-        <ProtectedRoute component={CoachSettingsPage} />
+        <PremiumProtectedRoute component={CoachSettingsPage} />
       </Route>
       <Route path="/audit-report">
         <ProtectedRoute component={AuditReportPage} />
