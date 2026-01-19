@@ -26,18 +26,13 @@ export class AuthService {
     // Hash password
     const hashedPassword = await bcrypt.hash(userData.password, SALT_ROUNDS);
 
-    // Calculate 7-day reverse trial end date
-    const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + 7);
-
-    // Create user with reverse trial (Pro features for 7 days, no credit card required)
+    // Create user as free user
     const user = await storage.createUser({
       email: userData.email,
       password: hashedPassword,
       firstName: userData.firstName,
       lastName: userData.lastName,
-      username: userData.email, // Use email as username for now
-      trialEndsAt: trialEndsAt,
+      username: userData.email,
     });
 
     // Generate JWT token

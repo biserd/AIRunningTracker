@@ -149,15 +149,25 @@ function useAuditCheckout() {
 }
 
 export default function AuditReportPage() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading: authLoading } = useAuth();
   const { hasActiveSubscription, isLoading: subLoading } = useSubscription();
   const [, navigate] = useLocation();
   const [isUnlocked, setIsUnlocked] = useState(false);
   const checkout = useAuditCheckout();
 
+  // Check if user has connected Strava
+  const isStravaConnected = !!(user as any)?.stravaAthleteId;
+
+  // Redirect to dashboard (which has Strava connect flow) if not connected
+  useEffect(() => {
+    if (!authLoading && user && !isStravaConnected) {
+      navigate('/dashboard');
+    }
+  }, [authLoading, user, isStravaConnected, navigate]);
+
   const { data: auditData, isLoading: auditLoading } = useQuery<AuditData>({
     queryKey: [`/api/audit-report/${user?.id}`],
-    enabled: !!user?.id,
+    enabled: !!user?.id && isStravaConnected,
   });
 
   useEffect(() => {
