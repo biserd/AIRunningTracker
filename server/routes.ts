@@ -4453,7 +4453,12 @@ ${allPages.map(page => `  <url>
         return res.redirect("/?error=missing_params");
       }
 
-      const userId = parseInt(state as string);
+      // Parse state - may include "_audit" suffix for tracking source
+      const stateStr = state as string;
+      const isFromAudit = stateStr.endsWith('_audit');
+      const userIdStr = isFromAudit ? stateStr.replace('_audit', '') : stateStr;
+      const userId = parseInt(userIdStr);
+      
       if (isNaN(userId)) {
         return res.redirect("/?error=invalid_user");
       }
@@ -4468,6 +4473,19 @@ ${allPages.map(page => `  <url>
         stravaHasWriteScope: true,
       });
 
+      // Trigger initial activity sync after Strava connection
+      try {
+        jobQueue.addJob(createListActivitiesJob(
+          userId,
+          200,
+          undefined,
+          'initial'
+        ));
+        console.log(`[Strava] Queued initial activity sync for user ${userId}`);
+      } catch (syncError) {
+        console.error('Failed to queue initial sync:', syncError);
+      }
+
       // Trigger drip campaign transition from segment_a to segment_b
       try {
         await dripCampaignService.onStravaConnected(userId);
@@ -4476,7 +4494,9 @@ ${allPages.map(page => `  <url>
         console.error('Drip campaign trigger failed in Strava callback:', campaignError);
       }
 
-      res.redirect("/dashboard?connected=true");
+      // Redirect based on where they came from
+      const redirectUrl = isFromAudit ? "/audit-report?connected=true" : "/dashboard?connected=true";
+      res.redirect(redirectUrl);
     } catch (error: any) {
       console.error('Strava callback error:', error);
       res.redirect("/dashboard?error=connection_failed");
