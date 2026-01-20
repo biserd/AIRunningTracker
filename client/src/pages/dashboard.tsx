@@ -128,13 +128,9 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: [`/api/activities/heatmap?range=3m`] });
       queryClient.invalidateQueries({ queryKey: [`/api/activities/heatmap?range=6m`] });
       toast({
-        title: "Activities synced",
-        description: "Activities synced and AI insights generated successfully",
+        title: "Sync started",
+        description: "Syncing activities from Strava. Your dashboard will update automatically.",
       });
-      // Refresh the page to show updated data
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
     },
     onError: (error: any) => {
       toast({
@@ -151,9 +147,11 @@ export default function Dashboard() {
   const { data: dashboardData, isLoading, error } = useQuery<any>({
     queryKey: [`/api/dashboard/${user.id}`],
     refetchInterval: (query) => {
+      // Only check status after successful initial fetch
+      if (!query.state.data) return false;
       // Poll every 5 seconds while insights are being generated
-      const data = query.state.data;
-      if (data?.insightsStatus === 'syncing' || data?.insightsStatus === 'generating') {
+      const status = query.state.data?.insightsStatus;
+      if (status === 'syncing' || status === 'generating') {
         return 5000;
       }
       return false; // Stop polling when ready
