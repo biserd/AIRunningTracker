@@ -315,8 +315,8 @@ export default function BestStravaTools() {
                 </div>
 
                 <div className="bg-gradient-to-r from-strava-orange to-orange-600 p-6 rounded-lg text-white">
-                  <p className="font-bold mb-2">💰 Pricing: FREE</p>
-                  <p className="mb-4">All features completely free. No credit card required.</p>
+                  <p className="font-bold mb-2">💰 Pricing: Free tier + Premium</p>
+                  <p className="mb-4">Free tier available. Premium starts with a 14-day free trial.</p>
                   <Link href="/auth">
                     <Button className="bg-white text-strava-orange hover:bg-gray-100" data-testid="cta-runanalytics-signup">
                       Get Started Free <ArrowRight className="ml-2" size={16} />

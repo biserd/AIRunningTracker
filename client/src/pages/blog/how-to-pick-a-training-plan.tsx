@@ -823,7 +823,7 @@ export default function HowToPickTrainingPlan() {
                 Stop Guessing. Start Training Smarter.
               </CardTitle>
               <CardDescription className="text-white/90 text-lg mb-6 max-w-2xl mx-auto">
-                Get your personalized AI training plan built from your Strava data. Free to start, no credit card required.
+                Get your personalized AI training plan built from your Strava data. Start your 14-day free trial today.
               </CardDescription>
               <Link href="/auth">
                 <Button size="lg" className="bg-white text-purple-600 hover:bg-gray-100 font-bold" data-testid="button-final-cta">

@@ -90,7 +90,7 @@ export default function Dashboard() {
         setTimeout(() => {
           toast({
             title: "Welcome to your 7-day Pro trial!",
-            description: `You have ${trialDaysRemaining} days to explore unlimited AI insights, training plans, race predictions, and more. No credit card needed.`,
+            description: `You have ${trialDaysRemaining} days to explore unlimited AI insights, training plans, race predictions, and more. Cancel anytime.`,
             duration: 8000,
           });
           localStorage.setItem(seenKey, 'true');

@@ -73,7 +73,7 @@ export default function AICoachLanding() {
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="text-green-600" size={20} />
-              <span>No Credit Card</span>
+              <span>14-Day Free Trial</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="text-green-600" size={20} />
@@ -602,7 +602,7 @@ export default function AICoachLanding() {
               <div className="flex items-center justify-center gap-8 text-sm opacity-90">
                 <div className="flex items-center gap-2">
                   <CheckCircle size={20} />
-                  <span>No Credit Card Required</span>
+                  <span>Cancel Anytime</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle size={20} />
