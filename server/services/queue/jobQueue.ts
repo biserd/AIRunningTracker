@@ -7,6 +7,9 @@ import { stravaClient, isRateLimitError } from '../stravaClient';
 import { storage } from '../../storage';
 import { metrics } from './metrics';
 import { processCoachRecapJob } from '../coachingService';
+import { aiService } from '../ai';
+import goalsService from '../goals';
+import { deleteCachedResponse } from '../../routes';
 
 // Track users with active sync operations
 const activeSyncs = new Map<number, { startedAt: Date; totalActivities: number; processedActivities: number }>();
@@ -510,8 +513,34 @@ class JobQueue {
           const incrementalSince = mostRecent?.startDate || new Date();
           return storage.completeSyncSuccess(userId, incrementalSince);
         })
-        .then(() => {
+        .then(async () => {
           console.log(`[JobQueue] Sync completed for user ${userId}. Processed ${syncState.processedActivities} activities.`);
+          
+          // Generate AI insights after sync completes
+          if (syncState.processedActivities > 0) {
+            try {
+              await aiService.generateInsights(userId);
+              console.log(`[JobQueue] AI insights generated for user ${userId}`);
+            } catch (error) {
+              console.error(`[JobQueue] Error generating AI insights for user ${userId}:`, error);
+            }
+            
+            // Check and auto-complete goals based on new activities
+            try {
+              const goalsResult = await goalsService.checkAndCompleteGoals(userId);
+              if (goalsResult.completedGoals > 0) {
+                console.log(`[JobQueue] Auto-completed ${goalsResult.completedGoals} goals for user ${userId}`);
+              }
+            } catch (error) {
+              console.error(`[JobQueue] Error checking goals for user ${userId}:`, error);
+            }
+            
+            // Invalidate cache for user's dashboard and chart data
+            deleteCachedResponse(`dashboard:${userId}`);
+            deleteCachedResponse(`chart:${userId}:30days`);
+            console.log(`[JobQueue] Cache invalidated for user ${userId}`);
+          }
+          
           this.notifyProgress(userId, 'Sync completed', { 
             processedActivities: syncState.processedActivities,
             totalActivities: syncState.totalActivities,

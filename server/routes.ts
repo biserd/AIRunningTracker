@@ -136,7 +136,7 @@ function setCachedResponse(key: string, data: any): void {
   }
 }
 
-function deleteCachedResponse(key: string): void {
+export function deleteCachedResponse(key: string): void {
   const deleted = responseCache.delete(key);
   if (ENABLE_CACHE_LOGGING) {
     console.log(`[CACHE] ${deleted ? 'Deleted' : 'Attempted to delete'} cache key "${key}". Cache size: ${responseCache.size}`);
