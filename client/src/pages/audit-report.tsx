@@ -319,9 +319,11 @@ export default function AuditReportPage() {
     );
   }
 
-  // Only show syncing screen when we have NO data yet (activityCount = 0)
-  const hasNoData = auditData?.greyZone?.activityCount === 0 || !auditData;
-  const showSyncingScreen = hasNoData && isSyncing && justConnected;
+  // Show syncing screen until we have enough activities for meaningful insights
+  // Need at least 5 activities for grey zone analysis to work properly
+  const activityCount = auditData?.greyZone?.activityCount || 0;
+  const hasInsights = activityCount >= 5 && auditData?.runnerIQ?.score !== undefined && auditData.runnerIQ.score > 25;
+  const showSyncingScreen = !hasInsights && isSyncing && justConnected;
   
   if (showSyncingScreen) {
     const progress = syncStatus?.syncProgress || 0;
