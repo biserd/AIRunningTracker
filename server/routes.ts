@@ -2140,11 +2140,16 @@ ${allPages.map(page => `  <url>
           recommendations: insights.filter(i => i.type === 'recommendation'),
         },
         // Insights status: syncing | generating | ready
-        // - syncing: activities are still being synced from Strava
+        // - syncing: activities are still being synced from Strava (with progress)
         // - generating: sync complete but insights not yet generated (just synced, waiting for AI)
         // - ready: insights exist or no activities to analyze
         insightsStatus: (() => {
-          if (syncState.syncStatus === 'running') return 'syncing';
+          // Only show syncing if sync is actively running AND making progress
+          // If sync status is "running" but no progress/total, it's likely stuck
+          const isActivelySyncing = syncState.syncStatus === 'running' && 
+            (syncState.syncProgress > 0 || syncState.syncTotal > 0);
+          if (isActivelySyncing) return 'syncing';
+          
           // If sync completed recently (within 2 minutes) and no insights yet, AI is generating
           const hasActivities = activities.length > 0;
           const hasInsights = insights.length > 0;
