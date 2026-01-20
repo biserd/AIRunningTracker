@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Flame, Shield, Activity, Brain, Target, Heart, AlertTriangle, Gauge, Bot, Settings, Calendar, MessageSquare, ChevronRight, Sparkles, Clock, CheckCircle, XCircle, Timer, TrendingDown } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureAccess } from "@/hooks/useSubscription";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import AppHeader from "@/components/AppHeader";
@@ -416,8 +417,8 @@ function InsightsTab({ user, batchData, isDataLoading, recoveryData, isRecoveryL
   );
 }
 
-function AIAgentCoachTab({ user }: { user: User }) {
-  const isPremium = user.subscriptionPlan === "premium" && user.subscriptionStatus === "active";
+function AIAgentCoachTab({ user, canAccessAICoachChat }: { user: User; canAccessAICoachChat: boolean }) {
+  const isPremium = canAccessAICoachChat;
   const hasOnboarded = !!user.coachGoal;
 
   const { data: recapsData, isLoading: recapsLoading } = useQuery<{ recaps: CoachRecap[] }>({
@@ -608,6 +609,7 @@ function AIAgentCoachTab({ user }: { user: User }) {
 
 export default function CoachInsightsPage() {
   const { user, isLoading } = useAuth();
+  const { canAccessAICoachChat } = useFeatureAccess();
   const [activeTab, setActiveTab] = useState("insights");
   
   const { data: batchData, isLoading: isDataLoading } = useQuery({
@@ -674,7 +676,7 @@ export default function CoachInsightsPage() {
               <TabsTrigger value="agent-coach" className="flex items-center gap-2" data-testid="tab-agent-coach">
                 <Bot size={16} />
                 AI Agent Coach
-                {user.subscriptionPlan === "premium" && user.subscriptionStatus === "active" && !user.coachGoal && (
+                {canAccessAICoachChat && !user.coachGoal && (
                   <span className="w-2 h-2 bg-strava-orange rounded-full"></span>
                 )}
               </TabsTrigger>
@@ -685,7 +687,7 @@ export default function CoachInsightsPage() {
             </TabsContent>
             
             <TabsContent value="agent-coach" className="mt-6">
-              <AIAgentCoachTab user={user} />
+              <AIAgentCoachTab user={user} canAccessAICoachChat={canAccessAICoachChat} />
             </TabsContent>
           </Tabs>
         </div>
