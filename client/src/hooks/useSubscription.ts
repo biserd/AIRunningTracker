@@ -109,10 +109,10 @@ export function useFeatureAccess() {
     canAccessTrainingPlans: hasProAccess,
     canAccessRacePredictions: hasProAccess,
     
-    canAccessAICoachChat: isPremium,
-    canAccessFormAnalysis: isPremium,
-    canAccessPrioritySupport: isPremium,
-    canAccessEarlyAccess: isPremium,
+    canAccessAICoachChat: isPremium || isReverseTrial,
+    canAccessFormAnalysis: isPremium || isReverseTrial,
+    canAccessPrioritySupport: isPremium || isReverseTrial,
+    canAccessEarlyAccess: isPremium || isReverseTrial,
     
     canAccessUnlimitedHistory: hasProAccess,
     maxInsightsPerMonth: hasFreeAccess ? 3 : Infinity,
@@ -141,10 +141,10 @@ export function useFeatureAccess() {
       splits: hasProAccess ? 'full' : 'preview', // 3 splits for free
       hrCadencePower: hasProAccess,
       
-      // Premium only
-      askCoach: isPremium,
-      activityComparison: isPremium,
-      goalPlanActions: isPremium, // rest day / swap / reschedule
+      // Premium only (includes reverse trial)
+      askCoach: isPremium || isReverseTrial,
+      activityComparison: isPremium || isReverseTrial,
+      goalPlanActions: isPremium || isReverseTrial, // rest day / swap / reschedule
     }
   };
 }
