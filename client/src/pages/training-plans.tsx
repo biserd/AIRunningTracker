@@ -78,14 +78,8 @@ export default function TrainingPlans() {
   const [constraints, setConstraints] = useState("");
   const [preferredDays, setPreferredDays] = useState<string[]>(["monday", "wednesday", "friday", "saturday", "sunday"]);
   
-  // Fetch user preferences for unit conversion
-  const { data: dashboardData } = useQuery<{ user?: { unitPreference?: string } }>({
-    queryKey: [`/api/dashboard/${user?.id}`],
-    queryFn: getQueryFn({ on401: "returnNull" }),
-    enabled: !!user?.id,
-  });
-  
-  const useMiles = dashboardData?.user?.unitPreference === "miles";
+  // Get unit preference from auth user
+  const useMiles = (user as any)?.unitPreference === "miles";
   
   // Fetch athlete profile
   const { data: profile, isLoading: profileLoading } = useQuery<AthleteProfile>({
