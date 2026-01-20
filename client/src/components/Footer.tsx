@@ -76,7 +76,7 @@ export default function Footer() {
         <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
           <div className="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
             <div className="flex flex-col items-center sm:items-start space-y-2">
-              <p>&copy; 2025 RunAnalytics. All rights reserved.</p>
+              <p>&copy; 2026 RunAnalytics. All rights reserved.</p>
               <StravaPoweredBy variant="white" size="sm" />
             </div>
             <div className="flex items-center space-x-4">
