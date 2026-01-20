@@ -32,7 +32,7 @@ export default function CoachOnboardingPage() {
 
   return (
     <CoachOnboardingWizard 
-      onComplete={() => setLocation("/dashboard")} 
+      onComplete={() => setLocation("/coach-insights")} 
     />
   );
 }
