@@ -202,6 +202,8 @@ export default function AuditReportPage() {
   const { data: auditData, isLoading: auditLoading, refetch: refetchAudit } = useQuery<AuditData>({
     queryKey: [`/api/audit-report/${user?.id}`],
     enabled: !!user?.id && isStravaConnected,
+    // Refetch every 3 seconds while syncing to update UI as data arrives
+    refetchInterval: isSyncing && justConnected ? 3000 : false,
   });
 
   // Refetch audit data when sync completes
