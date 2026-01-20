@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Flame, Mountain, Clock, Target, TrendingUp, Info, Footprints, ExternalLink } from "lucide-react";
+import { Flame, Mountain, Clock, Target, TrendingUp, Info, Footprints, ExternalLink, Loader2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,9 +18,10 @@ interface RecommendationData {
 interface TrainingRecommendationsProps {
   recommendations: RecommendationData[];
   userId?: number;
+  insightsStatus?: 'syncing' | 'generating' | 'ready';
 }
 
-export default function TrainingRecommendations({ recommendations, userId }: TrainingRecommendationsProps) {
+export default function TrainingRecommendations({ recommendations, userId, insightsStatus = 'ready' }: TrainingRecommendationsProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedRecommendation, setSelectedRecommendation] = useState<RecommendationData | null>(null);
@@ -102,17 +103,52 @@ export default function TrainingRecommendations({ recommendations, userId }: Tra
     return lowerTitle.includes('gear') || lowerTitle.includes('shoe');
   };
 
+  // Show generating state when AI is analyzing activities
+  if (insightsStatus === 'syncing' || insightsStatus === 'generating') {
+    return (
+      <Card className="border-strava-orange/20">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl font-semibold text-charcoal dark:text-white">Training Recommendations</CardTitle>
+            <Badge variant="secondary" className="bg-strava-orange/10 text-strava-orange animate-pulse">
+              <Sparkles className="h-3 w-3 mr-1" />
+              {insightsStatus === 'syncing' ? 'Syncing...' : 'Analyzing...'}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <div className="relative mx-auto w-16 h-16 mb-4">
+              <div className="absolute inset-0 bg-gradient-to-r from-achievement-green to-performance-blue rounded-full animate-pulse opacity-20"></div>
+              <div className="absolute inset-2 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center">
+                <Loader2 className="h-8 w-8 text-achievement-green animate-spin" />
+              </div>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              {insightsStatus === 'syncing' ? 'Syncing Activities...' : 'Creating Your Recommendations...'}
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs mx-auto">
+              {insightsStatus === 'syncing' 
+                ? 'Importing your running data from Strava.'
+                : 'Our AI is building personalized training recommendations based on your running patterns.'}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (recommendations.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl font-semibold text-charcoal">Training Recommendations</CardTitle>
+          <CardTitle className="text-xl font-semibold text-charcoal dark:text-white">Training Recommendations</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-6">
             <Clock className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No recommendations yet</h3>
-            <p className="text-gray-500 text-sm">Generate AI insights to see training recommendations.</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No recommendations yet</h3>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">Generate AI insights to see training recommendations.</p>
           </div>
         </CardContent>
       </Card>

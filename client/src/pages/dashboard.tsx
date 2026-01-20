@@ -471,7 +471,7 @@ export default function Dashboard() {
             <GoalProgress userId={user?.id!} unitPreference={dashboardData?.user?.unitPreference} />
             
             <AIInsights insights={dashboardData?.insights || {}} userId={user?.id!} insightsStatus={dashboardData?.insightsStatus} />
-            <TrainingRecommendations recommendations={dashboardData?.insights?.recommendations || []} userId={user?.id!} />
+            <TrainingRecommendations recommendations={dashboardData?.insights?.recommendations || []} userId={user?.id!} insightsStatus={dashboardData?.insightsStatus} />
             <FitnessTrends chartData={dashboardData?.chartData || []} unitPreference={dashboardData?.user?.unitPreference} />
 
             {/* Recent Conversations - Premium Only */}
