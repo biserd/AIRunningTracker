@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,21 @@ import {
 import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
+import { useAuth } from "@/hooks/useAuth";
+import { useFeatureAccess } from "@/hooks/useSubscription";
+import { useEffect } from "react";
 
 export default function AIAgentCoachLanding() {
+  const { isAuthenticated } = useAuth();
+  const { canAccessAICoachChat } = useFeatureAccess();
+  const [, navigate] = useLocation();
+
+  // Redirect users with access to dashboard where AI Coach is available
+  useEffect(() => {
+    if (isAuthenticated && canAccessAICoachChat) {
+      navigate("/dashboard?openChat=true");
+    }
+  }, [isAuthenticated, canAccessAICoachChat, navigate]);
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Product",
