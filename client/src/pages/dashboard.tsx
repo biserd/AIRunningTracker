@@ -13,7 +13,6 @@ import FitnessTrends from "@/components/dashboard/FitnessTrends";
 import GoalProgress from "@/components/dashboard/GoalProgress";
 import RunnerScoreRadar from "@/components/dashboard/RunnerScoreRadar";
 import HistoricalRunnerScore from "@/components/dashboard/HistoricalRunnerScore";
-import InsightHistory from "@/components/dashboard/InsightHistory";
 import ProgressChecklist from "@/components/dashboard/ProgressChecklist";
 import ShoeHub from "@/components/dashboard/ShoeHub";
 import Onboarding from "@/components/Onboarding";
@@ -478,9 +477,6 @@ export default function Dashboard() {
             )}
             
             <ShoeHub />
-            
-            {/* Insight History - at bottom */}
-            <InsightHistory userId={user?.id!} />
           </div>
         </div>
       </main>
