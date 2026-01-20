@@ -4478,7 +4478,7 @@ ${allPages.map(page => `  <url>
         jobQueue.addJob(createListActivitiesJob(
           userId,
           1,      // page
-          30,     // perPage
+          200,    // perPage (Strava API max)
           200     // maxActivities
         ));
         console.log(`[Strava] Queued initial activity sync for user ${userId}`);
