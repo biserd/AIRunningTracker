@@ -4477,9 +4477,9 @@ ${allPages.map(page => `  <url>
       try {
         jobQueue.addJob(createListActivitiesJob(
           userId,
-          200,
-          undefined,
-          'initial'
+          1,      // page
+          30,     // perPage
+          200     // maxActivities
         ));
         console.log(`[Strava] Queued initial activity sync for user ${userId}`);
       } catch (syncError) {
