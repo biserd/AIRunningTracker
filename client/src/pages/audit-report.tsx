@@ -317,8 +317,11 @@ export default function AuditReportPage() {
     );
   }
 
-  // Show syncing screen when activities are being pulled
-  if (isSyncing || (auditLoading && justConnected)) {
+  // Only show syncing screen when we have NO data yet (activityCount = 0)
+  const hasNoData = auditData?.greyZone?.activityCount === 0 || !auditData;
+  const showSyncingScreen = hasNoData && isSyncing && justConnected;
+  
+  if (showSyncingScreen) {
     const progress = syncStatus?.syncProgress || 0;
     const total = syncStatus?.syncTotal || 0;
     const pendingJobs = (syncStatus?.pendingJobs || 0) + (syncStatus?.processingJobs || 0);
