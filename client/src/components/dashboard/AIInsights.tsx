@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Brain, Crown, Lock } from "lucide-react";
+import { Brain, Crown, Lock, Loader2, Sparkles } from "lucide-react";
 import { Link } from "wouter";
 import { useFeatureAccess } from "@/hooks/useSubscription";
 
@@ -19,11 +19,52 @@ interface AIInsightsProps {
     technique?: InsightData;
   };
   userId: number;
+  insightsStatus?: 'syncing' | 'generating' | 'ready';
 }
 
-export default function AIInsights({ insights, userId }: AIInsightsProps) {
+export default function AIInsights({ insights, userId, insightsStatus = 'ready' }: AIInsightsProps) {
   const { canAccessAdvancedInsights } = useFeatureAccess();
   const hasInsights = insights.performance || insights.pattern || insights.recovery || insights.motivation || insights.technique;
+
+  // Show generating state when AI is analyzing activities
+  if (insightsStatus === 'syncing' || insightsStatus === 'generating') {
+    return (
+      <Card className="border-strava-orange/20">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-performance-blue rounded-lg flex items-center justify-center">
+                <Brain className="text-white" size={16} />
+              </div>
+              <CardTitle className="text-xl font-semibold text-charcoal dark:text-white">Key Insights</CardTitle>
+            </div>
+            <Badge variant="secondary" className="bg-strava-orange/10 text-strava-orange animate-pulse">
+              <Sparkles className="h-3 w-3 mr-1" />
+              {insightsStatus === 'syncing' ? 'Syncing...' : 'Analyzing...'}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <div className="relative mx-auto w-16 h-16 mb-4">
+              <div className="absolute inset-0 bg-gradient-to-r from-strava-orange to-purple-500 rounded-full animate-pulse opacity-20"></div>
+              <div className="absolute inset-2 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center">
+                <Loader2 className="h-8 w-8 text-strava-orange animate-spin" />
+              </div>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              {insightsStatus === 'syncing' ? 'Syncing Your Activities...' : 'Generating AI Insights...'}
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs mx-auto">
+              {insightsStatus === 'syncing' 
+                ? 'Importing your running data from Strava. This may take a moment.'
+                : 'Our AI coach is analyzing your running patterns to provide personalized insights.'}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!hasInsights) {
     return (
@@ -34,7 +75,7 @@ export default function AIInsights({ insights, userId }: AIInsightsProps) {
               <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-performance-blue rounded-lg flex items-center justify-center">
                 <Brain className="text-white" size={16} />
               </div>
-              <CardTitle className="text-xl font-semibold text-charcoal">Key Insights</CardTitle>
+              <CardTitle className="text-xl font-semibold text-charcoal dark:text-white">Key Insights</CardTitle>
             </div>
             {!canAccessAdvancedInsights && (
               <Badge variant="secondary" className="bg-strava-orange/10 text-strava-orange">
@@ -47,8 +88,8 @@ export default function AIInsights({ insights, userId }: AIInsightsProps) {
         <CardContent>
           <div className="text-center py-6">
             <Brain className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No insights yet</h3>
-            <p className="text-gray-500 text-sm">AI insights will be generated automatically when you sync new activities from Strava.</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No insights yet</h3>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">AI insights will be generated automatically when you sync new activities from Strava.</p>
           </div>
         </CardContent>
       </Card>

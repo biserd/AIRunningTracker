@@ -147,9 +147,17 @@ export default function Dashboard() {
 
 
 
-  // Dashboard data query
+  // Dashboard data query with polling when insights are generating
   const { data: dashboardData, isLoading, error } = useQuery<any>({
     queryKey: [`/api/dashboard/${user.id}`],
+    refetchInterval: (query) => {
+      // Poll every 5 seconds while insights are being generated
+      const data = query.state.data;
+      if (data?.insightsStatus === 'syncing' || data?.insightsStatus === 'generating') {
+        return 5000;
+      }
+      return false; // Stop polling when ready
+    },
   });
 
   // Recovery status query
@@ -462,7 +470,7 @@ export default function Dashboard() {
             {/* My Goals - moved up for visibility */}
             <GoalProgress userId={user?.id!} unitPreference={dashboardData?.user?.unitPreference} />
             
-            <AIInsights insights={dashboardData?.insights || {}} userId={user?.id!} />
+            <AIInsights insights={dashboardData?.insights || {}} userId={user?.id!} insightsStatus={dashboardData?.insightsStatus} />
             <TrainingRecommendations recommendations={dashboardData?.insights?.recommendations || []} userId={user?.id!} />
             <FitnessTrends chartData={dashboardData?.chartData || []} unitPreference={dashboardData?.user?.unitPreference} />
 

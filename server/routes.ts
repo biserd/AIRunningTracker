@@ -1849,6 +1849,9 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
 
+      // Get sync state to determine insights status
+      const syncState = await storage.getSyncState(userId);
+
       // Get activity history limit based on subscription
       const historyLimitDays = getActivityHistoryLimit(user.subscriptionPlan, user.subscriptionStatus);
       let historyLimitDate: Date | undefined;
@@ -2136,6 +2139,20 @@ ${allPages.map(page => `  <url>
           technique: insights.find(i => i.type === 'technique'),
           recommendations: insights.filter(i => i.type === 'recommendation'),
         },
+        // Insights status: syncing | generating | ready
+        // - syncing: activities are still being synced from Strava
+        // - generating: sync complete but insights not yet generated (just synced, waiting for AI)
+        // - ready: insights exist or no activities to analyze
+        insightsStatus: (() => {
+          if (syncState.syncStatus === 'running') return 'syncing';
+          // If sync completed recently (within 2 minutes) and no insights yet, AI is generating
+          const hasActivities = activities.length > 0;
+          const hasInsights = insights.length > 0;
+          const syncCompletedRecently = syncState.lastSyncAt && 
+            (Date.now() - new Date(syncState.lastSyncAt).getTime()) < 2 * 60 * 1000;
+          if (hasActivities && !hasInsights && syncCompletedRecently) return 'generating';
+          return 'ready';
+        })(),
         chartData: activities.slice(0, 6).reverse().map((activity, index) => {
           const distanceInKm = activity.distance / 1000;
           const distanceConverted = user.unitPreference === "miles" ? distanceInKm * 0.621371 : distanceInKm;
