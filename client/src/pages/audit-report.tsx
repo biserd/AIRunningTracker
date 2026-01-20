@@ -149,6 +149,14 @@ function useAuditCheckout() {
   });
 }
 
+interface SyncStatus {
+  syncStatus: string;
+  syncProgress: number;
+  syncTotal: number;
+  pendingJobs: number;
+  processingJobs: number;
+}
+
 export default function AuditReportPage() {
   const { isAuthenticated, user, isLoading: authLoading } = useAuth();
   const { hasActiveSubscription, isLoading: subLoading } = useSubscription();
@@ -158,6 +166,10 @@ export default function AuditReportPage() {
 
   // Check if user has connected Strava
   const isStravaConnected = !!(user as any)?.stravaAthleteId;
+
+  // Check if we just connected (from URL param)
+  const params = new URLSearchParams(window.location.search);
+  const justConnected = params.get('connected') === 'true';
 
   const handleStravaConnect = () => {
     const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID;
@@ -169,10 +181,37 @@ export default function AuditReportPage() {
     window.location.href = stravaAuthUrl;
   };
 
-  const { data: auditData, isLoading: auditLoading } = useQuery<AuditData>({
+  // Poll sync status when Strava is connected
+  const { data: syncStatus } = useQuery<SyncStatus>({
+    queryKey: ['/api/strava/sync-status'],
+    enabled: !!user?.id && isStravaConnected,
+    refetchInterval: (query) => {
+      // Keep polling while sync is running or there are pending jobs
+      const data = query.state.data;
+      if (data?.syncStatus === 'running' || (data?.pendingJobs ?? 0) > 0 || (data?.processingJobs ?? 0) > 0) {
+        return 2000; // Poll every 2 seconds
+      }
+      return false; // Stop polling
+    },
+  });
+
+  const isSyncing = syncStatus?.syncStatus === 'running' || 
+    (syncStatus?.pendingJobs ?? 0) > 0 || 
+    (syncStatus?.processingJobs ?? 0) > 0;
+
+  const { data: auditData, isLoading: auditLoading, refetch: refetchAudit } = useQuery<AuditData>({
     queryKey: [`/api/audit-report/${user?.id}`],
     enabled: !!user?.id && isStravaConnected,
   });
+
+  // Refetch audit data when sync completes
+  useEffect(() => {
+    if (syncStatus && !isSyncing && justConnected) {
+      refetchAudit();
+      // Clear the connected param from URL
+      window.history.replaceState({}, '', '/audit-report');
+    }
+  }, [isSyncing, syncStatus, justConnected, refetchAudit]);
 
   useEffect(() => {
     if (!subLoading && hasActiveSubscription) {
@@ -273,6 +312,51 @@ export default function AuditReportPage() {
           <p className="text-sm text-gray-500 mt-4">
             We only read your activity data. We never post on your behalf.
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show syncing screen when activities are being pulled
+  if (isSyncing || (auditLoading && justConnected)) {
+    const progress = syncStatus?.syncProgress || 0;
+    const total = syncStatus?.syncTotal || 0;
+    const pendingJobs = (syncStatus?.pendingJobs || 0) + (syncStatus?.processingJobs || 0);
+    
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-orange-50 flex items-center justify-center">
+        <SEO 
+          title="Syncing Your Data | AITracker.run"
+          description="We're pulling your Strava activities to analyze your training."
+        />
+        <div className="max-w-md mx-auto px-4 text-center">
+          <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-strava-orange" />
+          </div>
+          <h1 className="text-3xl font-bold text-charcoal mb-4">
+            Syncing Your Activities
+          </h1>
+          <p className="text-gray-600 mb-6">
+            We're pulling your running data from Strava. This usually takes 10-30 seconds.
+          </p>
+          {total > 0 && (
+            <div className="mb-4">
+              <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                <div 
+                  className="bg-strava-orange h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min((progress / total) * 100, 100)}%` }}
+                />
+              </div>
+              <p className="text-sm text-gray-500">
+                {progress} of {total} activities processed
+              </p>
+            </div>
+          )}
+          {pendingJobs > 0 && (
+            <p className="text-sm text-gray-500">
+              {pendingJobs} task{pendingJobs !== 1 ? 's' : ''} remaining...
+            </p>
+          )}
         </div>
       </div>
     );
