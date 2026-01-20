@@ -155,9 +155,11 @@ export default function TrainingPlans() {
   
   const formatPace = (minPerKm: number | null) => {
     if (!minPerKm) return "N/A";
-    const mins = Math.floor(minPerKm);
-    const secs = Math.round((minPerKm - mins) * 60);
-    return `${mins}:${secs.toString().padStart(2, "0")}/km`;
+    // Convert to min/mile if user prefers miles
+    const pace = useMiles ? minPerKm / KM_TO_MILES : minPerKm;
+    const mins = Math.floor(pace);
+    const secs = Math.round((pace - mins) * 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}/${useMiles ? "mi" : "km"}`;
   };
   
   const goalTypeLabels: Record<string, string> = {
