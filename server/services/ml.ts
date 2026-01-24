@@ -101,7 +101,126 @@ export class MLService {
   }
 
   /**
+   * High-confidence race name patterns (very specific event names)
+   * These require the activity to match a standard race distance for detection
+   */
+  private static HIGH_CONFIDENCE_RACE_PATTERNS = [
+    /\bmarathon\b/i,
+    /\bhalf\s*marathon\b/i,
+    /\b(5k|10k|15k|20k|25k|30k)\b/i,
+    /\b(5K|10K|15K|20K|25K|30K)\b/,
+    /\bparkrun\b/i,
+    /\b(turkey\s*trot|resolution\s*run)\b/i,
+  ];
+
+  /**
+   * Medium-confidence race patterns - require standard distance + fast pace
+   */
+  private static MEDIUM_CONFIDENCE_RACE_PATTERNS = [
+    /\b(classic|challenge|championship|invitational)\b/i,
+  ];
+
+  /**
+   * Standard race distances in meters with tolerance ranges
+   */
+  private static RACE_DISTANCES = [
+    { name: '5K', meters: 5000, min: 4800, max: 5500 },
+    { name: '10K', meters: 10000, min: 9500, max: 10500 },
+    { name: '15K', meters: 15000, min: 14500, max: 15500 },
+    { name: 'Half', meters: 21097, min: 20500, max: 22000 },
+    { name: 'Marathon', meters: 42195, min: 41000, max: 43500 },
+  ];
+
+  /**
+   * Auto-detect race efforts from activities that may not have workout_type=1
+   * Uses: activity name + distance matching, pace analysis, and heart rate
+   * Stricter guardrails to reduce false positives
+   */
+  private autoDetectRaces(activities: Activity[]): Activity[] {
+    if (activities.length === 0) return [];
+
+    // Calculate user's average training pace for comparison
+    const paces = activities
+      .filter(a => a.distance >= 3000) // At least 3km for meaningful pace
+      .map(a => (a.movingTime / 60) / (a.distance / 1000));
+    
+    if (paces.length === 0) return [];
+    
+    const avgPace = paces.reduce((a, b) => a + b, 0) / paces.length;
+    const sortedPaces = [...paces].sort((a, b) => a - b);
+    const fastPaceThreshold = sortedPaces[Math.floor(sortedPaces.length * 0.15)]; // Top 15% threshold
+    const veryFastThreshold = sortedPaces[Math.floor(sortedPaces.length * 0.10)]; // Top 10% threshold
+    
+    console.log(`[Race Auto-Detect] Avg pace: ${avgPace.toFixed(2)} min/km, Fast threshold (15%): ${fastPaceThreshold.toFixed(2)}, Very fast (10%): ${veryFastThreshold.toFixed(2)}`);
+
+    const detectedRaces: Activity[] = [];
+    
+    for (const activity of activities) {
+      // Skip runs that are too short for race predictions
+      if (activity.distance < 4500) continue;
+      
+      const pace = (activity.movingTime / 60) / (activity.distance / 1000);
+      let isRace = false;
+      let detectionReason = '';
+
+      // Check if activity matches a standard race distance
+      const matchedDistance = MLService.RACE_DISTANCES.find(
+        d => activity.distance >= d.min && activity.distance <= d.max
+      );
+
+      // Method 1: High-confidence name patterns (marathon, half marathon, 5K, 10K, parkrun)
+      // Must also be at a matching standard distance and faster than average
+      const highConfidenceMatch = MLService.HIGH_CONFIDENCE_RACE_PATTERNS.some(pattern => 
+        pattern.test(activity.name || '')
+      );
+      
+      if (highConfidenceMatch && matchedDistance && pace < avgPace) {
+        isRace = true;
+        detectionReason = `name match (${matchedDistance.name}) + fast pace`;
+      }
+
+      // Method 2: Medium-confidence patterns (classic, challenge, championship)
+      // Require standard distance + top 15% pace
+      if (!isRace) {
+        const mediumConfidenceMatch = MLService.MEDIUM_CONFIDENCE_RACE_PATTERNS.some(pattern => 
+          pattern.test(activity.name || '')
+        );
+        
+        if (mediumConfidenceMatch && matchedDistance && pace <= fastPaceThreshold) {
+          isRace = true;
+          detectionReason = `event name + ${matchedDistance.name} distance + fast pace`;
+        }
+      }
+
+      // Method 3: Standard race distance at top 10% pace (very fast effort)
+      // No name matching required - pace itself is strong evidence
+      if (!isRace && matchedDistance && pace <= veryFastThreshold) {
+        isRace = true;
+        detectionReason = `top 10% pace at ${matchedDistance.name} distance`;
+      }
+
+      // Method 4: High HR effort at standard race distance with fast pace
+      // Require 90%+ avg HR relative to max + top 15% pace + standard distance
+      if (!isRace && matchedDistance && activity.averageHeartrate && activity.maxHeartrate) {
+        const hrEffort = activity.averageHeartrate / activity.maxHeartrate;
+        if (hrEffort > 0.90 && pace <= fastPaceThreshold) {
+          isRace = true;
+          detectionReason = `high HR (${(hrEffort * 100).toFixed(0)}%) + ${matchedDistance.name} + fast pace`;
+        }
+      }
+
+      if (isRace) {
+        console.log(`[Race Auto-Detect] Detected: "${activity.name}" - ${(activity.distance/1000).toFixed(2)}km @ ${pace.toFixed(2)} min/km (${detectionReason})`);
+        detectedRaces.push(activity);
+      }
+    }
+
+    return detectedRaces;
+  }
+
+  /**
    * Predict race times using actual race data (workout_type=1) with Riegel formula
+   * Also auto-detects race efforts from unmarked activities
    * Falls back to training pace analysis if no races found
    */
   async predictRacePerformance(userId: number): Promise<RacePrediction[]> {
@@ -119,18 +238,33 @@ export class MLService {
       }];
     }
 
-    // Look for actual races (Strava workout_type = 1) within last 90 days
-    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-    const recentRaces = activities.filter(a => 
+    // Look for actual races (Strava workout_type = 1) within last 180 days (6 months)
+    // Extended window to capture more race data for users who race infrequently
+    const sixMonthsAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
+    const markedRaces = activities.filter(a => 
       a.workoutType === 1 && 
-      new Date(a.startDate) >= ninetyDaysAgo &&
+      new Date(a.startDate) >= sixMonthsAgo &&
       a.distance >= 1000 // At least 1km
     );
 
+    // Auto-detect additional race efforts from recent activities (also 6 months)
+    const recentActivities = activities.filter(a => 
+      new Date(a.startDate) >= sixMonthsAgo &&
+      a.distance >= 1000
+    );
+    const autoDetectedRaces = this.autoDetectRaces(recentActivities);
+
+    // Combine marked and auto-detected races, avoiding duplicates
+    const markedRaceIds = new Set(markedRaces.map(r => r.id));
+    const additionalRaces = autoDetectedRaces.filter(r => !markedRaceIds.has(r.id));
+    const allRaces = [...markedRaces, ...additionalRaces];
+
+    console.log(`[Race Predictor] User ${userId}: ${markedRaces.length} marked races, ${additionalRaces.length} auto-detected races`);
+
     // If we have race data, use the Riegel formula for predictions
-    if (recentRaces.length > 0) {
-      console.log(`[Race Predictor] Found ${recentRaces.length} races for user ${userId}`);
-      return this.predictFromRaces(recentRaces, activities.length);
+    if (allRaces.length > 0) {
+      console.log(`[Race Predictor] Using ${allRaces.length} total races for predictions`);
+      return this.predictFromRaces(allRaces, activities.length);
     }
 
     // Fallback: No races found, use training pace analysis
@@ -139,26 +273,69 @@ export class MLService {
   }
 
   /**
+   * Calculate VDOT (VO2max estimate) from a race performance using Daniels' formula
+   * Higher VDOT = better fitness. This normalizes performances across different distances.
+   */
+  private calculateVDOT(distanceMeters: number, timeSeconds: number): number {
+    const distanceKm = distanceMeters / 1000;
+    const timeMinutes = timeSeconds / 60;
+    
+    // Simplified VDOT approximation based on Daniels' Running Formula
+    // VDOT correlates to VO2max and allows comparing performances across distances
+    const velocity = distanceKm / timeMinutes; // km per minute
+    const percentVO2 = 0.8 + 0.1894393 * Math.exp(-0.012778 * timeMinutes) + 
+                       0.2989558 * Math.exp(-0.1932605 * timeMinutes);
+    const vo2 = -4.6 + 0.182258 * velocity * 1000 + 0.000104 * Math.pow(velocity * 1000, 2);
+    
+    return vo2 / percentVO2;
+  }
+
+  /**
    * Predict race times using the Riegel formula from actual race performances
    * Formula: T2 = T1 × (D2/D1)^1.06
+   * Prefers longer races as reference points since they're more accurate for predictions
    */
   private predictFromRaces(races: Activity[], totalActivities: number): RacePrediction[] {
+    // Filter out very short races (< 5km) - they're not reliable for Riegel predictions
+    // Short races have much faster paces that don't extrapolate well to longer distances
+    const validRaces = races.filter(r => r.distance >= 5000);
+    if (validRaces.length === 0) {
+      console.log('[Race Predictor] No races >= 5km, falling back to training pace analysis');
+      return this.predictFromTrainingPace(races);
+    }
+
     // Group races by approximate distance category and find best performance in each
     const racesByCategory = {
-      '5K': races.filter(r => r.distance >= 4500 && r.distance <= 6000),
-      '10K': races.filter(r => r.distance >= 9000 && r.distance <= 11000),
-      'Half': races.filter(r => r.distance >= 20000 && r.distance <= 22000),
-      'Marathon': races.filter(r => r.distance >= 40000 && r.distance <= 44000),
+      '5K': validRaces.filter(r => r.distance >= 4500 && r.distance <= 6000),
+      '10K': validRaces.filter(r => r.distance >= 9000 && r.distance <= 11000),
+      'Half': validRaces.filter(r => r.distance >= 20000 && r.distance <= 22000),
+      'Marathon': validRaces.filter(r => r.distance >= 40000 && r.distance <= 44000),
     };
 
-    // Find the best (fastest pace) race to use as reference
+    // Find the best reference race using VDOT (normalizes across distances)
+    // Strongly prefer longer races as they're more reliable for predicting race times
     let bestRace: Activity | null = null;
-    let bestPacePerKm = Infinity;
+    let bestScore = 0;
 
-    for (const race of races) {
-      const pacePerKm = (race.movingTime / 60) / (race.distance / 1000);
-      if (pacePerKm < bestPacePerKm) {
-        bestPacePerKm = pacePerKm;
+    for (const race of validRaces) {
+      const vdot = this.calculateVDOT(race.distance, race.movingTime);
+      const distanceKm = race.distance / 1000;
+      
+      // Distance multiplier: prefer longer races more strongly
+      // 5K = 1.0x, 10K = 1.15x, Half = 1.3x, Marathon = 1.5x
+      let distanceMultiplier = 1.0;
+      if (distanceKm >= 40) distanceMultiplier = 1.5; // Marathon
+      else if (distanceKm >= 20) distanceMultiplier = 1.3; // Half Marathon
+      else if (distanceKm >= 10) distanceMultiplier = 1.15; // 10K
+      
+      // Recency bonus: prefer more recent races (within last 30 days get small bonus)
+      const daysSinceRace = (Date.now() - new Date(race.startDate).getTime()) / (24 * 60 * 60 * 1000);
+      const recencyBonus = daysSinceRace < 30 ? 0.5 : (daysSinceRace < 60 ? 0.25 : 0);
+      
+      const adjustedScore = (vdot + recencyBonus) * distanceMultiplier;
+      
+      if (adjustedScore > bestScore) {
+        bestScore = adjustedScore;
         bestRace = race;
       }
     }
@@ -169,8 +346,9 @@ export class MLService {
 
     const refDistanceKm = bestRace.distance / 1000;
     const refTimeMinutes = bestRace.movingTime / 60;
+    const refVDOT = this.calculateVDOT(bestRace.distance, bestRace.movingTime);
     
-    console.log(`[Race Predictor] Using best race: ${bestRace.name} - ${refDistanceKm.toFixed(2)}km in ${this.formatTime(refTimeMinutes)}`);
+    console.log(`[Race Predictor] Using best race: ${bestRace.name} - ${refDistanceKm.toFixed(2)}km in ${this.formatTime(refTimeMinutes)} (VDOT: ${refVDOT.toFixed(1)})`);
 
     const predictions: RacePrediction[] = [];
     const targetDistances = [
