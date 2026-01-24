@@ -16,6 +16,9 @@ export interface IStorage {
   getUserByResetToken(resetToken: string): Promise<User | undefined>;
   updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
   
+  // Strava lookup methods
+  getUserByStravaId(stravaAthleteId: string): Promise<User | undefined>;
+  
   // Stripe subscription methods
   getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined>;
   updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<User | undefined>;
@@ -414,6 +417,11 @@ export class DatabaseStorage implements IStorage {
       .set(updates)
       .where(eq(users.id, id))
       .returning();
+    return user || undefined;
+  }
+
+  async getUserByStravaId(stravaAthleteId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.stravaAthleteId, stravaAthleteId));
     return user || undefined;
   }
 
