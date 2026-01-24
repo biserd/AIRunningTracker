@@ -70,7 +70,7 @@ export default function PricingPage() {
   const { isAuthenticated } = useAuth();
   const { plan, isPro, isPremium } = useSubscription();
   const checkout = useCheckout();
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [, navigate] = useLocation();
 
   const handleSubscribe = (tier: 'pro' | 'premium') => {
