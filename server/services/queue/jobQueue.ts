@@ -223,7 +223,6 @@ class JobQueue {
 
     const newJobs: Omit<Job, 'id' | 'createdAt' | 'status' | 'attempts'>[] = [];
     let processedCount = 0;
-    let rehydratedCount = 0;
 
     for (const activity of activities) {
       const stravaId = activity.id.toString();
@@ -231,29 +230,11 @@ class JobQueue {
       const existingActivity = await storage.getActivityByStravaIdAndUser(stravaId, job.userId);
       
       if (existingActivity) {
-        const needsStreams = !existingActivity.streamsData;
-        const needsLaps = !existingActivity.lapsData;
-        
-        if (needsStreams || needsLaps) {
-          newJobs.push({
-            type: 'HYDRATE_ACTIVITY',
-            userId: job.userId,
-            priority: 3,
-            scheduledAt: new Date(),
-            maxAttempts: 3,
-            data: {
-              activityId: existingActivity.id,
-              stravaId,
-              fetchStreams: needsStreams,
-              fetchLaps: needsLaps,
-            },
-          });
-          rehydratedCount++;
-        }
+        // Activity already exists - skip hydration (will be done on-demand)
         continue;
       }
 
-      const newActivity = await storage.createActivity({
+      await storage.createActivity({
         userId: job.userId,
         stravaId,
         name: activity.name,
@@ -289,25 +270,12 @@ class JobQueue {
         elevLow: activity.elev_low || null,
       });
 
-      newJobs.push({
-        type: 'HYDRATE_ACTIVITY',
-        userId: job.userId,
-        priority: 2,
-        scheduledAt: new Date(),
-        maxAttempts: 3,
-        data: {
-          activityId: newActivity.id,
-          stravaId,
-          fetchStreams: true,
-          fetchLaps: true,
-        },
-      });
-
+      // No hydration job - hydration is done on-demand when user accesses tools that need detailed data
       processedCount++;
     }
 
-    this.notifyProgress(job.userId, `Created ${processedCount} new activities${rehydratedCount > 0 ? `, requeued ${rehydratedCount} for missing data` : ''}`);
-    console.log(`[JobQueue] User ${job.userId}: ${processedCount} new activities, ${rehydratedCount} rehydration jobs queued`);
+    this.notifyProgress(job.userId, `Created ${processedCount} new activities`);
+    console.log(`[JobQueue] User ${job.userId}: ${processedCount} new activities saved (hydration on-demand)`);
 
     // Update sync progress
     const syncState = activeSyncs.get(job.userId);
