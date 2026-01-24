@@ -971,17 +971,17 @@ ${allPages.map(page => `  <url>
         customerId = customer.id;
       }
 
-      // Get the Premium yearly price from Stripe
+      // Get the Premium monthly price from Stripe
       const prices = await stripe.prices.list({
         active: true,
         type: 'recurring',
         limit: 20,
       });
       
-      // Find Premium yearly price (look for 'premium' in product metadata or name, with yearly interval)
+      // Find Premium monthly price (look for 'premium' in product metadata or name, with monthly interval)
       let premiumPriceId: string | null = null;
       for (const price of prices.data) {
-        if (price.recurring?.interval === 'year') {
+        if (price.recurring?.interval === 'month') {
           const product = await stripe.products.retrieve(price.product as string);
           if (product.name?.toLowerCase().includes('premium') || 
               product.metadata?.tier === 'premium') {
@@ -992,10 +992,10 @@ ${allPages.map(page => `  <url>
       }
       
       if (!premiumPriceId) {
-        // Fallback to first yearly price if no Premium price found
-        const yearlyPrice = prices.data.find(p => p.recurring?.interval === 'year');
-        if (yearlyPrice) {
-          premiumPriceId = yearlyPrice.id;
+        // Fallback to first monthly price if no Premium price found
+        const monthlyPrice = prices.data.find(p => p.recurring?.interval === 'month');
+        if (monthlyPrice) {
+          premiumPriceId = monthlyPrice.id;
         } else {
           // Final fallback to any recurring price
           const anyPrice = prices.data[0];
