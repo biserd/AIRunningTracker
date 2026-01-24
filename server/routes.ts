@@ -3979,6 +3979,22 @@ ${allPages.map(page => `  <url>
       const velocities = streamsData.velocity_smooth?.data || [];
 
       if (cadences.length === 0) {
+        // Trigger on-demand hydration if streams not available
+        const needsStreams = !activity.streamsData || activity.streamsData === 'null';
+        if (needsStreams) {
+          jobQueue.addJob(createHydrateActivityJob(
+            userId,
+            activity.id,
+            activity.stravaId,
+            true, // needsStreams
+            !activity.lapsData, // needsLaps
+            0 // Priority 0 = highest
+          ));
+          return res.status(202).json({ 
+            message: "Fetching detailed activity data from Strava. Please try again in a few seconds.",
+            hydrating: true
+          });
+        }
         return res.status(400).json({ message: "No cadence stream data available for this activity" });
       }
 
