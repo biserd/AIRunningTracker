@@ -145,14 +145,9 @@ export default function RunnerScoreRadar() {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-yellow-500" />
-            Runner Score
-          </div>
-          <Button onClick={handleShare} variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-gray-600">
-            <Share2 className="h-4 w-4" />
-          </Button>
+        <CardTitle className="flex items-center gap-2">
+          <Trophy className="h-5 w-5 text-yellow-500" />
+          Runner Score
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0 space-y-3">
