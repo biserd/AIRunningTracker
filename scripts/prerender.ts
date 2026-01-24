@@ -33,50 +33,10 @@ const STATIC_PAGES: Record<string, PageMeta> = {
     description: "Free running calculators: race predictor, marathon fueling, aerobic decoupling, cadence analysis & more. No signup required.",
     keywords: "running tools, running calculators, free running apps, marathon calculator, running analysis"
   },
-  "/tools/race-predictor": {
-    title: "Race Time Predictor | Free 5K to Marathon Calculator | RunAnalytics",
-    description: "Predict your 5K, 10K, half marathon & marathon times using the Riegel formula. Import Strava data for personalized race predictions. Free calculator.",
-    keywords: "race time predictor, marathon time calculator, running pace calculator, Riegel formula"
-  },
-  "/tools/marathon-fueling": {
-    title: "Marathon Fueling Calculator | Gel Timing & Nutrition Plan | RunAnalytics",
-    description: "Calculate your marathon nutrition plan with exact gel timing, carb targets & sodium needs. Get a personalized race fueling strategy in minutes.",
-    keywords: "marathon fueling, gel timing calculator, marathon nutrition plan, race nutrition"
-  },
-  "/tools/aerobic-decoupling-calculator": {
-    title: "Aerobic Decoupling Calculator | Running Endurance Test | RunAnalytics",
-    description: "Measure aerobic fade on long runs. Calculate your Pa:HR ratio and endurance efficiency score. Free tool with Strava import.",
-    keywords: "aerobic decoupling, running endurance test, cardiac drift calculator, Pa:HR ratio"
-  },
-  "/tools/training-split-analyzer": {
-    title: "Training Split Analyzer | Polarized vs Pyramidal Training | RunAnalytics",
-    description: "Analyze your running intensity distribution. Discover if you're training polarized, pyramidal, or threshold-heavy. Free with Strava sync.",
-    keywords: "training split analyzer, polarized training, pyramidal training, running zones"
-  },
-  "/tools/cadence-analyzer": {
-    title: "Running Cadence Analyzer | Form Stability Score | RunAnalytics",
-    description: "Detect running form fade with cadence and stride analysis. Get your Form Stability Score and identify late-run form breakdown.",
-    keywords: "running cadence analyzer, form stability, stride length, running form analysis"
-  },
-  "/tools/heatmap": {
-    title: "Running Heatmap | Visualize Your Training Routes | RunAnalytics",
-    description: "See your most-run routes on an interactive heatmap. Discover training patterns and favorite paths from your Strava activities.",
-    keywords: "running heatmap, training routes, Strava heatmap, route visualization"
-  },
   "/tools/shoes": {
     title: "Running Shoe Database | Compare 100+ Running Shoes | RunAnalytics",
     description: "Browse and compare 100+ running shoes with specs, reviews & AI insights. Find the best shoes for your running needs.",
     keywords: "running shoes database, compare running shoes, best running shoes 2026"
-  },
-  "/tools/shoe-finder": {
-    title: "Running Shoe Finder | Personalized Shoe Recommendations | RunAnalytics",
-    description: "Find your perfect running shoe based on foot type, running style & goals. AI-powered recommendations from 100+ models.",
-    keywords: "running shoe finder, best running shoes, shoe recommendations"
-  },
-  "/tools/rotation-planner": {
-    title: "Running Shoe Rotation Planner | Build Your Shoe Lineup | RunAnalytics",
-    description: "Plan the perfect running shoe rotation. Get AI recommendations for daily trainers, speed shoes & race day options.",
-    keywords: "shoe rotation, running shoe lineup, multiple running shoes"
   },
   "/blog": {
     title: "Running Blog | Training Tips & AI Coaching Insights | RunAnalytics",

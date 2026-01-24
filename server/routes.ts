@@ -543,6 +543,13 @@ ${allPages.map(page => `  <url>
     next();
   });
 
+  // Tool slugs that get full SSR with content (not just meta)
+  const fullSsrToolSlugs = [
+    'race-predictor', 'marathon-fueling', 'aerobic-decoupling-calculator',
+    'training-split-analyzer', 'cadence-analyzer', 'heatmap', 
+    'shoe-finder', 'rotation-planner'
+  ];
+
   // Middleware to handle crawler requests for SEO pages (static marketing/tool pages)
   Object.entries(SEO_PAGES).forEach(([route, meta]) => {
     // Skip homepage - it gets full SSG above
@@ -551,6 +558,10 @@ ${allPages.map(page => `  <url>
     }
     // Skip blog posts - they get full SSR below
     if (route.startsWith('/blog/') && route !== '/blog') {
+      return;
+    }
+    // Skip tool pages that get full SSR with content below
+    if (route.startsWith('/tools/') && fullSsrToolSlugs.some(slug => route === `/tools/${slug}`)) {
       return;
     }
     
