@@ -26,15 +26,15 @@ interface RunnerScoreData {
 
 const RadarChart = ({ data }: { data: RunnerScoreData['components'] }) => {
   const scores = [
-    { label: 'Consistency', shortLabel: 'Con', value: (data.consistency / 25) * 100, color: '#3B82F6' },
-    { label: 'Performance', shortLabel: 'Perf', value: (data.performance / 25) * 100, color: '#EAB308' },
-    { label: 'Volume', shortLabel: 'Vol', value: (data.volume / 25) * 100, color: '#10B981' },
-    { label: 'Improvement', shortLabel: 'Imp', value: (data.improvement / 25) * 100, color: '#8B5CF6' },
+    { label: 'Consistency', value: (data.consistency / 25) * 100, color: '#3B82F6' },
+    { label: 'Performance', value: (data.performance / 25) * 100, color: '#EAB308' },
+    { label: 'Volume', value: (data.volume / 25) * 100, color: '#10B981' },
+    { label: 'Improvement', value: (data.improvement / 25) * 100, color: '#8B5CF6' },
   ];
 
-  const size = 200;
+  const size = 160;
   const center = size / 2;
-  const maxRadius = 70;
+  const maxRadius = 60;
   
   const points = scores.map((score, index) => {
     const angle = (index * 2 * Math.PI) / scores.length - Math.PI / 2;
@@ -54,23 +54,8 @@ const RadarChart = ({ data }: { data: RunnerScoreData['components'] }) => {
   });
 
   return (
-    <div className="flex items-center gap-4">
-      {/* Legend on left */}
-      <div className="flex flex-col gap-1 min-w-[80px]">
-        {scores.map((score, index) => (
-          <div key={index} className="flex items-center gap-1.5">
-            <div 
-              className="w-2 h-2 rounded-full flex-shrink-0" 
-              style={{ backgroundColor: score.color }}
-            />
-            <span className="text-[11px] text-gray-600 truncate">{score.shortLabel}</span>
-            <span className="text-[11px] font-medium ml-auto">{score.value.toFixed(0)}%</span>
-          </div>
-        ))}
-      </div>
-      
-      {/* Chart */}
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="flex-shrink-0">
+    <div className="flex flex-col items-center">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         {gridLevels.map((level) => (
           <circle
             key={level}
@@ -97,7 +82,7 @@ const RadarChart = ({ data }: { data: RunnerScoreData['components'] }) => {
         
         <polygon
           points={points.map(p => `${p.x},${p.y}`).join(' ')}
-          fill="rgba(59, 130, 246, 0.2)"
+          fill="rgba(59, 130, 246, 0.15)"
           stroke="#3B82F6"
           strokeWidth="2"
         />
@@ -107,13 +92,26 @@ const RadarChart = ({ data }: { data: RunnerScoreData['components'] }) => {
             key={index}
             cx={point.x}
             cy={point.y}
-            r="3"
+            r="4"
             fill={point.color}
             stroke="white"
-            strokeWidth="1.5"
+            strokeWidth="2"
           />
         ))}
       </svg>
+      
+      {/* Legend row below chart */}
+      <div className="flex justify-center gap-3 mt-2">
+        {scores.map((score, index) => (
+          <div key={index} className="flex items-center gap-1">
+            <div 
+              className="w-2 h-2 rounded-full" 
+              style={{ backgroundColor: score.color }}
+            />
+            <span className="text-[10px] text-gray-500">{score.label.slice(0, 3)}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
@@ -212,47 +210,48 @@ export default function RunnerScoreRadar() {
 
   return (
     <Card>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Trophy className="h-5 w-5" />
+            <Trophy className="h-5 w-5 text-yellow-500" />
             Runner Score
           </div>
-          <Button onClick={handleShare} variant="ghost" size="sm" className="h-7 w-7 p-0">
+          <Button onClick={handleShare} variant="ghost" size="sm" className="h-8 px-2 text-gray-500 hover:text-gray-700">
             <Share2 className="h-4 w-4" />
           </Button>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3 pt-0">
-        {/* Score + Grade Row */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className={`text-4xl font-bold ${getScoreColor(scoreData.totalScore)}`}>
+      <CardContent className="pt-0">
+        <div className="flex items-center gap-4">
+          {/* Left: Score display */}
+          <div className="flex flex-col items-center">
+            <span className={`text-5xl font-bold ${getScoreColor(scoreData.totalScore)}`}>
               {scoreData.totalScore}
             </span>
-            <div className="flex flex-col">
-              <Badge className={`text-sm px-2 py-0.5 font-bold rounded ${getGradeColor(scoreData.grade)}`}>
-                {scoreData.grade}
-              </Badge>
-              <span className="text-xs text-gray-500 mt-0.5">
-                Top {100 - scoreData.percentile}%
-              </span>
-            </div>
+            <Badge className={`mt-1 text-sm px-3 py-1 font-bold ${getGradeColor(scoreData.grade)}`}>
+              Grade {scoreData.grade}
+            </Badge>
+            <span className="text-xs text-gray-500 mt-1">
+              Top {100 - scoreData.percentile}%
+            </span>
           </div>
-          {/* Badges inline */}
-          {scoreData.badges.length > 0 && (
-            <div className="flex flex-wrap gap-1 justify-end max-w-[100px]">
-              {scoreData.badges.slice(0, 2).map((badge, index) => (
-                <Badge key={index} variant="outline" className="text-[10px] px-1.5 py-0">
-                  {badge}
-                </Badge>
-              ))}
-            </div>
-          )}
+          
+          {/* Right: Radar Chart */}
+          <div className="flex-1 flex justify-center">
+            <RadarChart data={scoreData.components} />
+          </div>
         </div>
-
-        {/* Compact Radar Chart with legend on left */}
-        <RadarChart data={scoreData.components} />
+        
+        {/* Badges row at bottom */}
+        {scoreData.badges.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-gray-100">
+            {scoreData.badges.slice(0, 4).map((badge, index) => (
+              <Badge key={index} variant="outline" className="text-xs">
+                {badge}
+              </Badge>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
