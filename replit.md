@@ -44,6 +44,13 @@ Preferred communication style: Simple, everyday language.
 - **Database Schema**: Comprehensive schema covering users, activities, AI insights, training plans, shoes, and more.
 - **Deployment**: Replit-optimized development, Vite/ESBuild for production, Neon for PostgreSQL.
 - **Performance Analytics**: Includes VO2 Max estimation, HR zone calculations, running efficiency, and training load analysis.
+- **Race Predictor Algorithm**: 
+  - Uses Riegel formula (T2 = T1 × (D2/D1)^1.06) for predictions
+  - Auto-detects races from activities using: name patterns (marathon, half, 5K, 10K, parkrun), pace analysis (top 10-15% fastest efforts), and standard race distance matching
+  - Combines Strava's workout_type=1 (marked races) with auto-detected races
+  - VDOT-based reference race selection with distance multipliers to prefer longer, more reliable races (Marathon=1.5x, Half=1.3x, 10K=1.15x)
+  - 180-day race history window for users who race infrequently
+  - Minimum 5K distance filter for Riegel formula predictions
 
 ## External Dependencies
 
