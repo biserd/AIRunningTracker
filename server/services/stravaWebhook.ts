@@ -68,9 +68,7 @@ class StravaWebhookService {
         return;
       }
 
-      await storage.saveStravaActivity(user.id, activity);
-      console.log(`[Strava Webhook] Saved activity ${event.object_id} for user ${user.id}`);
-
+      console.log(`[Strava Webhook] Processing run activity ${event.object_id} for user ${user.id}`);
       await this.sendPostRunEmail(user, activity);
     } catch (error) {
       console.error("[Strava Webhook] Error processing new activity:", error);
