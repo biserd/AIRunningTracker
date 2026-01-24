@@ -1,5 +1,6 @@
 import { getBlogPostBySlug, BlogPostContent } from './blogContent';
 import { homepageContent, HomepageContent } from './homepageContent';
+import { getToolBySlug, ToolContent } from './toolsContent';
 
 const BASE_URL = "https://aitracker.run";
 
@@ -601,3 +602,118 @@ export function renderHomepage(): string {
 </body>
 </html>`;
 }
+
+function generateSoftwareApplicationSchema(tool: ToolContent, url: string): string {
+  return JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": tool.title.split('|')[0].trim(),
+    "description": tool.description,
+    "applicationCategory": "HealthApplication",
+    "operatingSystem": "Web Browser",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "RunAnalytics",
+      "url": BASE_URL
+    },
+    "url": `${BASE_URL}${url}`,
+    "featureList": tool.features.join(", ")
+  }, null, 2);
+}
+
+export function renderToolPage(slug: string): string | null {
+  const tool = getToolBySlug(slug);
+  if (!tool) return null;
+
+  const url = `/tools/${slug}`;
+  const meta: PageMeta = {
+    title: `${tool.title} | RunAnalytics`,
+    description: tool.description,
+    keywords: tool.keywords,
+    type: 'website'
+  };
+
+  const structuredData = generateSoftwareApplicationSchema(tool, url);
+  const head = generateHtmlHead(meta, url, structuredData);
+
+  const faqHtml = tool.faq && tool.faq.length > 0
+    ? `<section class="ssr-faq">
+        <h2>Frequently Asked Questions</h2>
+        ${tool.faq.map(item => `
+        <details>
+          <summary>${escapeHtml(item.question)}</summary>
+          <p>${escapeHtml(item.answer)}</p>
+        </details>
+        `).join('')}
+      </section>`
+    : '';
+
+  const faqSchema = tool.faq && tool.faq.length > 0
+    ? `<script type="application/ld+json">
+  ${JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": tool.faq.map(item => ({
+      "@type": "Question",
+      "name": item.question,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": item.answer
+      }
+    }))
+  }, null, 2)}
+  </script>`
+    : '';
+
+  return `${head}
+${faqSchema}
+<body>
+  <div id="root">
+    <header class="ssr-header">
+      <div class="ssr-meta">Free Running Tool</div>
+      <h1>${escapeHtml(tool.title.split('|')[0].trim())}</h1>
+      <p style="opacity: 0.9; margin-top: 10px;">${escapeHtml(tool.description)}</p>
+    </header>
+    
+    <main class="ssr-container">
+      <article class="ssr-content">
+        <section class="ssr-features">
+          <h2>Features</h2>
+          <ul>
+            ${tool.features.map(f => `<li>${escapeHtml(f)}</li>`).join('\n            ')}
+          </ul>
+        </section>
+        
+        <section class="ssr-how-it-works">
+          <h2>How It Works</h2>
+          <p>${escapeHtml(tool.howItWorks)}</p>
+        </section>
+        
+        <section class="ssr-benefits">
+          <h2>Benefits</h2>
+          <ul>
+            ${tool.benefits.map(b => `<li>${escapeHtml(b)}</li>`).join('\n            ')}
+          </ul>
+        </section>
+        
+        ${faqHtml}
+        
+        <div class="ssr-cta">
+          <h3>Try ${escapeHtml(tool.title.split('|')[0].trim())} Free</h3>
+          <p>No signup required. Connect Strava for personalized insights.</p>
+          <a href="${url}">Use This Tool &rarr;</a>
+        </div>
+      </article>
+    </main>
+  </div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>`;
+}
+
+export { getAllToolSlugs } from './toolsContent';
