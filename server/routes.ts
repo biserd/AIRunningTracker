@@ -971,41 +971,8 @@ ${allPages.map(page => `  <url>
         customerId = customer.id;
       }
 
-      // Get the Premium monthly price from Stripe
-      const prices = await stripe.prices.list({
-        active: true,
-        type: 'recurring',
-        limit: 20,
-      });
-      
-      // Find Premium monthly price (look for 'premium' in product metadata or name, with monthly interval)
-      let premiumPriceId: string | null = null;
-      for (const price of prices.data) {
-        if (price.recurring?.interval === 'month') {
-          const product = await stripe.products.retrieve(price.product as string);
-          if (product.name?.toLowerCase().includes('premium') || 
-              product.metadata?.tier === 'premium') {
-            premiumPriceId = price.id;
-            break;
-          }
-        }
-      }
-      
-      if (!premiumPriceId) {
-        // Fallback to first monthly price if no Premium price found
-        const monthlyPrice = prices.data.find(p => p.recurring?.interval === 'month');
-        if (monthlyPrice) {
-          premiumPriceId = monthlyPrice.id;
-        } else {
-          // Final fallback to any recurring price
-          const anyPrice = prices.data[0];
-          if (anyPrice) {
-            premiumPriceId = anyPrice.id;
-          } else {
-            return res.status(400).json({ message: "No subscription price found" });
-          }
-        }
-      }
+      // Use the hardcoded Premium monthly price ID (same as pricing page)
+      const premiumPriceId = "price_1SbtcfRwvWaTf8xfSEO4iKnc";
 
       // Get the domain
       const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
