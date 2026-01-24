@@ -7,6 +7,7 @@ import AppHeader from "@/components/AppHeader";
 import QuickStats from "@/components/dashboard/QuickStats";
 import PerformanceChart from "@/components/dashboard/PerformanceChart";
 import ActivityHeatmap from "@/components/dashboard/ActivityHeatmap";
+import DashboardHeatmap from "@/components/dashboard/DashboardHeatmap";
 import AIInsights from "@/components/dashboard/AIInsights";
 import TrainingRecommendations from "@/components/dashboard/TrainingRecommendations";
 import FitnessTrends from "@/components/dashboard/FitnessTrends";
@@ -454,6 +455,7 @@ export default function Dashboard() {
             <RunnerScoreRadar />
             <HistoricalRunnerScore />
             <ActivityHeatmap />
+            <DashboardHeatmap />
           </div>
           
           <div className="space-y-6">
