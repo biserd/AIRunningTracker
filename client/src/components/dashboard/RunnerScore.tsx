@@ -141,117 +141,105 @@ export default function RunnerScore() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-2">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Trophy className="h-5 w-5" />
             Runner Score
           </div>
-          <Button onClick={handleShare} variant="outline" size="sm">
-            <Share2 className="h-4 w-4 mr-2" />
-            Share
-          </Button>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Main Score Display */}
-        <div className="text-center space-y-2">
-          <div className={`text-6xl font-bold ${getScoreColor(scoreData.totalScore)}`}>
-            {scoreData.totalScore}
-          </div>
-          <div className="flex items-center justify-center gap-2">
-            <Badge className={getGradeColor(scoreData.grade)}>
-              Grade {scoreData.grade}
-            </Badge>
-            <span className="text-sm text-gray-600">
-              {scoreData.percentile}th percentile
-            </span>
-          </div>
-        </div>
-
-        {/* Score Components */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <Calendar className="h-4 w-4" />
-              Consistency
-            </div>
-            <Progress value={(scoreData.components.consistency / 25) * 100} className="h-2" />
-            <span className="text-xs text-gray-600">{scoreData.components.consistency}/25</span>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <Zap className="h-4 w-4" />
-              Performance
-            </div>
-            <Progress value={(scoreData.components.performance / 25) * 100} className="h-2" />
-            <span className="text-xs text-gray-600">{scoreData.components.performance}/25</span>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <Target className="h-4 w-4" />
-              Volume
-            </div>
-            <Progress value={(scoreData.components.volume / 25) * 100} className="h-2" />
-            <span className="text-xs text-gray-600">{scoreData.components.volume}/25</span>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <TrendingUp className="h-4 w-4" />
-              Improvement
-            </div>
-            <Progress value={(scoreData.components.improvement / 25) * 100} className="h-2" />
-            <span className="text-xs text-gray-600">{scoreData.components.improvement}/25</span>
-          </div>
-        </div>
-
-        {/* Trends */}
-        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-          <div className="text-center">
-            <div className="flex items-center gap-1 justify-center">
+          <div className="flex items-center gap-2">
+            {/* Inline trends */}
+            <div className="flex items-center gap-1 text-xs">
               {scoreData.trends.weeklyChange >= 0 ? (
-                <TrendingUp className="h-4 w-4 text-green-600" />
+                <TrendingUp className="h-3 w-3 text-green-600" />
               ) : (
-                <TrendingDown className="h-4 w-4 text-red-600" />
+                <TrendingDown className="h-3 w-3 text-red-600" />
               )}
-              <span className="text-sm font-medium">
+              <span className={scoreData.trends.weeklyChange >= 0 ? "text-green-600" : "text-red-600"}>
                 {scoreData.trends.weeklyChange >= 0 ? '+' : ''}{scoreData.trends.weeklyChange}
               </span>
             </div>
-            <span className="text-xs text-gray-600">This Week</span>
+            <Button onClick={handleShare} variant="ghost" size="sm" className="h-7 w-7 p-0">
+              <Share2 className="h-4 w-4" />
+            </Button>
           </div>
-
-          <div className="text-center">
-            <div className="flex items-center gap-1 justify-center">
-              {scoreData.trends.monthlyChange >= 0 ? (
-                <TrendingUp className="h-4 w-4 text-green-600" />
-              ) : (
-                <TrendingDown className="h-4 w-4 text-red-600" />
-              )}
-              <span className="text-sm font-medium">
-                {scoreData.trends.monthlyChange >= 0 ? '+' : ''}{scoreData.trends.monthlyChange}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 pt-0">
+        {/* Score + Grade Row */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className={`text-4xl font-bold ${getScoreColor(scoreData.totalScore)}`}>
+              {scoreData.totalScore}
+            </span>
+            <div className="flex flex-col">
+              <Badge className={`${getGradeColor(scoreData.grade)} text-xs`}>
+                {scoreData.grade}
+              </Badge>
+              <span className="text-xs text-gray-500 mt-0.5">
+                Top {100 - scoreData.percentile}%
               </span>
             </div>
-            <span className="text-xs text-gray-600">This Month</span>
           </div>
-        </div>
-
-        {/* Badges */}
-        {scoreData.badges.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Achievement Badges</h4>
-            <div className="flex flex-wrap gap-2">
-              {scoreData.badges.map((badge, index) => (
-                <Badge key={index} variant="outline" className="text-xs">
+          {/* Badges inline */}
+          {scoreData.badges.length > 0 && (
+            <div className="flex flex-wrap gap-1 justify-end max-w-[120px]">
+              {scoreData.badges.slice(0, 2).map((badge, index) => (
+                <Badge key={index} variant="outline" className="text-[10px] px-1.5 py-0">
                   {badge}
                 </Badge>
               ))}
+              {scoreData.badges.length > 2 && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                  +{scoreData.badges.length - 2}
+                </Badge>
+              )}
             </div>
+          )}
+        </div>
+
+        {/* Compact Component Quadrant */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-3 w-3 text-gray-500 flex-shrink-0" />
+            <div className="flex-1">
+              <Progress value={(scoreData.components.consistency / 25) * 100} className="h-1.5" />
+            </div>
+            <span className="text-[10px] text-gray-500 w-6">{scoreData.components.consistency}</span>
           </div>
-        )}
+
+          <div className="flex items-center gap-2">
+            <Zap className="h-3 w-3 text-gray-500 flex-shrink-0" />
+            <div className="flex-1">
+              <Progress value={(scoreData.components.performance / 25) * 100} className="h-1.5" />
+            </div>
+            <span className="text-[10px] text-gray-500 w-6">{scoreData.components.performance}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Target className="h-3 w-3 text-gray-500 flex-shrink-0" />
+            <div className="flex-1">
+              <Progress value={(scoreData.components.volume / 25) * 100} className="h-1.5" />
+            </div>
+            <span className="text-[10px] text-gray-500 w-6">{scoreData.components.volume}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-3 w-3 text-gray-500 flex-shrink-0" />
+            <div className="flex-1">
+              <Progress value={(scoreData.components.improvement / 25) * 100} className="h-1.5" />
+            </div>
+            <span className="text-[10px] text-gray-500 w-6">{scoreData.components.improvement}</span>
+          </div>
+        </div>
+
+        {/* Legend row */}
+        <div className="flex justify-between text-[10px] text-gray-400 px-1">
+          <span className="flex items-center gap-1"><Calendar className="h-2.5 w-2.5" />Consistency</span>
+          <span className="flex items-center gap-1"><Zap className="h-2.5 w-2.5" />Performance</span>
+          <span className="flex items-center gap-1"><Target className="h-2.5 w-2.5" />Volume</span>
+          <span className="flex items-center gap-1"><TrendingUp className="h-2.5 w-2.5" />Improve</span>
+        </div>
       </CardContent>
     </Card>
   );
