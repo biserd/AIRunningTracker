@@ -32,7 +32,7 @@ import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClie
 import { db } from "./db";
 import { sql, eq, isNull } from "drizzle-orm";
 import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getActivityHistoryLimit, RATE_LIMITS } from "./rateLimits";
-import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage } from "./ssr/renderer";
+import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage, renderToolPage, getAllToolSlugs } from "./ssr/renderer";
 import { getAllBlogPosts } from "./ssr/blogContent";
 
 // Authentication middleware
@@ -607,6 +607,57 @@ ${allPages.map(page => `  <url>
       // Blog post not found, let React handle it
       next();
     }
+  });
+
+  // SSG for free tools pages - serves to crawlers only for SEO, regular users get SPA
+  // Tool slugs: race-predictor, marathon-fueling, aerobic-decoupling-calculator, training-split-analyzer, cadence-analyzer, heatmap, shoe-finder, rotation-planner
+  const toolRouteMap: Record<string, string> = {
+    'race-predictor': 'race-predictor',
+    'marathon-fueling': 'marathon-fueling',
+    'aerobic-decoupling-calculator': 'aerobic-decoupling-calculator',
+    'training-split-analyzer': 'training-split-analyzer',
+    'cadence-analyzer': 'cadence-analyzer',
+    'heatmap': 'heatmap',
+    'shoe-finder': 'shoe-finder',
+    'rotation-planner': 'rotation-planner'
+  };
+
+  Object.entries(toolRouteMap).forEach(([routeSlug, contentSlug]) => {
+    app.get(`/tools/${routeSlug}`, (req: any, res, next) => {
+      const userAgent = req.get('user-agent') || '';
+      const isCrawlerRequest = /googlebot|bingbot|yandex|baiduspider|duckduckbot|slurp|facebookexternalhit|twitterbot|linkedinbot|pinterest|semrush|ahrefsbot|mj12bot|dotbot|petalbot|rogerbot|dataforseo/i.test(userAgent);
+      
+      // Only serve SSR to crawlers - regular users get the rich SPA
+      if (!isCrawlerRequest) {
+        next();
+        return;
+      }
+      
+      const staticFilePath = path.join(process.cwd(), 'dist', 'prerender', `tools-${contentSlug}.html`);
+      
+      // Try to serve pre-rendered static file first (SSG)
+      if (fs.existsSync(staticFilePath)) {
+        console.log(`[SSG] Serving static tool page to crawler: ${contentSlug}`);
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('X-Robots-Tag', 'index, follow');
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        res.sendFile(staticFilePath);
+        return;
+      }
+      
+      // Fallback to dynamic SSR if static file doesn't exist
+      const html = renderToolPage(contentSlug);
+      if (html) {
+        console.log(`[SSR] Fallback: serving server-rendered tool page to crawler: ${contentSlug}`);
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('X-Robots-Tag', 'index, follow');
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        res.send(html);
+      } else {
+        // Tool not found, let React handle it
+        next();
+      }
+    });
   });
 
   // SSG for individual shoe pages - serves to crawlers only for SEO, regular users get SPA
