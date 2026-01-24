@@ -4500,11 +4500,65 @@ ${allPages.map(page => `  <url>
         message: "Hydration queued",
         needsStreams,
         needsLaps,
-        queuePosition: jobQueue.getStats().pendingJobs
+        queuePosition: jobQueue.getStats().pending
       });
     } catch (error: any) {
       console.error('Activity hydration error:', error);
       res.status(500).json({ message: error.message || "Failed to hydrate activity" });
+    }
+  });
+
+  // Bulk hydration endpoint - hydrate activities that need streams for specific tools
+  app.post("/api/activities/hydrate-bulk", authenticateJWT, async (req: any, res) => {
+    try {
+      const { activityIds, limit = 50 } = req.body;
+      const userId = req.user.id;
+      
+      // Get activities that need hydration
+      let activities: Activity[];
+      if (activityIds && Array.isArray(activityIds)) {
+        // Hydrate specific activities
+        const allActivities = await Promise.all(
+          activityIds.slice(0, limit).map((id: number) => storage.getActivityById(id))
+        );
+        activities = allActivities.filter((a): a is Activity => a !== null && a.userId === userId && !a.streamsData);
+      } else {
+        // Get activities that need hydration for this user
+        activities = await storage.getActivitiesNeedingHydration(userId, limit);
+      }
+      
+      if (activities.length === 0) {
+        return res.json({ 
+          success: true, 
+          message: "No activities need hydration",
+          queued: 0
+        });
+      }
+      
+      // Queue hydration jobs with high priority
+      let queued = 0;
+      for (const activity of activities) {
+        jobQueue.addJob(createHydrateActivityJob(
+          userId,
+          activity.id,
+          activity.stravaId,
+          true, // needsStreams
+          !activity.lapsData, // needsLaps
+          1 // Priority 1 = high
+        ));
+        queued++;
+      }
+      
+      console.log(`[Bulk Hydration] Queued ${queued} activities for user ${userId}`);
+      
+      res.json({ 
+        success: true, 
+        message: `Queued ${queued} activities for hydration`,
+        queued
+      });
+    } catch (error: any) {
+      console.error('Bulk hydration error:', error);
+      res.status(500).json({ message: error.message || "Failed to queue bulk hydration" });
     }
   });
 
