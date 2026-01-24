@@ -38,12 +38,12 @@ export default function DashboardHeatmap() {
     const map = L.map(mapContainerRef.current, {
       center: [40.7749, -73.95],
       zoom: 12,
-      zoomControl: false,
+      zoomControl: true,
       attributionControl: false,
-      dragging: false,
-      scrollWheelZoom: false,
-      doubleClickZoom: false,
-      touchZoom: false,
+      dragging: true,
+      scrollWheelZoom: true,
+      doubleClickZoom: true,
+      touchZoom: true,
     });
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -139,12 +139,9 @@ export default function DashboardHeatmap() {
               className="h-64 w-full rounded-lg overflow-hidden"
               style={{ zIndex: 0 }}
             />
-            <div className="absolute bottom-2 left-2 bg-white/90 dark:bg-gray-800/90 px-2 py-1 rounded text-xs text-gray-600 dark:text-gray-300">
+            <div className="absolute bottom-2 left-2 bg-white/90 dark:bg-gray-800/90 px-2 py-1 rounded text-xs text-gray-600 dark:text-gray-300 z-[1000]">
               {routeCount} routes
             </div>
-            <Link href="/tools/heatmap">
-              <div className="absolute inset-0 cursor-pointer hover:bg-black/5 transition-colors rounded-lg" />
-            </Link>
           </div>
         )}
       </CardContent>
