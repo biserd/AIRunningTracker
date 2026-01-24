@@ -25,44 +25,52 @@ interface RunnerScoreData {
 }
 
 const RadarChart = ({ data }: { data: RunnerScoreData['components'] }) => {
-  // Convert scores to percentages (0-100)
   const scores = [
-    { label: 'Consistency', value: (data.consistency / 25) * 100, color: '#3B82F6' },
-    { label: 'Performance', value: (data.performance / 25) * 100, color: '#EAB308' },
-    { label: 'Volume', value: (data.volume / 25) * 100, color: '#10B981' },
-    { label: 'Improvement', value: (data.improvement / 25) * 100, color: '#8B5CF6' },
+    { label: 'Consistency', shortLabel: 'Con', value: (data.consistency / 25) * 100, color: '#3B82F6' },
+    { label: 'Performance', shortLabel: 'Perf', value: (data.performance / 25) * 100, color: '#EAB308' },
+    { label: 'Volume', shortLabel: 'Vol', value: (data.volume / 25) * 100, color: '#10B981' },
+    { label: 'Improvement', shortLabel: 'Imp', value: (data.improvement / 25) * 100, color: '#8B5CF6' },
   ];
 
-  const size = 500;
+  const size = 200;
   const center = size / 2;
-  const maxRadius = 140;
+  const maxRadius = 70;
   
-  // Calculate points for the radar chart
   const points = scores.map((score, index) => {
-    const angle = (index * 2 * Math.PI) / scores.length - Math.PI / 2; // Start from top
+    const angle = (index * 2 * Math.PI) / scores.length - Math.PI / 2;
     const radius = (score.value / 100) * maxRadius;
     const x = center + radius * Math.cos(angle);
     const y = center + radius * Math.sin(angle);
     return { x, y, ...score };
   });
 
-  // Generate grid circles
-  const gridLevels = [20, 40, 60, 80, 100];
+  const gridLevels = [50, 100];
   
-  // Generate axis lines and labels
   const axisPoints = scores.map((score, index) => {
     const angle = (index * 2 * Math.PI) / scores.length - Math.PI / 2;
     const x = center + maxRadius * Math.cos(angle);
     const y = center + maxRadius * Math.sin(angle);
-    const labelX = center + (maxRadius + 50) * Math.cos(angle);
-    const labelY = center + (maxRadius + 50) * Math.sin(angle);
-    return { x, y, labelX, labelY, label: score.label };
+    return { x, y };
   });
 
   return (
-    <div className="flex flex-col items-center">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {/* Grid circles */}
+    <div className="flex items-center gap-4">
+      {/* Legend on left */}
+      <div className="flex flex-col gap-1 min-w-[80px]">
+        {scores.map((score, index) => (
+          <div key={index} className="flex items-center gap-1.5">
+            <div 
+              className="w-2 h-2 rounded-full flex-shrink-0" 
+              style={{ backgroundColor: score.color }}
+            />
+            <span className="text-[11px] text-gray-600 truncate">{score.shortLabel}</span>
+            <span className="text-[11px] font-medium ml-auto">{score.value.toFixed(0)}%</span>
+          </div>
+        ))}
+      </div>
+      
+      {/* Chart */}
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="flex-shrink-0">
         {gridLevels.map((level) => (
           <circle
             key={level}
@@ -75,7 +83,6 @@ const RadarChart = ({ data }: { data: RunnerScoreData['components'] }) => {
           />
         ))}
         
-        {/* Axis lines */}
         {axisPoints.map((point, index) => (
           <line
             key={index}
@@ -88,7 +95,6 @@ const RadarChart = ({ data }: { data: RunnerScoreData['components'] }) => {
           />
         ))}
         
-        {/* Data area */}
         <polygon
           points={points.map(p => `${p.x},${p.y}`).join(' ')}
           fill="rgba(59, 130, 246, 0.2)"
@@ -96,47 +102,18 @@ const RadarChart = ({ data }: { data: RunnerScoreData['components'] }) => {
           strokeWidth="2"
         />
         
-        {/* Data points */}
         {points.map((point, index) => (
           <circle
             key={index}
             cx={point.x}
             cy={point.y}
-            r="4"
+            r="3"
             fill={point.color}
             stroke="white"
-            strokeWidth="2"
+            strokeWidth="1.5"
           />
         ))}
-        
-        {/* Labels */}
-        {axisPoints.map((point, index) => (
-          <text
-            key={index}
-            x={point.labelX}
-            y={point.labelY}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            className="text-sm font-semibold fill-gray-800"
-          >
-            {point.label}
-          </text>
-        ))}
       </svg>
-      
-      {/* Score legend */}
-      <div className="grid grid-cols-2 gap-4 mt-4 w-full">
-        {scores.map((score, index) => (
-          <div key={index} className="flex items-center gap-2">
-            <div 
-              className="w-3 h-3 rounded-full" 
-              style={{ backgroundColor: score.color }}
-            />
-            <span className="text-sm text-gray-600">{score.label}</span>
-            <span className="text-sm font-medium ml-auto">{score.value.toFixed(0)}%</span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 };
@@ -235,50 +212,47 @@ export default function RunnerScoreRadar() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-2">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Trophy className="h-5 w-5" />
             Runner Score
           </div>
-          <Button onClick={handleShare} variant="outline" size="sm">
-            <Share2 className="h-4 w-4 mr-2" />
-            Share
+          <Button onClick={handleShare} variant="ghost" size="sm" className="h-7 w-7 p-0">
+            <Share2 className="h-4 w-4" />
           </Button>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Main Score Display */}
-        <div className="text-center space-y-4">
-          <div className={`text-6xl font-bold ${getScoreColor(scoreData.totalScore)}`}>
-            {scoreData.totalScore}
-          </div>
-          <div className="flex flex-col items-center gap-3">
-            <Badge className={`text-2xl px-6 py-3 font-bold tracking-wide rounded-xl transform hover:scale-105 transition-transform ${getGradeColor(scoreData.grade)}`}>
-              Grade {scoreData.grade}
-            </Badge>
-            <span className="text-lg font-medium text-gray-600">
-              {scoreData.percentile}th percentile
+      <CardContent className="space-y-3 pt-0">
+        {/* Score + Grade Row */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className={`text-4xl font-bold ${getScoreColor(scoreData.totalScore)}`}>
+              {scoreData.totalScore}
             </span>
+            <div className="flex flex-col">
+              <Badge className={`text-sm px-2 py-0.5 font-bold rounded ${getGradeColor(scoreData.grade)}`}>
+                {scoreData.grade}
+              </Badge>
+              <span className="text-xs text-gray-500 mt-0.5">
+                Top {100 - scoreData.percentile}%
+              </span>
+            </div>
           </div>
-        </div>
-
-        {/* Radar Chart */}
-        <RadarChart data={scoreData.components} />
-
-        {/* Badges */}
-        {scoreData.badges.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Achievement Badges</h4>
-            <div className="flex flex-wrap gap-2">
-              {scoreData.badges.slice(0, 3).map((badge, index) => (
-                <Badge key={index} variant="outline" className="text-xs">
+          {/* Badges inline */}
+          {scoreData.badges.length > 0 && (
+            <div className="flex flex-wrap gap-1 justify-end max-w-[100px]">
+              {scoreData.badges.slice(0, 2).map((badge, index) => (
+                <Badge key={index} variant="outline" className="text-[10px] px-1.5 py-0">
                   {badge}
                 </Badge>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        {/* Compact Radar Chart with legend on left */}
+        <RadarChart data={scoreData.components} />
       </CardContent>
     </Card>
   );
