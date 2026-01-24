@@ -57,6 +57,7 @@ export const users = pgTable("users", {
   }).default("direct"),
   coachNotifyRecap: boolean("coach_notify_recap").default(true),
   coachNotifyWeeklySummary: boolean("coach_notify_weekly_summary").default(true),
+  notifyPostRun: boolean("notify_post_run").default(true),
   coachQuietHoursStart: integer("coach_quiet_hours_start"), // 0-23 hour
   coachQuietHoursEnd: integer("coach_quiet_hours_end"), // 0-23 hour
   lastCoachSyncAt: timestamp("last_coach_sync_at"),

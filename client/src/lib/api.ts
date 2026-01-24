@@ -23,6 +23,7 @@ export interface DashboardData {
     coachNotifyWeeklySummary?: boolean;
     coachQuietHoursStart?: number | null;
     coachQuietHoursEnd?: number | null;
+    notifyPostRun?: boolean;
   };
   stats: {
     totalDistance: string;

@@ -24,6 +24,7 @@ import { dataQualityService } from "./services/dataQuality";
 import { efficiencyService } from "./services/efficiency";
 import { dripCampaignService } from "./services/dripCampaign";
 import { dripCampaignWorker } from "./services/dripCampaignWorker";
+import { stravaWebhookService } from "./services/stravaWebhook";
 import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, emailWaitlist, type Activity, type RunningShoe } from "@shared/schema";
 import { shoeData } from "./shoe-data";
 import { validateAllShoes, getPipelineStats, findDuplicates, getShoeDataWithMetadata, getShoesWithMetadataFromStorage, getEnrichedShoeData, enrichShoeWithAIData } from "./shoe-pipeline";
@@ -1690,6 +1691,48 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Strava Webhook Verification (GET request from Strava to verify subscription)
+  app.get("/api/strava/webhook", async (req, res) => {
+    try {
+      const mode = req.query["hub.mode"] as string;
+      const challenge = req.query["hub.challenge"] as string;
+      const verifyToken = req.query["hub.verify_token"] as string;
+
+      const result = await stravaWebhookService.verifySubscription(mode, challenge, verifyToken);
+      
+      if (result.valid && result.challenge) {
+        console.log("[Strava Webhook] Verification successful");
+        return res.json({ "hub.challenge": result.challenge });
+      }
+      
+      console.log("[Strava Webhook] Verification failed");
+      return res.status(403).json({ error: "Verification failed" });
+    } catch (error) {
+      console.error("[Strava Webhook] Verification error:", error);
+      return res.status(500).json({ error: "Verification error" });
+    }
+  });
+
+  // Strava Webhook Events (POST request when activities happen)
+  app.post("/api/strava/webhook", async (req, res) => {
+    try {
+      console.log("[Strava Webhook] Received event:", JSON.stringify(req.body));
+      
+      res.status(200).send("EVENT_RECEIVED");
+      
+      setImmediate(async () => {
+        try {
+          await stravaWebhookService.handleEvent(req.body);
+        } catch (error) {
+          console.error("[Strava Webhook] Event processing error:", error);
+        }
+      });
+    } catch (error) {
+      console.error("[Strava Webhook] Request error:", error);
+      res.status(200).send("EVENT_RECEIVED");
+    }
+  });
+
   // Create short-lived SSE nonces for sync
   const sseNonces = new Map<string, { userId: number; maxActivities: number; expiresAt: number }>();
   
@@ -2037,6 +2080,7 @@ ${allPages.map(page => `  <url>
           coachNotifyWeeklySummary: user.coachNotifyWeeklySummary ?? true,
           coachQuietHoursStart: user.coachQuietHoursStart,
           coachQuietHoursEnd: user.coachQuietHoursEnd,
+          notifyPostRun: user.notifyPostRun ?? true,
         },
         usage: usageStats,
         stats: {
@@ -3057,6 +3101,40 @@ ${allPages.map(page => `  <url>
     } catch (error: any) {
       console.error('Branding settings update error:', error);
       res.status(500).json({ message: error.message || "Failed to update branding settings" });
+    }
+  });
+
+  // Update user notification settings
+  app.patch("/api/users/:userId/notifications", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { notifyPostRun } = req.body;
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      if (req.user.id !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      if (typeof notifyPostRun !== "boolean") {
+        return res.status(400).json({ message: "notifyPostRun must be a boolean" });
+      }
+
+      const updatedUser = await storage.updateUser(userId, { notifyPostRun });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      deleteCachedResponse(`dashboard:${userId}`);
+      console.log(`[Notifications] Updated notification settings for user ${userId}: notifyPostRun=${notifyPostRun}`);
+
+      res.json({ success: true, user: updatedUser });
+    } catch (error: any) {
+      console.error('Notification settings update error:', error);
+      res.status(500).json({ message: error.message || "Failed to update notification settings" });
     }
   });
 

@@ -889,6 +889,99 @@ Biser`;
       text
     });
   }
+
+  async sendPostRunAnalysis(options: {
+    to: string;
+    firstName: string;
+    activityName: string;
+    distance: string;
+    duration: string;
+    pace: string;
+    heartRate: string | null;
+    elevation: string | null;
+    insights: { title: string; message: string }[];
+    dashboardUrl: string;
+  }): Promise<boolean> {
+    const { to, firstName, activityName, distance, duration, pace, heartRate, elevation, insights, dashboardUrl } = options;
+    
+    const insightsHtml = insights.map(insight => `
+      <div style="background: #f8f9fa; padding: 12px 16px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #e74c3c;">
+        <strong style="color: #2c3e50;">${insight.title}</strong>
+        <p style="margin: 5px 0 0; color: #666; font-size: 14px;">${insight.message}</p>
+      </div>
+    `).join("");
+
+    const statsRow = [
+      { label: "Distance", value: distance },
+      { label: "Duration", value: duration },
+      { label: "Pace", value: pace },
+      ...(heartRate ? [{ label: "Avg HR", value: heartRate }] : []),
+      ...(elevation ? [{ label: "Elevation", value: elevation }] : [])
+    ];
+
+    const statsHtml = statsRow.map(stat => `
+      <div style="text-align: center; padding: 10px;">
+        <div style="font-size: 20px; font-weight: bold; color: #e74c3c;">${stat.value}</div>
+        <div style="font-size: 12px; color: #666; text-transform: uppercase;">${stat.label}</div>
+      </div>
+    `).join("");
+
+    const subject = `Great run! ${activityName} - Your Analysis Ready`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #ffffff;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #e74c3c; margin: 0;">RunAnalytics</h1>
+          <p style="color: #666; margin: 5px 0;">Your Post-Run Analysis</p>
+        </div>
+        
+        <h2 style="color: #2c3e50; margin-bottom: 5px;">Nice work, ${firstName}!</h2>
+        <p style="color: #666; margin-top: 0;">Here's your quick analysis for <strong>${activityName}</strong></p>
+        
+        <div style="background: linear-gradient(135deg, #fef3f0 0%, #fff 100%); border-radius: 12px; padding: 20px; margin: 20px 0; display: flex; justify-content: space-around; flex-wrap: wrap;">
+          ${statsHtml}
+        </div>
+        
+        <h3 style="color: #2c3e50; margin-bottom: 15px;">Quick Insights</h3>
+        ${insightsHtml}
+        
+        <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); border-radius: 12px; padding: 25px; text-align: center; margin: 30px 0;">
+          <p style="color: rgba(255,255,255,0.9); margin: 0 0 15px; font-size: 16px;">See your full analysis, training trends, and AI recommendations</p>
+          <a href="${dashboardUrl}" style="background: white; color: #e74c3c; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">View Full Analysis</a>
+        </div>
+        
+        <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; color: #666; font-size: 13px; text-align: center;">
+          <p style="margin: 5px 0;">Happy running!</p>
+          <p style="margin: 5px 0;">The RunAnalytics Team</p>
+          <p style="margin: 15px 0 0; font-size: 11px; color: #999;">
+            <a href="${dashboardUrl.replace('/dashboard', '')}/settings" style="color: #999;">Manage email preferences</a>
+          </p>
+        </div>
+      </div>
+    `;
+
+    const insightsText = insights.map(i => `${i.title}: ${i.message}`).join("\n");
+    const text = `
+Nice work, ${firstName}!
+
+Here's your quick analysis for ${activityName}:
+
+Distance: ${distance}
+Duration: ${duration}
+Pace: ${pace}
+${heartRate ? `Avg HR: ${heartRate}` : ""}
+${elevation ? `Elevation: ${elevation}` : ""}
+
+Quick Insights:
+${insightsText}
+
+See your full analysis: ${dashboardUrl}
+
+Happy running!
+The RunAnalytics Team
+    `;
+
+    return await this.sendEmail({ to, subject, html, text });
+  }
 }
 
 export const emailService = new EmailService();

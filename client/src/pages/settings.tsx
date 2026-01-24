@@ -33,6 +33,7 @@ function SettingsPageContent() {
   const [stravaBrandingEnabled, setStravaBrandingEnabled] = useState(false);
   const [stravaBrandingTemplate, setStravaBrandingTemplate] = useState("🏃 Runner Score: {score} | {insight} — Analyzed with AITracker.run");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [notifyPostRun, setNotifyPostRun] = useState(true);
 
   useEffect(() => {
     if (dashboardData?.user?.unitPreference) {
@@ -43,6 +44,9 @@ function SettingsPageContent() {
     }
     if (dashboardData?.user?.stravaBrandingTemplate) {
       setStravaBrandingTemplate(dashboardData.user.stravaBrandingTemplate);
+    }
+    if (dashboardData?.user?.notifyPostRun !== undefined) {
+      setNotifyPostRun(dashboardData.user.notifyPostRun);
     }
   }, [dashboardData]);
 
@@ -108,6 +112,28 @@ function SettingsPageContent() {
       toast({
         title: "Update failed",
         description: error.message || "Failed to update branding settings",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateNotificationsMutation = useMutation({
+    mutationFn: async (settings: { notifyPostRun: boolean }) => {
+      return apiRequest(`/api/users/${user!.id}/notifications`, "PATCH", settings);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user!.id}`] });
+      toast({
+        title: "Notification settings updated",
+        description: notifyPostRun 
+          ? "You'll receive post-run analysis emails" 
+          : "Post-run emails disabled",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update failed",
+        description: error.message || "Failed to update notification settings",
         variant: "destructive",
       });
     },
@@ -419,6 +445,52 @@ function SettingsPageContent() {
                   </Button>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {dashboardData?.user?.stravaConnected && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="h-5 w-5" />
+                Email Notifications
+              </CardTitle>
+              <CardDescription>
+                Control what emails you receive from RunAnalytics
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="post-run-toggle" className="text-base font-medium">
+                    Post-Run Analysis Emails
+                  </Label>
+                  <p className="text-sm text-gray-500">
+                    Get an email with quick insights after every run
+                  </p>
+                </div>
+                <Switch
+                  id="post-run-toggle"
+                  checked={notifyPostRun}
+                  onCheckedChange={setNotifyPostRun}
+                  data-testid="switch-post-run-notifications"
+                />
+              </div>
+              
+              <Button
+                onClick={() => updateNotificationsMutation.mutate({ notifyPostRun })}
+                disabled={updateNotificationsMutation.isPending}
+                className="flex items-center gap-2"
+                data-testid="button-save-notifications"
+              >
+                {updateNotificationsMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4" />
+                )}
+                {updateNotificationsMutation.isPending ? "Saving..." : "Save Notification Settings"}
+              </Button>
             </CardContent>
           </Card>
         )}
