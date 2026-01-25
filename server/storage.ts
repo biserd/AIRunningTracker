@@ -1,7 +1,7 @@
 import { users, activities, aiInsights, trainingPlans, trainingPlansLegacy, athleteProfiles, planWeeks, planDays, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, shoeComparisons, apiKeys, refreshTokens, workoutCache, coachRecaps, agentRuns, notificationOutbox, deletionFeedback, userCampaigns, emailJobs, emailClicks, systemSettings, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ShoeComparison, type InsertShoeComparison, type ApiKey, type InsertApiKey, type RefreshToken, type InsertRefreshToken, type AthleteProfile, type InsertAthleteProfile, type PlanWeek, type InsertPlanWeek, type PlanDay, type InsertPlanDay, type WorkoutCache, type InsertWorkoutCache, type CoachRecap, type InsertCoachRecap, type AgentRun, type InsertAgentRun, type NotificationOutbox, type InsertNotificationOutbox, type DeletionFeedback, type InsertDeletionFeedback, type UserCampaign, type InsertUserCampaign, type EmailJob, type InsertEmailJob, type EmailClick, type InsertEmailClick } from "@shared/schema";
 import crypto from "crypto";
 import { db } from "./db";
-import { eq, desc, and, sql, inArray, gte, gt, lt, ne } from "drizzle-orm";
+import { eq, desc, and, or, sql, inArray, gte, gt, lt, ne } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 export interface IStorage {
@@ -154,6 +154,7 @@ export interface IStorage {
   getEmailJobByDedupeKey(dedupeKey: string): Promise<EmailJob | undefined>;
   updateEmailJob(id: number, updates: Partial<EmailJob>): Promise<EmailJob | undefined>;
   cancelEmailJobsForUser(userId: number): Promise<void>;
+  getLastSentEmailForUser(userId: number): Promise<EmailJob | null>;
   
   createEmailClick(click: InsertEmailClick): Promise<EmailClick>;
   getEmailClicksByUser(userId: number, limit?: number): Promise<EmailClick[]>;
@@ -1488,6 +1489,19 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(emailJobs.userId, userId), eq(emailJobs.status, "pending")));
   }
 
+  async getLastSentEmailForUser(userId: number): Promise<EmailJob | null> {
+    const [result] = await db
+      .select()
+      .from(emailJobs)
+      .where(and(
+        eq(emailJobs.userId, userId),
+        eq(emailJobs.status, "sent")
+      ))
+      .orderBy(desc(emailJobs.sentAt))
+      .limit(1);
+    return result || null;
+  }
+
   async createEmailClick(click: InsertEmailClick): Promise<EmailClick> {
     const [result] = await db
       .insert(emailClicks)
@@ -1604,30 +1618,59 @@ export class DatabaseStorage implements IStorage {
     segment_c: number;
     segment_d: number;
   }> {
-    const counts = await db
-      .select({
-        campaign: userCampaigns.campaign,
-        count: sql<number>`count(*)`,
-      })
-      .from(userCampaigns)
-      .where(eq(userCampaigns.state, "active"))
-      .groupBy(userCampaigns.campaign);
+    // Calculate segments directly from users table
+    // Segment A: Not connected to Strava, not opted out, free plan
+    const [segmentAResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(and(
+        eq(users.stravaConnected, false),
+        eq(users.marketingOptOut, false),
+        eq(users.subscriptionPlan, "free")
+      ));
 
-    const result = {
-      segment_a: 0,
-      segment_b: 0,
-      segment_c: 0,
-      segment_d: 0,
+    // Segment B: Connected, not activated, not opted out, free plan
+    const [segmentBResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(and(
+        eq(users.stravaConnected, true),
+        sql`${users.activationAt} IS NULL`,
+        eq(users.marketingOptOut, false),
+        eq(users.subscriptionPlan, "free")
+      ));
+
+    // Segment C: Activated, free plan, active (seen in last 7 days), not opted out
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const [segmentCResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(and(
+        sql`${users.activationAt} IS NOT NULL`,
+        eq(users.subscriptionPlan, "free"),
+        eq(users.marketingOptOut, false),
+        or(
+          gte(users.lastSeenAt, sevenDaysAgo),
+          sql`${users.lastSeenAt} IS NULL`
+        )
+      ));
+
+    // Segment D: Inactive 7+ days, free plan, not opted out
+    const [segmentDResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(and(
+        lt(users.lastSeenAt, sevenDaysAgo),
+        eq(users.subscriptionPlan, "free"),
+        eq(users.marketingOptOut, false)
+      ));
+
+    return {
+      segment_a: Number(segmentAResult?.count || 0),
+      segment_b: Number(segmentBResult?.count || 0),
+      segment_c: Number(segmentCResult?.count || 0),
+      segment_d: Number(segmentDResult?.count || 0),
     };
-
-    for (const row of counts) {
-      if (row.campaign === "segment_a") result.segment_a = Number(row.count);
-      if (row.campaign === "segment_b") result.segment_b = Number(row.count);
-      if (row.campaign === "segment_c") result.segment_c = Number(row.count);
-      if (row.campaign === "segment_d") result.segment_d = Number(row.count);
-    }
-
-    return result;
   }
 
   async getUserCountsBySubscription(): Promise<{

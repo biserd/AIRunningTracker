@@ -192,59 +192,53 @@ export class DripCampaignService {
     return "segment_c";
   }
 
-  async enterCampaign(userId: number, segment: UserSegment): Promise<void> {
-    if (!segment) return;
+  async scheduleNextEmailForUser(userId: number): Promise<void> {
+    const user = await storage.getUser(userId);
+    if (!user) return;
 
-    const existingCampaign = await storage.getUserCampaign(userId, segment);
-    if (existingCampaign && existingCampaign.state === "active") {
-      console.log(`[DripCampaign] User ${userId} already in active ${segment} campaign`);
+    if (user.marketingOptOut) {
+      console.log(`[DripCampaign] User ${userId} opted out of marketing`);
       return;
     }
 
-    const campaign = await storage.createUserCampaign({
-      userId,
-      campaign: segment,
-      currentStep: 1,
-    });
+    const segment = this.computeUserSegment(user);
+    if (!segment) {
+      console.log(`[DripCampaign] User ${userId} is paid, no drip emails`);
+      return;
+    }
 
-    console.log(`[DripCampaign] User ${userId} entered ${segment} campaign`);
-
-    await this.scheduleNextStep(userId, segment, 1);
-  }
-
-  async scheduleNextStep(userId: number, segment: string, stepNumber: number): Promise<void> {
     const steps = SEGMENT_STEPS[segment];
-    if (!steps || stepNumber > steps.length) {
-      console.log(`[DripCampaign] No more steps for ${segment}, step ${stepNumber}`);
-      return;
+    if (!steps || steps.length === 0) return;
+
+    // Find the next step that hasn't been sent yet
+    for (const step of steps) {
+      const dedupeKey = `${userId}:${segment}:${step.step}`;
+      const existingJob = await storage.getEmailJobByDedupeKey(dedupeKey);
+      
+      if (!existingJob) {
+        // Schedule this step
+        const scheduledAt = new Date(Date.now() + step.delayHours * 60 * 60 * 1000);
+
+        await storage.createEmailJob({
+          userId,
+          jobType: "drip",
+          campaign: segment,
+          step: step.step,
+          scheduledAt,
+          dedupeKey,
+          metadata: {
+            ctaUrl: step.ctaUrl,
+            subject: step.subject,
+            previewText: step.previewText,
+          },
+        });
+
+        console.log(`[DripCampaign] Scheduled ${step.step} for user ${userId} at ${scheduledAt.toISOString()}`);
+        return; // Only schedule one email at a time
+      }
     }
 
-    const step = steps[stepNumber - 1];
-    const dedupeKey = `${userId}:${segment}:${step.step}`;
-
-    const existingJob = await storage.getEmailJobByDedupeKey(dedupeKey);
-    if (existingJob) {
-      console.log(`[DripCampaign] Email job already exists for ${dedupeKey}`);
-      return;
-    }
-
-    const scheduledAt = new Date(Date.now() + step.delayHours * 60 * 60 * 1000);
-
-    await storage.createEmailJob({
-      userId,
-      jobType: "drip",
-      campaign: segment,
-      step: step.step,
-      scheduledAt,
-      dedupeKey,
-      metadata: {
-        ctaUrl: step.ctaUrl,
-        subject: step.subject,
-        previewText: step.previewText,
-      },
-    });
-
-    console.log(`[DripCampaign] Scheduled ${step.step} for user ${userId} at ${scheduledAt.toISOString()}`);
+    console.log(`[DripCampaign] User ${userId} has completed ${segment} campaign`);
   }
 
   async processEmailJob(job: EmailJob): Promise<boolean> {
@@ -262,20 +256,23 @@ export class DripCampaignService {
 
       if (user.subscriptionPlan !== "free") {
         await storage.updateEmailJob(job.id, { status: "cancelled", errorMessage: "User is paid" });
-        await this.exitCampaignForUser(user.id, "subscribed");
+        await this.cancelEmailsForUser(user.id);
         return false;
       }
 
+      // Check if user's segment has changed - if so, cancel old emails and reschedule
       const currentSegment = this.computeUserSegment(user);
       if (currentSegment !== job.campaign) {
         await storage.updateEmailJob(job.id, { status: "cancelled", errorMessage: `Segment changed to ${currentSegment}` });
         
+        // Schedule email for new segment
         if (currentSegment) {
-          await this.enterCampaign(user.id, currentSegment);
+          await this.scheduleNextEmailForUser(user.id);
         }
         return false;
       }
 
+      // Check frequency cap - no more than 1 email per 24 hours
       const lastEmailSent = await this.getLastEmailSentAt(user.id);
       if (lastEmailSent) {
         const hoursSinceLastEmail = (Date.now() - lastEmailSent.getTime()) / (1000 * 60 * 60);
@@ -314,15 +311,30 @@ export class DripCampaignService {
         sentAt: new Date() 
       });
 
-      const campaign = await storage.getUserCampaign(user.id, job.campaign || "");
-      if (campaign) {
-        await storage.updateUserCampaign(campaign.id, { 
-          currentStep: (campaign.currentStep || 0) + 1,
-          lastEmailSentAt: new Date(),
-        });
-
-        const currentStepNum = parseInt(job.step?.replace(/[A-D]/, "") || "1");
-        await this.scheduleNextStep(user.id, job.campaign || "", currentStepNum + 1);
+      // Schedule the next step in the campaign
+      const currentStepNum = parseInt(job.step?.replace(/[A-D]/, "") || "1");
+      const nextStep = steps[currentStepNum];
+      if (nextStep) {
+        const dedupeKey = `${user.id}:${job.campaign}:${nextStep.step}`;
+        const existingNextJob = await storage.getEmailJobByDedupeKey(dedupeKey);
+        
+        if (!existingNextJob) {
+          const scheduledAt = new Date(Date.now() + nextStep.delayHours * 60 * 60 * 1000);
+          await storage.createEmailJob({
+            userId: user.id,
+            jobType: "drip",
+            campaign: job.campaign,
+            step: nextStep.step,
+            scheduledAt,
+            dedupeKey,
+            metadata: {
+              ctaUrl: nextStep.ctaUrl,
+              subject: nextStep.subject,
+              previewText: nextStep.previewText,
+            },
+          });
+          console.log(`[DripCampaign] Scheduled next step ${nextStep.step} for user ${user.id}`);
+        }
       }
 
       console.log(`[DripCampaign] Sent ${job.step} to user ${user.id}`);
@@ -339,21 +351,14 @@ export class DripCampaignService {
   }
 
   async getLastEmailSentAt(userId: number): Promise<Date | null> {
-    const campaigns = await storage.getActiveCampaigns(userId);
-    const lastSent = campaigns
-      .map(c => c.lastEmailSentAt)
-      .filter((d): d is Date => d !== null)
-      .sort((a, b) => b.getTime() - a.getTime())[0];
-    return lastSent || null;
+    // Get last sent email from email_jobs
+    const lastSentJob = await storage.getLastSentEmailForUser(userId);
+    return lastSentJob?.sentAt || null;
   }
 
-  async exitCampaignForUser(userId: number, reason: string): Promise<void> {
-    const campaigns = await storage.getActiveCampaigns(userId);
-    for (const campaign of campaigns) {
-      await storage.exitUserCampaign(campaign.id, reason);
-    }
+  async cancelEmailsForUser(userId: number): Promise<void> {
     await storage.cancelEmailJobsForUser(userId);
-    console.log(`[DripCampaign] Exited all campaigns for user ${userId}, reason: ${reason}`);
+    console.log(`[DripCampaign] Cancelled pending emails for user ${userId}`);
   }
 
   async recordActivation(userId: number, activationType: string): Promise<void> {
@@ -363,14 +368,10 @@ export class DripCampaignService {
     if (!user.activationAt) {
       await storage.updateUserActivation(userId, new Date());
       console.log(`[DripCampaign] User ${userId} activated via ${activationType}`);
-
-      const segmentBCampaign = await storage.getUserCampaign(userId, "segment_b");
-      if (segmentBCampaign && segmentBCampaign.state === "active") {
-        await storage.exitUserCampaign(segmentBCampaign.id, "activated");
-        await storage.cancelEmailJobsForUser(userId);
-        
-        await this.enterCampaign(userId, "segment_c");
-      }
+      
+      // Cancel old segment emails and schedule new ones
+      await this.cancelEmailsForUser(userId);
+      await this.scheduleNextEmailForUser(userId);
     }
   }
 
@@ -379,17 +380,15 @@ export class DripCampaignService {
   }
 
   async onStravaConnected(userId: number): Promise<void> {
-    const segmentACampaign = await storage.getUserCampaign(userId, "segment_a");
-    if (segmentACampaign && segmentACampaign.state === "active") {
-      await storage.exitUserCampaign(segmentACampaign.id, "strava_connected");
-      await storage.cancelEmailJobsForUser(userId);
-    }
-
-    await this.enterCampaign(userId, "segment_b");
+    // Cancel segment A emails and schedule segment B
+    await this.cancelEmailsForUser(userId);
+    await this.scheduleNextEmailForUser(userId);
+    console.log(`[DripCampaign] User ${userId} connected Strava, transitioning to segment B`);
   }
 
   async onUserSubscribed(userId: number): Promise<void> {
-    await this.exitCampaignForUser(userId, "subscribed");
+    await this.cancelEmailsForUser(userId);
+    console.log(`[DripCampaign] User ${userId} subscribed, cancelled all drip emails`);
   }
 
   async scheduleActivityReadyEmail(userId: number, activityId: number): Promise<void> {
@@ -413,6 +412,36 @@ export class DripCampaignService {
     });
 
     console.log(`[DripCampaign] Scheduled activity_ready email for user ${userId}, activity ${activityId}`);
+  }
+
+  // Bulk enroll all users who should be in a segment but don't have pending emails
+  async enrollMissingUsers(): Promise<{ enrolled: number; skipped: number }> {
+    let enrolled = 0;
+    let skipped = 0;
+
+    for (const segment of ["segment_a", "segment_b", "segment_c", "segment_d"]) {
+      const users = await storage.getUsersNeedingCampaign(segment);
+      
+      for (const user of users) {
+        // Check if user already has a pending email for this segment
+        const steps = SEGMENT_STEPS[segment];
+        if (!steps || steps.length === 0) continue;
+
+        const firstStep = steps[0];
+        const dedupeKey = `${user.id}:${segment}:${firstStep.step}`;
+        const existingJob = await storage.getEmailJobByDedupeKey(dedupeKey);
+        
+        if (!existingJob) {
+          await this.scheduleNextEmailForUser(user.id);
+          enrolled++;
+        } else {
+          skipped++;
+        }
+      }
+    }
+
+    console.log(`[DripCampaign] Enrolled ${enrolled} users, skipped ${skipped} already enrolled`);
+    return { enrolled, skipped };
   }
 }
 

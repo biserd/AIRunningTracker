@@ -1122,12 +1122,12 @@ ${allPages.map(page => `  <url>
       // Send notification to admin
       await emailService.sendRegistrationNotification(userData.email);
       
-      // Enter new user into drip campaign Segment A (not connected to Strava yet)
+      // Schedule first drip email for new user (Segment A - not connected to Strava yet)
       try {
-        await dripCampaignService.enterCampaign(result.user.id, "segment_a");
-        console.log('New user entered drip campaign segment A');
+        await dripCampaignService.scheduleNextEmailForUser(result.user.id);
+        console.log('New user drip email scheduled');
       } catch (campaignError) {
-        console.error('Drip campaign entry failed:', campaignError);
+        console.error('Drip campaign scheduling failed:', campaignError);
       }
       
       res.json(result);
