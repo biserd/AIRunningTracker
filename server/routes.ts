@@ -285,11 +285,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       description: "Read the RunAnalytics terms of service. Understand your rights and responsibilities when using our running analytics platform.",
       keywords: "terms of service, terms and conditions, user agreement"
     },
-    "/release-notes": {
-      title: "Release Notes | What's New | RunAnalytics",
-      description: "See the latest updates, new features, and improvements to RunAnalytics. Stay up to date with our running analytics platform.",
-      keywords: "release notes, updates, changelog, new features, running app updates"
-    },
     "/runner-score": {
       title: "Runner Score | Your Running Performance Index | RunAnalytics",
       description: "Discover your Runner Score - a comprehensive metric combining fitness, consistency, and progression. Share your score and track improvement.",
@@ -401,7 +396,6 @@ Sitemap: ${baseUrl}/sitemap.xml`;
         { url: "/contact", changefreq: "monthly", priority: "0.5", lastmod: "2025-12-01" },
         { url: "/privacy", changefreq: "yearly", priority: "0.3", lastmod: "2025-11-01" },
         { url: "/terms", changefreq: "yearly", priority: "0.3", lastmod: "2025-11-01" },
-        { url: "/release-notes", changefreq: "weekly", priority: "0.7", lastmod: today },
       ];
 
       // Fetch all shoes for individual shoe pages

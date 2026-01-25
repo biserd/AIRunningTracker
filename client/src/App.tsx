@@ -18,7 +18,6 @@ import ResetPasswordPage from "@/pages/reset-password";
 import PrivacyPage from "@/pages/privacy";
 import ContactPage from "@/pages/contact";
 import FAQPage from "@/pages/faq";
-import ReleaseNotesPage from "@/pages/release-notes";
 import RunnerScorePage from "@/pages/runner-score";
 import AdminPage from "@/pages/admin";
 import AdminPerformanceLogsPage from "@/pages/admin-performance-logs";
@@ -127,7 +126,6 @@ function Router() {
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/contact" component={ContactPage} />
       <Route path="/faq" component={FAQPage} />
-      <Route path="/release-notes" component={ReleaseNotesPage} />
       <Route path="/runner-score/:userId" component={RunnerScorePage} />
       <Route path="/tools" component={ToolsPage} />
       <Route path="/tools/aerobic-decoupling-calculator" component={AerobicDecouplingCalculator} />

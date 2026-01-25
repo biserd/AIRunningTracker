@@ -81,9 +81,6 @@ export default function Footer() {
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm" data-testid="text-version">v{VERSION}</span>
-              <Link href="/release-notes" className="text-sm hover:text-white transition-colors" data-testid="link-release-notes">
-                Release Notes
-              </Link>
             </div>
           </div>
         </div>
