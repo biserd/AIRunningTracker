@@ -645,10 +645,9 @@ Your AI Coach at RunAnalytics
     const { to, subject, previewText, ctaText, ctaUrl, userName, step, campaign } = options;
     
     const segmentLabels: Record<string, string> = {
-      segment_a: "Get started with your running analysis",
-      segment_b: "Unlock your running potential",
-      segment_c: "Take your training to the next level",
-      segment_d: "Welcome back to your training",
+      segment_a: "Start your free Premium trial",
+      segment_b: "Get the most from your Premium trial",
+      segment_c: "We miss you! Come back and explore",
     };
     
     const headline = segmentLabels[campaign] || "Your running insights await";

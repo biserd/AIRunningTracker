@@ -2,7 +2,7 @@ import { storage } from "../storage";
 import { emailService } from "./email";
 import type { User, EmailJob } from "@shared/schema";
 
-export type UserSegment = "segment_a" | "segment_b" | "segment_c" | "segment_d" | null;
+export type UserSegment = "segment_a" | "segment_b" | "segment_c" | null;
 
 interface DripStep {
   step: string;
@@ -14,150 +14,141 @@ interface DripStep {
   objective: string;
 }
 
+// Segment A: Not connected to Strava yet - push to connect and start Premium trial
 const SEGMENT_A_STEPS: DripStep[] = [
   {
     step: "A1",
     delayHours: 0.08, // 5 minutes after signup
-    subject: "Your running analysis is waiting",
-    previewText: "Connect Strava to see your Coach Grade",
-    ctaText: "Connect Strava",
+    subject: "Start your free 14-day Premium trial",
+    previewText: "Connect Strava to unlock AI coaching and personalized insights",
+    ctaText: "Start My Free Trial",
     ctaUrl: "/auth?tab=signup&connect=strava&source=emailA1",
     objective: "strava_connected",
   },
   {
     step: "A2",
     delayHours: 48, // Day 2
-    subject: "30 seconds to unlock your running insights",
-    previewText: "Connect Strava and see what you've been missing",
-    ctaText: "Connect Strava (30 seconds)",
+    subject: "Your AI running coach is waiting",
+    previewText: "30 seconds to connect Strava and get personalized training insights",
+    ctaText: "Connect Strava Now",
     ctaUrl: "/auth?tab=signup&connect=strava&source=emailA2",
+    objective: "strava_connected",
+  },
+  {
+    step: "A3",
+    delayHours: 120, // Day 5
+    subject: "Don't miss out on free Premium features",
+    previewText: "Your 14-day trial includes AI coaching, race predictions, and training plans",
+    ctaText: "Claim My Free Trial",
+    ctaUrl: "/auth?tab=signup&connect=strava&source=emailA3",
     objective: "strava_connected",
   },
 ];
 
+// Segment B: Active Premium trial users - feature discovery and engagement
 const SEGMENT_B_STEPS: DripStep[] = [
   {
     step: "B1",
-    delayHours: 1, // 1 hour after connect
-    subject: "Your Coach Grade is ready",
-    previewText: "See how your recent runs stack up",
-    ctaText: "View My Coach Grade",
+    delayHours: 1, // 1 hour after trial starts
+    subject: "Your Runner Score is ready",
+    previewText: "See your personalized performance analysis",
+    ctaText: "View My Runner Score",
     ctaUrl: "/dashboard?source=B1",
-    objective: "snapshot_viewed",
+    objective: "dashboard_viewed",
   },
   {
     step: "B2",
-    delayHours: 24, // Next morning
-    subject: "Your personalized running recommendation",
-    previewText: "Based on your recent activity",
-    ctaText: "See Today's Recommendation",
-    ctaUrl: "/dashboard?source=B2",
-    objective: "snapshot_viewed",
+    delayHours: 24, // Day 1
+    subject: "Meet your AI Running Coach",
+    previewText: "Ask anything about your training - your coach knows your data",
+    ctaText: "Chat with Coach",
+    ctaUrl: "/chat?source=B2",
+    objective: "coach_question_asked",
   },
   {
     step: "B3",
     delayHours: 72, // Day 3
-    subject: "Your last run in 30 seconds",
-    previewText: "See the story of your recent run",
-    ctaText: "View Run Story",
+    subject: "Your last run, analyzed",
+    previewText: "See AI insights, effort breakdown, and coaching tips",
+    ctaText: "View Run Analysis",
     ctaUrl: "/activities?source=B3",
-    objective: "activity_story_viewed",
+    objective: "activity_viewed",
   },
   {
     step: "B4",
     delayHours: 120, // Day 5
-    subject: "Ask your AI Coach anything",
-    previewText: "Get a personalized answer about your training",
-    ctaText: "Ask the Coach",
-    ctaUrl: "/chat?source=B4",
-    objective: "coach_question_asked",
+    subject: "Your personalized training plan is ready",
+    previewText: "AI-generated plan based on your goals and fitness level",
+    ctaText: "See My Training Plan",
+    ctaUrl: "/training-plans?source=B4",
+    objective: "plan_viewed",
   },
   {
     step: "B5",
-    delayHours: 168, // Day 7
-    subject: "Your Week in Review is ready",
-    previewText: "See your training trends and progress",
-    ctaText: "View Weekly Review",
+    delayHours: 168, // Day 7 - halfway through trial
+    subject: "Halfway through your trial - here's what you've unlocked",
+    previewText: "See your progress and the Premium features helping you improve",
+    ctaText: "View My Progress",
     ctaUrl: "/dashboard?source=B5",
-    objective: "weekly_review_viewed",
+    objective: "dashboard_viewed",
   },
   {
     step: "B6",
     delayHours: 240, // Day 10
-    subject: "Compare your runs side-by-side",
-    previewText: "See how you're progressing",
-    ctaText: "Compare Runs",
-    ctaUrl: "/activities?compare=true&source=B6",
-    objective: "compare_opened",
+    subject: "Your race predictions are in",
+    previewText: "See estimated finish times for 5K, 10K, half marathon, and marathon",
+    ctaText: "View Race Predictions",
+    ctaUrl: "/race-predictor?source=B6",
+    objective: "race_predictor_viewed",
   },
   {
     step: "B7",
-    delayHours: 336, // Day 14
-    subject: "Unlock unlimited coaching and insights",
-    previewText: "Get the most out of your training data",
-    ctaText: "See Pro Features",
-    ctaUrl: "/pricing?source=B7",
-    objective: "upgrade_click",
+    delayHours: 288, // Day 12 - trial ending soon
+    subject: "Your Premium trial ends in 2 days",
+    previewText: "Keep your AI coach, training plans, and unlimited insights",
+    ctaText: "Continue Premium",
+    ctaUrl: "/settings?tab=subscription&source=B7",
+    objective: "subscription_viewed",
   },
 ];
 
+// Segment C: Inactive trial users OR expired trial - win-back and re-engagement
 const SEGMENT_C_STEPS: DripStep[] = [
   {
     step: "C1",
-    delayHours: 48, // Day 2 after activation
-    subject: "You've unlocked valuable insights",
-    previewText: "See what you've discovered so far",
-    ctaText: "Ask the Coach",
-    ctaUrl: "/chat?source=C1",
-    objective: "coach_question_asked",
+    delayHours: 0, // Immediately when inactive/expired
+    subject: "We miss you! Your running insights are waiting",
+    previewText: "See what's new since your last visit",
+    ctaText: "View My Dashboard",
+    ctaUrl: "/dashboard?source=C1",
+    objective: "dashboard_viewed",
   },
   {
     step: "C2",
-    delayHours: 120, // Day 5 after activation
-    subject: "Compare runs to see your progress",
-    previewText: "Training insights from your data",
-    ctaText: "Compare Runs",
-    ctaUrl: "/activities?compare=true&source=C2",
-    objective: "compare_opened",
+    delayHours: 72, // 3 days after C1
+    subject: "New feature: AI activity recaps",
+    previewText: "Get personalized coaching after every run",
+    ctaText: "Try It Now",
+    ctaUrl: "/activities?source=C2",
+    objective: "activity_viewed",
   },
   {
     step: "C3",
-    delayHours: 240, // Day 10 after activation
-    subject: "Get a simple training plan for this week",
-    previewText: "AI-powered, personalized to you",
-    ctaText: "Generate My Plan",
-    ctaUrl: "/training-plans?source=C3",
-    objective: "plan_generated",
+    delayHours: 168, // 7 days after C1
+    subject: "Your training insights are piling up",
+    previewText: "Your AI coach has new recommendations for you",
+    ctaText: "See Recommendations",
+    ctaUrl: "/chat?source=C3",
+    objective: "coach_question_asked",
   },
   {
     step: "C4",
-    delayHours: 336, // Day 14 after activation
-    subject: "Ready for the next level?",
-    previewText: "Unlock Pro features for serious runners",
-    ctaText: "Start Pro Trial",
-    ctaUrl: "/pricing?source=C4",
-    objective: "upgrade_click",
-  },
-];
-
-const SEGMENT_D_STEPS: DripStep[] = [
-  {
-    step: "D1",
-    delayHours: 0, // Immediately when inactive
-    subject: "See what changed since your last run",
-    previewText: "Your running insights are waiting",
-    ctaText: "View My Dashboard",
-    ctaUrl: "/dashboard?source=D1",
-    objective: "snapshot_viewed",
-  },
-  {
-    step: "D2",
-    delayHours: 72, // 3 days after D1
-    subject: "Your new week plan is ready",
-    previewText: "Get back on track with personalized recommendations",
-    ctaText: "See This Week's Plan",
-    ctaUrl: "/dashboard?source=D2",
-    objective: "snapshot_viewed",
+    delayHours: 336, // 14 days after C1
+    subject: "Come back and see what's improved",
+    previewText: "New features: better race predictions, smarter training plans",
+    ctaText: "Explore New Features",
+    ctaUrl: "/dashboard?source=C4",
+    objective: "dashboard_viewed",
   },
 ];
 
@@ -165,30 +156,52 @@ const SEGMENT_STEPS: Record<string, DripStep[]> = {
   segment_a: SEGMENT_A_STEPS,
   segment_b: SEGMENT_B_STEPS,
   segment_c: SEGMENT_C_STEPS,
-  segment_d: SEGMENT_D_STEPS,
 };
 
 export class DripCampaignService {
+  /**
+   * Compute user segment based on new 3-segment model:
+   * - Segment A: Not connected to Strava (push to connect & start trial)
+   * - Segment B: Connected, on active trial, actively using (feature discovery)
+   * - Segment C: Inactive 7+ days OR trial expired (win-back)
+   */
   computeUserSegment(user: User): UserSegment {
-    const isPaid = user.subscriptionPlan !== "free";
-    
-    if (isPaid) {
+    // Users who opted out of marketing get no emails
+    if (user.marketingOptOut) {
       return null;
     }
     
+    // Not connected to Strava yet - push to connect
     if (!user.stravaConnected) {
       return "segment_a";
     }
     
-    if (!user.activationAt) {
+    // Check trial status - trial users are "trialing", active subscribers are "active"
+    const isTrialing = user.subscriptionStatus === "trialing";
+    const isActiveSubscriber = user.subscriptionStatus === "active" && user.subscriptionPlan !== "free";
+    const hasExpiredTrial = user.subscriptionStatus === "canceled" || user.subscriptionStatus === "past_due" || user.subscriptionStatus === "unpaid";
+    
+    // Active paid subscribers don't get drip emails
+    if (isActiveSubscriber) {
+      return null;
+    }
+    
+    // Check if user has been inactive for 7+ days
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const isInactive = user.lastSeenAt && new Date(user.lastSeenAt) < sevenDaysAgo;
+    
+    // Segment C: Inactive trial users OR expired trial users
+    if (isInactive || hasExpiredTrial) {
+      return "segment_c";
+    }
+    
+    // Segment B: Active trial users (trialing and active within last 7 days)
+    if (isTrialing) {
       return "segment_b";
     }
     
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    if (user.lastSeenAt && new Date(user.lastSeenAt) < sevenDaysAgo) {
-      return "segment_d";
-    }
-    
+    // Free users who connected Strava but never started trial (edge case)
+    // Treat them as segment C (win-back)
     return "segment_c";
   }
 
@@ -419,7 +432,7 @@ export class DripCampaignService {
     let enrolled = 0;
     let skipped = 0;
 
-    for (const segment of ["segment_a", "segment_b", "segment_c", "segment_d"]) {
+    for (const segment of ["segment_a", "segment_b", "segment_c"]) {
       const users = await storage.getUsersNeedingCampaign(segment);
       
       for (const user of users) {

@@ -7319,7 +7319,6 @@ ${allPages.map(page => `  <url>
         segment_a: segmentStats.segment_a || 0,
         segment_b: segmentStats.segment_b || 0,
         segment_c: segmentStats.segment_c || 0,
-        segment_d: segmentStats.segment_d || 0,
         paid: userCounts.paid,
         total: userCounts.total,
       });

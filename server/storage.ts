@@ -168,7 +168,6 @@ export interface IStorage {
     segment_a: number;
     segment_b: number;
     segment_c: number;
-    segment_d: number;
   }>;
   getUserCountsBySubscription(): Promise<{
     total: number;
@@ -1616,38 +1615,25 @@ export class DatabaseStorage implements IStorage {
     segment_a: number;
     segment_b: number;
     segment_c: number;
-    segment_d: number;
   }> {
-    // Calculate segments directly from users table
-    // Segment A: Not connected to Strava, not opted out, free plan
+    // Calculate segments directly from users table using new 3-segment model
+    // Segment A: Not connected to Strava, not opted out
     const [segmentAResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(users)
       .where(and(
         eq(users.stravaConnected, false),
-        eq(users.marketingOptOut, false),
-        eq(users.subscriptionPlan, "free")
+        eq(users.marketingOptOut, false)
       ));
 
-    // Segment B: Connected, not activated, not opted out, free plan
+    // Segment B: Connected, trialing (active Premium trial), active in last 7 days, not opted out
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const [segmentBResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(users)
       .where(and(
         eq(users.stravaConnected, true),
-        sql`${users.activationAt} IS NULL`,
-        eq(users.marketingOptOut, false),
-        eq(users.subscriptionPlan, "free")
-      ));
-
-    // Segment C: Activated, free plan, active (seen in last 7 days), not opted out
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const [segmentCResult] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(users)
-      .where(and(
-        sql`${users.activationAt} IS NOT NULL`,
-        eq(users.subscriptionPlan, "free"),
+        eq(users.subscriptionStatus, "trialing"),
         eq(users.marketingOptOut, false),
         or(
           gte(users.lastSeenAt, sevenDaysAgo),
@@ -1655,21 +1641,33 @@ export class DatabaseStorage implements IStorage {
         )
       ));
 
-    // Segment D: Inactive 7+ days, free plan, not opted out
-    const [segmentDResult] = await db
+    // Segment C: Inactive 7+ days OR expired trial (canceled, past_due, unpaid), not opted out
+    const [segmentCResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(users)
       .where(and(
-        lt(users.lastSeenAt, sevenDaysAgo),
-        eq(users.subscriptionPlan, "free"),
-        eq(users.marketingOptOut, false)
+        eq(users.stravaConnected, true),
+        eq(users.marketingOptOut, false),
+        or(
+          // Inactive trial users
+          and(
+            eq(users.subscriptionStatus, "trialing"),
+            lt(users.lastSeenAt, sevenDaysAgo)
+          ),
+          // Expired trial users
+          sql`${users.subscriptionStatus} IN ('canceled', 'past_due', 'unpaid')`,
+          // Free users who connected but never started trial
+          and(
+            eq(users.subscriptionPlan, "free"),
+            sql`${users.subscriptionStatus} IS NULL OR ${users.subscriptionStatus} = ''`
+          )
+        )
       ));
 
     return {
       segment_a: Number(segmentAResult?.count || 0),
       segment_b: Number(segmentBResult?.count || 0),
       segment_c: Number(segmentCResult?.count || 0),
-      segment_d: Number(segmentDResult?.count || 0),
     };
   }
 
@@ -1751,33 +1749,42 @@ export class DatabaseStorage implements IStorage {
             eq(users.stravaConnected, false),
             eq(users.marketingOptOut, false)
           ));
-      case "segment_b": // Connected, Not Activated
+      case "segment_b": // Active Premium trial users (trialing, active in last 7 days)
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
         return await db
           .select()
           .from(users)
           .where(and(
             eq(users.stravaConnected, true),
-            sql`${users.activationAt} IS NULL`,
-            eq(users.marketingOptOut, false)
+            eq(users.subscriptionStatus, "trialing"),
+            eq(users.marketingOptOut, false),
+            or(
+              gte(users.lastSeenAt, sevenDaysAgo),
+              sql`${users.lastSeenAt} IS NULL`
+            )
           ));
-      case "segment_c": // Activated, Not Paid
-        return await db
-          .select()
-          .from(users)
-          .where(and(
-            sql`${users.activationAt} IS NOT NULL`,
-            eq(users.subscriptionPlan, "free"),
-            eq(users.marketingOptOut, false)
-          ));
-      case "segment_d": // Inactive (7+ days)
+      case "segment_c": // Inactive trial users OR expired trial users
         const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
         return await db
           .select()
           .from(users)
           .where(and(
-            lt(users.lastSeenAt, cutoff),
-            eq(users.subscriptionPlan, "free"),
-            eq(users.marketingOptOut, false)
+            eq(users.stravaConnected, true),
+            eq(users.marketingOptOut, false),
+            or(
+              // Inactive trial users
+              and(
+                eq(users.subscriptionStatus, "trialing"),
+                lt(users.lastSeenAt, cutoff)
+              ),
+              // Expired trial users
+              sql`${users.subscriptionStatus} IN ('canceled', 'past_due', 'unpaid')`,
+              // Free users who connected but never started trial
+              and(
+                eq(users.subscriptionPlan, "free"),
+                sql`${users.subscriptionStatus} IS NULL OR ${users.subscriptionStatus} = ''`
+              )
+            )
           ));
       default:
         return [];
