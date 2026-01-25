@@ -143,7 +143,6 @@ interface SegmentStats {
   segment_a: number;
   segment_b: number;
   segment_c: number;
-  segment_d: number;
   paid: number;
   total: number;
 }
@@ -872,7 +871,7 @@ export default function AdminPage() {
                         </TooltipTrigger>
                         <TooltipContent>
                           <p className="font-medium">Segment A: Not Connected</p>
-                          <p className="text-xs text-gray-400">Users who registered but haven't connected Strava yet. Receives 2 emails encouraging connection.</p>
+                          <p className="text-xs text-gray-400">Users who haven't connected Strava yet. Receives 3 emails pushing Premium trial.</p>
                         </TooltipContent>
                       </Tooltip>
                       <Tooltip>
@@ -885,30 +884,12 @@ export default function AdminPage() {
                             <p className="text-xl font-bold text-charcoal" data-testid="stat-segment-b">
                               {segmentStats?.segment_b || 0}
                             </p>
-                            <p className="text-xs text-gray-500">Not Activated</p>
+                            <p className="text-xs text-gray-500">Active Trial</p>
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="font-medium">Segment B: Connected but Not Activated</p>
-                          <p className="text-xs text-gray-400">Users connected to Strava but haven't visited the dashboard. Receives 7 emails over 14 days.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-3 border border-blue-200 cursor-help">
-                            <div className="flex items-center gap-1 mb-1">
-                              <UserCheck className="h-3 w-3 text-blue-600" />
-                              <span className="text-xs font-medium text-gray-600">Segment C</span>
-                            </div>
-                            <p className="text-xl font-bold text-charcoal" data-testid="stat-segment-c">
-                              {segmentStats?.segment_c || 0}
-                            </p>
-                            <p className="text-xs text-gray-500">Active Free</p>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="font-medium">Segment C: Active Free Users</p>
-                          <p className="text-xs text-gray-400">Activated free users - target for conversion. Receives 4 emails over 14 days promoting Pro/Premium.</p>
+                          <p className="font-medium">Segment B: Active Trial Users</p>
+                          <p className="text-xs text-gray-400">Active Premium trial users. Receives 7 emails over 14 days for feature discovery.</p>
                         </TooltipContent>
                       </Tooltip>
                       <Tooltip>
@@ -916,17 +897,17 @@ export default function AdminPage() {
                           <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-lg p-3 border border-gray-200 cursor-help">
                             <div className="flex items-center gap-1 mb-1">
                               <UserMinus className="h-3 w-3 text-gray-500" />
-                              <span className="text-xs font-medium text-gray-600">Segment D</span>
+                              <span className="text-xs font-medium text-gray-600">Segment C</span>
                             </div>
-                            <p className="text-xl font-bold text-charcoal" data-testid="stat-segment-d">
-                              {segmentStats?.segment_d || 0}
+                            <p className="text-xl font-bold text-charcoal" data-testid="stat-segment-c">
+                              {segmentStats?.segment_c || 0}
                             </p>
-                            <p className="text-xs text-gray-500">Inactive 7d+</p>
+                            <p className="text-xs text-gray-500">Inactive/Expired</p>
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="font-medium">Segment D: Inactive Users</p>
-                          <p className="text-xs text-gray-400">Users inactive for 7+ days. Receives 2 re-engagement emails to bring them back.</p>
+                          <p className="font-medium">Segment C: Inactive or Expired Trial</p>
+                          <p className="text-xs text-gray-400">Inactive 7+ days or expired trial. Receives 4 win-back emails.</p>
                         </TooltipContent>
                       </Tooltip>
                       <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-3 border border-green-200">
