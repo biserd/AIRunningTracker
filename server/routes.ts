@@ -3276,7 +3276,7 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
       
-      if (user.subscriptionPlan !== "premium" || user.subscriptionStatus !== "active") {
+      if (user.subscriptionPlan !== "premium" || !["active", "trialing"].includes(user.subscriptionStatus || "")) {
         return res.status(403).json({ message: "Premium subscription required for coach recaps" });
       }
 
@@ -3312,7 +3312,7 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
       
-      if (user.subscriptionPlan !== "premium" || user.subscriptionStatus !== "active") {
+      if (user.subscriptionPlan !== "premium" || !["active", "trialing"].includes(user.subscriptionStatus || "")) {
         return res.status(403).json({ message: "Premium subscription required for coach recaps" });
       }
 
@@ -3335,7 +3335,7 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
       
-      if (user.subscriptionPlan !== "premium" || user.subscriptionStatus !== "active") {
+      if (user.subscriptionPlan !== "premium" || !["active", "trialing"].includes(user.subscriptionStatus || "")) {
         return res.status(403).json({ message: "Premium subscription required for coach recaps" });
       }
       
