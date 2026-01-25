@@ -1641,26 +1641,28 @@ export class DatabaseStorage implements IStorage {
         )
       ));
 
-    // Segment C: Inactive 7+ days OR expired trial (canceled, past_due, unpaid), not opted out
+    // Segment C: All connected users who are NOT active trial (B) and NOT paid subscribers
+    // This includes: inactive trial, expired trial, legacy free users
     const [segmentCResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(users)
       .where(and(
         eq(users.stravaConnected, true),
         eq(users.marketingOptOut, false),
+        // Not an active trial user (those are in B)
         or(
-          // Inactive trial users
+          sql`${users.subscriptionStatus} != 'trialing'`,
+          sql`${users.subscriptionStatus} IS NULL`,
+          // Inactive trial users (trialing but not active recently)
           and(
             eq(users.subscriptionStatus, "trialing"),
             lt(users.lastSeenAt, sevenDaysAgo)
-          ),
-          // Expired trial users
-          sql`${users.subscriptionStatus} IN ('canceled', 'past_due', 'unpaid')`,
-          // Free users who connected but never started trial
-          and(
-            eq(users.subscriptionPlan, "free"),
-            sql`${users.subscriptionStatus} IS NULL OR ${users.subscriptionStatus} = ''`
           )
+        ),
+        // Not a paid subscriber
+        or(
+          eq(users.subscriptionPlan, "free"),
+          sql`${users.subscriptionPlan} IS NULL`
         )
       ));
 
@@ -1763,7 +1765,7 @@ export class DatabaseStorage implements IStorage {
               sql`${users.lastSeenAt} IS NULL`
             )
           ));
-      case "segment_c": // Inactive trial users OR expired trial users
+      case "segment_c": // All connected users who are NOT active trial and NOT paid
         const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
         return await db
           .select()
@@ -1771,19 +1773,20 @@ export class DatabaseStorage implements IStorage {
           .where(and(
             eq(users.stravaConnected, true),
             eq(users.marketingOptOut, false),
+            // Not an active trial user (those are in B)
             or(
+              sql`${users.subscriptionStatus} != 'trialing'`,
+              sql`${users.subscriptionStatus} IS NULL`,
               // Inactive trial users
               and(
                 eq(users.subscriptionStatus, "trialing"),
                 lt(users.lastSeenAt, cutoff)
-              ),
-              // Expired trial users
-              sql`${users.subscriptionStatus} IN ('canceled', 'past_due', 'unpaid')`,
-              // Free users who connected but never started trial
-              and(
-                eq(users.subscriptionPlan, "free"),
-                sql`${users.subscriptionStatus} IS NULL OR ${users.subscriptionStatus} = ''`
               )
+            ),
+            // Not a paid subscriber
+            or(
+              eq(users.subscriptionPlan, "free"),
+              sql`${users.subscriptionPlan} IS NULL`
             )
           ));
       default:

@@ -200,8 +200,7 @@ export class DripCampaignService {
       return "segment_b";
     }
     
-    // Free users who connected Strava but never started trial (edge case)
-    // Treat them as segment C (win-back)
+    // All other connected users (legacy free users, etc.) go to segment C (win-back)
     return "segment_c";
   }
 
