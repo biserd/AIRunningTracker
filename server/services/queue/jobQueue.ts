@@ -369,7 +369,7 @@ class JobQueue {
     
     const user = await storage.getUser(job.userId);
     if (user?.subscriptionPlan === 'premium' && 
-        user?.subscriptionStatus === 'active' && 
+        ["active", "trialing"].includes(user?.subscriptionStatus || "") && 
         user?.coachOnboardingCompleted) {
       const activity = await storage.getActivityById(activityId);
       if (activity?.type?.toLowerCase().includes('run')) {

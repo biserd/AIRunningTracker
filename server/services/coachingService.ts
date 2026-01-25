@@ -24,7 +24,7 @@ export async function generateCoachRecap(
     return null;
   }
 
-  if (user.subscriptionPlan !== "premium" || user.subscriptionStatus !== "active") {
+  if (user.subscriptionPlan !== "premium" || !["active", "trialing"].includes(user.subscriptionStatus || "")) {
     console.log(`[Coach] User ${userId} is not a Premium subscriber`);
     return null;
   }

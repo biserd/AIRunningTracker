@@ -3158,7 +3158,7 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
       
-      if (user.subscriptionPlan !== "premium") {
+      if (user.subscriptionPlan !== "premium" || !["active", "trialing"].includes(user.subscriptionStatus || "")) {
         return res.status(403).json({ message: "AI Coach is a Premium feature" });
       }
 
@@ -7053,7 +7053,7 @@ ${allPages.map(page => `  <url>
       
       // Check Premium tier for full comparison features
       const user = await storage.getUser(userId);
-      const isPremium = user?.subscriptionPlan === 'premium';
+      const isPremium = user?.subscriptionPlan === 'premium' && ["active", "trialing"].includes(user?.subscriptionStatus || "");
       
       // Import services dynamically to avoid circular deps
       const { getOrComputeComparison, getWhatChanged } = await import('./services/comparableRunsService');
