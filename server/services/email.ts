@@ -899,10 +899,13 @@ Biser`;
     pace: string;
     heartRate: string | null;
     elevation: string | null;
+    effortScore?: number;
+    runType?: string;
+    aiCoachInsight?: string;
     insights: { title: string; message: string }[];
     dashboardUrl: string;
   }): Promise<boolean> {
-    const { to, firstName, activityName, distance, duration, pace, heartRate, elevation, insights, dashboardUrl } = options;
+    const { to, firstName, activityName, distance, duration, pace, heartRate, elevation, effortScore, runType, aiCoachInsight, insights, dashboardUrl } = options;
     
     const insightsHtml = insights.map(insight => `
       <div style="background: #f8f9fa; padding: 12px 16px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #e74c3c;">
@@ -926,33 +929,70 @@ Biser`;
       </div>
     `).join("");
 
-    const subject = `Great run! ${activityName} - Your Analysis Ready`;
+    const effortColor = effortScore && effortScore >= 75 ? "#e74c3c" : effortScore && effortScore >= 50 ? "#f39c12" : "#27ae60";
+    const effortLabel = effortScore && effortScore >= 80 ? "High Intensity" : effortScore && effortScore >= 60 ? "Moderate" : "Easy Effort";
+
+    const effortScoreHtml = effortScore ? `
+      <div style="background: linear-gradient(135deg, ${effortColor}15 0%, ${effortColor}05 100%); border-radius: 12px; padding: 20px; margin: 20px 0; text-align: center; border: 2px solid ${effortColor}30;">
+        <div style="font-size: 14px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Effort Score</div>
+        <div style="font-size: 48px; font-weight: bold; color: ${effortColor}; margin: 0;">${effortScore}</div>
+        <div style="font-size: 14px; color: ${effortColor}; font-weight: 500;">${effortLabel}</div>
+      </div>
+    ` : "";
+
+    const runTypeBadge = runType ? `
+      <div style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-bottom: 15px;">${runType}</div>
+    ` : "";
+
+    const aiCoachHtml = aiCoachInsight ? `
+      <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 16px; padding: 24px; margin: 25px 0; position: relative;">
+        <div style="display: flex; align-items: center; margin-bottom: 12px;">
+          <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+            <span style="font-size: 20px;">🏃</span>
+          </div>
+          <div>
+            <div style="color: #e74c3c; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">AI Coach</div>
+            <div style="color: rgba(255,255,255,0.6); font-size: 12px;">Personalized Insight</div>
+          </div>
+        </div>
+        <p style="color: rgba(255,255,255,0.95); font-size: 16px; line-height: 1.6; margin: 0; font-style: italic;">"${aiCoachInsight}"</p>
+      </div>
+    ` : "";
+
+    const subject = `${runType || "Great run"}! ${activityName} - Your AI Analysis Ready`;
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #ffffff;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #e74c3c; margin: 0;">RunAnalytics</h1>
-          <p style="color: #666; margin: 5px 0;">Your Post-Run Analysis</p>
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: #ffffff;">
+        <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); padding: 30px 20px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">RunAnalytics</h1>
+          <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0; font-size: 14px;">Your Post-Run AI Analysis</p>
         </div>
         
-        <h2 style="color: #2c3e50; margin-bottom: 5px;">Nice work, ${firstName}!</h2>
-        <p style="color: #666; margin-top: 0;">Here's your quick analysis for <strong>${activityName}</strong></p>
-        
-        <div style="background: linear-gradient(135deg, #fef3f0 0%, #fff 100%); border-radius: 12px; padding: 20px; margin: 20px 0; display: flex; justify-content: space-around; flex-wrap: wrap;">
-          ${statsHtml}
+        <div style="padding: 30px 25px;">
+          ${runTypeBadge}
+          <h2 style="color: #2c3e50; margin: 0 0 5px; font-size: 24px;">Nice work, ${firstName}!</h2>
+          <p style="color: #666; margin: 0 0 20px; font-size: 16px;">Here's your analysis for <strong>${activityName}</strong></p>
+          
+          ${effortScoreHtml}
+          
+          <div style="background: linear-gradient(135deg, #fef3f0 0%, #fff 100%); border-radius: 12px; padding: 20px; margin: 20px 0; display: flex; justify-content: space-around; flex-wrap: wrap; border: 1px solid #fce4e0;">
+            ${statsHtml}
+          </div>
+          
+          ${aiCoachHtml}
+          
+          <h3 style="color: #2c3e50; margin: 25px 0 15px; font-size: 18px;">Training Insights</h3>
+          ${insightsHtml}
+          
+          <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); border-radius: 12px; padding: 28px; text-align: center; margin: 30px 0;">
+            <p style="color: rgba(255,255,255,0.95); margin: 0 0 18px; font-size: 17px; font-weight: 500;">Unlock your full Runner Score, training trends & more</p>
+            <a href="${dashboardUrl}" style="background: white; color: #e74c3c; padding: 14px 36px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">View Full Analysis</a>
+          </div>
         </div>
         
-        <h3 style="color: #2c3e50; margin-bottom: 15px;">Quick Insights</h3>
-        ${insightsHtml}
-        
-        <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); border-radius: 12px; padding: 25px; text-align: center; margin: 30px 0;">
-          <p style="color: rgba(255,255,255,0.9); margin: 0 0 15px; font-size: 16px;">See your full analysis, training trends, and AI recommendations</p>
-          <a href="${dashboardUrl}" style="background: white; color: #e74c3c; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">View Full Analysis</a>
-        </div>
-        
-        <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; color: #666; font-size: 13px; text-align: center;">
-          <p style="margin: 5px 0;">Happy running!</p>
-          <p style="margin: 5px 0;">The RunAnalytics Team</p>
-          <p style="margin: 15px 0 0; font-size: 11px; color: #999;">
+        <div style="border-top: 1px solid #eee; padding: 25px; background: #fafafa; text-align: center;">
+          <p style="margin: 0 0 5px; color: #666; font-size: 14px;">Keep building that fitness!</p>
+          <p style="margin: 0; color: #999; font-size: 13px;">The RunAnalytics Team</p>
+          <p style="margin: 18px 0 0; font-size: 11px;">
             <a href="${dashboardUrl.replace('/dashboard', '')}/settings" style="color: #999;">Manage email preferences</a>
           </p>
         </div>
@@ -961,9 +1001,11 @@ Biser`;
 
     const insightsText = insights.map(i => `${i.title}: ${i.message}`).join("\n");
     const text = `
-Nice work, ${firstName}!
+${runType || "Great run"}! Nice work, ${firstName}!
 
-Here's your quick analysis for ${activityName}:
+Here's your analysis for ${activityName}:
+
+${effortScore ? `Effort Score: ${effortScore}/100 (${effortLabel})` : ""}
 
 Distance: ${distance}
 Duration: ${duration}
@@ -971,12 +1013,14 @@ Pace: ${pace}
 ${heartRate ? `Avg HR: ${heartRate}` : ""}
 ${elevation ? `Elevation: ${elevation}` : ""}
 
-Quick Insights:
+${aiCoachInsight ? `AI Coach: "${aiCoachInsight}"` : ""}
+
+Training Insights:
 ${insightsText}
 
 See your full analysis: ${dashboardUrl}
 
-Happy running!
+Keep building that fitness!
 The RunAnalytics Team
     `;
 
