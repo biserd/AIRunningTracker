@@ -3,6 +3,9 @@
 
 import { getStripeSync } from './stripeClient';
 import { storage } from './storage';
+import { emailService } from './services/email';
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'biserd@gmail.com';
 
 // Map price IDs to subscription plans
 const PRICE_TO_PLAN: Record<string, string> = {
@@ -61,6 +64,16 @@ export class WebhookHandlers {
         
         await storage.updateStripeSubscriptionId(user.id, subscription.id);
         await storage.updateSubscriptionStatus(user.id, status, plan);
+        
+        // Send admin notification for new trial starts
+        if (event.type === 'customer.subscription.created' && status === 'trialing') {
+          await WebhookHandlers.sendAdminNotification(
+            'New Trial Started',
+            user,
+            plan,
+            subscription.trial_end ? new Date(subscription.trial_end * 1000) : null
+          );
+        }
       } else {
         console.log('User not found for Stripe customer:', customerId);
       }
@@ -72,8 +85,56 @@ export class WebhookHandlers {
       
       const user = await storage.getUserByStripeCustomerId(customerId);
       if (user) {
+        const previousPlan = user.subscriptionPlan || 'unknown';
         await storage.updateSubscriptionStatus(user.id, 'canceled', 'free');
+        
+        // Send admin notification for cancellation
+        await WebhookHandlers.sendAdminNotification(
+          'Subscription Canceled',
+          user,
+          previousPlan,
+          null
+        );
       }
+    }
+  }
+
+  private static async sendAdminNotification(
+    eventType: string,
+    user: { id: number; email: string; firstName?: string | null },
+    plan: string,
+    trialEndsAt: Date | null
+  ): Promise<void> {
+    try {
+      const subject = `[RunAnalytics] ${eventType}: ${user.email}`;
+      const trialInfo = trialEndsAt 
+        ? `<p><strong>Trial ends:</strong> ${trialEndsAt.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>`
+        : '';
+      
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: ${eventType.includes('Canceled') ? '#e74c3c' : '#27ae60'};">${eventType}</h2>
+          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>User:</strong> ${user.firstName || 'N/A'}</p>
+            <p><strong>Email:</strong> ${user.email}</p>
+            <p><strong>User ID:</strong> ${user.id}</p>
+            <p><strong>Plan:</strong> ${plan.charAt(0).toUpperCase() + plan.slice(1)}</p>
+            ${trialInfo}
+            <p><strong>Time:</strong> ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })} ET</p>
+          </div>
+        </div>
+      `;
+
+      await emailService.sendEmail({
+        to: ADMIN_EMAIL,
+        subject,
+        html,
+        text: `${eventType}\n\nUser: ${user.email}\nPlan: ${plan}\n${trialEndsAt ? `Trial ends: ${trialEndsAt.toISOString()}` : ''}`
+      });
+      
+      console.log(`[Webhook] Admin notification sent: ${eventType} for ${user.email}`);
+    } catch (error) {
+      console.error('[Webhook] Failed to send admin notification:', error);
     }
   }
 }
