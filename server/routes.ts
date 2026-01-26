@@ -7340,6 +7340,22 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Admin: Enroll missing users into drip campaigns
+  app.post("/api/admin/campaigns/enroll-missing", authenticateAdmin, async (req: any, res) => {
+    try {
+      const result = await dripCampaignService.enrollMissingUsers();
+      res.json({ 
+        success: true, 
+        enrolled: result.enrolled, 
+        skipped: result.skipped,
+        message: `Enrolled ${result.enrolled} users, skipped ${result.skipped} already enrolled`
+      });
+    } catch (error: any) {
+      console.error("Enroll missing users error:", error);
+      res.status(500).json({ message: error.message || "Failed to enroll users" });
+    }
+  });
+
   // Admin: Get welcome email campaign stats
   app.get("/api/admin/welcome-campaign/stats", authenticateAdmin, async (req: any, res) => {
     try {

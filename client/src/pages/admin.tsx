@@ -978,6 +978,46 @@ export default function AdminPage() {
                   </div>
                 </div>
 
+                {/* Actions */}
+                <div className="pt-4 border-t">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Actions</h4>
+                  <div className="flex gap-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          const response = await fetch("/api/admin/campaigns/enroll-missing", {
+                            method: "POST",
+                            credentials: "include",
+                          });
+                          const data = await response.json();
+                          if (response.ok) {
+                            toast({
+                              title: "Users Enrolled",
+                              description: data.message,
+                            });
+                          } else {
+                            throw new Error(data.message);
+                          }
+                        } catch (error: any) {
+                          toast({
+                            title: "Error",
+                            description: error.message || "Failed to enroll users",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                    >
+                      <Users className="h-4 w-4 mr-2" />
+                      Enroll Missing Users
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Schedule the first drip email for all existing users who don't have pending emails yet.
+                  </p>
+                </div>
+
               </div>
             )}
           </CardContent>
