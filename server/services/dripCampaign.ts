@@ -62,8 +62,8 @@ const SEGMENT_B_STEPS: DripStep[] = [
     subject: "Meet your AI Running Coach",
     previewText: "Ask anything about your training - your coach knows your data",
     ctaText: "Chat with Coach",
-    ctaUrl: "/chat?source=B2",
-    objective: "coach_question_asked",
+    ctaUrl: "/dashboard?source=B2",
+    objective: "dashboard_viewed",
   },
   {
     step: "B3",
@@ -98,8 +98,8 @@ const SEGMENT_B_STEPS: DripStep[] = [
     subject: "Your race predictions are in",
     previewText: "See estimated finish times for 5K, 10K, half marathon, and marathon",
     ctaText: "View Race Predictions",
-    ctaUrl: "/race-predictor?source=B6",
-    objective: "race_predictor_viewed",
+    ctaUrl: "/coach-insights?source=B6",
+    objective: "coach_insights_viewed",
   },
   {
     step: "B7",
@@ -138,8 +138,8 @@ const SEGMENT_C_STEPS: DripStep[] = [
     subject: "Your training insights are piling up",
     previewText: "Your AI coach has new recommendations for you",
     ctaText: "See Recommendations",
-    ctaUrl: "/chat?source=C3",
-    objective: "coach_question_asked",
+    ctaUrl: "/coach-insights?source=C3",
+    objective: "coach_insights_viewed",
   },
   {
     step: "C4",
@@ -147,8 +147,8 @@ const SEGMENT_C_STEPS: DripStep[] = [
     subject: "Come back and see what's improved",
     previewText: "New features: better race predictions, smarter training plans",
     ctaText: "Explore New Features",
-    ctaUrl: "/dashboard?source=C4",
-    objective: "dashboard_viewed",
+    ctaUrl: "/coach-insights?source=C4",
+    objective: "coach_insights_viewed",
   },
 ];
 
