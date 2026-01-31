@@ -80,7 +80,6 @@ export default function Footer() {
               <StravaPoweredBy variant="white" size="sm" />
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm" data-testid="text-version">v{VERSION}</span>
             </div>
           </div>
         </div>
