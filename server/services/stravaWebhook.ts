@@ -131,7 +131,7 @@ class StravaWebhookService {
       const unsubscribeToken = this.generateUnsubscribeToken(user.id);
       const unsubscribeUrl = `https://${domain}/api/notifications/unsubscribe?token=${unsubscribeToken}`;
       const dashboardUrl = `https://${domain}/dashboard`;
-      const activityUrl = `https://${domain}/activities/${activity.id}`;
+      const activityUrl = `https://${domain}`;
 
       const aiResult = await this.generatePersonalizedEmail(
         user, activity, distanceKm, distanceLabel, runType, effortScore,
