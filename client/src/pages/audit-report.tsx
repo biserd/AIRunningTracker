@@ -274,7 +274,7 @@ export default function AuditReportPage() {
   const { isAuthenticated, user, isLoading: authLoading } = useAuth();
   const { hasActiveSubscription, isLoading: subLoading, isReverseTrial } = useSubscription();
   const [, navigate] = useLocation();
-  const [showWizard, setShowWizard] = useState(false);
+  const [wizardDismissed, setWizardDismissed] = useState(false);
   const checkout = useAuditCheckout();
 
   const isStravaConnected = !!(user as any)?.stravaAthleteId;
@@ -332,11 +332,7 @@ export default function AuditReportPage() {
   const hasInsights = activityCount >= 5 && auditData?.runnerIQ?.score !== undefined && auditData.runnerIQ.score > 25;
   const syncDone = !isSyncing || !justConnected;
 
-  useEffect(() => {
-    if (isStravaConnected && syncDone && hasInsights && !hasCalibration && !calibrationLoading) {
-      setShowWizard(true);
-    }
-  }, [isStravaConnected, syncDone, hasInsights, hasCalibration, calibrationLoading]);
+  const shouldShowWizard = isStravaConnected && syncDone && hasInsights && !hasCalibration && !calibrationLoading && !wizardDismissed;
 
   useEffect(() => {
     if (!subLoading && !authLoading && (hasActiveSubscription || isReverseTrial)) {
@@ -360,7 +356,7 @@ export default function AuditReportPage() {
   };
 
   const handleCalibrationComplete = () => {
-    setShowWizard(false);
+    setWizardDismissed(true);
     queryClient.invalidateQueries({ queryKey: ['/api/calibration'] });
   };
 
@@ -460,10 +456,6 @@ export default function AuditReportPage() {
     );
   }
 
-  if (showWizard && !hasCalibration) {
-    return <CalibrationWizard onComplete={handleCalibrationComplete} />;
-  }
-
   if (auditLoading || calibrationLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-orange-50 flex items-center justify-center">
@@ -473,6 +465,10 @@ export default function AuditReportPage() {
         </div>
       </div>
     );
+  }
+
+  if (shouldShowWizard) {
+    return <CalibrationWizard onComplete={handleCalibrationComplete} />;
   }
 
   const runnerIQ = auditData?.runnerIQ || { score: 71, grade: 'B', components: { consistency: 15, performance: 18, volume: 20, improvement: 18 }, volumeGrade: 'A', performanceGrade: 'B', hasGap: true };
