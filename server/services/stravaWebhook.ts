@@ -2,6 +2,7 @@ import { storage } from "../storage";
 import { emailService } from "./email";
 import { stravaService } from "./strava";
 import OpenAI from "openai";
+import crypto from "crypto";
 
 interface StravaWebhookEvent {
   object_type: "activity" | "athlete";
@@ -14,12 +15,33 @@ interface StravaWebhookEvent {
 }
 
 const VERIFY_TOKEN = process.env.STRAVA_VERIFY_TOKEN || "runanalytics_webhook_verify_2024";
+const UNSUBSCRIBE_SECRET = process.env.JWT_SECRET || "runanalytics_unsub_secret_2024";
 
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY || "default_key" 
 });
 
 class StravaWebhookService {
+  generateUnsubscribeToken(userId: number): string {
+    const payload = `unsub:${userId}`;
+    const signature = crypto.createHmac("sha256", UNSUBSCRIBE_SECRET).update(payload).digest("hex").slice(0, 16);
+    return Buffer.from(`${userId}:${signature}`).toString("base64url");
+  }
+
+  verifyUnsubscribeToken(token: string): number | null {
+    try {
+      const decoded = Buffer.from(token, "base64url").toString();
+      const [userIdStr, signature] = decoded.split(":");
+      const userId = parseInt(userIdStr);
+      if (isNaN(userId)) return null;
+      const expected = crypto.createHmac("sha256", UNSUBSCRIBE_SECRET).update(`unsub:${userId}`).digest("hex").slice(0, 16);
+      if (signature !== expected) return null;
+      return userId;
+    } catch {
+      return null;
+    }
+  }
+
   async verifySubscription(hubMode: string, hubChallenge: string, hubVerifyToken: string): Promise<{ valid: boolean; challenge?: string }> {
     if (hubMode === "subscribe" && hubVerifyToken === VERIFY_TOKEN) {
       console.log("[Strava Webhook] Subscription verified");
@@ -99,14 +121,22 @@ class StravaWebhookService {
       const paceDisplay = `${paceMin}:${String(paceSec).padStart(2, "0")} /${isKm ? "km" : "mi"}`;
 
       const domain = "aitracker.run";
-      const dashboardUrl = `https://${domain}/dashboard`;
-      
       const firstName = user.firstName || user.email.split("@")[0];
-      
-      const effortScore = this.calculateEffortScore(activity);
       const runType = this.detectRunType(activity, distanceKm);
-      const aiCoachInsight = await this.generateAICoachInsight(user, activity, distanceKm, runType, effortScore);
-      const insights = this.generateQuickInsights(activity, distanceKm, runType);
+      const distanceLabel = this.getDistanceLabel(distanceKm);
+      const effortScore = this.calculateEffortScore(activity);
+      const efficiencyRating = this.getEfficiencyRating(activity, pacePerKm);
+      const greyZoneAnalysis = this.analyzeGreyZone(activity, pacePerKm);
+
+      const unsubscribeToken = this.generateUnsubscribeToken(user.id);
+      const unsubscribeUrl = `https://${domain}/api/notifications/unsubscribe?token=${unsubscribeToken}`;
+      const dashboardUrl = `https://${domain}/dashboard`;
+      const activityUrl = `https://${domain}/activities/${activity.id}`;
+
+      const aiResult = await this.generatePersonalizedEmail(
+        user, activity, distanceKm, distanceLabel, runType, effortScore,
+        efficiencyRating, greyZoneAnalysis, paceDisplay, distanceDisplay
+      );
 
       await emailService.sendPostRunAnalysis({
         to: user.email,
@@ -119,15 +149,151 @@ class StravaWebhookService {
         elevation: activity.total_elevation_gain ? `${Math.round(activity.total_elevation_gain)}m` : null,
         effortScore,
         runType,
-        aiCoachInsight,
-        insights,
-        dashboardUrl
+        aiCoachInsight: aiResult.coachVerdictBody,
+        insights: [],
+        dashboardUrl,
+        subject: aiResult.subject,
+        efficiencyRating,
+        greyZoneAnalysis,
+        unsubscribeUrl,
+        activityUrl,
       });
       
       console.log(`[Strava Webhook] Sent post-run email to ${user.email}`);
     } catch (error) {
       console.error("[Strava Webhook] Error sending post-run email:", error);
     }
+  }
+
+  private getDistanceLabel(distanceKm: number): string {
+    if (distanceKm >= 40 && distanceKm <= 44) return "Marathon";
+    if (distanceKm >= 20 && distanceKm <= 22) return "Half Marathon";
+    if (distanceKm >= 14 && distanceKm <= 16) return "15k";
+    if (distanceKm >= 9.5 && distanceKm <= 10.5) return "10k";
+    if (distanceKm >= 4.8 && distanceKm <= 5.2) return "5k";
+    if (distanceKm >= 2.8 && distanceKm <= 3.2) return "3k";
+    if (distanceKm >= 1.5 && distanceKm <= 1.7) return "Mile";
+    return `${distanceKm.toFixed(1)}k`;
+  }
+
+  private getEfficiencyRating(activity: any, pacePerKm: number): { label: string; icon: string } {
+    if (!activity.average_heartrate) return { label: "Unknown", icon: "?" };
+    const hrPerPace = activity.average_heartrate / pacePerKm;
+    if (hrPerPace < 24) return { label: "High", icon: "checkmark" };
+    if (hrPerPace < 28) return { label: "Moderate", icon: "warning" };
+    return { label: "Low", icon: "warning" };
+  }
+
+  private analyzeGreyZone(activity: any, pacePerKm: number): { inGreyZone: boolean; minutes: number; message: string } | null {
+    if (!activity.average_heartrate) return null;
+    const avgHr = activity.average_heartrate;
+    const maxHr = activity.max_heartrate || (220 - 30);
+    const easyThreshold = maxHr * 0.70;
+    const tempoThreshold = maxHr * 0.85;
+
+    if (avgHr > easyThreshold && avgHr < tempoThreshold) {
+      const greyZoneMinutes = Math.round(activity.moving_time / 60 * 0.6);
+      let message = "";
+      if (pacePerKm > 5.5) {
+        message = `You likely felt good at the start, but your heart rate drifted too high in the second half. This "Grey Zone" effort is too hard for recovery but too easy for real speed gains.`;
+      } else {
+        message = `Your average heart rate sat between easy and tempo zones for most of this run. That means your body was working hard but not targeting a specific adaptation.`;
+      }
+      return { inGreyZone: true, minutes: greyZoneMinutes, message };
+    }
+
+    return { inGreyZone: false, minutes: 0, message: "" };
+  }
+
+  private async generatePersonalizedEmail(
+    user: any, activity: any, distanceKm: number, distanceLabel: string,
+    runType: string, effortScore: number, efficiencyRating: { label: string; icon: string },
+    greyZoneAnalysis: { inGreyZone: boolean; minutes: number; message: string } | null,
+    paceDisplay: string, distanceDisplay: string
+  ): Promise<{ subject: string; coachVerdictBody: string }> {
+    try {
+      const isKm = user.unitPreference === "km";
+      const firstName = user.firstName || user.email.split("@")[0];
+
+      const prompt = `You are the AI Running Coach for AITracker.run. Generate a highly personalized post-run email for this runner.
+
+Runner: ${firstName}
+Run Type: ${runType}
+Distance: ${distanceDisplay} (${distanceLabel})
+Pace: ${paceDisplay}
+Duration: ${Math.floor(activity.moving_time / 60)} minutes
+Heart Rate: ${activity.average_heartrate ? Math.round(activity.average_heartrate) + " bpm (avg), " + (activity.max_heartrate ? activity.max_heartrate + " bpm (max)" : "no max") : "not recorded"}
+Elevation: ${activity.total_elevation_gain ? Math.round(activity.total_elevation_gain) + "m" : "flat"}
+Effort Score: ${effortScore}/100
+Efficiency: ${efficiencyRating.label}
+Grey Zone: ${greyZoneAnalysis ? (greyZoneAnalysis.inGreyZone ? `Yes, ~${greyZoneAnalysis.minutes} min in grey zone` : "No, good intensity distribution") : "Unknown (no HR data)"}
+PRs: ${activity.pr_count || 0}
+
+Generate a JSON response with exactly these fields:
+1. "subject": An email subject line (under 60 chars). Start with a running emoji. Reference the distance (e.g. "5k", "10k", "Half Marathon"). Include a hook that references something specific about THIS run. End with "but..." or a teaser to create curiosity. Examples:
+   - "🏃‍♂️ 5k Analysis: You crushed the first mile, but..."
+   - "🏃‍♂️ 10k Breakdown: Strong pace, questionable efficiency"
+   - "🏃‍♂️ Half Marathon Report: Your HR tells a different story"
+   - "🏃‍♂️ 8k Audit: Solid effort, but you left speed on the table"
+
+2. "coachVerdictBody": A 2-3 sentence personalized coach verdict. Be specific to this run's data. Mention one thing they did well, and one thing to watch. If they were in the grey zone, mention it directly. If efficiency is low, call it out. Be warm but honest. Do NOT use generic encouragement. Do NOT use em dashes. Use short, punchy sentences.
+
+Respond with ONLY valid JSON, no markdown.`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "You are an expert AI running coach. Respond with valid JSON only." },
+          { role: "user", content: prompt }
+        ],
+        max_tokens: 300,
+        temperature: 0.8
+      });
+
+      const content = response.choices[0]?.message?.content?.trim();
+      if (content) {
+        const cleaned = content.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+        const parsed = JSON.parse(cleaned);
+        if (parsed.subject && parsed.coachVerdictBody) {
+          return {
+            subject: parsed.subject.slice(0, 80),
+            coachVerdictBody: parsed.coachVerdictBody,
+          };
+        }
+      }
+    } catch (error) {
+      console.error("[Strava Webhook] AI email generation failed:", error);
+    }
+
+    return this.getFallbackEmail(user, activity, distanceKm, distanceLabel, effortScore, efficiencyRating, greyZoneAnalysis);
+  }
+
+  private getFallbackEmail(
+    user: any, activity: any, distanceKm: number, distanceLabel: string,
+    effortScore: number, efficiencyRating: { label: string; icon: string },
+    greyZoneAnalysis: { inGreyZone: boolean; minutes: number; message: string } | null,
+  ): { subject: string; coachVerdictBody: string } {
+    let hook = "here's what we found";
+    let verdict = "Every run is a data point. Let's make the next one count.";
+
+    if (greyZoneAnalysis?.inGreyZone) {
+      hook = "your heart rate tells a story";
+      verdict = `You spent about ${greyZoneAnalysis.minutes} minutes in the Grey Zone. That means your body was working hard, but not targeting a specific training adaptation. Try slowing your easy runs down or pushing your hard runs harder.`;
+    } else if (efficiencyRating.label === "Low") {
+      hook = "strong effort, but your efficiency needs work";
+      verdict = `Your effort was there, but your running efficiency came in low. This often means your pace and heart rate are mismatched. Focus on keeping your easy runs truly easy.`;
+    } else if (effortScore >= 80) {
+      hook = "you went all out on this one";
+      verdict = `Big effort today. Your body is going to need proper recovery to absorb this session. Make sure your next run is an easy one.`;
+    } else if (activity.pr_count && activity.pr_count > 0) {
+      hook = "new PR, nice work";
+      verdict = `You set ${activity.pr_count} PR${activity.pr_count > 1 ? "s" : ""} today. That is your hard work paying off. The question is: are you recovering enough to keep progressing?`;
+    }
+
+    return {
+      subject: `🏃‍♂️ ${distanceLabel} Analysis: ${hook.charAt(0).toUpperCase() + hook.slice(1)}`,
+      coachVerdictBody: verdict,
+    };
   }
 
   private calculateEffortScore(activity: any): number {
@@ -179,128 +345,6 @@ class StravaWebhookService {
     if (distanceKm < 5) return "Quick Run";
     
     return "Training Run";
-  }
-
-  private async generateAICoachInsight(user: any, activity: any, distanceKm: number, runType: string, effortScore: number): Promise<string> {
-    try {
-      const isKm = user.unitPreference === "km";
-      const pacePerKm = activity.moving_time / 60 / distanceKm;
-      const pacePerMile = pacePerKm / 0.621371;
-      const pace = isKm ? pacePerKm : pacePerMile;
-      const paceMin = Math.floor(pace);
-      const paceSec = Math.round((pace - paceMin) * 60);
-      const paceDisplay = `${paceMin}:${String(paceSec).padStart(2, "0")}/${isKm ? "km" : "mi"}`;
-
-      const prompt = `You are an expert AI running coach. Generate a brief, personalized post-run insight (2-3 sentences max) for this run:
-
-Run Type: ${runType}
-Distance: ${isKm ? distanceKm.toFixed(2) + " km" : (distanceKm * 0.621371).toFixed(2) + " mi"}
-Pace: ${paceDisplay}
-Duration: ${Math.floor(activity.moving_time / 60)} minutes
-Heart Rate: ${activity.average_heartrate ? Math.round(activity.average_heartrate) + " bpm" : "not recorded"}
-Elevation Gain: ${activity.total_elevation_gain ? Math.round(activity.total_elevation_gain) + "m" : "minimal"}
-Effort Score: ${effortScore}/100
-PRs on this run: ${activity.pr_count || 0}
-
-Provide an encouraging, coach-like insight that:
-- Acknowledges what went well
-- Gives one specific observation about their effort/performance
-- Optionally suggests what this means for their training
-
-Keep it warm, personal, and motivating. Don't use generic phrases. Be specific to THIS run's data.`;
-
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: "You are an expert AI running coach providing brief post-run insights. Be encouraging, specific, and concise." },
-          { role: "user", content: prompt }
-        ],
-        max_tokens: 150,
-        temperature: 0.7
-      });
-
-      const insight = response.choices[0]?.message?.content?.trim();
-      if (insight && insight.length > 20) {
-        return insight;
-      }
-      
-      return this.getFallbackCoachInsight(runType, effortScore, distanceKm, activity);
-    } catch (error) {
-      console.error("[Strava Webhook] AI insight generation failed:", error);
-      return this.getFallbackCoachInsight(runType, effortScore, distanceKm, activity);
-    }
-  }
-
-  private getFallbackCoachInsight(runType: string, effortScore: number, distanceKm: number, activity: any): string {
-    if (runType === "Long Run" || runType === "Ultra Distance") {
-      return `Excellent endurance work! Long runs like this build the aerobic foundation that makes all your other runs feel easier. Your body is adapting to go the distance.`;
-    }
-    if (runType === "Tempo Run" || effortScore > 75) {
-      return `Great effort pushing into that tempo zone! This kind of work improves your lactate threshold, which means you'll be able to hold faster paces for longer.`;
-    }
-    if (runType === "Recovery Run" || runType === "Easy Run") {
-      return `Smart easy effort today. Recovery runs are where the magic happens - your body is rebuilding stronger from your harder sessions. Keep stacking these consistent efforts!`;
-    }
-    if (activity.pr_count && activity.pr_count > 0) {
-      return `You set ${activity.pr_count} PR${activity.pr_count > 1 ? "s" : ""} today - that's your hard work paying off! These benchmarks show real fitness gains happening.`;
-    }
-    if (distanceKm >= 10) {
-      return `Solid double-digit effort! Runs like this are the backbone of distance running fitness. You're building the engine that powers faster race times.`;
-    }
-    return `Every run counts toward your goals. This one added to your fitness bank - keep building that momentum!`;
-  }
-
-  private generateQuickInsights(activity: any, distanceKm: number, runType: string): { title: string; message: string }[] {
-    const insights: { title: string; message: string }[] = [];
-    
-    if (distanceKm >= 20) {
-      insights.push({
-        title: "Endurance Builder",
-        message: "Long runs like this develop mitochondrial density and capillary networks in your muscles."
-      });
-    } else if (distanceKm >= 10) {
-      insights.push({
-        title: "Solid Volume",
-        message: "Double-digit runs build the aerobic base that supports faster training."
-      });
-    }
-
-    if (activity.average_heartrate) {
-      if (activity.average_heartrate < 140) {
-        insights.push({
-          title: "Zone 2 Training",
-          message: "Low heart rate running builds fat-burning efficiency and recovery capacity."
-        });
-      } else if (activity.average_heartrate > 160) {
-        insights.push({
-          title: "Threshold Work",
-          message: "Higher intensity builds lactate clearance and race-day speed."
-        });
-      }
-    }
-
-    if (activity.total_elevation_gain > 100) {
-      insights.push({
-        title: "Strength Gains",
-        message: `${Math.round(activity.total_elevation_gain)}m of climbing builds leg strength and mental toughness.`
-      });
-    }
-
-    if (activity.pr_count && activity.pr_count > 0) {
-      insights.push({
-        title: "New PRs!",
-        message: `${activity.pr_count} personal record${activity.pr_count > 1 ? "s" : ""} set - fitness is trending up!`
-      });
-    }
-
-    if (insights.length === 0) {
-      insights.push({
-        title: "Consistency Counts",
-        message: "Regular running builds cumulative fitness gains over time."
-      });
-    }
-
-    return insights.slice(0, 3);
   }
 }
 

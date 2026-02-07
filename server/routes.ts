@@ -1713,6 +1713,37 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  app.get("/api/notifications/unsubscribe", async (req, res) => {
+    try {
+      const token = req.query.token as string;
+      if (!token) {
+        return res.status(400).send("<html><body><h2>Invalid unsubscribe link.</h2></body></html>");
+      }
+
+      const userId = stravaWebhookService.verifyUnsubscribeToken(token);
+      if (!userId) {
+        return res.status(400).send("<html><body><h2>Invalid or expired unsubscribe link.</h2></body></html>");
+      }
+
+      await storage.updateUser(userId, { notifyPostRun: false });
+      console.log(`[Notifications] User ${userId} unsubscribed from post-run emails via one-click link`);
+
+      res.send(`
+        <html>
+          <head><title>Unsubscribed | AITracker.run</title></head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 80px auto; text-align: center; padding: 20px;">
+            <h1 style="color: #2c3e50;">You've been unsubscribed</h1>
+            <p style="color: #666; font-size: 16px; line-height: 1.6;">You will no longer receive post-run analysis emails from AITracker.run.</p>
+            <p style="color: #999; font-size: 14px; margin-top: 20px;">You can re-enable these notifications anytime in your <a href="https://aitracker.run/settings" style="color: #FC5200;">account settings</a>.</p>
+          </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error("[Notifications] Unsubscribe error:", error);
+      res.status(500).send("<html><body><h2>Something went wrong. Please try again.</h2></body></html>");
+    }
+  });
+
   // Create short-lived SSE nonces for sync
   const sseNonces = new Map<string, { userId: number; maxActivities: number; expiresAt: number }>();
   

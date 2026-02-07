@@ -903,127 +903,106 @@ Biser`;
     aiCoachInsight?: string;
     insights: { title: string; message: string }[];
     dashboardUrl: string;
+    subject?: string;
+    efficiencyRating?: { label: string; icon: string };
+    greyZoneAnalysis?: { inGreyZone: boolean; minutes: number; message: string } | null;
+    unsubscribeUrl?: string;
+    activityUrl?: string;
   }): Promise<boolean> {
-    const { to, firstName, activityName, distance, duration, pace, heartRate, elevation, effortScore, runType, aiCoachInsight, insights, dashboardUrl } = options;
-    
-    const insightsHtml = insights.map(insight => `
-      <div style="background: #f8f9fa; padding: 12px 16px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #e74c3c;">
-        <strong style="color: #2c3e50;">${insight.title}</strong>
-        <p style="margin: 5px 0 0; color: #666; font-size: 14px;">${insight.message}</p>
-      </div>
-    `).join("");
+    const { to, firstName, activityName, distance, duration, pace, heartRate, elevation, effortScore, runType, aiCoachInsight, insights, dashboardUrl, efficiencyRating, greyZoneAnalysis, unsubscribeUrl, activityUrl } = options;
 
-    const statsRow = [
-      { label: "Distance", value: distance },
-      { label: "Duration", value: duration },
-      { label: "Pace", value: pace },
-      ...(heartRate ? [{ label: "Avg HR", value: heartRate }] : []),
-      ...(elevation ? [{ label: "Elevation", value: elevation }] : [])
-    ];
+    const efficiencyIcon = efficiencyRating?.label === "High" ? "&#9989;" : efficiencyRating?.label === "Low" ? "&#9888;&#65039;" : efficiencyRating ? "&#8226;" : "";
+    const efficiencyColor = efficiencyRating?.label === "High" ? "#27ae60" : efficiencyRating?.label === "Low" ? "#e67e22" : "#666";
 
-    const statsHtml = statsRow.map(stat => `
-      <div style="text-align: center; padding: 10px;">
-        <div style="font-size: 20px; font-weight: bold; color: #e74c3c;">${stat.value}</div>
-        <div style="font-size: 12px; color: #666; text-transform: uppercase;">${stat.label}</div>
-      </div>
-    `).join("");
-
-    const effortColor = effortScore && effortScore >= 75 ? "#e74c3c" : effortScore && effortScore >= 50 ? "#f39c12" : "#27ae60";
-    const effortLabel = effortScore && effortScore >= 80 ? "High Intensity" : effortScore && effortScore >= 60 ? "Moderate" : "Easy Effort";
-
-    const effortScoreHtml = effortScore ? `
-      <div style="background: linear-gradient(135deg, ${effortColor}15 0%, ${effortColor}05 100%); border-radius: 12px; padding: 20px; margin: 20px 0; text-align: center; border: 2px solid ${effortColor}30;">
-        <div style="font-size: 14px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Effort Score</div>
-        <div style="font-size: 48px; font-weight: bold; color: ${effortColor}; margin: 0;">${effortScore}</div>
-        <div style="font-size: 14px; color: ${effortColor}; font-weight: 500;">${effortLabel}</div>
+    const greyZoneHtml = greyZoneAnalysis?.inGreyZone ? `
+      <div style="background: #fef3cd; border-radius: 12px; padding: 20px; margin: 20px 0; border-left: 4px solid #f39c12;">
+        <div style="font-weight: 700; color: #856404; font-size: 15px; margin-bottom: 8px;">&#9888;&#65039; Grey Zone Alert: ~${greyZoneAnalysis.minutes} minutes</div>
+        <p style="color: #856404; font-size: 14px; line-height: 1.6; margin: 0;">${greyZoneAnalysis.message}</p>
+        <p style="color: #856404; font-size: 14px; font-weight: 600; margin: 12px 0 0;">Don't let this run turn into "Junk Mileage."</p>
       </div>
     ` : "";
 
-    const runTypeBadge = runType ? `
-      <div style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-bottom: 15px;">${runType}</div>
-    ` : "";
+    const ctaUrl = activityUrl || dashboardUrl;
+    const emailSubject = options.subject || `${runType || "Great run"}! ${activityName}`;
 
-    const aiCoachHtml = aiCoachInsight ? `
-      <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 16px; padding: 24px; margin: 25px 0; position: relative;">
-        <div style="display: flex; align-items: center; margin-bottom: 12px;">
-          <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
-            <span style="font-size: 20px;">🏃</span>
-          </div>
-          <div>
-            <div style="color: #e74c3c; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">AI Coach</div>
-            <div style="color: rgba(255,255,255,0.6); font-size: 12px;">Personalized Insight</div>
-          </div>
-        </div>
-        <p style="color: rgba(255,255,255,0.95); font-size: 16px; line-height: 1.6; margin: 0; font-style: italic;">"${aiCoachInsight}"</p>
-      </div>
-    ` : "";
-
-    const subject = `${runType || "Great run"}! ${activityName} - Your AI Analysis Ready`;
     const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: #ffffff;">
-        <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); padding: 30px 20px; text-align: center;">
-          <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">RunAnalytics</h1>
-          <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0; font-size: 14px;">Your Post-Run AI Analysis</p>
+        <div style="padding: 30px 25px 0;">
+          <p style="color: #666; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">Hey ${firstName},</p>
+          <p style="color: #666; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">We just saw your <strong style="color: #2c3e50;">${activityName}</strong> upload to Strava. Nice work getting out there!</p>
+          
+          <h2 style="color: #2c3e50; margin: 0 0 15px; font-size: 18px; font-weight: 700;">Quick Audit:</h2>
+
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <tr>
+              <td style="padding: 8px 0; color: #666; font-size: 15px; border-bottom: 1px solid #f0f0f0;"><strong>Pace:</strong></td>
+              <td style="padding: 8px 0; color: #2c3e50; font-size: 15px; font-weight: 600; text-align: right; border-bottom: 1px solid #f0f0f0;">${pace}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #666; font-size: 15px; border-bottom: 1px solid #f0f0f0;"><strong>Distance:</strong></td>
+              <td style="padding: 8px 0; color: #2c3e50; font-size: 15px; font-weight: 600; text-align: right; border-bottom: 1px solid #f0f0f0;">${distance}</td>
+            </tr>
+            ${heartRate ? `<tr>
+              <td style="padding: 8px 0; color: #666; font-size: 15px; border-bottom: 1px solid #f0f0f0;"><strong>Avg HR:</strong></td>
+              <td style="padding: 8px 0; color: #2c3e50; font-size: 15px; font-weight: 600; text-align: right; border-bottom: 1px solid #f0f0f0;">${heartRate}</td>
+            </tr>` : ""}
+            ${efficiencyRating ? `<tr>
+              <td style="padding: 8px 0; color: #666; font-size: 15px; border-bottom: 1px solid #f0f0f0;"><strong>Efficiency:</strong></td>
+              <td style="padding: 8px 0; color: ${efficiencyColor}; font-size: 15px; font-weight: 600; text-align: right; border-bottom: 1px solid #f0f0f0;">${efficiencyRating.label} ${efficiencyIcon}</td>
+            </tr>` : ""}
+          </table>
+
+          ${greyZoneHtml}
+
+          ${aiCoachInsight ? `
+          <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin: 20px 0; border-left: 4px solid #FC5200;">
+            <p style="color: #2c3e50; font-size: 15px; line-height: 1.7; margin: 0;">${aiCoachInsight}</p>
+          </div>
+          ` : ""}
+
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${ctaUrl}" style="background: #FC5200; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 16px;">See My Full Run Analysis &amp; Recovery Time</a>
+          </div>
         </div>
         
-        <div style="padding: 30px 25px;">
-          ${runTypeBadge}
-          <h2 style="color: #2c3e50; margin: 0 0 5px; font-size: 24px;">Nice work, ${firstName}!</h2>
-          <p style="color: #666; margin: 0 0 20px; font-size: 16px;">Here's your analysis for <strong>${activityName}</strong></p>
-          
-          ${effortScoreHtml}
-          
-          <div style="background: linear-gradient(135deg, #fef3f0 0%, #fff 100%); border-radius: 12px; padding: 20px; margin: 20px 0; display: flex; justify-content: space-around; flex-wrap: wrap; border: 1px solid #fce4e0;">
-            ${statsHtml}
-          </div>
-          
-          ${aiCoachHtml}
-          
-          <h3 style="color: #2c3e50; margin: 25px 0 15px; font-size: 18px;">Training Insights</h3>
-          ${insightsHtml}
-          
-          <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); border-radius: 12px; padding: 28px; text-align: center; margin: 30px 0;">
-            <p style="color: rgba(255,255,255,0.95); margin: 0 0 18px; font-size: 17px; font-weight: 500;">Unlock your full Runner Score, training trends & more</p>
-            <a href="${dashboardUrl}" style="background: white; color: #e74c3c; padding: 14px 36px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">View Full Analysis</a>
-          </div>
-        </div>
-        
-        <div style="border-top: 1px solid #eee; padding: 25px; background: #fafafa; text-align: center;">
-          <p style="margin: 0 0 5px; color: #666; font-size: 14px;">Keep building that fitness!</p>
-          <p style="margin: 0; color: #999; font-size: 13px;">The RunAnalytics Team</p>
-          <p style="margin: 18px 0 0; font-size: 11px;">
-            <a href="${dashboardUrl.replace('/dashboard', '')}/settings" style="color: #999;">Manage email preferences</a>
+        <div style="border-top: 1px solid #eee; padding: 25px; text-align: center;">
+          <p style="margin: 0 0 5px; color: #666; font-size: 14px;">Train smarter,</p>
+          <p style="margin: 0 0 15px; color: #2c3e50; font-size: 14px; font-weight: 600;">The AITracker Coach</p>
+          ${unsubscribeUrl ? `
+          <p style="margin: 15px 0 0; font-size: 12px;">
+            <a href="${unsubscribeUrl}" style="color: #999; text-decoration: underline;">Unsubscribe / Stop Analyzing My Runs</a>
           </p>
+          ` : `
+          <p style="margin: 15px 0 0; font-size: 12px;">
+            <a href="${dashboardUrl.replace('/dashboard', '')}/settings" style="color: #999; text-decoration: underline;">Manage email preferences</a>
+          </p>
+          `}
         </div>
       </div>
     `;
 
-    const insightsText = insights.map(i => `${i.title}: ${i.message}`).join("\n");
-    const text = `
-${runType || "Great run"}! Nice work, ${firstName}!
+    const text = `Hey ${firstName},
 
-Here's your analysis for ${activityName}:
+We just saw your ${activityName} upload to Strava. Nice work getting out there!
 
-${effortScore ? `Effort Score: ${effortScore}/100 (${effortLabel})` : ""}
+Quick Audit:
 
-Distance: ${distance}
-Duration: ${duration}
 Pace: ${pace}
+Distance: ${distance}
 ${heartRate ? `Avg HR: ${heartRate}` : ""}
-${elevation ? `Elevation: ${elevation}` : ""}
+${efficiencyRating ? `Efficiency: ${efficiencyRating.label}` : ""}
 
-${aiCoachInsight ? `AI Coach: "${aiCoachInsight}"` : ""}
+${greyZoneAnalysis?.inGreyZone ? `We detected that you spent ~${greyZoneAnalysis.minutes} minutes in the "Grey Zone." ${greyZoneAnalysis.message}\n\nDon't let this run turn into "Junk Mileage."\n` : ""}
+${aiCoachInsight || ""}
 
-Training Insights:
-${insightsText}
+See your full run analysis: ${ctaUrl}
 
-See your full analysis: ${dashboardUrl}
-
-Keep building that fitness!
-The RunAnalytics Team
+Train smarter,
+The AITracker Coach
+${unsubscribeUrl ? `\nUnsubscribe: ${unsubscribeUrl}` : ""}
     `;
 
-    return await this.sendEmail({ to, subject, html, text });
+    return await this.sendEmail({ to, subject: emailSubject, html, text });
   }
 }
 
