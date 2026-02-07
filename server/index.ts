@@ -219,7 +219,7 @@ async function initStripe() {
 
     // Set up managed webhook
     console.log('Setting up managed webhook...');
-    const webhookBaseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+    const webhookBaseUrl = `https://aitracker.run`;
     const { webhook, uuid } = await stripeSync.findOrCreateManagedWebhook(
       `${webhookBaseUrl}/api/stripe/webhook`,
       { enabled_events: ['*'], description: 'RunAnalytics Stripe sync' }

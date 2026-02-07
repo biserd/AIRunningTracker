@@ -907,11 +907,6 @@ ${allPages.map(page => `  <url>
         customerId = customer.id;
       }
 
-      // Get the domain - use custom domain in production
-      const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
-      const domain = isProduction ? 'aitracker.run' : (process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000');
-      const protocol = domain.includes('localhost') ? 'http' : 'https';
-
       // Create checkout session
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
@@ -919,8 +914,8 @@ ${allPages.map(page => `  <url>
         line_items: [{ price: priceId, quantity: 1 }],
         mode: 'subscription',
         allow_promotion_codes: true,
-        success_url: `${protocol}://${domain}/billing?success=true`,
-        cancel_url: `${protocol}://${domain}/pricing?canceled=true`,
+        success_url: `https://aitracker.run/billing?success=true`,
+        cancel_url: `https://aitracker.run/pricing?canceled=true`,
         metadata: { userId: String(userId) }
       });
 
@@ -969,11 +964,6 @@ ${allPages.map(page => `  <url>
       // Use the hardcoded Premium monthly price ID (same as pricing page)
       const premiumPriceId = "price_1SbtcfRwvWaTf8xfSEO4iKnc";
 
-      // Get the domain
-      const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
-      const domain = isProduction ? 'aitracker.run' : (process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000');
-      const protocol = domain.includes('localhost') ? 'http' : 'https';
-
       // Create checkout session with 14-day trial
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
@@ -984,8 +974,8 @@ ${allPages.map(page => `  <url>
         subscription_data: {
           trial_period_days: 14,
         },
-        success_url: `${protocol}://${domain}/audit-report?upgraded=true`,
-        cancel_url: `${protocol}://${domain}/audit-report?canceled=true`,
+        success_url: `https://aitracker.run/audit-report?upgraded=true`,
+        cancel_url: `https://aitracker.run/audit-report?canceled=true`,
         metadata: { userId: String(userId), source: 'audit-report' }
       });
 
@@ -1094,13 +1084,10 @@ ${allPages.map(page => `  <url>
       }
 
       const stripe = await getUncachableStripeClient();
-      const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
-      const domain = isProduction ? 'aitracker.run' : (process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000');
-      const protocol = domain.includes('localhost') ? 'http' : 'https';
 
       const session = await stripe.billingPortal.sessions.create({
         customer: user.stripeCustomerId,
-        return_url: `${protocol}://${domain}/billing`
+        return_url: `https://aitracker.run/billing`
       });
 
       res.json({ url: session.url });

@@ -305,7 +305,7 @@ export class DripCampaignService {
 
       const metadata = job.metadata as { ctaUrl?: string; subject?: string; previewText?: string } || {};
       const ctaUrl = metadata.ctaUrl || stepConfig.ctaUrl;
-      const fullUrl = `${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://aitracker.run'}${ctaUrl}`;
+      const fullUrl = `https://aitracker.run${ctaUrl}`;
 
       await emailService.sendDripEmail({
         to: user.email,

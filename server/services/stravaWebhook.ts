@@ -98,7 +98,7 @@ class StravaWebhookService {
       const paceSec = Math.round((pace - paceMin) * 60);
       const paceDisplay = `${paceMin}:${String(paceSec).padStart(2, "0")} /${isKm ? "km" : "mi"}`;
 
-      const domain = process.env.REPLIT_DOMAINS?.split(",")[0] || "aitracker.run";
+      const domain = "aitracker.run";
       const dashboardUrl = `https://${domain}/dashboard`;
       
       const firstName = user.firstName || user.email.split("@")[0];
