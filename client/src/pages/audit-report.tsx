@@ -9,7 +9,6 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { SEO } from "@/components/SEO";
 import { StravaConnectButton } from "@/components/StravaConnect";
 import CalibrationWizard from "@/components/CalibrationWizard";
-import confetti from "canvas-confetti";
 
 interface AuditData {
   runnerIQ: {
@@ -273,9 +272,8 @@ interface SyncStatus {
 
 export default function AuditReportPage() {
   const { isAuthenticated, user, isLoading: authLoading } = useAuth();
-  const { hasActiveSubscription, isLoading: subLoading } = useSubscription();
+  const { hasActiveSubscription, isLoading: subLoading, isReverseTrial } = useSubscription();
   const [, navigate] = useLocation();
-  const [isUnlocked, setIsUnlocked] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const checkout = useAuditCheckout();
 
@@ -341,44 +339,17 @@ export default function AuditReportPage() {
   }, [isStravaConnected, syncDone, hasInsights, hasCalibration, calibrationLoading]);
 
   useEffect(() => {
-    if (!subLoading && hasActiveSubscription) {
-      setIsUnlocked(true);
+    if (!subLoading && !authLoading && (hasActiveSubscription || isReverseTrial)) {
+      navigate('/dashboard');
     }
-  }, [hasActiveSubscription, subLoading]);
+  }, [hasActiveSubscription, isReverseTrial, subLoading, authLoading, navigate]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('upgraded') === 'true') {
-      setIsUnlocked(true);
-      window.history.replaceState({}, '', '/audit-report');
-      
-      const duration = 3000;
-      const animationEnd = Date.now() + duration;
-      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
-
-      const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
-
-      const interval = setInterval(() => {
-        const timeLeft = animationEnd - Date.now();
-        if (timeLeft <= 0) {
-          clearInterval(interval);
-          return;
-        }
-
-        const particleCount = 50 * (timeLeft / duration);
-        confetti({
-          ...defaults,
-          particleCount,
-          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
-        });
-        confetti({
-          ...defaults,
-          particleCount,
-          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
-        });
-      }, 250);
+      navigate('/dashboard');
     }
-  }, []);
+  }, [navigate]);
 
   const handleUpgrade = () => {
     if (!isAuthenticated) {
@@ -386,10 +357,6 @@ export default function AuditReportPage() {
       return;
     }
     checkout.mutate();
-  };
-
-  const handleGoToDashboard = () => {
-    navigate('/dashboard');
   };
 
   const handleCalibrationComplete = () => {
@@ -493,7 +460,7 @@ export default function AuditReportPage() {
     );
   }
 
-  if (showWizard) {
+  if (showWizard && !hasCalibration) {
     return <CalibrationWizard onComplete={handleCalibrationComplete} />;
   }
 
@@ -641,7 +608,7 @@ export default function AuditReportPage() {
                 </p>
 
                 <div className="relative mt-4">
-                  <div className={`bg-white rounded-lg p-4 border border-purple-200 ${!isUnlocked ? 'blur-sm' : ''}`}>
+                  <div className="bg-white rounded-lg p-4 border border-purple-200 blur-sm">
                     <p className="text-lg font-semibold text-charcoal">
                       Optimal Easy Pace: {greyZone.optimalEasyPaceMiles} /mile
                     </p>
@@ -650,18 +617,16 @@ export default function AuditReportPage() {
                     </p>
                   </div>
                   
-                  {!isUnlocked && (
-                    <button
-                      onClick={handleUpgrade}
-                      disabled={checkout.isPending}
-                      className="absolute inset-0 flex items-center justify-center bg-white/60 rounded-lg cursor-pointer hover:bg-white/70 transition-colors"
-                    >
-                      <div className="flex items-center gap-2 text-purple-700 font-semibold">
-                        <Lock className="h-5 w-5" />
-                        {checkout.isPending ? "Redirecting..." : "Unlock to reveal"}
-                      </div>
-                    </button>
-                  )}
+                  <button
+                    onClick={handleUpgrade}
+                    disabled={checkout.isPending}
+                    className="absolute inset-0 flex items-center justify-center bg-white/60 rounded-lg cursor-pointer hover:bg-white/70 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 text-purple-700 font-semibold">
+                      <Lock className="h-5 w-5" />
+                      {checkout.isPending ? "Redirecting..." : "Unlock to reveal"}
+                    </div>
+                  </button>
                 </div>
 
                 <p className="text-sm text-purple-700 mt-3">
@@ -684,39 +649,28 @@ export default function AuditReportPage() {
             </p>
           </div>
           
-          {isUnlocked ? (
+          <div className="space-y-2">
             <Button
-              onClick={handleGoToDashboard}
+              onClick={handleUpgrade}
+              disabled={checkout.isPending}
               className="w-full bg-white text-strava-orange hover:bg-gray-100 font-bold py-3 rounded-xl"
             >
-              <Sparkles className="h-5 w-5 mr-2" />
-              Go to Training Dashboard
-              <ArrowRight className="h-5 w-5 ml-2" />
+              {checkout.isPending ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-strava-orange" />
+                  Redirecting to checkout...
+                </div>
+              ) : (
+                <>
+                  Reveal My Optimal Paces & Fix My Plan
+                  <ArrowRight className="h-5 w-5 ml-2" />
+                </>
+              )}
             </Button>
-          ) : (
-            <div className="space-y-2">
-              <Button
-                onClick={handleUpgrade}
-                disabled={checkout.isPending}
-                className="w-full bg-white text-strava-orange hover:bg-gray-100 font-bold py-3 rounded-xl"
-              >
-                {checkout.isPending ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-strava-orange" />
-                    Redirecting to checkout...
-                  </div>
-                ) : (
-                  <>
-                    Reveal My Optimal Paces & Fix My Plan
-                    <ArrowRight className="h-5 w-5 ml-2" />
-                  </>
-                )}
-              </Button>
-              <p className="text-center text-white/90 text-sm font-medium">
-                14-Day Free Trial. Cancel anytime.
-              </p>
-            </div>
-          )}
+            <p className="text-center text-white/90 text-sm font-medium">
+              14-Day Free Trial. Cancel anytime.
+            </p>
+          </div>
         </div>
       </div>
     </div>
