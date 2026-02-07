@@ -70,6 +70,16 @@ export const users = pgTable("users", {
   marketingOptOut: boolean("marketing_opt_out").default(false), // User opted out of lifecycle emails
   coachQuestionsCount7d: integer("coach_questions_count_7d").default(0), // Rolling 7-day coach question count
   welcomeEmailSentAt: timestamp("welcome_email_sent_at"), // When the welcome campaign email was sent
+  onboardingGoal: text("onboarding_goal", { 
+    enum: ["race", "faster", "endurance", "injury_free"] 
+  }),
+  onboardingStruggle: text("onboarding_struggle", { 
+    enum: ["plateau", "burnout", "inconsistency", "guesswork"] 
+  }),
+  onboardingDays: text("onboarding_days", { 
+    enum: ["3", "4", "5+"] 
+  }),
+  onboardingCompletedAt: timestamp("onboarding_completed_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
