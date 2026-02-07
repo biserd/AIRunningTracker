@@ -48,109 +48,258 @@ interface CalibrationData {
   completedAt: string | null;
 }
 
+interface PersonalizedCopy {
+  headline: string;
+  hook: string;
+  solution: string;
+  runnerIQ: {
+    title: string;
+    body: string;
+    takeaway: string;
+  };
+  loadWarning: {
+    title: string;
+    body: string;
+    takeaway: string;
+  };
+  greyZone: {
+    title: string;
+    body: string;
+    lockedLabel: string;
+    lockedDescription: string;
+  };
+  cta: {
+    headline: string;
+    subtext: string;
+    button: string;
+  };
+}
+
 function getPersonalizedCopy(
   goal: string | null,
   struggle: string | null,
   days: string | null,
   auditData: AuditData
-) {
+): PersonalizedCopy {
   const greyZonePct = auditData.greyZone.percentage;
   const runnerIQScore = auditData.runnerIQ.score;
-  const daysLabel = days === "5+" ? "5+" : days;
+  const daysLabel = days === "5+" ? "5+" : (days || "3");
+  const volumeGrade = auditData.runnerIQ.volumeGrade;
+  const perfGrade = auditData.runnerIQ.performanceGrade;
+  const activityCount = auditData.greyZone.activityCount;
+  const thisWeek = auditData.trainingLoad.thisWeekActivities;
+  const lastWeek = auditData.trainingLoad.lastWeekActivities;
+  const loadChange = auditData.trainingLoad.change;
+  const isCritical = auditData.trainingLoad.isCritical;
 
   const goalLabels: Record<string, string> = {
     race: "race day",
-    faster: "new PRs",
-    endurance: "longer distances",
+    faster: "speed",
+    endurance: "endurance",
     injury_free: "injury-free running",
   };
-
   const goalTarget = goalLabels[goal || ""] || "your goals";
 
-  if (goal === "race" && struggle === "plateau") {
-    return {
+  // --- Runner IQ copy by goal ---
+  const runnerIQByGoal: Record<string, PersonalizedCopy['runnerIQ']> = {
+    race: {
+      title: `Your 'Runner IQ' is ${runnerIQScore}`,
+      body: `You are putting in Grade ${volumeGrade} effort, but getting Grade ${perfGrade} race-readiness. ${greyZonePct}% of your recent miles were spent in no-man's land: not easy enough to recover, not hard enough to build race fitness.`,
+      takeaway: `Your training volume is there, but it is not translating to race performance.`,
+    },
+    faster: {
+      title: `Your 'Runner IQ' is ${runnerIQScore}`,
+      body: `Grade ${volumeGrade} effort in, Grade ${perfGrade} speed out. ${greyZonePct}% of your miles are stuck in the "grey zone" where you are running too hard to recover but too slow to trigger speed adaptations.`,
+      takeaway: `You have the engine. You just need the right gear shifts to unlock faster times.`,
+    },
+    endurance: {
+      title: `Your 'Runner IQ' is ${runnerIQScore}`,
+      body: `You are logging Grade ${volumeGrade} volume, but your aerobic efficiency is only Grade ${perfGrade}. ${greyZonePct}% of your miles are too fast for base-building, which means your body never fully adapts before the next session.`,
+      takeaway: `Slowing down on easy days is the fastest path to running longer.`,
+    },
+    injury_free: {
+      title: `Your 'Runner IQ' is ${runnerIQScore}`,
+      body: `You are putting in Grade ${volumeGrade} effort, but your body is absorbing Grade ${perfGrade} levels of stress. ${greyZonePct}% of your miles create unnecessary mechanical load on your joints and tendons without improving fitness.`,
+      takeaway: `Your body is absorbing more impact than it needs to. That is a recipe for injury.`,
+    },
+  };
+
+  // --- Load Warning copy by struggle ---
+  const loadWarningByStruggle: Record<string, PersonalizedCopy['loadWarning']> = {
+    plateau: isCritical ? {
+      title: `Load Spike Detected: ${loadChange !== null && loadChange > 0 ? '+' : ''}${loadChange ?? 0}%`,
+      body: `You are pushing harder to break through, but your body cannot absorb this spike. This week: ${thisWeek} sessions. Last week: ${lastWeek}. Sudden jumps like this lead to stagnation, not breakthroughs.`,
+      takeaway: `Plateaus break with precision, not brute force. A structured plan ramps load safely.`,
+    } : {
+      title: `Load Flat: ${loadChange ?? 0}% Change`,
+      body: `Your training load has barely changed. This week: ${thisWeek} sessions. Last week: ${lastWeek}. Without progressive overload, your body has no reason to adapt. That is why your times have stalled.`,
+      takeaway: `To break through, you need structured progression, not more of the same.`,
+    },
+    burnout: isCritical ? {
+      title: `Overload Warning: ${loadChange !== null && loadChange > 0 ? '+' : ''}${loadChange ?? 0}%`,
+      body: `Your fatigue is not in your head. This week: ${thisWeek} sessions vs. ${lastWeek} last week. Your body is accumulating more stress than it can recover from between runs.`,
+      takeaway: `You need a recovery protocol before you can build fitness again.`,
+    } : {
+      title: `Load Check: ${loadChange ?? 0}% Change`,
+      body: `This week: ${thisWeek} sessions. Last week: ${lastWeek}. Even without a big spike, the cumulative effect of too many grey zone runs is draining your energy reserves over time.`,
+      takeaway: `The fix is not running less. It is running at the right intensities.`,
+    },
+    inconsistency: {
+      title: `Training Gaps Detected`,
+      body: `This week: ${thisWeek} sessions. Last week: ${lastWeek}. When your schedule is unpredictable, every run needs to count. Right now, the runs you do fit in are not structured for maximum return.`,
+      takeaway: `A flexible ${daysLabel}-day plan adapts to your life and still delivers results.`,
+    },
+    guesswork: isCritical ? {
+      title: `Load Warning: ${loadChange !== null && loadChange > 0 ? '+' : ''}${loadChange ?? 0}%`,
+      body: `Without clear targets, it is easy to overshoot. This week: ${thisWeek} sessions vs. ${lastWeek} last week. Your body does not know whether you are building fitness or just accumulating fatigue.`,
+      takeaway: `You need a plan with clear daily targets so every run has a purpose.`,
+    } : {
+      title: `Load Status: ${loadChange ?? 0}% Change`,
+      body: `This week: ${thisWeek} sessions. Last week: ${lastWeek}. Without structure, you are training by feel, and the data shows it is not working. ${greyZonePct}% of your effort is landing in no-man's land.`,
+      takeaway: `A structured plan removes the guesswork and tells you exactly what to do each day.`,
+    },
+  };
+
+  // --- Grey Zone copy by goal ---
+  const greyZoneByGoal: Record<string, PersonalizedCopy['greyZone']> = {
+    race: {
+      title: `Your Race Fitness Gap`,
+      body: `Across ${activityCount} activities, ${greyZonePct}% of your miles are in the Grey Zone. On race day, your body will default to these efforts. That means you are training yourself to run at a pace that is neither your goal pace nor recovery pace.`,
+      lockedLabel: `Unlock Your Race Pace Zones`,
+      lockedDescription: `See exactly what paces to hit on easy days, tempo days, and long runs to peak on race day.`,
+    },
+    faster: {
+      title: `Why Your Speed Has Stalled`,
+      body: `Across ${activityCount} activities, ${greyZonePct}% of your miles are in the Grey Zone. Speed comes from contrast: truly easy days that let you recover, and truly hard sessions that push your threshold. You are stuck in the middle.`,
+      lockedLabel: `Unlock Your Speed Zones`,
+      lockedDescription: `See your optimal easy pace, tempo pace, and interval targets based on your current fitness.`,
+    },
+    endurance: {
+      title: `Your Aerobic Base Gap`,
+      body: `Across ${activityCount} activities, ${greyZonePct}% of your miles are too fast for base-building. Endurance is built in the easy zone. Running faster than that on easy days actually slows your aerobic development.`,
+      lockedLabel: `Unlock Your Easy Pace Target`,
+      lockedDescription: `See the exact easy pace that builds your aerobic engine without the fatigue hangover.`,
+    },
+    injury_free: {
+      title: `Your Injury Risk Profile`,
+      body: `Across ${activityCount} activities, ${greyZonePct}% of your miles create more impact stress than necessary. Every grey zone mile puts extra load on your tendons, joints, and connective tissue without a fitness payoff.`,
+      lockedLabel: `Unlock Your Safe Training Zones`,
+      lockedDescription: `See the pace and heart rate ranges that build fitness while protecting your body.`,
+    },
+  };
+
+  // --- CTA copy by goal ---
+  const ctaByGoal: Record<string, PersonalizedCopy['cta']> = {
+    race: {
+      headline: `Get race-ready with a plan built for your body.`,
+      subtext: `Personalized paces, structured weekly plan, and race-day strategy.`,
+      button: `Unlock My Race Plan`,
+    },
+    faster: {
+      headline: `Unlock the speed your training is missing.`,
+      subtext: `Personalized pace zones, structured speed sessions, and recovery timing.`,
+      button: `Unlock My Speed Plan`,
+    },
+    endurance: {
+      headline: `Build the aerobic base to run longer than ever.`,
+      subtext: `Personalized easy pace, progressive long runs, and endurance tracking.`,
+      button: `Unlock My Endurance Plan`,
+    },
+    injury_free: {
+      headline: `Train consistently without the injury setbacks.`,
+      subtext: `Safe pace zones, load monitoring, and recovery-first planning.`,
+      button: `Unlock My Safe Training Plan`,
+    },
+  };
+
+  // --- Headline/hook by goal+struggle ---
+  const headlineHookMap: Record<string, { headline: string; hook: string }> = {
+    "race_plateau": {
       headline: "Break through your plateau and crush your next race.",
-      hook: `You want to race, but your current training is holding you back. Our data shows ${greyZonePct}% of your runs are in the 'Grey Zone' — causing you to plateau. With the right structure, you can break through.`,
-      solution: `Here is your ${daysLabel}-day/week plan to peak exactly on race day.`,
-    };
-  }
-
-  if (goal === "race" && struggle === "burnout") {
-    return {
+      hook: `You want to race, but your current training is holding you back. Our data shows ${greyZonePct}% of your runs are in the Grey Zone, causing you to plateau. With the right structure, you can break through.`,
+    },
+    "race_burnout": {
       headline: "Race faster without burning out before the start line.",
-      hook: `You reported feeling tired and heavy-legged. Our analysis confirms why: ${greyZonePct}% of your miles are 'Junk Mileage'. You're overloading your body instead of building race fitness.`,
-      solution: `Here is your ${daysLabel}-day/week plan that builds race fitness while protecting your energy.`,
-    };
-  }
-
-  if (goal === "race" && struggle === "inconsistency") {
-    return {
+      hook: `You reported feeling tired and heavy-legged. Our analysis confirms why: ${greyZonePct}% of your miles are Junk Mileage. You are overloading your body instead of building race fitness.`,
+    },
+    "race_inconsistency": {
       headline: "A race plan that fits your real life.",
-      hook: `Sticking to a schedule is tough. But ${greyZonePct}% of the runs you do manage are in the Grey Zone — not getting you closer to race day. You need a plan that works even when life gets busy.`,
-      solution: `Here is your flexible ${daysLabel}-day/week plan built around your schedule.`,
-    };
-  }
-
-  if (goal === "race" && struggle === "guesswork") {
-    return {
+      hook: `Sticking to a schedule is tough. But ${greyZonePct}% of the runs you do manage are in the Grey Zone, not getting you closer to race day. You need a plan that works even when life gets busy.`,
+    },
+    "race_guesswork": {
       headline: "Stop guessing. Start training with a plan that peaks on race day.",
-      hook: `You don't know if your training is on track — and the data confirms the concern. ${greyZonePct}% of your mileage is in the Grey Zone, meaning you're working hard but not building race-specific fitness.`,
-      solution: `Here is your ${daysLabel}-day/week structured plan with clear targets for every session.`,
-    };
-  }
-
-  if (goal === "faster" && struggle === "plateau") {
-    return {
+      hook: `You do not know if your training is on track, and the data confirms the concern. ${greyZonePct}% of your mileage is in the Grey Zone, meaning you are working hard but not building race-specific fitness.`,
+    },
+    "faster_plateau": {
       headline: "You're working hard. Here's why you're not getting faster.",
-      hook: `With a Runner IQ of ${runnerIQScore}, your effort is there — but ${greyZonePct}% of your runs are stuck in the Grey Zone. Too fast to recover, too slow to build speed. That's why you've plateaued.`,
-      solution: `Here is your ${daysLabel}-day/week plan designed to break through the speed ceiling.`,
-    };
-  }
-
-  if (goal === "faster" && struggle === "burnout") {
-    return {
+      hook: `With a Runner IQ of ${runnerIQScore}, your effort is there, but ${greyZonePct}% of your runs are stuck in the Grey Zone. Too fast to recover, too slow to build speed. That is why you have plateaued.`,
+    },
+    "faster_burnout": {
       headline: "Get faster without running yourself into the ground.",
-      hook: `Feeling tired isn't a badge of honor — it's a warning sign. ${greyZonePct}% of your miles are 'Junk Mileage', draining your energy without making you faster.`,
-      solution: `Here is your ${daysLabel}-day/week plan that prioritizes quality over quantity.`,
-    };
-  }
-
-  if (goal === "injury_free" && struggle === "burnout") {
-    return {
-      headline: "Stop the cycle of overtraining and injury.",
-      hook: `You reported feeling tired. Our analysis confirms why: ${greyZonePct}% of your miles are 'Junk Mileage'. You are overloading your joints without gaining fitness.`,
-      solution: `Here is a 'Safe-Build' ${daysLabel}-day/week plan that prioritizes recovery and sustainable volume.`,
-    };
-  }
-
-  if (goal === "injury_free" && struggle === "plateau") {
-    return {
-      headline: "Build sustainable fitness without breaking down.",
-      hook: `Running hard but not seeing results — and now you're worried about getting hurt. ${greyZonePct}% of your runs are in the Grey Zone, putting unnecessary stress on your body without improving fitness.`,
-      solution: `Here is your ${daysLabel}-day/week plan built around injury prevention and gradual progression.`,
-    };
-  }
-
-  if (goal === "endurance" && struggle === "burnout") {
-    return {
-      headline: "Run longer without feeling destroyed the next day.",
-      hook: `You want to go further, but fatigue keeps holding you back. ${greyZonePct}% of your miles are too fast for building aerobic endurance — they're burning you out instead.`,
-      solution: `Here is your ${daysLabel}-day/week plan to build endurance with sustainable effort levels.`,
-    };
-  }
-
-  if (goal === "endurance" && struggle === "plateau") {
-    return {
+      hook: `Feeling tired is not a badge of honor. It is a warning sign. ${greyZonePct}% of your miles are Junk Mileage, draining your energy without making you faster.`,
+    },
+    "faster_inconsistency": {
+      headline: "Make every run count, even when life gets in the way.",
+      hook: `You can not always control your schedule, but you can control what each run does for you. Right now, ${greyZonePct}% of your efforts are not building speed.`,
+    },
+    "faster_guesswork": {
+      headline: "Stop wondering if your training is working. Know it.",
+      hook: `Without clear targets, ${greyZonePct}% of your runs end up in the Grey Zone. You are putting in the work, but you need a plan that tells you exactly what pace to hit and why.`,
+    },
+    "endurance_plateau": {
       headline: "Push past the distance wall and keep building.",
-      hook: `You've hit a ceiling on how far you can run. With ${greyZonePct}% Grey Zone mileage, your body isn't adapting — it's just surviving. Time to train smarter.`,
-      solution: `Here is your ${daysLabel}-day/week progressive plan to systematically increase your distance.`,
-    };
-  }
+      hook: `You have hit a ceiling on how far you can run. With ${greyZonePct}% Grey Zone mileage, your body is not adapting. It is just surviving. Time to train smarter.`,
+    },
+    "endurance_burnout": {
+      headline: "Run longer without feeling destroyed the next day.",
+      hook: `You want to go further, but fatigue keeps holding you back. ${greyZonePct}% of your miles are too fast for building aerobic endurance. They are burning you out instead.`,
+    },
+    "endurance_inconsistency": {
+      headline: "Build endurance that sticks, even with an unpredictable schedule.",
+      hook: `Endurance requires consistency, but life does not always cooperate. The good news: ${daysLabel} well-structured days per week can build more base than 6 random ones.`,
+    },
+    "endurance_guesswork": {
+      headline: "Your easy runs are not easy enough. Here is the proof.",
+      hook: `${greyZonePct}% of your miles are faster than they should be for building endurance. Without knowing your real easy pace, every easy run is secretly chipping away at your recovery.`,
+    },
+    "injury_free_plateau": {
+      headline: "Build sustainable fitness without breaking down.",
+      hook: `Running hard but not seeing results, and now you are worried about getting hurt. ${greyZonePct}% of your runs put unnecessary stress on your body without improving fitness.`,
+    },
+    "injury_free_burnout": {
+      headline: "Stop the cycle of overtraining and injury.",
+      hook: `You reported feeling tired. Our analysis confirms why: ${greyZonePct}% of your miles are Junk Mileage. You are overloading your joints without gaining fitness.`,
+    },
+    "injury_free_inconsistency": {
+      headline: "A plan your body can trust, even when your schedule changes.",
+      hook: `Inconsistent training creates spiky load patterns, which is one of the top predictors of running injuries. A ${daysLabel}-day plan with built-in flexibility keeps your body adapting safely.`,
+    },
+    "injury_free_guesswork": {
+      headline: "Your body is telling you something. Let's listen to the data.",
+      hook: `Without knowing your safe training zones, ${greyZonePct}% of your miles are creating more impact than necessary. A clear plan shows you exactly where to keep your effort to stay healthy.`,
+    },
+  };
+
+  const key = `${goal || "race"}_${struggle || "guesswork"}`;
+  const headlineHook = headlineHookMap[key] || {
+    headline: `We found a gap in your training for ${goalTarget}.`,
+    hook: `Your Runner IQ is ${runnerIQScore}, but ${greyZonePct}% of your mileage is in the Grey Zone. With the right adjustments, you can see real improvement.`,
+  };
+
+  const solutionMap: Record<string, string> = {
+    race: `Here is your ${daysLabel}-day/week plan to peak exactly on race day.`,
+    faster: `Here is your ${daysLabel}-day/week plan designed to unlock your next gear.`,
+    endurance: `Here is your ${daysLabel}-day/week plan to systematically build your distance.`,
+    injury_free: `Here is your ${daysLabel}-day/week plan built around injury prevention and safe progression.`,
+  };
 
   return {
-    headline: `We found a gap in your training for ${goalTarget}.`,
-    hook: `Your Runner IQ is ${runnerIQScore}, but ${greyZonePct}% of your mileage is in the Grey Zone — too fast to recover, too slow to build fitness. With the right adjustments, you can see real improvement.`,
-    solution: `Here is your personalized ${daysLabel}-day/week plan to train smarter, not harder.`,
+    ...headlineHook,
+    solution: solutionMap[goal || "race"] || `Here is your personalized ${daysLabel}-day/week plan to train smarter.`,
+    runnerIQ: runnerIQByGoal[goal || "race"] || runnerIQByGoal.race,
+    loadWarning: loadWarningByStruggle[struggle || "guesswork"] || loadWarningByStruggle.guesswork,
+    greyZone: greyZoneByGoal[goal || "race"] || greyZoneByGoal.race,
+    cta: ctaByGoal[goal || "race"] || ctaByGoal.race,
   };
 }
 
@@ -526,31 +675,34 @@ export default function AuditReportPage() {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <h2 className="text-xl font-bold text-charcoal">Your 'Runner IQ' is {runnerIQ.score}</h2>
+                  <h2 className="text-xl font-bold text-charcoal">
+                    {personalizedCopy?.runnerIQ.title || `Your 'Runner IQ' is ${runnerIQ.score}`}
+                  </h2>
                   <span className={`px-2 py-0.5 rounded text-xs font-bold ${getGradeColor(runnerIQ.grade)}`}>
                     Grade {runnerIQ.grade}
                   </span>
                 </div>
                 <p className="text-gray-700 leading-relaxed">
-                  You are putting in <strong className="text-orange-600">Grade {runnerIQ.volumeGrade} effort</strong> (Volume), but getting <strong className="text-orange-600">Grade {runnerIQ.performanceGrade} results</strong> (Performance). 
-                  Our analysis detects that <strong>{greyZone.percentage}% of your recent mileage was 'Junk Mileage'</strong> - too fast to recover, too slow to build speed.
+                  {personalizedCopy?.runnerIQ.body || (
+                    <>You are putting in <strong className="text-orange-600">Grade {runnerIQ.volumeGrade} effort</strong> (Volume), but getting <strong className="text-orange-600">Grade {runnerIQ.performanceGrade} results</strong> (Performance). {greyZone.percentage}% of your recent mileage was in the Grey Zone.</>
+                  )}
                 </p>
                 <p className="text-sm text-orange-700 mt-3 font-medium">
-                  • You are working harder than you need to.
+                  {personalizedCopy?.runnerIQ.takeaway || "You are working harder than you need to."}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
+          <div className={`${trainingLoad.isCritical ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'} border rounded-2xl p-6`}>
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 flex-shrink-0 bg-red-100 rounded-xl flex items-center justify-center">
-                <AlertTriangle className="h-7 w-7 text-red-600" />
+              <div className={`w-12 h-12 flex-shrink-0 ${trainingLoad.isCritical ? 'bg-red-100' : 'bg-amber-100'} rounded-xl flex items-center justify-center`}>
+                <AlertTriangle className={`h-7 w-7 ${trainingLoad.isCritical ? 'text-red-600' : 'text-amber-600'}`} />
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
                   <h2 className="text-xl font-bold text-charcoal">
-                    Load Warning: {trainingLoad.change !== null && trainingLoad.change > 0 ? '+' : ''}{trainingLoad.change !== null ? `${trainingLoad.change}%` : 'N/A'} {trainingLoad.change !== null && trainingLoad.change > 0 ? 'Spike' : 'Change'}
+                    {personalizedCopy?.loadWarning.title || `Load Warning: ${trainingLoad.change ?? 0}% Change`}
                   </h2>
                   {trainingLoad.isCritical && (
                     <span className="px-2 py-0.5 rounded text-xs font-bold bg-red-600 text-white">
@@ -558,28 +710,12 @@ export default function AuditReportPage() {
                     </span>
                   )}
                 </div>
-                {trainingLoad.isCritical ? (
-                  <>
-                    <p className="text-gray-700 leading-relaxed mb-2">
-                      <strong>Critical Imbalance Detected.</strong>
-                    </p>
-                    <p className="text-gray-700 leading-relaxed">
-                      In the last 10 days, your fatigue accumulation has outpaced your fitness gains by a <strong>factor of 2:1</strong>.
-                    </p>
-                    <p className="text-gray-700 leading-relaxed mt-2">
-                      <strong>Translation:</strong> You are not getting fitter right now; you are just breaking your body down.
-                    </p>
-                    <p className="text-sm text-red-700 mt-3 font-medium flex items-center gap-1">
-                      <AlertTriangle className="h-4 w-4" />
-                      You need a specific recovery protocol immediately to avoid a setback.
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-gray-700 leading-relaxed">
-                    Your training load has {trainingLoad.change !== null && trainingLoad.change > 0 ? 'increased' : 'changed'} compared to last week. 
-                    This week: {trainingLoad.thisWeekActivities} activities. Last week: {trainingLoad.lastWeekActivities} activities.
-                  </p>
-                )}
+                <p className="text-gray-700 leading-relaxed">
+                  {personalizedCopy?.loadWarning.body || `Your training load has changed compared to last week. This week: ${trainingLoad.thisWeekActivities} activities. Last week: ${trainingLoad.lastWeekActivities} activities.`}
+                </p>
+                <p className={`text-sm ${trainingLoad.isCritical ? 'text-red-700' : 'text-amber-700'} mt-3 font-medium`}>
+                  {personalizedCopy?.loadWarning.takeaway || "A structured plan manages your load automatically."}
+                </p>
               </div>
             </div>
           </div>
@@ -591,17 +727,15 @@ export default function AuditReportPage() {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <h2 className="text-xl font-bold text-charcoal">The 'Grey Zone' Trap</h2>
+                  <h2 className="text-xl font-bold text-charcoal">
+                    {personalizedCopy?.greyZone.title || "The 'Grey Zone' Trap"}
+                  </h2>
                   <span className="px-2 py-0.5 rounded text-xs font-bold bg-purple-100 text-purple-800">
                     Insight
                   </span>
                 </div>
                 <p className="text-gray-700 leading-relaxed">
-                  We analyzed your pace distribution across <strong>{greyZone.activityCount} activities</strong>.
-                </p>
-                <p className="text-gray-700 leading-relaxed mt-2">
-                  <strong>The Problem:</strong> Your easy days are averaging <strong>{greyZone.currentEasyPaceMiles}/mile</strong> ({greyZone.currentEasyPaceKm}/km), but they should be slower.
-                  You think you are recovering, but you are actually burning glycogen reserves needed for your long runs.
+                  {personalizedCopy?.greyZone.body || `We analyzed your pace distribution across ${greyZone.activityCount} activities. ${greyZone.percentage}% of your easy days are too fast.`}
                 </p>
 
                 <div className="relative mt-4">
@@ -621,13 +755,13 @@ export default function AuditReportPage() {
                   >
                     <div className="flex items-center gap-2 text-purple-700 font-semibold">
                       <Lock className="h-5 w-5" />
-                      {checkout.isPending ? "Redirecting..." : "Unlock to reveal"}
+                      {checkout.isPending ? "Redirecting..." : (personalizedCopy?.greyZone.lockedLabel || "Unlock to reveal")}
                     </div>
                   </button>
                 </div>
 
                 <p className="text-sm text-purple-700 mt-3">
-                  We have calculated your actual optimal easy pace based on your physiological profile.
+                  {personalizedCopy?.greyZone.lockedDescription || "We have calculated your actual optimal easy pace based on your physiological profile."}
                 </p>
               </div>
             </div>
@@ -639,10 +773,10 @@ export default function AuditReportPage() {
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-3">
             <h3 className="text-white font-bold text-lg">
-              Stop guessing. Start training efficiently.
+              {personalizedCopy?.cta.headline || "Stop guessing. Start training efficiently."}
             </h3>
             <p className="text-white/80 text-sm">
-              Get your personalized training plan optimized for your unique physiology.
+              {personalizedCopy?.cta.subtext || "Get your personalized training plan optimized for your unique physiology."}
             </p>
           </div>
           
@@ -659,7 +793,7 @@ export default function AuditReportPage() {
                 </div>
               ) : (
                 <>
-                  Reveal My Optimal Paces & Fix My Plan
+                  {personalizedCopy?.cta.button || "Reveal My Optimal Paces & Fix My Plan"}
                   <ArrowRight className="h-5 w-5 ml-2" />
                 </>
               )}
