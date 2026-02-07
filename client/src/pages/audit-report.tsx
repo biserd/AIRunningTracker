@@ -316,7 +316,7 @@ export default function AuditReportPage() {
   const hasCalibration = !!(calibrationData?.completedAt);
 
   const { data: auditData, isLoading: auditLoading, refetch: refetchAudit } = useQuery<AuditData>({
-    queryKey: ['/api/audit-report', user?.id],
+    queryKey: [`/api/audit-report/${user?.id}`],
     enabled: !!user?.id && isStravaConnected,
     refetchInterval: isSyncing && justConnected ? 3000 : false,
   });
