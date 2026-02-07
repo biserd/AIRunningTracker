@@ -5,9 +5,10 @@ import { AlertTriangle, Target, Lock, ArrowRight, CheckCircle, Sparkles } from "
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { SEO } from "@/components/SEO";
 import { StravaConnectButton } from "@/components/StravaConnect";
+import CalibrationWizard from "@/components/CalibrationWizard";
 import confetti from "canvas-confetti";
 
 interface AuditData {
@@ -38,6 +39,119 @@ interface AuditData {
     optimalEasyPaceMiles: string;
     currentEasyPaceKm: string;
     currentEasyPaceMiles: string;
+  };
+}
+
+interface CalibrationData {
+  goal: string | null;
+  struggle: string | null;
+  days: string | null;
+  completedAt: string | null;
+}
+
+function getPersonalizedCopy(
+  goal: string | null,
+  struggle: string | null,
+  days: string | null,
+  auditData: AuditData
+) {
+  const greyZonePct = auditData.greyZone.percentage;
+  const runnerIQScore = auditData.runnerIQ.score;
+  const daysLabel = days === "5+" ? "5+" : days;
+
+  const goalLabels: Record<string, string> = {
+    race: "race day",
+    faster: "new PRs",
+    endurance: "longer distances",
+    injury_free: "injury-free running",
+  };
+
+  const goalTarget = goalLabels[goal || ""] || "your goals";
+
+  if (goal === "race" && struggle === "plateau") {
+    return {
+      headline: "Break through your plateau and crush your next race.",
+      hook: `You want to race, but your current training is holding you back. Our data shows ${greyZonePct}% of your runs are in the 'Grey Zone' — causing you to plateau. With the right structure, you can break through.`,
+      solution: `Here is your ${daysLabel}-day/week plan to peak exactly on race day.`,
+    };
+  }
+
+  if (goal === "race" && struggle === "burnout") {
+    return {
+      headline: "Race faster without burning out before the start line.",
+      hook: `You reported feeling tired and heavy-legged. Our analysis confirms why: ${greyZonePct}% of your miles are 'Junk Mileage'. You're overloading your body instead of building race fitness.`,
+      solution: `Here is your ${daysLabel}-day/week plan that builds race fitness while protecting your energy.`,
+    };
+  }
+
+  if (goal === "race" && struggle === "inconsistency") {
+    return {
+      headline: "A race plan that fits your real life.",
+      hook: `Sticking to a schedule is tough. But ${greyZonePct}% of the runs you do manage are in the Grey Zone — not getting you closer to race day. You need a plan that works even when life gets busy.`,
+      solution: `Here is your flexible ${daysLabel}-day/week plan built around your schedule.`,
+    };
+  }
+
+  if (goal === "race" && struggle === "guesswork") {
+    return {
+      headline: "Stop guessing. Start training with a plan that peaks on race day.",
+      hook: `You don't know if your training is on track — and the data confirms the concern. ${greyZonePct}% of your mileage is in the Grey Zone, meaning you're working hard but not building race-specific fitness.`,
+      solution: `Here is your ${daysLabel}-day/week structured plan with clear targets for every session.`,
+    };
+  }
+
+  if (goal === "faster" && struggle === "plateau") {
+    return {
+      headline: "You're working hard. Here's why you're not getting faster.",
+      hook: `With a Runner IQ of ${runnerIQScore}, your effort is there — but ${greyZonePct}% of your runs are stuck in the Grey Zone. Too fast to recover, too slow to build speed. That's why you've plateaued.`,
+      solution: `Here is your ${daysLabel}-day/week plan designed to break through the speed ceiling.`,
+    };
+  }
+
+  if (goal === "faster" && struggle === "burnout") {
+    return {
+      headline: "Get faster without running yourself into the ground.",
+      hook: `Feeling tired isn't a badge of honor — it's a warning sign. ${greyZonePct}% of your miles are 'Junk Mileage', draining your energy without making you faster.`,
+      solution: `Here is your ${daysLabel}-day/week plan that prioritizes quality over quantity.`,
+    };
+  }
+
+  if (goal === "injury_free" && struggle === "burnout") {
+    return {
+      headline: "Stop the cycle of overtraining and injury.",
+      hook: `You reported feeling tired. Our analysis confirms why: ${greyZonePct}% of your miles are 'Junk Mileage'. You are overloading your joints without gaining fitness.`,
+      solution: `Here is a 'Safe-Build' ${daysLabel}-day/week plan that prioritizes recovery and sustainable volume.`,
+    };
+  }
+
+  if (goal === "injury_free" && struggle === "plateau") {
+    return {
+      headline: "Build sustainable fitness without breaking down.",
+      hook: `Running hard but not seeing results — and now you're worried about getting hurt. ${greyZonePct}% of your runs are in the Grey Zone, putting unnecessary stress on your body without improving fitness.`,
+      solution: `Here is your ${daysLabel}-day/week plan built around injury prevention and gradual progression.`,
+    };
+  }
+
+  if (goal === "endurance" && struggle === "burnout") {
+    return {
+      headline: "Run longer without feeling destroyed the next day.",
+      hook: `You want to go further, but fatigue keeps holding you back. ${greyZonePct}% of your miles are too fast for building aerobic endurance — they're burning you out instead.`,
+      solution: `Here is your ${daysLabel}-day/week plan to build endurance with sustainable effort levels.`,
+    };
+  }
+
+  if (goal === "endurance" && struggle === "plateau") {
+    return {
+      headline: "Push past the distance wall and keep building.",
+      hook: `You've hit a ceiling on how far you can run. With ${greyZonePct}% Grey Zone mileage, your body isn't adapting — it's just surviving. Time to train smarter.`,
+      solution: `Here is your ${daysLabel}-day/week progressive plan to systematically increase your distance.`,
+    };
+  }
+
+  return {
+    headline: `We found a gap in your training for ${goalTarget}.`,
+    hook: `Your Runner IQ is ${runnerIQScore}, but ${greyZonePct}% of your mileage is in the Grey Zone — too fast to recover, too slow to build fitness. With the right adjustments, you can see real improvement.`,
+    solution: `Here is your personalized ${daysLabel}-day/week plan to train smarter, not harder.`,
   };
 }
 
@@ -162,12 +276,11 @@ export default function AuditReportPage() {
   const { hasActiveSubscription, isLoading: subLoading } = useSubscription();
   const [, navigate] = useLocation();
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
   const checkout = useAuditCheckout();
 
-  // Check if user has connected Strava
   const isStravaConnected = !!(user as any)?.stravaAthleteId;
 
-  // Check if we just connected (from URL param)
   const params = new URLSearchParams(window.location.search);
   const justConnected = params.get('connected') === 'true';
 
@@ -181,17 +294,15 @@ export default function AuditReportPage() {
     window.location.href = stravaAuthUrl;
   };
 
-  // Poll sync status when Strava is connected
   const { data: syncStatus } = useQuery<SyncStatus>({
     queryKey: ['/api/strava/sync-status'],
     enabled: !!user?.id && isStravaConnected,
     refetchInterval: (query) => {
-      // Keep polling while sync is running or there are pending jobs
       const data = query.state.data;
       if (data?.syncStatus === 'running' || (data?.pendingJobs ?? 0) > 0 || (data?.processingJobs ?? 0) > 0) {
-        return 2000; // Poll every 2 seconds
+        return 2000;
       }
-      return false; // Stop polling
+      return false;
     },
   });
 
@@ -199,21 +310,35 @@ export default function AuditReportPage() {
     (syncStatus?.pendingJobs ?? 0) > 0 || 
     (syncStatus?.processingJobs ?? 0) > 0;
 
-  const { data: auditData, isLoading: auditLoading, refetch: refetchAudit } = useQuery<AuditData>({
-    queryKey: [`/api/audit-report/${user?.id}`],
+  const { data: calibrationData, isLoading: calibrationLoading } = useQuery<CalibrationData>({
+    queryKey: ['/api/calibration'],
     enabled: !!user?.id && isStravaConnected,
-    // Refetch every 3 seconds while syncing to update UI as data arrives
+  });
+
+  const hasCalibration = !!(calibrationData?.completedAt);
+
+  const { data: auditData, isLoading: auditLoading, refetch: refetchAudit } = useQuery<AuditData>({
+    queryKey: ['/api/audit-report', user?.id],
+    enabled: !!user?.id && isStravaConnected,
     refetchInterval: isSyncing && justConnected ? 3000 : false,
   });
 
-  // Refetch audit data when sync completes
   useEffect(() => {
     if (syncStatus && !isSyncing && justConnected) {
       refetchAudit();
-      // Clear the connected param from URL
       window.history.replaceState({}, '', '/audit-report');
     }
   }, [isSyncing, syncStatus, justConnected, refetchAudit]);
+
+  const activityCount = auditData?.greyZone?.activityCount || 0;
+  const hasInsights = activityCount >= 5 && auditData?.runnerIQ?.score !== undefined && auditData.runnerIQ.score > 25;
+  const syncDone = !isSyncing || !justConnected;
+
+  useEffect(() => {
+    if (isStravaConnected && syncDone && hasInsights && !hasCalibration && !calibrationLoading) {
+      setShowWizard(true);
+    }
+  }, [isStravaConnected, syncDone, hasInsights, hasCalibration, calibrationLoading]);
 
   useEffect(() => {
     if (!subLoading && hasActiveSubscription) {
@@ -227,7 +352,6 @@ export default function AuditReportPage() {
       setIsUnlocked(true);
       window.history.replaceState({}, '', '/audit-report');
       
-      // Trigger confetti celebration
       const duration = 3000;
       const animationEnd = Date.now() + duration;
       const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
@@ -268,6 +392,11 @@ export default function AuditReportPage() {
     navigate('/dashboard');
   };
 
+  const handleCalibrationComplete = () => {
+    setShowWizard(false);
+    queryClient.invalidateQueries({ queryKey: ['/api/calibration'] });
+  };
+
   const getGradeColor = (grade: string) => {
     if (grade.startsWith('A')) return "bg-green-100 text-green-800";
     if (grade.startsWith('B')) return "bg-yellow-100 text-yellow-800";
@@ -286,7 +415,6 @@ export default function AuditReportPage() {
     );
   }
 
-  // Show Strava connect screen if not connected
   if (!isStravaConnected) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-orange-50 flex items-center justify-center">
@@ -319,10 +447,6 @@ export default function AuditReportPage() {
     );
   }
 
-  // Show syncing screen until we have enough activities for meaningful insights
-  // Need at least 5 activities for grey zone analysis to work properly
-  const activityCount = auditData?.greyZone?.activityCount || 0;
-  const hasInsights = activityCount >= 5 && auditData?.runnerIQ?.score !== undefined && auditData.runnerIQ.score > 25;
   const showSyncingScreen = !hasInsights && isSyncing && justConnected;
   
   if (showSyncingScreen) {
@@ -369,7 +493,11 @@ export default function AuditReportPage() {
     );
   }
 
-  if (auditLoading) {
+  if (showWizard) {
+    return <CalibrationWizard onComplete={handleCalibrationComplete} />;
+  }
+
+  if (auditLoading || calibrationLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-orange-50 flex items-center justify-center">
         <div className="text-center">
@@ -383,6 +511,10 @@ export default function AuditReportPage() {
   const runnerIQ = auditData?.runnerIQ || { score: 71, grade: 'B', components: { consistency: 15, performance: 18, volume: 20, improvement: 18 }, volumeGrade: 'A', performanceGrade: 'B', hasGap: true };
   const trainingLoad = auditData?.trainingLoad || { change: 22, isCritical: true, thisWeekActivities: 5, lastWeekActivities: 4 };
   const greyZone = auditData?.greyZone || { percentage: 30, activityCount: 142, easyRunsAreTooFast: true, optimalEasyPaceKm: '5:45 - 6:15', optimalEasyPaceMiles: '9:15 - 10:03', currentEasyPaceKm: '5:25', currentEasyPaceMiles: '8:43' };
+
+  const personalizedCopy = hasCalibration && auditData
+    ? getPersonalizedCopy(calibrationData?.goal ?? null, calibrationData?.struggle ?? null, calibrationData?.days ?? null, auditData)
+    : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-orange-50 pb-28">
@@ -401,12 +533,26 @@ export default function AuditReportPage() {
 
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-charcoal mb-3">
-            We found a gap in your training.
+            {personalizedCopy?.headline || "We found a gap in your training."}
           </h1>
           <p className="text-xl text-gray-600">
-            Your Effort is High, but your Efficiency is Low.
+            {personalizedCopy?.hook || "Your Effort is High, but your Efficiency is Low."}
           </p>
         </div>
+
+        {personalizedCopy?.solution && (
+          <div className="bg-green-50 border border-green-200 rounded-2xl p-5 mb-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 flex-shrink-0 bg-green-100 rounded-xl flex items-center justify-center">
+                <Sparkles className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-green-900 mb-1">Your Personalized Plan</h3>
+                <p className="text-green-800 leading-relaxed">{personalizedCopy.solution}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-4">
           <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6">

@@ -25,7 +25,7 @@ import { efficiencyService } from "./services/efficiency";
 import { dripCampaignService } from "./services/dripCampaign";
 import { dripCampaignWorker } from "./services/dripCampaignWorker";
 import { stravaWebhookService } from "./services/stravaWebhook";
-import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, emailWaitlist, type Activity, type RunningShoe } from "@shared/schema";
+import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, emailWaitlist, users, type Activity, type RunningShoe } from "@shared/schema";
 import { shoeData } from "./shoe-data";
 import { validateAllShoes, getPipelineStats, findDuplicates, getShoeDataWithMetadata, getShoesWithMetadataFromStorage, getEnrichedShoeData, enrichShoeWithAIData } from "./shoe-pipeline";
 import { z } from "zod";
@@ -2867,6 +2867,55 @@ ${allPages.map(page => `  <url>
     } catch (error: any) {
       console.error('Public runner score error:', error);
       res.status(500).json({ message: error.message || "Failed to get runner score" });
+    }
+  });
+
+  app.post("/api/calibration", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+      const { goal, struggle, days } = req.body;
+      
+      const validGoals = ["race", "faster", "endurance", "injury_free"];
+      const validStruggles = ["plateau", "burnout", "inconsistency", "guesswork"];
+      const validDays = ["3", "4", "5+"];
+
+      if (!validGoals.includes(goal) || !validStruggles.includes(struggle) || !validDays.includes(days)) {
+        return res.status(400).json({ message: "Invalid calibration answers" });
+      }
+
+      await db.update(users).set({
+        onboardingGoal: goal,
+        onboardingStruggle: struggle,
+        onboardingDays: days,
+        onboardingCompletedAt: new Date(),
+      }).where(eq(users.id, userId));
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Calibration save error:", error);
+      res.status(500).json({ message: "Failed to save calibration" });
+    }
+  });
+
+  app.get("/api/calibration", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      res.json({
+        goal: user.onboardingGoal || null,
+        struggle: user.onboardingStruggle || null,
+        days: user.onboardingDays || null,
+        completedAt: user.onboardingCompletedAt || null,
+      });
+    } catch (error: any) {
+      console.error("Calibration fetch error:", error);
+      res.status(500).json({ message: "Failed to fetch calibration" });
     }
   });
 
