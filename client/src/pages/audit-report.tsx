@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { AlertTriangle, Target, Lock, ArrowRight, CheckCircle, Sparkles } from "lucide-react";
+import { AlertTriangle, Target, Lock, ArrowRight, CheckCircle, Sparkles, Zap, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -39,6 +39,15 @@ interface AuditData {
     currentEasyPaceKm: string;
     currentEasyPaceMiles: string;
   };
+  racePotential: {
+    predictions: {
+      distance: string;
+      currentTime: string;
+      potentialTime: string;
+      timeSaved: string;
+    }[];
+    gapPercent: number;
+  } | null;
 }
 
 interface CalibrationData {
@@ -687,6 +696,71 @@ export default function AuditReportPage() {
               </div>
             </div>
           </div>
+
+          {auditData?.racePotential && (
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+              <div className="flex items-start gap-4 mb-5">
+                <div className="w-12 h-12 flex-shrink-0 bg-amber-100 rounded-xl flex items-center justify-center">
+                  <TrendingUp className="h-7 w-7 text-amber-600" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold text-charcoal mb-1">
+                    You are leaving speed on the table at every distance.
+                  </h2>
+                  <p className="text-gray-600 text-sm">
+                    Based on your VO2 Max and volume data, your current trajectory is underperforming your potential by ~{auditData.racePotential.gapPercent}%.
+                  </p>
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-xl border border-gray-200">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="text-left py-3 px-4 font-semibold text-gray-600">Distance</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-600">Current Trajectory</th>
+                      <th className="text-left py-3 px-4 font-bold text-charcoal">Your True Potential</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-600">Time Unlocked</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {auditData.racePotential.predictions.map((p, i) => (
+                      <tr key={p.distance} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                        <td className="py-3 px-4 font-bold text-charcoal">{p.distance}</td>
+                        <td className="py-3 px-4 text-gray-500">{p.currentTime}</td>
+                        <td className="py-3 px-4 font-bold text-charcoal">{p.potentialTime}</td>
+                        <td className="py-3 px-4">
+                          <span className="inline-flex items-center gap-1 text-amber-600 font-semibold">
+                            <Zap className="h-3.5 w-3.5" />
+                            {p.timeSaved}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="mt-4 bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <p className="text-sm text-gray-600">
+                  <strong className="text-charcoal">The Insight:</strong>{' '}
+                  {personalizedCopy ? (
+                    calibrationData?.goal === 'race' ? (
+                      <>You have the aerobic engine to run a <strong className="text-charcoal">{auditData.racePotential.predictions[3]?.potentialTime} Marathon</strong>, but your Grey Zone training habits are anchoring you at <strong>{auditData.racePotential.predictions[3]?.currentTime}</strong>. Fix your intensity distribution and unlock those times.</>
+                    ) : calibrationData?.goal === 'faster' ? (
+                      <>Your current training predicts a <strong>{auditData.racePotential.predictions[0]?.currentTime} 5K</strong>, but your true speed ceiling is <strong className="text-charcoal">{auditData.racePotential.predictions[0]?.potentialTime}</strong>. The gap is not fitness. It is how you distribute your effort across training days.</>
+                    ) : calibrationData?.goal === 'endurance' ? (
+                      <>Your half marathon potential is <strong className="text-charcoal">{auditData.racePotential.predictions[2]?.potentialTime}</strong>, but grey zone habits are costing you <strong>{auditData.racePotential.predictions[2]?.timeSaved}</strong>. Slower easy runs build a bigger aerobic base, which means longer distances feel easier.</>
+                    ) : (
+                      <>You are working hard enough for the faster time, but your efficiency is too low to sustain it. Fixing your intensity distribution reduces impact stress while making you faster.</>
+                    )
+                  ) : (
+                    <>You are working hard enough for the faster times, but your efficiency is too low to sustain it. Fixing your grey zone habits unlocks speed at every distance.</>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className={`${trainingLoad.isCritical ? 'bg-red-50 border-red-200' : 'bg-teal-50 border-teal-200'} border rounded-2xl p-6`}>
             <div className="flex items-start gap-4">
