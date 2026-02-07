@@ -215,7 +215,7 @@ class StravaWebhookService {
       const isKm = user.unitPreference === "km";
       const firstName = user.firstName || user.email.split("@")[0];
 
-      const prompt = `You are the AI Running Coach for AITracker.run. Generate a highly personalized post-run email for this runner.
+      const prompt = `You are the Running Coach for AITracker.run. Generate a highly personalized post-run email for this runner.
 
 Runner: ${firstName}
 Run Type: ${runType}
