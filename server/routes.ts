@@ -3030,35 +3030,25 @@ ${allPages.map(page => `  <url>
                                runnerScore.components.performance >= 15 ? 'B' : 
                                runnerScore.components.performance >= 10 ? 'C' : 'D';
       
-      // Calculate race potential matrix
       let racePotential = null;
       try {
-        const validRunsForPace = runningActivities
-          .filter(a => a.averageSpeed && a.averageSpeed > 0 && a.distance >= 1000)
-          .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
-        if (validRunsForPace.length >= 5) {
-          // Current trajectory: based on most recent average pace (Riegel formula from training pace)
-          const recentRuns = validRunsForPace.slice(0, 30);
-          const avgPaceMinPerKm = recentRuns.reduce((sum, a) => sum + (1000 / a.averageSpeed!) / 60, 0) / recentRuns.length;
-          
-          // Grey zone improvement factor: eliminating grey zone typically yields 8-15% improvement
-          // Scale by how much grey zone they have (more grey zone = more room to improve)
+        const currentPredictions = await mlService.predictRacePerformance(userId);
+        const validPredictions = currentPredictions.filter(p => p.predictedTime !== "Need more data" && p.confidence > 0);
+        
+        if (validPredictions.length > 0) {
           const improvementFactor = 1 - (Math.min(greyZonePercentage, 60) / 100) * 0.25;
-          
-          const targetDistances = [
-            { label: '5K', km: 5 },
-            { label: '10K', km: 10 },
-            { label: 'Half', km: 21.0975 },
-            { label: 'Marathon', km: 42.195 },
-          ];
+
+          const parseTimeToMinutes = (timeStr: string): number => {
+            const parts = timeStr.split(':').map(Number);
+            if (parts.length === 3) return parts[0] * 60 + parts[1] + parts[2] / 60;
+            return parts[0] + parts[1] / 60;
+          };
 
           const formatRaceTime = (totalMinutes: number): string => {
             const hours = Math.floor(totalMinutes / 60);
             const mins = Math.floor(totalMinutes % 60);
             const secs = Math.round((totalMinutes % 1) * 60);
-            if (hours > 0) {
-              return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-            }
+            if (hours > 0) return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
             return `${mins}:${secs.toString().padStart(2, '0')}`;
           };
 
@@ -3068,24 +3058,25 @@ ${allPages.map(page => `  <url>
             return `-${mins}:${secs.toString().padStart(2, '0')}`;
           };
 
-          // Use Riegel-like formula: time = pace * distance^1.06 (adjusted for distance)
-          const predictions = targetDistances.map(d => {
-            const currentTime = avgPaceMinPerKm * Math.pow(d.km, 1.06);
-            const potentialTime = currentTime * improvementFactor;
-            const timeSaved = currentTime - potentialTime;
+          const distanceLabelMap: Record<string, string> = {
+            '5K': '5K', '10K': '10K', 'Half Marathon': 'Half', 'Marathon': 'Marathon'
+          };
+
+          const predictions = validPredictions.map(p => {
+            const currentMinutes = parseTimeToMinutes(p.predictedTime);
+            const potentialMinutes = currentMinutes * improvementFactor;
+            const timeSaved = currentMinutes - potentialMinutes;
             return {
-              distance: d.label,
-              currentTime: formatRaceTime(currentTime),
-              potentialTime: formatRaceTime(potentialTime),
+              distance: distanceLabelMap[p.distance] || p.distance,
+              currentTime: p.predictedTime,
+              potentialTime: formatRaceTime(potentialMinutes),
               timeSaved: formatTimeDiff(timeSaved),
             };
           });
 
-          const totalGapPercent = Math.round((1 - improvementFactor) * 100);
-          
           racePotential = {
             predictions,
-            gapPercent: totalGapPercent,
+            gapPercent: Math.round((1 - improvementFactor) * 100),
           };
         }
       } catch (err) {
