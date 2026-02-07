@@ -17,7 +17,6 @@ export interface SubscriptionStatus {
   trialEndsAt?: string;
   subscriptionEndsAt?: string;
   usage?: UsageStats;
-  // Reverse trial fields
   isReverseTrial?: boolean;
   trialDaysRemaining?: number;
 }
@@ -35,13 +34,11 @@ export function useSubscription() {
   const plan = subscription?.subscriptionPlan || 'free';
   const status = subscription?.subscriptionStatus || 'free';
 
-  const isPremium = plan === 'premium' && (status === 'active' || status === 'trialing');
-  const isPro = (plan === 'pro' || plan === 'premium') && (status === 'active' || status === 'trialing');
+  const isPremium = (plan === 'premium' || plan === 'pro') && (status === 'active' || status === 'trialing');
   const isFree = plan === 'free' || status === 'canceled' || status === 'past_due';
 
   const usage = subscription?.usage;
   
-  // Reverse trial specific data
   const isReverseTrial = subscription?.isReverseTrial || false;
   const trialDaysRemaining = subscription?.trialDaysRemaining || 0;
   const trialEndsAt = subscription?.trialEndsAt ? new Date(subscription.trialEndsAt) : null;
@@ -53,11 +50,10 @@ export function useSubscription() {
     plan,
     status,
     isPremium,
-    isPro,
+    isPro: isPremium,
     isFree,
-    hasActiveSubscription: isPro || isPremium,
+    hasActiveSubscription: isPremium,
     usage,
-    // Reverse trial exports
     isReverseTrial,
     trialDaysRemaining,
     trialEndsAt,
@@ -93,10 +89,9 @@ export function useManageSubscription() {
 }
 
 export function useFeatureAccess() {
-  const { isPro, isPremium, isFree, usage, isReverseTrial } = useSubscription();
+  const { isPremium, isFree, usage, isReverseTrial } = useSubscription();
   
-  // Reverse trial users get Pro-level access
-  const hasProAccess = isPro || isPremium || isReverseTrial;
+  const hasPremiumAccess = isPremium || isReverseTrial;
   const hasFreeAccess = isFree && !isReverseTrial;
   
   return {
@@ -104,47 +99,41 @@ export function useFeatureAccess() {
     canAccessStravaIntegration: true,
     canAccessRunnerScore: true,
     
-    canAccessAdvancedInsights: hasProAccess,
-    canAccessInsightHistory: hasProAccess,
-    canAccessTrainingPlans: hasProAccess,
-    canAccessRacePredictions: hasProAccess,
+    canAccessAdvancedInsights: hasPremiumAccess,
+    canAccessInsightHistory: hasPremiumAccess,
+    canAccessTrainingPlans: hasPremiumAccess,
+    canAccessRacePredictions: hasPremiumAccess,
     
-    canAccessAICoachChat: isPremium || isReverseTrial,
-    canAccessFormAnalysis: isPremium || isReverseTrial,
-    canAccessPrioritySupport: isPremium || isReverseTrial,
-    canAccessEarlyAccess: isPremium || isReverseTrial,
+    canAccessAICoachChat: hasPremiumAccess,
+    canAccessFormAnalysis: hasPremiumAccess,
+    canAccessPrioritySupport: hasPremiumAccess,
+    canAccessEarlyAccess: hasPremiumAccess,
     
-    canAccessUnlimitedHistory: hasProAccess,
+    canAccessUnlimitedHistory: hasPremiumAccess,
     maxInsightsPerMonth: hasFreeAccess ? 3 : Infinity,
     maxDataHistoryDays: hasFreeAccess ? 30 : Infinity,
     
-    // Usage stats
     insightsUsed: usage?.insightsUsed ?? 0,
     insightsRemaining: usage?.insightsRemaining ?? 3,
     insightsLimit: usage?.insightsLimit ?? 3,
     usageResetAt: usage?.resetAt ? new Date(usage.resetAt) : null,
     
-    // Trial status for UI
     isOnReverseTrial: isReverseTrial,
     
-    // Activity page specific gates
     activity: {
-      // Story Mode
-      coachVerdict: hasProAccess ? 'full' : 'basic',
-      nextSteps: hasProAccess ? 'full' : 'basic',
-      routeMap: true, // Always visible
-      baselineComparison: hasProAccess, // "vs 42-day avg" tiles
+      coachVerdict: hasPremiumAccess ? 'full' : 'basic',
+      nextSteps: hasPremiumAccess ? 'full' : 'basic',
+      routeMap: true,
+      baselineComparison: hasPremiumAccess,
       
-      // Deep Dive Mode
-      performanceMetrics: hasProAccess, // Drift, Pacing, vs Baseline
-      timeline: hasProAccess ? 'full' : 'readonly',
-      splits: hasProAccess ? 'full' : 'preview', // 3 splits for free
-      hrCadencePower: hasProAccess,
+      performanceMetrics: hasPremiumAccess,
+      timeline: hasPremiumAccess ? 'full' : 'readonly',
+      splits: hasPremiumAccess ? 'full' : 'preview',
+      hrCadencePower: hasPremiumAccess,
       
-      // Premium only (includes reverse trial)
-      askCoach: isPremium || isReverseTrial,
-      activityComparison: isPremium || isReverseTrial,
-      goalPlanActions: isPremium || isReverseTrial, // rest day / swap / reschedule
+      askCoach: hasPremiumAccess,
+      activityComparison: hasPremiumAccess,
+      goalPlanActions: hasPremiumAccess,
     }
   };
 }

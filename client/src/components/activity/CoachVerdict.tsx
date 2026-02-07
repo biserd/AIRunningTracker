@@ -84,21 +84,21 @@ export default function CoachVerdict({ activityId, compact = false }: CoachVerdi
 
   if (error) {
     const errorMessage = (error as Error).message;
-    const requiresPro = errorMessage.includes('Pro subscription');
+    const requiresPremium = errorMessage.includes('Pro subscription') || errorMessage.includes('Premium subscription');
     
-    if (requiresPro) {
+    if (requiresPremium) {
       return (
-        <Card className="border-2 border-dashed border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50" data-testid="card-coach-verdict-locked">
+        <Card className="border-2 border-dashed border-yellow-200 bg-gradient-to-r from-yellow-50 to-amber-50" data-testid="card-coach-verdict-locked">
           <CardContent className="p-4">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-orange-100 to-amber-100 flex items-center justify-center">
-                <Lock className="w-8 h-8 text-orange-500" />
+              <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-yellow-100 to-amber-100 flex items-center justify-center">
+                <Lock className="w-8 h-8 text-yellow-600" />
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-orange-900">Coach Verdict</p>
-                <p className="text-sm text-orange-700">Unlock AI-powered run analysis with Pro</p>
+                <p className="font-semibold text-yellow-900">Coach Verdict</p>
+                <p className="text-sm text-yellow-700">Unlock AI-powered run analysis with Premium</p>
                 <Link href="/pricing">
-                  <span className="text-sm font-medium text-orange-600 hover:text-orange-800 inline-flex items-center gap-1 mt-1 cursor-pointer" data-testid="link-upgrade-pro">
+                  <span className="text-sm font-medium text-yellow-600 hover:text-yellow-800 inline-flex items-center gap-1 mt-1 cursor-pointer" data-testid="link-upgrade-premium">
                     Upgrade now <ChevronRight className="w-3 h-3" />
                   </span>
                 </Link>

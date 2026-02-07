@@ -88,7 +88,7 @@ export function FitnessChart({ userId }: FitnessChartProps) {
             </p>
             <Link href="/pricing">
               <Button className="bg-gradient-to-r from-strava-orange to-orange-500 hover:from-orange-600 hover:to-orange-600">
-                Upgrade to Pro
+                Upgrade to Premium
               </Button>
             </Link>
           </div>

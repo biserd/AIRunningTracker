@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Link, Redirect, useSearch } from "wouter";
-import { ArrowLeft, CreditCard, Crown, Star, Zap, Check, ExternalLink, Loader2, Calendar, CheckCircle } from "lucide-react";
+import { ArrowLeft, CreditCard, Crown, Zap, Check, ExternalLink, Loader2, Calendar, CheckCircle } from "lucide-react";
 import { SEO } from "@/components/SEO";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
@@ -13,7 +13,7 @@ import AppHeader from "@/components/AppHeader";
 
 export default function BillingPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const { subscription, plan, status, isPro, isPremium, isLoading } = useSubscription();
+  const { subscription, plan, status, isPremium, isLoading } = useSubscription();
   const manageSubscription = useManageSubscription();
   const { toast } = useToast();
   const searchString = useSearch();
@@ -47,20 +47,17 @@ export default function BillingPage() {
   }
 
   const getPlanIcon = () => {
-    if (isPremium) return <Crown className="h-6 w-6 text-yellow-500" />;
-    if (isPro) return <Star className="h-6 w-6 text-strava-orange" />;
+    if (isPremium) return <Crown className="h-6 w-6 text-strava-orange" />;
     return <Zap className="h-6 w-6 text-gray-500" />;
   };
 
   const getPlanName = () => {
     if (isPremium) return 'Premium';
-    if (isPro) return 'Pro';
     return 'Free';
   };
 
   const getPlanColor = () => {
-    if (isPremium) return 'text-yellow-600';
-    if (isPro) return 'text-strava-orange';
+    if (isPremium) return 'text-strava-orange';
     return 'text-gray-600';
   };
 
@@ -169,7 +166,7 @@ export default function BillingPage() {
                     <Link href="/pricing">
                       <Button className="bg-strava-orange hover:bg-strava-orange/90" data-testid="button-upgrade-billing">
                         <Crown className="h-4 w-4 mr-2" />
-                        {isPro ? 'Upgrade to Premium' : 'Upgrade Plan'}
+                        Upgrade to Premium
                       </Button>
                     </Link>
                   )}
@@ -181,8 +178,8 @@ export default function BillingPage() {
           {plan === 'free' && (
             <Card className="border-2 border-strava-orange">
               <CardHeader>
-                <CardTitle className="text-strava-orange">Upgrade to Pro or Premium</CardTitle>
-                <CardDescription>Unlock advanced features and personalized insights</CardDescription>
+                <CardTitle className="text-strava-orange">Upgrade to Premium</CardTitle>
+                <CardDescription>Unlock all features and personalized insights</CardDescription>
               </CardHeader>
               <CardContent>
                 <ul className="grid md:grid-cols-2 gap-3 mb-6">
@@ -200,7 +197,7 @@ export default function BillingPage() {
                   </li>
                   <li className="flex items-center gap-2 text-sm">
                     <CheckCircle className="h-4 w-4 text-green-500" />
-                    Unlimited Activity History
+                    AI Coach Chat & Agent Coach
                   </li>
                 </ul>
                 
@@ -238,7 +235,7 @@ export default function BillingPage() {
                     Free Calculator Tools
                   </li>
                   
-                  {(isPro || isPremium) && (
+                  {isPremium && (
                     <>
                       <li className="flex items-center gap-2 text-sm">
                         <Check className="h-4 w-4 text-strava-orange" />
@@ -252,18 +249,9 @@ export default function BillingPage() {
                         <Check className="h-4 w-4 text-strava-orange" />
                         <span className="text-strava-orange font-medium">Race Predictions</span>
                       </li>
-                    </>
-                  )}
-                  
-                  {isPremium && (
-                    <>
                       <li className="flex items-center gap-2 text-sm">
-                        <Check className="h-4 w-4 text-yellow-500" />
-                        <span className="text-yellow-600 font-medium">Running Coach Chat</span>
-                      </li>
-                      <li className="flex items-center gap-2 text-sm">
-                        <Check className="h-4 w-4 text-yellow-500" />
-                        <span className="text-yellow-600 font-medium">Priority Support</span>
+                        <Check className="h-4 w-4 text-strava-orange" />
+                        <span className="text-strava-orange font-medium">AI Coach Chat</span>
                       </li>
                     </>
                   )}
@@ -319,7 +307,7 @@ export default function BillingPage() {
                 <div>
                   <h4 className="font-semibold mb-2">Can I change my plan?</h4>
                   <p className="text-sm text-gray-600">
-                    You can upgrade, downgrade, or cancel your subscription anytime through 
+                    You can cancel your subscription anytime through 
                     the Manage Subscription button above.
                   </p>
                 </div>

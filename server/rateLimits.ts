@@ -22,11 +22,11 @@ export async function checkInsightRateLimit(userId: number): Promise<RateLimitRe
     return { allowed: false, remaining: 0, limit: 0, message: "User not found" };
   }
 
-  const isProOrPremium = 
+  const isPaidUser = 
     (user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'premium') &&
     (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing');
 
-  if (isProOrPremium) {
+  if (isPaidUser) {
     return { allowed: true, remaining: Infinity, limit: Infinity };
   }
 
@@ -55,7 +55,7 @@ export async function checkInsightRateLimit(userId: number): Promise<RateLimitRe
       remaining: 0,
       limit: RATE_LIMITS.FREE_MONTHLY_INSIGHTS,
       resetAt: nextMonth,
-      message: `You've reached your monthly limit of ${RATE_LIMITS.FREE_MONTHLY_INSIGHTS} AI insights. Upgrade to Pro for unlimited insights.`
+      message: `You've reached your monthly limit of ${RATE_LIMITS.FREE_MONTHLY_INSIGHTS} AI insights. Upgrade to Premium for unlimited insights.`
     };
   }
 
@@ -72,11 +72,11 @@ export async function incrementInsightCount(userId: number): Promise<void> {
   
   if (!user) return;
 
-  const isProOrPremium = 
+  const isPaidUser = 
     (user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'premium') &&
     (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing');
 
-  if (isProOrPremium) return;
+  if (isPaidUser) return;
 
   const now = new Date();
   const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -97,11 +97,11 @@ export async function incrementInsightCount(userId: number): Promise<void> {
 }
 
 export function getActivityHistoryLimit(subscriptionPlan: string | null, subscriptionStatus: string | null): number | null {
-  const isProOrPremium = 
+  const isPaidUser = 
     (subscriptionPlan === 'pro' || subscriptionPlan === 'premium') &&
     (subscriptionStatus === 'active' || subscriptionStatus === 'trialing');
 
-  if (isProOrPremium) {
+  if (isPaidUser) {
     return null;
   }
 
@@ -127,11 +127,11 @@ export async function getUserUsageStats(userId: number): Promise<{
     };
   }
 
-  const isProOrPremium = 
+  const isPaidUser = 
     (user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'premium') &&
     (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing');
 
-  if (isProOrPremium) {
+  if (isPaidUser) {
     return {
       insightsUsed: 0,
       insightsLimit: Infinity,

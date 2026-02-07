@@ -139,31 +139,19 @@ export const homepageContent: HomepageContent = {
         cta: { text: "Get Started Free", href: "/auth" }
       },
       {
-        name: "Pro",
-        price: "$8/month",
-        description: "For dedicated runners",
+        name: "Premium",
+        price: "$7.99/month",
+        description: "Everything you need to run smarter",
         features: [
           "Everything in Free",
-          "Full activity history",
-          "Advanced analytics",
-          "Training plans",
-          "Priority support"
+          "Full activity history & analytics",
+          "AI training plans & race predictions",
+          "AI Coach Chat & Agent Coach",
+          "Compare runs & form stability",
+          "Proactive coaching alerts"
         ],
-        cta: { text: "Start Pro Trial", href: "/pricing" },
+        cta: { text: "Go Premium", href: "/pricing" },
         highlighted: true
-      },
-      {
-        name: "Premium",
-        price: "$15/month",
-        description: "For serious athletes",
-        features: [
-          "Everything in Pro",
-          "AI Agent Coach",
-          "Proactive coaching alerts",
-          "Goal tracking",
-          "Custom insights"
-        ],
-        cta: { text: "Go Premium", href: "/pricing" }
       }
     ]
   },

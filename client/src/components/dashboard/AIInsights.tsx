@@ -80,7 +80,7 @@ export default function AIInsights({ insights, userId, insightsStatus = 'ready' 
             {!canAccessAdvancedInsights && (
               <Badge variant="secondary" className="bg-strava-orange/10 text-strava-orange">
                 <Crown className="h-3 w-3 mr-1" />
-                Pro Feature
+                Premium Feature
               </Badge>
             )}
           </div>
@@ -110,7 +110,7 @@ export default function AIInsights({ insights, userId, insightsStatus = 'ready' 
             </div>
             <Badge variant="secondary" className="bg-strava-orange/10 text-strava-orange">
               <Crown className="h-3 w-3 mr-1" />
-              Pro Feature
+              Premium Feature
             </Badge>
           </div>
         </CardHeader>
@@ -133,7 +133,7 @@ export default function AIInsights({ insights, userId, insightsStatus = 'ready' 
                   <Link href="/pricing">
                     <Button size="sm" className="bg-strava-orange hover:bg-strava-orange/90" data-testid="button-unlock-insights">
                       <Crown className="h-3 w-3 mr-1" />
-                      Upgrade to Pro
+                      Upgrade to Premium
                     </Button>
                   </Link>
                 </div>

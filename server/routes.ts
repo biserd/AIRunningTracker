@@ -235,8 +235,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       keywords: "training plan, marathon training, 5K plan, running schedule"
     },
     "/pricing": {
-      title: "Pricing | Free, Pro & Premium Plans | RunAnalytics",
-      description: "Start free with basic analytics. Upgrade to Pro for advanced insights or Premium for AI Agent Coach and unlimited features.",
+      title: "Pricing | Free & Premium Plans | RunAnalytics",
+      description: "Start free with basic analytics. Upgrade to Premium for AI insights, training plans, Coach Chat, and unlimited features.",
       keywords: "running app pricing, strava analytics cost, AI coach pricing"
     },
     "/features": {
@@ -938,7 +938,7 @@ ${allPages.map(page => `  <url>
     }
   });
 
-  // Create audit checkout session (with 14-day trial for Pro plan)
+  // Create audit checkout session (with 14-day trial for Premium plan)
   app.post("/api/stripe/create-audit-checkout", authenticateJWT, async (req: any, res) => {
     try {
       const userId = req.user.id;
@@ -996,7 +996,7 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Check if user is in active reverse trial (7-day Pro trial, no credit card)
+      // Check if user is in active reverse trial (7-day Premium trial, no credit card)
       const now = new Date();
       const isInReverseTrial = user.trialEndsAt && new Date(user.trialEndsAt) > now && 
                                !user.stripeSubscriptionId && user.subscriptionPlan === 'free';
@@ -1011,8 +1011,7 @@ ${allPages.map(page => `  <url>
       // Get usage stats for rate limit display
       const usageStats = await getUserUsageStats(req.user.id);
 
-      // For reverse trial users, treat them as Pro tier with 'trialing' status
-      const effectivePlan = isInReverseTrial ? 'pro' : (user.subscriptionPlan || 'free');
+      const effectivePlan = isInReverseTrial ? 'premium' : (user.subscriptionPlan || 'free');
       const effectiveStatus = isInReverseTrial ? 'trialing' : (user.subscriptionStatus || 'free');
 
       res.json({
@@ -1103,7 +1102,7 @@ ${allPages.map(page => `  <url>
       const userData = registerSchema.parse(req.body);
       const result = await authService.register(userData);
       
-      // Send trial welcome email to new user (7-day Pro trial)
+      // Send trial welcome email to new user (7-day Premium trial)
       await emailService.sendTrialWelcomeEmail(userData.email, userData.firstName);
       
       // Send notification to admin
@@ -3543,11 +3542,11 @@ ${allPages.map(page => `  <url>
         // Full re-list: queue LIST_ACTIVITIES job to fetch all activities
         const { createListActivitiesJob } = await import("./services/queue/jobTypes");
         
-        const hasProPlan = user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'premium';
+        const hasPaidPlan = user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'premium';
         const hasActiveStatus = user.subscriptionStatus === 'active' || 
                                 user.subscriptionStatus === 'trialing' || 
                                 user.subscriptionStatus === 'past_due';
-        const maxActivities = hasProPlan && hasActiveStatus ? 500 : 50;
+        const maxActivities = hasPaidPlan && hasActiveStatus ? 500 : 50;
         
         const job = jobQueue.addJob(createListActivitiesJob(
           userId,
@@ -3624,11 +3623,11 @@ ${allPages.map(page => `  <url>
       }
 
       // Check subscription for activity limit
-      const hasProPlan = user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'premium';
+      const hasPaidPlan = user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'premium';
       const hasActiveStatus = user.subscriptionStatus === 'active' || 
                               user.subscriptionStatus === 'trialing' || 
                               user.subscriptionStatus === 'past_due';
-      if (!hasProPlan || !hasActiveStatus) {
+      if (!hasPaidPlan || !hasActiveStatus) {
         maxActivities = Math.min(maxActivities, 50);
       }
 
@@ -4653,7 +4652,7 @@ ${allPages.map(page => `  <url>
     }
   });
 
-  // Subscription status endpoint - Returns Pro for all users (no payment required)
+  // Subscription status endpoint - Returns Premium for all users (no payment required)
   app.get("/api/subscription/status", authenticateJWT, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
@@ -4662,10 +4661,9 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Everyone gets Pro features for free
       res.json({ 
         status: 'active',
-        plan: 'pro'
+        plan: 'premium'
       });
     } catch (error: any) {
       console.error('Subscription status error:', error);
@@ -5209,7 +5207,7 @@ ${allPages.map(page => `  <url>
     }
   });
 
-  // Get coach verdict for an activity (Pro tier feature)
+  // Get coach verdict for an activity (Premium tier feature)
   app.get("/api/activities/:activityId/verdict", authenticateJWT, async (req: any, res) => {
     try {
       const activityId = parseInt(req.params.activityId);
@@ -5226,12 +5224,12 @@ ${allPages.map(page => `  <url>
 
       const now = new Date();
       const isInTrial = user.trialEndsAt && new Date(user.trialEndsAt) > now && !user.stripeSubscriptionId;
-      const isPro = user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'premium' || isInTrial;
+      const hasPremiumAccess = user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'premium' || isInTrial;
       
-      if (!isPro) {
+      if (!hasPremiumAccess) {
         return res.status(403).json({ 
-          message: "Coach Verdict requires Pro subscription",
-          requiresPro: true
+          message: "Coach Verdict requires Premium subscription",
+          requiresPremium: true
         });
       }
 

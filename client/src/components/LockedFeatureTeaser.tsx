@@ -3,30 +3,21 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 
 interface LockedFeatureTeaserProps {
-  tier: 'pro' | 'premium';
+  tier?: 'premium';
   teaser: string;
   className?: string;
   compact?: boolean;
 }
 
 export function LockedFeatureTeaser({ tier, teaser, className = '', compact = false }: LockedFeatureTeaserProps) {
-  const tierConfig = tier === 'pro' 
-    ? { 
-        label: 'Pro', 
-        bgClass: 'bg-gradient-to-r from-orange-50 to-amber-50',
-        borderClass: 'border-orange-200',
-        iconColor: 'text-orange-500',
-        buttonClass: 'bg-orange-500 hover:bg-orange-600',
-        badgeClass: 'bg-orange-100 text-orange-600'
-      }
-    : { 
-        label: 'Premium', 
-        bgClass: 'bg-gradient-to-r from-yellow-50 to-amber-50',
-        borderClass: 'border-yellow-200',
-        iconColor: 'text-yellow-600',
-        buttonClass: 'bg-yellow-500 hover:bg-yellow-600',
-        badgeClass: 'bg-yellow-100 text-yellow-700'
-      };
+  const tierConfig = { 
+    label: 'Premium', 
+    bgClass: 'bg-gradient-to-r from-yellow-50 to-amber-50',
+    borderClass: 'border-yellow-200',
+    iconColor: 'text-yellow-600',
+    buttonClass: 'bg-yellow-500 hover:bg-yellow-600',
+    badgeClass: 'bg-yellow-100 text-yellow-700'
+  };
 
   if (compact) {
     return (
@@ -67,35 +58,26 @@ export function LockedFeatureTeaser({ tier, teaser, className = '', compact = fa
   );
 }
 
-export function TierBadge({ tier }: { tier: 'pro' | 'premium' }) {
-  return tier === 'pro' ? (
-    <span className="ml-2 text-xs font-bold px-1.5 py-0.5 rounded bg-orange-100 text-orange-600">PRO</span>
-  ) : (
+export function TierBadge({ tier }: { tier?: 'premium' }) {
+  return (
     <span className="ml-2 text-xs font-bold px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700">PREMIUM</span>
   );
 }
 
 interface LockedOverlayProps {
-  tier: 'pro' | 'premium';
+  tier?: 'premium';
   teaser: string;
   children: React.ReactNode;
   blur?: boolean;
 }
 
 export function LockedOverlay({ tier, teaser, children, blur = true }: LockedOverlayProps) {
-  const tierConfig = tier === 'pro' 
-    ? { 
-        label: 'Pro', 
-        borderClass: 'border-orange-300',
-        buttonClass: 'bg-orange-500 hover:bg-orange-600',
-        iconColor: 'text-orange-500'
-      }
-    : { 
-        label: 'Premium', 
-        borderClass: 'border-yellow-300',
-        buttonClass: 'bg-yellow-500 hover:bg-yellow-600',
-        iconColor: 'text-yellow-600'
-      };
+  const tierConfig = { 
+    label: 'Premium', 
+    borderClass: 'border-yellow-300',
+    buttonClass: 'bg-yellow-500 hover:bg-yellow-600',
+    iconColor: 'text-yellow-600'
+  };
 
   return (
     <div className="relative" data-testid="locked-overlay">

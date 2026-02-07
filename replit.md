@@ -2,7 +2,7 @@
 
 ## Overview
 
-RunAnalytics is an AI-powered platform designed for runners, integrating with Strava to provide personalized insights, performance tracking, and training recommendations. Key features include a Race Predictor, Form Stability Analyzer, Aerobic Decoupling Calculator, Training Split Analyzer, Marathon Fueling Planner, Running Heatmap, and an AI Running Coach Chat. The platform operates on a freemium model (Free, Pro, Premium tiers) with the business vision of offering comprehensive, AI-driven running analytics to help runners of all levels improve performance and prevent injuries.
+RunAnalytics is an AI-powered platform designed for runners, integrating with Strava to provide personalized insights, performance tracking, and training recommendations. Key features include a Race Predictor, Form Stability Analyzer, Aerobic Decoupling Calculator, Training Split Analyzer, Marathon Fueling Planner, Running Heatmap, and an AI Running Coach Chat. The platform operates on a freemium model (Free and Premium tiers only — Pro tier has been removed) with the business vision of offering comprehensive, AI-driven running analytics to help runners of all levels improve performance and prevent injuries.
 
 ## User Preferences
 

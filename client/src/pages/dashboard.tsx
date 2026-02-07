@@ -90,7 +90,7 @@ export default function Dashboard() {
       if (!hasSeenWelcome) {
         setTimeout(() => {
           toast({
-            title: "Welcome to your 7-day Pro trial!",
+            title: "Welcome to your 7-day Premium trial!",
             description: `You have ${trialDaysRemaining} days to explore unlimited AI insights, training plans, race predictions, and more. Cancel anytime.`,
             duration: 8000,
           });

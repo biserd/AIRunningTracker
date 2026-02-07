@@ -72,9 +72,9 @@ export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnal
           <CardTitle className="text-xl font-semibold text-charcoal flex items-center">
             <Shield className="mr-2 h-5 w-5 text-strava-orange" />
             Injury Risk Analysis
-            <Badge className="ml-2 bg-gradient-to-r from-strava-orange to-orange-500 text-white text-xs">
+            <Badge className="ml-2 bg-gradient-to-r from-yellow-500 to-amber-500 text-white text-xs">
               <Crown className="h-3 w-3 mr-1" />
-              Pro
+              Premium
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -89,7 +89,7 @@ export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnal
             </p>
             <Link href="/pricing">
               <Button className="bg-gradient-to-r from-strava-orange to-orange-500 hover:from-orange-600 hover:to-orange-600">
-                Upgrade to Pro
+                Upgrade to Premium
               </Button>
             </Link>
           </div>

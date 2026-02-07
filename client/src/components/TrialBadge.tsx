@@ -26,7 +26,7 @@ export default function TrialBadge() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-semibold">Pro Trial Active</span>
+              <span className="font-semibold">Premium Trial Active</span>
               <Badge variant="secondary" className="text-xs" data-testid="trial-days-remaining">
                 <Clock size={12} className="mr-1" />
                 {trialDaysRemaining} {trialDaysRemaining === 1 ? 'day' : 'days'} left
@@ -34,7 +34,7 @@ export default function TrialBadge() {
             </div>
             <p className="text-sm opacity-80">
               {trialDaysRemaining <= 2 
-                ? "Your trial ends soon! Upgrade to keep Pro features."
+                ? "Your trial ends soon! Upgrade to keep Premium features."
                 : "Enjoy unlimited AI insights, training plans, and more!"}
             </p>
           </div>
@@ -47,7 +47,7 @@ export default function TrialBadge() {
             className={trialDaysRemaining <= 2 ? "bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white border-0" : ""}
             data-testid="trial-upgrade-button"
           >
-            Upgrade to Pro
+            Upgrade to Premium
             <ChevronRight size={16} className="ml-1" />
           </Button>
         </Link>

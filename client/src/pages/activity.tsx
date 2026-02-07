@@ -31,9 +31,7 @@ import { LockedFeatureTeaser, LockedOverlay, TierBadge as TierBadgeComponent } f
 type ViewMode = "story" | "deep_dive";
 
 function TierBadge({ tier }: { tier: 'pro' | 'premium' }) {
-  return tier === 'pro' ? (
-    <span className="ml-2 text-xs font-bold px-1.5 py-0.5 rounded bg-orange-100 text-orange-600">PRO</span>
-  ) : (
+  return (
     <span className="ml-2 text-xs font-bold px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700">PREMIUM</span>
   );
 }
@@ -47,25 +45,15 @@ function LockedFeaturePanel({
   title: string;
   description: string;
 }) {
-  const tierConfig = tier === 'pro' 
-    ? { 
-        label: 'Pro', 
-        color: 'orange',
-        bgGradient: 'from-orange-50 to-amber-50',
-        borderColor: 'border-orange-200',
-        iconColor: 'text-orange-500',
-        buttonClass: 'bg-orange-500 hover:bg-orange-600',
-        badgeClass: 'bg-orange-100 text-orange-600'
-      }
-    : { 
-        label: 'Premium', 
-        color: 'yellow',
-        bgGradient: 'from-yellow-50 to-amber-50',
-        borderColor: 'border-yellow-200',
-        iconColor: 'text-yellow-600',
-        buttonClass: 'bg-yellow-500 hover:bg-yellow-600',
-        badgeClass: 'bg-yellow-100 text-yellow-700'
-      };
+  const tierConfig = { 
+    label: 'Premium', 
+    color: 'yellow',
+    bgGradient: 'from-yellow-50 to-amber-50',
+    borderColor: 'border-yellow-200',
+    iconColor: 'text-yellow-600',
+    buttonClass: 'bg-yellow-500 hover:bg-yellow-600',
+    badgeClass: 'bg-yellow-100 text-yellow-700'
+  };
 
   return (
     <Card className={`border-2 ${tierConfig.borderColor} bg-gradient-to-br ${tierConfig.bgGradient}`} data-testid={`locked-feature-${title.toLowerCase().replace(/\s+/g, '-')}`}>
@@ -746,7 +734,7 @@ export default function ActivityPage() {
             {/* Section 1: Performance Metrics - Drift, Pacing, Baseline */}
             {!featureAccess.activity.performanceMetrics ? (
               <LockedFeatureTeaser 
-                tier="pro"
+                tier="premium"
                 teaser="Unlock detailed Drift, Pacing, and Baseline comparison metrics"
               />
             ) : efficiencyData ? (
@@ -875,7 +863,7 @@ export default function ActivityPage() {
             {/* Section 2: Run Timeline */}
             {featureAccess.activity.timeline !== 'full' ? (
               <LockedFeatureTeaser 
-                tier="pro"
+                tier="premium"
                 teaser="See your run unfold second-by-second with interactive pace, heart rate, and elevation charts"
               />
             ) : (
@@ -890,7 +878,7 @@ export default function ActivityPage() {
             {/* Section 3: Splits Analysis */}
             {featureAccess.activity.splits !== 'full' ? (
               <LockedFeatureTeaser 
-                tier="pro"
+                tier="premium"
                 teaser="Analyze every split with pace consistency metrics and effort distribution"
               />
             ) : (
@@ -905,7 +893,7 @@ export default function ActivityPage() {
             {/* Section 4: Heart Rate, Cadence, Power - Side by Side Grid */}
             {!featureAccess.activity.hrCadencePower ? (
               <LockedFeatureTeaser 
-                tier="pro"
+                tier="premium"
                 teaser="Unlock detailed Heart Rate, Cadence, and Power analysis charts"
               />
             ) : (

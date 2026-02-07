@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Save, Unlink, Trash2, Crown, Star, Zap, CreditCard, ExternalLink, Loader2, Share2, Check, AlertTriangle, MessageSquare, Target, Calendar, Bell } from "lucide-react";
+import { Settings, Save, Unlink, Trash2, Crown, Zap, CreditCard, ExternalLink, Loader2, Share2, Check, AlertTriangle, MessageSquare, Target, Calendar, Bell } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 
@@ -21,7 +21,7 @@ function SettingsPageContent() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { subscription, plan, status, isPro, isPremium, isLoading: subscriptionLoading, isReverseTrial } = useSubscription();
+  const { subscription, plan, status, isPremium, isLoading: subscriptionLoading, isReverseTrial } = useSubscription();
   const manageSubscription = useManageSubscription();
 
   const { data: dashboardData } = useQuery<DashboardData>({
@@ -264,18 +264,14 @@ function SettingsPageContent() {
                       <div className="p-2 bg-yellow-100 rounded-full">
                         <Crown className="h-5 w-5 text-yellow-600" />
                       </div>
-                    ) : isPro ? (
-                      <div className="p-2 bg-orange-100 rounded-full">
-                        <Star className="h-5 w-5 text-strava-orange" />
-                      </div>
                     ) : (
                       <div className="p-2 bg-gray-100 rounded-full">
                         <Zap className="h-5 w-5 text-gray-600" />
                       </div>
                     )}
                     <div>
-                      <h3 className={`font-semibold text-lg ${isPremium ? 'text-yellow-600' : isPro ? 'text-strava-orange' : 'text-gray-900'}`}>
-                        {isPremium ? 'Premium' : isPro ? 'Pro' : 'Free'} Plan
+                      <h3 className={`font-semibold text-lg ${isPremium ? 'text-yellow-600' : 'text-gray-900'}`}>
+                        {isPremium ? 'Premium' : 'Free'} Plan
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
                         <Badge variant={
@@ -325,7 +321,7 @@ function SettingsPageContent() {
                       data-testid="button-upgrade-settings"
                     >
                       <Crown className="h-4 w-4" />
-                      {isPro ? 'Upgrade to Premium' : 'Upgrade Plan'}
+                      Upgrade Plan
                     </Button>
                   )}
                   <Button 
