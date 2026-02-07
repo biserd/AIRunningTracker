@@ -1,0 +1,51 @@
+I need to update the audit-report contents and the onboarding wizard after the user connects its strava. 
+
+After the user connects its strava and we sync their activities, before we show the Audit report, we ask them three simple questions in a very elegant way.
+
+Title: "Calibrating your profile..."
+
+Step 1: The Goal (The North Star)
+"To build your perfect plan, what is your primary focus right now?"
+
+[Option A] Crush a Race: I have a specific race coming up (5k, 10k, Half, Full).
+[Option B] Get Faster: I want to beat my PRs, but no specific race yet.
+[Option C] Build Endurance: I want to run longer without stopping.
+[Option D] Stay Injury Free: I want to run consistently without getting hurt.
+
+Step 2: The Struggle ( The Pain Point)
+"What has been your biggest frustration with training recently?"
+
+[Option A] Plateau: I’m running hard but not getting faster.
+[Option B] Burnout/Fatigue: I often feel tired or heavy-legged.
+[Option C] Inconsistency: I have trouble sticking to a schedule.
+[Option D] Guesswork: I don't know if I'm training correctly.
+
+Step 3: The Commitment (The Reality Check)
+"To hit your goal, how many days per week can you realistically train?"
+
+[3 Days]
+[4 Days]
+[5+ Days]
+
+All questions are mandatory and must be stored in our database.
+
+Based on their answers we calibrate and show them the Audit report:
+
+How the Result Page Changes (Dynamic Copy)
+Now, your landing page isn't generic. It echoes their answers back to them. This creates High Relevance.
+
+Scenario A: The "Racer" (Selected: Race + Plateau)
+Headline: "Break through your plateau and smash your Half Marathon."
+
+The Hook: "You want to race in October, but your current 'Grey Zone' training is causing you to plateau. Our data predicts a 1:58 finish, but with the right structure, you can hit 1:45."
+
+The Solution: "Here is your 4-day/week plan to peak exactly on race day."
+
+Scenario B: The "Injury Prone" (Selected: Injury Free + Burnout)
+Headline: "Stop the cycle of overtraining and injury."
+
+The Hook: "You reported feeling tired. Our analysis confirms why: 37% of your miles are 'Junk Mileage'. You are overloading your joints without gaining fitness."
+
+The Solution: "Here is a 'Safe-Build' plan that prioritizes recovery and sustainable volume."
+
+Implementation Tip: Make the wizard visually engaging. Don't use standard form inputs. Use big, tappable cards. Add a small "analyzing..." animation between steps to make it feel like the AI is crunching their specific data. 
