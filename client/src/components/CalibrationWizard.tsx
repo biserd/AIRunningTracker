@@ -168,7 +168,7 @@ export default function CalibrationWizard({ onComplete }: CalibrationWizardProps
             <p className="text-gray-500 text-sm">
               {step === 0 && "To build your perfect plan, we need to know your north star."}
               {step === 1 && "Understanding your pain point helps us target the right solution."}
-              {step === 2 && "Be realistic — consistency beats volume every time."}
+              {step === 2 && "Be realistic. Consistency beats volume every time."}
             </p>
           </div>
 
