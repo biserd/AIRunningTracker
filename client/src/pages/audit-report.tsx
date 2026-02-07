@@ -335,10 +335,12 @@ export default function AuditReportPage() {
   const shouldShowWizard = isStravaConnected && syncDone && hasInsights && !hasCalibration && !calibrationLoading && !wizardDismissed;
 
   useEffect(() => {
-    if (!subLoading && !authLoading && (hasActiveSubscription || isReverseTrial)) {
-      navigate('/dashboard');
+    if (!subLoading && !authLoading && !calibrationLoading && (hasActiveSubscription || isReverseTrial)) {
+      if (hasCalibration || wizardDismissed) {
+        navigate('/dashboard');
+      }
     }
-  }, [hasActiveSubscription, isReverseTrial, subLoading, authLoading, navigate]);
+  }, [hasActiveSubscription, isReverseTrial, subLoading, authLoading, calibrationLoading, hasCalibration, wizardDismissed, navigate]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
