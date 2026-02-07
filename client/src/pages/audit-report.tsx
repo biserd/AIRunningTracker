@@ -572,6 +572,9 @@ export default function AuditReportPage() {
           <p className="text-sm text-gray-500 mt-4">
             We only read your activity data. We never post on your behalf.
           </p>
+          <p className="text-sm text-gray-500 mt-2">
+            We'll analyze your activities and email you a weekly progress report. Unsubscribe anytime.
+          </p>
         </div>
       </div>
     );
