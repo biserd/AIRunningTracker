@@ -125,38 +125,46 @@ function getPersonalizedCopy(
   };
 
   // --- Load Warning copy by struggle ---
+  // When load is stable (not critical), reframe positively around consistency
+  const isStable = !isCritical;
+  const consistencyGrade = thisWeek >= 4 ? 'A' : thisWeek >= 3 ? 'B+' : thisWeek >= 2 ? 'B' : 'C';
+
   const loadWarningByStruggle: Record<string, PersonalizedCopy['loadWarning']> = {
     plateau: isCritical ? {
-      title: `Load Spike Detected: ${loadChange !== null && loadChange > 0 ? '+' : ''}${loadChange ?? 0}%`,
+      title: `Load Spike Detected: +${Math.abs(loadChange ?? 0)}%`,
       body: `You are pushing harder to break through, but your body cannot absorb this spike. This week: ${thisWeek} sessions. Last week: ${lastWeek}. Sudden jumps like this lead to stagnation, not breakthroughs.`,
       takeaway: `Plateaus break with precision, not brute force. A structured plan ramps load safely.`,
     } : {
-      title: `Load Flat: ${loadChange ?? 0}% Change`,
-      body: `Your training load has barely changed. This week: ${thisWeek} sessions. Last week: ${lastWeek}. Without progressive overload, your body has no reason to adapt. That is why your times have stalled.`,
-      takeaway: `To break through, you need structured progression, not more of the same.`,
+      title: `Consistency Score: ${consistencyGrade}`,
+      body: `You run consistently (${thisWeek}x/week), and that discipline is a real strength. But your intensity distribution is off. ${greyZonePct}% of your runs are in the grey zone, so your body has no reason to adapt.`,
+      takeaway: `You have the discipline. You just need the right plan to channel it.`,
     },
     burnout: isCritical ? {
-      title: `Overload Warning: ${loadChange !== null && loadChange > 0 ? '+' : ''}${loadChange ?? 0}%`,
+      title: `Overload Warning: +${Math.abs(loadChange ?? 0)}%`,
       body: `Your fatigue is not in your head. This week: ${thisWeek} sessions vs. ${lastWeek} last week. Your body is accumulating more stress than it can recover from between runs.`,
       takeaway: `You need a recovery protocol before you can build fitness again.`,
     } : {
-      title: `Load Check: ${loadChange ?? 0}% Change`,
-      body: `This week: ${thisWeek} sessions. Last week: ${lastWeek}. Even without a big spike, the cumulative effect of too many grey zone runs is draining your energy reserves over time.`,
+      title: `Consistency Score: ${consistencyGrade}`,
+      body: `You are showing up (${thisWeek}x/week), which takes real commitment. But too many of those runs are draining you instead of building you up. ${greyZonePct}% of your effort is landing at the wrong intensity.`,
       takeaway: `The fix is not running less. It is running at the right intensities.`,
     },
-    inconsistency: {
+    inconsistency: isStable && thisWeek >= 3 ? {
+      title: `Consistency Score: ${consistencyGrade}`,
+      body: `You ran ${thisWeek} times this week. That is solid. The challenge is making each session count when your schedule shifts. Right now, ${greyZonePct}% of the runs you do fit in are not structured for maximum return.`,
+      takeaway: `A flexible ${daysLabel}-day plan adapts to your life and still delivers results.`,
+    } : {
       title: `Training Gaps Detected`,
-      body: `This week: ${thisWeek} sessions. Last week: ${lastWeek}. When your schedule is unpredictable, every run needs to count. Right now, the runs you do fit in are not structured for maximum return.`,
+      body: `This week: ${thisWeek} sessions. Last week: ${lastWeek}. When your schedule is unpredictable, every run needs to count. A plan with built-in flexibility keeps you progressing even on busy weeks.`,
       takeaway: `A flexible ${daysLabel}-day plan adapts to your life and still delivers results.`,
     },
     guesswork: isCritical ? {
-      title: `Load Warning: ${loadChange !== null && loadChange > 0 ? '+' : ''}${loadChange ?? 0}%`,
+      title: `Load Warning: +${Math.abs(loadChange ?? 0)}%`,
       body: `Without clear targets, it is easy to overshoot. This week: ${thisWeek} sessions vs. ${lastWeek} last week. Your body does not know whether you are building fitness or just accumulating fatigue.`,
       takeaway: `You need a plan with clear daily targets so every run has a purpose.`,
     } : {
-      title: `Load Status: ${loadChange ?? 0}% Change`,
-      body: `This week: ${thisWeek} sessions. Last week: ${lastWeek}. Without structure, you are training by feel, and the data shows it is not working. ${greyZonePct}% of your effort is landing in no-man's land.`,
-      takeaway: `A structured plan removes the guesswork and tells you exactly what to do each day.`,
+      title: `Consistency Score: ${consistencyGrade}`,
+      body: `You are putting in the work (${thisWeek}x/week), and that matters. But without clear targets, ${greyZonePct}% of your effort is landing at the wrong intensity. You have the habit. Now you need the structure.`,
+      takeaway: `A structured plan tells you exactly what to do each day so nothing is wasted.`,
     },
   };
 
@@ -694,10 +702,14 @@ export default function AuditReportPage() {
             </div>
           </div>
 
-          <div className={`${trainingLoad.isCritical ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'} border rounded-2xl p-6`}>
+          <div className={`${trainingLoad.isCritical ? 'bg-red-50 border-red-200' : 'bg-teal-50 border-teal-200'} border rounded-2xl p-6`}>
             <div className="flex items-start gap-4">
-              <div className={`w-12 h-12 flex-shrink-0 ${trainingLoad.isCritical ? 'bg-red-100' : 'bg-amber-100'} rounded-xl flex items-center justify-center`}>
-                <AlertTriangle className={`h-7 w-7 ${trainingLoad.isCritical ? 'text-red-600' : 'text-amber-600'}`} />
+              <div className={`w-12 h-12 flex-shrink-0 ${trainingLoad.isCritical ? 'bg-red-100' : 'bg-teal-100'} rounded-xl flex items-center justify-center`}>
+                {trainingLoad.isCritical ? (
+                  <AlertTriangle className="h-7 w-7 text-red-600" />
+                ) : (
+                  <CheckCircle className="h-7 w-7 text-teal-600" />
+                )}
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
@@ -713,7 +725,7 @@ export default function AuditReportPage() {
                 <p className="text-gray-700 leading-relaxed">
                   {personalizedCopy?.loadWarning.body || `Your training load has changed compared to last week. This week: ${trainingLoad.thisWeekActivities} activities. Last week: ${trainingLoad.lastWeekActivities} activities.`}
                 </p>
-                <p className={`text-sm ${trainingLoad.isCritical ? 'text-red-700' : 'text-amber-700'} mt-3 font-medium`}>
+                <p className={`text-sm ${trainingLoad.isCritical ? 'text-red-700' : 'text-teal-700'} mt-3 font-medium`}>
                   {personalizedCopy?.loadWarning.takeaway || "A structured plan manages your load automatically."}
                 </p>
               </div>
