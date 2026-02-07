@@ -84,18 +84,18 @@ export default function CalibrationWizard({ onComplete }: CalibrationWizardProps
 
   if (isAnalyzing) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-orange-50 flex items-center justify-center">
         <div className="text-center px-4">
           <div className="relative w-20 h-20 mx-auto mb-8">
-            <div className="absolute inset-0 rounded-full border-4 border-orange-500/20" />
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-orange-500 animate-spin" />
+            <div className="absolute inset-0 rounded-full border-4 border-strava-orange/20" />
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-strava-orange animate-spin" />
             <div className="absolute inset-2 rounded-full border-4 border-transparent border-t-orange-400 animate-spin" style={{ animationDuration: '1.5s', animationDirection: 'reverse' }} />
             <div className="absolute inset-4 rounded-full border-4 border-transparent border-t-orange-300 animate-spin" style={{ animationDuration: '2s' }} />
           </div>
-          <p className="text-white/90 text-xl font-medium animate-pulse">
+          <p className="text-charcoal text-xl font-medium animate-pulse">
             {isSaving ? "Building your profile..." : "Analyzing..."}
           </p>
-          <p className="text-white/50 text-sm mt-2">
+          <p className="text-gray-500 text-sm mt-2">
             {isSaving ? "Calibrating insights to your goals" : "Processing your answer"}
           </p>
         </div>
@@ -105,19 +105,19 @@ export default function CalibrationWizard({ onComplete }: CalibrationWizardProps
 
   if (saveError) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-orange-50 flex items-center justify-center">
         <div className="text-center px-4">
-          <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <span className="text-3xl">⚠️</span>
           </div>
-          <h2 className="text-white text-xl font-semibold mb-3">Something went wrong</h2>
-          <p className="text-white/50 text-sm mb-6">We couldn't save your profile. Please try again.</p>
+          <h2 className="text-charcoal text-xl font-semibold mb-3">Something went wrong</h2>
+          <p className="text-gray-500 text-sm mb-6">We couldn't save your profile. Please try again.</p>
           <button
             onClick={() => {
               setSaveError(false);
               if (days) handleDaysSelect(days);
             }}
-            className="px-6 py-3 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors"
+            className="px-6 py-3 bg-strava-orange text-white rounded-xl font-medium hover:bg-strava-orange/90 transition-colors"
           >
             Try Again
           </button>
@@ -130,42 +130,42 @@ export default function CalibrationWizard({ onComplete }: CalibrationWizardProps
   const StepIcon = stepIcons[step];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-orange-50 flex flex-col">
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
         <div className="w-full max-w-lg">
           <div className="flex items-center justify-center gap-3 mb-2">
             {[0, 1, 2].map((i) => (
               <div key={i} className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ${
-                  i < step ? 'bg-green-500 scale-90' : i === step ? 'bg-orange-500 scale-110 ring-4 ring-orange-500/30' : 'bg-white/10'
+                  i < step ? 'bg-green-500 scale-90' : i === step ? 'bg-strava-orange scale-110 ring-4 ring-strava-orange/20' : 'bg-gray-200'
                 }`}>
                   {i < step ? (
                     <Check className="w-5 h-5 text-white" />
                   ) : (
-                    <span className="text-white/80 text-sm font-bold">{i + 1}</span>
+                    <span className={`text-sm font-bold ${i === step ? 'text-white' : 'text-gray-500'}`}>{i + 1}</span>
                   )}
                 </div>
                 {i < 2 && (
-                  <div className={`w-12 h-0.5 transition-all duration-500 ${i < step ? 'bg-green-500' : 'bg-white/10'}`} />
+                  <div className={`w-12 h-0.5 transition-all duration-500 ${i < step ? 'bg-green-500' : 'bg-gray-200'}`} />
                 )}
               </div>
             ))}
           </div>
 
-          <p className="text-center text-orange-400/80 text-xs font-medium tracking-widest uppercase mb-8 mt-4">
+          <p className="text-center text-strava-orange/80 text-xs font-medium tracking-widest uppercase mb-8 mt-4">
             Calibrating your profile...
           </p>
 
           <div className="text-center mb-8">
-            <div className="w-14 h-14 bg-orange-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <StepIcon className="w-7 h-7 text-orange-400" />
+            <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <StepIcon className="w-7 h-7 text-strava-orange" />
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-white mb-3">
+            <h1 className="text-2xl md:text-3xl font-bold text-charcoal mb-3">
               {step === 0 && "What is your primary focus right now?"}
               {step === 1 && "What's been your biggest frustration?"}
               {step === 2 && "How many days per week can you train?"}
             </h1>
-            <p className="text-white/50 text-sm">
+            <p className="text-gray-500 text-sm">
               {step === 0 && "To build your perfect plan, we need to know your north star."}
               {step === 1 && "Understanding your pain point helps us target the right solution."}
               {step === 2 && "Be realistic — consistency beats volume every time."}
@@ -180,17 +180,17 @@ export default function CalibrationWizard({ onComplete }: CalibrationWizardProps
                   onClick={() => handleGoalSelect(option.value)}
                   className={`w-full text-left p-5 rounded-2xl border-2 transition-all duration-200 group hover:scale-[1.02] active:scale-[0.98] ${
                     goal === option.value
-                      ? 'border-orange-500 bg-orange-500/10'
-                      : 'border-white/10 bg-white/5 hover:border-white/25 hover:bg-white/10'
+                      ? 'border-strava-orange bg-orange-50'
+                      : 'border-gray-200 bg-white hover:border-orange-200 hover:bg-orange-50/50 shadow-sm'
                   }`}
                 >
                   <div className="flex items-start gap-4">
                     <span className="text-2xl mt-0.5">{option.emoji}</span>
                     <div className="flex-1">
-                      <h3 className="text-white font-semibold text-lg mb-1">{option.title}</h3>
-                      <p className="text-white/50 text-sm leading-relaxed">{option.description}</p>
+                      <h3 className="text-charcoal font-semibold text-lg mb-1">{option.title}</h3>
+                      <p className="text-gray-500 text-sm leading-relaxed">{option.description}</p>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-white/20 group-hover:text-white/50 mt-1 transition-colors" />
+                    <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-strava-orange mt-1 transition-colors" />
                   </div>
                 </button>
               ))}
@@ -205,17 +205,17 @@ export default function CalibrationWizard({ onComplete }: CalibrationWizardProps
                   onClick={() => handleStruggleSelect(option.value)}
                   className={`w-full text-left p-5 rounded-2xl border-2 transition-all duration-200 group hover:scale-[1.02] active:scale-[0.98] ${
                     struggle === option.value
-                      ? 'border-orange-500 bg-orange-500/10'
-                      : 'border-white/10 bg-white/5 hover:border-white/25 hover:bg-white/10'
+                      ? 'border-strava-orange bg-orange-50'
+                      : 'border-gray-200 bg-white hover:border-orange-200 hover:bg-orange-50/50 shadow-sm'
                   }`}
                 >
                   <div className="flex items-start gap-4">
                     <span className="text-2xl mt-0.5">{option.emoji}</span>
                     <div className="flex-1">
-                      <h3 className="text-white font-semibold text-lg mb-1">{option.title}</h3>
-                      <p className="text-white/50 text-sm leading-relaxed">{option.description}</p>
+                      <h3 className="text-charcoal font-semibold text-lg mb-1">{option.title}</h3>
+                      <p className="text-gray-500 text-sm leading-relaxed">{option.description}</p>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-white/20 group-hover:text-white/50 mt-1 transition-colors" />
+                    <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-strava-orange mt-1 transition-colors" />
                   </div>
                 </button>
               ))}
@@ -230,14 +230,14 @@ export default function CalibrationWizard({ onComplete }: CalibrationWizardProps
                   onClick={() => handleDaysSelect(option.value)}
                   className={`flex-1 max-w-[140px] p-6 rounded-2xl border-2 transition-all duration-200 hover:scale-[1.05] active:scale-[0.95] text-center ${
                     days === option.value
-                      ? 'border-orange-500 bg-orange-500/10'
-                      : 'border-white/10 bg-white/5 hover:border-white/25 hover:bg-white/10'
+                      ? 'border-strava-orange bg-orange-50'
+                      : 'border-gray-200 bg-white hover:border-orange-200 hover:bg-orange-50/50 shadow-sm'
                   }`}
                 >
-                  <span className="text-3xl font-bold text-white block mb-1">
+                  <span className="text-3xl font-bold text-charcoal block mb-1">
                     {option.value === "5+" ? "5+" : option.value}
                   </span>
-                  <span className="text-white/50 text-sm">days/week</span>
+                  <span className="text-gray-500 text-sm">days/week</span>
                 </button>
               ))}
             </div>

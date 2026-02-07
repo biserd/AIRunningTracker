@@ -330,9 +330,8 @@ export default function AuditReportPage() {
 
   const activityCount = auditData?.greyZone?.activityCount || 0;
   const hasInsights = activityCount >= 5 && auditData?.runnerIQ?.score !== undefined && auditData.runnerIQ.score > 25;
-  const syncDone = !isSyncing || !justConnected;
 
-  const shouldShowWizard = isStravaConnected && syncDone && hasInsights && !hasCalibration && !calibrationLoading && !wizardDismissed;
+  const shouldShowWizard = isStravaConnected && hasInsights && !hasCalibration && !calibrationLoading && !wizardDismissed;
 
   useEffect(() => {
     if (!subLoading && !authLoading && !calibrationLoading && (hasActiveSubscription || isReverseTrial)) {
