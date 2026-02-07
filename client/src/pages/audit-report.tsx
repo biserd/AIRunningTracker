@@ -661,20 +661,6 @@ export default function AuditReportPage() {
           </p>
         </div>
 
-        {personalizedCopy?.solution && (
-          <div className="bg-green-50 border border-green-200 rounded-2xl p-5 mb-4">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 flex-shrink-0 bg-green-100 rounded-xl flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <h3 className="font-bold text-green-900 mb-1">Your Personalized Plan</h3>
-                <p className="text-green-800 leading-relaxed">{personalizedCopy.solution}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
         <div className="space-y-4">
           <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6">
             <div className="flex items-start gap-4">
