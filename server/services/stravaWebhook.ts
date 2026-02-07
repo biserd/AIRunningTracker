@@ -230,20 +230,20 @@ Grey Zone: ${greyZoneAnalysis ? (greyZoneAnalysis.inGreyZone ? `Yes, ~${greyZone
 PRs: ${activity.pr_count || 0}
 
 Generate a JSON response with exactly these fields:
-1. "subject": An email subject line (under 60 chars). Start with a running emoji. Reference the distance (e.g. "5k", "10k", "Half Marathon"). Include a hook that references something specific about THIS run. End with "but..." or a teaser to create curiosity. Examples:
-   - "🏃‍♂️ 5k Analysis: You crushed the first mile, but..."
-   - "🏃‍♂️ 10k Breakdown: Strong pace, questionable efficiency"
-   - "🏃‍♂️ Half Marathon Report: Your HR tells a different story"
-   - "🏃‍♂️ 8k Audit: Solid effort, but you left speed on the table"
+1. "subject": An email subject line (under 60 chars). Reference the distance (e.g. "5k", "10k", "Half Marathon"). Include a hook that references something specific about THIS run. End with a teaser to create curiosity. Examples:
+   - "Your 5k Analysis: You crushed the first mile, but..."
+   - "Your 10k Breakdown: Strong pace, questionable efficiency"
+   - "Half Marathon Report: Your HR tells a different story"
+   - "Your 8k Audit: Solid effort, but you left speed on the table"
 
-2. "coachVerdictBody": A 2-3 sentence personalized coach verdict. Be specific to this run's data. Mention one thing they did well, and one thing to watch. If they were in the grey zone, mention it directly. If efficiency is low, call it out. Be warm but honest. Do NOT use generic encouragement. Do NOT use em dashes. Use short, punchy sentences.
+2. "coachVerdictBody": A 2-3 sentence personalized coach verdict. Be specific to this run's data. Mention one thing they did well, and one thing to watch. If they were in the grey zone, mention it directly. If efficiency is low, call it out. Be warm but honest. Do NOT use generic encouragement. Do NOT use em dashes (never use the character: --). Use short, punchy sentences.
 
 Respond with ONLY valid JSON, no markdown.`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "You are an expert AI running coach. Respond with valid JSON only." },
+          { role: "system", content: "You are an expert running coach. Respond with valid JSON only. Never use em dashes in your writing." },
           { role: "user", content: prompt }
         ],
         max_tokens: 300,
@@ -291,7 +291,7 @@ Respond with ONLY valid JSON, no markdown.`;
     }
 
     return {
-      subject: `🏃‍♂️ ${distanceLabel} Analysis: ${hook.charAt(0).toUpperCase() + hook.slice(1)}`,
+      subject: `Your ${distanceLabel} Analysis: ${hook.charAt(0).toUpperCase() + hook.slice(1)}`,
       coachVerdictBody: verdict,
     };
   }

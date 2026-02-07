@@ -911,96 +911,53 @@ Biser`;
   }): Promise<boolean> {
     const { to, firstName, activityName, distance, duration, pace, heartRate, elevation, effortScore, runType, aiCoachInsight, insights, dashboardUrl, efficiencyRating, greyZoneAnalysis, unsubscribeUrl, activityUrl } = options;
 
-    const efficiencyIcon = efficiencyRating?.label === "High" ? "&#9989;" : efficiencyRating?.label === "Low" ? "&#9888;&#65039;" : efficiencyRating ? "&#8226;" : "";
-    const efficiencyColor = efficiencyRating?.label === "High" ? "#27ae60" : efficiencyRating?.label === "Low" ? "#e67e22" : "#666";
-
-    const greyZoneHtml = greyZoneAnalysis?.inGreyZone ? `
-      <div style="background: #fef3cd; border-radius: 12px; padding: 20px; margin: 20px 0; border-left: 4px solid #f39c12;">
-        <div style="font-weight: 700; color: #856404; font-size: 15px; margin-bottom: 8px;">&#9888;&#65039; Grey Zone Alert: ~${greyZoneAnalysis.minutes} minutes</div>
-        <p style="color: #856404; font-size: 14px; line-height: 1.6; margin: 0;">${greyZoneAnalysis.message}</p>
-        <p style="color: #856404; font-size: 14px; font-weight: 600; margin: 12px 0 0;">Don't let this run turn into "Junk Mileage."</p>
-      </div>
-    ` : "";
-
     const ctaUrl = activityUrl || dashboardUrl;
-    const emailSubject = options.subject || `${runType || "Great run"}! ${activityName}`;
+    const emailSubject = options.subject || `Your ${runType || "Run"} Analysis: ${activityName}`;
 
-    const html = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: #ffffff;">
-        <div style="padding: 30px 25px 0;">
-          <p style="color: #666; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">Hey ${firstName},</p>
-          <p style="color: #666; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">We just saw your <strong style="color: #2c3e50;">${activityName}</strong> upload to Strava. Nice work getting out there!</p>
-          
-          <h2 style="color: #2c3e50; margin: 0 0 15px; font-size: 18px; font-weight: 700;">Quick Audit:</h2>
+    const greyZoneText = greyZoneAnalysis?.inGreyZone
+      ? `\nGrey Zone Alert: ~${greyZoneAnalysis.minutes} minutes\n${greyZoneAnalysis.message}\nDon't let this run turn into "Junk Mileage."\n`
+      : "";
 
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-            <tr>
-              <td style="padding: 8px 0; color: #666; font-size: 15px; border-bottom: 1px solid #f0f0f0;"><strong>Pace:</strong></td>
-              <td style="padding: 8px 0; color: #2c3e50; font-size: 15px; font-weight: 600; text-align: right; border-bottom: 1px solid #f0f0f0;">${pace}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #666; font-size: 15px; border-bottom: 1px solid #f0f0f0;"><strong>Distance:</strong></td>
-              <td style="padding: 8px 0; color: #2c3e50; font-size: 15px; font-weight: 600; text-align: right; border-bottom: 1px solid #f0f0f0;">${distance}</td>
-            </tr>
-            ${heartRate ? `<tr>
-              <td style="padding: 8px 0; color: #666; font-size: 15px; border-bottom: 1px solid #f0f0f0;"><strong>Avg HR:</strong></td>
-              <td style="padding: 8px 0; color: #2c3e50; font-size: 15px; font-weight: 600; text-align: right; border-bottom: 1px solid #f0f0f0;">${heartRate}</td>
-            </tr>` : ""}
-            ${efficiencyRating ? `<tr>
-              <td style="padding: 8px 0; color: #666; font-size: 15px; border-bottom: 1px solid #f0f0f0;"><strong>Efficiency:</strong></td>
-              <td style="padding: 8px 0; color: ${efficiencyColor}; font-size: 15px; font-weight: 600; text-align: right; border-bottom: 1px solid #f0f0f0;">${efficiencyRating.label} ${efficiencyIcon}</td>
-            </tr>` : ""}
-          </table>
+    const coachText = aiCoachInsight ? `\nRunning Coach:\n${aiCoachInsight}\n` : "";
 
-          ${greyZoneHtml}
-
-          ${aiCoachInsight ? `
-          <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin: 20px 0; border-left: 4px solid #FC5200;">
-            <p style="color: #2c3e50; font-size: 15px; line-height: 1.7; margin: 0;">${aiCoachInsight}</p>
-          </div>
-          ` : ""}
-
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${ctaUrl}" style="background: #FC5200; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 16px;">See My Full Run Analysis &amp; Recovery Time</a>
-          </div>
-        </div>
-        
-        <div style="border-top: 1px solid #eee; padding: 25px; text-align: center;">
-          <p style="margin: 0 0 5px; color: #666; font-size: 14px;">Train smarter,</p>
-          <p style="margin: 0 0 15px; color: #2c3e50; font-size: 14px; font-weight: 600;">The AITracker Coach</p>
-          ${unsubscribeUrl ? `
-          <p style="margin: 15px 0 0; font-size: 12px;">
-            <a href="${unsubscribeUrl}" style="color: #999; text-decoration: underline;">Unsubscribe / Stop Analyzing My Runs</a>
-          </p>
-          ` : `
-          <p style="margin: 15px 0 0; font-size: 12px;">
-            <a href="${dashboardUrl.replace('/dashboard', '')}/settings" style="color: #999; text-decoration: underline;">Manage email preferences</a>
-          </p>
-          `}
-        </div>
-      </div>
-    `;
+    const unsubLine = unsubscribeUrl
+      ? `\nDon't want these emails? Unsubscribe here: ${unsubscribeUrl}`
+      : "";
 
     const text = `Hey ${firstName},
 
-We just saw your ${activityName} upload to Strava. Nice work getting out there!
+We just saw your ${activityName} upload to Strava. Nice work getting out there.
 
 Quick Audit:
 
 Pace: ${pace}
 Distance: ${distance}
 ${heartRate ? `Avg HR: ${heartRate}` : ""}
-${efficiencyRating ? `Efficiency: ${efficiencyRating.label}` : ""}
-
-${greyZoneAnalysis?.inGreyZone ? `We detected that you spent ~${greyZoneAnalysis.minutes} minutes in the "Grey Zone." ${greyZoneAnalysis.message}\n\nDon't let this run turn into "Junk Mileage."\n` : ""}
-${aiCoachInsight || ""}
-
-See your full run analysis: ${ctaUrl}
+${efficiencyRating && efficiencyRating.label !== "Unknown" ? `Efficiency: ${efficiencyRating.label}` : ""}
+${greyZoneText}${coachText}
+See your full run analysis and recovery time: ${ctaUrl}
 
 Train smarter,
-The AITracker Coach
-${unsubscribeUrl ? `\nUnsubscribe: ${unsubscribeUrl}` : ""}
-    `;
+The AITracker Running Coach
+${unsubLine}
+    `.trim();
+
+    const html = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+<pre style="font-family: inherit; font-size: 15px; line-height: 1.7; color: #333; white-space: pre-wrap; word-wrap: break-word; margin: 0; padding: 30px 25px;">Hey ${firstName},
+
+We just saw your <b>${activityName}</b> upload to Strava. Nice work getting out there.
+
+<b>Quick Audit:</b>
+
+Pace: ${pace}
+Distance: ${distance}${heartRate ? `\nAvg HR: ${heartRate}` : ""}${efficiencyRating && efficiencyRating.label !== "Unknown" ? `\nEfficiency: ${efficiencyRating.label}` : ""}
+${greyZoneAnalysis?.inGreyZone ? `\n<b>Grey Zone Alert: ~${greyZoneAnalysis.minutes} minutes</b>\n${greyZoneAnalysis.message}\nDon't let this run turn into "Junk Mileage."\n` : ""}${aiCoachInsight ? `\n<b>Running Coach:</b>\n${aiCoachInsight}\n` : ""}
+<a href="${ctaUrl}" style="color: #FC5200; font-weight: bold;">See My Full Run Analysis and Recovery Time</a>
+
+Train smarter,
+The AITracker Running Coach</pre>
+<div style="padding: 15px 25px; font-size: 12px; color: #999;">${unsubscribeUrl ? `<a href="${unsubscribeUrl}" style="color: #999;">Unsubscribe from post-run emails</a>` : ""}</div>
+</div>`;
 
     return await this.sendEmail({ to, subject: emailSubject, html, text });
   }
