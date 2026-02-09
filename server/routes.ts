@@ -908,6 +908,7 @@ ${allPages.map(page => `  <url>
       }
 
       // Create checkout session
+      const appSlug = process.env.APP_SLUG || 'aitracker';
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
         payment_method_types: ['card'],
@@ -916,7 +917,10 @@ ${allPages.map(page => `  <url>
         allow_promotion_codes: true,
         success_url: `https://aitracker.run/billing?success=true`,
         cancel_url: `https://aitracker.run/pricing?canceled=true`,
-        metadata: { userId: String(userId) }
+        metadata: { userId: String(userId), app: appSlug },
+        subscription_data: {
+          metadata: { app: appSlug, userId: String(userId) }
+        }
       });
 
       res.json({ url: session.url });
@@ -964,7 +968,7 @@ ${allPages.map(page => `  <url>
       // Use the hardcoded Premium monthly price ID (same as pricing page)
       const premiumPriceId = "price_1SbtcfRwvWaTf8xfSEO4iKnc";
 
-      // Create checkout session with 14-day trial
+      const appSlug = process.env.APP_SLUG || 'aitracker';
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
         payment_method_types: ['card'],
@@ -973,10 +977,11 @@ ${allPages.map(page => `  <url>
         allow_promotion_codes: true,
         subscription_data: {
           trial_period_days: 14,
+          metadata: { app: appSlug, userId: String(userId) }
         },
         success_url: `https://aitracker.run/audit-report?upgraded=true`,
         cancel_url: `https://aitracker.run/audit-report?canceled=true`,
-        metadata: { userId: String(userId), source: 'audit-report' }
+        metadata: { userId: String(userId), source: 'audit-report', app: appSlug }
       });
 
       res.json({ url: session.url });
