@@ -86,7 +86,32 @@ class StravaWebhookService {
         return "skipped:no_access_token";
       }
 
-      const activity = await stravaService.getActivityById(user.stravaAccessToken, event.object_id);
+      let accessToken = user.stravaAccessToken;
+
+      let activity = null;
+      try {
+        activity = await stravaService.getActivityById(accessToken, event.object_id);
+      } catch (fetchError: any) {
+        if (fetchError.message?.includes('Unauthorized') && user.stravaRefreshToken) {
+          console.log(`[Strava Webhook] Token expired for user ${user.id}, refreshing...`);
+          try {
+            const tokenData = await stravaService.refreshAccessToken(user.stravaRefreshToken);
+            accessToken = tokenData.access_token;
+            await storage.updateUser(user.id, {
+              stravaAccessToken: tokenData.access_token,
+              stravaRefreshToken: tokenData.refresh_token,
+            });
+            console.log(`[Strava Webhook] Token refreshed for user ${user.id}`);
+            activity = await stravaService.getActivityById(accessToken, event.object_id);
+          } catch (refreshError) {
+            console.error(`[Strava Webhook] Token refresh failed for user ${user.id}:`, refreshError);
+            return `error:token_refresh_failed:${String(refreshError)}`;
+          }
+        } else {
+          return `error:activity_fetch:${String(fetchError)}`;
+        }
+      }
+
       if (!activity) {
         console.log(`[Strava Webhook] Failed to fetch activity ${event.object_id}`);
         return "skipped:activity_fetch_failed";
