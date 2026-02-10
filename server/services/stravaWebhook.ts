@@ -152,7 +152,7 @@ class StravaWebhookService {
       const domain = "aitracker.run";
       const firstName = user.firstName || user.email.split("@")[0];
       const runType = this.detectRunType(activity, distanceKm);
-      const distanceLabel = this.getDistanceLabel(distanceKm);
+      const distanceLabel = this.getDistanceLabel(distanceKm, distanceMiles, isKm);
       const effortScore = this.calculateEffortScore(activity);
       const efficiencyRating = this.getEfficiencyRating(activity, pacePerKm);
       const greyZoneAnalysis = this.analyzeGreyZone(activity, pacePerKm);
@@ -194,7 +194,7 @@ class StravaWebhookService {
     }
   }
 
-  private getDistanceLabel(distanceKm: number): string {
+  private getDistanceLabel(distanceKm: number, distanceMiles: number, isKm: boolean): string {
     if (distanceKm >= 40 && distanceKm <= 44) return "Marathon";
     if (distanceKm >= 20 && distanceKm <= 22) return "Half Marathon";
     if (distanceKm >= 14 && distanceKm <= 16) return "15k";
@@ -202,7 +202,10 @@ class StravaWebhookService {
     if (distanceKm >= 4.8 && distanceKm <= 5.2) return "5k";
     if (distanceKm >= 2.8 && distanceKm <= 3.2) return "3k";
     if (distanceKm >= 1.5 && distanceKm <= 1.7) return "Mile";
-    return `${distanceKm.toFixed(1)}k`;
+    if (isKm) {
+      return `${distanceKm.toFixed(1)}k`;
+    }
+    return `${distanceMiles.toFixed(1)} mi`;
   }
 
   private getEfficiencyRating(activity: any, pacePerKm: number): { label: string; icon: string } {
@@ -259,11 +262,11 @@ Grey Zone: ${greyZoneAnalysis ? (greyZoneAnalysis.inGreyZone ? `Yes, ~${greyZone
 PRs: ${activity.pr_count || 0}
 
 Generate a JSON response with exactly these fields:
-1. "subject": An email subject line (under 60 chars). Reference the distance (e.g. "5k", "10k", "Half Marathon"). Include a hook that references something specific about THIS run. End with a teaser to create curiosity. Examples:
-   - "Your 5k Analysis: You crushed the first mile, but..."
-   - "Your 10k Breakdown: Strong pace, questionable efficiency"
+1. "subject": An email subject line (under 60 chars). Reference the distance using the runner's preferred unit (${isKm ? "km" : "miles"}). Include a hook that references something specific about THIS run. End with a teaser to create curiosity. Use the distance label "${distanceLabel}" when referencing the distance. Examples:
+   - "Your ${isKm ? "5k" : "3.1 mi"} Analysis: You crushed the first mile, but..."
+   - "Your ${isKm ? "10k" : "6.2 mi"} Breakdown: Strong pace, questionable efficiency"
    - "Half Marathon Report: Your HR tells a different story"
-   - "Your 8k Audit: Solid effort, but you left speed on the table"
+   - "Your ${isKm ? "8k" : "5.0 mi"} Audit: Solid effort, but you left speed on the table"
 
 2. "coachVerdictBody": A 2-3 sentence personalized coach verdict. Be specific to this run's data. Mention one thing they did well, and one thing to watch. If they were in the grey zone, mention it directly. If efficiency is low, call it out. Be warm but honest. Do NOT use generic encouragement. Do NOT use em dashes (never use the character: --). Use short, punchy sentences.
 
