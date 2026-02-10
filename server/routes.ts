@@ -1722,10 +1722,11 @@ ${allPages.map(page => `  <url>
       }
 
       try {
-        await stravaWebhookService.handleEvent(body);
+        const result = await stravaWebhookService.handleEvent(body);
         if (logId) {
+          const status = result.startsWith("error:") ? "failed" : result === "email_sent" ? "processed" : "skipped";
           await db.update(stravaWebhookLogs)
-            .set({ status: "processed", processedAt: new Date() })
+            .set({ status, errorMessage: result, processedAt: new Date() })
             .where(eq(stravaWebhookLogs.id, logId));
         }
       } catch (error) {

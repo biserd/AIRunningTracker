@@ -51,54 +51,58 @@ class StravaWebhookService {
     return { valid: false };
   }
 
-  async handleEvent(event: StravaWebhookEvent): Promise<void> {
+  async handleEvent(event: StravaWebhookEvent): Promise<string> {
     console.log(`[Strava Webhook] Received event: ${event.aspect_type} ${event.object_type} ${event.object_id} for athlete ${event.owner_id}`);
 
     if (event.object_type === "activity" && event.aspect_type === "create") {
-      await this.handleNewActivity(event);
+      return await this.handleNewActivity(event);
     }
+
+    return `skipped:${event.aspect_type}_${event.object_type}`;
   }
 
-  private async handleNewActivity(event: StravaWebhookEvent): Promise<void> {
+  private async handleNewActivity(event: StravaWebhookEvent): Promise<string> {
     try {
       const stravaAthleteId = String(event.owner_id);
       const user = await storage.getUserByStravaId(stravaAthleteId);
       
       if (!user) {
         console.log(`[Strava Webhook] No user found for Strava athlete ${stravaAthleteId}`);
-        return;
+        return "skipped:no_user_found";
       }
 
       if (!user.stravaConnected) {
         console.log(`[Strava Webhook] User ${user.id} is not connected to Strava`);
-        return;
+        return "skipped:strava_not_connected";
       }
 
       if (!user.notifyPostRun) {
         console.log(`[Strava Webhook] User ${user.id} has post-run notifications disabled`);
-        return;
+        return "skipped:notifications_disabled";
       }
 
       if (!user.stravaAccessToken) {
         console.log(`[Strava Webhook] User ${user.id} missing Strava access token`);
-        return;
+        return "skipped:no_access_token";
       }
 
       const activity = await stravaService.getActivityById(user.stravaAccessToken, event.object_id);
       if (!activity) {
         console.log(`[Strava Webhook] Failed to fetch activity ${event.object_id}`);
-        return;
+        return "skipped:activity_fetch_failed";
       }
 
       if (activity.type !== "Run") {
         console.log(`[Strava Webhook] Activity ${event.object_id} is not a run (${activity.type})`);
-        return;
+        return `skipped:not_a_run(${activity.type})`;
       }
 
       console.log(`[Strava Webhook] Processing run activity ${event.object_id} for user ${user.id}`);
       await this.sendPostRunEmail(user, activity);
+      return "email_sent";
     } catch (error) {
       console.error("[Strava Webhook] Error processing new activity:", error);
+      return `error:${String(error)}`;
     }
   }
 
