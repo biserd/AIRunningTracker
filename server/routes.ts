@@ -25,7 +25,7 @@ import { efficiencyService } from "./services/efficiency";
 import { dripCampaignService } from "./services/dripCampaign";
 import { dripCampaignWorker } from "./services/dripCampaignWorker";
 import { stravaWebhookService } from "./services/stravaWebhook";
-import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, emailWaitlist, users, type Activity, type RunningShoe } from "@shared/schema";
+import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, emailWaitlist, users, stravaWebhookLogs, type Activity, type RunningShoe } from "@shared/schema";
 import { shoeData } from "./shoe-data";
 import { validateAllShoes, getPipelineStats, findDuplicates, getShoeDataWithMetadata, getShoesWithMetadataFromStorage, getEnrichedShoeData, enrichShoeWithAIData } from "./shoe-pipeline";
 import { z } from "zod";
@@ -1700,22 +1700,43 @@ ${allPages.map(page => `  <url>
 
   // Strava Webhook Events (POST request when activities happen)
   app.post("/api/strava/webhook", async (req, res) => {
-    try {
-      console.log("[Strava Webhook] Received event:", JSON.stringify(req.body));
-      
-      res.status(200).send("EVENT_RECEIVED");
-      
-      setImmediate(async () => {
-        try {
-          await stravaWebhookService.handleEvent(req.body);
-        } catch (error) {
-          console.error("[Strava Webhook] Event processing error:", error);
+    const body = req.body;
+    console.log("[Strava Webhook] Received event:", JSON.stringify(body));
+    res.status(200).send("EVENT_RECEIVED");
+
+    setImmediate(async () => {
+      let logId: number | null = null;
+      try {
+        const [logEntry] = await db.insert(stravaWebhookLogs).values({
+          eventType: body.aspect_type || "unknown",
+          objectType: body.object_type || "unknown",
+          objectId: String(body.object_id || ""),
+          athleteId: String(body.owner_id || ""),
+          subscriptionId: body.subscription_id || null,
+          status: "received",
+          rawPayload: JSON.stringify(body),
+        }).returning({ id: stravaWebhookLogs.id });
+        logId = logEntry.id;
+      } catch (logError) {
+        console.error("[Strava Webhook] Failed to log event to DB:", logError);
+      }
+
+      try {
+        await stravaWebhookService.handleEvent(body);
+        if (logId) {
+          await db.update(stravaWebhookLogs)
+            .set({ status: "processed", processedAt: new Date() })
+            .where(eq(stravaWebhookLogs.id, logId));
         }
-      });
-    } catch (error) {
-      console.error("[Strava Webhook] Request error:", error);
-      res.status(200).send("EVENT_RECEIVED");
-    }
+      } catch (error) {
+        console.error("[Strava Webhook] Event processing error:", error);
+        if (logId) {
+          await db.update(stravaWebhookLogs)
+            .set({ status: "failed", errorMessage: String(error), processedAt: new Date() })
+            .where(eq(stravaWebhookLogs.id, logId));
+        }
+      }
+    });
   });
 
   app.get("/api/notifications/unsubscribe", async (req, res) => {
