@@ -1017,6 +1017,31 @@ export const insertSystemSettingSchema = createInsertSchema(systemSettings).omit
   updatedAt: true,
 });
 
+export const stravaWebhookLogs = pgTable("strava_webhook_logs", {
+  id: serial("id").primaryKey(),
+  eventId: text("event_id"),
+  eventType: text("event_type").notNull(),
+  objectType: text("object_type").notNull(),
+  objectId: text("object_id").notNull(),
+  athleteId: text("athlete_id").notNull(),
+  subscriptionId: integer("subscription_id"),
+  status: text("status").notNull().default("received"),
+  errorMessage: text("error_message"),
+  rawPayload: text("raw_payload"),
+  receivedAt: timestamp("received_at").defaultNow(),
+  processedAt: timestamp("processed_at"),
+}, (table) => ({
+  athleteIdx: index("strava_wh_logs_athlete_idx").on(table.athleteId),
+  statusIdx: index("strava_wh_logs_status_idx").on(table.status),
+  receivedIdx: index("strava_wh_logs_received_idx").on(table.receivedAt),
+}));
+
+export const insertStravaWebhookLogSchema = createInsertSchema(stravaWebhookLogs).omit({
+  id: true,
+  receivedAt: true,
+  processedAt: true,
+});
+
 // Login schema for authentication
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -1094,3 +1119,5 @@ export type InsertEmailClick = z.infer<typeof insertEmailClickSchema>;
 export type EmailClick = typeof emailClicks.$inferSelect;
 export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
 export type SystemSetting = typeof systemSettings.$inferSelect;
+export type InsertStravaWebhookLog = z.infer<typeof insertStravaWebhookLogSchema>;
+export type StravaWebhookLog = typeof stravaWebhookLogs.$inferSelect;
