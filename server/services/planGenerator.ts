@@ -3,7 +3,7 @@ import { storage } from "../storage";
 import { athleteProfileService } from "./athleteProfile";
 import { trainingGuardrails, type GeneratedPlan, type PlanWeekInput, type PlanDayInput } from "./trainingGuardrails";
 import { generateSkeleton, type PlanSkeleton, type SkeletonWeek, type SkeletonDay } from "./skeletonGenerator";
-import type { AthleteProfile, TrainingPlan, InsertTrainingPlan, InsertPlanWeek, InsertPlanDay, GoalType } from "@shared/schema";
+import type { AthleteProfile, TrainingPlan, InsertTrainingPlan, InsertPlanWeek, InsertPlanDay, GoalType, TerrainType } from "@shared/schema";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -426,6 +426,19 @@ export class PlanGeneratorService {
     
     console.log(`[PlanGenerator] Plan ${savedPlan.id} saved with status '${enrichmentStatus}'`);
     
+    if (request.goals && request.goals.length > 0) {
+      const goalInserts = request.goals.map(g => ({
+        planId: savedPlan.id,
+        goalType: g.goalType as GoalType,
+        raceDate: g.raceDate ? new Date(g.raceDate) : undefined,
+        targetTime: g.targetTime || undefined,
+        priority: g.priority as "primary" | "secondary",
+        terrainType: (g.terrainType as TerrainType) || undefined,
+      }));
+      await storage.createPlanGoals(goalInserts);
+      console.log(`[PlanGenerator] Saved ${goalInserts.length} plan goals for plan ${savedPlan.id}`);
+    }
+    
     return savedPlan;
   }
   
@@ -437,22 +450,35 @@ export class PlanGeneratorService {
     profile: AthleteProfile,
     raceDate?: Date
   ): number {
-    if (raceDate) {
+    const allDates: Date[] = [];
+    if (raceDate) allDates.push(raceDate);
+
+    if (request.goals && request.goals.length > 0) {
+      for (const g of request.goals) {
+        if (g.raceDate) allDates.push(new Date(g.raceDate));
+      }
+    }
+
+    if (allDates.length > 0) {
+      const latestDate = new Date(Math.max(...allDates.map(d => d.getTime())));
       const now = new Date();
-      const weeksUntilRace = Math.floor((raceDate.getTime() - now.getTime()) / (7 * 24 * 60 * 60 * 1000));
-      return Math.max(4, Math.min(24, weeksUntilRace));
+      const weeksUntilRace = Math.floor((latestDate.getTime() - now.getTime()) / (7 * 24 * 60 * 60 * 1000));
+      return Math.max(4, Math.min(30, weeksUntilRace));
     }
     
-    // Default durations if no race date
     const defaultWeeks: Record<string, number> = {
       "5k": 8,
       "10k": 10,
       "half_marathon": 12,
       "marathon": 16,
+      "50k": 20,
+      "50_mile": 24,
+      "100k": 24,
+      "100_mile": 28,
       "general_fitness": 8,
     };
     
-    return defaultWeeks[request.goalType] || 8;
+    return defaultWeeks[request.goalType] || 12;
   }
   
   /**

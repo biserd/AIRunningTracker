@@ -75,11 +75,20 @@ interface PlanDay {
   isBackToBackLongRun?: boolean;
   fuelingPractice?: boolean;
   plannedVertGainM?: number | null;
+  goalContribution?: Record<string, number> | null;
 }
 
 interface PlanWeekExtended extends PlanWeek {
   wasAdjusted?: boolean;
   adjustmentReason?: "tired" | "strong" | "manual" | null;
+}
+
+interface PlanGoal {
+  goalType: string;
+  raceDate?: string;
+  targetTime?: string;
+  priority: "primary" | "secondary";
+  terrainType?: string;
 }
 
 interface TrainingPlanDetail {
@@ -93,10 +102,12 @@ interface TrainingPlanDetail {
   status: string;
   coachNotes: string | null;
   createdAt: string;
+  goals?: PlanGoal[] | null;
   weeks: (PlanWeek & { 
     days: PlanDay[]; 
     wasAdjusted?: boolean;
     adjustmentReason?: "tired" | "strong" | "manual" | null;
+    goalSplit?: Record<string, number> | null;
   })[];
   enrichmentStatus?: "pending" | "enriching" | "complete" | "partial" | "failed" | null;
   enrichedWeeks?: number | null;
@@ -144,6 +155,29 @@ const phaseColors: Record<string, string> = {
   peak: "bg-red-500",
   taper: "bg-amber-500",
   recovery: "bg-gray-400",
+};
+
+const goalTypeLabels: Record<string, string> = {
+  "5k": "5K",
+  "10k": "10K",
+  "half_marathon": "HM",
+  "marathon": "M",
+  "50k": "50K",
+  "50_mile": "50M",
+  "100k": "100K",
+  "100_mile": "100M",
+  "general_fitness": "Fit",
+};
+
+const goalColors: Record<string, string> = {
+  "5k": "text-emerald-600 dark:text-emerald-400",
+  "10k": "text-cyan-600 dark:text-cyan-400",
+  "half_marathon": "text-blue-600 dark:text-blue-400",
+  "marathon": "text-violet-600 dark:text-violet-400",
+  "50k": "text-orange-600 dark:text-orange-400",
+  "50_mile": "text-red-600 dark:text-red-400",
+  "100k": "text-rose-600 dark:text-rose-400",
+  "100_mile": "text-pink-600 dark:text-pink-400",
 };
 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -555,6 +589,27 @@ export default function TrainingPlanDetail() {
                 {plan.totalWeeks} weeks
               </span>
             </div>
+            
+            {plan.goals && plan.goals.length > 1 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {plan.goals.map((g, i) => (
+                  <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                    <Target className="w-3.5 h-3.5 text-strava-orange" />
+                    <span className={`text-sm font-semibold ${goalColors[g.goalType] || "text-gray-700 dark:text-gray-300"}`}>
+                      {goalTypeLabels[g.goalType] || g.goalType}
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      ({g.priority})
+                    </span>
+                    {g.raceDate && (
+                      <span className="text-xs text-gray-400 dark:text-gray-500">
+                        {format(parseISO(g.raceDate), "MMM d")}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           
           <DropdownMenu>
@@ -870,6 +925,30 @@ export default function TrainingPlanDetail() {
             {isRecoveryWeek && (
               <Badge variant="secondary" className="mt-1">Recovery Week</Badge>
             )}
+            {currentWeekData?.goalSplit && Object.keys(currentWeekData.goalSplit).length > 1 && (
+              <div className="mt-2 w-full max-w-[200px]">
+                <div className="flex h-2 rounded-full overflow-hidden border border-gray-200 dark:border-gray-700">
+                  {Object.entries(currentWeekData.goalSplit).map(([gt, pct], i) => {
+                    const colors = ["bg-blue-500", "bg-orange-500", "bg-purple-500"];
+                    return (
+                      <div
+                        key={gt}
+                        className={`${colors[i % colors.length]} transition-all`}
+                        style={{ width: `${pct}%` }}
+                        title={`${goalTypeLabels[gt] || gt}: ${pct}%`}
+                      />
+                    );
+                  })}
+                </div>
+                <div className="flex justify-center gap-3 mt-1">
+                  {Object.entries(currentWeekData.goalSplit).map(([gt, pct]) => (
+                    <span key={gt} className="text-[10px] text-gray-500 dark:text-gray-400">
+                      {goalTypeLabels[gt] || gt} {pct}%
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           
           <Button
@@ -1150,6 +1229,18 @@ export default function TrainingPlanDetail() {
                           <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 text-[10px] px-1.5">
                             <Mountain className="w-2.5 h-2.5 mr-0.5" />
                             {useMiles ? `${Math.round(dayData.plannedVertGainM * 3.281)}ft` : `${dayData.plannedVertGainM}m`}
+                          </Badge>
+                        )}
+                        {dayData.goalContribution && Object.keys(dayData.goalContribution).length > 1 && (
+                          <Badge className="bg-gray-100 dark:bg-gray-800 text-[10px] px-1.5 py-0 font-medium">
+                            {Object.entries(dayData.goalContribution).map(([gt, pct], idx) => (
+                              <span key={gt}>
+                                {idx > 0 && " / "}
+                                <span className={goalColors[gt] || "text-gray-600 dark:text-gray-400"}>
+                                  {goalTypeLabels[gt] || gt} {pct}%
+                                </span>
+                              </span>
+                            ))}
                           </Badge>
                         )}
                       </div>

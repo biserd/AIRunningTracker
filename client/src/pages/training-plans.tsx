@@ -78,8 +78,14 @@ export default function TrainingPlans() {
   const [constraints, setConstraints] = useState("");
   const [preferredDays, setPreferredDays] = useState<string[]>(["monday", "wednesday", "friday", "saturday", "sunday"]);
   const [terrainType, setTerrainType] = useState<string>("road");
+  const [secondaryGoalEnabled, setSecondaryGoalEnabled] = useState(false);
+  const [secondaryGoalType, setSecondaryGoalType] = useState<string>("50k");
+  const [secondaryRaceDate, setSecondaryRaceDate] = useState("");
+  const [secondaryTargetTime, setSecondaryTargetTime] = useState("");
+  const [secondaryTerrainType, setSecondaryTerrainType] = useState<string>("trail");
+  const [conflictWarnings, setConflictWarnings] = useState<Array<{type: string; severity: string; message: string; recommendation?: string}>>([]);
+  const [recommendedMode, setRecommendedMode] = useState<string>("single");
   
-  // Get unit preference from auth user
   const useMiles = (user as any)?.unitPreference === "miles";
   
   // Fetch athlete profile
@@ -99,7 +105,7 @@ export default function TrainingPlans() {
   // Generate plan mutation - instant generation, navigate immediately
   const generateMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("/api/training/plans/generate", "POST", {
+      const body: any = {
         goalType,
         goalTimeTarget: goalTimeTarget || undefined,
         raceDate: raceDate || undefined,
@@ -110,7 +116,28 @@ export default function TrainingPlans() {
         constraints: constraints || undefined,
         preferredRunDays: preferredDays,
         terrainType: terrainType !== "road" ? terrainType : undefined,
-      });
+      };
+      
+      if (secondaryGoalEnabled) {
+        body.goals = [
+          {
+            goalType,
+            raceDate: raceDate || undefined,
+            targetTime: goalTimeTarget || undefined,
+            priority: "primary",
+            terrainType: terrainType !== "road" ? terrainType : undefined,
+          },
+          {
+            goalType: secondaryGoalType,
+            raceDate: secondaryRaceDate || undefined,
+            targetTime: secondaryTargetTime || undefined,
+            priority: "secondary",
+            terrainType: secondaryTerrainType !== "road" ? secondaryTerrainType : undefined,
+          }
+        ];
+      }
+      
+      return await apiRequest("/api/training/plans/generate", "POST", body);
     },
     onSuccess: (data: { planId?: number; plan?: TrainingPlan }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/training/plans"] });
@@ -152,6 +179,26 @@ export default function TrainingPlans() {
       setPreferredDays(preferredDays.filter(d => d !== day));
     } else {
       setPreferredDays([...preferredDays, day]);
+    }
+  };
+  
+  const checkConflicts = async () => {
+    if (!secondaryGoalEnabled) {
+      setConflictWarnings([]);
+      return;
+    }
+    try {
+      const res = await apiRequest("/api/training/plans/check-conflicts", "POST", {
+        goals: [
+          { goalType, raceDate: raceDate || undefined, priority: "primary", terrainType },
+          { goalType: secondaryGoalType, raceDate: secondaryRaceDate || undefined, priority: "secondary", terrainType: secondaryTerrainType }
+        ]
+      });
+      if (res && typeof res === 'object') {
+        setConflictWarnings((res as any).conflicts || []);
+        setRecommendedMode((res as any).recommendedMode || "single");
+      }
+    } catch (e) {
     }
   };
   
@@ -372,6 +419,136 @@ export default function TrainingPlans() {
                       )}
                     </div>
                   )}
+                  
+                  <div className="border-t pt-6 mt-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <Label className="text-base font-semibold">Add a second goal?</Label>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          Train for two races with one unified plan
+                        </p>
+                      </div>
+                      <Button
+                        variant={secondaryGoalEnabled ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          setSecondaryGoalEnabled(!secondaryGoalEnabled);
+                          if (secondaryGoalEnabled) {
+                            setConflictWarnings([]);
+                          }
+                        }}
+                        data-testid="button-toggle-secondary-goal"
+                      >
+                        {secondaryGoalEnabled ? "Remove" : <><Plus className="w-4 h-4 mr-1" /> Add Goal</>}
+                      </Button>
+                    </div>
+                    
+                    {secondaryGoalEnabled && (
+                      <div className="space-y-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Target className="w-4 h-4 text-blue-600" />
+                          <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">Secondary Goal (B Race)</span>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="secondaryGoalType">Race distance</Label>
+                          <Select value={secondaryGoalType} onValueChange={setSecondaryGoalType}>
+                            <SelectTrigger className="mt-1" data-testid="select-secondary-goal-type">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="5k">5K Race</SelectItem>
+                              <SelectItem value="10k">10K Race</SelectItem>
+                              <SelectItem value="half_marathon">Half Marathon</SelectItem>
+                              <SelectItem value="marathon">Marathon</SelectItem>
+                              <SelectItem value="50k">50K Ultra</SelectItem>
+                              <SelectItem value="50_mile">50 Mile Ultra</SelectItem>
+                              <SelectItem value="100k">100K Ultra</SelectItem>
+                              <SelectItem value="100_mile">100 Mile Ultra</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="secondaryRaceDate">Race date</Label>
+                          <Input
+                            id="secondaryRaceDate"
+                            type="date"
+                            value={secondaryRaceDate}
+                            onChange={(e) => setSecondaryRaceDate(e.target.value)}
+                            className="mt-1"
+                            data-testid="input-secondary-race-date"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="secondaryTargetTime">Target time (optional)</Label>
+                          <Input
+                            id="secondaryTargetTime"
+                            placeholder="e.g., 5:30:00"
+                            value={secondaryTargetTime}
+                            onChange={(e) => setSecondaryTargetTime(e.target.value)}
+                            className="mt-1"
+                            data-testid="input-secondary-target-time"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="secondaryTerrain">Terrain</Label>
+                          <Select value={secondaryTerrainType} onValueChange={setSecondaryTerrainType}>
+                            <SelectTrigger className="mt-1" data-testid="select-secondary-terrain">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="road">Road</SelectItem>
+                              <SelectItem value="trail">Trail</SelectItem>
+                              <SelectItem value="mountain">Mountain</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={checkConflicts}
+                          className="mt-2"
+                          data-testid="button-check-conflicts"
+                        >
+                          <AlertTriangle className="w-4 h-4 mr-1" />
+                          Check compatibility
+                        </Button>
+                        
+                        {conflictWarnings.length > 0 && (
+                          <div className="space-y-2 mt-3">
+                            {conflictWarnings.map((w, i) => (
+                              <div
+                                key={i}
+                                className={`p-3 rounded-lg text-sm ${
+                                  w.severity === "error" ? "bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300" :
+                                  w.severity === "warning" ? "bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300" :
+                                  "bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
+                                }`}
+                              >
+                                <div className="flex items-start gap-2">
+                                  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                  <div>
+                                    <p className="font-medium">{w.message}</p>
+                                    {w.recommendation && <p className="mt-1 opacity-80">{w.recommendation}</p>}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            {recommendedMode !== "single" && (
+                              <div className="p-3 rounded-lg text-sm bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300">
+                                <CheckCircle className="w-4 h-4 inline mr-1" />
+                                Mode: <span className="font-semibold capitalize">{recommendedMode.replace("_", " ")}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
               

@@ -6521,6 +6521,30 @@ ${allPages.map(page => `  <url>
     }
   });
   
+  app.post("/api/training/plans/check-conflicts", authenticateJWT, async (req: any, res) => {
+    try {
+      const { detectConflicts, analyzeMultiGoalPlan } = await import("./services/multiGoalEngine");
+      const { athleteProfileService: aps } = await import("./services/athleteProfile");
+      const goals = req.body.goals || [];
+      if (goals.length < 2) {
+        return res.json({ conflicts: [], canDualPeak: true, recommendedMode: "single" });
+      }
+      const conflicts = detectConflicts(goals);
+      const profile = await aps.getOrComputeProfile(req.user.id);
+      const analysis = analyzeMultiGoalPlan({ userId: req.user.id, goalType: goals[0].goalType, goals }, profile);
+      res.json({
+        conflicts: analysis.conflicts,
+        canDualPeak: analysis.canDualPeak,
+        recommendedMode: analysis.recommendedMode,
+        totalWeeks: analysis.totalWeeks,
+        phaseTimeline: analysis.phaseTimeline,
+      });
+    } catch (error: any) {
+      console.error("Check conflicts error:", error);
+      res.status(500).json({ message: error.message || "Failed to check conflicts" });
+    }
+  });
+  
   // Generate training plan (instant version with background enrichment)
   app.post("/api/training/plans/generate", authenticateJWT, async (req: any, res) => {
     try {
@@ -6679,8 +6703,10 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "Training plan not found" });
       }
       
-      // Get weeks and days
-      const weeks = await storage.getPlanWeeks(planId);
+      const [weeks, goals] = await Promise.all([
+        storage.getPlanWeeks(planId),
+        storage.getPlanGoals(planId),
+      ]);
       const weeksWithDays = await Promise.all(
         weeks.map(async (week: any) => {
           const days = await storage.getPlanDays(week.id);
@@ -6688,7 +6714,7 @@ ${allPages.map(page => `  <url>
         })
       );
       
-      res.json({ ...plan, weeks: weeksWithDays });
+      res.json({ ...plan, weeks: weeksWithDays, goals });
     } catch (error: any) {
       console.error("Get training plan error:", error);
       res.status(500).json({ message: error.message || "Failed to get training plan" });

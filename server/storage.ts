@@ -1,4 +1,4 @@
-import { users, activities, aiInsights, trainingPlans, trainingPlansLegacy, athleteProfiles, planWeeks, planDays, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, shoeComparisons, apiKeys, refreshTokens, workoutCache, coachRecaps, agentRuns, notificationOutbox, deletionFeedback, userCampaigns, emailJobs, emailClicks, systemSettings, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ShoeComparison, type InsertShoeComparison, type ApiKey, type InsertApiKey, type RefreshToken, type InsertRefreshToken, type AthleteProfile, type InsertAthleteProfile, type PlanWeek, type InsertPlanWeek, type PlanDay, type InsertPlanDay, type WorkoutCache, type InsertWorkoutCache, type CoachRecap, type InsertCoachRecap, type AgentRun, type InsertAgentRun, type NotificationOutbox, type InsertNotificationOutbox, type DeletionFeedback, type InsertDeletionFeedback, type UserCampaign, type InsertUserCampaign, type EmailJob, type InsertEmailJob, type EmailClick, type InsertEmailClick } from "@shared/schema";
+import { users, activities, aiInsights, trainingPlans, trainingPlansLegacy, athleteProfiles, planWeeks, planDays, planGoals, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, shoeComparisons, apiKeys, refreshTokens, workoutCache, coachRecaps, agentRuns, notificationOutbox, deletionFeedback, userCampaigns, emailJobs, emailClicks, systemSettings, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ShoeComparison, type InsertShoeComparison, type ApiKey, type InsertApiKey, type RefreshToken, type InsertRefreshToken, type AthleteProfile, type InsertAthleteProfile, type PlanWeek, type InsertPlanWeek, type PlanDay, type InsertPlanDay, type PlanGoal, type InsertPlanGoal, type WorkoutCache, type InsertWorkoutCache, type CoachRecap, type InsertCoachRecap, type AgentRun, type InsertAgentRun, type NotificationOutbox, type InsertNotificationOutbox, type DeletionFeedback, type InsertDeletionFeedback, type UserCampaign, type InsertUserCampaign, type EmailJob, type InsertEmailJob, type EmailClick, type InsertEmailClick } from "@shared/schema";
 import crypto from "crypto";
 import { db } from "./db";
 import { eq, desc, and, or, sql, inArray, gte, gt, lt, ne } from "drizzle-orm";
@@ -93,6 +93,11 @@ export interface IStorage {
   updatePlanDay(dayId: number, updates: Partial<PlanDay>): Promise<PlanDay | undefined>;
   linkActivityToPlanDay(dayId: number, activityId: number, actualMetrics: { distanceKm?: number; durationMins?: number; pace?: string }): Promise<PlanDay | undefined>;
   getUpcomingWorkouts(userId: number, limit?: number): Promise<PlanDay[]>;
+  
+  createPlanGoal(goal: InsertPlanGoal): Promise<PlanGoal>;
+  createPlanGoals(goals: InsertPlanGoal[]): Promise<PlanGoal[]>;
+  getPlanGoals(planId: number): Promise<PlanGoal[]>;
+  deletePlanGoals(planId: number): Promise<void>;
   
   createFeedback(feedback: InsertFeedback): Promise<Feedback>;
   
@@ -760,14 +765,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteTrainingPlanById(planId: number): Promise<void> {
-    // Delete days first
+    await this.deletePlanGoals(planId);
     const weeks = await this.getPlanWeeks(planId);
     for (const week of weeks) {
       await db.delete(planDays).where(eq(planDays.weekId, week.id));
     }
-    // Delete weeks
     await db.delete(planWeeks).where(eq(planWeeks.planId, planId));
-    // Delete plan
     await db.delete(trainingPlans).where(eq(trainingPlans.id, planId));
   }
 
@@ -1029,6 +1032,25 @@ export class DatabaseStorage implements IStorage {
       ))
       .orderBy(planDays.date)
       .limit(limit);
+  }
+
+  async createPlanGoal(goal: InsertPlanGoal): Promise<PlanGoal> {
+    const [result] = await db.insert(planGoals).values(goal).returning();
+    return result;
+  }
+
+  async createPlanGoals(goals: InsertPlanGoal[]): Promise<PlanGoal[]> {
+    if (goals.length === 0) return [];
+    const results = await db.insert(planGoals).values(goals).returning();
+    return results;
+  }
+
+  async getPlanGoals(planId: number): Promise<PlanGoal[]> {
+    return await db.select().from(planGoals).where(eq(planGoals.planId, planId));
+  }
+
+  async deletePlanGoals(planId: number): Promise<void> {
+    await db.delete(planGoals).where(eq(planGoals.planId, planId));
   }
 
   async updateActivity(activityId: number, updates: Partial<Activity>): Promise<Activity | undefined> {

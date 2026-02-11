@@ -1,6 +1,7 @@
 import { GOAL_TYPES, PHASE_TYPES, TERRAIN_TYPES, type GoalType, type PhaseType, type TerrainType } from "@shared/schema";
 import type { AthleteProfile } from "@shared/schema";
 import type { PlanGenerationRequest } from "./planGenerator";
+import { analyzeMultiGoalPlan, getPhaseForWeek, tagWorkoutForGoals, computeWeekGoalSplit, type MultiGoalAnalysis, type MultiGoalPhase, type MultiGoalWorkoutTag, type GoalConfig } from "./multiGoalEngine";
 
 type WorkoutType =
   | "easy"
@@ -1052,11 +1053,55 @@ export function generateSkeleton(
     }
   }
 
+  const multiGoalAnalysis = (request.goals && request.goals.length >= 2)
+    ? analyzeMultiGoalPlan(request, profile)
+    : null;
+
+  if (multiGoalAnalysis && multiGoalAnalysis.isMultiGoal && multiGoalAnalysis.secondaryGoal) {
+    const { phaseTimeline, primaryGoal, secondaryGoal } = multiGoalAnalysis;
+
+    for (const week of weeks) {
+      const phase = getPhaseForWeek(week.weekNumber, phaseTimeline);
+
+      if (phase) {
+        week.weekType = phase.phase;
+
+        const phaseNames: Record<PhaseType, string> = {
+          base: "Shared Base Building",
+          build: `Build (${GOAL_LABELS_LOCAL[phase.primaryFocus] || phase.primaryFocus} focus)`,
+          build2_specific: `Race-Specific (${GOAL_LABELS_LOCAL[phase.primaryFocus] || phase.primaryFocus})`,
+          peak: `Peak (${GOAL_LABELS_LOCAL[phase.primaryFocus] || phase.primaryFocus})`,
+          taper: `Taper (${GOAL_LABELS_LOCAL[phase.primaryFocus] || phase.primaryFocus})`,
+          recovery: "Recovery / Transition",
+        };
+        week.phaseName = phaseNames[phase.phase] || phase.description;
+        week.whyThisWeek = phase.description;
+
+        const workoutTags: MultiGoalWorkoutTag[] = [];
+        for (const day of week.days) {
+          const tag = tagWorkoutForGoals(
+            day.workoutType, day.dayOfWeek, phase, primaryGoal, secondaryGoal
+          );
+          day.goalContribution = tag.goalContribution;
+          workoutTags.push(tag);
+        }
+
+        week.goalSplit = computeWeekGoalSplit(phase, workoutTags);
+      }
+    }
+  }
+
   return {
     trainingPlan: { ...settings, coachNotes: null },
     weeks,
   };
 }
+
+const GOAL_LABELS_LOCAL: Record<string, string> = {
+  "5k": "5K", "10k": "10K", "half_marathon": "HM", "marathon": "Marathon",
+  "50k": "50K", "50_mile": "50M", "100k": "100K", "100_mile": "100M",
+  "general_fitness": "Fitness"
+};
 
 export function runSkeletonInvariantTests(): { passed: number; failed: number; errors: string[] } {
   const errors: string[] = [];
