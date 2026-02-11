@@ -1,0 +1,169 @@
+1) 100K plans that span many weeks (and actually make sense)
+What has to change conceptually
+
+A 100K plan can’t be generated as “week-by-week workouts” only. It needs a hierarchy:
+
+Goal → Phases → Weeks → Days → Workout structure
+
+So you generate top-down:
+
+Macro plan (phases): Base → Build → Specific → Peak → Taper → Race → Recovery
+
+Weekly targets: volume (time or miles), long-run duration, vert, intensity distribution
+
+Daily schedule: place key sessions first, then fill easy/recovery/strength
+
+Default phase template for 100K (example)
+
+Base (4–8 weeks): aerobic volume + consistency + strides, light hills
+
+Build 1 (4–6 weeks): long run grows, add hill strength + steady/tempo
+
+Build 2 / Specific (4–8 weeks): trail specificity, vert, back-to-back long runs, fueling practice, race-pace blocks
+
+Peak (2–3 weeks): biggest long run(s), biggest vert week, specificity highest
+
+Taper (2–3 weeks): reduce volume, keep some intensity, sharpen, rest
+
+Recovery (1–2 weeks): very easy + optional cross train
+
+Rules that make it “real”
+
+These are the guardrails your generator enforces:
+
+Progression / deload
+
+Volume progression: typically 2–3 build weeks + 1 cutback week
+
+Cap week-to-week increase using athlete history (not a blind 10% rule):
+
+If athlete is consistent: allow slightly faster progression
+
+If inconsistent: slower ramp + more cutbacks
+
+Long run + back-to-back
+
+Long run as time-based (ultra reality): 2h → 2.5h → 3h → 3.5–5h depending on level
+
+Add back-to-back (e.g., Sat long trail + Sun medium long) every ~2–3 weeks in specific phase
+
+Protect recovery: hard long-run weekends force easier Mon/Tue
+
+Intensity distribution (ultra-safe default)
+
+Keep most training easy (classic polarized-ish):
+
+~80–90% easy
+
+10–20% quality (tempo, hills, fartlek)
+
+Two “stress anchors” max most weeks:
+
+1 quality session midweek (tempo/hills)
+
+1 long-run block on weekend (sometimes back-to-back)
+
+Specificity
+
+Vert targets scale with race profile (flat 100K ≠ mountain 100K)
+
+Add technical downhill/strength work if trail/mountain
+
+Fueling practice scheduled weekly during specific phase
+
+UI/UX upgrades (so users can trust it)
+
+Phase timeline view (scrollable multi-week)
+
+Weekly “targets bar” (volume, long run, vert, intensity minutes)
+
+Regenerate controls at 3 levels:
+
+regenerate a day / a week / a whole phase
+
+“Why this week?” explanation: “Cutback week after 2 build weeks; protects fatigue before peak block.”
+
+2) Two plans at the same time (HM + 50K) with sane day-to-day training
+Don’t generate two separate calendars
+
+If you literally create two plans, you’ll collide workouts and blow up load. Instead:
+
+✅ One combined plan with multiple goals.
+
+Think of it as: one schedule optimized against two objectives.
+
+The model: goals + priorities + dates
+
+Each goal has:
+
+event date
+
+distance/type (HM road, 50K trail)
+
+target priority (slider or Primary/Secondary)
+
+key requirements (HM: threshold/VO2 + pace skills; 50K: long duration, vert, fueling, durability)
+
+Then you generate one plan that:
+
+respects global constraints (max days/week, max long-run time, rest days)
+
+respects stress budget (weekly load caps derived from athlete history)
+
+places key sessions without stacking them dangerously
+
+Conflict logic (the honest part)
+
+If the HM and 50K are close together, you can’t peak for both. So the app should:
+
+detect overlap: competing tapers/peaks
+
+offer an explicit choice:
+
+Primary race + Secondary “B race” (finish strong but not peaked)
+
+Two peaks only if dates are far enough apart (with rebuild block)
+
+Convert one goal into a training race (supported mode)
+
+How day-to-day looks (example microcycle)
+
+Assume: HM (speed/threshold) + 50K (endurance/trail). A sensible “dual-goal” week often looks like:
+
+Mon: Rest or easy + mobility/strength
+
+Tue: HM-quality (tempo / cruise intervals)
+
+Wed: Easy aerobic
+
+Thu: Hills or steady-state (can serve both)
+
+Fri: Easy or rest (protect weekend)
+
+Sat: Long trail run (50K-specific)
+
+Sun: Medium-long easy (back-to-back durability)
+
+Each workout is tagged with contribution:
+
+Tue: mostly HM
+
+Sat/Sun: mostly 50K
+
+Thu: shared
+
+UI: make the split visible
+
+Each workout card shows icons: HM / 50K with contribution %
+
+Weekly summary shows:
+
+total volume
+
+quality minutes
+
+long-run duration
+
+“goal split” (e.g., 35% HM / 65% 50K)
+
+Conflict warnings: “Two key sessions too close (Tue hard + Thu hard). Choose which to keep hard.”
