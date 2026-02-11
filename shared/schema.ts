@@ -2,6 +2,15 @@ import { pgTable, text, serial, integer, boolean, real, timestamp, json, jsonb, 
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export const GOAL_TYPES = ["5k", "10k", "half_marathon", "marathon", "50k", "50_mile", "100k", "100_mile", "general_fitness"] as const;
+export type GoalType = typeof GOAL_TYPES[number];
+
+export const PHASE_TYPES = ["base", "build", "build2_specific", "peak", "taper", "recovery"] as const;
+export type PhaseType = typeof PHASE_TYPES[number];
+
+export const TERRAIN_TYPES = ["road", "trail", "mountain"] as const;
+export type TerrainType = typeof TERRAIN_TYPES[number];
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
@@ -46,7 +55,7 @@ export const users = pgTable("users", {
   // AI Coach Agent preferences (Premium feature)
   coachOnboardingCompleted: boolean("coach_onboarding_completed").default(false),
   coachGoal: text("coach_goal", { 
-    enum: ["5k", "10k", "half_marathon", "marathon", "general_fitness"] 
+    enum: [...GOAL_TYPES] 
   }),
   coachRaceDate: timestamp("coach_race_date"),
   coachTargetTime: text("coach_target_time"),
@@ -218,10 +227,13 @@ export const trainingPlans = pgTable("training_plans_v2", {
   userId: integer("user_id").notNull(),
   // Goal configuration
   goalType: text("goal_type", { 
-    enum: ["5k", "10k", "half_marathon", "marathon", "general_fitness"] 
+    enum: [...GOAL_TYPES] 
   }).notNull(),
   raceDate: timestamp("race_date"),
   targetTime: text("target_time"),
+  terrainType: text("terrain_type", {
+    enum: [...TERRAIN_TYPES]
+  }).default("road"),
   // Plan configuration
   daysPerWeek: integer("days_per_week").notNull().default(4),
   preferredLongRunDay: text("preferred_long_run_day").default("sunday"),
@@ -263,8 +275,13 @@ export const planWeeks = pgTable("plan_weeks", {
   plannedDistanceKm: real("planned_distance_km").notNull(),
   plannedDurationMins: integer("planned_duration_mins"),
   weekType: text("week_type", { 
-    enum: ["base", "build", "peak", "recovery", "taper"] 
+    enum: [...PHASE_TYPES] 
   }).notNull(),
+  phaseName: text("phase_name"),
+  plannedVertGainM: integer("planned_vert_gain_m"),
+  plannedLongRunDurationMins: integer("planned_long_run_duration_mins"),
+  goalSplit: json("goal_split").$type<Record<string, number>>(),
+  whyThisWeek: text("why_this_week"),
   // Completed metrics
   completedDistanceKm: real("completed_distance_km").default(0),
   completedDurationMins: integer("completed_duration_mins").default(0),
@@ -292,7 +309,7 @@ export const planDays = pgTable("plan_days", {
   dayOfWeek: text("day_of_week").notNull(),
   // Workout details
   workoutType: text("workout_type", { 
-    enum: ["easy", "tempo", "intervals", "long_run", "recovery", "rest", "cross_training", "race", "fartlek", "hills", "progression"] 
+    enum: ["easy", "tempo", "intervals", "long_run", "recovery", "rest", "cross_training", "race", "fartlek", "hills", "progression", "back_to_back_long", "fueling_practice"] 
   }).notNull(),
   title: text("title").notNull(),
   description: text("description"),
@@ -302,6 +319,10 @@ export const planDays = pgTable("plan_days", {
   targetPace: text("target_pace"),
   targetHrZone: text("target_hr_zone"),
   intensity: text("intensity", { enum: ["low", "moderate", "high"] }).default("low"),
+  plannedVertGainM: integer("planned_vert_gain_m"),
+  isBackToBackLongRun: boolean("is_back_to_back_long_run").default(false),
+  fuelingPractice: boolean("fueling_practice").default(false),
+  goalContribution: json("goal_contribution").$type<Record<string, number>>(),
   // Structure for intervals/tempo
   workoutStructure: json("workout_structure").$type<{ warmup?: string; main?: string; cooldown?: string; intervals?: { reps: number; distance: string; pace: string; rest: string }[] }>(),
   // Completion status
@@ -326,6 +347,21 @@ export const planDays = pgTable("plan_days", {
   planIdIdx: index("plan_days_plan_id_idx").on(table.planId),
   dateIdx: index("plan_days_date_idx").on(table.date),
   linkedActivityIdx: index("plan_days_linked_activity_idx").on(table.linkedActivityId),
+}));
+
+// Plan goals - for multi-goal plan support
+export const planGoals = pgTable("plan_goals", {
+  id: serial("id").primaryKey(),
+  planId: integer("plan_id").notNull(),
+  goalType: text("goal_type", { enum: [...GOAL_TYPES] }).notNull(),
+  raceDate: timestamp("race_date"),
+  targetTime: text("target_time"),
+  priority: text("priority", { enum: ["primary", "secondary"] }).notNull().default("primary"),
+  terrainType: text("terrain_type", { enum: [...TERRAIN_TYPES] }).default("road"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  planIdIdx: index("plan_goals_plan_id_idx").on(table.planId),
 }));
 
 // Workout cache - stores AI-generated workout content by fingerprint
@@ -829,6 +865,11 @@ export const insertPlanDaySchema = createInsertSchema(planDays).omit({
   actualPace: true,
 });
 
+export const insertPlanGoalSchema = createInsertSchema(planGoals).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertWorkoutCacheSchema = createInsertSchema(workoutCache).omit({
   id: true,
   createdAt: true,
@@ -882,7 +923,7 @@ export const insertNotificationOutboxSchema = createInsertSchema(notificationOut
 
 // Coach preferences update schema (for user settings)
 export const updateCoachPreferencesSchema = z.object({
-  coachGoal: z.enum(["5k", "10k", "half_marathon", "marathon", "general_fitness"]).optional(),
+  coachGoal: z.enum(GOAL_TYPES).optional(),
   coachRaceDate: z.string().datetime().optional().nullable(),
   coachTargetTime: z.string().optional().nullable(),
   coachDaysAvailable: z.array(z.string()).optional(),
@@ -1121,3 +1162,5 @@ export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
 export type SystemSetting = typeof systemSettings.$inferSelect;
 export type InsertStravaWebhookLog = z.infer<typeof insertStravaWebhookLogSchema>;
 export type StravaWebhookLog = typeof stravaWebhookLogs.$inferSelect;
+export type InsertPlanGoal = z.infer<typeof insertPlanGoalSchema>;
+export type PlanGoal = typeof planGoals.$inferSelect;

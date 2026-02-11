@@ -3,23 +3,31 @@ import { storage } from "../storage";
 import { athleteProfileService } from "./athleteProfile";
 import { trainingGuardrails, type GeneratedPlan, type PlanWeekInput, type PlanDayInput } from "./trainingGuardrails";
 import { generateSkeleton, type PlanSkeleton, type SkeletonWeek, type SkeletonDay } from "./skeletonGenerator";
-import type { AthleteProfile, TrainingPlan, InsertTrainingPlan, InsertPlanWeek, InsertPlanDay } from "@shared/schema";
+import type { AthleteProfile, TrainingPlan, InsertTrainingPlan, InsertPlanWeek, InsertPlanDay, GoalType } from "@shared/schema";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export interface PlanGenerationRequest {
   userId: number;
-  goalType: "5k" | "10k" | "half_marathon" | "marathon" | "general_fitness";
-  goalTimeTarget?: string; // e.g., "sub-4:00" for marathon
-  raceDate?: string; // ISO date string
+  goalType: string;
+  goalTimeTarget?: string;
+  raceDate?: string;
   raceName?: string;
-  preferredRunDays?: string[]; // ["monday", "wednesday", "friday", "saturday", "sunday"]
+  preferredRunDays?: string[];
   maxWeeklyHours?: number;
-  constraints?: string; // User's free-form constraints/notes
+  constraints?: string;
   includeSpeedwork?: boolean;
   includeLongRuns?: boolean;
   experienceLevel?: "beginner" | "intermediate" | "advanced";
-  unitPreference?: "km" | "miles"; // User's preferred display unit
+  unitPreference?: "km" | "miles";
+  terrainType?: "road" | "trail" | "mountain";
+  goals?: Array<{
+    goalType: string;
+    raceDate?: string;
+    targetTime?: string;
+    priority: "primary" | "secondary";
+    terrainType?: "road" | "trail" | "mountain";
+  }>;
 }
 
 export interface PlanGenerationResult {
@@ -340,12 +348,12 @@ export class PlanGeneratorService {
   ): Promise<TrainingPlan> {
     const raceDate = request.raceDate ? new Date(request.raceDate) : null;
     
-    // Create the main plan record with enrichment status
     const planData: InsertTrainingPlan = {
       userId: request.userId,
-      goalType: request.goalType,
+      goalType: request.goalType as GoalType,
       raceDate: raceDate || undefined,
       targetTime: request.goalTimeTarget || undefined,
+      terrainType: request.terrainType || undefined,
       daysPerWeek: skeleton.trainingPlan.daysPerWeek,
       preferredLongRunDay: skeleton.trainingPlan.preferredLongRunDay,
       preferredDays: skeleton.trainingPlan.preferredDays,
@@ -375,13 +383,17 @@ export class PlanGeneratorService {
         weekEndDate: new Date(skeletonWeek.weekEndDate),
         plannedDistanceKm: skeletonWeek.plannedDistanceKm,
         plannedDurationMins: skeletonWeek.plannedDurationMins || undefined,
+        phaseName: skeletonWeek.phaseName || undefined,
+        plannedVertGainM: skeletonWeek.plannedVertGainM || undefined,
+        plannedLongRunDurationMins: skeletonWeek.plannedLongRunDurationMins || undefined,
+        goalSplit: skeletonWeek.goalSplit || undefined,
+        whyThisWeek: skeletonWeek.whyThisWeek || undefined,
         coachNotes: undefined,
-        enriched: false, // Not enriched yet
+        enriched: false,
       };
       
       const savedWeek = await storage.createPlanWeek(weekData);
       
-      // Save days using skeleton dates but template content
       for (let j = 0; j < skeletonWeek.days.length; j++) {
         const skeletonDay = skeletonWeek.days[j];
         const planDay = planWeek?.days[j];
@@ -400,6 +412,10 @@ export class PlanGeneratorService {
           targetHrZone: planDay?.targetHrZone || undefined,
           intensity: planDay?.intensity || this.getDefaultIntensity(skeletonDay.workoutType),
           workoutStructure: planDay?.workoutStructure || undefined,
+          plannedVertGainM: skeletonDay.plannedVertGainM || undefined,
+          isBackToBackLongRun: skeletonDay.isBackToBackLongRun || false,
+          fuelingPractice: skeletonDay.fuelingPractice || false,
+          goalContribution: skeletonDay.goalContribution || undefined,
           userNotes: undefined,
           perceivedEffort: undefined,
         };
@@ -1428,12 +1444,12 @@ Output:
   ): Promise<TrainingPlan> {
     const raceDate = request.raceDate ? new Date(request.raceDate) : null;
     
-    // Create the main plan record
     const planData: InsertTrainingPlan = {
       userId: request.userId,
-      goalType: request.goalType,
+      goalType: request.goalType as GoalType,
       raceDate: raceDate || undefined,
       targetTime: request.goalTimeTarget || undefined,
+      terrainType: request.terrainType || undefined,
       daysPerWeek: skeleton.trainingPlan.daysPerWeek,
       preferredLongRunDay: skeleton.trainingPlan.preferredLongRunDay,
       preferredDays: skeleton.trainingPlan.preferredDays,
@@ -1461,12 +1477,16 @@ Output:
         weekEndDate: new Date(skeletonWeek.weekEndDate),
         plannedDistanceKm: skeletonWeek.plannedDistanceKm,
         plannedDurationMins: skeletonWeek.plannedDurationMins || undefined,
+        phaseName: skeletonWeek.phaseName || undefined,
+        plannedVertGainM: skeletonWeek.plannedVertGainM || undefined,
+        plannedLongRunDurationMins: skeletonWeek.plannedLongRunDurationMins || undefined,
+        goalSplit: skeletonWeek.goalSplit || undefined,
+        whyThisWeek: skeletonWeek.whyThisWeek || undefined,
         coachNotes: undefined,
       };
       
       const savedWeek = await storage.createPlanWeek(weekData);
       
-      // Save days using skeleton dates but LLM content
       for (let j = 0; j < skeletonWeek.days.length; j++) {
         const skeletonDay = skeletonWeek.days[j];
         const planDay = planWeek?.days[j];
@@ -1485,6 +1505,10 @@ Output:
           targetHrZone: planDay?.targetHrZone || undefined,
           intensity: planDay?.intensity || this.getDefaultIntensity(skeletonDay.workoutType),
           workoutStructure: planDay?.workoutStructure || undefined,
+          plannedVertGainM: skeletonDay.plannedVertGainM || undefined,
+          isBackToBackLongRun: skeletonDay.isBackToBackLongRun || false,
+          fuelingPractice: skeletonDay.fuelingPractice || false,
+          goalContribution: skeletonDay.goalContribution || undefined,
           userNotes: undefined,
           perceivedEffort: undefined,
         };
@@ -1510,12 +1534,12 @@ Output:
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - startDate.getDay()); // Start from Sunday
     
-    // Create the main plan record
     const planData: InsertTrainingPlan = {
       userId: request.userId,
-      goalType: request.goalType,
+      goalType: request.goalType as GoalType,
       raceDate: raceDate || undefined,
       targetTime: request.goalTimeTarget || undefined,
+      terrainType: request.terrainType || undefined,
       daysPerWeek: request.preferredRunDays?.length || 4,
       preferredLongRunDay: "sunday",
       preferredDays: request.preferredRunDays || undefined,

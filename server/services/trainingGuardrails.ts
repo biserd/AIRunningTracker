@@ -2,14 +2,14 @@ import type { AthleteProfile } from "@shared/schema";
 
 export interface PlanWeekInput {
   weekNumber: number;
-  weekType: "base" | "build" | "peak" | "recovery" | "taper";
+  weekType: "base" | "build" | "build2_specific" | "peak" | "recovery" | "taper";
   plannedDistanceKm: number;
   days: PlanDayInput[];
 }
 
 export interface PlanDayInput {
   dayOfWeek: string;
-  workoutType: "easy" | "tempo" | "intervals" | "long_run" | "recovery" | "rest" | "cross_training" | "race" | "fartlek" | "hills" | "progression";
+  workoutType: "easy" | "tempo" | "intervals" | "long_run" | "recovery" | "rest" | "cross_training" | "race" | "fartlek" | "hills" | "progression" | "back_to_back_long" | "fueling_practice";
   title: string;
   description?: string;
   plannedDistanceKm?: number;
