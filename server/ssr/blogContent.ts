@@ -241,6 +241,207 @@ export const blogPosts: BlogPostContent[] = [
       </ul>
       <p>Small, consistent improvements add up. A 1% improvement each month leads to significant gains over a training cycle.</p>
     `
+  },
+  {
+    slug: "ultra-marathon-training-plan-100-miler-guide",
+    title: "Ultra Marathon Training Plan: The Complete Guide to Training for a 100 Miler",
+    description: "Everything you need to know about creating an ultra marathon training plan for your first 100 mile race. Covers periodization, back-to-back long runs, fueling strategy, vertical gain training, tapering, and race day execution.",
+    date: "February 11, 2026",
+    readTime: "20 min read",
+    category: "Ultra Running",
+    tableOfContents: [
+      { id: "introduction", title: "Why Train for a 100 Miler?" },
+      { id: "prerequisites", title: "Prerequisites: Are You Ready?" },
+      { id: "ultra-marathon-training-plan-structure", title: "Ultra Marathon Training Plan Structure" },
+      { id: "periodization", title: "Periodization for Ultra Distances" },
+      { id: "long-runs-and-back-to-back", title: "Long Runs and Back-to-Back Training" },
+      { id: "vertical-gain-training", title: "Vertical Gain and Terrain-Specific Training" },
+      { id: "fueling-strategy", title: "Fueling Strategy for 100 Miles" },
+      { id: "mental-preparation", title: "Mental Preparation for Ultra Running" },
+      { id: "tapering", title: "Tapering for Your 100 Mile Race" },
+      { id: "gear-and-equipment", title: "Gear and Equipment Essentials" },
+      { id: "race-day", title: "Race Day Execution" },
+      { id: "ai-training-plans", title: "AI-Powered Ultra Marathon Training Plans" }
+    ],
+    content: `
+      <h2 id="introduction">Why Train for a 100 Miler?</h2>
+      <p>Running 100 miles is one of the most demanding endurance challenges on the planet. Whether you're stepping up from a marathon or progressing through shorter ultra distances, a well-structured <strong>ultra marathon training plan</strong> is the difference between crossing the finish line and dropping out at mile 60. This guide covers everything you need to build a 100 mile training plan that prepares your body, your mind, and your fueling strategy for the long haul.</p>
+      <p>Unlike marathon training, where the focus is primarily on speed and aerobic threshold, ultra marathon training emphasizes time on feet, resilience, fueling under fatigue, and the ability to keep moving through the night. Your <strong>ultra running training</strong> plan needs to account for all of these factors — and that's exactly what we'll break down here.</p>
+
+      <h2 id="prerequisites">Prerequisites: Are You Ready for an Ultra Marathon Training Plan?</h2>
+      <p>Before starting a <strong>100 mile training plan</strong>, you need a solid running foundation. Jumping into ultra marathon training without adequate base fitness dramatically increases your injury risk and reduces your chances of finishing.</p>
+      <p><strong>Minimum prerequisites before starting your ultra marathon training plan:</strong></p>
+      <ul>
+        <li><strong>Weekly mileage base:</strong> Consistently running 70+ km (45+ miles) per week for at least 6 months</li>
+        <li><strong>Race experience:</strong> Completed at least one 50K or 50-mile race, ideally both</li>
+        <li><strong>Long run history:</strong> Comfortable with 4+ hour long runs on varied terrain</li>
+        <li><strong>Strength training:</strong> Regular hip, glute, and core work to handle ultra distances</li>
+        <li><strong>Time commitment:</strong> 10-15 hours per week of training for 24-30 weeks</li>
+      </ul>
+      <p>If you're not quite there yet, consider a progressive approach: build to a 50K first, then a 50-miler, then tackle the 100-mile distance. Each step teaches you invaluable lessons about pacing, fueling, and mental toughness that feed into your eventual <strong>ultramarathon training plan</strong>.</p>
+
+      <h2 id="ultra-marathon-training-plan-structure">Ultra Marathon Training Plan Structure</h2>
+      <p>A proper <strong>ultra marathon training plan</strong> for 100 miles typically spans 24-30 weeks. This is significantly longer than a marathon build because your body needs more time to adapt to the extreme demands of running for 20-30+ hours straight.</p>
+      <p><strong>Key components of a 100 mile training plan:</strong></p>
+      <ul>
+        <li><strong>Total duration:</strong> 24-30 weeks for experienced ultra runners, 30+ weeks if stepping up from marathon</li>
+        <li><strong>Peak weekly volume:</strong> 120-160 km (75-100 miles), depending on experience</li>
+        <li><strong>Long runs:</strong> Measured by time (3-7 hours), not distance — because ultra racing is about time on feet</li>
+        <li><strong>Back-to-back long runs:</strong> Weekend pairings that simulate running on tired legs</li>
+        <li><strong>Vertical training:</strong> Elevation-specific sessions for trail and mountain ultras</li>
+        <li><strong>Fueling practice:</strong> Dedicated sessions to dial in race-day nutrition</li>
+        <li><strong>Recovery weeks:</strong> Every 3-4 weeks to allow adaptation without overtraining</li>
+      </ul>
+      <p>The biggest mistake in <strong>ultra running training</strong> is trying to replicate marathon training at higher volume. Ultra training requires a fundamentally different approach — slower paces, longer time on feet, and a much greater emphasis on consistency over intensity.</p>
+
+      <h2 id="periodization">Periodization for Ultra Distances</h2>
+      <p>Effective <strong>ultra marathon training plans</strong> use true periodization — structured phases that systematically build your fitness toward peak performance on race day. Unlike shorter race training, ultra periodization includes race-specific phases that target the unique demands of 100 miles.</p>
+      <p><strong>The 6 phases of a 100 mile ultra marathon training plan:</strong></p>
+      
+      <p><strong>1. Base Phase (6-8 weeks)</strong></p>
+      <p>Build your aerobic foundation with consistent, easy-effort mileage. Focus on gradually increasing weekly volume while keeping intensity low. This phase establishes the cardiovascular and musculoskeletal base that everything else builds upon. Long runs start at 2-3 hours.</p>
+      
+      <p><strong>2. Build 1 Phase (4-6 weeks)</strong></p>
+      <p>Introduce moderate-intensity workouts like tempo runs and sustained climbs. Weekly volume increases by 10-12% per week (with recovery weeks built in). Long runs extend to 3-4 hours. This is where your <strong>ultra running training</strong> begins to feel real.</p>
+      
+      <p><strong>3. Build 2 / Race-Specific Phase (4-6 weeks)</strong></p>
+      <p>The most important phase of your <strong>ultramarathon training plan</strong>. This is where back-to-back long runs begin, fueling practice becomes a priority, and training mimics race-day conditions. If your race has significant elevation, this phase emphasizes vertical gain. Long runs reach 4-6 hours.</p>
+      
+      <p><strong>4. Peak Phase (2-3 weeks)</strong></p>
+      <p>Your highest volume and longest runs occur here. Peak long runs reach 5-7 hours (50-60 km). Back-to-back weekends are at their most demanding, with the Saturday long run followed by a 60-70% effort on Sunday. This is the summit of your training — everything after this is recovery and sharpening.</p>
+      
+      <p><strong>5. Taper Phase (4-5 weeks for 100 miles)</strong></p>
+      <p>Gradually reduce volume by 20% per week while maintaining some intensity. The 100-mile taper is longer than a marathon taper because the training stimulus is so much greater. Your body needs 4-5 weeks to fully absorb the training and arrive at the start line fresh.</p>
+      
+      <p><strong>6. Recovery Phase (2-3 weeks post-race)</strong></p>
+      <p>Easy running and active recovery after the race. Many runners take 1-2 weeks completely off, then return to easy jogging. Full recovery from a 100-miler typically takes 4-8 weeks.</p>
+
+      <h2 id="long-runs-and-back-to-back">Long Runs and Back-to-Back Training</h2>
+      <p>The long run is the cornerstone of any <strong>ultra marathon training plan</strong>, but for 100-mile training, it takes on a unique form: <strong>back-to-back long runs</strong>.</p>
+      
+      <p><strong>Why back-to-back long runs matter:</strong></p>
+      <p>In a 100-mile race, you'll spend 20-30+ hours on your feet. No single training run can replicate that fatigue. Back-to-back long runs — a long effort on Saturday followed by another long effort on Sunday — teach your body to perform on pre-fatigued legs. This is the closest you can get to simulating race conditions without actually racing.</p>
+      
+      <p><strong>How to structure back-to-back weekends in your ultra running training:</strong></p>
+      <ul>
+        <li><strong>Frequency:</strong> Every 2-3 weeks during the Build 2 and Peak phases</li>
+        <li><strong>Saturday (primary):</strong> Your longest effort — 4-7 hours at easy, conversational pace</li>
+        <li><strong>Sunday (secondary):</strong> 60-70% of Saturday's duration, starting slow and building if you feel good</li>
+        <li><strong>Fueling:</strong> Practice your race-day nutrition during both runs</li>
+        <li><strong>Terrain:</strong> Run on similar terrain to your target race whenever possible</li>
+      </ul>
+      
+      <p><strong>Time-based long runs vs. distance-based:</strong></p>
+      <p>Most experienced ultra coaches design long runs by time, not distance. A 5-hour long run on technical trail at 8:00/km pace covers very different ground than a 5-hour road run at 6:00/km pace — but the training stimulus (time on feet, metabolic demand, musculoskeletal stress) is similar. Your <strong>ultra marathon training plan</strong> should prescribe long runs in hours, especially if you're training on trails.</p>
+
+      <h2 id="vertical-gain-training">Vertical Gain and Terrain-Specific Training</h2>
+      <p>If your 100-mile race involves significant climbing — and most do — your <strong>ultramarathon training plan</strong> needs to include dedicated vertical gain training. Mountain ultras like UTMB, Western States, and Hardrock demand as much climbing fitness as running fitness.</p>
+      
+      <p><strong>How to incorporate vertical training:</strong></p>
+      <ul>
+        <li><strong>Weekly vert targets:</strong> Build from 1,000m/week in base phase to 3,000-5,000m/week in peak phase</li>
+        <li><strong>Hill repeats:</strong> Short, steep climbs (200-400m gain) at threshold effort to build power</li>
+        <li><strong>Sustained climbs:</strong> 45-90 minute continuous uphill efforts at easy-to-moderate effort</li>
+        <li><strong>Downhill training:</strong> Practice fast, controlled descending to build quad resilience — downhills destroy your legs in a 100-miler</li>
+        <li><strong>Power hiking:</strong> Train to hike efficiently at 4-5 km/h on steep terrain — you will hike significant portions of any mountain 100-miler</li>
+        <li><strong>Pole practice:</strong> If your race allows trekking poles, train with them during long runs</li>
+      </ul>
+      <p>For road-based 100-milers, vertical training is less critical but still valuable. Even modest hills build strength and break up the repetitive motion that causes overuse injuries during flat ultra marathons.</p>
+
+      <h2 id="fueling-strategy">Fueling Strategy for 100 Miles</h2>
+      <p>Fueling is where 100-mile races are won or lost. Your <strong>100 mile training plan</strong> must include dedicated fueling practice sessions — you cannot figure out your nutrition strategy on race day.</p>
+      
+      <p><strong>The numbers:</strong></p>
+      <ul>
+        <li><strong>Caloric burn:</strong> 8,000-12,000 calories over 100 miles</li>
+        <li><strong>Target intake:</strong> 200-300 calories per hour (you cannot replace all calories burned)</li>
+        <li><strong>Carbohydrate goal:</strong> 60-90g of carbs per hour for optimal performance</li>
+        <li><strong>Hydration:</strong> 500-800ml per hour, adjusted for heat and humidity</li>
+        <li><strong>Sodium:</strong> 500-1000mg per hour to prevent hyponatremia</li>
+      </ul>
+      
+      <p><strong>How to practice fueling during ultra marathon training:</strong></p>
+      <ul>
+        <li><strong>Start early:</strong> Begin fueling practice during Build 1 phase on long runs over 2 hours</li>
+        <li><strong>Test everything:</strong> Gels, chews, real food (boiled potatoes, PB&J, rice balls), liquid calories</li>
+        <li><strong>Simulate aid stations:</strong> Practice eating and drinking while moving at race pace</li>
+        <li><strong>Night fueling:</strong> Practice eating when nauseous and tired — your appetite will crash during the race</li>
+        <li><strong>Stomach training:</strong> Gradually increase caloric intake during training to train your gut</li>
+        <li><strong>Record everything:</strong> Track what works and what doesn't — your race-day plan should be proven in training</li>
+      </ul>
+      <p>The golden rule of ultra fueling: <em>eat before you're hungry, drink before you're thirsty</em>. By the time you feel hungry or thirsty in a 100-miler, you're already behind and it's very hard to catch up.</p>
+
+      <h2 id="mental-preparation">Mental Preparation for Ultra Running</h2>
+      <p>The physical demands of a 100-mile race are enormous, but it's the mental challenge that separates finishers from DNFs. Your <strong>ultra marathon training plan</strong> should include deliberate mental preparation.</p>
+      
+      <p><strong>Mental strategies for ultra running:</strong></p>
+      <ul>
+        <li><strong>Segment the race:</strong> Break 100 miles into manageable chunks (aid station to aid station, not start to finish)</li>
+        <li><strong>Embrace the low points:</strong> Everyone hits dark patches — the runners who finish are the ones who keep moving through them</li>
+        <li><strong>Practice discomfort:</strong> Train in bad weather, run tired, do back-to-back long runs — get comfortable being uncomfortable</li>
+        <li><strong>Visualization:</strong> Mentally rehearse key moments — arriving at aid stations, running through the night, crossing the finish line</li>
+        <li><strong>Mantras:</strong> Develop personal phrases that anchor you when things get hard ("relentless forward progress," "one step at a time")</li>
+        <li><strong>Crew and pacer strategy:</strong> Plan who will pace you and when — having a familiar face at mile 70 can be transformative</li>
+      </ul>
+      <p>Perhaps the most important mental skill in <strong>ultra running training</strong> is learning to separate pain from injury. Discomfort is guaranteed in a 100-miler. Knowing when it's safe to push through and when to stop requires experience — which is why building up through shorter ultra distances is so valuable.</p>
+
+      <h2 id="tapering">Tapering for Your 100 Mile Race</h2>
+      <p>The taper is one of the most misunderstood parts of a <strong>100 mile training plan</strong>. Many runners taper too short or not aggressively enough for ultra distances.</p>
+      
+      <p><strong>Ultra marathon taper guidelines:</strong></p>
+      <ul>
+        <li><strong>100-mile taper:</strong> 4-5 weeks (significantly longer than a marathon's 2-3 weeks)</li>
+        <li><strong>Volume reduction:</strong> ~20% per week — so if peak week is 150 km, taper goes roughly 120 → 96 → 77 → 61 → race week</li>
+        <li><strong>Maintain some intensity:</strong> Keep 1-2 short, moderate-effort sessions per week to stay sharp</li>
+        <li><strong>Final long run:</strong> 3-4 weeks before race day, no longer than 2-3 hours</li>
+        <li><strong>Race week:</strong> Very easy running, 30-40% of normal volume, with 2 full rest days before the race</li>
+      </ul>
+      <p>The taper is when all your training adaptations solidify. Trust the process — it's normal to feel sluggish and anxious during taper. That restless energy is your body storing up for race day. A well-executed taper can improve your race performance by 3-6%.</p>
+
+      <h2 id="gear-and-equipment">Gear and Equipment Essentials</h2>
+      <p>Your <strong>ultra marathon training plan</strong> should include gear testing well before race day. Nothing new on race day — this applies to every piece of equipment you carry.</p>
+      
+      <p><strong>Essential gear for a 100-mile race:</strong></p>
+      <ul>
+        <li><strong>Shoes:</strong> Have 2-3 pairs broken in and tested on long runs. Many runners swap shoes at mile 50-60 for fresh cushioning. Trail shoes need adequate grip and drainage.</li>
+        <li><strong>Hydration:</strong> Handheld bottles, vest, or pack — test on long runs to prevent chafing</li>
+        <li><strong>Lighting:</strong> High-quality headlamp (200+ lumens) plus a backup — you'll run through at least one full night</li>
+        <li><strong>Clothing layers:</strong> Conditions change dramatically over 20-30 hours. Plan for heat, cold, rain, and wind.</li>
+        <li><strong>Anti-chafe:</strong> Body Glide, Squirrel's Nut Butter, or petroleum jelly on every potential friction point</li>
+        <li><strong>Drop bags:</strong> Pre-packed bags at key aid stations with fresh clothes, shoes, food, and supplies</li>
+        <li><strong>Foot care:</strong> Extra socks, blister treatment supplies, and toe tape</li>
+      </ul>
+
+      <h2 id="race-day">Race Day Execution</h2>
+      <p>All the training comes down to execution. Here's how to apply your <strong>ultramarathon training plan</strong> on race day:</p>
+      
+      <p><strong>Miles 0-30: Banking patience</strong></p>
+      <p>Start slower than you think you should. Your goal is to arrive at mile 30 feeling fresh and controlled. Walk the uphills from the start — your legs will thank you later. Eat and drink on schedule, not by feel.</p>
+      
+      <p><strong>Miles 30-60: The real race begins</strong></p>
+      <p>This is where discipline separates finishers from DNFs. Maintain your fueling schedule even as appetite fades. Keep your effort conversational. If you trained with back-to-back long runs, your body knows how to perform on tired legs — trust it.</p>
+      
+      <p><strong>Miles 60-80: The dark place</strong></p>
+      <p>Almost everyone hits their lowest point somewhere in this stretch. Nausea, blisters, exhaustion, and self-doubt are normal. Keep moving, even if it's a slow walk. This is where your mental training pays off. Aid station to aid station. One step at a time.</p>
+      
+      <p><strong>Miles 80-100: Finding another gear</strong></p>
+      <p>If you make it to mile 80, you will almost certainly finish. A remarkable thing happens in the final 20 miles — knowing the end is near unlocks energy you didn't know you had. Embrace the emotion. You're about to become a 100-mile finisher.</p>
+
+      <h2 id="ai-training-plans">AI-Powered Ultra Marathon Training Plans</h2>
+      <p>Building a <strong>100 mile training plan</strong> from scratch is complex — there are dozens of variables to balance across 24-30 weeks. That's where AI-powered training plans can help.</p>
+      
+      <p><strong>How RunAnalytics builds your ultra marathon training plan:</strong></p>
+      <ul>
+        <li><strong>True periodization:</strong> Automatically structures your plan into Base, Build, Race-Specific, Peak, Taper, and Recovery phases</li>
+        <li><strong>Time-based long runs:</strong> Prescribes long runs by duration (not just distance), which is more appropriate for ultra training</li>
+        <li><strong>Back-to-back scheduling:</strong> Intelligently places back-to-back long run weekends every 2-3 weeks during Build 2 and Peak phases</li>
+        <li><strong>Vertical gain targets:</strong> Calculates weekly elevation targets based on your race terrain (road, trail, or mountain)</li>
+        <li><strong>Fueling practice sessions:</strong> Marks specific long runs as fueling practice opportunities so you never show up to race day unprepared</li>
+        <li><strong>Adaptive coaching:</strong> AI adjusts your plan based on how training is going — missed a week? The plan recalibrates. Feeling strong? It can push you further.</li>
+        <li><strong>Phase explanations:</strong> Every week includes a "Why this week?" note explaining the training intent, so you understand the purpose behind each session</li>
+      </ul>
+      <p>Whether you're training for your first 50K or pushing toward a 100-mile buckle, an <strong>ultra marathon training plan</strong> built on real periodization science — not just a spreadsheet with increasing mileage — gives you the best chance of success. Start building your personalized plan today with RunAnalytics.</p>
+    `
   }
 ];
 

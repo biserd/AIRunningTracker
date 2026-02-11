@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, ArrowRight, Brain, TrendingUp, BarChart, Target, Bot } from "lucide-react";
+import { Calendar, Clock, ArrowRight, Brain, TrendingUp, BarChart, Target, Bot, Mountain } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
@@ -18,6 +18,16 @@ interface BlogPost {
 }
 
 const blogPosts: BlogPost[] = [
+  {
+    slug: "ultra-marathon-training-plan-100-miler-guide",
+    title: "Ultra Marathon Training Plan: The Complete Guide to Training for a 100 Miler",
+    description: "Everything you need to know about creating an ultra marathon training plan for your first 100 mile race. Covers periodization, back-to-back long runs, fueling, vertical gain training, tapering, and race day execution.",
+    date: "February 11, 2026",
+    readTime: "20 min read",
+    category: "Ultra Running",
+    icon: Mountain,
+    gradient: "from-emerald-600 to-teal-700"
+  },
   {
     slug: "ai-agent-coach-proactive-coaching",
     title: "AI Agent Coach: How Proactive AI Coaching Transforms Your Running",

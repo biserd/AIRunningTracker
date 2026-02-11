@@ -51,6 +51,7 @@ import HowToPickTrainingPlan from "@/pages/blog/how-to-pick-a-training-plan";
 import AICoachLanding from "@/pages/ai-running-coach";
 import AIAgentCoachLanding from "@/pages/ai-agent-coach";
 import AIAgentCoachBlogPost from "@/pages/blog/ai-agent-coach-proactive-coaching";
+import UltraMarathonTrainingPlanBlogPost from "@/pages/blog/ultra-marathon-training-plan-100-miler-guide";
 import DevelopersPage from "@/pages/developers";
 import ApiDocsPage from "@/pages/developers/api-docs";
 import YearRecapPage from "@/pages/year-recap";
@@ -148,6 +149,7 @@ function Router() {
       <Route path="/blog/how-to-improve-running-pace" component={ImproveRunningPace} />
       <Route path="/blog/how-to-pick-a-training-plan" component={HowToPickTrainingPlan} />
       <Route path="/blog/ai-agent-coach-proactive-coaching" component={AIAgentCoachBlogPost} />
+      <Route path="/blog/ultra-marathon-training-plan-100-miler-guide" component={UltraMarathonTrainingPlanBlogPost} />
       <Route path="/ai-running-coach" component={AICoachLanding} />
       <Route path="/ai-agent-coach" component={AIAgentCoachLanding} />
       
