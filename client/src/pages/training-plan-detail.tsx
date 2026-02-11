@@ -50,6 +50,10 @@ interface PlanWeek {
   weekType: string | null;
   plannedDistanceKm: number | null;
   coachNotes: string | null;
+  phaseName: string | null;
+  plannedVertGainM: number | null;
+  plannedLongRunDurationMins: number | null;
+  whyThisWeek: string | null;
 }
 
 interface PlanDay {
@@ -68,6 +72,9 @@ interface PlanDay {
   wasAdjusted?: boolean;
   originalWorkoutType?: string | null;
   originalDistanceKm?: number | null;
+  isBackToBackLongRun?: boolean;
+  fuelingPractice?: boolean;
+  plannedVertGainM?: number | null;
 }
 
 interface PlanWeekExtended extends PlanWeek {
@@ -107,6 +114,10 @@ const workoutTypeIcons: Record<string, typeof Footprints> = {
   fartlek: Zap,
   hills: Mountain,
   progression: Zap,
+  back_to_back_long: ArrowRight,
+  fueling_practice: Battery,
+  cross_training: Dumbbell,
+  race: Target,
 };
 
 const workoutTypeColors: Record<string, string> = {
@@ -120,6 +131,19 @@ const workoutTypeColors: Record<string, string> = {
   fartlek: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
   hills: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
   progression: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
+  back_to_back_long: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300",
+  fueling_practice: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
+  cross_training: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300",
+  race: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+};
+
+const phaseColors: Record<string, string> = {
+  base: "bg-green-500",
+  build: "bg-blue-500",
+  build2_specific: "bg-purple-500",
+  peak: "bg-red-500",
+  taper: "bg-amber-500",
+  recovery: "bg-gray-400",
 };
 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -392,6 +416,10 @@ export default function TrainingPlanDetail() {
     "10k": "10K",
     "half_marathon": "Half Marathon",
     "marathon": "Marathon",
+    "50k": "50K Ultra",
+    "50_mile": "50 Mile Ultra",
+    "100k": "100K Ultra",
+    "100_mile": "100 Mile Ultra",
     "general_fitness": "General Fitness",
   };
   
@@ -427,7 +455,7 @@ export default function TrainingPlanDetail() {
   const isRecoveryWeek = currentWeekData?.weekType === "recovery";
   
   // Living metrics calculations
-  const qualityWorkoutTypes = ["tempo", "intervals", "long", "long_run", "fartlek", "hills", "progression"];
+  const qualityWorkoutTypes = ["tempo", "intervals", "long", "long_run", "fartlek", "hills", "progression", "back_to_back_long", "fueling_practice"];
   const qualityWorkouts = currentWeekData?.days.filter(d => d.workoutType && qualityWorkoutTypes.includes(d.workoutType)) || [];
   const completedQualityWorkouts = qualityWorkouts.filter(d => d.status === "completed" || d.linkedActivityId).length;
   const totalQualityWorkouts = qualityWorkouts.length;
@@ -785,6 +813,34 @@ export default function TrainingPlanDetail() {
           </Card>
         )}
         
+        {plan.weeks.some(w => w.phaseName) && (
+          <div className="mb-4 bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm overflow-x-auto" data-testid="phase-timeline">
+            <div className="flex gap-0.5 min-w-max">
+              {plan.weeks.map((week, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedWeek(week.weekNumber)}
+                  className={`h-6 flex-1 min-w-[24px] rounded-sm transition-all ${
+                    phaseColors[week.weekType || ""] || "bg-gray-300"
+                  } ${selectedWeek === week.weekNumber ? "ring-2 ring-offset-1 ring-gray-900 dark:ring-white" : "opacity-70 hover:opacity-100"}`}
+                  title={`Week ${week.weekNumber}: ${week.phaseName || week.weekType}`}
+                />
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-3 mt-2 text-[10px] text-gray-500">
+              {Object.entries(phaseColors).map(([phase, color]) => {
+                if (!plan.weeks.some(w => w.weekType === phase)) return null;
+                return (
+                  <span key={phase} className="flex items-center gap-1">
+                    <span className={`w-2 h-2 rounded-sm ${color}`} />
+                    {phase === "build2_specific" ? "Race-Specific" : phase.charAt(0).toUpperCase() + phase.slice(1)}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        
         <div className="flex items-center justify-between mb-6 bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
           <Button
             variant="outline"
@@ -799,9 +855,16 @@ export default function TrainingPlanDetail() {
             <h2 className="text-xl font-semibold" data-testid="text-current-week">
               Week {selectedWeek} of {plan.totalWeeks}
             </h2>
-            {currentWeekData?.weekType && (
+            {currentWeekData?.phaseName ? (
+              <div className="flex items-center justify-center gap-2 mt-1">
+                <span className={`w-2 h-2 rounded-full ${phaseColors[currentWeekData.weekType || ""] || "bg-gray-400"}`} />
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {currentWeekData.phaseName}
+                </p>
+              </div>
+            ) : currentWeekData?.weekType && (
               <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">
-                {currentWeekData.weekType} week
+                {currentWeekData.weekType === "build2_specific" ? "Race-Specific" : currentWeekData.weekType} week
               </p>
             )}
             {isRecoveryWeek && (
@@ -890,6 +953,41 @@ export default function TrainingPlanDetail() {
                   </div>
                 </div>
               </div>
+              
+              {(currentWeekData?.plannedVertGainM || currentWeekData?.plannedLongRunDurationMins) && (
+                <div className="grid grid-cols-2 gap-4 text-center mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                  {currentWeekData.plannedVertGainM && currentWeekData.plannedVertGainM > 0 && (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-center gap-1 text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <Mountain className="w-3 h-3" />
+                        Vert Target
+                      </div>
+                      <p className="text-lg font-bold text-gray-900 dark:text-white">
+                        {useMiles ? `${Math.round(currentWeekData.plannedVertGainM * 3.281)} ft` : `${currentWeekData.plannedVertGainM} m`}
+                      </p>
+                    </div>
+                  )}
+                  {currentWeekData.plannedLongRunDurationMins && currentWeekData.plannedLongRunDurationMins > 0 && (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-center gap-1 text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <Timer className="w-3 h-3" />
+                        Long Run Time
+                      </div>
+                      <p className="text-lg font-bold text-gray-900 dark:text-white">
+                        {Math.floor(currentWeekData.plannedLongRunDurationMins / 60)}h {currentWeekData.plannedLongRunDurationMins % 60}m
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {currentWeekData?.whyThisWeek && (
+                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                    {currentWeekData.whyThisWeek}
+                  </p>
+                </div>
+              )}
               
               {/* Actions row */}
               <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex flex-wrap items-center gap-3">
@@ -1030,11 +1128,31 @@ export default function TrainingPlanDetail() {
                         </div>
                       )}
                       
-                      {/* Workout type badge */}
-                      <Badge className={`${colorClass} text-xs`}>
-                        <Icon className="w-3 h-3 mr-1" />
-                        {dayData.workoutType}
-                      </Badge>
+                      <div className="flex flex-wrap gap-1">
+                        <Badge className={`${colorClass} text-xs`}>
+                          <Icon className="w-3 h-3 mr-1" />
+                          {dayData.workoutType === "back_to_back_long" ? "B2B Long" : 
+                           dayData.workoutType === "fueling_practice" ? "Fueling" :
+                           dayData.workoutType === "cross_training" ? "Cross Train" :
+                           dayData.workoutType}
+                        </Badge>
+                        {dayData.isBackToBackLongRun && dayData.workoutType !== "back_to_back_long" && (
+                          <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 text-[10px] px-1.5">
+                            B2B
+                          </Badge>
+                        )}
+                        {dayData.fuelingPractice && dayData.workoutType !== "fueling_practice" && (
+                          <Badge className="bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 text-[10px] px-1.5">
+                            Fuel
+                          </Badge>
+                        )}
+                        {dayData.plannedVertGainM && dayData.plannedVertGainM > 0 && (
+                          <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 text-[10px] px-1.5">
+                            <Mountain className="w-2.5 h-2.5 mr-0.5" />
+                            {useMiles ? `${Math.round(dayData.plannedVertGainM * 3.281)}ft` : `${dayData.plannedVertGainM}m`}
+                          </Badge>
+                        )}
+                      </div>
                       
                       {dayData.plannedDistanceKm && (
                         <p className="text-sm font-semibold" data-testid={`text-distance-${dayKey}`}>

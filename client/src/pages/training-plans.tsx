@@ -77,6 +77,7 @@ export default function TrainingPlans() {
   const [includeLongRuns, setIncludeLongRuns] = useState(true);
   const [constraints, setConstraints] = useState("");
   const [preferredDays, setPreferredDays] = useState<string[]>(["monday", "wednesday", "friday", "saturday", "sunday"]);
+  const [terrainType, setTerrainType] = useState<string>("road");
   
   // Get unit preference from auth user
   const useMiles = (user as any)?.unitPreference === "miles";
@@ -108,6 +109,7 @@ export default function TrainingPlans() {
         includeLongRuns,
         constraints: constraints || undefined,
         preferredRunDays: preferredDays,
+        terrainType: terrainType !== "road" ? terrainType : undefined,
       });
     },
     onSuccess: (data: { planId?: number; plan?: TrainingPlan }) => {
@@ -167,8 +169,14 @@ export default function TrainingPlans() {
     "10k": "10K",
     "half_marathon": "Half Marathon",
     "marathon": "Marathon",
+    "50k": "50K Ultra",
+    "50_mile": "50 Mile Ultra",
+    "100k": "100K Ultra",
+    "100_mile": "100 Mile Ultra",
     "general_fitness": "General Fitness",
   };
+  
+  const isUltraGoal = ["50k", "50_mile", "100k", "100_mile"].includes(goalType);
   
   if (authLoading || !user) {
     return (
@@ -295,6 +303,10 @@ export default function TrainingPlans() {
                         <SelectItem value="10k">10K Race</SelectItem>
                         <SelectItem value="half_marathon">Half Marathon</SelectItem>
                         <SelectItem value="marathon">Marathon</SelectItem>
+                        <SelectItem value="50k">50K Ultra</SelectItem>
+                        <SelectItem value="50_mile">50 Mile Ultra</SelectItem>
+                        <SelectItem value="100k">100K Ultra</SelectItem>
+                        <SelectItem value="100_mile">100 Mile Ultra</SelectItem>
                         <SelectItem value="general_fitness">General Fitness</SelectItem>
                       </SelectContent>
                     </Select>
@@ -338,6 +350,27 @@ export default function TrainingPlans() {
                         />
                       </div>
                     </>
+                  )}
+                  
+                  {(isUltraGoal || goalType === "marathon" || goalType === "half_marathon") && (
+                    <div>
+                      <Label htmlFor="terrainType">Terrain type</Label>
+                      <Select value={terrainType} onValueChange={setTerrainType}>
+                        <SelectTrigger className="mt-2" data-testid="select-terrain">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="road">Road</SelectItem>
+                          <SelectItem value="trail">Trail</SelectItem>
+                          <SelectItem value="mountain">Mountain / Technical</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {isUltraGoal && terrainType !== "road" && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {terrainType === "trail" ? "Plan includes trail-specific training with moderate vert targets" : "Plan includes aggressive vert targets, technical terrain training, and power hiking"}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
               )}

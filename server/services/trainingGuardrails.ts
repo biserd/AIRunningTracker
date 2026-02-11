@@ -140,7 +140,7 @@ export class TrainingGuardrails {
     // 6. Check for unrealistic timeline
     this.validateTimeline(correctedPlan, profile, goalType, raceDate, validation);
     
-    if (goalType === "marathon" || goalType === "half_marathon" || goalType === "50k") {
+    if (["marathon", "half_marathon", "50k", "50_mile", "100k", "100_mile"].includes(goalType)) {
       this.validatePeakLongRun(correctedPlan, goalType, validation);
     }
     
@@ -584,7 +584,11 @@ export class TrainingGuardrails {
     const raceDistanceKm = RACE_DISTANCES_KM[goalType as keyof typeof RACE_DISTANCES_KM];
     if (!raceDistanceKm) return;
     
-    const requiredPeakLongRunKm = raceDistanceKm * (this.config.peakLongRunPercentOfRace / 100);
+    const ultraPeakLongRunCaps: Record<string, number> = {
+      "50k": 42, "50_mile": 50, "100k": 55, "100_mile": 60,
+    };
+    const requiredPeakLongRunKm = ultraPeakLongRunCaps[goalType] ??
+      raceDistanceKm * (this.config.peakLongRunPercentOfRace / 100);
     
     // Find the current max long run across all non-taper weeks
     let maxLongRunKm = 0;

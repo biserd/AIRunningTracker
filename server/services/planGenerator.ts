@@ -513,10 +513,11 @@ You follow evidence-based training principles:
 - Progressive overload with 10-15% weekly mileage increases max
 - Long runs should be 25-30% of weekly volume
 - Include recovery weeks every 3-4 weeks (reduce volume by 20-25%)
-- Proper taper before races (2-3 weeks for marathon, 1-2 for half)
+- Proper taper before races (2-3 weeks for marathon, 1-2 for half, 3-5 for ultras)
 - Easy runs at conversational pace (80% of training volume)
 - Quality workouts (tempo, intervals) 2-3x per week max
 - Rest days are essential for adaptation
+- Ultra plans: time-on-feet focus for long runs, back-to-back weekends, fueling practice sessions, vert-specific training for trail
 ${weekRequirement}
 
 IMPORTANT: All distances in the JSON output MUST be in KILOMETERS (plannedDistanceKm field).
@@ -563,7 +564,7 @@ Output JSON with this exact structure:
       "days": [
         {
           "dayOfWeek": "monday",
-          "workoutType": "easy|tempo|intervals|long_run|recovery|rest|cross_training|fartlek|hills|progression",
+          "workoutType": "easy|tempo|intervals|long_run|recovery|rest|cross_training|fartlek|hills|progression|back_to_back_long|fueling_practice",
           "title": "Easy Run",
           "description": "30 min easy pace",
           "plannedDistanceKm": 5.0,
@@ -941,7 +942,10 @@ Ensure each week has 7 days. Use "rest" type for rest days.`;
       easyPace = `${this.formatPace(min, false)}-${this.formatPace(max, false)}`;
     }
 
-    return `Goal:${request.goalType.replace("_", "")}${request.goalTimeTarget ? `(${request.goalTimeTarget})` : ""} Easy:${easyPace}${paceUnit} VDOT:${profile.estimatedVdot || 45} Level:${request.experienceLevel || "intermediate"}`;
+    const isUltra = ["50k", "50_mile", "100k", "100_mile"].includes(request.goalType);
+    const terrainNote = request.terrainType && request.terrainType !== "road" ? ` Terrain:${request.terrainType}` : "";
+    const ultraNote = isUltra ? " Focus:time-on-feet,fueling,vert" : "";
+    return `Goal:${request.goalType.replace("_", "")}${request.goalTimeTarget ? `(${request.goalTimeTarget})` : ""} Easy:${easyPace}${paceUnit} VDOT:${profile.estimatedVdot || 45} Level:${request.experienceLevel || "intermediate"}${terrainNote}${ultraNote}`;
   }
 
   /**
@@ -1130,7 +1134,6 @@ Ensure each week has 7 days. Use "rest" type for rest days.`;
     // Step 3: Call LLM for uncached workouts (or all if none cached)
     const workoutsToFill = uncachedWorkouts.length > 0 ? uncachedWorkouts : chunk.workouts;
     
-    // Compact system prompt with strict limits
     const systemPrompt = `Running coach. Fill quality workouts. STRICT LIMITS:
 - title: max 6 words
 - description: max 200 chars (warmup+main+cooldown summary)
@@ -1142,6 +1145,19 @@ Ensure each week has 7 days. Use "rest" type for rest days.`;
 qualityLevel 1-2: intro work, short intervals
 qualityLevel 3-4: building, longer efforts
 qualityLevel 5: peak race-specific
+
+Ultra workout types:
+- back_to_back_long: Day-after long run (60-70% of primary long run), focus on running on tired legs
+- fueling_practice: Practice race-day nutrition strategy during this workout, include fueling notes in description
+- hills: For trail/mountain ultras, include vert-specific guidance (power hiking, technical descents)
+
+Phase context:
+- base: aerobic foundation, easy effort
+- build: progressive overload, introduce quality
+- build2_specific: race-specific work (terrain, fueling, vert simulation)
+- peak: highest load, race-simulation efforts
+- taper: reduced volume, maintain intensity, sharpen
+- recovery: reduced load, active recovery
 
 JSON only. No markdown.`;
 
