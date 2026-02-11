@@ -61,12 +61,15 @@ export interface GuardrailConfig {
   minEasyRunKm: number; // Minimum easy run distance in km (floor)
 }
 
-// Race distances in km
-const RACE_DISTANCES_KM = {
+const RACE_DISTANCES_KM: Record<string, number> = {
   marathon: 42.195,
   half_marathon: 21.0975,
   "10k": 10,
   "5k": 5,
+  "50k": 50,
+  "50_mile": 80.4672,
+  "100k": 100,
+  "100_mile": 160.934,
 };
 
 const DEFAULT_CONFIG: GuardrailConfig = {
@@ -137,8 +140,7 @@ export class TrainingGuardrails {
     // 6. Check for unrealistic timeline
     this.validateTimeline(correctedPlan, profile, goalType, raceDate, validation);
     
-    // 7. Validate peak long run reaches 90% of race distance (marathon/half marathon)
-    if (goalType === "marathon" || goalType === "half_marathon") {
+    if (goalType === "marathon" || goalType === "half_marathon" || goalType === "50k") {
       this.validatePeakLongRun(correctedPlan, goalType, validation);
     }
     
@@ -160,17 +162,19 @@ export class TrainingGuardrails {
     goalType: string,
     validation: ValidationResult
   ): void {
-    const raceDistanceKm = RACE_DISTANCES_KM[goalType as keyof typeof RACE_DISTANCES_KM];
+    const raceDistanceKm = RACE_DISTANCES_KM[goalType];
     
-    // For non-race goals, use a reasonable default (e.g., 15km max easy run)
+    const isUltra = ["50k", "50_mile", "100k", "100_mile"].includes(goalType);
+    
     const maxEasyRunKm = raceDistanceKm 
-      ? raceDistanceKm * (this.config.maxEasyRunPercentOfRace / 100)
+      ? (isUltra ? Math.min(raceDistanceKm * 0.3, 25) : raceDistanceKm * (this.config.maxEasyRunPercentOfRace / 100))
       : 15;
     
-    // Peak long run target (90% of race distance, or 25km for non-race)
-    const peakLongRunKm = raceDistanceKm 
-      ? raceDistanceKm * (this.config.peakLongRunPercentOfRace / 100)
-      : 25;
+    const ultraLongRunCaps: Record<string, number> = {
+      "50k": 42, "50_mile": 50, "100k": 55, "100_mile": 60,
+    };
+    const peakLongRunKm = ultraLongRunCaps[goalType] ??
+      (raceDistanceKm ? raceDistanceKm * (this.config.peakLongRunPercentOfRace / 100) : 25);
     
     for (const week of plan.weeks) {
       // Find the long run for this week
@@ -428,10 +432,14 @@ export class TrainingGuardrails {
     goalType: string,
     validation: ValidationResult
   ): void {
+    const ultraTaperWeeks: Record<string, number> = {
+      "50k": 3, "50_mile": 3, "100k": 4, "100_mile": 5,
+    };
     const requiredTaperWeeks = 
-      goalType === "marathon" ? this.config.taperWeeksMarathon :
+      ultraTaperWeeks[goalType] ??
+      (goalType === "marathon" ? this.config.taperWeeksMarathon :
       goalType === "half_marathon" ? this.config.taperWeeksHalf :
-      this.config.taperWeeks10k;
+      this.config.taperWeeks10k);
     
     const totalWeeks = plan.weeks.length;
     const taperStartWeek = totalWeeks - requiredTaperWeeks;
@@ -522,12 +530,15 @@ export class TrainingGuardrails {
     const baseMileage = profile.baselineWeeklyMileageKm || 0;
     const totalWeeks = plan.weeks.length;
     
-    // Minimum recommended weeks by goal
     const minWeeks: Record<string, number> = {
       "5k": 6,
       "10k": 8,
       "half_marathon": 12,
       "marathon": 16,
+      "50k": 20,
+      "50_mile": 24,
+      "100k": 28,
+      "100_mile": 30,
       "general_fitness": 4,
     };
     
@@ -539,7 +550,6 @@ export class TrainingGuardrails {
       );
     }
     
-    // Check if starting mileage is too low for goal
     if (goalType === "marathon" && baseMileage < 20) {
       validation.errors.push(
         `Current baseline (${baseMileage}km/week) is too low for marathon training. Build base to 30+ km/week first.`
@@ -549,6 +559,16 @@ export class TrainingGuardrails {
     if (goalType === "half_marathon" && baseMileage < 15) {
       validation.warnings.push(
         `Current baseline (${baseMileage}km/week) is low for half marathon training. Consider building base first.`
+      );
+    }
+    
+    const ultraMinBaselines: Record<string, number> = {
+      "50k": 40, "50_mile": 50, "100k": 60, "100_mile": 70,
+    };
+    const ultraMinBaseline = ultraMinBaselines[goalType];
+    if (ultraMinBaseline && baseMileage < ultraMinBaseline) {
+      validation.errors.push(
+        `Current baseline (${baseMileage}km/week) is too low for ${goalType.replace("_", " ")} training. Build base to ${ultraMinBaseline}+ km/week first.`
       );
     }
   }
@@ -699,17 +719,23 @@ export class TrainingGuardrails {
       "10k": 35,
       "half_marathon": 50,
       "marathon": 70,
+      "50k": 90,
+      "50_mile": 110,
+      "100k": 130,
+      "100_mile": 150,
       "general_fitness": 0,
     };
     
     const target = targetMileages[goalType] || 30;
     
     if (currentWeeklyMileage >= target) {
-      // Already at target, just need race-specific work
-      return goalType === "marathon" ? 12 : goalType === "half_marathon" ? 10 : 6;
+      const atTargetWeeks: Record<string, number> = {
+        marathon: 12, half_marathon: 10, "50k": 16, "50_mile": 20,
+        "100k": 24, "100_mile": 26,
+      };
+      return atTargetWeeks[goalType] ?? 6;
     }
     
-    // Calculate weeks needed with 10% weekly increase + taper
     const weeklyIncrease = 1.10;
     let weeks = 0;
     let mileage = Math.max(currentWeeklyMileage, 10);
@@ -717,12 +743,14 @@ export class TrainingGuardrails {
     while (mileage < target && weeks < 52) {
       mileage *= weeklyIncrease;
       weeks++;
-      // Add recovery week every 4 weeks
       if (weeks % 4 === 0) weeks++;
     }
     
-    // Add taper
-    const taperWeeks = goalType === "marathon" ? 3 : goalType === "half_marathon" ? 2 : 1;
+    const taperWeeksMap: Record<string, number> = {
+      marathon: 3, half_marathon: 2, "50k": 3, "50_mile": 3,
+      "100k": 4, "100_mile": 5,
+    };
+    const taperWeeks = taperWeeksMap[goalType] ?? 1;
     
     return weeks + taperWeeks;
   }
