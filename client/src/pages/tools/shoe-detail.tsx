@@ -384,8 +384,14 @@ export default function ShoeDetailPage() {
     seriesShoes: RunningShoe[];
     hasSeriesData: boolean;
   }>({
-    queryKey: [`/api/shoes/by-slug/${slug}`],
+    queryKey: ['/api/shoes/by-slug', slug],
     enabled: !!slug,
+  });
+
+  const { data: similarShoes } = useQuery<RunningShoe[]>({
+    queryKey: ['/api/shoes/by-slug', slug, 'similar'],
+    queryFn: () => fetch(`/api/shoes/by-slug/${slug}/similar`).then(r => r.json()),
+    enabled: !!slug && !!data?.shoe,
   });
 
   useEffect(() => {
@@ -696,6 +702,30 @@ export default function ShoeDetailPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Similar Shoes */}
+            {similarShoes && similarShoes.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Similar Shoes</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {similarShoes.map((s) => (
+                    <Link key={s.id} href={`/tools/shoes/${s.slug}`} className="block">
+                      <div className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                        <div>
+                          <p className="font-medium text-sm">{s.brand} {s.model}</p>
+                          <p className="text-xs text-gray-500">
+                            {s.weight ? `${s.weight} oz` : ''}{s.weight && s.price ? ' • ' : ''}{s.price ? `$${s.price}` : ''}
+                          </p>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-gray-400" />
+                      </div>
+                    </Link>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
 
             {/* CTA */}
             <Card className="bg-gradient-to-br from-strava-orange to-orange-600 text-white">

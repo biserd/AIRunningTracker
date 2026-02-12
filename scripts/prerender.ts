@@ -217,9 +217,29 @@ async function prerender() {
 
   // 4. Generate all shoe pages with FULL content
   console.log('\n=== Generating Shoe Pages (Full SSG) ===');
+  function findSimilarShoes(target: typeof shoeData[0], all: typeof shoeData, limit = 3) {
+    return all
+      .filter(s => s !== target && (s.category || 'daily_trainer') === (target.category || 'daily_trainer'))
+      .map(s => {
+        let score = 0;
+        if (target.price && s.price) score += (1 - Math.min(Math.abs(target.price - s.price) / target.price, 1)) * 30;
+        if (target.weight && s.weight) score += (1 - Math.min(Math.abs(target.weight - s.weight) / target.weight, 1)) * 20;
+        if (target.cushioningLevel === s.cushioningLevel) score += 15;
+        if (target.stability === s.stability) score += 10;
+        if (target.heelToToeDrop != null && s.heelToToeDrop != null) score += Math.max(0, 10 - Math.abs(target.heelToToeDrop - s.heelToToeDrop));
+        if (target.hasCarbonPlate === s.hasCarbonPlate) score += 5;
+        if (target.brand === s.brand) score += 5;
+        return { shoe: s, score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map(r => ({ brand: r.shoe.brand, model: r.shoe.model, slug: generateSlug(r.shoe.brand, r.shoe.model), weight: r.shoe.weight || null, price: r.shoe.price || null }));
+  }
+
   for (const shoe of shoeData) {
     try {
       const slug = generateSlug(shoe.brand, shoe.model);
+      const similar = findSimilarShoes(shoe, shoeData);
       const shoeHtml = renderShoePage(slug, {
         brand: shoe.brand,
         model: shoe.model,
@@ -235,7 +255,7 @@ async function prerender() {
         price: shoe.price || null,
         bestFor: shoe.bestFor || [],
         description: shoe.description || null
-      });
+      }, similar);
       const fileName = `shoes-${slug}.html`;
       const filePath = path.join(OUTPUT_DIR, fileName);
       fs.writeFileSync(filePath, shoeHtml, 'utf-8');

@@ -700,6 +700,7 @@ ${allPages.map(page => `  <url>
         res.setHeader('Content-Type', 'text/html');
         res.setHeader('X-Robots-Tag', 'index, follow');
         res.setHeader('Cache-Control', 'public, max-age=3600');
+        const similar = await storage.getSimilarShoes(shoe, 3);
         const html = renderShoePage(slug, {
           brand: shoe.brand,
           model: shoe.model,
@@ -715,7 +716,7 @@ ${allPages.map(page => `  <url>
           price: shoe.price,
           hasCarbonPlate: shoe.hasCarbonPlate,
           hasSuperFoam: shoe.hasSuperFoam
-        });
+        }, similar.map(s => ({ brand: s.brand, model: s.model, slug: s.slug, weight: s.weight, price: s.price })));
         res.send(html);
       } else {
         next();
@@ -6076,6 +6077,21 @@ ${allPages.map(page => `  <url>
     } catch (error: any) {
       console.error('Get shoe by slug error:', error);
       res.status(500).json({ message: error.message || "Failed to get shoe" });
+    }
+  });
+
+  app.get("/api/shoes/by-slug/:slug/similar", async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const shoe = await storage.getShoeBySlug(slug);
+      if (!shoe) {
+        return res.status(404).json({ message: "Shoe not found" });
+      }
+      const similar = await storage.getSimilarShoes(shoe, 3);
+      res.json(similar);
+    } catch (error: any) {
+      console.error('Get similar shoes error:', error);
+      res.status(500).json({ message: error.message || "Failed to get similar shoes" });
     }
   });
 

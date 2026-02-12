@@ -303,6 +303,7 @@ export interface IStorage {
   getShoeById(shoeId: number): Promise<RunningShoe | undefined>;
   getShoeBySlug(slug: string): Promise<RunningShoe | undefined>;
   getShoesBySeries(brand: string, seriesName: string): Promise<RunningShoe[]>;
+  getSimilarShoes(shoe: RunningShoe, limit?: number): Promise<RunningShoe[]>;
   createShoe(shoe: InsertRunningShoe): Promise<RunningShoe>;
   clearAllShoes(): Promise<void>;
   
@@ -2431,6 +2432,39 @@ export class DatabaseStorage implements IStorage {
         eq(runningShoes.seriesName, seriesName)
       ))
       .orderBy(runningShoes.releaseYear);
+  }
+
+  async getSimilarShoes(shoe: RunningShoe, limit: number = 3): Promise<RunningShoe[]> {
+    const candidates = await db.select().from(runningShoes)
+      .where(and(
+        ne(runningShoes.id, shoe.id),
+        eq(runningShoes.category, shoe.category)
+      ))
+      .limit(20);
+
+    const scored = candidates.map(c => {
+      let score = 0;
+      if (shoe.price && c.price) {
+        const priceDiff = Math.abs(shoe.price - c.price) / shoe.price;
+        score += (1 - Math.min(priceDiff, 1)) * 30;
+      }
+      if (shoe.weight && c.weight) {
+        const weightDiff = Math.abs(shoe.weight - c.weight) / shoe.weight;
+        score += (1 - Math.min(weightDiff, 1)) * 20;
+      }
+      if (shoe.cushioningLevel === c.cushioningLevel) score += 15;
+      if (shoe.stability === c.stability) score += 10;
+      if (shoe.heelToToeDrop != null && c.heelToToeDrop != null) {
+        const dropDiff = Math.abs(shoe.heelToToeDrop - c.heelToToeDrop);
+        score += Math.max(0, 10 - dropDiff);
+      }
+      if (shoe.hasCarbonPlate === c.hasCarbonPlate) score += 5;
+      if (shoe.brand === c.brand) score += 5;
+      return { shoe: c, score };
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, limit).map(s => s.shoe);
   }
 
   async createShoe(shoe: InsertRunningShoe): Promise<RunningShoe> {

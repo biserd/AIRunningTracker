@@ -196,7 +196,7 @@ interface ShoeData {
   hasSuperFoam?: boolean | null;
 }
 
-export function renderShoePage(slug: string, shoe: ShoeData): string {
+export function renderShoePage(slug: string, shoe: ShoeData, similarShoes?: { brand: string; model: string; slug: string; weight: number | null; price: number | null }[]): string {
   const shoeName = `${shoe.brand} ${shoe.model}`;
   const url = `/tools/shoes/${slug}`;
   
@@ -256,6 +256,12 @@ export function renderShoePage(slug: string, shoe: ShoeData): string {
         <section>
           <h2>Best For</h2>
           <ul>${shoe.bestFor.map(b => `<li>${escapeHtml(b.replace(/_/g, ' '))}</li>`).join('')}</ul>
+        </section>` : ''}
+        
+        ${similarShoes && similarShoes.length > 0 ? `
+        <section>
+          <h2>Similar Shoes</h2>
+          <ul>${similarShoes.map(s => `<li><a href="/tools/shoes/${s.slug}">${escapeHtml(s.brand)} ${escapeHtml(s.model)}</a>${s.weight || s.price ? ` — ${s.weight ? s.weight + ' oz' : ''}${s.weight && s.price ? ', ' : ''}${s.price ? '$' + s.price : ''}` : ''}</li>`).join('')}</ul>
         </section>` : ''}
         
         <div class="ssr-cta">
