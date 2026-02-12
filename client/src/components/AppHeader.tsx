@@ -23,7 +23,7 @@ const navigationItems = [
 
 export default function AppHeader() {
   const { user, logout } = useAuth();
-  const { isPro } = useSubscription();
+  const { isPro, hasActiveSubscription, isReverseTrial } = useSubscription();
   const [location] = useLocation();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
@@ -104,12 +104,14 @@ export default function AppHeader() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem asChild>
-                  <Link href="/settings" className="flex items-center space-x-2 cursor-pointer">
-                    <Settings size={16} />
-                    <span>Settings</span>
-                  </Link>
-                </DropdownMenuItem>
+                {(hasActiveSubscription || isReverseTrial) && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings" className="flex items-center space-x-2 cursor-pointer">
+                      <Settings size={16} />
+                      <span>Settings</span>
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem asChild>
                   <Link href="/chat-history" className="flex items-center space-x-2 cursor-pointer">
                     <MessageCircle size={16} />

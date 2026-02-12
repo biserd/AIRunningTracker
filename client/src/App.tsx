@@ -178,7 +178,7 @@ function Router() {
         {() => { window.location.href = "/coach-insights"; return null; }}
       </Route>
       <Route path="/settings">
-        <ProtectedRoute component={SettingsPage} />
+        <PremiumProtectedRoute component={SettingsPage} />
       </Route>
       <Route path="/billing">
         <ProtectedRoute component={BillingPage} />
