@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Loader2, Send, Sparkles, TrendingUp, AlertCircle, Activity, PlusCircle, User, ThumbsUp, ThumbsDown, Zap, Target, Heart } from "lucide-react";
+import { Loader2, Send, Sparkles, TrendingUp, AlertCircle, Activity, PlusCircle, User, ThumbsUp, ThumbsDown, Zap, Target, Heart, Calendar, MapPin, Trophy, CheckCircle2, ExternalLink } from "lucide-react";
+import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -143,6 +144,183 @@ function FollowUpSuggestions({
         </Button>
       ))}
     </motion.div>
+  );
+}
+
+interface PlanProposal {
+  goalType: string;
+  raceDate?: string;
+  raceName?: string;
+  goalTimeTarget?: string;
+  experienceLevel?: string;
+  terrainType?: string;
+  includeSpeedwork?: boolean;
+  includeLongRuns?: boolean;
+  preferredRunDays?: string[];
+  constraints?: string;
+}
+
+const goalTypeLabels: Record<string, string> = {
+  "5k": "5K",
+  "10k": "10K",
+  half_marathon: "Half Marathon",
+  marathon: "Marathon",
+  "50k": "50K Ultra",
+  "50_mile": "50 Mile Ultra",
+  "100k": "100K Ultra",
+  "100_mile": "100 Mile Ultra",
+  general_fitness: "General Fitness",
+};
+
+const validGoalTypes = new Set(["5k", "10k", "half_marathon", "marathon", "50k", "50_mile", "100k", "100_mile", "general_fitness"]);
+
+function parsePlanProposals(content: string): { text: string; proposals: PlanProposal[] } {
+  const proposals: PlanProposal[] = [];
+  const text = content.replace(/:::plan-proposal(\{[\s\S]*?\}):::/g, (_, json) => {
+    try {
+      const parsed = JSON.parse(json);
+      if (parsed.goalType && validGoalTypes.has(parsed.goalType)) {
+        proposals.push(parsed);
+      }
+    } catch (e) {
+      // Silently ignore malformed JSON
+    }
+    return "";
+  }).trim();
+  return { text, proposals };
+}
+
+function PlanProposalCard({ proposal, onCreated }: { proposal: PlanProposal; onCreated: (planId: number) => void }) {
+  const [status, setStatus] = useState<"idle" | "creating" | "success" | "error">("idle");
+  const [planId, setPlanId] = useState<number | null>(null);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [, navigate] = useLocation();
+
+  const handleCreate = async () => {
+    setStatus("creating");
+    try {
+      const res = await apiRequest("/api/training/plans/generate", "POST", {
+        goalType: proposal.goalType,
+        raceDate: proposal.raceDate || undefined,
+        raceName: proposal.raceName || undefined,
+        goalTimeTarget: proposal.goalTimeTarget || undefined,
+        experienceLevel: proposal.experienceLevel || "intermediate",
+        terrainType: proposal.terrainType || undefined,
+        includeSpeedwork: proposal.includeSpeedwork ?? true,
+        includeLongRuns: proposal.includeLongRuns ?? true,
+        preferredRunDays: proposal.preferredRunDays || undefined,
+        constraints: proposal.constraints || undefined,
+      });
+      setPlanId(res.planId);
+      setStatus("success");
+      queryClient.invalidateQueries({ queryKey: ["/api/training/plans"] });
+      onCreated(res.planId);
+    } catch (e: any) {
+      setErrorMsg(e.message || "Failed to create plan");
+      setStatus("error");
+    }
+  };
+
+  const raceDate = proposal.raceDate ? new Date(proposal.raceDate + "T00:00:00") : null;
+
+  return (
+    <Card className="my-3 overflow-hidden border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30">
+      <div className="p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Trophy className="w-5 h-5 text-purple-600" />
+          <span className="font-semibold text-sm text-purple-900 dark:text-purple-200">Training Plan Proposal</span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+            <Target className="w-3.5 h-3.5 text-purple-500" />
+            <span>{goalTypeLabels[proposal.goalType] || proposal.goalType}</span>
+          </div>
+          {raceDate && (
+            <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+              <Calendar className="w-3.5 h-3.5 text-purple-500" />
+              <span>{format(raceDate, "MMM d, yyyy")}</span>
+            </div>
+          )}
+          {proposal.raceName && (
+            <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 col-span-2">
+              <MapPin className="w-3.5 h-3.5 text-purple-500" />
+              <span>{proposal.raceName}</span>
+            </div>
+          )}
+          {proposal.goalTimeTarget && (
+            <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+              <Zap className="w-3.5 h-3.5 text-purple-500" />
+              <span>Target: {proposal.goalTimeTarget}</span>
+            </div>
+          )}
+          {proposal.terrainType && proposal.terrainType !== "road" && (
+            <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+              <Activity className="w-3.5 h-3.5 text-purple-500" />
+              <span className="capitalize">{proposal.terrainType}</span>
+            </div>
+          )}
+        </div>
+
+        {status === "idle" && (
+          <Button
+            onClick={handleCreate}
+            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-sm"
+            size="sm"
+          >
+            <Sparkles className="w-4 h-4 mr-2" />
+            Create This Plan
+          </Button>
+        )}
+        {status === "creating" && (
+          <Button disabled className="w-full text-sm" size="sm">
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Creating your plan...
+          </Button>
+        )}
+        {status === "success" && planId && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-green-700 dark:text-green-400 text-sm font-medium">
+              <CheckCircle2 className="w-4 h-4" />
+              Plan created successfully!
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-sm border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:hover:bg-purple-950"
+              onClick={() => navigate(`/training-plans/${planId}`)}
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              View Your Plan
+            </Button>
+          </div>
+        )}
+        {status === "error" && (
+          <div className="space-y-2">
+            <p className="text-xs text-red-600 dark:text-red-400">{errorMsg}</p>
+            <Button onClick={handleCreate} variant="outline" size="sm" className="w-full text-sm">
+              Try Again
+            </Button>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function MessageContent({ content, onPlanCreated }: { content: string; onPlanCreated: (planId: number) => void }) {
+  const { text, proposals } = parsePlanProposals(content);
+  return (
+    <>
+      {text && (
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          {text}
+        </ReactMarkdown>
+      )}
+      {proposals.map((proposal, i) => (
+        <PlanProposalCard key={i} proposal={proposal} onCreated={onPlanCreated} />
+      ))}
+    </>
   );
 }
 
@@ -458,9 +636,7 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
                             >
                               {msg.role === "assistant" ? (
                                 <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0.5">
-                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                    {msg.content}
-                                  </ReactMarkdown>
+                                  <MessageContent content={msg.content} onPlanCreated={(id) => queryClient.invalidateQueries({ queryKey: ["/api/training/plans"] })} />
                                 </div>
                               ) : (
                                 <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
@@ -549,7 +725,7 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
                       <div className="max-w-[75%] rounded-2xl rounded-bl-md px-4 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm">
                         <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0.5">
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                            {streamingMessage}
+                            {streamingMessage.replace(/:::plan-proposal[\s\S]*?:::/g, "").trim()}
                           </ReactMarkdown>
                           <BlinkingCursor />
                         </div>

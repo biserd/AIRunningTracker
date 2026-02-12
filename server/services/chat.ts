@@ -271,7 +271,21 @@ Guidelines:
 - Provide actionable recommendations
 - Keep responses concise (under 200 words unless asked for detail)
 - If asked about specific workouts or dates, use the activity data provided
-- Always consider their current fitness level when making suggestions`
+- Always consider their current fitness level when making suggestions
+
+TRAINING PLAN CREATION:
+When the runner wants you to create a training plan, gather the key details through conversation (race goal, race date, target time if any, experience level, preferred run days, terrain). Once you have enough info, include a plan proposal block in your response so they can create it with one click. Format it EXACTLY like this, on its own line:
+
+:::plan-proposal{"goalType":"100k","raceDate":"2026-04-18","raceName":"Mountain 100K","goalTimeTarget":"14:00:00","experienceLevel":"intermediate","terrainType":"trail","includeSpeedwork":true,"includeLongRuns":true,"preferredRunDays":["monday","wednesday","friday","saturday","sunday"]}:::
+
+Valid goalType values: 5k, 10k, half_marathon, marathon, 50k, 50_mile, 100k, 100_mile, general_fitness
+Valid experienceLevel: beginner, intermediate, advanced
+Valid terrainType: road, trail, mixed
+preferredRunDays: array of lowercase day names
+goalTimeTarget: HH:MM:SS format or omit if no target
+raceDate: YYYY-MM-DD format or omit if no specific date
+
+Place the block AFTER your conversational summary of the plan. Only include fields you've confirmed with the runner. You can propose a plan proactively once you have at least the goalType. Always include a brief text summary before the block explaining what the plan will look like.`
           },
           ...conversationHistory.map(msg => ({
             role: msg.role,
@@ -283,7 +297,7 @@ Guidelines:
             type: "text" as const
           }
         },
-        max_output_tokens: 800,
+        max_output_tokens: 1200,
         reasoning: { effort: "low" },
         stream: true
       });
