@@ -327,7 +327,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/robots.txt", (req, res) => {
     const baseUrl = "https://aitracker.run";
     
-    const robotsTxt = `User-agent: *
+    const robotsTxt = `Content-Signal: ai-train=yes, search=yes, ai-input=yes
+
+User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /dashboard
