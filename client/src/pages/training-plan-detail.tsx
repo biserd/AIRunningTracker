@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useRoute } from "wouter";
 import { 
@@ -203,6 +207,15 @@ export default function TrainingPlanDetail() {
   const [sseFailed, setSseFailed] = useState(false);
   const sseRef = useRef<EventSource | null>(null);
   const [adjustmentPreview, setAdjustmentPreview] = useState<{ feeling: "tired" | "strong"; open: boolean }>({ feeling: "tired", open: false });
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [settingsForm, setSettingsForm] = useState({
+    targetTime: "",
+    raceDate: "",
+    daysPerWeek: 4,
+    preferredDays: [] as string[],
+    terrainType: "road",
+  });
   
   const { data: dashboardData } = useQuery<{ user?: { unitPreference?: string } }>({
     queryKey: [`/api/dashboard/${user?.id}`],
@@ -438,6 +451,119 @@ export default function TrainingPlanDetail() {
     },
   });
   
+  const updateSettingsMutation = useMutation({
+    mutationFn: async (updates: Record<string, any>) => {
+      return await apiRequest(`/api/training/plans/${planId}/settings`, "PATCH", updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/training/plans/${planId}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/training/plans"] });
+      setSettingsOpen(false);
+      toast({
+        title: "Settings saved",
+        description: "Your plan settings have been updated.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save settings. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const archivePlanMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest(`/api/training/plans/${planId}/status`, "PATCH", { status: "archived" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/training/plans"] });
+      setArchiveOpen(false);
+      toast({
+        title: "Plan archived",
+        description: "Your training plan has been archived. You can find it in your archived plans.",
+      });
+      navigate("/training-plans");
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to archive plan. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const exportPlan = () => {
+    if (!plan) return;
+    
+    const allDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const rows: string[][] = [];
+    
+    rows.push(["Week", "Phase", "Day", "Workout Type", "Title", "Distance", "Duration (min)", "Target Pace", "Intensity", "Description"]);
+    
+    plan.weeks.forEach(week => {
+      allDays.forEach(dayKey => {
+        const day = week.days.find(d => d.dayOfWeek === dayKey);
+        if (day) {
+          const dist = day.plannedDistanceKm 
+            ? (useMiles ? `${(day.plannedDistanceKm * KM_TO_MILES).toFixed(1)} mi` : `${day.plannedDistanceKm.toFixed(1)} km`) 
+            : "";
+          rows.push([
+            `Week ${week.weekNumber}`,
+            week.phaseName || week.weekType || "",
+            dayKey,
+            day.workoutType || "rest",
+            day.title || "",
+            dist,
+            day.plannedDurationMins?.toString() || "",
+            day.targetPace || "",
+            day.intensity || "",
+            (day.description || "").replace(/"/g, '""'),
+          ]);
+        } else {
+          rows.push([
+            `Week ${week.weekNumber}`,
+            week.phaseName || week.weekType || "",
+            dayKey,
+            "rest",
+            "", "", "", "", "", "",
+          ]);
+        }
+      });
+    });
+    
+    const csvContent = rows.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const planName = `${goalTypeLabels[plan.goalType] || plan.goalType}${plan.targetTime ? ` - ${plan.targetTime}` : ""}`;
+    link.href = url;
+    link.download = `training-plan-${planName.replace(/[^a-zA-Z0-9]/g, "-")}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Plan exported",
+      description: "Your training plan has been downloaded as a CSV file.",
+    });
+  };
+
+  const openSettings = () => {
+    if (!plan) return;
+    setSettingsForm({
+      targetTime: plan.targetTime || "",
+      raceDate: plan.raceDate ? format(parseISO(plan.raceDate), "yyyy-MM-dd") : "",
+      daysPerWeek: (plan as any).daysPerWeek || 4,
+      preferredDays: (plan as any).preferredDays || [],
+      terrainType: (plan as any).terrainType || "road",
+    });
+    setSettingsOpen(true);
+  };
+
   const formatPace = (minPerKm: number | null | undefined) => {
     if (!minPerKm) return null;
     const mins = Math.floor(minPerKm);
@@ -620,36 +746,21 @@ export default function TrainingPlanDetail() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem 
-                onClick={() => {
-                  toast({
-                    title: "Coming soon",
-                    description: "Plan settings will be available in a future update.",
-                  });
-                }}
+                onClick={openSettings}
                 data-testid="menu-settings"
               >
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
               </DropdownMenuItem>
               <DropdownMenuItem 
-                onClick={() => {
-                  toast({
-                    title: "Coming soon",
-                    description: "Plan export will be available in a future update.",
-                  });
-                }}
+                onClick={exportPlan}
                 data-testid="menu-export"
               >
                 <Download className="w-4 h-4 mr-2" />
                 Export Plan
               </DropdownMenuItem>
               <DropdownMenuItem 
-                onClick={() => {
-                  toast({
-                    title: "Coming soon",
-                    description: "Plan archiving will be available in a future update.",
-                  });
-                }}
+                onClick={() => setArchiveOpen(true)}
                 data-testid="menu-archive"
               >
                 <Archive className="w-4 h-4 mr-2" />
@@ -1523,6 +1634,167 @@ export default function TrainingPlanDetail() {
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 ) : null}
                 {adjustmentPreview.feeling === "tired" ? "Activate Recovery" : "Confirm"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Settings Dialog */}
+        <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+          <DialogContent className="sm:max-w-lg" data-testid="dialog-settings">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5 text-gray-500" />
+                Plan Settings
+              </DialogTitle>
+              <DialogDescription>
+                Update your training plan preferences. Note: changing these settings won't regenerate workouts — they update your plan metadata.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="settings-target-time">Target Time</Label>
+                <Input
+                  id="settings-target-time"
+                  placeholder="e.g. 1:45:00"
+                  value={settingsForm.targetTime}
+                  onChange={(e) => setSettingsForm(prev => ({ ...prev, targetTime: e.target.value }))}
+                  data-testid="input-settings-target-time"
+                />
+                <p className="text-xs text-gray-500">Format: H:MM:SS or MM:SS</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="settings-race-date">Race Date</Label>
+                <Input
+                  id="settings-race-date"
+                  type="date"
+                  value={settingsForm.raceDate}
+                  onChange={(e) => setSettingsForm(prev => ({ ...prev, raceDate: e.target.value }))}
+                  data-testid="input-settings-race-date"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="settings-terrain">Terrain Type</Label>
+                <Select
+                  value={settingsForm.terrainType}
+                  onValueChange={(val) => setSettingsForm(prev => ({ ...prev, terrainType: val }))}
+                >
+                  <SelectTrigger data-testid="select-settings-terrain">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="road">Road</SelectItem>
+                    <SelectItem value="trail">Trail</SelectItem>
+                    <SelectItem value="mixed">Mixed</SelectItem>
+                    <SelectItem value="track">Track</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Preferred Running Days</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map(day => (
+                    <label key={day} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox
+                        checked={settingsForm.preferredDays.includes(day)}
+                        onCheckedChange={(checked) => {
+                          setSettingsForm(prev => ({
+                            ...prev,
+                            preferredDays: checked 
+                              ? [...prev.preferredDays, day]
+                              : prev.preferredDays.filter(d => d !== day),
+                          }));
+                        }}
+                      />
+                      <span className="capitalize">{day.slice(0, 3)}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="flex gap-2 sm:gap-0">
+              <Button 
+                variant="outline" 
+                onClick={() => setSettingsOpen(false)}
+                data-testid="button-cancel-settings"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  const updates: Record<string, any> = {};
+                  if (settingsForm.targetTime !== (plan?.targetTime || "")) updates.targetTime = settingsForm.targetTime || null;
+                  if (settingsForm.raceDate !== (plan?.raceDate ? format(parseISO(plan.raceDate), "yyyy-MM-dd") : "")) {
+                    updates.raceDate = settingsForm.raceDate || null;
+                  }
+                  if (settingsForm.terrainType !== ((plan as any)?.terrainType || "road")) updates.terrainType = settingsForm.terrainType;
+                  if (JSON.stringify(settingsForm.preferredDays.sort()) !== JSON.stringify(((plan as any)?.preferredDays || []).sort())) {
+                    updates.preferredDays = settingsForm.preferredDays;
+                  }
+                  updateSettingsMutation.mutate(updates);
+                }}
+                disabled={updateSettingsMutation.isPending}
+                data-testid="button-save-settings"
+              >
+                {updateSettingsMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : null}
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Archive Confirmation Dialog */}
+        <Dialog open={archiveOpen} onOpenChange={setArchiveOpen}>
+          <DialogContent className="sm:max-w-md" data-testid="dialog-archive">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Archive className="w-5 h-5 text-amber-500" />
+                Archive Training Plan
+              </DialogTitle>
+              <DialogDescription>
+                Archiving this plan will move it out of your active plans. You can still view it later in your archived plans. Your workout history will be preserved.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="py-4">
+              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
+                  {goalTypeLabels[plan?.goalType || ""] || plan?.goalType}
+                  {plan?.targetTime && ` — ${plan.targetTime}`}
+                </p>
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                  {plan?.totalWeeks} weeks · Created {plan?.createdAt ? format(parseISO(plan.createdAt), "MMM d, yyyy") : ""}
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter className="flex gap-2 sm:gap-0">
+              <Button 
+                variant="outline" 
+                onClick={() => setArchiveOpen(false)}
+                data-testid="button-cancel-archive"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => archivePlanMutation.mutate()}
+                disabled={archivePlanMutation.isPending}
+                className="bg-amber-500 hover:bg-amber-600 text-white"
+                data-testid="button-confirm-archive"
+              >
+                {archivePlanMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Archive className="w-4 h-4 mr-2" />
+                )}
+                Archive Plan
               </Button>
             </DialogFooter>
           </DialogContent>

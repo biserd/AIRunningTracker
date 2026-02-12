@@ -18,7 +18,7 @@ import { Link, useLocation } from "wouter";
 import { 
   Plus, Calendar, Target, Clock, ChevronRight, ChevronLeft,
   Loader2, CheckCircle, AlertTriangle, TrendingUp, Footprints,
-  Sparkles, ArrowRight, RefreshCw
+  Sparkles, ArrowRight, RefreshCw, Archive
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
@@ -65,6 +65,7 @@ export default function TrainingPlans() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [showWizard, setShowWizard] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [wizardStep, setWizardStep] = useState<WizardStep>("goal");
   
   // Form state
@@ -672,15 +673,29 @@ export default function TrainingPlans() {
         {/* Existing Plans List */}
         {!showWizard && (
           <div>
-            <h2 className="text-xl font-semibold mb-4">Your Training Plans</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Your Training Plans</h2>
+              {plans && plans.some(p => p.status === "archived") && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowArchived(!showArchived)}
+                  className="text-gray-500"
+                  data-testid="button-toggle-archived"
+                >
+                  <Archive className="w-4 h-4 mr-1" />
+                  {showArchived ? "Hide Archived" : "Show Archived"}
+                </Button>
+              )}
+            </div>
             
             {plansLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-6 h-6 animate-spin text-strava-orange" />
               </div>
-            ) : plans && plans.length > 0 ? (
+            ) : plans && plans.filter(p => showArchived || p.status !== "archived").length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {plans.map((plan) => {
+                {plans.filter(p => showArchived || p.status !== "archived").map((plan) => {
                   const isEnriching = plan.enrichmentStatus === "enriching";
                   const enrichProgress = plan.enrichedWeeks && plan.totalWeeks 
                     ? Math.round((plan.enrichedWeeks / plan.totalWeeks) * 100) 

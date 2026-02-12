@@ -6757,6 +6757,37 @@ ${allPages.map(page => `  <url>
     }
   });
   
+  // Update training plan settings
+  app.patch("/api/training/plans/:planId/settings", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const planId = parseInt(req.params.planId);
+      
+      const plan = await storage.getTrainingPlanById(planId);
+      if (!plan || plan.userId !== userId) {
+        return res.status(404).json({ message: "Training plan not found" });
+      }
+      
+      const allowedFields = ["targetTime", "raceDate", "terrainType", "preferredDays", "daysPerWeek"];
+      const updates: Record<string, any> = {};
+      for (const field of allowedFields) {
+        if (req.body[field] !== undefined) {
+          if (field === "raceDate" && req.body[field]) {
+            updates[field] = new Date(req.body[field]);
+          } else {
+            updates[field] = req.body[field];
+          }
+        }
+      }
+      
+      const updated = await storage.updateTrainingPlan(planId, updates);
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Update training plan settings error:", error);
+      res.status(500).json({ message: error.message || "Failed to update training plan settings" });
+    }
+  });
+
   // Delete a training plan
   app.delete("/api/training/plans/:planId", authenticateJWT, async (req: any, res) => {
     try {
