@@ -754,21 +754,32 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
               e.preventDefault();
               handleSendMessage(inputMessage);
             }}
-            className="flex gap-2"
+            className="flex gap-2 items-end"
           >
-            <Input
+            <textarea
               value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
+              onChange={(e) => {
+                setInputMessage(e.target.value);
+                e.target.style.height = "auto";
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage(inputMessage);
+                }
+              }}
               placeholder="Ask about your running..."
               disabled={isStreaming}
-              className="flex-1 rounded-full border-slate-300 dark:border-slate-600 focus:border-purple-400 focus:ring-purple-400"
+              rows={2}
+              className="flex-1 resize-none rounded-xl border border-slate-300 dark:border-slate-600 focus:border-purple-400 focus:ring-purple-400 focus:ring-1 focus:outline-none bg-transparent px-3 py-2 text-sm dark:text-white placeholder:text-slate-400"
               data-testid="input-chat-message"
             />
             <Button
               type="submit"
               disabled={!inputMessage.trim() || isStreaming}
               size="icon"
-              className="rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600"
+              className="rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 flex-shrink-0"
               data-testid="button-send-message"
             >
               {isStreaming ? (

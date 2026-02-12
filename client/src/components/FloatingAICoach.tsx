@@ -53,7 +53,7 @@ export function FloatingAICoach({ userId, className, pageContext, isOpen: contro
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: "spring", duration: 0.3 }}
             className={cn(
-              "fixed bottom-24 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[420px] h-[500px] sm:h-[600px] max-h-[calc(100vh-8rem)]",
+              "fixed bottom-24 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[480px] h-[560px] sm:h-[680px] max-h-[calc(100vh-8rem)]",
               "bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-purple-200 dark:border-purple-800 overflow-hidden"
             )}
           >
