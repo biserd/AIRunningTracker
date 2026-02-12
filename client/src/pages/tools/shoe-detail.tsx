@@ -384,13 +384,12 @@ export default function ShoeDetailPage() {
     seriesShoes: RunningShoe[];
     hasSeriesData: boolean;
   }>({
-    queryKey: ['/api/shoes/by-slug', slug],
+    queryKey: [`/api/shoes/by-slug/${slug}`],
     enabled: !!slug,
   });
 
   const { data: similarShoes } = useQuery<RunningShoe[]>({
-    queryKey: ['/api/shoes/by-slug', slug, 'similar'],
-    queryFn: () => fetch(`/api/shoes/by-slug/${slug}/similar`).then(r => r.json()),
+    queryKey: [`/api/shoes/by-slug/${slug}/similar`],
     enabled: !!slug && !!data?.shoe,
   });
 
