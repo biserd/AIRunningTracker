@@ -727,10 +727,10 @@ export default function ShoeDetailPage() {
             )}
 
             {/* CTA */}
-            <Card className="bg-gradient-to-br from-strava-orange to-orange-600 text-white">
+            <Card className="bg-gradient-to-br from-orange-500 to-orange-700 border-orange-500">
               <CardContent className="p-6 text-center">
-                <h3 className="text-lg font-bold mb-2">Find Your Perfect Fit</h3>
-                <p className="text-sm opacity-90 mb-4">
+                <h3 className="text-lg font-bold mb-2 text-white">Find Your Perfect Fit</h3>
+                <p className="text-sm text-orange-100 mb-4">
                   Use our AI-powered shoe finder to get personalized recommendations
                 </p>
                 <Link href="/tools/shoe-finder">
