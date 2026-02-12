@@ -764,7 +764,7 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
                 e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
               }}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                if (e.key === "Enter" && !e.shiftKey && !e.altKey) {
                   e.preventDefault();
                   handleSendMessage(inputMessage);
                 }
