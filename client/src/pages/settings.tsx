@@ -34,6 +34,7 @@ function SettingsPageContent() {
   const [stravaBrandingTemplate, setStravaBrandingTemplate] = useState("🏃 Runner Score: {score} | {insight} — Analyzed with AITracker.run");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [notifyPostRun, setNotifyPostRun] = useState(true);
+  const [postRunEmailFrequency, setPostRunEmailFrequency] = useState("every_run");
 
   useEffect(() => {
     if (dashboardData?.user?.unitPreference) {
@@ -47,6 +48,9 @@ function SettingsPageContent() {
     }
     if (dashboardData?.user?.notifyPostRun !== undefined) {
       setNotifyPostRun(dashboardData.user.notifyPostRun);
+    }
+    if (dashboardData?.user?.postRunEmailFrequency) {
+      setPostRunEmailFrequency(dashboardData.user.postRunEmailFrequency);
     }
   }, [dashboardData]);
 
@@ -118,7 +122,7 @@ function SettingsPageContent() {
   });
 
   const updateNotificationsMutation = useMutation({
-    mutationFn: async (settings: { notifyPostRun: boolean }) => {
+    mutationFn: async (settings: { notifyPostRun: boolean; postRunEmailFrequency: string }) => {
       return apiRequest(`/api/users/${user!.id}/notifications`, "PATCH", settings);
     },
     onSuccess: () => {
@@ -126,7 +130,9 @@ function SettingsPageContent() {
       toast({
         title: "Notification settings updated",
         description: notifyPostRun 
-          ? "You'll receive post-run analysis emails" 
+          ? postRunEmailFrequency === "weekly"
+            ? "You'll receive a weekly post-run analysis email"
+            : "You'll receive post-run analysis emails after every run"
           : "Post-run emails disabled",
       });
     },
@@ -463,7 +469,7 @@ function SettingsPageContent() {
                     Post-Run Analysis Emails
                   </Label>
                   <p className="text-sm text-gray-500">
-                    Get an email with quick insights after every run
+                    Get AI-powered insights emailed to you after your runs
                   </p>
                 </div>
                 <Switch
@@ -473,9 +479,35 @@ function SettingsPageContent() {
                   data-testid="switch-post-run-notifications"
                 />
               </div>
+
+              {notifyPostRun && (
+                <div className="space-y-3 pl-1">
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    How often?
+                  </Label>
+                  <RadioGroup
+                    value={postRunEmailFrequency}
+                    onValueChange={setPostRunEmailFrequency}
+                    className="space-y-2"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <RadioGroupItem value="every_run" id="freq-every" />
+                      <Label htmlFor="freq-every" className="text-sm font-normal cursor-pointer">
+                        After every run
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <RadioGroupItem value="weekly" id="freq-weekly" />
+                      <Label htmlFor="freq-weekly" className="text-sm font-normal cursor-pointer">
+                        Once a week (max)
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              )}
               
               <Button
-                onClick={() => updateNotificationsMutation.mutate({ notifyPostRun })}
+                onClick={() => updateNotificationsMutation.mutate({ notifyPostRun, postRunEmailFrequency })}
                 disabled={updateNotificationsMutation.isPending}
                 className="flex items-center gap-2"
                 data-testid="button-save-notifications"

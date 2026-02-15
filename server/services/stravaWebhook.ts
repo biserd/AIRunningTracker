@@ -81,6 +81,15 @@ class StravaWebhookService {
         return "skipped:notifications_disabled";
       }
 
+      const frequency = user.postRunEmailFrequency ?? "every_run";
+      if (frequency === "weekly" && user.lastPostRunEmailAt) {
+        const daysSinceLastEmail = (Date.now() - new Date(user.lastPostRunEmailAt).getTime()) / (1000 * 60 * 60 * 24);
+        if (daysSinceLastEmail < 7) {
+          console.log(`[Strava Webhook] User ${user.id} set to weekly emails, last sent ${daysSinceLastEmail.toFixed(1)} days ago — skipping`);
+          return "skipped:weekly_throttle";
+        }
+      }
+
       if (!user.stravaAccessToken) {
         console.log(`[Strava Webhook] User ${user.id} missing Strava access token`);
         return "skipped:no_access_token";
@@ -124,6 +133,7 @@ class StravaWebhookService {
 
       console.log(`[Strava Webhook] Processing run activity ${event.object_id} for user ${user.id}`);
       await this.sendPostRunEmail(user, activity);
+      await storage.updateUser(user.id, { lastPostRunEmailAt: new Date() });
       return "email_sent";
     } catch (error) {
       console.error("[Strava Webhook] Error processing new activity:", error);

@@ -24,6 +24,7 @@ export interface DashboardData {
     coachQuietHoursStart?: number | null;
     coachQuietHoursEnd?: number | null;
     notifyPostRun?: boolean;
+    postRunEmailFrequency?: string;
   };
   stats: {
     totalDistance: string;

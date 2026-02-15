@@ -2122,6 +2122,7 @@ ${allPages.map(page => `  <url>
           coachQuietHoursStart: user.coachQuietHoursStart,
           coachQuietHoursEnd: user.coachQuietHoursEnd,
           notifyPostRun: user.notifyPostRun ?? true,
+          postRunEmailFrequency: user.postRunEmailFrequency ?? "every_run",
         },
         usage: usageStats,
         stats: {
@@ -3252,7 +3253,7 @@ ${allPages.map(page => `  <url>
   app.patch("/api/users/:userId/notifications", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
-      const { notifyPostRun } = req.body;
+      const { notifyPostRun, postRunEmailFrequency } = req.body;
       
       if (isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
@@ -3262,18 +3263,28 @@ ${allPages.map(page => `  <url>
         return res.status(403).json({ message: "Access denied" });
       }
 
-      if (typeof notifyPostRun !== "boolean") {
-        return res.status(400).json({ message: "notifyPostRun must be a boolean" });
+      const updateData: Record<string, any> = {};
+
+      if (typeof notifyPostRun === "boolean") {
+        updateData.notifyPostRun = notifyPostRun;
       }
 
-      const updatedUser = await storage.updateUser(userId, { notifyPostRun });
+      if (postRunEmailFrequency && ["every_run", "weekly"].includes(postRunEmailFrequency)) {
+        updateData.postRunEmailFrequency = postRunEmailFrequency;
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ message: "No valid notification settings provided" });
+      }
+
+      const updatedUser = await storage.updateUser(userId, updateData);
       
       if (!updatedUser) {
         return res.status(404).json({ message: "User not found" });
       }
 
       deleteCachedResponse(`dashboard:${userId}`);
-      console.log(`[Notifications] Updated notification settings for user ${userId}: notifyPostRun=${notifyPostRun}`);
+      console.log(`[Notifications] Updated notification settings for user ${userId}:`, updateData);
 
       res.json({ success: true, user: updatedUser });
     } catch (error: any) {
