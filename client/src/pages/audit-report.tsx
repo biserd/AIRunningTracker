@@ -215,7 +215,7 @@ function getPersonalizedCopy(
     faster: {
       headline: `Unlock the speed your training is missing.`,
       subtext: `Personalized pace zones, structured speed sessions, and recovery timing.`,
-      button: `Unlock My Speed Plan`,
+      button: `Unlock My Full Toolkit (Start a Free Trial)`,
     },
     endurance: {
       headline: `Build the aerobic base to run longer than ever.`,
