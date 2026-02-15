@@ -260,6 +260,51 @@ export default function AdminPage() {
   } | null>(null);
   const [showConfirmWelcome, setShowConfirmWelcome] = useState(false);
 
+  const [productUpdateResult, setProductUpdateResult] = useState<{
+    sent: number;
+    failed: number;
+    total: number;
+    message: string;
+  } | null>(null);
+  const [showConfirmProductUpdate, setShowConfirmProductUpdate] = useState(false);
+
+  const sendTestProductUpdateMutation = useMutation({
+    mutationFn: () => apiRequest("/api/admin/send-product-update?test=true", "POST"),
+    onSuccess: (data: any) => {
+      toast({
+        title: data.success ? "Test Email Sent" : "Failed",
+        description: data.message,
+        variant: data.success ? "default" : "destructive",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Send",
+        description: error.message || "Could not send test email",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const sendAllProductUpdateMutation = useMutation({
+    mutationFn: () => apiRequest("/api/admin/send-product-update", "POST"),
+    onSuccess: (data: any) => {
+      setProductUpdateResult(data);
+      toast({
+        title: "Product Update Sent",
+        description: data.message,
+      });
+      setShowConfirmProductUpdate(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Send",
+        description: error.message || "Could not send product update emails",
+        variant: "destructive",
+      });
+    },
+  });
+
   const sendTestWelcomeEmailMutation = useMutation({
     mutationFn: () => apiRequest("/api/admin/welcome-campaign/test", "POST"),
     onSuccess: (data: any) => {
@@ -812,6 +857,80 @@ export default function AdminPage() {
                 )}
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Product Update Email */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-blue-500" />
+              Product Update Email
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Send the latest product update email to all users (skips marketing opt-outs).
+              </p>
+
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => sendTestProductUpdateMutation.mutate()}
+                  disabled={sendTestProductUpdateMutation.isPending}
+                >
+                  {sendTestProductUpdateMutation.isPending ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
+                  ) : (
+                    <Mail className="h-4 w-4 mr-2" />
+                  )}
+                  Send Test to Me
+                </Button>
+
+                {!showConfirmProductUpdate ? (
+                  <Button
+                    onClick={() => setShowConfirmProductUpdate(true)}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Send to All Users
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-red-600 font-medium">Are you sure?</span>
+                    <Button
+                      onClick={() => sendAllProductUpdateMutation.mutate()}
+                      disabled={sendAllProductUpdateMutation.isPending}
+                      variant="destructive"
+                    >
+                      {sendAllProductUpdateMutation.isPending ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      ) : null}
+                      Yes, Send All
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowConfirmProductUpdate(false)}
+                      disabled={sendAllProductUpdateMutation.isPending}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {productUpdateResult && (
+                <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                  <p className="text-sm text-blue-800">
+                    <strong>Result:</strong> {productUpdateResult.message}
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    Sent: {productUpdateResult.sent} | Failed: {productUpdateResult.failed}
+                  </p>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 

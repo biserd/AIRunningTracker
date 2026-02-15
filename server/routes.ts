@@ -7681,6 +7681,115 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Admin: Send product update email (test or all)
+  app.post("/api/admin/send-product-update", authenticateAdmin, async (req: any, res) => {
+    try {
+      const isTest = req.query.test === "true";
+      const adminUser = req.user;
+
+      const subject = "RunAnalytics product update: Ultra plans, dual goals, Coach chat + Strava email cadence";
+
+      const textBody = `Hi everyone,
+
+It's Biser from RunAnalytics with a quick product update.
+
+Over the last few weeks, we've cleared up a number of small bugs and improved several existing features — including marathon pace prediction.
+
+We're excited to share four newly released updates:
+
+1. Ultra training plans (including 100-milers)
+
+2. Primary + secondary goals so plans can adapt to competing priorities (e.g., half marathon + 50-miler)
+
+3. Chat with our Running Coach and build/refine a training plan directly through chat
+
+4. Strava webhook email cadence controls - members love getting instant feedback after posting runs, and you can now choose how frequently you want those emails
+
+If you have any questions or want to request a feature, just reply to this email - I read every response.
+
+See you on the roads (and trails),
+Biser
+
+RunAnalytics
+P.S. Jump back in here: https://aitracker.run`;
+
+      const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #333; line-height: 1.6;">
+<p>Hi everyone,</p>
+<p>It's Biser from RunAnalytics with a quick product update.</p>
+<p>Over the last few weeks, we've cleared up a number of small bugs and improved several existing features — including marathon pace prediction.</p>
+<p>We're excited to share four newly released updates:</p>
+<p><strong>1. Ultra training plans (including 100-milers)</strong></p>
+<p><strong>2. Primary + secondary goals</strong> so plans can adapt to competing priorities (e.g., half marathon + 50-miler)</p>
+<p><strong>3. Chat with our Running Coach</strong> and build/refine a training plan directly through chat</p>
+<p><strong>4. Strava webhook email cadence controls</strong> - members love getting instant feedback after posting runs, and you can now choose how frequently you want those emails</p>
+<p>If you have any questions or want to request a feature, just reply to this email - I read every response.</p>
+<p>See you on the roads (and trails),<br/>Biser</p>
+<p>RunAnalytics<br/>P.S. Jump back in here: <a href="https://aitracker.run" style="color: #FC5200;">https://aitracker.run</a></p>
+</div>`;
+
+      if (isTest) {
+        const success = await emailService.sendEmail({
+          to: adminUser.email,
+          subject: `[TEST] ${subject}`,
+          html: htmlBody,
+          text: textBody,
+        });
+        return res.json({
+          success,
+          sent: success ? 1 : 0,
+          failed: success ? 0 : 1,
+          total: 1,
+          message: success ? `Test email sent to ${adminUser.email}` : "Failed to send test email",
+        });
+      }
+
+      const allUsers = await storage.getAllUsers(10000);
+      const recipients = allUsers.filter((u: any) => !u.marketingOptOut && u.email);
+
+      let sent = 0;
+      let failed = 0;
+      const batchSize = 5;
+      const delayMs = 1500;
+
+      for (let i = 0; i < recipients.length; i += batchSize) {
+        const batch = recipients.slice(i, i + batchSize);
+        const results = await Promise.all(
+          batch.map(async (user: any) => {
+            try {
+              const success = await emailService.sendEmail({
+                to: user.email,
+                subject,
+                html: htmlBody,
+                text: textBody,
+              });
+              return success;
+            } catch (err) {
+              console.error(`Failed to send product update to ${user.email}:`, err);
+              return false;
+            }
+          })
+        );
+        sent += results.filter(Boolean).length;
+        failed += results.filter((r: boolean) => !r).length;
+        if (i + batchSize < recipients.length) {
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+      }
+
+      console.log(`[ProductUpdate] Sent: ${sent}, Failed: ${failed}, Total: ${recipients.length}`);
+      res.json({
+        success: true,
+        sent,
+        failed,
+        total: recipients.length,
+        message: `Sent ${sent} product update emails, ${failed} failed`,
+      });
+    } catch (error: any) {
+      console.error("Product update email error:", error);
+      res.status(500).json({ message: error.message || "Failed to send product update emails" });
+    }
+  });
+
   // User: Opt out of marketing emails
   app.post("/api/users/:userId/marketing-optout", authenticateJWT, async (req: any, res) => {
     try {
