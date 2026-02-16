@@ -921,8 +921,8 @@ Biser`;
     const coachText = aiCoachInsight ? `\nRunning Coach:\n${aiCoachInsight}\n` : "";
 
     const unsubLine = unsubscribeUrl
-      ? `\nDon't want these emails? Unsubscribe here: ${unsubscribeUrl}`
-      : "";
+      ? `\nDon't want these emails? Unsubscribe here: ${unsubscribeUrl}\nChange email frequency: https://aitracker.run/settings`
+      : `\nChange email frequency: https://aitracker.run/settings`;
 
     const text = `Hey ${firstName},
 
@@ -956,7 +956,7 @@ ${greyZoneAnalysis?.inGreyZone ? `\n<b>Grey Zone Alert: ~${greyZoneAnalysis.minu
 
 Train smarter,
 The AITracker Running Coach</pre>
-<div style="padding: 15px 25px; font-size: 12px; color: #999;">${unsubscribeUrl ? `<a href="${unsubscribeUrl}" style="color: #999;">Unsubscribe from post-run emails</a>` : ""}</div>
+<div style="padding: 15px 25px; font-size: 12px; color: #999;">${unsubscribeUrl ? `<a href="${unsubscribeUrl}" style="color: #999;">Unsubscribe from post-run emails</a> · ` : ""}<a href="https://aitracker.run/settings" style="color: #999;">Change email frequency</a></div>
 </div>`;
 
     return await this.sendEmail({ to, subject: emailSubject, html, text });
