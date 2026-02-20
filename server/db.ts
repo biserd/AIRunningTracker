@@ -1,4 +1,4 @@
-import { neon } from '@neondatabase/serverless';
+import { neon, types } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from "@shared/schema";
 
@@ -8,6 +8,8 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Use HTTP connection instead of WebSocket for better stability
+types.setTypeParser(types.builtins.TIMESTAMP, (val: string) => new Date(val));
+types.setTypeParser(types.builtins.TIMESTAMPTZ, (val: string) => new Date(val));
+
 const sql = neon(process.env.DATABASE_URL);
 export const db = drizzle({ client: sql, schema });

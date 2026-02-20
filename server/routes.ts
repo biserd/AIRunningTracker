@@ -2012,9 +2012,11 @@ ${allPages.map(page => `  <url>
       // This prevents timezone issues where server is in UTC Nov 1 but user activities are Oct 31
       let referenceDate = new Date();
       if (recentActivities.length > 0) {
-        // Use the most recent activity's date as reference
-        const mostRecentActivity = recentActivities[0]; // Activities are sorted by date desc
-        referenceDate = new Date(mostRecentActivity.startDate);
+        const mostRecentActivity = recentActivities[0];
+        const parsed = new Date(mostRecentActivity.startDate);
+        if (!isNaN(parsed.getTime())) {
+          referenceDate = parsed;
+        }
       }
       
       // Recalculate thisMonth and lastMonth based on the reference date
@@ -2032,7 +2034,7 @@ ${allPages.map(page => `  <url>
       console.log(`  Adjusted Last Month: ${adjustedLastMonth.toISOString()} to ${adjustedThisMonth.toISOString()}`);
       console.log(`  Total recent activities fetched: ${recentActivities.length}`);
       if (recentActivities.length > 0) {
-        console.log(`  Sample activity dates: ${recentActivities.slice(0, 3).map(a => new Date(a.startDate).toISOString()).join(', ')}`);
+        console.log(`  Sample activity dates: ${recentActivities.slice(0, 3).map(a => { const d = new Date(a.startDate); return isNaN(d.getTime()) ? `INVALID(${a.startDate})` : d.toISOString(); }).join(', ')}`);
       }
       
       // Filter activities by time periods (using adjusted month boundaries)
@@ -2438,6 +2440,10 @@ ${allPages.map(page => `  <url>
       
       filteredActivities.forEach(activity => {
         const activityDate = new Date(activity.startDate);
+        if (isNaN(activityDate.getTime())) {
+          console.warn(`[Chart] Skipping activity ${activity.id} with invalid startDate: ${activity.startDate}`);
+          return;
+        }
         let groupKey: string;
         
         if (timeRange === "7days") {
