@@ -2037,23 +2037,26 @@ ${allPages.map(page => `  <url>
         console.log(`  Sample activity dates: ${recentActivities.slice(0, 3).map(a => { const d = new Date(a.startDate); return isNaN(d.getTime()) ? `INVALID(${a.startDate})` : d.toISOString(); }).join(', ')}`);
       }
       
+      // Filter to running activities only for stats (exclude walks, weight training, etc.)
+      const runningActivities = recentActivities.filter(a => a.type === 'Run');
+      
       // Filter activities by time periods (using adjusted month boundaries)
-      const thisMonthActivities = recentActivities.filter(a => 
+      const thisMonthActivities = runningActivities.filter(a => 
         new Date(a.startDate) >= adjustedThisMonth
       );
       
-      const lastMonthActivities = recentActivities.filter(a => 
+      const lastMonthActivities = runningActivities.filter(a => 
         new Date(a.startDate) >= adjustedLastMonth && new Date(a.startDate) < adjustedThisMonth
       );
       
       console.log(`  This month activities: ${thisMonthActivities.length}`);
       console.log(`  Last month activities: ${lastMonthActivities.length}`);
       
-      const thisWeekActivities = recentActivities.filter(a => 
+      const thisWeekActivities = runningActivities.filter(a => 
         new Date(a.startDate) >= thisWeek
       );
       
-      const lastWeekActivities = recentActivities.filter(a => 
+      const lastWeekActivities = runningActivities.filter(a => 
         new Date(a.startDate) >= lastWeek && new Date(a.startDate) < thisWeek
       );
       
@@ -2434,11 +2437,14 @@ ${allPages.map(page => `  <url>
 
       // OPTIMIZATION: Filter at database level using startDate parameter
       const filteredActivities = await storage.getActivitiesByUserId(userId, 100, startDate);
+      
+      // Filter to running activities only (exclude walks, weight training, etc.)
+      const runOnlyActivities = filteredActivities.filter(a => a.type === 'Run');
 
       // Group activities by week/month
       const groupedData = new Map();
       
-      filteredActivities.forEach(activity => {
+      runOnlyActivities.forEach(activity => {
         const activityDate = new Date(activity.startDate);
         if (isNaN(activityDate.getTime())) {
           console.warn(`[Chart] Skipping activity ${activity.id} with invalid startDate: ${activity.startDate}`);
