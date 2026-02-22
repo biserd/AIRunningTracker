@@ -623,7 +623,6 @@ export class DatabaseStorage implements IStorage {
       await tx.execute(sql`DELETE FROM activity_route_map WHERE activity_id = ${activityId}`);
       await tx.execute(sql`DELETE FROM activity_features WHERE activity_id = ${activityId}`);
       await tx.execute(sql`DELETE FROM similar_runs_cache WHERE activity_id = ${activityId}`);
-      await tx.execute(sql`DELETE FROM notification_outbox WHERE activity_id = ${activityId}`);
       await tx.execute(sql`UPDATE plan_days SET linked_activity_id = NULL WHERE linked_activity_id = ${activityId}`);
       await tx.execute(sql`UPDATE agent_runs SET activity_id = NULL WHERE activity_id = ${activityId}`);
       await tx.delete(activities).where(eq(activities.id, activityId));
