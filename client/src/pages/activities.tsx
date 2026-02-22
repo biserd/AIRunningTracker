@@ -65,7 +65,7 @@ export default function ActivitiesPage() {
 
   const deleteActivityMutation = useMutation({
     mutationFn: async (activityId: number) => {
-      await apiRequest("DELETE", `/api/activities/${activityId}`);
+      await apiRequest(`/api/activities/${activityId}`, "DELETE");
     },
     onSuccess: () => {
       toast({ title: "Activity deleted", description: "The activity has been removed and your stats will update." });
