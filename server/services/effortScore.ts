@@ -1,4 +1,4 @@
-import { storage } from "../storage";
+import { storage, RUNNING_ACTIVITY_TYPES } from "../storage";
 import type { Activity } from "@shared/schema";
 
 interface EffortScoreResult {
@@ -112,7 +112,7 @@ export class EffortScoreService {
     cutoffDate.setDate(cutoffDate.getDate() - periodDays);
     
     const recentActivities = activities.filter((a: Activity) => 
-      new Date(a.startDate) >= cutoffDate && a.type === "Run"
+      new Date(a.startDate) >= cutoffDate && RUNNING_ACTIVITY_TYPES.includes(a.type)
     );
     
     if (recentActivities.length === 0) {

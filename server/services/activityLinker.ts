@@ -1,4 +1,4 @@
-import { storage } from "../storage";
+import { storage, RUNNING_ACTIVITY_TYPES } from "../storage";
 import type { Activity, PlanDay } from "@shared/schema";
 
 interface LinkCandidate {
@@ -17,7 +17,7 @@ interface LinkResult {
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 function calculateMatchScore(day: PlanDay, activity: Activity): number | null {
-  if (activity.type !== "Run") {
+  if (!RUNNING_ACTIVITY_TYPES.includes(activity.type)) {
     return null;
   }
 

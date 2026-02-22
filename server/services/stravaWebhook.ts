@@ -1,4 +1,4 @@
-import { storage } from "../storage";
+import { storage, RUNNING_ACTIVITY_TYPES } from "../storage";
 import { emailService } from "./email";
 import { stravaService } from "./strava";
 import OpenAI from "openai";
@@ -126,7 +126,7 @@ class StravaWebhookService {
         return "skipped:activity_fetch_failed";
       }
 
-      if (activity.type !== "Run") {
+      if (!RUNNING_ACTIVITY_TYPES.includes(activity.type)) {
         console.log(`[Strava Webhook] Activity ${event.object_id} is not a run (${activity.type})`);
         return `skipped:not_a_run(${activity.type})`;
       }

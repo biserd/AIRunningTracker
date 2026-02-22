@@ -4,6 +4,8 @@ import { db } from "./db";
 import { eq, desc, and, or, sql, inArray, gte, gt, lt, ne } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
+export const RUNNING_ACTIVITY_TYPES = ['Run', 'TrailRun', 'VirtualRun'];
+
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -559,8 +561,8 @@ export class DatabaseStorage implements IStorage {
   }> {
     const { page, pageSize, minDistance, maxDistance, startDate, endDate } = options;
     
-    // Build where conditions
-    const conditions = [eq(activities.userId, userId)];
+    // Build where conditions - filter to running activities only
+    const conditions = [eq(activities.userId, userId), inArray(activities.type, RUNNING_ACTIVITY_TYPES)];
     
     if (minDistance !== undefined) {
       conditions.push(gte(activities.distance, minDistance));

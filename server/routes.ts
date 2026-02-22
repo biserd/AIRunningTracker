@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import * as fs from "fs";
 import * as path from "path";
-import { storage } from "./storage";
+import { storage, RUNNING_ACTIVITY_TYPES } from "./storage";
 import { stravaService } from "./services/strava";
 import { stravaClient } from "./services/stravaClient";
 import { jobQueue, createListActivitiesJob, createHydrateActivityJob, metrics } from "./services/queue";
@@ -2038,7 +2038,7 @@ ${allPages.map(page => `  <url>
       }
       
       // Filter to running activities only for stats (exclude walks, weight training, etc.)
-      const runningActivities = recentActivities.filter(a => a.type === 'Run');
+      const runningActivities = recentActivities.filter(a => RUNNING_ACTIVITY_TYPES.includes(a.type));
       
       // Filter activities by time periods (using adjusted month boundaries)
       const thisMonthActivities = runningActivities.filter(a => 
@@ -2439,7 +2439,7 @@ ${allPages.map(page => `  <url>
       const filteredActivities = await storage.getActivitiesByUserId(userId, 100, startDate);
       
       // Filter to running activities only (exclude walks, weight training, etc.)
-      const runOnlyActivities = filteredActivities.filter(a => a.type === 'Run');
+      const runOnlyActivities = filteredActivities.filter(a => RUNNING_ACTIVITY_TYPES.includes(a.type));
 
       // Group activities by week/month
       const groupedData = new Map();
@@ -3012,7 +3012,7 @@ ${allPages.map(page => `  <url>
       // Get activities for additional analysis
       const activities = await storage.getActivitiesByUserId(userId, 100);
       const runningActivities = activities.filter(a => 
-        ['Run', 'TrailRun', 'VirtualRun'].includes(a.type)
+        RUNNING_ACTIVITY_TYPES.includes(a.type)
       );
       
       // Calculate training load change using calendar weeks (Monday-Sunday)
@@ -4307,7 +4307,7 @@ ${allPages.map(page => `  <url>
       const dailyData: Map<string, { totalDistanceKm: number; activities: Array<{ id: number; name: string; distanceKm: number; grade?: string }> }> = new Map();
       
       for (const activity of activities) {
-        if (activity.type !== 'Run') continue;
+        if (!RUNNING_ACTIVITY_TYPES.includes(activity.type)) continue;
         
         const activityDate = new Date(activity.startDate);
         if (activityDate < startDate || activityDate > endDate) continue;
@@ -6492,7 +6492,7 @@ ${allPages.map(page => `  <url>
       // Calculate favorite day of the week
       const yearActivities = activities.filter(a => {
         const activityYear = new Date(a.startDate).getFullYear();
-        return activityYear === year && a.type === "Run";
+        return activityYear === year && RUNNING_ACTIVITY_TYPES.includes(a.type);
       });
       
       const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];

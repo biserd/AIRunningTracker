@@ -1,4 +1,4 @@
-import { storage } from "../storage";
+import { storage, RUNNING_ACTIVITY_TYPES } from "../storage";
 import type { Activity, AthleteProfile, InsertAthleteProfile } from "@shared/schema";
 
 interface ComputedProfile {
@@ -43,7 +43,7 @@ export class AthleteProfileService {
     const activities = await storage.getActivitiesByUserId(userId, undefined, twelveWeeksAgo);
     
     // Filter to only runs
-    const runs = activities.filter(a => a.type === "Run");
+    const runs = activities.filter(a => RUNNING_ACTIVITY_TYPES.includes(a.type));
     
     if (runs.length === 0) {
       console.log(`[AthleteProfile] No runs found for user ${userId}, creating minimal profile`);

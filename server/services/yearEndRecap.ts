@@ -1,4 +1,5 @@
 import { Activity } from "@shared/schema";
+import { RUNNING_ACTIVITY_TYPES } from "../storage";
 
 export interface YearlyStats {
   totalRuns: number;
@@ -47,7 +48,7 @@ export interface LocationInfo {
 export function calculateYearlyStats(activities: Activity[], year: number): YearlyStats {
   const yearActivities = activities.filter(a => {
     const activityYear = new Date(a.startDate).getFullYear();
-    return activityYear === year && a.type === "Run";
+    return activityYear === year && RUNNING_ACTIVITY_TYPES.includes(a.type);
   });
 
   if (yearActivities.length === 0) {
