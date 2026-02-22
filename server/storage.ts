@@ -46,6 +46,7 @@ export interface IStorage {
     totalPages: number;
   }>;
   getActivityById(activityId: number): Promise<Activity | undefined>;
+  deleteActivity(activityId: number): Promise<void>;
   getActivityStreams(activityId: number): Promise<any | null>;
   getActivityByStravaId(stravaId: string): Promise<Activity | undefined>;
   getActivityByStravaIdAndUser(stravaId: string, userId: number): Promise<Activity | undefined>;
@@ -614,6 +615,19 @@ export class DatabaseStorage implements IStorage {
       .from(activities)
       .where(eq(activities.id, activityId));
     return activity || undefined;
+  }
+
+  async deleteActivity(activityId: number): Promise<void> {
+    await db.transaction(async (tx) => {
+      await tx.delete(coachRecaps).where(eq(coachRecaps.activityId, activityId));
+      await tx.execute(sql`DELETE FROM activity_route_map WHERE activity_id = ${activityId}`);
+      await tx.execute(sql`DELETE FROM activity_features WHERE activity_id = ${activityId}`);
+      await tx.execute(sql`DELETE FROM similar_runs_cache WHERE activity_id = ${activityId}`);
+      await tx.execute(sql`DELETE FROM notification_outbox WHERE activity_id = ${activityId}`);
+      await tx.execute(sql`UPDATE plan_days SET linked_activity_id = NULL WHERE linked_activity_id = ${activityId}`);
+      await tx.execute(sql`UPDATE agent_runs SET activity_id = NULL WHERE activity_id = ${activityId}`);
+      await tx.delete(activities).where(eq(activities.id, activityId));
+    });
   }
 
   async getActivityStreams(activityId: number): Promise<any | null> {

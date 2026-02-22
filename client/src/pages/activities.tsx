@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import AppHeader from "@/components/AppHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Activity, Calendar, Clock, TrendingUp, Zap, ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import { Activity, Calendar, Clock, TrendingUp, Zap, ChevronLeft, ChevronRight, Filter, Trash2 } from "lucide-react";
 import { Link } from "wouter";
 import { StravaPoweredBy } from "@/components/StravaConnect";
 import { useState } from "react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface ActivityData {
   id: number;
@@ -51,6 +53,7 @@ interface ActivitiesResponse {
 
 export default function ActivitiesPage() {
   const { user, isLoading: authLoading } = useAuth();
+  const { toast } = useToast();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [minDistance, setMinDistance] = useState("");
@@ -58,6 +61,24 @@ export default function ActivitiesPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+
+  const deleteActivityMutation = useMutation({
+    mutationFn: async (activityId: number) => {
+      await apiRequest("DELETE", `/api/activities/${activityId}`);
+    },
+    onSuccess: () => {
+      toast({ title: "Activity deleted", description: "The activity has been removed and your stats will update." });
+      queryClient.invalidateQueries({ queryKey: ['/api/activities'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/chart-data'] });
+      setDeleteConfirmId(null);
+    },
+    onError: (error: any) => {
+      toast({ title: "Failed to delete", description: error.message || "Something went wrong.", variant: "destructive" });
+      setDeleteConfirmId(null);
+    },
+  });
 
   const { data: response, isLoading } = useQuery<ActivitiesResponse>({
     queryKey: ['/api/activities', page, pageSize, minDistance, maxDistance, startDate, endDate],
@@ -338,89 +359,130 @@ export default function ActivitiesPage() {
               <CardContent>
                 <div className="space-y-3">
                   {activities.map((activity, index) => (
-                    <Link key={activity.id} href={`/activity/${activity.id}`}>
-                      <div 
-                        className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                        data-testid={`activity-item-${activity.id}`}
-                      >
-                        {activity.grade ? (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold text-white shadow-md flex-shrink-0 cursor-help ${gradeColors[activity.grade]}`} data-testid={`grade-badge-${activity.id}`}>
-                                  {activity.grade}
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent side="right" className="max-w-xs">
-                                <p className="font-semibold">Run Score: {activity.grade}</p>
-                                <p className="text-xs text-muted-foreground">{gradeDescriptions[activity.grade]}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        ) : (
-                          <div className="w-10 h-10 rounded-lg bg-strava-orange/10 flex items-center justify-center flex-shrink-0">
-                            <Activity className="h-5 w-5 text-strava-orange" />
-                          </div>
-                        )}
-                        
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-charcoal truncate">{activity.name}</h4>
-                          <div className="flex items-center gap-2 mt-1 text-sm text-gray-600">
-                            <Calendar className="h-3 w-3" />
-                            <span>{formatDate(activity.startDate)}</span>
-                          </div>
+                    <div key={activity.id} className="relative">
+                      {deleteConfirmId === activity.id && (
+                        <div className="absolute inset-0 z-10 bg-white/95 rounded-lg flex items-center justify-center gap-3 border-2 border-red-200">
+                          <span className="text-sm font-medium text-gray-700">Delete this activity?</span>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => deleteActivityMutation.mutate(activity.id)}
+                            disabled={deleteActivityMutation.isPending}
+                          >
+                            {deleteActivityMutation.isPending ? "Deleting..." : "Yes, delete"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setDeleteConfirmId(null)}
+                            disabled={deleteActivityMutation.isPending}
+                          >
+                            Cancel
+                          </Button>
                         </div>
+                      )}
+                      <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <Link href={`/activity/${activity.id}`} className="flex items-center gap-4 flex-1 min-w-0 cursor-pointer">
+                          {activity.grade ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold text-white shadow-md flex-shrink-0 cursor-help ${gradeColors[activity.grade]}`} data-testid={`grade-badge-${activity.id}`}>
+                                    {activity.grade}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="right" className="max-w-xs">
+                                  <p className="font-semibold">Run Score: {activity.grade}</p>
+                                  <p className="text-xs text-muted-foreground">{gradeDescriptions[activity.grade]}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-strava-orange/10 flex items-center justify-center flex-shrink-0">
+                              <Activity className="h-5 w-5 text-strava-orange" />
+                            </div>
+                          )}
+                          
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-charcoal truncate">{activity.name}</h4>
+                            <div className="flex items-center gap-2 mt-1 text-sm text-gray-600">
+                              <Calendar className="h-3 w-3" />
+                              <span>{formatDate(activity.startDate)}</span>
+                            </div>
+                          </div>
 
-                        <div className="hidden md:flex items-center gap-6 text-sm">
-                          <div className="text-right">
+                          <div className="hidden md:flex items-center gap-6 text-sm">
+                            <div className="text-right">
+                              <div className="font-semibold text-charcoal">
+                                {formatDistance(activity.distance)} {unitPreference === 'miles' ? 'mi' : 'km'}
+                              </div>
+                              <div className="text-gray-600">Distance</div>
+                            </div>
+
+                            <div className="text-right">
+                              <div className="font-semibold text-charcoal">
+                                {formatPace(activity.averageSpeed)} /{unitPreference === 'miles' ? 'mi' : 'km'}
+                              </div>
+                              <div className="text-gray-600">Pace</div>
+                            </div>
+
+                            <div className="text-right">
+                              <div className="font-semibold text-charcoal">
+                                {formatDuration(activity.movingTime)}
+                              </div>
+                              <div className="text-gray-600">Time</div>
+                            </div>
+
+                            <div className="text-right">
+                              <div className="font-semibold text-charcoal">
+                                {Math.round(activity.totalElevationGain)} m
+                              </div>
+                              <div className="text-gray-600">Elevation</div>
+                            </div>
+
+                            {activity.averageHeartrate && (
+                              <div className="text-right">
+                                <div className="font-semibold text-charcoal flex items-center gap-1">
+                                  <Zap className="h-3 w-3 text-red-500" />
+                                  {Math.round(activity.averageHeartrate)}
+                                </div>
+                                <div className="text-gray-600">Avg HR</div>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="md:hidden text-right">
                             <div className="font-semibold text-charcoal">
                               {formatDistance(activity.distance)} {unitPreference === 'miles' ? 'mi' : 'km'}
                             </div>
-                            <div className="text-gray-600">Distance</div>
-                          </div>
-
-                          <div className="text-right">
-                            <div className="font-semibold text-charcoal">
-                              {formatPace(activity.averageSpeed)} /{unitPreference === 'miles' ? 'mi' : 'km'}
-                            </div>
-                            <div className="text-gray-600">Pace</div>
-                          </div>
-
-                          <div className="text-right">
-                            <div className="font-semibold text-charcoal">
+                            <div className="text-sm text-gray-600">
                               {formatDuration(activity.movingTime)}
                             </div>
-                            <div className="text-gray-600">Time</div>
                           </div>
+                        </Link>
 
-                          <div className="text-right">
-                            <div className="font-semibold text-charcoal">
-                              {Math.round(activity.totalElevationGain)} m
-                            </div>
-                            <div className="text-gray-600">Elevation</div>
-                          </div>
-
-                          {activity.averageHeartrate && (
-                            <div className="text-right">
-                              <div className="font-semibold text-charcoal flex items-center gap-1">
-                                <Zap className="h-3 w-3 text-red-500" />
-                                {Math.round(activity.averageHeartrate)}
-                              </div>
-                              <div className="text-gray-600">Avg HR</div>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="md:hidden text-right">
-                          <div className="font-semibold text-charcoal">
-                            {formatDistance(activity.distance)} {unitPreference === 'miles' ? 'mi' : 'km'}
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            {formatDuration(activity.movingTime)}
-                          </div>
-                        </div>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                className="flex-shrink-0 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setDeleteConfirmId(activity.id);
+                                }}
+                                data-testid={`delete-activity-${activity.id}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Delete activity</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
-                    </Link>
+                    </div>
                   ))}
                 </div>
 

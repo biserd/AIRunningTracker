@@ -4624,6 +4624,34 @@ ${allPages.map(page => `  <url>
   });
 
   // Get activity details
+  app.delete("/api/activities/:activityId", authenticateJWT, async (req: any, res) => {
+    try {
+      const activityId = parseInt(req.params.activityId);
+      const userId = req.user!.id;
+
+      if (isNaN(activityId)) {
+        return res.status(400).json({ message: "Invalid activity ID" });
+      }
+
+      const activity = await storage.getActivityById(activityId);
+      if (!activity) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
+
+      if (activity.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      await storage.deleteActivity(activityId);
+      deleteCachedResponse(`dashboard_${userId}`);
+      deleteCachedResponse(`chart_${userId}`);
+      res.json({ message: "Activity deleted successfully" });
+    } catch (error: any) {
+      console.error('Delete activity error:', error);
+      res.status(500).json({ message: error.message || "Failed to delete activity" });
+    }
+  });
+
   app.get("/api/activities/:activityId", async (req, res) => {
     try {
       const activityId = parseInt(req.params.activityId);
