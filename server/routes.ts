@@ -144,6 +144,14 @@ export function deleteCachedResponse(key: string): void {
   }
 }
 
+export function deleteCachedByPrefix(prefix: string): void {
+  for (const key of responseCache.keys()) {
+    if (key.startsWith(prefix)) {
+      responseCache.delete(key);
+    }
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   
   // SEO: Page-specific meta data for dynamic rendering
@@ -4643,8 +4651,11 @@ ${allPages.map(page => `  <url>
       }
 
       await storage.deleteActivity(activityId);
-      deleteCachedResponse(`dashboard_${userId}`);
-      deleteCachedResponse(`chart_${userId}`);
+      deleteCachedResponse(`dashboard:${userId}`);
+      deleteCachedByPrefix(`chart:${userId}:`);
+      deleteCachedByPrefix(`fitness:${userId}:`);
+      deleteCachedResponse(`analytics-batch:${userId}`);
+      deleteCachedResponse(`predictions:${userId}`);
       res.json({ message: "Activity deleted successfully" });
     } catch (error: any) {
       console.error('Delete activity error:', error);
