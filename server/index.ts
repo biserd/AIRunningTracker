@@ -10,19 +10,16 @@ import { emailService } from './services/email';
 
 const app = express();
 
-// Security headers for HTTPS
-app.use((req, res, next) => {
-  // Force HTTPS in production
-  if (process.env.NODE_ENV === 'production' && !req.secure && req.get('x-forwarded-proto') !== 'https') {
-    return res.redirect(301, `https://${req.get('host')}${req.url}`);
-  }
-  
-  // Security headers
-  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+// Health check endpoint - MUST be first, before any middleware that could slow or redirect
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+// Security headers (TLS termination is handled by Replit's proxy - no HTTPS redirect needed)
+app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
-  
   next();
 });
 
