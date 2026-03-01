@@ -305,22 +305,22 @@ function getPersonalizedCopy(
     race: {
       headline: `Get race-ready with a plan built for your body.`,
       subtext: `Personalized paces, structured weekly plan, and race-day strategy.`,
-      button: `Unlock My Race Plan`,
+      button: `Continue`,
     },
     faster: {
       headline: `Unlock the speed your training is missing.`,
       subtext: `Personalized pace zones, structured speed sessions, and recovery timing.`,
-      button: `Unlock My Full Toolkit (Start a Free Trial)`,
+      button: `Continue`,
     },
     endurance: {
       headline: `Build the aerobic base to run longer than ever.`,
       subtext: `Personalized easy pace, progressive long runs, and endurance tracking.`,
-      button: `Unlock My Endurance Plan`,
+      button: `Continue`,
     },
     injury_free: {
       headline: `Train consistently without the injury setbacks.`,
       subtext: `Safe pace zones, load monitoring, and recovery-first planning.`,
-      button: `Unlock My Safe Training Plan`,
+      button: `Continue`,
     },
   };
 
@@ -963,7 +963,7 @@ export default function AuditReportPage() {
                 </div>
               ) : (
                 <>
-                  {personalizedCopy?.cta.button || "Reveal My Optimal Paces & Fix My Plan"}
+                  {personalizedCopy?.cta.button || "Continue"}
                   <ArrowRight className="h-5 w-5 ml-2" />
                 </>
               )}
