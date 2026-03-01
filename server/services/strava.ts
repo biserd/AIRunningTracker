@@ -229,21 +229,13 @@ export class StravaService {
     existingDescription: string | null,
     brandingText: string
   ): Promise<boolean> {
-    // Don't add branding if it's already there (check for exact branding text or AITracker.run marker)
-    if (existingDescription) {
-      // Check for the exact branding text or the AITracker.run marker
-      if (existingDescription.includes(brandingText.trim()) || existingDescription.includes('AITracker.run')) {
-        console.log(`[Branding] Activity ${activityId} already has branding, skipping`);
-        return true;
-      }
+    // Only write branding if the activity has no existing description
+    if (existingDescription?.trim()) {
+      console.log(`[Branding] Activity ${activityId} already has a description, skipping`);
+      return true;
     }
     
-    // Append branding to existing description with clean formatting
-    const newDescription = existingDescription?.trim()
-      ? `${existingDescription.trim()}\n\n${brandingText.trim()}`
-      : brandingText.trim();
-    
-    return this.updateActivityDescription(accessToken, activityId, newDescription);
+    return this.updateActivityDescription(accessToken, activityId, brandingText.trim());
   }
 
   async updateActivityDescription(accessToken: string, activityId: number, description: string): Promise<boolean> {

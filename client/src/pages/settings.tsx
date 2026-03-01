@@ -351,9 +351,6 @@ function SettingsPageContent() {
               <CardTitle className="flex items-center gap-2">
                 <Share2 className="h-5 w-5" />
                 Strava Activity Branding
-                <Badge variant="secondary" className="bg-green-100 text-green-700">
-                  Growth Feature
-                </Badge>
               </CardTitle>
               <CardDescription>
                 Automatically add your Runner Score and AI insights to your Strava activity descriptions
