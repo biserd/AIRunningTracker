@@ -71,7 +71,7 @@ interface PersonalizedCopy {
     body: string;
     takeaway: string;
   };
-  greyZone: {
+  insightCard: {
     title: string;
     body: string;
     lockedLabel: string;
@@ -113,28 +113,27 @@ function getPersonalizedCopy(
   const runnerIQByGoal: Record<string, PersonalizedCopy['runnerIQ']> = {
     race: {
       title: `Your 'Runner IQ' is ${runnerIQScore}`,
-      body: `You are putting in Grade ${volumeGrade} effort, but getting Grade ${perfGrade} race-readiness. ${greyZonePct}% of your recent miles were spent in no-man's land: not easy enough to recover, not hard enough to build race fitness.`,
+      body: `You are putting in Grade ${volumeGrade} effort, but getting Grade ${perfGrade} race-readiness. Too many of your recent miles are not targeted at a specific training adaptation — not easy enough to recover, not hard enough to build race fitness.`,
       takeaway: `Your training volume is there, but it is not translating to race performance.`,
     },
     faster: {
       title: `Your 'Runner IQ' is ${runnerIQScore}`,
-      body: `Grade ${volumeGrade} effort in, Grade ${perfGrade} speed out. ${greyZonePct}% of your miles are stuck in the "grey zone" where you are running too hard to recover but too slow to trigger speed adaptations.`,
+      body: `Grade ${volumeGrade} effort in, Grade ${perfGrade} speed out. Your runs are landing at an intensity that is too hard to fully recover from but too easy to trigger speed adaptations. That middle ground is where speed goes to disappear.`,
       takeaway: `You have the engine. You just need the right gear shifts to unlock faster times.`,
     },
     endurance: {
       title: `Your 'Runner IQ' is ${runnerIQScore}`,
-      body: `You are logging Grade ${volumeGrade} volume, but your aerobic efficiency is only Grade ${perfGrade}. ${greyZonePct}% of your miles are too fast for base-building, which means your body never fully adapts before the next session.`,
+      body: `You are logging Grade ${volumeGrade} volume, but your aerobic efficiency is only Grade ${perfGrade}. Most of your easy miles are running faster than the pace where your aerobic engine actually develops, which means your body never fully adapts before the next session.`,
       takeaway: `Slowing down on easy days is the fastest path to running longer.`,
     },
     injury_free: {
       title: `Your 'Runner IQ' is ${runnerIQScore}`,
-      body: `You are putting in Grade ${volumeGrade} effort, but your body is absorbing Grade ${perfGrade} levels of stress. ${greyZonePct}% of your miles create unnecessary mechanical load on your joints and tendons without improving fitness.`,
+      body: `You are putting in Grade ${volumeGrade} effort, but your body is absorbing Grade ${perfGrade} levels of stress. Running at mismatched intensities creates unnecessary mechanical load on your joints and tendons without delivering fitness gains.`,
       takeaway: `Your body is absorbing more impact than it needs to. That is a recipe for injury.`,
     },
   };
 
   // --- Load Warning copy by struggle ---
-  // When load is stable (not critical), reframe positively around consistency
   const isStable = !isCritical;
   const consistencyGrade = thisWeek >= 4 ? 'A' : thisWeek >= 3 ? 'B+' : thisWeek >= 2 ? 'B' : 'C';
 
@@ -145,25 +144,25 @@ function getPersonalizedCopy(
       takeaway: `Plateaus break with precision, not brute force. A structured plan ramps load safely.`,
     } : {
       title: `Consistency Score: ${consistencyGrade}`,
-      body: `You run consistently (${thisWeek}x/week), and that discipline is a real strength. But your intensity distribution is off. ${greyZonePct}% of your runs are in the grey zone, so your body has no reason to adapt.`,
+      body: `You run consistently (${thisWeek}x/week), and that discipline is a real strength. But your sessions are not structured to push adaptation. Without targeted effort levels, your body settles into the same fitness plateau.`,
       takeaway: `You have the discipline. You just need the right plan to channel it.`,
     },
     burnout: isCritical ? {
       title: `Overload Warning: +${Math.abs(loadChange ?? 0)}%`,
-      body: `Your fatigue is not in your head. This week: ${thisWeek} sessions vs. ${lastWeek} last week. Your body is accumulating more stress than it can recover from between runs.`,
+      body: `Your fatigue is not in your head. This week: ${thisWeek} sessions vs. ${lastWeek} last week. Your body is accumulating more stress than it can recover from between runs. That is the direct cause of feeling heavy-legged and drained.`,
       takeaway: `You need a recovery protocol before you can build fitness again.`,
     } : {
       title: `Consistency Score: ${consistencyGrade}`,
-      body: `You are showing up (${thisWeek}x/week), which takes real commitment. But too many of those runs are draining you instead of building you up. ${greyZonePct}% of your effort is landing at the wrong intensity.`,
+      body: `You are showing up (${thisWeek}x/week), which takes real commitment. But too many of those runs are draining you instead of building you up. Running at the wrong intensity accumulates fatigue without the fitness payoff to justify it.`,
       takeaway: `The fix is not running less. It is running at the right intensities.`,
     },
     inconsistency: isStable && thisWeek >= 3 ? {
       title: `Consistency Score: ${consistencyGrade}`,
-      body: `You ran ${thisWeek} times this week. That is solid. The challenge is making each session count when your schedule shifts. Right now, ${greyZonePct}% of the runs you do fit in are not structured for maximum return.`,
+      body: `You ran ${thisWeek} times this week. That is solid. The challenge is making each session count when your schedule shifts. Without a structured plan, the runs you do squeeze in do not build on each other.`,
       takeaway: `A flexible ${daysLabel}-day plan adapts to your life and still delivers results.`,
     } : {
       title: `Training Gaps Detected`,
-      body: `This week: ${thisWeek} sessions. Last week: ${lastWeek}. When your schedule is unpredictable, every run needs to count. A plan with built-in flexibility keeps you progressing even on busy weeks.`,
+      body: `This week: ${thisWeek} sessions. Last week: ${lastWeek}. Gaps in your training schedule prevent your body from building the adaptation you need. When runs are sporadic, each one starts from scratch.`,
       takeaway: `A flexible ${daysLabel}-day plan adapts to your life and still delivers results.`,
     },
     guesswork: isCritical ? {
@@ -172,37 +171,133 @@ function getPersonalizedCopy(
       takeaway: `You need a plan with clear daily targets so every run has a purpose.`,
     } : {
       title: `Consistency Score: ${consistencyGrade}`,
-      body: `You are putting in the work (${thisWeek}x/week), and that matters. But without clear targets, ${greyZonePct}% of your effort is landing at the wrong intensity. You have the habit. Now you need the structure.`,
+      body: `You are putting in the work (${thisWeek}x/week), and that matters. But without clear targets for each run, your effort is scattered across intensities that do not target a specific adaptation. You have the habit. Now you need the structure.`,
       takeaway: `A structured plan tells you exactly what to do each day so nothing is wasted.`,
     },
   };
 
-  // --- Grey Zone copy by goal ---
-  const greyZoneByGoal: Record<string, PersonalizedCopy['greyZone']> = {
-    race: {
-      title: `Your Race Fitness Gap`,
-      body: `Across ${activityCount} activities, ${greyZonePct}% of your miles are in the Grey Zone. On race day, your body will default to these efforts. That means you are training yourself to run at a pace that is neither your goal pace nor recovery pace.`,
-      lockedLabel: `Unlock Your Race Pace Zones`,
-      lockedDescription: `See exactly what paces to hit on easy days, tempo days, and long runs to peak on race day.`,
+  // --- Insight card copy by struggle + goal ---
+  // The insight card reflects what the runner told us is their primary issue.
+  // plateau → intensity structure (they're working hard but stuck)
+  // burnout → overtraining / recovery (they're doing too much at the wrong level)
+  // inconsistency → volume gap (they need to run more consistently)
+  // guesswork → training blind spots (they have no targets to aim at)
+  type InsightCard = PersonalizedCopy['insightCard'];
+
+  const insightCardByStruggle: Record<string, Record<string, InsightCard>> = {
+    plateau: {
+      race: {
+        title: `Your Race Fitness Gap`,
+        body: `Across ${activityCount} activities, too many of your runs land at an effort level that builds neither speed nor endurance. On race day your body defaults to what it practiced in training — and right now that is not race pace.`,
+        lockedLabel: `Unlock Your Race Pace Zones`,
+        lockedDescription: `See exactly what paces to hit on easy days, tempo days, and long runs to peak on race day.`,
+      },
+      faster: {
+        title: `Why Your Speed Has Stalled`,
+        body: `Across ${activityCount} activities, your effort is landing in a dead zone — too hard to fully recover, too easy to force speed adaptations. Speed comes from contrast: truly easy days and truly hard sessions. You are stuck in the middle.`,
+        lockedLabel: `Unlock Your Speed Zones`,
+        lockedDescription: `See your optimal easy pace, tempo pace, and interval targets based on your current fitness.`,
+      },
+      endurance: {
+        title: `Your Aerobic Base Gap`,
+        body: `Across ${activityCount} activities, most of your easy miles are running faster than the pace where aerobic efficiency actually develops. Your body is working but not adapting. Slower easy days unlock the base that makes long distances feel manageable.`,
+        lockedLabel: `Unlock Your Easy Pace Target`,
+        lockedDescription: `See the exact easy pace that builds your aerobic engine without the fatigue hangover.`,
+      },
+      injury_free: {
+        title: `Your Injury Risk Profile`,
+        body: `Across ${activityCount} activities, too many runs are creating more mechanical load than necessary. Running at an unstructured intensity puts repeated stress on tendons, joints, and connective tissue without delivering the fitness gains to justify it.`,
+        lockedLabel: `Unlock Your Safe Training Zones`,
+        lockedDescription: `See the pace and heart rate ranges that build fitness while protecting your body.`,
+      },
     },
-    faster: {
-      title: `Why Your Speed Has Stalled`,
-      body: `Across ${activityCount} activities, ${greyZonePct}% of your miles are in the Grey Zone. Speed comes from contrast: truly easy days that let you recover, and truly hard sessions that push your threshold. You are stuck in the middle.`,
-      lockedLabel: `Unlock Your Speed Zones`,
-      lockedDescription: `See your optimal easy pace, tempo pace, and interval targets based on your current fitness.`,
+    burnout: {
+      race: {
+        title: `Your Overtraining Signal`,
+        body: `Across ${activityCount} activities, your body is absorbing more cumulative fatigue than it can clear between sessions. You are training hard but arriving at race-specific workouts already depleted. That is why race fitness is not building.`,
+        lockedLabel: `Unlock Your Recovery Blueprint`,
+        lockedDescription: `See your optimal easy days and recovery windows so you arrive at every hard session fresh and ready to adapt.`,
+      },
+      faster: {
+        title: `Why Speed Gains Feel Out of Reach`,
+        body: `Across ${activityCount} activities, your body is carrying more cumulative fatigue than it can clear between runs. Speed adaptations only happen when you recover fully — hard sessions on tired legs reinforce slow habits, not fast ones.`,
+        lockedLabel: `Unlock Your Recovery Protocol`,
+        lockedDescription: `See the easy pace and recovery windows your body needs to actually get faster between sessions.`,
+      },
+      endurance: {
+        title: `Why Recovery Feels Impossible`,
+        body: `Across ${activityCount} activities, you are running at intensities that accumulate fatigue faster than your aerobic system can clear it. Endurance is built on top of recovery. Without it, you are just grinding without adaptation.`,
+        lockedLabel: `Unlock Your Easy Pace Range`,
+        lockedDescription: `See the exact effort range where your aerobic engine grows without leaving you wrecked the next day.`,
+      },
+      injury_free: {
+        title: `Your Injury Risk Window`,
+        body: `Across ${activityCount} activities, your cumulative load is outpacing your recovery capacity. This is the exact pattern that precedes most running injuries — not a single hard run, but a slow accumulation of uncleared fatigue.`,
+        lockedLabel: `Unlock Your Load Safety Score`,
+        lockedDescription: `See your current injury risk level and the weekly structure that keeps you training consistently without breaking down.`,
+      },
     },
-    endurance: {
-      title: `Your Aerobic Base Gap`,
-      body: `Across ${activityCount} activities, ${greyZonePct}% of your miles are too fast for base-building. Endurance is built in the easy zone. Running faster than that on easy days actually slows your aerobic development.`,
-      lockedLabel: `Unlock Your Easy Pace Target`,
-      lockedDescription: `See the exact easy pace that builds your aerobic engine without the fatigue hangover.`,
+    inconsistency: {
+      race: {
+        title: `Your Volume Consistency Gap`,
+        body: `Across ${activityCount} activities, your training pattern shows gaps that prevent race-specific fitness from compounding. Aerobic fitness builds week over week — missed weeks reset more progress than most runners realize.`,
+        lockedLabel: `Unlock Your Race-Ready Schedule`,
+        lockedDescription: `See a flexible ${daysLabel}-day plan that builds race fitness even when life gets in the way.`,
+      },
+      faster: {
+        title: `The Habit Your Speed Needs`,
+        body: `Across ${activityCount} activities, sporadic training means your speed gains reset before they have time to compound. Consistent stimulus — even at lower volume — outperforms occasional hard efforts every time.`,
+        lockedLabel: `Unlock Your Speed-Building Schedule`,
+        lockedDescription: `See a ${daysLabel}-day plan that fits your life and builds real speed through consistent, targeted sessions.`,
+      },
+      endurance: {
+        title: `Your Base-Building Gap`,
+        body: `Across ${activityCount} activities, irregular training prevents the progressive aerobic base-building that endurance requires. Your body adapts to the pattern of training, not just isolated sessions. Consistency is the engine.`,
+        lockedLabel: `Unlock Your Endurance Plan`,
+        lockedDescription: `See the progressive ${daysLabel}-day plan that builds your aerobic base steadily, even with an unpredictable schedule.`,
+      },
+      injury_free: {
+        title: `Your Consistency Shield`,
+        body: `Across ${activityCount} activities, uneven training patterns create spiky load cycles — periods of low stress followed by sudden high load. That contrast is one of the top predictors of running injury, even at modest mileage.`,
+        lockedLabel: `Unlock Your Safe Training Plan`,
+        lockedDescription: `See a consistent ${daysLabel}-day schedule that keeps load steady and gives your body the predictability it needs to stay healthy.`,
+      },
     },
-    injury_free: {
-      title: `Your Injury Risk Profile`,
-      body: `Across ${activityCount} activities, ${greyZonePct}% of your miles create more impact stress than necessary. Every grey zone mile puts extra load on your tendons, joints, and connective tissue without a fitness payoff.`,
-      lockedLabel: `Unlock Your Safe Training Zones`,
-      lockedDescription: `See the pace and heart rate ranges that build fitness while protecting your body.`,
+    guesswork: {
+      race: {
+        title: `Your Race Readiness Score`,
+        body: `Across ${activityCount} activities, your training has no clear targets — and neither does your body. Race fitness requires specific paces on specific days. Without that structure, effort accumulates but race-specific adaptation does not.`,
+        lockedLabel: `Unlock Your Race Pace Targets`,
+        lockedDescription: `See the exact paces for every type of run — easy, tempo, long — mapped to your current fitness and race goal.`,
+      },
+      faster: {
+        title: `Where Your Speed Is Hiding`,
+        body: `Across ${activityCount} activities, your runs have no defined targets. Without a clear easy pace and a clear hard pace, your effort clusters at a moderate level that does not trigger speed adaptation. Structure is what unlocks the gap between what you run now and what you are capable of.`,
+        lockedLabel: `Unlock Your Pace Targets`,
+        lockedDescription: `See your exact easy, tempo, and interval paces based on your current fitness — so every run has a clear purpose.`,
+      },
+      endurance: {
+        title: `Your Aerobic Efficiency Score`,
+        body: `Across ${activityCount} activities, training without defined easy and hard efforts means your aerobic system gets a mixed signal. It cannot build a true base because it never gets enough time at the low intensity where that adaptation actually happens.`,
+        lockedLabel: `Unlock Your Easy Pace Target`,
+        lockedDescription: `See the exact easy pace where your aerobic engine develops — and why slowing down is the fastest route to running longer.`,
+      },
+      injury_free: {
+        title: `Your Load Safety Score`,
+        body: `Across ${activityCount} activities, training without defined targets means load accumulates unpredictably. Some days too much, some days too little — and that variance is what causes injury more than total mileage ever does.`,
+        lockedLabel: `Unlock Your Safe Zones`,
+        lockedDescription: `See the effort range and weekly structure that keeps your body adapting without accumulating the load spikes that lead to injury.`,
+      },
     },
+  };
+
+  const insightCard: InsightCard = (
+    insightCardByStruggle[struggle || "guesswork"]?.[goal || "race"]
+  ) || {
+    title: `Your Training Insight`,
+    body: `Across ${activityCount} activities, your effort is not consistently targeted at a specific adaptation. With the right structure, every run has a purpose — and your fitness compounds week over week.`,
+    lockedLabel: `Unlock Your Training Zones`,
+    lockedDescription: `See the personalized pace and effort targets that match your goal and your physiology.`,
   };
 
   // --- CTA copy by goal ---
@@ -233,74 +328,74 @@ function getPersonalizedCopy(
   const headlineHookMap: Record<string, { headline: string; hook: string }> = {
     "race_plateau": {
       headline: "Break through your plateau and crush your next race.",
-      hook: `You want to race, but your current training is holding you back. Our data shows ${greyZonePct}% of your runs are in the Grey Zone, causing you to plateau. With the right structure, you can break through.`,
+      hook: `You are putting in the effort, but it is not converting to race fitness. Our analysis of your ${activityCount} activities shows your sessions are not structured to build the specific adaptations race day demands. With the right plan, that changes.`,
     },
     "race_burnout": {
       headline: "Race faster without burning out before the start line.",
-      hook: `You reported feeling tired and heavy-legged. Our analysis confirms why: ${greyZonePct}% of your miles are Junk Mileage. You are overloading your body instead of building race fitness.`,
+      hook: `You reported feeling tired and heavy-legged — and the data backs it up. Your cumulative training load is outpacing your recovery. You are overloading your body instead of building race fitness. The fix is not less running. It is smarter running.`,
     },
     "race_inconsistency": {
       headline: "A race plan that fits your real life.",
-      hook: `Sticking to a schedule is tough. But ${greyZonePct}% of the runs you do manage are in the Grey Zone, not getting you closer to race day. You need a plan that works even when life gets busy.`,
+      hook: `Sticking to a schedule is tough — but the runs you do fit in need to count. Right now, your sessions are not structured to build toward a race peak. A flexible ${daysLabel}-day plan keeps you progressing even on busy weeks.`,
     },
     "race_guesswork": {
       headline: "Stop guessing. Start training with a plan that peaks on race day.",
-      hook: `You do not know if your training is on track, and the data confirms the concern. ${greyZonePct}% of your mileage is in the Grey Zone, meaning you are working hard but not building race-specific fitness.`,
+      hook: `You do not know if your training is on track — and our analysis of your ${activityCount} activities confirms the concern. Without clear targets, your effort accumulates without building race-specific fitness. That gap is fixable.`,
     },
     "faster_plateau": {
       headline: "You're working hard. Here's why you're not getting faster.",
-      hook: `With a Runner IQ of ${runnerIQScore}, your effort is there, but ${greyZonePct}% of your runs are stuck in the Grey Zone. Too fast to recover, too slow to build speed. That is why you have plateaued.`,
+      hook: `With a Runner IQ of ${runnerIQScore}, your effort is real — but it is not producing speed. Your runs are landing at an intensity that is too hard to fully recover from and too easy to trigger speed adaptations. That is the exact zone where progress stalls.`,
     },
     "faster_burnout": {
       headline: "Get faster without running yourself into the ground.",
-      hook: `Feeling tired is not a badge of honor. It is a warning sign. ${greyZonePct}% of your miles are Junk Mileage, draining your energy without making you faster.`,
+      hook: `Feeling tired is not a badge of honor. It is a signal that your training is accumulating more fatigue than your body can clear. Speed adaptations happen during recovery — not during the run itself. You need structure that lets you actually absorb your training.`,
     },
     "faster_inconsistency": {
       headline: "Make every run count, even when life gets in the way.",
-      hook: `You can not always control your schedule, but you can control what each run does for you. Right now, ${greyZonePct}% of your efforts are not building speed.`,
+      hook: `You can not always control your schedule, but you can control what each run does for you. Right now, without clear targets, sessions are not building on each other. A ${daysLabel}-day plan gives every run a specific purpose — and delivers speed even with a busy life.`,
     },
     "faster_guesswork": {
       headline: "Stop wondering if your training is working. Know it.",
-      hook: `Without clear targets, ${greyZonePct}% of your runs end up in the Grey Zone. You are putting in the work, but you need a plan that tells you exactly what pace to hit and why.`,
+      hook: `Without clear targets, your effort is scattered — and you have no way of knowing if it is moving the needle. Our analysis of your ${activityCount} activities shows exactly where your speed ceiling is and what is holding it in place.`,
     },
     "endurance_plateau": {
       headline: "Push past the distance wall and keep building.",
-      hook: `You have hit a ceiling on how far you can run. With ${greyZonePct}% Grey Zone mileage, your body is not adapting. It is just surviving. Time to train smarter.`,
+      hook: `You have hit a ceiling on how far you can run comfortably. Our analysis shows your easy runs are not slow enough to build true aerobic base. Your body is working hard but not adapting. Running smarter — not harder — is how you break through.`,
     },
     "endurance_burnout": {
       headline: "Run longer without feeling destroyed the next day.",
-      hook: `You want to go further, but fatigue keeps holding you back. ${greyZonePct}% of your miles are too fast for building aerobic endurance. They are burning you out instead.`,
+      hook: `You want to go further, but fatigue keeps pulling you back. Your easy runs are not easy enough for your body to fully recover, which means you are starting each session already depleted. Slowing down strategically is the unlock.`,
     },
     "endurance_inconsistency": {
       headline: "Build endurance that sticks, even with an unpredictable schedule.",
-      hook: `Endurance requires consistency, but life does not always cooperate. The good news: ${daysLabel} well-structured days per week can build more base than 6 random ones.`,
+      hook: `Endurance requires consistent stimulus over time — but life does not always cooperate. The good news: ${daysLabel} well-structured days per week builds more aerobic base than 6 unstructured ones. It is about pattern, not just mileage.`,
     },
     "endurance_guesswork": {
       headline: "Your easy runs are not easy enough. Here is the proof.",
-      hook: `${greyZonePct}% of your miles are faster than they should be for building endurance. Without knowing your real easy pace, every easy run is secretly chipping away at your recovery.`,
+      hook: `Without a defined easy pace, every run drifts toward the same moderate effort — fast enough to accumulate fatigue, too slow to build speed, and faster than the zone where your aerobic engine actually develops. We found your real easy pace in your data.`,
     },
     "injury_free_plateau": {
       headline: "Build sustainable fitness without breaking down.",
-      hook: `Running hard but not seeing results, and now you are worried about getting hurt. ${greyZonePct}% of your runs put unnecessary stress on your body without improving fitness.`,
+      hook: `You are working hard but not seeing results — and the effort is adding up in ways your body feels. Our analysis shows your load is not structured in a way that balances stress and recovery. The right plan makes progress possible without the breakdown risk.`,
     },
     "injury_free_burnout": {
       headline: "Stop the cycle of overtraining and injury.",
-      hook: `You reported feeling tired. Our analysis confirms why: ${greyZonePct}% of your miles are Junk Mileage. You are overloading your joints without gaining fitness.`,
+      hook: `You reported feeling tired — and the data shows why. Your cumulative load is exceeding your recovery capacity. That pattern, more than any single hard run, is what puts runners on the injury list. A recovery-first plan breaks the cycle.`,
     },
     "injury_free_inconsistency": {
       headline: "A plan your body can trust, even when your schedule changes.",
-      hook: `Inconsistent training creates spiky load patterns, which is one of the top predictors of running injuries. A ${daysLabel}-day plan with built-in flexibility keeps your body adapting safely.`,
+      hook: `Inconsistent training creates spiky load patterns — periods of low stress followed by sudden high demand. That contrast is one of the top predictors of running injuries, even at modest mileage. A ${daysLabel}-day plan with built-in flexibility keeps load steady and your body adapting safely.`,
     },
     "injury_free_guesswork": {
       headline: "Your body is telling you something. Let's listen to the data.",
-      hook: `Without knowing your safe training zones, ${greyZonePct}% of your miles are creating more impact than necessary. A clear plan shows you exactly where to keep your effort to stay healthy.`,
+      hook: `Without defined effort targets, your training load accumulates unpredictably. Some days too much stress, some days too little — and that variance, not total mileage, is what causes most running injuries. Our analysis found the specific zones where you can build fitness and stay healthy.`,
     },
   };
 
   const key = `${goal || "race"}_${struggle || "guesswork"}`;
   const headlineHook = headlineHookMap[key] || {
     headline: `We found a gap in your training for ${goalTarget}.`,
-    hook: `Your Runner IQ is ${runnerIQScore}, but ${greyZonePct}% of your mileage is in the Grey Zone. With the right adjustments, you can see real improvement.`,
+    hook: `Your Runner IQ is ${runnerIQScore}. Our analysis of your ${activityCount} activities shows your effort is not consistently targeted at a specific adaptation. With the right adjustments, you can see real improvement.`,
   };
 
   const solutionMap: Record<string, string> = {
@@ -315,7 +410,7 @@ function getPersonalizedCopy(
     solution: solutionMap[goal || "race"] || `Here is your personalized ${daysLabel}-day/week plan to train smarter.`,
     runnerIQ: runnerIQByGoal[goal || "race"] || runnerIQByGoal.race,
     loadWarning: loadWarningByStruggle[struggle || "guesswork"] || loadWarningByStruggle.guesswork,
-    greyZone: greyZoneByGoal[goal || "race"] || greyZoneByGoal.race,
+    insightCard,
     cta: ctaByGoal[goal || "race"] || ctaByGoal.race,
   };
 }
@@ -690,7 +785,7 @@ export default function AuditReportPage() {
                 </div>
                 <p className="text-gray-700 leading-relaxed">
                   {personalizedCopy?.runnerIQ.body || (
-                    <>You are putting in <strong className="text-orange-600">Grade {runnerIQ.volumeGrade} effort</strong> (Volume), but getting <strong className="text-orange-600">Grade {runnerIQ.performanceGrade} results</strong> (Performance). {greyZone.percentage}% of your recent mileage was in the Grey Zone.</>
+                    <>You are putting in <strong className="text-orange-600">Grade {runnerIQ.volumeGrade} effort</strong> (Volume), but getting <strong className="text-orange-600">Grade {runnerIQ.performanceGrade} results</strong> (Performance). Your runs are not consistently targeted at a specific training adaptation.</>
                   )}
                 </p>
                 <p className="text-sm text-orange-700 mt-3 font-medium">
@@ -749,16 +844,16 @@ export default function AuditReportPage() {
                   <strong className="text-charcoal">The Insight:</strong>{' '}
                   {personalizedCopy ? (
                     calibrationData?.goal === 'race' ? (
-                      <>You have the aerobic engine to run a <strong className="text-charcoal">{auditData.racePotential.predictions[3]?.potentialTime} Marathon</strong>, but your Grey Zone training habits are anchoring you at <strong>{auditData.racePotential.predictions[3]?.currentTime}</strong>. Fix your intensity distribution and unlock those times.</>
+                      <>You have the aerobic engine to run a <strong className="text-charcoal">{auditData.racePotential.predictions[3]?.potentialTime} Marathon</strong>, but your current training structure is anchoring you at <strong>{auditData.racePotential.predictions[3]?.currentTime}</strong>. Fix your intensity distribution and unlock those times.</>
                     ) : calibrationData?.goal === 'faster' ? (
-                      <>Your current training predicts a <strong>{auditData.racePotential.predictions[0]?.currentTime} 5K</strong>, but your true speed ceiling is <strong className="text-charcoal">{auditData.racePotential.predictions[0]?.potentialTime}</strong>. The gap is not fitness. It is how you distribute your effort across training days.</>
+                      <>Your current training predicts a <strong>{auditData.racePotential.predictions[0]?.currentTime} 5K</strong>, but your true speed ceiling is <strong className="text-charcoal">{auditData.racePotential.predictions[0]?.potentialTime}</strong>. The gap is not fitness. It is how you structure your effort across training days.</>
                     ) : calibrationData?.goal === 'endurance' ? (
-                      <>Your half marathon potential is <strong className="text-charcoal">{auditData.racePotential.predictions[2]?.potentialTime}</strong>, but grey zone habits are costing you <strong>{auditData.racePotential.predictions[2]?.timeSaved}</strong>. Slower easy runs build a bigger aerobic base, which means longer distances feel easier.</>
+                      <>Your half marathon potential is <strong className="text-charcoal">{auditData.racePotential.predictions[2]?.potentialTime}</strong>, but running too fast on easy days is costing you <strong>{auditData.racePotential.predictions[2]?.timeSaved}</strong>. Slower easy runs build a bigger aerobic base, which means longer distances feel manageable.</>
                     ) : (
                       <>You are working hard enough for the faster time, but your efficiency is too low to sustain it. Fixing your intensity distribution reduces impact stress while making you faster.</>
                     )
                   ) : (
-                    <>You are working hard enough for the faster times, but your efficiency is too low to sustain it. Fixing your grey zone habits unlocks speed at every distance.</>
+                    <>You are working hard enough for the faster times, but your efficiency is too low to sustain it. Restructuring your training intensity unlocks speed at every distance.</>
                   )}
                 </p>
               </div>
@@ -803,14 +898,14 @@ export default function AuditReportPage() {
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
                   <h2 className="text-xl font-bold text-charcoal">
-                    {personalizedCopy?.greyZone.title || "The 'Grey Zone' Trap"}
+                    {personalizedCopy?.insightCard.title || "Your Training Insight"}
                   </h2>
                   <span className="px-2 py-0.5 rounded text-xs font-bold bg-purple-100 text-purple-800">
                     Insight
                   </span>
                 </div>
                 <p className="text-gray-700 leading-relaxed">
-                  {personalizedCopy?.greyZone.body || `We analyzed your pace distribution across ${greyZone.activityCount} activities. ${greyZone.percentage}% of your easy days are too fast.`}
+                  {personalizedCopy?.insightCard.body || `We analyzed your pace distribution across ${greyZone.activityCount} activities. ${greyZone.percentage}% of your easy days are running faster than optimal for your goal.`}
                 </p>
 
                 <div className="relative mt-4">
@@ -830,13 +925,13 @@ export default function AuditReportPage() {
                   >
                     <div className="flex items-center gap-2 text-purple-700 font-semibold">
                       <Lock className="h-5 w-5" />
-                      {checkout.isPending ? "Redirecting..." : (personalizedCopy?.greyZone.lockedLabel || "Unlock to reveal")}
+                      {checkout.isPending ? "Redirecting..." : (personalizedCopy?.insightCard.lockedLabel || "Unlock to reveal")}
                     </div>
                   </button>
                 </div>
 
                 <p className="text-sm text-purple-700 mt-3">
-                  {personalizedCopy?.greyZone.lockedDescription || "We have calculated your actual optimal easy pace based on your physiological profile."}
+                  {personalizedCopy?.insightCard.lockedDescription || "We have calculated your actual optimal training zones based on your physiological profile."}
                 </p>
               </div>
             </div>
