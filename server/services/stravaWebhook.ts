@@ -14,12 +14,36 @@ interface StravaWebhookEvent {
   updates?: Record<string, any>;
 }
 
+interface TrainingContext {
+  runsThisWeek: number;
+  kmThisWeek: number;
+  recentAvgPaceSecPerKm: number | null; // avg pace for similar-distance runs, last 30 days
+  paceVsRecentSec: number | null;       // negative = faster than usual, positive = slower
+  runStreak: number;
+  totalRunsLast30Days: number;
+  weeklyContextLine: string;            // e.g. "3 runs · 28.4 km this week"
+}
+
 const VERIFY_TOKEN = process.env.STRAVA_VERIFY_TOKEN || "runanalytics_webhook_verify_2024";
 const UNSUBSCRIBE_SECRET = process.env.JWT_SECRET || "runanalytics_unsub_secret_2024";
 
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY || "default_key" 
 });
+
+const GOAL_LABELS: Record<string, string> = {
+  race: "training for a race",
+  faster: "getting faster / beating PRs",
+  endurance: "building endurance",
+  injury_free: "staying injury-free",
+};
+
+const STRUGGLE_LABELS: Record<string, string> = {
+  plateau: "hitting a performance plateau",
+  burnout: "fatigue and feeling burnt out",
+  inconsistency: "sticking to a consistent schedule",
+  guesswork: "not knowing if training is on track",
+};
 
 class StravaWebhookService {
   generateUnsubscribeToken(userId: number): string {
@@ -141,6 +165,72 @@ class StravaWebhookService {
     }
   }
 
+  private async buildTrainingContext(userId: number, currentActivityDistanceKm: number, currentActivityDate: Date): Promise<TrainingContext> {
+    try {
+      const thirtyDaysAgo = new Date(currentActivityDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const recentActivities = await storage.getActivitiesByUserId(userId, 60, thirtyDaysAgo);
+      const runs = recentActivities.filter(a => RUNNING_ACTIVITY_TYPES.includes(a.type || "Run"));
+
+      const sevenDaysAgo = new Date(currentActivityDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const runsThisWeek = runs.filter(r => new Date(r.startDate) >= sevenDaysAgo && r.stravaId !== String(currentActivityDate.getTime()));
+      const runsThisWeekCount = runsThisWeek.length;
+      const kmThisWeek = runsThisWeek.reduce((sum, r) => sum + (r.distance || 0) / 1000, 0);
+
+      // Pace trend: compare today's pace to average for similar-distance runs (±40% of today's distance)
+      const distanceLow = currentActivityDistanceKm * 0.6;
+      const distanceHigh = currentActivityDistanceKm * 1.4;
+      const similarRuns = runs.filter(r => {
+        const km = (r.distance || 0) / 1000;
+        return km >= distanceLow && km <= distanceHigh && r.movingTime && r.distance;
+      });
+
+      let recentAvgPaceSecPerKm: number | null = null;
+      if (similarRuns.length >= 2) {
+        const totalPace = similarRuns.reduce((sum, r) => {
+          const km = (r.distance || 0) / 1000;
+          const paceSecPerKm = (r.movingTime || 0) / km;
+          return sum + paceSecPerKm;
+        }, 0);
+        recentAvgPaceSecPerKm = totalPace / similarRuns.length;
+      }
+
+      // Run streak: count consecutive days with at least one run ending today
+      let runStreak = 1;
+      const runDates = new Set(runs.map(r => new Date(r.startDate).toDateString()));
+      for (let i = 1; i <= 30; i++) {
+        const d = new Date(currentActivityDate.getTime() - i * 24 * 60 * 60 * 1000);
+        if (runDates.has(d.toDateString())) {
+          runStreak++;
+        } else {
+          break;
+        }
+      }
+
+      const weeklyContextLine = `${runsThisWeekCount + 1} run${runsThisWeekCount + 1 !== 1 ? "s" : ""} · ${(kmThisWeek + currentActivityDistanceKm).toFixed(1)} km this week`;
+
+      return {
+        runsThisWeek: runsThisWeekCount + 1,
+        kmThisWeek: kmThisWeek + currentActivityDistanceKm,
+        recentAvgPaceSecPerKm,
+        paceVsRecentSec: null, // filled in sendPostRunEmail after pace is computed
+        runStreak,
+        totalRunsLast30Days: runs.length + 1,
+        weeklyContextLine,
+      };
+    } catch (err) {
+      console.error("[Strava Webhook] Failed to build training context:", err);
+      return {
+        runsThisWeek: 1,
+        kmThisWeek: currentActivityDistanceKm,
+        recentAvgPaceSecPerKm: null,
+        paceVsRecentSec: null,
+        runStreak: 1,
+        totalRunsLast30Days: 1,
+        weeklyContextLine: "",
+      };
+    }
+  }
+
   private async sendPostRunEmail(user: any, activity: any): Promise<void> {
     try {
       const distanceKm = activity.distance / 1000;
@@ -158,6 +248,7 @@ class StravaWebhookService {
       const paceMin = Math.floor(pace);
       const paceSec = Math.round((pace - paceMin) * 60);
       const paceDisplay = `${paceMin}:${String(paceSec).padStart(2, "0")} /${isKm ? "km" : "mi"}`;
+      const paceSecPerKm = pacePerKm * 60;
 
       const domain = "aitracker.run";
       const firstName = user.firstName || user.email.split("@")[0];
@@ -165,16 +256,24 @@ class StravaWebhookService {
       const distanceLabel = this.getDistanceLabel(distanceKm, distanceMiles, isKm);
       const effortScore = this.calculateEffortScore(activity);
       const efficiencyRating = this.getEfficiencyRating(activity, pacePerKm);
-      const greyZoneAnalysis = this.analyzeGreyZone(activity, pacePerKm);
 
       const unsubscribeToken = this.generateUnsubscribeToken(user.id);
       const unsubscribeUrl = `https://${domain}/api/notifications/unsubscribe?token=${unsubscribeToken}`;
       const dashboardUrl = `https://${domain}/dashboard`;
       const activityUrl = `https://${domain}`;
 
+      // Build training context from the last 30 days of activities
+      const activityDate = new Date(activity.start_date || Date.now());
+      const trainingContext = await this.buildTrainingContext(user.id, distanceKm, activityDate);
+
+      // Compute pace vs recent average (now that we have today's pace)
+      if (trainingContext.recentAvgPaceSecPerKm !== null) {
+        trainingContext.paceVsRecentSec = paceSecPerKm - trainingContext.recentAvgPaceSecPerKm;
+      }
+
       const aiResult = await this.generatePersonalizedEmail(
         user, activity, distanceKm, distanceLabel, runType, effortScore,
-        efficiencyRating, greyZoneAnalysis, paceDisplay, distanceDisplay
+        efficiencyRating, paceDisplay, distanceDisplay, trainingContext
       );
 
       await emailService.sendPostRunAnalysis({
@@ -189,11 +288,12 @@ class StravaWebhookService {
         effortScore,
         runType,
         aiCoachInsight: aiResult.coachVerdictBody,
+        nextRunTip: aiResult.nextRunTip,
+        weeklyContext: trainingContext.weeklyContextLine || undefined,
         insights: [],
         dashboardUrl,
         subject: aiResult.subject,
         efficiencyRating,
-        greyZoneAnalysis,
         unsubscribeUrl,
         activityUrl,
       });
@@ -212,9 +312,7 @@ class StravaWebhookService {
     if (distanceKm >= 4.8 && distanceKm <= 5.2) return "5k";
     if (distanceKm >= 2.8 && distanceKm <= 3.2) return "3k";
     if (distanceKm >= 1.5 && distanceKm <= 1.7) return "Mile";
-    if (isKm) {
-      return `${distanceKm.toFixed(1)}k`;
-    }
+    if (isKm) return `${distanceKm.toFixed(1)}k`;
     return `${distanceMiles.toFixed(1)} mi`;
   }
 
@@ -226,70 +324,81 @@ class StravaWebhookService {
     return { label: "Low", icon: "warning" };
   }
 
-  private analyzeGreyZone(activity: any, pacePerKm: number): { inGreyZone: boolean; minutes: number; message: string } | null {
-    if (!activity.average_heartrate) return null;
-    const avgHr = activity.average_heartrate;
-    const maxHr = activity.max_heartrate || (220 - 30);
-    const easyThreshold = maxHr * 0.70;
-    const tempoThreshold = maxHr * 0.85;
-
-    if (avgHr > easyThreshold && avgHr < tempoThreshold) {
-      const greyZoneMinutes = Math.round(activity.moving_time / 60 * 0.6);
-      let message = "";
-      if (pacePerKm > 5.5) {
-        message = `You likely felt good at the start, but your heart rate drifted too high in the second half. This "Grey Zone" effort is too hard for recovery but too easy for real speed gains.`;
-      } else {
-        message = `Your average heart rate sat between easy and tempo zones for most of this run. That means your body was working hard but not targeting a specific adaptation.`;
-      }
-      return { inGreyZone: true, minutes: greyZoneMinutes, message };
-    }
-
-    return { inGreyZone: false, minutes: 0, message: "" };
-  }
-
   private async generatePersonalizedEmail(
     user: any, activity: any, distanceKm: number, distanceLabel: string,
     runType: string, effortScore: number, efficiencyRating: { label: string; icon: string },
-    greyZoneAnalysis: { inGreyZone: boolean; minutes: number; message: string } | null,
-    paceDisplay: string, distanceDisplay: string
-  ): Promise<{ subject: string; coachVerdictBody: string }> {
+    paceDisplay: string, distanceDisplay: string,
+    ctx: TrainingContext
+  ): Promise<{ subject: string; coachVerdictBody: string; nextRunTip: string }> {
     try {
       const isKm = user.unitPreference === "km";
       const firstName = user.firstName || user.email.split("@")[0];
+      const goalLabel = GOAL_LABELS[user.onboardingGoal || ""] || null;
+      const struggleLabel = STRUGGLE_LABELS[user.onboardingStruggle || ""] || null;
 
-      const prompt = `You are the Running Coach for AITracker.run. Generate a highly personalized post-run email for this runner.
+      // Format pace trend
+      let paceTrend = "No recent data for comparison";
+      if (ctx.paceVsRecentSec !== null) {
+        const absSec = Math.abs(Math.round(ctx.paceVsRecentSec));
+        if (absSec < 5) {
+          paceTrend = "Right on their recent average pace for this distance";
+        } else if (ctx.paceVsRecentSec < 0) {
+          paceTrend = `${absSec} sec/km faster than their recent average for this distance`;
+        } else {
+          paceTrend = `${absSec} sec/km slower than their recent average for this distance`;
+        }
+      }
+
+      // Format streak
+      const streakNote = ctx.runStreak >= 3 ? `${ctx.runStreak}-day running streak` : null;
+
+      const prompt = `You are the Running Coach for AITracker.run. Generate a highly personalized post-run email for this runner based on ALL the data below — not just today's run.
 
 Runner: ${firstName}
-Run Type: ${runType}
+Today's run type: ${runType}
 Distance: ${distanceDisplay} (${distanceLabel})
 Pace: ${paceDisplay}
 Duration: ${Math.floor(activity.moving_time / 60)} minutes
-Heart Rate: ${activity.average_heartrate ? Math.round(activity.average_heartrate) + " bpm (avg), " + (activity.max_heartrate ? activity.max_heartrate + " bpm (max)" : "no max") : "not recorded"}
-Elevation: ${activity.total_elevation_gain ? Math.round(activity.total_elevation_gain) + "m" : "flat"}
+Heart Rate: ${activity.average_heartrate ? Math.round(activity.average_heartrate) + " bpm avg, " + (activity.max_heartrate ? activity.max_heartrate + " bpm max" : "no max recorded") : "not recorded"}
+Elevation: ${activity.total_elevation_gain ? Math.round(activity.total_elevation_gain) + "m gain" : "flat"}
 Effort Score: ${effortScore}/100
-Efficiency: ${efficiencyRating.label}
-Grey Zone: ${greyZoneAnalysis ? (greyZoneAnalysis.inGreyZone ? `Yes, ~${greyZoneAnalysis.minutes} min in grey zone` : "No, good intensity distribution") : "Unknown (no HR data)"}
-PRs: ${activity.pr_count || 0}
+Running Efficiency: ${efficiencyRating.label}
+PRs set: ${activity.pr_count || 0}
 
-Generate a JSON response with exactly these fields:
-1. "subject": An email subject line (under 60 chars). Reference the distance using the runner's preferred unit (${isKm ? "km" : "miles"}). Include a hook that references something specific about THIS run. End with a teaser to create curiosity. Use the distance label "${distanceLabel}" when referencing the distance. Examples:
-   - "Your ${isKm ? "5k" : "3.1 mi"} Analysis: You crushed the first mile, but..."
-   - "Your ${isKm ? "10k" : "6.2 mi"} Breakdown: Strong pace, questionable efficiency"
-   - "Half Marathon Report: Your HR tells a different story"
-   - "Your ${isKm ? "8k" : "5.0 mi"} Audit: Solid effort, but you left speed on the table"
+Training context (last 30 days):
+- Pace vs recent: ${paceTrend}
+- This week: ${ctx.runsThisWeek} run${ctx.runsThisWeek !== 1 ? "s" : ""}, ${ctx.kmThisWeek.toFixed(1)} km total
+- Runs in last 30 days: ${ctx.totalRunsLast30Days}
+${streakNote ? `- Current streak: ${streakNote}` : ""}
 
-2. "coachVerdictBody": A 2-3 sentence personalized coach verdict. Be specific to this run's data. Mention one thing they did well, and one thing to watch. If they were in the grey zone, mention it directly. If efficiency is low, call it out. Be warm but honest. Do NOT use generic encouragement. Do NOT use em dashes (never use the character: --). Use short, punchy sentences.
+Runner profile:
+${goalLabel ? `- Primary goal: ${goalLabel}` : ""}
+${struggleLabel ? `- Main struggle: ${struggleLabel}` : ""}
 
-Respond with ONLY valid JSON, no markdown.`;
+Generate a JSON response with exactly these 3 fields:
+
+1. "subject": Email subject line under 65 chars. Reference something specific from today's run. Use distance label "${distanceLabel}". Create curiosity. Example formats:
+   - "Your ${distanceLabel} today: pace trend is moving in the right direction"
+   - "${distanceLabel} done — your HR tells a different story"
+   - "Strong ${distanceLabel}, but your effort score says recovery time"
+
+2. "coachVerdictBody": 2-3 sentences. Be specific to this runner's data. Mention at least one thing from their training context (pace trend, weekly load, streak, or goal alignment) — not just today's run in isolation. One observation about today. One about the bigger picture. Be warm but direct. No generic praise. No em dashes. No "Grey Zone" or "Junk Mileage" terminology.
+
+3. "nextRunTip": One short, concrete sentence telling them what to do on their next run. Base it on today's effort score, their goal, and their weekly load. Examples:
+   - "Keep your next run easy — 3 days in a row at this effort needs a recovery day."
+   - "You have room for a quality session tomorrow — your effort today was controlled."
+   - "Aim for a longer easy run this weekend to build on your weekly mileage."
+
+Respond with ONLY valid JSON, no markdown, no commentary.`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "You are an expert running coach. Respond with valid JSON only. Never use em dashes in your writing." },
+          { role: "system", content: "You are an expert running coach. Respond with valid JSON only. Never use em dashes, 'Grey Zone', or 'Junk Mileage' in your writing." },
           { role: "user", content: prompt }
         ],
-        max_tokens: 300,
-        temperature: 0.8
+        max_tokens: 450,
+        temperature: 0.75
       });
 
       const content = response.choices[0]?.message?.content?.trim();
@@ -300,6 +409,7 @@ Respond with ONLY valid JSON, no markdown.`;
           return {
             subject: parsed.subject.slice(0, 80),
             coachVerdictBody: parsed.coachVerdictBody,
+            nextRunTip: parsed.nextRunTip || "",
           };
         }
       }
@@ -307,34 +417,56 @@ Respond with ONLY valid JSON, no markdown.`;
       console.error("[Strava Webhook] AI email generation failed:", error);
     }
 
-    return this.getFallbackEmail(user, activity, distanceKm, distanceLabel, effortScore, efficiencyRating, greyZoneAnalysis);
+    return this.getFallbackEmail(user, activity, distanceKm, distanceLabel, effortScore, efficiencyRating, ctx);
   }
 
   private getFallbackEmail(
     user: any, activity: any, distanceKm: number, distanceLabel: string,
     effortScore: number, efficiencyRating: { label: string; icon: string },
-    greyZoneAnalysis: { inGreyZone: boolean; minutes: number; message: string } | null,
-  ): { subject: string; coachVerdictBody: string } {
-    let hook = "here's what we found";
+    ctx: TrainingContext
+  ): { subject: string; coachVerdictBody: string; nextRunTip: string } {
+    let hook = "here is what the data shows";
     let verdict = "Every run is a data point. Let's make the next one count.";
+    let nextRunTip = "Keep your next run easy to let today's effort absorb.";
 
-    if (greyZoneAnalysis?.inGreyZone) {
-      hook = "your heart rate tells a story";
-      verdict = `You spent about ${greyZoneAnalysis.minutes} minutes in the Grey Zone. That means your body was working hard, but not targeting a specific training adaptation. Try slowing your easy runs down or pushing your hard runs harder.`;
+    // Pace-based hook
+    if (ctx.paceVsRecentSec !== null && ctx.paceVsRecentSec < -10) {
+      const absSec = Math.abs(Math.round(ctx.paceVsRecentSec));
+      hook = `${absSec} seconds faster than your recent average`;
+      verdict = `You ran ${absSec} sec/km faster than your recent average for this distance. Your fitness is building. Make sure your next run is easy enough to absorb this effort.`;
+      nextRunTip = "Follow this up with an easy run — your body needs the recovery to lock in these gains.";
+    } else if (ctx.paceVsRecentSec !== null && ctx.paceVsRecentSec > 15) {
+      hook = "slower than usual, which is not always a bad thing";
+      verdict = `Your pace was a bit slower than your recent average today. That can be deliberate recovery, or a signal to check your sleep and nutrition. Either way, consistency is what builds fitness.`;
+      nextRunTip = "Focus on consistency over the next few days rather than pushing pace.";
     } else if (efficiencyRating.label === "Low") {
-      hook = "strong effort, but your efficiency needs work";
-      verdict = `Your effort was there, but your running efficiency came in low. This often means your pace and heart rate are mismatched. Focus on keeping your easy runs truly easy.`;
+      hook = "solid effort, but efficiency has room to grow";
+      verdict = `Your effort was high today, but your running efficiency came in low. That often means your heart rate is working harder than your pace warrants. A few easy aerobic runs this week will help reset that.`;
+      nextRunTip = "Prioritize keeping your next 1-2 runs at a conversational pace.";
     } else if (effortScore >= 80) {
-      hook = "you went all out on this one";
-      verdict = `Big effort today. Your body is going to need proper recovery to absorb this session. Make sure your next run is an easy one.`;
+      hook = "big effort today";
+      verdict = `You put out a high-effort session. Your body is going to need proper recovery to absorb this one. Easy running for the next day or two is not optional — it is part of the training.`;
+      nextRunTip = "Make your next run genuinely easy — effort score like today needs 24-48 hours of recovery.";
     } else if (activity.pr_count && activity.pr_count > 0) {
-      hook = "new PR, nice work";
-      verdict = `You set ${activity.pr_count} PR${activity.pr_count > 1 ? "s" : ""} today. That is your hard work paying off. The question is: are you recovering enough to keep progressing?`;
+      hook = `${activity.pr_count} new PR${activity.pr_count > 1 ? "s" : ""}`;
+      verdict = `You set ${activity.pr_count} PR${activity.pr_count > 1 ? "s" : ""} today. That is real progress showing up in the data. The question now is whether you recover well enough to keep that trajectory going.`;
+      nextRunTip = "Give yourself a proper easy day before your next hard session.";
+    } else if (ctx.runsThisWeek >= 3) {
+      hook = `run ${ctx.runsThisWeek} of the week is in the books`;
+      verdict = `You have been consistent this week — ${ctx.runsThisWeek} runs and ${ctx.kmThisWeek.toFixed(1)} km logged. Consistency is the most underrated part of training. Keep it up.`;
+      nextRunTip = "You are building a solid week. Make sure at least one more run this week is fully easy.";
+    }
+
+    // Goal-aware closing nudge
+    const goalLabel = GOAL_LABELS[user.onboardingGoal || ""] || null;
+    if (goalLabel && verdict === "Every run is a data point. Let's make the next one count.") {
+      verdict = `You are ${goalLabel} and today is another step in that direction. Consistency over perfection — keep showing up.`;
     }
 
     return {
       subject: `Your ${distanceLabel} Analysis: ${hook.charAt(0).toUpperCase() + hook.slice(1)}`,
       coachVerdictBody: verdict,
+      nextRunTip,
     };
   }
 

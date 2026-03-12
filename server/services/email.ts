@@ -901,62 +901,110 @@ Biser`;
     effortScore?: number;
     runType?: string;
     aiCoachInsight?: string;
+    nextRunTip?: string;
+    weeklyContext?: string;
     insights: { title: string; message: string }[];
     dashboardUrl: string;
     subject?: string;
     efficiencyRating?: { label: string; icon: string };
-    greyZoneAnalysis?: { inGreyZone: boolean; minutes: number; message: string } | null;
     unsubscribeUrl?: string;
     activityUrl?: string;
   }): Promise<boolean> {
-    const { to, firstName, activityName, distance, duration, pace, heartRate, elevation, effortScore, runType, aiCoachInsight, insights, dashboardUrl, efficiencyRating, greyZoneAnalysis, unsubscribeUrl, activityUrl } = options;
+    const { to, firstName, activityName, distance, duration, pace, heartRate, elevation, effortScore, runType, aiCoachInsight, nextRunTip, weeklyContext, insights, dashboardUrl, efficiencyRating, unsubscribeUrl, activityUrl } = options;
 
     const ctaUrl = activityUrl || dashboardUrl;
     const emailSubject = options.subject || `Your ${runType || "Run"} Analysis: ${activityName}`;
-
-    const greyZoneText = greyZoneAnalysis?.inGreyZone
-      ? `\nGrey Zone Alert: ~${greyZoneAnalysis.minutes} minutes\n${greyZoneAnalysis.message}\nDon't let this run turn into "Junk Mileage."\n`
-      : "";
-
-    const coachText = aiCoachInsight ? `\nRunning Coach:\n${aiCoachInsight}\n` : "";
 
     const unsubLine = unsubscribeUrl
       ? `\nDon't want these emails? Unsubscribe here: ${unsubscribeUrl}\nChange email frequency: https://aitracker.run/settings`
       : `\nChange email frequency: https://aitracker.run/settings`;
 
+    // Plain text version
+    const statsLines = [
+      `Pace: ${pace}`,
+      `Distance: ${distance}`,
+      `Duration: ${duration}`,
+      heartRate ? `Avg HR: ${heartRate}` : null,
+      elevation ? `Elevation: ${elevation}` : null,
+      efficiencyRating && efficiencyRating.label !== "Unknown" ? `Efficiency: ${efficiencyRating.label}` : null,
+    ].filter(Boolean).join("\n");
+
     const text = `Hey ${firstName},
 
-We just saw your ${activityName} upload to Strava. Nice work getting out there.
+We just pulled your ${activityName} data from Strava.
 
-Quick Audit:
+Today's Run:
+${statsLines}
+${weeklyContext ? `\nThis week: ${weeklyContext}` : ""}
 
-Pace: ${pace}
-Distance: ${distance}
-${heartRate ? `Avg HR: ${heartRate}` : ""}
-${efficiencyRating && efficiencyRating.label !== "Unknown" ? `Efficiency: ${efficiencyRating.label}` : ""}
-${greyZoneText}${coachText}
-See your full run analysis and recovery time: ${ctaUrl}
+Coach Verdict:
+${aiCoachInsight || "Every run is a data point. Keep showing up."}
+${nextRunTip ? `\nNext Run: ${nextRunTip}` : ""}
+
+See your full analysis: ${ctaUrl}
 
 Train smarter,
 The AITracker Running Coach
-${unsubLine}
-    `.trim();
+${unsubLine}`.trim();
 
-    const html = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-<pre style="font-family: inherit; font-size: 15px; line-height: 1.7; color: #333; white-space: pre-wrap; word-wrap: break-word; margin: 0; padding: 30px 25px;">Hey ${firstName},
+    // HTML version
+    const statsHtmlRows = [
+      `<tr><td style="color:#888;padding:4px 0;width:110px;">Pace</td><td style="font-weight:600;padding:4px 0;">${pace}</td></tr>`,
+      `<tr><td style="color:#888;padding:4px 0;">Distance</td><td style="font-weight:600;padding:4px 0;">${distance}</td></tr>`,
+      `<tr><td style="color:#888;padding:4px 0;">Duration</td><td style="font-weight:600;padding:4px 0;">${duration}</td></tr>`,
+      heartRate ? `<tr><td style="color:#888;padding:4px 0;">Avg HR</td><td style="font-weight:600;padding:4px 0;">${heartRate}</td></tr>` : null,
+      elevation ? `<tr><td style="color:#888;padding:4px 0;">Elevation</td><td style="font-weight:600;padding:4px 0;">${elevation}</td></tr>` : null,
+      efficiencyRating && efficiencyRating.label !== "Unknown"
+        ? `<tr><td style="color:#888;padding:4px 0;">Efficiency</td><td style="font-weight:600;padding:4px 0;">${efficiencyRating.label}</td></tr>`
+        : null,
+    ].filter(Boolean).join("\n");
 
-We just saw your <b>${activityName}</b> upload to Strava. Nice work getting out there.
+    const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;">
 
-<b>Quick Audit:</b>
+  <!-- Header -->
+  <div style="background:#FC5200;padding:24px 28px 20px;">
+    <p style="margin:0;color:rgba(255,255,255,0.85);font-size:13px;letter-spacing:0.05em;text-transform:uppercase;">AITracker.run</p>
+    <h1 style="margin:6px 0 0;color:#ffffff;font-size:20px;font-weight:700;line-height:1.3;">Your Run Report</h1>
+  </div>
 
-Pace: ${pace}
-Distance: ${distance}${heartRate ? `\nAvg HR: ${heartRate}` : ""}${efficiencyRating && efficiencyRating.label !== "Unknown" ? `\nEfficiency: ${efficiencyRating.label}` : ""}
-${greyZoneAnalysis?.inGreyZone ? `\n<b>Grey Zone Alert: ~${greyZoneAnalysis.minutes} minutes</b>\n${greyZoneAnalysis.message}\nDon't let this run turn into "Junk Mileage."\n` : ""}${aiCoachInsight ? `\n<b>Running Coach:</b>\n${aiCoachInsight}\n` : ""}
-<a href="${ctaUrl}" style="color: #FC5200; font-weight: bold;">See My Full Run Analysis and Recovery Time</a>
+  <!-- Greeting -->
+  <div style="padding:24px 28px 0;">
+    <p style="margin:0;font-size:15px;color:#333;line-height:1.6;">Hey ${firstName}, we just pulled your <strong>${activityName}</strong> data from Strava.</p>
+  </div>
 
-Train smarter,
-The AITracker Running Coach</pre>
-<div style="padding: 15px 25px; font-size: 12px; color: #999;">${unsubscribeUrl ? `<a href="${unsubscribeUrl}" style="color: #999;">Unsubscribe from post-run emails</a> · ` : ""}<a href="https://aitracker.run/settings" style="color: #999;">Change email frequency</a></div>
+  <!-- Stats block -->
+  <div style="margin:20px 28px;background:#f8f8f8;border-radius:10px;padding:18px 20px;">
+    <p style="margin:0 0 12px;font-size:12px;font-weight:700;color:#888;letter-spacing:0.08em;text-transform:uppercase;">Today's Run</p>
+    <table style="border-collapse:collapse;width:100%;font-size:14px;color:#222;">
+      ${statsHtmlRows}
+    </table>
+    ${weeklyContext ? `<div style="margin-top:14px;padding-top:12px;border-top:1px solid #e8e8e8;font-size:13px;color:#555;">📅 This week: <strong>${weeklyContext}</strong></div>` : ""}
+  </div>
+
+  <!-- Coach verdict -->
+  ${aiCoachInsight ? `
+  <div style="margin:0 28px;padding:18px 20px;border-left:3px solid #FC5200;background:#fff9f7;">
+    <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#FC5200;letter-spacing:0.08em;text-transform:uppercase;">Coach Verdict</p>
+    <p style="margin:0;font-size:14px;color:#333;line-height:1.65;">${aiCoachInsight}</p>
+  </div>` : ""}
+
+  <!-- Next run tip -->
+  ${nextRunTip ? `
+  <div style="margin:16px 28px 0;padding:14px 18px;background:#f0f7ff;border-radius:8px;">
+    <p style="margin:0;font-size:13px;color:#1a5276;line-height:1.55;"><strong>Next run:</strong> ${nextRunTip}</p>
+  </div>` : ""}
+
+  <!-- CTA -->
+  <div style="padding:24px 28px 28px;text-align:center;">
+    <a href="${ctaUrl}" style="display:inline-block;background:#FC5200;color:#ffffff;font-weight:700;font-size:14px;padding:12px 28px;border-radius:8px;text-decoration:none;">View Full Run Analysis</a>
+  </div>
+
+  <!-- Footer -->
+  <div style="padding:16px 28px;border-top:1px solid #f0f0f0;font-size:12px;color:#aaa;">
+    Train smarter, The AITracker Running Coach<br>
+    ${unsubscribeUrl ? `<a href="${unsubscribeUrl}" style="color:#aaa;">Unsubscribe from post-run emails</a> · ` : ""}<a href="https://aitracker.run/settings" style="color:#aaa;">Change email frequency</a>
+  </div>
+
 </div>`;
 
     return await this.sendEmail({ to, subject: emailSubject, html, text });
