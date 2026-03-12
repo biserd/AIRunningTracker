@@ -961,12 +961,6 @@ ${unsubLine}`.trim();
 
     const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;">
 
-  <!-- Header -->
-  <div style="background:#FC5200;padding:24px 28px 20px;">
-    <p style="margin:0;color:rgba(255,255,255,0.85);font-size:13px;letter-spacing:0.05em;text-transform:uppercase;">AITracker.run</p>
-    <h1 style="margin:6px 0 0;color:#ffffff;font-size:20px;font-weight:700;line-height:1.3;">Your Run Report</h1>
-  </div>
-
   <!-- Greeting -->
   <div style="padding:24px 28px 0;">
     <p style="margin:0;font-size:15px;color:#333;line-height:1.6;">Hey ${firstName}, we just pulled your <strong>${activityName}</strong> data from Strava.</p>
