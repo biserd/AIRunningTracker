@@ -106,14 +106,11 @@ class StravaWebhookService {
       }
 
       const frequency = user.postRunEmailFrequency ?? "every_run";
-
-      // Hard minimum gap between any two post-run emails (prevents bulk-import floods)
-      const MIN_GAP_HOURS = frequency === "weekly" ? 168 : 4;
-      if (user.lastPostRunEmailAt) {
-        const hoursSinceLastEmail = (Date.now() - new Date(user.lastPostRunEmailAt).getTime()) / (1000 * 60 * 60);
-        if (hoursSinceLastEmail < MIN_GAP_HOURS) {
-          console.log(`[Strava Webhook] User ${user.id} throttled — last email sent ${hoursSinceLastEmail.toFixed(1)}h ago (min gap: ${MIN_GAP_HOURS}h)`);
-          return "skipped:throttle";
+      if (frequency === "weekly" && user.lastPostRunEmailAt) {
+        const daysSinceLastEmail = (Date.now() - new Date(user.lastPostRunEmailAt).getTime()) / (1000 * 60 * 60 * 24);
+        if (daysSinceLastEmail < 7) {
+          console.log(`[Strava Webhook] User ${user.id} set to weekly emails, last sent ${daysSinceLastEmail.toFixed(1)} days ago — skipping`);
+          return "skipped:weekly_throttle";
         }
       }
 
