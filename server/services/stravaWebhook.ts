@@ -155,8 +155,61 @@ class StravaWebhookService {
         return `skipped:not_a_run(${activity.type})`;
       }
 
+      // Store the activity in the DB so training context queries have accurate history.
+      // Duplicate-safe: the regular sync job may also store this later; we skip if it exists.
+      const stravaId = String(event.object_id);
+      const existing = await storage.getActivityByStravaIdAndUser(stravaId, user.id);
+      if (!existing) {
+        try {
+          await storage.createActivity({
+            userId: user.id,
+            stravaId,
+            name: activity.name,
+            distance: activity.distance,
+            movingTime: activity.moving_time,
+            totalElevationGain: activity.total_elevation_gain || 0,
+            averageSpeed: activity.average_speed,
+            maxSpeed: activity.max_speed,
+            averageHeartrate: activity.average_heartrate || null,
+            maxHeartrate: activity.max_heartrate || null,
+            startDate: new Date(activity.start_date),
+            type: activity.sport_type || activity.type,
+            calories: activity.calories || null,
+            averageCadence: activity.average_cadence ? activity.average_cadence * 2 : null,
+            maxCadence: activity.max_cadence ? activity.max_cadence * 2 : null,
+            averageWatts: activity.average_watts || null,
+            maxWatts: activity.max_watts || null,
+            sufferScore: activity.suffer_score || null,
+            commentsCount: activity.comment_count || 0,
+            kudosCount: activity.kudos_count || 0,
+            achievementCount: activity.achievement_count || 0,
+            startLatitude: activity.start_latlng?.[0] || null,
+            startLongitude: activity.start_latlng?.[1] || null,
+            endLatitude: activity.end_latlng?.[0] || null,
+            endLongitude: activity.end_latlng?.[1] || null,
+            polyline: activity.map?.summary_polyline || null,
+            detailedPolyline: null,
+            streamsData: null,
+            lapsData: null,
+            averageTemp: activity.average_temp || null,
+            hasHeartrate: activity.has_heartrate || false,
+            deviceWatts: activity.device_watts || false,
+            elapsedTime: activity.elapsed_time || null,
+            workoutType: activity.workout_type ?? null,
+            prCount: activity.pr_count || 0,
+            hydrationStatus: "pending",
+          });
+          console.log(`[Strava Webhook] Stored activity ${stravaId} for user ${user.id}`);
+        } catch (storeErr) {
+          console.error(`[Strava Webhook] Failed to store activity ${stravaId}:`, storeErr);
+          // Non-fatal — email can still go out with whatever context the DB has
+        }
+      } else {
+        console.log(`[Strava Webhook] Activity ${stravaId} already in DB for user ${user.id}, skipping insert`);
+      }
+
       console.log(`[Strava Webhook] Processing run activity ${event.object_id} for user ${user.id}`);
-      await this.sendPostRunEmail(user, activity);
+      await this.sendPostRunEmail(user, activity, stravaId);
       await storage.updateUser(user.id, { lastPostRunEmailAt: new Date() });
       return "email_sent";
     } catch (error) {
@@ -165,14 +218,15 @@ class StravaWebhookService {
     }
   }
 
-  private async buildTrainingContext(userId: number, currentActivityDistanceKm: number, currentActivityDate: Date): Promise<TrainingContext> {
+  private async buildTrainingContext(userId: number, currentActivityDistanceKm: number, currentActivityDate: Date, currentStravaId: string): Promise<TrainingContext> {
     try {
       const thirtyDaysAgo = new Date(currentActivityDate.getTime() - 30 * 24 * 60 * 60 * 1000);
       const recentActivities = await storage.getActivitiesByUserId(userId, 60, thirtyDaysAgo);
-      const runs = recentActivities.filter(a => RUNNING_ACTIVITY_TYPES.includes(a.type || "Run"));
+      // Exclude today's newly-stored activity so we don't double-count it (we add +1 below)
+      const runs = recentActivities.filter(a => RUNNING_ACTIVITY_TYPES.includes(a.type || "Run") && a.stravaId !== currentStravaId);
 
       const sevenDaysAgo = new Date(currentActivityDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const runsThisWeek = runs.filter(r => new Date(r.startDate) >= sevenDaysAgo && r.stravaId !== String(currentActivityDate.getTime()));
+      const runsThisWeek = runs.filter(r => new Date(r.startDate) >= sevenDaysAgo);
       const runsThisWeekCount = runsThisWeek.length;
       const kmThisWeek = runsThisWeek.reduce((sum, r) => sum + (r.distance || 0) / 1000, 0);
 
@@ -231,7 +285,7 @@ class StravaWebhookService {
     }
   }
 
-  private async sendPostRunEmail(user: any, activity: any): Promise<void> {
+  private async sendPostRunEmail(user: any, activity: any, stravaId: string): Promise<void> {
     try {
       const distanceKm = activity.distance / 1000;
       const distanceMiles = distanceKm * 0.621371;
@@ -264,7 +318,7 @@ class StravaWebhookService {
 
       // Build training context from the last 30 days of activities
       const activityDate = new Date(activity.start_date || Date.now());
-      const trainingContext = await this.buildTrainingContext(user.id, distanceKm, activityDate);
+      const trainingContext = await this.buildTrainingContext(user.id, distanceKm, activityDate, stravaId);
 
       // Compute pace vs recent average (now that we have today's pace)
       if (trainingContext.recentAvgPaceSecPerKm !== null) {
