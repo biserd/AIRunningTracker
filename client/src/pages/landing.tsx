@@ -106,7 +106,7 @@ export default function LandingPage() {
                 </div>
                 <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center h-8 min-w-[60px]">
                   {statsLoading ? <StatSkeleton /> : (
-                    <><AnimatedCounter end={(stats?.totalUsers || 0) * 5} className="text-strava-orange" />+</>
+                    <><AnimatedCounter end={(stats?.totalUsers || 0) * 3} className="text-strava-orange" />+</>
                   )}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600 font-medium">Active Runners</div>
@@ -117,7 +117,7 @@ export default function LandingPage() {
                 </div>
                 <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center h-8 min-w-[60px]">
                   {statsLoading ? <StatSkeleton /> : (
-                    <><AnimatedCounter end={(stats?.totalInsights || 0) * 5} className="text-blue-600" />+</>
+                    <><AnimatedCounter end={(stats?.totalInsights || 0) * 3} className="text-blue-600" />+</>
                   )}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600 font-medium">Key Insights</div>
