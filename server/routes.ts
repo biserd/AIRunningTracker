@@ -1071,7 +1071,7 @@ ${allPages.map(page => `  <url>
       let customerId = user.stripeCustomerId;
       if (!customerId) {
         const customer = await stripe.customers.create({
-          email: user.email,
+          ...(user.email ? { email: user.email } : {}),
           metadata: { userId: String(userId) }
         });
         await storage.updateStripeCustomerId(userId, customer.id);
@@ -1453,7 +1453,7 @@ ${allPages.map(page => `  <url>
         });
         const token = authService.generateToken(existingUser);
         // Pass JWT via short-lived cookie to avoid token in URL (security)
-        res.cookie('_sta', token, { maxAge: 60000, path: '/', sameSite: 'lax' });
+        res.cookie('_sta', token, { maxAge: 60000, path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
         return res.redirect('/dashboard?strava_login=success');
       }
 
@@ -1489,7 +1489,7 @@ ${allPages.map(page => `  <url>
 
       const token = authService.generateToken(newUser);
       // Pass JWT via short-lived cookie to avoid token in URL (security)
-      res.cookie('_sta', token, { maxAge: 60000, path: '/', sameSite: 'lax' });
+      res.cookie('_sta', token, { maxAge: 60000, path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
       return res.redirect('/audit-report');
     } catch (error: any) {
       console.error('[StravaLogin] Callback error:', error);

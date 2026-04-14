@@ -944,7 +944,7 @@ export const updateCoachPreferencesSchema = z.object({
 export const deletionFeedback = pgTable("deletion_feedback", {
   id: serial("id").primaryKey(),
   userId: integer("user_id"), // Nullable since user will be deleted
-  userEmail: text("user_email").notNull(),
+  userEmail: text("user_email"), // Nullable for Strava-only users with no email
   reason: text("reason", { 
     enum: ["too_expensive", "not_using", "missing_features", "found_alternative", "technical_issues", "privacy_concerns", "other"] 
   }).notNull(),
