@@ -1430,12 +1430,19 @@ ${allPages.map(page => `  <url>
 
       // Exchange code for tokens
       const tokenData = await stravaService.exchangeCodeForTokens(code as string);
-      const athleteId = tokenData.athlete.id.toString();
-      const firstName = tokenData.athlete.firstname || "";
-      const lastName = tokenData.athlete.lastname || "";
+
+      // Fetch full athlete profile from Strava API (token exchange payload may be partial)
+      const athleteResponse = await fetch('https://www.strava.com/api/v3/athlete', {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      });
+      const athleteProfile = athleteResponse.ok ? await athleteResponse.json() : tokenData.athlete;
+
+      const athleteId = (athleteProfile.id || tokenData.athlete.id).toString();
+      const firstName = athleteProfile.firstname || tokenData.athlete.firstname || "";
+      const lastName = athleteProfile.lastname || tokenData.athlete.lastname || "";
 
       // Look for existing user by Strava athlete ID
-      const existingUser = await storage.getUserByStravaId(athleteId);
+      const existingUser = await storage.getUserByStravaAthleteId(athleteId);
 
       if (existingUser) {
         // Returning user — refresh their tokens and log in

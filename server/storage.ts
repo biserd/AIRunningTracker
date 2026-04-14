@@ -20,6 +20,7 @@ export interface IStorage {
   
   // Strava lookup methods
   getUserByStravaId(stravaAthleteId: string): Promise<User | undefined>;
+  getUserByStravaAthleteId(stravaAthleteId: string): Promise<User | undefined>;
   
   // Stripe subscription methods
   getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined>;
@@ -432,6 +433,10 @@ export class DatabaseStorage implements IStorage {
   async getUserByStravaId(stravaAthleteId: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.stravaAthleteId, stravaAthleteId));
     return user || undefined;
+  }
+
+  async getUserByStravaAthleteId(stravaAthleteId: string): Promise<User | undefined> {
+    return this.getUserByStravaId(stravaAthleteId);
   }
 
   async getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined> {
