@@ -683,7 +683,7 @@ export default function HowToPickTrainingPlan() {
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link href="/auth">
                     <Button size="lg" className="bg-white text-orange-600 hover:bg-gray-100 font-bold px-8" data-testid="button-cta-signup">
-                      Create Free Account
+                      Start Free Trial
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
                   </Link>
@@ -827,7 +827,7 @@ export default function HowToPickTrainingPlan() {
               </CardDescription>
               <Link href="/auth">
                 <Button size="lg" className="bg-white text-purple-600 hover:bg-gray-100 font-bold" data-testid="button-final-cta">
-                  Get Your Free Plan
+                  Start Free Trial
                 </Button>
               </Link>
             </CardHeader>

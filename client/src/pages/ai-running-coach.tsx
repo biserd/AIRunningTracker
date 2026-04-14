@@ -49,13 +49,13 @@ export default function AICoachLanding() {
             Your Personal AI <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">Running Coach</span>
           </h1>
           <p className="text-xl sm:text-2xl text-gray-700 dark:text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-            Get expert training advice, personalized insights, and race predictions powered by AI. Available 24/7, completely free.
+            Get expert training advice, personalized insights, and race predictions powered by AI. Available 24/7 — try it free for 14 days.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Link href="/auth">
               <Button size="lg" className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-6 text-lg" data-testid="hero-cta-start">
-                Start Free Now <ArrowRight className="ml-2" size={20} />
+                Start Free Trial <ArrowRight className="ml-2" size={20} />
               </Button>
             </Link>
             <Link href="/blog/ai-running-coach-complete-guide-2025">
@@ -281,7 +281,7 @@ export default function AICoachLanding() {
             <div className="text-center mt-12">
               <Link href="/auth">
                 <Button size="lg" className="bg-white text-purple-600 hover:bg-gray-100 px-10 py-6 text-lg" data-testid="cta-how-it-works">
-                  Get Started Free <ArrowRight className="ml-2" size={20} />
+                  Start Free Trial <ArrowRight className="ml-2" size={20} />
                 </Button>
               </Link>
             </div>
@@ -560,7 +560,7 @@ export default function AICoachLanding() {
                 <CardTitle className="text-lg dark:text-white">How is this different from Strava's features?</CardTitle>
               </CardHeader>
               <CardContent className="text-gray-700 dark:text-gray-300">
-                While Strava excels at tracking and social features, RunAnalytics provides deep performance analysis, AI-powered coaching conversations, race predictions, injury risk detection, and comprehensive training insights that Strava doesn't offer. Plus, it's completely free while Strava Summit costs $79.99/year.
+                While Strava excels at tracking and social features, RunAnalytics provides deep performance analysis, AI-powered coaching conversations, race predictions, injury risk detection, and comprehensive training insights that Strava doesn't offer. At $7.99/month after a 14-day free trial, it costs a fraction of Strava Summit's $79.99/year with far deeper analytics.
               </CardContent>
             </Card>
 
@@ -584,12 +584,12 @@ export default function AICoachLanding() {
                 Start Training Smarter Today
               </h2>
               <p className="text-xl mb-8 max-w-2xl mx-auto opacity-95">
-                Join thousands of runners who are achieving their goals with personalized AI coaching. It's free, takes 2 minutes to set up, and could transform your training.
+                Join thousands of runners who are achieving their goals with personalized AI coaching. Try it free for 14 days — takes just 2 minutes to set up.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
                 <Link href="/auth">
                   <Button size="lg" className="bg-white text-purple-600 hover:bg-gray-100 px-10 py-6 text-lg" data-testid="cta-final-signup">
-                    Get Started Free <ArrowRight className="ml-2" size={20} />
+                    Start Free Trial <ArrowRight className="ml-2" size={20} />
                   </Button>
                 </Link>
                 <Link href="/blog/ai-running-coach-complete-guide-2025">

@@ -122,34 +122,21 @@ export const homepageContent: HomepageContent = {
   ],
   pricing: {
     title: "Simple, Transparent Pricing",
-    subtitle: "Start free, upgrade when you're ready",
+    subtitle: "One plan. Everything included. Try it free for 14 days.",
     plans: [
-      {
-        name: "Free",
-        price: "$0",
-        description: "Perfect for casual runners",
-        features: [
-          "Basic Runner Score",
-          "Race Time Predictions",
-          "Last 30 days of activities",
-          "AI Chat (unlimited)",
-          "Free Running Tools"
-        ],
-        cta: { text: "Get Started Free", href: "/auth" }
-      },
       {
         name: "Premium",
         price: "$7.99/month",
-        description: "Everything you need to run smarter",
+        description: "Full access to every feature. 14-day free trial, then $7.99/month or $79.99/year.",
         features: [
-          "Everything in Free",
           "Full activity history & analytics",
           "AI training plans & race predictions",
           "AI Coach Chat & Agent Coach",
           "Compare runs & form stability",
+          "Runner Score & performance metrics",
           "Proactive coaching alerts"
         ],
-        cta: { text: "Go Premium", href: "/pricing" },
+        cta: { text: "Start Free Trial", href: "/auth" },
         highlighted: true
       }
     ]
