@@ -1259,11 +1259,11 @@ ${allPages.map(page => `  <url>
       // Delete all user data
       await storage.deleteAccount(userId);
 
-      // Send confirmation email to user
-      await emailService.sendAccountDeletionConfirmation(userEmail);
-
-      // Send notification to admin
-      await emailService.sendAccountDeletionNotification(userEmail, userId);
+      // Send confirmation email to user (skip if Strava-only user with no email)
+      if (userEmail) {
+        await emailService.sendAccountDeletionConfirmation(userEmail);
+        await emailService.sendAccountDeletionNotification(userEmail, userId);
+      }
 
       console.log(`[API DELETE /api/user] Account deleted for user ID: ${userId}, email: ${userEmail}`);
       
@@ -1323,11 +1323,11 @@ ${allPages.map(page => `  <url>
       // Delete all user data
       await storage.deleteAccount(userId);
 
-      // Send confirmation email to user
-      await emailService.sendAccountDeletionConfirmation(userEmail);
-
-      // Send notification to admin with feedback
-      await emailService.sendAccountDeletionWithFeedback(userEmail, userId, reason, details, subscriptionPlan, accountAgeInDays);
+      // Send confirmation + feedback emails (skip if Strava-only user with no email)
+      if (userEmail) {
+        await emailService.sendAccountDeletionConfirmation(userEmail);
+        await emailService.sendAccountDeletionWithFeedback(userEmail, userId, reason, details, subscriptionPlan, accountAgeInDays);
+      }
 
       console.log(`[API POST /api/user/delete-with-feedback] Account deleted for user ID: ${userId}, email: ${userEmail}, reason: ${reason}`);
       
@@ -6507,6 +6507,7 @@ ${allPages.map(page => `  <url>
       // 1. Send reminder emails (2 days before expiry)
       const usersNearingExpiry = await storage.getUsersWithTrialEndingSoon(2);
       for (const user of usersNearingExpiry) {
+        if (!user.email) continue; // Skip Strava-only users with no email
         try {
           await emailService.sendTrialReminderEmail(user.email, user.firstName || undefined, 2);
           results.remindersSent++;
@@ -6519,6 +6520,7 @@ ${allPages.map(page => `  <url>
       // 2. Send expiry emails (trial just ended)
       const usersWithExpiredTrials = await storage.getUsersWithExpiredTrials();
       for (const user of usersWithExpiredTrials) {
+        if (!user.email) continue; // Skip Strava-only users with no email
         try {
           await emailService.sendTrialExpiredEmail(user.email, user.firstName || undefined);
           results.expiredSent++;
@@ -7825,7 +7827,8 @@ ${allPages.map(page => `  <url>
         
         // Process batch in parallel
         const results = await Promise.all(
-          batch.map(async (user: { id: number; email: string }) => {
+          batch.map(async (user: { id: number; email: string | null }) => {
+            if (!user.email) return false; // Skip Strava-only users with no email
             try {
               const success = await emailService.sendFoundersWelcomeEmail(user.email);
               if (success) {

@@ -120,6 +120,11 @@ async function processTrialEmails() {
           console.log(`[Trial Scheduler] Skipping reminder for ${user.email} - already sent`);
           continue;
         }
+
+        if (!user.email) {
+          remindersSkipped++;
+          continue; // Skip Strava-only users with no email
+        }
         
         // Send the email
         await emailService.sendTrialReminderEmail(user.email, user.firstName || undefined, 2);
@@ -154,6 +159,11 @@ async function processTrialEmails() {
           expiredSkipped++;
           console.log(`[Trial Scheduler] Skipping expiry email for ${user.email} - already sent`);
           continue;
+        }
+
+        if (!user.email) {
+          expiredSkipped++;
+          continue; // Skip Strava-only users with no email
         }
         
         // Send the email
