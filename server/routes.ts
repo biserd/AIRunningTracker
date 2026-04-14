@@ -1401,7 +1401,8 @@ ${allPages.map(page => `  <url>
     const origin = `${req.protocol}://${req.get('host')}`;
     const redirectUri = `${origin}/auth/strava/login/callback`;
     // Generate a cryptographically secure random state to prevent CSRF
-    const state = `strava_login_${require('crypto').randomBytes(16).toString('hex')}`;
+    const { randomBytes } = await import('crypto');
+    const state = `strava_login_${randomBytes(16).toString('hex')}`;
     res.cookie('strava_oauth_state', state, { maxAge: 300000, httpOnly: true, sameSite: 'lax', path: '/' });
     const stravaUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&approval_prompt=auto&scope=read,activity:read_all&state=${encodeURIComponent(state)}`;
     res.redirect(stravaUrl);
