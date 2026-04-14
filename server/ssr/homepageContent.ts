@@ -67,7 +67,7 @@ export const homepageContent: HomepageContent = {
       "Free tier available",
       "No credit card required",
       "Syncs instantly with Strava"
-    ]
+    ],
   },
   aiCoach: {
     title: "Your 24/7 Running Strategist",

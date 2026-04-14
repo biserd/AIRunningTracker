@@ -2,7 +2,8 @@ import { useState, useRef } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp, Trophy, Users, TrendingDown, Calculator, ArrowRight, MessageCircle, Activity, Map, Footprints, RotateCcw, Gift, Sparkles, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Bot } from "lucide-react";
+import { CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp, Trophy, Users, TrendingDown, Calculator, ArrowRight, MessageCircle, Activity, Map, Footprints, RotateCcw, Gift, Sparkles, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Bot, Star } from "lucide-react";
+import { SiStrava } from "react-icons/si";
 import { VERSION } from "@shared/version";
 import Footer from "@/components/Footer";
 import PublicHeader from "@/components/PublicHeader";
@@ -85,6 +86,12 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center">
+          <div className="flex justify-center mb-4">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 border border-orange-200">
+              <Star className="h-3 w-3 fill-orange-500 text-orange-500" />
+              New — sign up in one tap with Strava
+            </span>
+          </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-charcoal mb-4 sm:mb-6 leading-tight">
             The Missing Analytics Layer
             <span className="text-strava-orange"> for Runners</span>
@@ -147,8 +154,8 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Action Button */}
-          <div className="flex justify-center items-center mb-6 sm:mb-8 px-4">
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-3 mb-6 sm:mb-8 px-4">
             <Link href="/auth" className="w-full sm:w-auto">
               <Button
                 className="w-full sm:w-auto bg-gradient-to-r from-strava-orange via-orange-500 to-red-500 text-white hover:from-orange-600 hover:via-orange-500 hover:to-red-600 h-14 px-8 sm:px-12 text-base sm:text-lg font-bold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-200 ring-2 ring-orange-300/50"
@@ -157,6 +164,15 @@ export default function LandingPage() {
                 Get My Free Running Analysis
               </Button>
             </Link>
+            <a href="/api/auth/strava-login" className="w-full sm:w-auto">
+              <Button
+                variant="outline"
+                className="w-full sm:w-auto h-14 px-8 sm:px-10 text-base font-semibold border-2 border-[#FC4C02] text-[#FC4C02] hover:bg-[#FC4C02] hover:text-white transition-all duration-200 flex items-center gap-2"
+              >
+                <SiStrava className="h-5 w-5" />
+                Continue with Strava
+              </Button>
+            </a>
           </div>
 
           {/* Trust Indicators */}
@@ -167,7 +183,7 @@ export default function LandingPage() {
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
-              <span>14-day free trial</span>
+              <span>No credit card required</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />

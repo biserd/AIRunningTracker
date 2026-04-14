@@ -56,7 +56,10 @@ export class AuthService {
       throw new Error('Invalid email or password');
     }
 
-    // Verify password
+    // Verify password — Strava-only accounts have no password
+    if (!user.password) {
+      throw new Error('This account uses Strava login. Please click "Continue with Strava" to sign in.');
+    }
     const isValidPassword = await bcrypt.compare(loginData.password, user.password);
     if (!isValidPassword) {
       throw new Error('Invalid email or password');

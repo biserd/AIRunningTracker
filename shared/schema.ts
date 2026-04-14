@@ -13,8 +13,8 @@ export type TerrainType = typeof TERRAIN_TYPES[number];
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  email: text("email").notNull().unique(),
-  password: text("password").notNull(),
+  email: text("email").unique(),
+  password: text("password"),
   firstName: text("first_name"),
   lastName: text("last_name"),
   username: text("username").unique(),

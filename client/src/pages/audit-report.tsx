@@ -9,6 +9,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { SEO } from "@/components/SEO";
 import { StravaConnectButton } from "@/components/StravaConnect";
 import CalibrationWizard from "@/components/CalibrationWizard";
+import { AddEmailModal } from "@/components/AddEmailModal";
 
 interface AuditData {
   runnerIQ: {
@@ -509,14 +510,27 @@ function MiniRadarChart({ data }: { data: AuditData['runnerIQ']['components'] })
   );
 }
 
-function useAuditCheckout() {
+function useAuditCheckout(onRequiresEmail: () => void) {
   return useMutation({
     mutationFn: async () => {
-      const data = await apiRequest("/api/stripe/create-audit-checkout", "POST");
+      const res = await fetch("/api/stripe/create-audit-checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+        },
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.status === 402 && data.requiresEmail) {
+        onRequiresEmail();
+        return null;
+      }
+      if (!res.ok) throw new Error(data.message || "Checkout failed");
       return data as { url: string };
     },
     onSuccess: (data) => {
-      if (data.url) {
+      if (data?.url) {
         window.location.href = data.url;
       }
     },
@@ -536,12 +550,13 @@ export default function AuditReportPage() {
   const { hasActiveSubscription, isLoading: subLoading, isReverseTrial } = useSubscription();
   const [, navigate] = useLocation();
   const [wizardDismissed, setWizardDismissed] = useState(false);
-  const checkout = useAuditCheckout();
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const checkout = useAuditCheckout(() => setShowEmailModal(true));
 
   const isStravaConnected = !!(user as any)?.stravaAthleteId;
 
   const params = new URLSearchParams(window.location.search);
-  const justConnected = params.get('connected') === 'true';
+  const justConnected = params.get('connected') === 'true' || params.get('strava_login') === 'success';
 
   const handleStravaConnect = () => {
     const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID;
@@ -745,6 +760,7 @@ export default function AuditReportPage() {
     : null;
 
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-orange-50 pb-28">
       <SEO 
         title="Your Training Audit | AITracker.run"
@@ -975,5 +991,14 @@ export default function AuditReportPage() {
         </div>
       </div>
     </div>
+    <AddEmailModal
+      open={showEmailModal}
+      onClose={() => setShowEmailModal(false)}
+      onSuccess={() => {
+        setShowEmailModal(false);
+        checkout.mutate();
+      }}
+    />
+    </>
   );
 }

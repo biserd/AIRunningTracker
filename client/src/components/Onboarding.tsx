@@ -165,7 +165,15 @@ const ONBOARDING_STEPS = [
 ];
 
 export default function Onboarding({ isOpen, onClose, onStravaConnect, isStravaConnected }: OnboardingProps) {
-  const [currentStep, setCurrentStep] = useState(0);
+  const STRAVA_STEP_INDEX = 1;
+  const [currentStep, setCurrentStep] = useState(isStravaConnected ? STRAVA_STEP_INDEX + 1 : 0);
+
+  useEffect(() => {
+    if (isStravaConnected && currentStep === STRAVA_STEP_INDEX) {
+      setCurrentStep(STRAVA_STEP_INDEX + 1);
+    }
+  }, [isStravaConnected]);
+
   const progress = ((currentStep + 1) / ONBOARDING_STEPS.length) * 100;
 
   const handleNext = () => {

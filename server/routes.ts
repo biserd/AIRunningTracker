@@ -905,6 +905,10 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
 
+      if (!user.email) {
+        return res.status(402).json({ requiresEmail: true, message: "Please add your email before subscribing." });
+      }
+
       const stripe = await getUncachableStripeClient();
 
       // Create or get Stripe customer
@@ -961,6 +965,10 @@ ${allPages.map(page => `  <url>
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
+      }
+
+      if (!user.email) {
+        return res.status(402).json({ requiresEmail: true, message: "Please add your email before subscribing." });
       }
 
       const stripe = await getUncachableStripeClient();
@@ -1377,6 +1385,111 @@ ${allPages.map(page => `  <url>
     } catch (error: any) {
       console.error('Reset password error:', error);
       res.status(400).json({ message: error.message || "Failed to reset password" });
+    }
+  });
+
+  // =============================================
+  // Strava OAuth Login (unauthenticated — new signup / returning login)
+  // =============================================
+
+  // Step 1: redirect browser to Strava consent page
+  app.get("/api/auth/strava-login", (req, res) => {
+    const clientId = process.env.STRAVA_CLIENT_ID || process.env.VITE_STRAVA_CLIENT_ID;
+    if (!clientId) {
+      return res.status(500).json({ message: "Strava client ID not configured" });
+    }
+    const origin = `${req.protocol}://${req.get('host')}`;
+    const redirectUri = `${origin}/auth/strava/login/callback`;
+    const stravaUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&approval_prompt=auto&scope=read,activity:read_all&state=strava_login`;
+    res.redirect(stravaUrl);
+  });
+
+  // Step 2: Strava redirects back here with ?code=...
+  app.get("/auth/strava/login/callback", async (req, res) => {
+    try {
+      const { code, error: stravaError } = req.query;
+
+      if (stravaError || !code) {
+        return res.redirect("/auth?error=strava_denied");
+      }
+
+      // Exchange code for tokens
+      const tokenData = await stravaService.exchangeCodeForTokens(code as string);
+      const athleteId = tokenData.athlete.id.toString();
+      const firstName = tokenData.athlete.firstname || "";
+      const lastName = tokenData.athlete.lastname || "";
+
+      // Look for existing user by Strava athlete ID
+      const existingUser = await storage.getUserByStravaId(athleteId);
+
+      if (existingUser) {
+        // Returning user — refresh their tokens and log in
+        await storage.updateUser(existingUser.id, {
+          stravaAccessToken: tokenData.access_token,
+          stravaRefreshToken: tokenData.refresh_token,
+          stravaConnected: true,
+        });
+        const token = authService.generateToken(existingUser);
+        return res.redirect(`/auth?strava_token=${token}&strava_redirect=/dashboard`);
+      }
+
+      // New user — create account silently, no email or password required
+      const trialEndsAt = new Date();
+      trialEndsAt.setDate(trialEndsAt.getDate() + 7);
+
+      const newUser = await storage.createUser({
+        firstName,
+        lastName,
+        email: null as any,
+        password: null as any,
+        stravaAthleteId: athleteId,
+        stravaAccessToken: tokenData.access_token,
+        stravaRefreshToken: tokenData.refresh_token,
+        stravaConnected: true,
+        subscriptionPlan: 'free',
+        trialEndsAt,
+      });
+
+      // Enqueue initial Strava sync
+      try {
+        jobQueue.addJob(createListActivitiesJob(newUser.id, 1, 200, 200));
+        console.log(`[StravaLogin] Queued initial sync for new user ${newUser.id}`);
+      } catch (syncError) {
+        console.error('[StravaLogin] Failed to queue sync:', syncError);
+      }
+
+      // Trigger drip campaign enrollment
+      try {
+        await dripCampaignService.onStravaConnected(newUser.id);
+      } catch (campaignError) {
+        console.error('[StravaLogin] Drip campaign error:', campaignError);
+      }
+
+      const token = authService.generateToken(newUser);
+      return res.redirect(`/auth?strava_token=${token}&strava_redirect=/audit-report`);
+    } catch (error: any) {
+      console.error('[StravaLogin] Callback error:', error);
+      res.redirect("/auth?error=strava_failed");
+    }
+  });
+
+  // Lazy email collection — called when user needs email for billing
+  app.post("/api/auth/add-email", authenticateJWT, async (req: any, res) => {
+    try {
+      const { email } = z.object({ email: z.string().email() }).parse(req.body);
+      const userId = req.user.id;
+
+      // Check uniqueness
+      const existing = await storage.getUserByEmail(email);
+      if (existing && existing.id !== userId) {
+        return res.status(409).json({ message: "That email is already registered to another account." });
+      }
+
+      await storage.updateUser(userId, { email });
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('[AddEmail] Error:', error);
+      res.status(400).json({ message: error.message || "Failed to save email" });
     }
   });
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Activity, Eye, EyeOff } from "lucide-react";
+import { SiStrava } from "react-icons/si";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { loginSchema, registerSchema, type LoginData, type RegisterData } from "@shared/schema";
@@ -18,36 +19,50 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
+  // Handle Strava OAuth token redirect — server sends ?strava_token=<jwt>&strava_redirect=/...
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const stravaToken = params.get("strava_token");
+    const stravaRedirect = params.get("strava_redirect") || "/dashboard";
+    const stravaError = params.get("error");
+
+    if (stravaToken) {
+      localStorage.setItem("auth_token", stravaToken);
+      window.history.replaceState({}, "", "/auth");
+      setLocation(stravaRedirect);
+      return;
+    }
+
+    if (stravaError) {
+      const message =
+        stravaError === "strava_denied"
+          ? "Strava connection was cancelled."
+          : "Strava sign-in failed. Please try again.";
+      toast({ title: "Sign-in failed", description: message, variant: "destructive" });
+      window.history.replaceState({}, "", "/auth");
+    }
+  }, []);
+
   const loginForm = useForm<LoginData>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues: { email: "", password: "" },
   });
 
   const registerForm = useForm<RegisterData>({
     resolver: zodResolver(registerSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      firstName: "",
-      lastName: "",
-    },
+    defaultValues: { email: "", password: "", firstName: "", lastName: "" },
   });
 
   const loginMutation = useMutation({
     mutationFn: (data: LoginData) => apiRequest("/api/auth/login", "POST", data),
     onSuccess: (response: any) => {
       localStorage.setItem("auth_token", response.token);
-      toast({
-        title: "Welcome back!",
-        description: "Successfully logged in",
-      });
-      // Free users go to audit page, subscribed/trial users go to dashboard
-      const isPaid = response.user?.subscriptionPlan && 
-                     response.user.subscriptionPlan !== 'free' && 
-                     (response.user.subscriptionStatus === 'active' || response.user.subscriptionStatus === 'trialing');
+      toast({ title: "Welcome back!", description: "Successfully logged in" });
+      const isPaid =
+        response.user?.subscriptionPlan &&
+        response.user.subscriptionPlan !== "free" &&
+        (response.user.subscriptionStatus === "active" ||
+          response.user.subscriptionStatus === "trialing");
       setLocation(isPaid ? "/dashboard" : "/audit-report");
     },
     onError: (error: any) => {
@@ -63,10 +78,7 @@ export default function AuthPage() {
     mutationFn: (data: RegisterData) => apiRequest("/api/auth/register", "POST", data),
     onSuccess: (response: any) => {
       localStorage.setItem("auth_token", response.token);
-      toast({
-        title: "Welcome to RunAnalytics!",
-        description: "Account created successfully",
-      });
+      toast({ title: "Welcome to RunAnalytics!", description: "Account created successfully" });
       setLocation("/audit-report");
     },
     onError: (error: any) => {
@@ -78,12 +90,11 @@ export default function AuthPage() {
     },
   });
 
-  const onLoginSubmit = (data: LoginData) => {
-    loginMutation.mutate(data);
-  };
+  const onLoginSubmit = (data: LoginData) => loginMutation.mutate(data);
+  const onRegisterSubmit = (data: RegisterData) => registerMutation.mutate(data);
 
-  const onRegisterSubmit = (data: RegisterData) => {
-    registerMutation.mutate(data);
+  const handleStravaLogin = () => {
+    window.location.href = "/api/auth/strava-login";
   };
 
   return (
@@ -111,6 +122,26 @@ export default function AuthPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+
+            {/* Strava OAuth button */}
+            <Button
+              type="button"
+              onClick={handleStravaLogin}
+              className="w-full bg-[#FC4C02] hover:bg-[#e04400] text-white font-semibold flex items-center justify-center gap-2 h-11"
+            >
+              <SiStrava className="h-5 w-5" />
+              Continue with Strava
+            </Button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-gray-500">or</span>
+              </div>
+            </div>
+
             {isLogin ? (
               <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                 <div className="space-y-2">
@@ -155,8 +186,8 @@ export default function AuthPage() {
                   </div>
                 </div>
 
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="w-full bg-strava-orange hover:bg-strava-orange/90"
                   disabled={loginMutation.isPending}
                 >
@@ -227,8 +258,8 @@ export default function AuthPage() {
                   )}
                 </div>
 
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="w-full bg-strava-orange hover:bg-strava-orange/90"
                   disabled={registerMutation.isPending}
                 >
@@ -243,10 +274,9 @@ export default function AuthPage() {
                 onClick={() => setIsLogin(!isLogin)}
                 className="text-sm text-strava-orange hover:underline"
               >
-                {isLogin 
-                  ? "Don't have an account? Sign up" 
-                  : "Already have an account? Sign in"
-                }
+                {isLogin
+                  ? "Don't have an account? Sign up"
+                  : "Already have an account? Sign in"}
               </button>
             </div>
 
