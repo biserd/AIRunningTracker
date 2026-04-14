@@ -1400,14 +1400,29 @@ ${allPages.map(page => `  <url>
     }
     const origin = `${req.protocol}://${req.get('host')}`;
     const redirectUri = `${origin}/auth/strava/login/callback`;
-    const stravaUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&approval_prompt=auto&scope=read,activity:read_all&state=strava_login`;
+    // Generate a random state value to prevent CSRF
+    const state = `strava_login_${Math.random().toString(36).slice(2)}`;
+    res.cookie('strava_oauth_state', state, { maxAge: 300000, httpOnly: true, sameSite: 'lax', path: '/' });
+    const stravaUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&approval_prompt=auto&scope=read,activity:read_all&state=${encodeURIComponent(state)}`;
     res.redirect(stravaUrl);
   });
 
   // Step 2: Strava redirects back here with ?code=...
   app.get("/auth/strava/login/callback", async (req, res) => {
     try {
-      const { code, error: stravaError } = req.query;
+      const { code, error: stravaError, state } = req.query;
+
+      // Validate state to prevent CSRF (manual cookie parse — no middleware needed)
+      const rawCookies = req.headers.cookie || '';
+      const expectedState = rawCookies.split(';')
+        .map(c => c.trim())
+        .find(c => c.startsWith('strava_oauth_state='))
+        ?.split('=').slice(1).join('=');
+      if (expectedState && state !== expectedState) {
+        return res.redirect("/auth?error=strava_failed");
+      }
+      // Clear the state cookie
+      res.cookie('strava_oauth_state', '', { maxAge: 0, path: '/', sameSite: 'lax' });
 
       if (stravaError || !code) {
         return res.redirect("/auth?error=strava_denied");
@@ -1430,7 +1445,9 @@ ${allPages.map(page => `  <url>
           stravaConnected: true,
         });
         const token = authService.generateToken(existingUser);
-        return res.redirect(`/auth?strava_token=${token}&strava_redirect=/dashboard`);
+        // Pass JWT via short-lived cookie to avoid token in URL (security)
+        res.cookie('_sta', token, { maxAge: 60000, path: '/', sameSite: 'lax' });
+        return res.redirect('/auth?strava_connected=1&strava_redirect=/dashboard');
       }
 
       // New user — create account silently, no email or password required
@@ -1440,8 +1457,6 @@ ${allPages.map(page => `  <url>
       const newUser = await storage.createUser({
         firstName,
         lastName,
-        email: null as any,
-        password: null as any,
         stravaAthleteId: athleteId,
         stravaAccessToken: tokenData.access_token,
         stravaRefreshToken: tokenData.refresh_token,
@@ -1466,7 +1481,9 @@ ${allPages.map(page => `  <url>
       }
 
       const token = authService.generateToken(newUser);
-      return res.redirect(`/auth?strava_token=${token}&strava_redirect=/audit-report`);
+      // Pass JWT via short-lived cookie to avoid token in URL (security)
+      res.cookie('_sta', token, { maxAge: 60000, path: '/', sameSite: 'lax' });
+      return res.redirect('/auth?strava_connected=1&strava_redirect=/audit-report?connected=true');
     } catch (error: any) {
       console.error('[StravaLogin] Callback error:', error);
       res.redirect("/auth?error=strava_failed");

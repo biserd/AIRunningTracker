@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription, useCheckout } from "@/hooks/useSubscription";
 import { useState } from "react";
 import { SEO } from "@/components/SEO";
+import { AddEmailModal } from "@/components/AddEmailModal";
 
 const PRICE_IDS = {
   premium: {
@@ -60,9 +61,10 @@ const features: PlanFeature[] = [
 export default function PricingPage() {
   const { isAuthenticated } = useAuth();
   const { plan, isPremium } = useSubscription();
-  const checkout = useCheckout();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+  const [showEmailModal, setShowEmailModal] = useState(false);
   const [, navigate] = useLocation();
+  const checkout = useCheckout(() => setShowEmailModal(true));
 
   const handleSubscribe = () => {
     if (!isAuthenticated) {
@@ -384,6 +386,15 @@ export default function PricingPage() {
       </section>
 
       <Footer />
+      <AddEmailModal
+        open={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        onSuccess={() => {
+          setShowEmailModal(false);
+          const priceId = PRICE_IDS.premium[billingCycle];
+          checkout.mutate(priceId);
+        }}
+      />
     </div>
   );
 }

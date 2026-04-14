@@ -19,17 +19,24 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
-  // Handle Strava OAuth token redirect — server sends ?strava_token=<jwt>&strava_redirect=/...
+  // Handle Strava OAuth callback — server sets JWT in short-lived cookie + redirects here
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const stravaToken = params.get("strava_token");
+    const stravaConnected = params.get("strava_connected");
     const stravaRedirect = params.get("strava_redirect") || "/dashboard";
     const stravaError = params.get("error");
 
-    if (stravaToken) {
-      localStorage.setItem("auth_token", stravaToken);
-      window.history.replaceState({}, "", "/auth");
-      setLocation(stravaRedirect);
+    if (stravaConnected) {
+      // Read JWT from short-lived _sta cookie
+      const tokenMatch = document.cookie.match(/(?:^|;\s*)_sta=([^;]+)/);
+      const cookieToken = tokenMatch?.[1];
+      if (cookieToken) {
+        localStorage.setItem("auth_token", cookieToken);
+        // Clear the cookie
+        document.cookie = "_sta=; Max-Age=0; path=/; SameSite=Lax";
+        window.history.replaceState({}, "", "/auth");
+        setLocation(stravaRedirect);
+      }
       return;
     }
 

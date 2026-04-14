@@ -60,14 +60,29 @@ export function useSubscription() {
   };
 }
 
-export function useCheckout() {
+export function useCheckout(onRequiresEmail?: () => void) {
   return useMutation({
     mutationFn: async (priceId: string) => {
-      const data = await apiRequest("/api/stripe/create-checkout-session", "POST", { priceId });
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch("/api/stripe/create-checkout-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: "include",
+        body: JSON.stringify({ priceId }),
+      });
+      const data = await res.json();
+      if (res.status === 402 && data.requiresEmail) {
+        onRequiresEmail?.();
+        return null;
+      }
+      if (!res.ok) throw new Error(data.message || "Checkout failed");
       return data as { url: string };
     },
     onSuccess: (data) => {
-      if (data.url) {
+      if (data?.url) {
         window.location.href = data.url;
       }
     },

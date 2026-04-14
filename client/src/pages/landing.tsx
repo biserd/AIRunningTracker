@@ -179,7 +179,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm text-gray-600 px-4">
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
-              <span>Free tier available</span>
+              <span>Sign up in seconds with Strava</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
@@ -187,7 +187,7 @@ export default function LandingPage() {
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
-              <span>Syncs instantly with Strava</span>
+              <span>Cancel anytime</span>
             </div>
           </div>
         </div>
