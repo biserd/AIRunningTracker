@@ -1393,7 +1393,7 @@ ${allPages.map(page => `  <url>
   // =============================================
 
   // Step 1: redirect browser to Strava consent page
-  app.get("/api/auth/strava-login", (req, res) => {
+  app.get("/api/auth/strava-login", async (req, res) => {
     const clientId = process.env.STRAVA_CLIENT_ID || process.env.VITE_STRAVA_CLIENT_ID;
     if (!clientId) {
       return res.status(500).json({ message: "Strava client ID not configured" });
