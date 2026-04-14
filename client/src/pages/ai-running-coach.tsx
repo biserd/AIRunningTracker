@@ -560,7 +560,7 @@ export default function AICoachLanding() {
                 <CardTitle className="text-lg dark:text-white">How is this different from Strava's features?</CardTitle>
               </CardHeader>
               <CardContent className="text-gray-700 dark:text-gray-300">
-                While Strava excels at tracking and social features, RunAnalytics provides deep performance analysis, AI-powered coaching conversations, race predictions, injury risk detection, and comprehensive training insights that Strava doesn't offer. At $7.99/month after a 14-day free trial, it costs a fraction of Strava Summit's $79.99/year with far deeper analytics.
+                While Strava excels at tracking and social features, RunAnalytics provides deep performance analysis, AI-powered coaching conversations, race predictions, injury risk detection, and comprehensive training insights that Strava doesn't offer. At $79.99/year after a 14-day free trial — the same price as Strava Summit — you get far deeper analytics and personalized AI coaching.
               </CardContent>
             </Card>
 

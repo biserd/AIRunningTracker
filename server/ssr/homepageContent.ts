@@ -62,7 +62,7 @@ export const homepageContent: HomepageContent = {
     title: "The Missing Analytics Layer for Strava",
     subtitle: "Strava tracks your miles. We tell you how to run them faster and stay healthy.",
     description: "Don't just log your runs, learn from them. Sync your history instantly to unlock the AI coaching, race predictions, and deep insights that your dashboard is missing.",
-    cta: { text: "Get My Free Strava Analysis", href: "/auth" },
+    cta: { text: "Start Free Trial", href: "/auth" },
     trustIndicators: [
       "14-day free trial",
       "Instant access with Strava"
@@ -161,7 +161,7 @@ export const homepageContent: HomepageContent = {
   finalCta: {
     title: "Ready to Run Smarter?",
     description: "Join thousands of runners who've discovered the insights hiding in their Strava data.",
-    buttonText: "Get My Free Analysis",
+    buttonText: "Start Free Trial",
     href: "/auth"
   }
 };
