@@ -51,11 +51,6 @@ export default function PublicHeader() {
           {/* Desktop right side */}
           <div className="hidden md:flex items-center gap-4">
             <Link href="/auth">
-              <span className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors cursor-pointer">
-                Sign In
-              </span>
-            </Link>
-            <Link href="/auth">
               <Button
                 className="bg-strava-orange text-white hover:bg-strava-orange/90"
                 data-testid="header-sign-in"
@@ -94,15 +89,7 @@ export default function PublicHeader() {
                 </span>
               </Link>
             ))}
-            <div className="px-6 py-4 flex flex-col gap-3">
-              <Link href="/auth">
-                <span
-                  className="block text-base font-medium text-gray-700 hover:text-gray-900 cursor-pointer"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Sign In
-                </span>
-              </Link>
+            <div className="px-6 py-4">
               <Link href="/auth">
                 <Button
                   className="w-full bg-strava-orange text-white hover:bg-strava-orange/90"
