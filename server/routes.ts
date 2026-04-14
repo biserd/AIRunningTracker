@@ -1412,13 +1412,13 @@ ${allPages.map(page => `  <url>
     try {
       const { code, error: stravaError, state } = req.query;
 
-      // Validate state to prevent CSRF (manual cookie parse — no middleware needed)
+      // Validate state to prevent CSRF (fail-closed: reject if cookie absent or mismatch)
       const rawCookies = req.headers.cookie || '';
       const expectedState = rawCookies.split(';')
         .map(c => c.trim())
         .find(c => c.startsWith('strava_oauth_state='))
         ?.split('=').slice(1).join('=');
-      if (expectedState && state !== expectedState) {
+      if (!expectedState || !state || state !== expectedState) {
         return res.redirect("/auth?error=strava_failed");
       }
       // Clear the state cookie

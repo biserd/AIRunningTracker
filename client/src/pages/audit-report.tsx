@@ -558,6 +558,10 @@ export default function AuditReportPage() {
   const params = new URLSearchParams(window.location.search);
   const justConnected = params.get('connected') === 'true' || params.get('strava_login') === 'success';
 
+  // Also treat newly Strava-connected users with no activities as "just connected"
+  // so the sync screen shows without relying on URL params
+  const isNewStravaUser = isStravaConnected;
+
   const handleStravaConnect = () => {
     const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID;
     const redirectUri = `${window.location.origin}/strava/callback`;
@@ -594,15 +598,16 @@ export default function AuditReportPage() {
   const { data: auditData, isLoading: auditLoading, refetch: refetchAudit } = useQuery<AuditData>({
     queryKey: [`/api/audit-report/${user?.id}`],
     enabled: !!user?.id && isStravaConnected,
-    refetchInterval: isSyncing && justConnected ? 3000 : false,
+    // Poll while syncing — applies to both URL-param flow and new Strava OAuth users
+    refetchInterval: isSyncing && (justConnected || isNewStravaUser) ? 3000 : false,
   });
 
   useEffect(() => {
-    if (syncStatus && !isSyncing && justConnected) {
+    if (syncStatus && !isSyncing && (justConnected || isNewStravaUser)) {
       refetchAudit();
-      window.history.replaceState({}, '', '/audit-report');
+      if (justConnected) window.history.replaceState({}, '', '/audit-report');
     }
-  }, [isSyncing, syncStatus, justConnected, refetchAudit]);
+  }, [isSyncing, syncStatus, justConnected, isNewStravaUser, refetchAudit]);
 
   const activityCount = auditData?.greyZone?.activityCount || 0;
   const hasInsights = activityCount >= 5 && auditData?.runnerIQ?.score !== undefined && auditData.runnerIQ.score > 25;
@@ -690,7 +695,8 @@ export default function AuditReportPage() {
     );
   }
 
-  const showSyncingScreen = !hasInsights && isSyncing && justConnected;
+  // Show sync screen for new users (URL param OR any Strava-connected user with no activities syncing)
+  const showSyncingScreen = !hasInsights && isSyncing && (justConnected || isNewStravaUser);
   
   if (showSyncingScreen) {
     const progress = syncStatus?.syncProgress || 0;
