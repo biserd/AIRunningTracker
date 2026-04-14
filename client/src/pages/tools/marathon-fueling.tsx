@@ -3,6 +3,7 @@ import { SEO } from "@/components/SEO";
 import { Link } from 'wouter';
 import { ArrowLeft, Zap, Droplets, Calculator, AlertTriangle, CheckCircle2, TrendingUp, Sparkles } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
+import PublicHeader from '@/components/PublicHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -178,20 +179,9 @@ export default function MarathonFuelingPlanner() {
       <FAQSchema faqs={MARATHON_FUELING_FAQS} />
 
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-        {isAuthenticated && <AppHeader />}
+        {isAuthenticated ? <AppHeader /> : <PublicHeader />}
         
         <div className="container mx-auto px-4 py-8 max-w-7xl">
-          {/* Header */}
-          {!isAuthenticated && (
-            <div className="mb-8">
-              <Link href="/tools">
-                <Button variant="ghost" size="sm" className="mb-4" data-testid="button-back-tools">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Tools
-                </Button>
-              </Link>
-            </div>
-          )}
           <div className="mb-8">
             <h1 className="text-4xl font-bold mb-3" data-testid="text-page-title">Marathon Fueling Planner</h1>
             <p className="text-xl text-muted-foreground" data-testid="text-page-description">

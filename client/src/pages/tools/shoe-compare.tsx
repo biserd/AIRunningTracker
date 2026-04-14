@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { SEO } from "@/components/SEO";
 import AppHeader from "@/components/AppHeader";
+import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { 
@@ -241,7 +242,7 @@ export default function ShoeComparePage() {
         }}
       />
 
-      <AppHeader />
+      {isAuthenticated ? <AppHeader /> : <PublicHeader />}
 
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">

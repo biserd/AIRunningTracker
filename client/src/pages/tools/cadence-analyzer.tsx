@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { SEO } from "@/components/SEO";
 import AppHeader from "@/components/AppHeader";
+import PublicHeader from "@/components/PublicHeader";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
@@ -147,38 +148,7 @@ export default function CadenceAnalyzer() {
 
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
         {/* Header */}
-        {isAuthenticated ? (
-          <AppHeader />
-        ) : (
-          <div className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <Link href="/tools">
-                    <Button variant="ghost" size="sm" data-testid="button-back-tools">
-                      <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
-                      All Tools
-                    </Button>
-                  </Link>
-                  <div className="hidden sm:flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-strava-orange rounded-lg flex items-center justify-center">
-                      <Footprints className="text-white" size={20} />
-                    </div>
-                    <div>
-                      <h1 className="text-xl font-bold text-charcoal dark:text-white">Cadence Analyzer</h1>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Form stability insights</p>
-                    </div>
-                  </div>
-                </div>
-                <Link href="/auth">
-                  <Button className="bg-strava-orange text-white hover:bg-strava-orange/90" size="sm" data-testid="button-sign-in">
-                    Sign In with Strava
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
+        {isAuthenticated ? <AppHeader /> : <PublicHeader />}
 
         {/* Main Content */}
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">

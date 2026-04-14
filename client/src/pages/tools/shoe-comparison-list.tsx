@@ -8,7 +8,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Helmet } from "react-helmet";
 import AppHeader from "@/components/AppHeader";
+import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   ArrowLeft, 
   ArrowRight,
@@ -80,6 +82,7 @@ function ComparisonCard({ comparison }: { comparison: ComparisonWithShoes }) {
 }
 
 export default function ShoeComparisonList() {
+  const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("all");
 
   const { data: comparisons, isLoading } = useQuery<ComparisonWithShoes[]>({
@@ -109,7 +112,7 @@ export default function ShoeComparisonList() {
         <link rel="canonical" href="https://aitracker.run/tools/shoes/compare" />
       </Helmet>
 
-      <AppHeader />
+      {isAuthenticated ? <AppHeader /> : <PublicHeader />}
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         <Link href="/tools/shoes">

@@ -5,7 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Helmet } from "react-helmet";
 import AppHeader from "@/components/AppHeader";
+import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   ArrowLeft, 
   Scale, 
@@ -76,6 +78,7 @@ function SpecRow({
 }
 
 export default function ShoeComparisonDetail() {
+  const { isAuthenticated } = useAuth();
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
 
@@ -92,7 +95,7 @@ export default function ShoeComparisonDetail() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <AppHeader />
+        {isAuthenticated ? <AppHeader /> : <PublicHeader />}
         <div className="max-w-6xl mx-auto px-4 py-8">
           <Skeleton className="h-8 w-64 mb-4" />
           <Skeleton className="h-96 w-full" />
@@ -105,7 +108,7 @@ export default function ShoeComparisonDetail() {
   if (error || !comparison) {
     return (
       <div className="min-h-screen bg-background">
-        <AppHeader />
+        {isAuthenticated ? <AppHeader /> : <PublicHeader />}
         <div className="max-w-6xl mx-auto px-4 py-8 text-center">
           <h1 className="text-2xl font-bold mb-4">Comparison Not Found</h1>
           <p className="text-gray-600 mb-6">This shoe comparison doesn't exist.</p>
@@ -132,7 +135,7 @@ export default function ShoeComparisonDetail() {
         <link rel="canonical" href={`https://aitracker.run/tools/shoes/compare/${comparison.slug}`} />
       </Helmet>
 
-      <AppHeader />
+      {isAuthenticated ? <AppHeader /> : <PublicHeader />}
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         <Link href="/tools/shoes/compare">

@@ -27,7 +27,9 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import AppHeader from "@/components/AppHeader";
+import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
+import { useAuth } from "@/hooks/useAuth";
 import {
   LineChart,
   Line,
@@ -376,6 +378,7 @@ function BreadcrumbJsonLd({ brand, model, slug }: { brand: string; model: string
 }
 
 export default function ShoeDetailPage() {
+  const { isAuthenticated } = useAuth();
   const params = useParams<{ slug: string }>();
   const slug = params.slug || "";
 
@@ -400,7 +403,7 @@ export default function ShoeDetailPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <AppHeader />
+        {isAuthenticated ? <AppHeader /> : <PublicHeader />}
         <main className="container mx-auto px-4 py-8">
           <Skeleton className="h-8 w-64 mb-6" />
           <div className="grid lg:grid-cols-3 gap-8">
@@ -422,7 +425,7 @@ export default function ShoeDetailPage() {
   if (error || !data?.shoe) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <AppHeader />
+        {isAuthenticated ? <AppHeader /> : <PublicHeader />}
         <main className="container mx-auto px-4 py-8 text-center">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             Shoe Not Found
@@ -477,7 +480,7 @@ export default function ShoeDetailPage() {
       <ProductJsonLd shoe={shoe} />
       <BreadcrumbJsonLd brand={shoe.brand} model={shoe.model} slug={shoe.slug || ""} />
 
-      <AppHeader />
+      {isAuthenticated ? <AppHeader /> : <PublicHeader />}
 
       <main className="container mx-auto px-4 py-8" data-testid="shoe-detail-page">
         <Breadcrumbs brand={shoe.brand} model={shoe.model} slug={shoe.slug || ""} />

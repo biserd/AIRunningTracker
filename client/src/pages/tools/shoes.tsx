@@ -11,6 +11,7 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { SEO } from "@/components/SEO";
 import AppHeader from "@/components/AppHeader";
+import PublicHeader from "@/components/PublicHeader";
 import type { RunningShoe } from "@shared/schema";
 
 const categoryLabels: Record<string, string> = {
@@ -276,27 +277,7 @@ export default function ShoeDatabasePage() {
       />
 
       <div className="min-h-screen bg-light-grey">
-        {isAuthenticated ? (
-          <AppHeader />
-        ) : (
-          <div className="bg-white shadow-sm border-b border-gray-200">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-              <div className="flex items-center justify-between">
-                <Link href="/tools">
-                  <Button variant="ghost" size="sm" className="px-2 sm:px-4" data-testid="button-back-tools">
-                    <ArrowRight className="h-4 w-4 sm:mr-2 rotate-180" />
-                    <span className="hidden sm:inline">Back to Tools</span>
-                  </Button>
-                </Link>
-                <Link href="/auth">
-                  <Button className="bg-strava-orange text-white hover:bg-strava-orange/90" size="sm" data-testid="button-sign-in">
-                    Sign In
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
+        {isAuthenticated ? <AppHeader /> : <PublicHeader />}
 
         <div className="bg-gradient-to-br from-orange-50 via-white to-amber-50 border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
