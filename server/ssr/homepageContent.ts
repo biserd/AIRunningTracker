@@ -64,9 +64,9 @@ export const homepageContent: HomepageContent = {
     description: "Don't just log your runs, learn from them. Sync your history instantly to unlock the AI coaching, race predictions, and deep insights that your dashboard is missing.",
     cta: { text: "Get My Free Strava Analysis", href: "/auth" },
     trustIndicators: [
-      "Sign up in seconds with Strava",
-      "No credit card required",
-      "Cancel anytime"
+      "Free to start",
+      "Instant access with Strava",
+      "No credit card required"
     ],
   },
   aiCoach: {

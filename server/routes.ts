@@ -1447,7 +1447,7 @@ ${allPages.map(page => `  <url>
         const token = authService.generateToken(existingUser);
         // Pass JWT via short-lived cookie to avoid token in URL (security)
         res.cookie('_sta', token, { maxAge: 60000, path: '/', sameSite: 'lax' });
-        return res.redirect('/auth?strava_connected=1&strava_redirect=/dashboard');
+        return res.redirect('/dashboard?strava_login=success');
       }
 
       // New user — create account silently, no email or password required
@@ -1483,7 +1483,7 @@ ${allPages.map(page => `  <url>
       const token = authService.generateToken(newUser);
       // Pass JWT via short-lived cookie to avoid token in URL (security)
       res.cookie('_sta', token, { maxAge: 60000, path: '/', sameSite: 'lax' });
-      return res.redirect('/auth?strava_connected=1&strava_redirect=/audit-report?connected=true');
+      return res.redirect('/audit-report?connected=true');
     } catch (error: any) {
       console.error('[StravaLogin] Callback error:', error);
       res.redirect("/auth?error=strava_failed");

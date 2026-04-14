@@ -170,7 +170,7 @@ export default function LandingPage() {
                 className="w-full sm:w-auto h-14 px-8 sm:px-10 text-base font-semibold border-2 border-[#FC4C02] text-[#FC4C02] hover:bg-[#FC4C02] hover:text-white transition-all duration-200 flex items-center gap-2"
               >
                 <SiStrava className="h-5 w-5" />
-                Continue with Strava
+                Continue with Strava — instant access
               </Button>
             </a>
           </div>
@@ -179,15 +179,15 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm text-gray-600 px-4">
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
-              <span>Sign up in seconds with Strava</span>
+              <span>Free to start</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <span>Instant access with Strava</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
               <span>No credit card required</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <span>Cancel anytime</span>
             </div>
           </div>
         </div>

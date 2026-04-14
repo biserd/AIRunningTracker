@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
+
 import MaintenancePage from "@/pages/maintenance";
 import Dashboard from "@/pages/dashboard";
 import SettingsPage from "@/pages/settings";
@@ -61,6 +62,16 @@ import CoachOnboardingPage from "@/pages/coach-onboarding";
 import CoachSettingsPage from "@/pages/coach-settings";
 import AuditReportPage from "@/pages/audit-report";
 import NotFound from "@/pages/not-found";
+
+// Pick up Strava OAuth JWT from short-lived cookie (_sta) set by the server callback.
+// Runs synchronously at module load so useAuth sees the token on first render.
+(function () {
+  const match = document.cookie.match(/(?:^|;\s*)_sta=([^;]+)/);
+  if (match) {
+    localStorage.setItem("auth_token", decodeURIComponent(match[1]));
+    document.cookie = "_sta=; Max-Age=0; path=/; SameSite=Lax";
+  }
+})();
 
 function ProtectedRoute({ component: Component, requiresSubscription = false }: { component: React.ComponentType; requiresSubscription?: boolean }) {
   const { isAuthenticated, isLoading } = useAuth();

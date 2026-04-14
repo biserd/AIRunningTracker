@@ -558,9 +558,9 @@ export default function AuditReportPage() {
   const params = new URLSearchParams(window.location.search);
   const justConnected = params.get('connected') === 'true' || params.get('strava_login') === 'success';
 
-  // Also treat newly Strava-connected users with no activities as "just connected"
-  // so the sync screen shows without relying on URL params
-  const isNewStravaUser = isStravaConnected;
+  // isNewStravaUser is computed later (after activityCount), placeholder needed for refetchInterval
+  // below. Using a derived value based on sync state: always poll when syncing + Strava connected.
+  const pollWhileSyncing = isStravaConnected;
 
   const handleStravaConnect = () => {
     const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID;
@@ -598,9 +598,15 @@ export default function AuditReportPage() {
   const { data: auditData, isLoading: auditLoading, refetch: refetchAudit } = useQuery<AuditData>({
     queryKey: [`/api/audit-report/${user?.id}`],
     enabled: !!user?.id && isStravaConnected,
-    // Poll while syncing — applies to both URL-param flow and new Strava OAuth users
-    refetchInterval: isSyncing && (justConnected || isNewStravaUser) ? 3000 : false,
+    // Poll while syncing for both URL-param flow and any Strava-connected user syncing
+    refetchInterval: isSyncing && pollWhileSyncing ? 3000 : false,
   });
+
+  const activityCount = auditData?.greyZone?.activityCount || 0;
+  const hasInsights = activityCount >= 5 && auditData?.runnerIQ?.score !== undefined && auditData.runnerIQ.score > 25;
+
+  // True for new Strava OAuth users who have no activities yet
+  const isNewStravaUser = isStravaConnected && !auditLoading && activityCount === 0;
 
   useEffect(() => {
     if (syncStatus && !isSyncing && (justConnected || isNewStravaUser)) {
@@ -608,9 +614,6 @@ export default function AuditReportPage() {
       if (justConnected) window.history.replaceState({}, '', '/audit-report');
     }
   }, [isSyncing, syncStatus, justConnected, isNewStravaUser, refetchAudit]);
-
-  const activityCount = auditData?.greyZone?.activityCount || 0;
-  const hasInsights = activityCount >= 5 && auditData?.runnerIQ?.score !== undefined && auditData.runnerIQ.score > 25;
 
   const shouldShowWizard = isStravaConnected && hasInsights && !hasCalibration && !calibrationLoading && !wizardDismissed;
 
