@@ -315,8 +315,8 @@ export default function BestStravaTools() {
                 </div>
 
                 <div className="bg-gradient-to-r from-strava-orange to-orange-600 p-6 rounded-lg text-white">
-                  <p className="font-bold mb-2">💰 Pricing: Free tier + Premium</p>
-                  <p className="mb-4">Free tier available. Premium starts with a 14-day free trial.</p>
+                  <p className="font-bold mb-2">💰 Pricing: 14-day free trial, then $7.99/mo</p>
+                  <p className="mb-4">Full Premium access free for 14 days. Cancel anytime.</p>
                   <Link href="/auth">
                     <Button className="bg-white text-strava-orange hover:bg-gray-100" data-testid="cta-runanalytics-signup">
                       Get Started Free <ArrowRight className="ml-2" size={16} />
@@ -678,7 +678,7 @@ export default function BestStravaTools() {
                   <CardTitle className="text-lg dark:text-white">Is RunAnalytics really free?</CardTitle>
                 </CardHeader>
                 <CardContent className="text-gray-700 dark:text-gray-300">
-                  Yes! RunAnalytics offers a generous free tier with AI coaching, race predictions, and Runner Score. Premium features like AI Agent Coach and advanced training plans are available with Pro and Premium subscriptions.
+                  RunAnalytics offers a 14-day free trial with full access to all Premium features — AI coaching, race predictions, Runner Score, training plans, and advanced analytics. After the trial, Premium is $7.99/month or $79.99/year. Cancel anytime.
                 </CardContent>
               </Card>
               <Card className="dark:border-slate-700">

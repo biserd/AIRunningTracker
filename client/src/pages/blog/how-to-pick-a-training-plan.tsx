@@ -678,7 +678,7 @@ export default function HowToPickTrainingPlan() {
               <CardContent className="py-8 text-center">
                 <h3 className="text-2xl font-bold mb-4">Ready to Train Smarter?</h3>
                 <p className="text-white/90 mb-6 max-w-2xl mx-auto">
-                  Stop guessing with generic plans. Get a personalized training program built from your actual running data—free to start.
+                  Stop guessing with generic plans. Get a personalized training program built from your actual running data — try it free for 14 days.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link href="/auth">

@@ -9,7 +9,6 @@ import {
   Clock, 
   Target, 
   Zap, 
-  DollarSign, 
   MessageCircle,
   CheckCircle,
   Star,
@@ -69,15 +68,15 @@ export default function AICoachLanding() {
           <div className="flex items-center justify-center gap-8 text-sm text-gray-600 dark:text-gray-400">
             <div className="flex items-center gap-2">
               <CheckCircle className="text-green-600" size={20} />
-              <span>100% Free Forever</span>
+              <span>14-day free trial</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="text-green-600" size={20} />
-              <span>14-Day Free Trial</span>
+              <span>Cancel anytime</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="text-green-600" size={20} />
-              <span>2-Minute Setup</span>
+              <span>2-minute setup</span>
             </div>
           </div>
         </section>
@@ -176,12 +175,12 @@ export default function AICoachLanding() {
             <Card className="border-2 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 dark:border-slate-700">
               <CardHeader>
                 <div className="w-14 h-14 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mb-4">
-                  <DollarSign className="text-white" size={28} />
+                  <Zap className="text-white" size={28} />
                 </div>
-                <CardTitle className="text-xl dark:text-white">100% Free Forever</CardTitle>
+                <CardTitle className="text-xl dark:text-white">14-Day Free Trial</CardTitle>
               </CardHeader>
               <CardContent className="text-gray-700 dark:text-gray-300">
-                Professional running coaches charge $100-300/month. Get similar value completely free with no hidden costs, subscriptions, or paywalls. Ever.
+                Professional running coaches charge $100-300/month. Try every Premium feature free for 14 days — AI coaching, race predictions, training plans, and more. Cancel anytime.
               </CardContent>
             </Card>
 
@@ -513,10 +512,10 @@ export default function AICoachLanding() {
           <div className="max-w-3xl mx-auto space-y-6">
             <Card className="shadow-lg dark:border-slate-700">
               <CardHeader>
-                <CardTitle className="text-lg dark:text-white">Is AI Running Coach really free?</CardTitle>
+                <CardTitle className="text-lg dark:text-white">How does the free trial work?</CardTitle>
               </CardHeader>
               <CardContent className="text-gray-700 dark:text-gray-300">
-                Yes, 100% free forever. We believe every runner deserves access to quality coaching insights. There are no hidden costs, subscriptions, or feature limitations.
+                You get 14 days of full Premium access, including AI coaching, race predictions, training plans, and all analytics. After the trial, it's $7.99/month or $79.99/year. Cancel anytime before the trial ends and you won't be charged.
               </CardContent>
             </Card>
 

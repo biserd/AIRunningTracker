@@ -49,9 +49,7 @@ export default function FAQPage() {
                 <div>
                   <h3 className="font-semibold text-charcoal mb-2">Is RunAnalytics free to use?</h3>
                   <p>
-                    Yes! RunAnalytics offers a comprehensive free tier that includes basic analytics, AI insights, 
-                    and performance tracking. Premium features and advanced analytics are available through our 
-                    subscription plans.
+                    RunAnalytics offers a 14-day free trial with full access to all Premium features — AI coaching, race predictions, training plans, and advanced analytics. After the trial, Premium is $7.99/month or $79.99/year. You can cancel anytime before the trial ends and you won't be charged.
                   </p>
                 </div>
               </div>
