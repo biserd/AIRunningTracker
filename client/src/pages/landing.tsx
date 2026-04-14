@@ -185,10 +185,6 @@ export default function LandingPage() {
               <CheckCircle className="h-4 w-4 text-green-600" />
               <span>Instant access with Strava</span>
             </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <span>No credit card required</span>
-            </div>
           </div>
         </div>
       </section>

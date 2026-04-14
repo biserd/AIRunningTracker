@@ -65,8 +65,7 @@ export const homepageContent: HomepageContent = {
     cta: { text: "Get My Free Strava Analysis", href: "/auth" },
     trustIndicators: [
       "Free to start",
-      "Instant access with Strava",
-      "No credit card required"
+      "Instant access with Strava"
     ],
   },
   aiCoach: {
