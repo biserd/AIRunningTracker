@@ -119,7 +119,7 @@ export default function BestStravaTools() {
               <CardContent className="pt-6">
                 <p className="text-gray-800 dark:text-gray-200 font-semibold mb-3">🎯 What We're Comparing:</p>
                 <ul className="space-y-2 text-gray-700 dark:text-gray-300">
-                  <li>• <strong>RunAnalytics</strong> - Free AI-powered platform with Runner Score</li>
+                  <li>• <strong>RunAnalytics</strong> - AI-powered platform with Runner Score</li>
                   <li>• <strong>TrainingPeaks</strong> - Professional-grade training platform</li>
                   <li>• <strong>Strava Summit</strong> - Strava's premium subscription</li>
                   <li>• <strong>Final Surge</strong> - Coach-focused training platform</li>
@@ -149,7 +149,7 @@ export default function BestStravaTools() {
                 <tbody className="text-gray-700 dark:text-gray-300">
                   <tr className="bg-green-50 dark:bg-green-900/20">
                     <td className="border border-gray-300 dark:border-slate-600 px-4 py-3 font-bold">RunAnalytics</td>
-                    <td className="border border-gray-300 dark:border-slate-600 px-4 py-3">Free</td>
+                    <td className="border border-gray-300 dark:border-slate-600 px-4 py-3">$7.99/mo</td>
                     <td className="border border-gray-300 dark:border-slate-600 px-4 py-3">✅ Yes</td>
                     <td className="border border-gray-300 dark:border-slate-600 px-4 py-3">All runners</td>
                     <td className="border border-gray-300 dark:border-slate-600 px-4 py-3 text-center">
@@ -239,7 +239,7 @@ export default function BestStravaTools() {
                   <Badge className="bg-green-600 text-white">Recommended</Badge>
                 </div>
                 <CardDescription className="text-lg dark:text-gray-300">
-                  Free AI-powered analytics platform with personalized coaching
+                  AI-powered analytics platform with personalized coaching — 14-day free trial
                 </CardDescription>
               </CardHeader>
               <CardContent>

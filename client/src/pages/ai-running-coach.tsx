@@ -30,9 +30,9 @@ export default function AICoachLanding() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <SEO
-        title="AI Running Coach - Free Personalized Training | RunAnalytics"
-        description="Get a free AI-powered running coach that analyzes your Strava data and provides personalized training advice, race predictions, and performance insights. Available 24/7 with expert guidance based on your actual running history."
-        keywords="AI running coach, free running coach, AI fitness coach, personalized running training, virtual running coach, Strava AI coach, running performance analysis"
+        title="AI Running Coach - Personalized Training Powered by AI | RunAnalytics"
+        description="Get an AI-powered running coach that analyzes your Strava data and provides personalized training advice, race predictions, and performance insights. 14-day free trial — available 24/7 with expert guidance based on your actual running history."
+        keywords="AI running coach, AI fitness coach, personalized running training, virtual running coach, Strava AI coach, running performance analysis"
         url="https://aitracker.run/ai-running-coach"
         type="website"
       />
@@ -439,7 +439,7 @@ export default function AICoachLanding() {
                   <tr className="border-b dark:border-slate-700">
                     <td className="px-6 py-4 font-semibold">Monthly Cost</td>
                     <td className="px-6 py-4 text-center">
-                      <Badge className="bg-green-600 text-white">FREE</Badge>
+                      <Badge className="bg-strava-orange text-white">$7.99/mo</Badge>
                     </td>
                     <td className="px-6 py-4 text-center">$100-300+</td>
                   </tr>
@@ -491,7 +491,7 @@ export default function AICoachLanding() {
               <CardContent className="pt-6">
                 <p className="text-gray-800 dark:text-gray-200 font-semibold mb-2">💡 Best of Both Worlds:</p>
                 <p className="text-gray-700 dark:text-gray-300">
-                  Many successful runners use AI coaching for day-to-day training guidance and data analysis, supplemented by periodic check-ins with a human coach for motivation and big-picture strategy. Start with free AI coaching and add human coaching if you need it later.
+                  Many successful runners use AI coaching for day-to-day training guidance and data analysis, supplemented by periodic check-ins with a human coach for motivation and big-picture strategy. Start your 14-day free trial to experience AI coaching, then add a human coach if you need extra support later.
                 </p>
               </CardContent>
             </Card>

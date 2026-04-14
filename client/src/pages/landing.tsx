@@ -311,7 +311,7 @@ export default function LandingPage() {
               <div className="mt-4 text-center">
                 <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm text-xs text-gray-600">
                   <Shield className="h-4 w-4 text-green-600" />
-                  <span>Smart coaching • Personalized • Free to use</span>
+                  <span>Smart coaching • Personalized • Cancel anytime</span>
                 </div>
               </div>
             </div>
