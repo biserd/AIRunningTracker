@@ -3685,19 +3685,26 @@ ${allPages.map(page => `  <url>
   });
 
   // Disconnect Strava
-  app.post("/api/strava/disconnect/:userId", async (req, res) => {
+  app.post("/api/strava/disconnect/:userId", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
-      
+
       if (isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
 
+      // Only allow a user to disconnect their own Strava account
+      if (req.user!.id !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      // Note: we intentionally KEEP stravaAthleteId so that if the user
+      // reconnects later, they land back on the same account instead of
+      // creating a duplicate NULL-email user via the Strava login flow.
       const updatedUser = await storage.updateUser(userId, {
         stravaConnected: false,
         stravaAccessToken: null,
         stravaRefreshToken: null,
-        stravaAthleteId: null,
       });
       
       if (!updatedUser) {
