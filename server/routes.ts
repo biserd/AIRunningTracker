@@ -1458,10 +1458,10 @@ ${allPages.map(page => `  <url>
         return res.redirect('/dashboard?strava_login=success');
       }
 
-      // New user — create account silently, no email or password required
-      const trialEndsAt = new Date();
-      trialEndsAt.setDate(trialEndsAt.getDate() + 7);
-
+      // New user — create account silently, no email or password required.
+      // Do NOT grant a free reverse trial here: new Strava signups must go through
+      // the onboarding wizard + audit report and start the 14-day PAID trial
+      // (credit card required) via Stripe checkout.
       const newUser = await storage.createUser({
         firstName,
         lastName,
@@ -1470,7 +1470,6 @@ ${allPages.map(page => `  <url>
         stravaRefreshToken: tokenData.refresh_token,
         stravaConnected: true,
         subscriptionPlan: 'free',
-        trialEndsAt,
       });
 
       // Enqueue initial Strava sync
