@@ -7,17 +7,53 @@ import { apiRequest } from "./queryClient";
 
 const SW_PATH = "/sw.js";
 
+interface CapacitorRuntime {
+  isNativePlatform?: () => boolean;
+  getPlatform?: () => string;
+}
+
+interface IOSStandaloneNavigator {
+  standalone?: boolean;
+}
+
+interface PushRegistrationToken {
+  value: string;
+}
+
+interface PushRegistrationError {
+  error?: string;
+}
+
+interface PushNotificationsPlugin {
+  requestPermissions(): Promise<{ receive: "granted" | "denied" | "prompt" | "prompt-with-rationale" }>;
+  register(): Promise<void>;
+  removeAllListeners(): Promise<void>;
+  addListener(eventName: "registration", listener: (token: PushRegistrationToken) => void): Promise<unknown> | unknown;
+  addListener(eventName: "registrationError", listener: (err: PushRegistrationError) => void): Promise<unknown> | unknown;
+}
+
+interface PushNotificationsModule {
+  PushNotifications: PushNotificationsPlugin;
+}
+
 declare global {
   interface Window {
-    Capacitor?: {
-      isNativePlatform?: () => boolean;
-      getPlatform?: () => string;
-    };
+    Capacitor?: CapacitorRuntime;
   }
 }
 
+const NATIVE_TOKEN_KEY = "push_native_token";
+
 export function isNative(): boolean {
-  return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const cap = window.Capacitor;
+  return !!(cap && cap.isNativePlatform && cap.isNativePlatform());
+}
+
+export function isStandalonePWA(): boolean {
+  if (typeof window === "undefined") return false;
+  if (window.matchMedia?.("(display-mode: standalone)").matches) return true;
+  const nav = window.navigator as Navigator & IOSStandaloneNavigator;
+  return nav.standalone === true;
 }
 
 export function isWebPushSupported(): boolean {
@@ -53,6 +89,17 @@ function arrayBufferToBase64(buf: ArrayBuffer | null): string {
   return btoa(bin);
 }
 
+function getErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "string") return err;
+  return fallback;
+}
+
+async function loadCapacitorPush(): Promise<PushNotificationsPlugin> {
+  const mod = (await import("@capacitor/push-notifications")) as unknown as PushNotificationsModule;
+  return mod.PushNotifications;
+}
+
 export async function ensureServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (isNative()) return null;
   if (!("serviceWorker" in navigator)) return null;
@@ -74,13 +121,12 @@ export async function subscribeToPush(): Promise<{ ok: boolean; reason?: string 
   // Native (Capacitor) path
   if (isNative()) {
     try {
-      const mod: any = await import("@capacitor/push-notifications");
-      const PushNotifications = mod.PushNotifications;
+      const PushNotifications = await loadCapacitorPush();
       const perm = await PushNotifications.requestPermissions();
       if (perm.receive !== "granted") return { ok: false, reason: "permission_denied" };
 
       return new Promise((resolve) => {
-        PushNotifications.addListener("registration", async (token: { value: string }) => {
+        PushNotifications.addListener("registration", async (token: PushRegistrationToken) => {
           const platform = window.Capacitor?.getPlatform?.() === "ios" ? "ios" : "android";
           try {
             await apiRequest("/api/push/subscribe", "POST", {
@@ -88,18 +134,23 @@ export async function subscribeToPush(): Promise<{ ok: boolean; reason?: string 
               nativeToken: token.value,
               userAgent: navigator.userAgent,
             });
+            try {
+              localStorage.setItem(NATIVE_TOKEN_KEY, token.value);
+            } catch {
+              // localStorage may be unavailable in some embedded contexts
+            }
             resolve({ ok: true });
-          } catch (err: any) {
-            resolve({ ok: false, reason: err?.message || "register_failed" });
+          } catch (err) {
+            resolve({ ok: false, reason: getErrorMessage(err, "register_failed") });
           }
         });
-        PushNotifications.addListener("registrationError", (err: any) => {
+        PushNotifications.addListener("registrationError", (err: PushRegistrationError) => {
           resolve({ ok: false, reason: err?.error || "registration_error" });
         });
         PushNotifications.register();
       });
-    } catch (err: any) {
-      return { ok: false, reason: err?.message || "capacitor_unavailable" };
+    } catch (err) {
+      return { ok: false, reason: getErrorMessage(err, "capacitor_unavailable") };
     }
   }
 
@@ -125,7 +176,7 @@ export async function subscribeToPush(): Promise<{ ok: boolean; reason?: string 
 
   const keyResp = await fetch("/api/push/vapid-public-key");
   if (!keyResp.ok) return { ok: false, reason: "no_vapid_key" };
-  const { publicKey } = await keyResp.json();
+  const { publicKey } = (await keyResp.json()) as { publicKey: string };
 
   let sub = await reg.pushManager.getSubscription();
   if (!sub) {
@@ -148,10 +199,32 @@ export async function subscribeToPush(): Promise<{ ok: boolean; reason?: string 
 
 export async function unsubscribeFromPush(): Promise<void> {
   if (isNative()) {
+    let storedToken: string | null = null;
     try {
-      const mod: any = await import("@capacitor/push-notifications");
-      await mod.PushNotifications.removeAllListeners();
-    } catch {}
+      storedToken = localStorage.getItem(NATIVE_TOKEN_KEY);
+    } catch {
+      // ignore
+    }
+    if (storedToken) {
+      try {
+        // Backend unsubscribe uses the `endpoint` field as a generic identifier;
+        // for native, we send the APNs/FCM token in the same slot.
+        await apiRequest("/api/push/unsubscribe", "POST", { endpoint: storedToken });
+      } catch {
+        // best-effort — continue cleanup
+      }
+      try {
+        localStorage.removeItem(NATIVE_TOKEN_KEY);
+      } catch {
+        // ignore
+      }
+    }
+    try {
+      const PushNotifications = await loadCapacitorPush();
+      await PushNotifications.removeAllListeners();
+    } catch {
+      // plugin missing — nothing to detach
+    }
     return;
   }
   const reg = await navigator.serviceWorker.getRegistration();
@@ -159,7 +232,9 @@ export async function unsubscribeFromPush(): Promise<void> {
   if (sub) {
     try {
       await apiRequest("/api/push/unsubscribe", "POST", { endpoint: sub.endpoint });
-    } catch {}
+    } catch {
+      // best-effort
+    }
     await sub.unsubscribe();
   }
 }
@@ -174,7 +249,13 @@ export async function getCurrentSubscriptionStatus(): Promise<{
   const supported = isWebPushSupported();
   const permission = getPermissionState();
   let subscribed = false;
-  if (!native && supported) {
+  if (native) {
+    try {
+      subscribed = !!localStorage.getItem(NATIVE_TOKEN_KEY);
+    } catch {
+      subscribed = false;
+    }
+  } else if (supported) {
     const reg = await navigator.serviceWorker.getRegistration();
     const sub = await reg?.pushManager.getSubscription();
     subscribed = !!sub;
