@@ -11,8 +11,8 @@ const ALLOWED_PRICE_IDS = (process.env.ALLOWED_PRICE_IDS || '').split(',').filte
 
 // Map price IDs to subscription plans
 const PRICE_TO_PLAN: Record<string, string> = {
-  'price_1SbtcfRwvWaTf8xfSEO4iKnc': 'premium',  // Premium monthly
-  'price_1SbtcfRwvWaTf8xfwcVnrRf8': 'premium',  // Premium annual
+  'price_1Sbr5WDfI9wxczZNEbTKSR12': 'premium',  // Premium monthly $7.99
+  'price_1Sbr5WDfI9wxczZNeEmIzlKQ': 'premium',  // Premium annual $79.99
 };
 
 const processedEvents = new Set<string>();

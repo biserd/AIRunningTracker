@@ -981,7 +981,7 @@ ${allPages.map(page => `  <url>
       }
 
       // Use the hardcoded Premium monthly price ID (same as pricing page)
-      const premiumPriceId = "price_1SbtcfRwvWaTf8xfSEO4iKnc";
+      const premiumPriceId = "price_1Sbr5WDfI9wxczZNEbTKSR12";
 
       const appSlug = process.env.APP_SLUG || 'aitracker';
       const session = await stripe.checkout.sessions.create({

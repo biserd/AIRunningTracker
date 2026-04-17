@@ -12,8 +12,8 @@ import { AddEmailModal } from "@/components/AddEmailModal";
 
 const PRICE_IDS = {
   premium: {
-    monthly: "price_1SbtcfRwvWaTf8xfSEO4iKnc",
-    annual: "price_1SbtcfRwvWaTf8xfwcVnrRf8"
+    monthly: "price_1Sbr5WDfI9wxczZNEbTKSR12",
+    annual: "price_1Sbr5WDfI9wxczZNeEmIzlKQ"
   }
 };
 
