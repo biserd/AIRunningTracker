@@ -207,9 +207,7 @@ export async function unsubscribeFromPush(): Promise<void> {
     }
     if (storedToken) {
       try {
-        // Backend unsubscribe uses the `endpoint` field as a generic identifier;
-        // for native, we send the APNs/FCM token in the same slot.
-        await apiRequest("/api/push/unsubscribe", "POST", { endpoint: storedToken });
+        await apiRequest("/api/push/unsubscribe", "POST", { nativeToken: storedToken });
       } catch {
         // best-effort — continue cleanup
       }

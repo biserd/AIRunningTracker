@@ -27,8 +27,13 @@ export async function processNotifications(limit = 50): Promise<ProcessingResult
       
       try {
         const user = await storage.getUser(notification.userId);
-        if (!user || !user.email) {
-          await storage.markNotificationFailed(notification.id, "User not found or no email");
+        if (!user) {
+          await storage.markNotificationFailed(notification.id, "User not found");
+          result.failed++;
+          continue;
+        }
+        if (notification.channel === "email" && !user.email) {
+          await storage.markNotificationFailed(notification.id, "User has no email address");
           result.failed++;
           continue;
         }

@@ -7657,9 +7657,12 @@ ${allPages.map(page => `  <url>
   app.post("/api/push/unsubscribe", authenticateJWT, async (req: any, res) => {
     try {
       const userId = req.user!.id;
-      const { endpoint } = req.body || {};
+      const { endpoint, nativeToken } = req.body || {};
       if (endpoint) {
         await storage.deletePushSubscriptionByEndpointForUser(userId, endpoint);
+      }
+      if (nativeToken) {
+        await storage.deletePushSubscriptionByNativeTokenForUser(userId, nativeToken);
       }
       res.json({ ok: true });
     } catch (error: any) {
