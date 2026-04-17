@@ -6,7 +6,7 @@ import webpush from "web-push";
 import { storage } from "../storage";
 import type { PushSubscription as DbPushSubscription } from "@shared/schema";
 
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "mailto:biserd@gmail.com";
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "mailto:noreply@aitracker.run";
 const VAPID_SETTING_PUBLIC = "vapid_public_key";
 const VAPID_SETTING_PRIVATE = "vapid_private_key";
 
