@@ -2,6 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  html, body {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+@layer utilities {
+  .safe-top { padding-top: env(safe-area-inset-top); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .safe-x {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  /* Ensure interactive elements meet 44px touch-target on mobile */
+  @media (pointer: coarse) {
+    button, [role="button"], a.btn, input[type="button"], input[type="submit"] {
+      min-height: 44px;
+    }
+  }
+}
+
 :root {
   --background: hsl(0, 0%, 100%);
   --foreground: hsl(0, 0%, 20%);

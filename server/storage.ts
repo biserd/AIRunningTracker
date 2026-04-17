@@ -401,6 +401,7 @@ export interface IStorage {
   getPushSubscriptionsByUserId(userId: number): Promise<PushSubscription[]>;
   deletePushSubscription(id: number): Promise<void>;
   deletePushSubscriptionByEndpoint(endpoint: string): Promise<void>;
+  deletePushSubscriptionByEndpointForUser(userId: number, endpoint: string): Promise<void>;
   touchPushSubscription(id: number): Promise<void>;
 }
 
@@ -1829,6 +1830,12 @@ export class DatabaseStorage implements IStorage {
 
   async deletePushSubscriptionByEndpoint(endpoint: string): Promise<void> {
     await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
+  }
+
+  async deletePushSubscriptionByEndpointForUser(userId: number, endpoint: string): Promise<void> {
+    await db
+      .delete(pushSubscriptions)
+      .where(and(eq(pushSubscriptions.userId, userId), eq(pushSubscriptions.endpoint, endpoint)));
   }
 
   async touchPushSubscription(id: number): Promise<void> {
