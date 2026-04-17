@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Settings, Save, Unlink, Trash2, Crown, Zap, CreditCard, ExternalLink, Loader2, Share2, Check, AlertTriangle, MessageSquare, Target, Calendar, Bell } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import PushNotificationToggle from "@/components/PushNotificationToggle";
 
 function SettingsPageContent() {
   const { user } = useAuth();
@@ -516,6 +517,11 @@ function SettingsPageContent() {
                 )}
                 {updateNotificationsMutation.isPending ? "Saving..." : "Save Notification Settings"}
               </Button>
+
+              <div className="border-t pt-6">
+                <Label className="text-base font-medium mb-3 block">Push notifications (this device)</Label>
+                <PushNotificationToggle />
+              </div>
             </CardContent>
           </Card>
         )}

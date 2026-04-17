@@ -1,5 +1,6 @@
 import { storage } from "../storage";
 import { emailService } from "./email";
+import { sendPushToUser } from "./pushService";
 import type { NotificationOutbox, User } from "@shared/schema";
 
 interface ProcessingResult {
@@ -48,6 +49,24 @@ export async function processNotifications(limit = 50): Promise<ProcessingResult
         } else if (notification.channel === "in_app") {
           await storage.markNotificationSent(notification.id);
           result.sent++;
+        } else if (notification.channel === "push") {
+          const data = (notification.data as Record<string, unknown> | null) || {};
+          const pushResult = await sendPushToUser(notification.userId, {
+            title: notification.title,
+            body: notification.body,
+            url: (data.url as string) || (data.activityId ? `/activity/${data.activityId}` : "/dashboard"),
+            tag: notification.dedupeKey || `notif-${notification.id}`,
+            data,
+          });
+          if (pushResult.delivered > 0 || pushResult.attempted === 0) {
+            // Mark sent even with no subscribers (user opted out) so we don't retry forever
+            await storage.markNotificationSent(notification.id);
+            result.sent++;
+            console.log(`[NotificationProcessor] Push notification ${notification.id} → ${pushResult.delivered}/${pushResult.attempted} delivered`);
+          } else {
+            await storage.markNotificationFailed(notification.id, "All push deliveries failed");
+            result.failed++;
+          }
         } else {
           await storage.markNotificationFailed(notification.id, `Unsupported channel: ${notification.channel}`);
           result.failed++;

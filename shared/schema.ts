@@ -925,6 +925,37 @@ export const insertNotificationOutboxSchema = createInsertSchema(notificationOut
   retryCount: true,
 });
 
+// Push subscriptions - for web push (and later native via Capacitor)
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  platform: text("platform", { enum: ["web", "ios", "android"] }).notNull().default("web"),
+  // Web push fields
+  endpoint: text("endpoint"),
+  p256dh: text("p256dh"),
+  auth: text("auth"),
+  // Native push token (Capacitor APNs/FCM)
+  nativeToken: text("native_token"),
+  // Metadata
+  userAgent: text("user_agent"),
+  enabled: boolean("enabled").default(true),
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("push_subscriptions_user_id_idx").on(table.userId),
+  endpointIdx: index("push_subscriptions_endpoint_idx").on(table.endpoint),
+  nativeTokenIdx: index("push_subscriptions_native_token_idx").on(table.nativeToken),
+}));
+
+export const insertPushSubscriptionSchema = createInsertSchema(pushSubscriptions).omit({
+  id: true,
+  createdAt: true,
+  lastUsedAt: true,
+});
+
+export type InsertPushSubscription = z.infer<typeof insertPushSubscriptionSchema>;
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+
 // Coach preferences update schema (for user settings)
 export const updateCoachPreferencesSchema = z.object({
   coachGoal: z.enum(GOAL_TYPES).optional(),

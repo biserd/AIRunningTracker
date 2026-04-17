@@ -118,6 +118,30 @@ export async function generateCoachRecap(
     console.log(`[Coach] Queued email notification for recap ${recap.id}`);
   }
 
+  // Also queue a push notification (delivered to any device the user has subscribed)
+  if (user.coachNotifyRecap) {
+    const pushDedupeKey = `notification:push:recap:${userId}:${activityId}`;
+    const existing = await storage.getNotificationByDedupeKey(pushDedupeKey);
+    if (!existing) {
+      await storage.createNotification({
+        userId,
+        type: "activity_recap",
+        channel: "push",
+        title: `🏃 Coach Recap: ${activity.name}`,
+        body: recapContent.recapBullets[0] || "Your post-run recap is ready.",
+        data: {
+          recapId: recap.id,
+          activityId,
+          activityName: activity.name,
+          nextStep: recapContent.nextStep,
+          url: `/activity/${activityId}`,
+        },
+        dedupeKey: pushDedupeKey,
+      });
+      console.log(`[Coach] Queued push notification for recap ${recap.id}`);
+    }
+  }
+
   return recap;
 }
 

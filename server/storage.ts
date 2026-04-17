@@ -1,4 +1,4 @@
-import { users, activities, aiInsights, trainingPlans, trainingPlansLegacy, athleteProfiles, planWeeks, planDays, planGoals, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, shoeComparisons, apiKeys, refreshTokens, workoutCache, coachRecaps, agentRuns, notificationOutbox, deletionFeedback, userCampaigns, emailJobs, emailClicks, systemSettings, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ShoeComparison, type InsertShoeComparison, type ApiKey, type InsertApiKey, type RefreshToken, type InsertRefreshToken, type AthleteProfile, type InsertAthleteProfile, type PlanWeek, type InsertPlanWeek, type PlanDay, type InsertPlanDay, type PlanGoal, type InsertPlanGoal, type WorkoutCache, type InsertWorkoutCache, type CoachRecap, type InsertCoachRecap, type AgentRun, type InsertAgentRun, type NotificationOutbox, type InsertNotificationOutbox, type DeletionFeedback, type InsertDeletionFeedback, type UserCampaign, type InsertUserCampaign, type EmailJob, type InsertEmailJob, type EmailClick, type InsertEmailClick } from "@shared/schema";
+import { users, activities, aiInsights, trainingPlans, trainingPlansLegacy, athleteProfiles, planWeeks, planDays, planGoals, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, shoeComparisons, apiKeys, refreshTokens, workoutCache, coachRecaps, agentRuns, notificationOutbox, deletionFeedback, userCampaigns, emailJobs, emailClicks, systemSettings, pushSubscriptions, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ShoeComparison, type InsertShoeComparison, type ApiKey, type InsertApiKey, type RefreshToken, type InsertRefreshToken, type AthleteProfile, type InsertAthleteProfile, type PlanWeek, type InsertPlanWeek, type PlanDay, type InsertPlanDay, type PlanGoal, type InsertPlanGoal, type WorkoutCache, type InsertWorkoutCache, type CoachRecap, type InsertCoachRecap, type AgentRun, type InsertAgentRun, type NotificationOutbox, type InsertNotificationOutbox, type DeletionFeedback, type InsertDeletionFeedback, type UserCampaign, type InsertUserCampaign, type EmailJob, type InsertEmailJob, type EmailClick, type InsertEmailClick, type PushSubscription, type InsertPushSubscription } from "@shared/schema";
 import crypto from "crypto";
 import { db } from "./db";
 import { eq, desc, and, or, sql, inArray, gte, gt, lt, ne } from "drizzle-orm";
@@ -395,6 +395,13 @@ export interface IStorage {
   // Coach preferences (updates handled via updateUser, but helper for Premium users)
   getPremiumUsersForCoaching(): Promise<User[]>;
   getUsersNeedingCoachSync(sinceDays?: number): Promise<User[]>;
+
+  // Push subscription methods (web push + native via Capacitor)
+  upsertPushSubscription(sub: InsertPushSubscription): Promise<PushSubscription>;
+  getPushSubscriptionsByUserId(userId: number): Promise<PushSubscription[]>;
+  deletePushSubscription(id: number): Promise<void>;
+  deletePushSubscriptionByEndpoint(endpoint: string): Promise<void>;
+  touchPushSubscription(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1757,6 +1764,78 @@ export class DatabaseStorage implements IStorage {
         target: systemSettings.key,
         set: { value, updatedAt: new Date() },
       });
+  }
+
+  async upsertPushSubscription(sub: InsertPushSubscription): Promise<PushSubscription> {
+    if (sub.endpoint) {
+      const existing = await db
+        .select()
+        .from(pushSubscriptions)
+        .where(eq(pushSubscriptions.endpoint, sub.endpoint));
+      if (existing[0]) {
+        const [updated] = await db
+          .update(pushSubscriptions)
+          .set({
+            userId: sub.userId,
+            platform: sub.platform,
+            p256dh: sub.p256dh,
+            auth: sub.auth,
+            userAgent: sub.userAgent,
+            enabled: true,
+            lastUsedAt: new Date(),
+          })
+          .where(eq(pushSubscriptions.id, existing[0].id))
+          .returning();
+        return updated;
+      }
+    }
+    if (sub.nativeToken) {
+      const existing = await db
+        .select()
+        .from(pushSubscriptions)
+        .where(eq(pushSubscriptions.nativeToken, sub.nativeToken));
+      if (existing[0]) {
+        const [updated] = await db
+          .update(pushSubscriptions)
+          .set({
+            userId: sub.userId,
+            platform: sub.platform,
+            userAgent: sub.userAgent,
+            enabled: true,
+            lastUsedAt: new Date(),
+          })
+          .where(eq(pushSubscriptions.id, existing[0].id))
+          .returning();
+        return updated;
+      }
+    }
+    const [created] = await db
+      .insert(pushSubscriptions)
+      .values({ ...sub, lastUsedAt: new Date() })
+      .returning();
+    return created;
+  }
+
+  async getPushSubscriptionsByUserId(userId: number): Promise<PushSubscription[]> {
+    return db
+      .select()
+      .from(pushSubscriptions)
+      .where(and(eq(pushSubscriptions.userId, userId), eq(pushSubscriptions.enabled, true)));
+  }
+
+  async deletePushSubscription(id: number): Promise<void> {
+    await db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, id));
+  }
+
+  async deletePushSubscriptionByEndpoint(endpoint: string): Promise<void> {
+    await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
+  }
+
+  async touchPushSubscription(id: number): Promise<void> {
+    await db
+      .update(pushSubscriptions)
+      .set({ lastUsedAt: new Date() })
+      .where(eq(pushSubscriptions.id, id));
   }
 
   async updateUserActivation(userId: number, activationAt: Date): Promise<void> {

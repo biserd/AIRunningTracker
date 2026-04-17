@@ -7608,6 +7608,82 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // ============================================
+  // Push notifications (web push + Capacitor native tokens)
+  // ============================================
+  app.get("/api/push/vapid-public-key", async (_req, res) => {
+    try {
+      const { getPublicVapidKey } = await import("./services/pushService");
+      const publicKey = await getPublicVapidKey();
+      res.json({ publicKey });
+    } catch (error: any) {
+      console.error("Get VAPID key error:", error);
+      res.status(500).json({ message: error.message || "Failed to load VAPID key" });
+    }
+  });
+
+  app.post("/api/push/subscribe", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      const { platform, endpoint, p256dh, auth, nativeToken, userAgent } = req.body || {};
+
+      if (!platform || !["web", "ios", "android"].includes(platform)) {
+        return res.status(400).json({ message: "Invalid platform" });
+      }
+      if (platform === "web" && (!endpoint || !p256dh || !auth)) {
+        return res.status(400).json({ message: "Missing web push fields (endpoint, p256dh, auth)" });
+      }
+      if (platform !== "web" && !nativeToken) {
+        return res.status(400).json({ message: "Missing nativeToken for native platform" });
+      }
+
+      const sub = await storage.upsertPushSubscription({
+        userId,
+        platform,
+        endpoint: endpoint || null,
+        p256dh: p256dh || null,
+        auth: auth || null,
+        nativeToken: nativeToken || null,
+        userAgent: userAgent || req.headers["user-agent"] || null,
+        enabled: true,
+      });
+      res.json({ ok: true, id: sub.id });
+    } catch (error: any) {
+      console.error("Push subscribe error:", error);
+      res.status(500).json({ message: error.message || "Failed to subscribe" });
+    }
+  });
+
+  app.post("/api/push/unsubscribe", authenticateJWT, async (req: any, res) => {
+    try {
+      const { endpoint } = req.body || {};
+      if (endpoint) {
+        await storage.deletePushSubscriptionByEndpoint(endpoint);
+      }
+      res.json({ ok: true });
+    } catch (error: any) {
+      console.error("Push unsubscribe error:", error);
+      res.status(500).json({ message: error.message || "Failed to unsubscribe" });
+    }
+  });
+
+  app.post("/api/push/test", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user!.id;
+      const { sendPushToUser } = await import("./services/pushService");
+      const result = await sendPushToUser(userId, {
+        title: "🏃 Test push",
+        body: "If you see this, push notifications are working!",
+        url: "/dashboard",
+        tag: "test-push",
+      });
+      res.json(result);
+    } catch (error: any) {
+      console.error("Push test error:", error);
+      res.status(500).json({ message: error.message || "Test push failed" });
+    }
+  });
+
   // Get unread notification count (for badge)
   app.get("/api/notifications/unread-count", authenticateJWT, async (req: any, res) => {
     try {
