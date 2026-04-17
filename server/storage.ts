@@ -396,7 +396,7 @@ export interface IStorage {
   getPremiumUsersForCoaching(): Promise<User[]>;
   getUsersNeedingCoachSync(sinceDays?: number): Promise<User[]>;
 
-  // Push subscription methods (web push + native via Capacitor)
+  // Push subscription methods (web push)
   upsertPushSubscription(sub: InsertPushSubscription): Promise<PushSubscription>;
   getPushSubscriptionsByUserId(userId: number): Promise<PushSubscription[]>;
   deletePushSubscription(id: number): Promise<void>;

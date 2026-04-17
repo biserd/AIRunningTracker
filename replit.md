@@ -39,15 +39,14 @@ Preferred communication style: Simple, everyday language.
   - **Pre-render Script**: scripts/prerender.ts generates static HTML files at build time for homepage, all blog posts, and all shoe pages
   - **Crawler Detection**: Regex pattern matches Googlebot, Bingbot, Yandex, Baidu, DuckDuckBot, Slurp, and social media crawlers
 - **Strava Activity Branding**: User-opt-in feature to append customizable branding text to Strava activity descriptions.
-- **Mobile App POC (PWA + Capacitor)**:
+- **PWA + Web Push**:
   - Installable PWA with manifest, service worker (cache + push handlers), and 192/512 icons
   - Web push notifications via VAPID (auto-generated and persisted in `system_settings` on first boot, env var override supported)
-  - `push_subscriptions` table stores web push endpoints and native (Capacitor) APNs/FCM tokens behind a `platform` column
+  - `push_subscriptions` table stores web push endpoints (extensible to native via `platform` column)
   - Endpoints: `/api/push/vapid-public-key`, `/api/push/subscribe`, `/api/push/unsubscribe`, `/api/push/test`
   - Coach Recap flow queues both an email and a push notification (de-duped per activity); notification processor handles `push` channel via `pushService.sendPushToUser()`
-  - Frontend abstraction `client/src/lib/push.ts` detects Capacitor at runtime — same UI works for web push and (when wired) native APNs/FCM
   - Settings → Notifications has a per-device push toggle (`PushNotificationToggle`)
-  - `capacitor.config.ts` configured (appId `run.aitracker.app`, webDir `dist/public`); iOS/Android folders generated locally — see `MOBILE.md`
+  - Native mobile app planned as a separate Expo project — not in this repo yet
 
 ### System Design Choices
 - **Database Schema**: Comprehensive schema covering users, activities, AI insights, training plans, shoes, and more.

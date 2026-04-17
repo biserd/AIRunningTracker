@@ -925,7 +925,7 @@ export const insertNotificationOutboxSchema = createInsertSchema(notificationOut
   retryCount: true,
 });
 
-// Push subscriptions - for web push (and later native via Capacitor)
+// Push subscriptions - for web push (PWA). Native mobile push will be added with the Expo app.
 export const pushSubscriptions = pgTable("push_subscriptions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
@@ -934,7 +934,7 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   endpoint: text("endpoint"),
   p256dh: text("p256dh"),
   auth: text("auth"),
-  // Native push token (Capacitor APNs/FCM)
+  // Native push token (reserved for future Expo APNs/FCM integration)
   nativeToken: text("native_token"),
   // Metadata
   userAgent: text("user_agent"),

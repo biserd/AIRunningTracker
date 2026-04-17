@@ -7609,7 +7609,7 @@ ${allPages.map(page => `  <url>
   });
 
   // ============================================
-  // Push notifications (web push + Capacitor native tokens)
+  // Push notifications (web push)
   // ============================================
   app.get("/api/push/vapid-public-key", async (_req, res) => {
     try {

@@ -1,6 +1,5 @@
 // Web push service: VAPID setup, subscription persistence, and push delivery.
-// Designed so the same backend serves Capacitor native tokens (APNs/FCM) later
-// — only the dispatch path needs an extra branch when native tokens land.
+// Native mobile push (Expo) will be added as a separate dispatch branch later.
 
 import webpush from "web-push";
 import { storage } from "../storage";
@@ -108,9 +107,8 @@ export async function sendPushToUser(userId: number, payload: PushPayload): Prom
         }
       }
     } else {
-      // Native (Capacitor) tokens — APNs/FCM dispatch hook goes here once a provider is wired up.
-      // For the POC we log and skip so the same endpoint accepts native tokens for future delivery.
-      console.log(`[Push] Skipping native ${sub.platform} token (no native provider configured yet)`);
+      // Native mobile push (Expo) will land in a separate dispatch branch.
+      console.log(`[Push] Skipping native ${sub.platform} subscription (no native provider configured yet)`);
     }
   }
 
