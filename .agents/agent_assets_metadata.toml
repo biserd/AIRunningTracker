@@ -1,0 +1,19 @@
+uploads = []
+
+[[generated]]
+id = "IfP-p9zM8xuz_jTz9tqWS"
+uri = "file://artifacts/mockup-sandbox/public/images/anti-summit-hero-bg.png"
+type = "image"
+title = "dark abstract data visualization"
+
+[[outputs]]
+id = "TOqlNOTrRLaJnzTwc_3kV"
+uri = "file://artifacts/mockup-sandbox/public/images/runner-training.jpg"
+type = "image"
+title = "serious runner training on road editorial"
+
+[[outputs]]
+id = "dwtWI76MqrYuJ68S8D7kl"
+uri = "file://artifacts/mockup-sandbox/public/images/runner-watch.jpg"
+type = "image"
+title = "runner looking at smart watch data"
