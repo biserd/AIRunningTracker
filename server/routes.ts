@@ -905,17 +905,14 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
 
-      if (!user.email) {
-        return res.status(402).json({ requiresEmail: true, message: "Please add your email before subscribing." });
-      }
-
       const stripe = await getUncachableStripeClient();
 
-      // Create or get Stripe customer
+      // Create or get Stripe customer. Email is optional — if missing,
+      // Stripe Checkout collects it and the webhook syncs it back.
       let customerId = user.stripeCustomerId;
       if (!customerId) {
         const customer = await stripe.customers.create({
-          email: user.email,
+          ...(user.email ? { email: user.email } : {}),
           metadata: { userId: String(userId) }
         });
         await storage.updateStripeCustomerId(userId, customer.id);
@@ -967,17 +964,16 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
 
-      if (!user.email) {
-        return res.status(402).json({ requiresEmail: true, message: "Please add your email before subscribing." });
-      }
-
       const stripe = await getUncachableStripeClient();
 
-      // Create or get Stripe customer
+      // Create or get Stripe customer. Email is optional here:
+      // if the user hasn't provided one (e.g. silent Strava signup),
+      // Stripe Checkout will collect it during the trial signup and
+      // we'll save it back to the user via the webhook.
       let customerId = user.stripeCustomerId;
       if (!customerId) {
         const customer = await stripe.customers.create({
-          email: user.email,
+          ...(user.email ? { email: user.email } : {}),
           metadata: { userId: String(userId) }
         });
         await storage.updateStripeCustomerId(userId, customer.id);

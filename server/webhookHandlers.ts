@@ -1,7 +1,7 @@
 // Stripe Webhook Handlers
 // Processes Stripe webhook events via stripe-replit-sync
 
-import { getStripeSync } from './stripeClient';
+import { getStripeSync, getUncachableStripeClient } from './stripeClient';
 import { storage } from './storage';
 import { emailService } from './services/email';
 
@@ -157,11 +157,32 @@ export class WebhookHandlers {
         } else if (subscription.items?.data?.[0]?.price?.metadata?.plan) {
           plan = subscription.items.data[0].price.metadata.plan;
         }
-        
+
         console.log('Updating user subscription:', { userId: user.id, status, plan });
-        
+
         await storage.updateStripeSubscriptionId(user.id, subscription.id);
         await storage.updateSubscriptionStatus(user.id, status, plan);
+
+        // Backfill the user's email from Stripe if we don't have one yet
+        // (e.g. silent Strava signups where Stripe Checkout collected the email).
+        if (!user.email) {
+          try {
+            const stripeClient = await getUncachableStripeClient();
+            const customer = await stripeClient.customers.retrieve(customerId);
+            const stripeEmail = (customer && !('deleted' in customer && customer.deleted) && (customer as any).email) || null;
+            if (stripeEmail) {
+              const existing = await storage.getUserByEmail(stripeEmail);
+              if (!existing || existing.id === user.id) {
+                await storage.updateUser(user.id, { email: stripeEmail });
+                console.log(`[Webhook] Backfilled email for user ${user.id} from Stripe customer ${customerId}`);
+              } else {
+                console.warn(`[Webhook] Cannot backfill email for user ${user.id}: ${stripeEmail} already in use by user ${existing.id}`);
+              }
+            }
+          } catch (emailErr) {
+            console.error(`[Webhook] Failed to backfill email for user ${user.id}:`, emailErr);
+          }
+        }
         
         // Send admin notification for new trial starts
         if (event.type === 'customer.subscription.created' && status === 'trialing') {
