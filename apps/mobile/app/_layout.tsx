@@ -28,6 +28,10 @@ export default function RootLayout() {
               <Stack.Screen name="tools/goals" />
               <Stack.Screen name="tools/insights" />
               <Stack.Screen name="tools/notifications" />
+              <Stack.Screen name="tools/coach-recaps" />
+              <Stack.Screen name="tools/recovery" />
+              <Stack.Screen name="tools/fitness" />
+              <Stack.Screen name="tools/injury-risk" />
             </Stack>
           </AuthProvider>
         </QueryClientProvider>

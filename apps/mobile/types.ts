@@ -191,6 +191,118 @@ export interface InsightItem {
   createdAt: string;
 }
 
+export interface CoachVerdict {
+  grade: "A" | "B" | "C" | "D" | "F";
+  gradeLabel: string;
+  summary: string;
+  evidenceBullets: { type: "positive" | "neutral" | "negative"; text: string }[];
+  effortScore: number;
+  consistencyLabel: "recovery" | "easier" | "consistent" | "harder" | "much_harder";
+  consistencyDescription: string;
+  comparison: {
+    paceVsAvg: number;
+    hrVsAvg: number;
+    effortVsAvg: number;
+    distanceVsAvg: number;
+  };
+  nextSteps: string[];
+}
+
+export interface DataQuality {
+  score: number;
+  flags: string[];
+  hrQuality: number;
+  gpsQuality: number;
+  pauseQuality: number;
+  totalDataPoints: number;
+  affectedPercentage: number;
+}
+
+export interface EfficiencyMetrics {
+  aerobicDecoupling: number | null;
+  decouplingLabel: "excellent" | "good" | "moderate" | "concerning" | "unknown";
+  paceHrEfficiency: number | null;
+  pacingStability: number;
+  pacingLabel: "very_stable" | "stable" | "variable" | "erratic";
+  cadenceDrift: number | null;
+  firstHalfPace: number | null;
+  secondHalfPace: number | null;
+  firstHalfHr: number | null;
+  secondHalfHr: number | null;
+  splitVariance: number;
+}
+
+export interface CoachRecap {
+  id: number;
+  userId: number;
+  activityId: number;
+  recapBullets: string[];
+  coachingCue: string;
+  nextStep: "rest" | "easy" | "workout" | "long_run" | "recovery";
+  nextStepRationale: string;
+  confidenceFlags: string[] | null;
+  activityName: string;
+  activityDate: string;
+  viewedAt: string | null;
+  createdAt: string;
+}
+
+export interface VO2MaxData {
+  current: number;
+  raceVO2Max: number;
+  trainingVO2Max: number;
+  trend: "improving" | "stable" | "declining";
+  ageGradePercentile: number;
+  comparison: string;
+  raceComparison: string;
+  trainingComparison: string;
+  targetRange: { min: number; max: number };
+}
+
+export interface FitnessMetric {
+  date: string;
+  ctl: number; // Chronic training load (fitness)
+  atl: number; // Acute training load (fatigue)
+  tsb: number; // Training stress balance (form)
+  trainingLoad: number;
+}
+
+export interface FitnessResponse {
+  metrics: FitnessMetric[];
+  currentForm: FitnessMetric | null;
+  interpretation: { label: string; description: string; color?: string } | string | null;
+}
+
+export interface RecoveryState {
+  daysSinceLastRun: number;
+  lastRunDate: string | null;
+  lastRunName: string | null;
+  acuteLoadKm: number;
+  chronicLoadKm: number;
+  acuteChronicRatio: number;
+  freshnessScore: number;
+  riskLevel: "low" | "moderate" | "high" | "critical";
+  originalRiskLevel: "low" | "moderate" | "high" | "critical";
+  riskReduced: boolean;
+  readyToRun: boolean;
+  recommendedNextStep: "rest" | "easy" | "workout" | "long_run" | "recovery";
+  statusMessage: string;
+  recoveryMessage: string;
+}
+
+export interface InjuryRiskAnalysis {
+  riskLevel: "Low" | "Medium" | "High";
+  riskFactors: string[];
+  recommendations: string[];
+}
+
+export interface MLRacePrediction {
+  distance: string;
+  predictedTime: string;
+  confidence: number;
+  recommendation: string;
+}
+
 export interface InsightDayGroup {
   date: string;
   insights: {

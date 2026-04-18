@@ -44,6 +44,30 @@ export default function ToolsScreen() {
       desc: "Latest performance, recovery, and technique insights from your AI coach.",
     },
     {
+      href: "/tools/coach-recaps",
+      emoji: "📝",
+      title: "Coach Recaps",
+      desc: "Post-run summaries with focus cues and next steps. (Premium)",
+    },
+    {
+      href: "/tools/recovery",
+      emoji: "❤️",
+      title: "Recovery",
+      desc: "Freshness, training load, and what to do next.",
+    },
+    {
+      href: "/tools/fitness",
+      emoji: "🫁",
+      title: "Fitness & VO2 Max",
+      desc: "Aerobic capacity, fitness, fatigue, and form trend.",
+    },
+    {
+      href: "/tools/injury-risk",
+      emoji: "⚠️",
+      title: "Injury Risk & ML",
+      desc: "Risk analysis with ML race-time predictions.",
+    },
+    {
       href: "/tools/notifications",
       emoji: "🔔",
       title: "Notifications",
