@@ -118,3 +118,87 @@ export interface RacePrediction {
   confidence?: "high" | "medium" | "low";
   k?: number;
 }
+
+export interface Goal {
+  id: number;
+  userId: number;
+  title: string;
+  description: string;
+  type: string;
+  targetValue: string | null;
+  currentProgress: number | null;
+  status: "active" | "completed";
+  source: "recommendation" | "manual";
+  completedAt: string | null;
+  createdAt: string | null;
+}
+
+export interface Conversation {
+  id: number;
+  userId: number;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChatMessage {
+  id: number;
+  conversationId: number;
+  role: "user" | "assistant" | "system";
+  content: string;
+  createdAt?: string;
+}
+
+export interface AppNotification {
+  id: number;
+  userId: number;
+  title: string;
+  body: string;
+  channel?: string;
+  status?: string;
+  readAt?: string | null;
+  createdAt: string;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface NotificationsResponse {
+  notifications: AppNotification[];
+  unreadCount: number;
+}
+
+export interface SubscriptionStatus {
+  subscriptionStatus: string;
+  subscriptionPlan: string;
+  stripeSubscriptionId: string | null;
+  trialEndsAt: string | null;
+  subscriptionEndsAt: string | null;
+  isReverseTrial: boolean;
+  trialDaysRemaining: number;
+  usage?: {
+    insightsUsedToday?: number;
+    insightsLimitPerDay?: number;
+    chatMessagesUsedToday?: number;
+    chatMessagesLimitPerDay?: number;
+  };
+}
+
+export interface InsightItem {
+  id: number;
+  type: string;
+  title: string;
+  content: string;
+  priority?: string | null;
+  createdAt: string;
+}
+
+export interface InsightDayGroup {
+  date: string;
+  insights: {
+    performance: InsightItem[];
+    pattern: InsightItem[];
+    recovery: InsightItem[];
+    motivation: InsightItem[];
+    technique: InsightItem[];
+    recommendation: InsightItem[];
+  };
+}

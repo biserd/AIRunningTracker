@@ -9,12 +9,13 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useAuth } from "../../lib/auth";
 import { api } from "../../lib/api";
 import { registerForPushAsync, unregisterPushAsync, sendTestPush } from "../../lib/push";
-import type { User } from "../../types";
+import type { User, SubscriptionStatus, NotificationsResponse } from "../../types";
 
 const PUSH_TOKEN_KEY = "ra_push_token";
 
@@ -28,6 +29,17 @@ export default function SettingsScreen() {
   useEffect(() => {
     SecureStore.getItemAsync(PUSH_TOKEN_KEY).then(setPushToken);
   }, []);
+
+  const sub = useQuery({
+    queryKey: ["subscription"],
+    queryFn: () => api<SubscriptionStatus>("/api/stripe/subscription"),
+  });
+
+  const notifs = useQuery({
+    queryKey: ["notifications"],
+    queryFn: () => api<NotificationsResponse>("/api/notifications?limit=1"),
+    refetchInterval: 60000,
+  });
 
   const updateUnits = useMutation({
     mutationFn: (unitPreference: "km" | "miles") =>
@@ -97,12 +109,56 @@ export default function SettingsScreen() {
             {user?.firstName || user?.username || "Runner"}
           </Text>
           <Text className="text-sm text-slate-500 mt-0.5">{user?.email || "—"}</Text>
-          {user?.subscriptionTier ? (
-            <Text className="text-xs text-strava font-semibold mt-2 uppercase">
-              {user.subscriptionTier}
-            </Text>
-          ) : null}
         </Card>
+
+        {sub.data ? (
+          <Card title="Subscription">
+            <View className="flex-row items-center justify-between">
+              <View>
+                <Text className="text-base font-semibold text-slate-900 dark:text-white capitalize">
+                  {sub.data.subscriptionPlan}
+                </Text>
+                <Text className="text-xs text-slate-500 mt-0.5 capitalize">
+                  {sub.data.subscriptionStatus.replace(/_/g, " ")}
+                </Text>
+              </View>
+              {sub.data.isReverseTrial ? (
+                <View className="bg-orange-100 dark:bg-orange-950/40 px-3 py-1.5 rounded-full">
+                  <Text className="text-xs font-semibold text-orange-700 dark:text-orange-300">
+                    {sub.data.trialDaysRemaining}d trial left
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+            {sub.data.subscriptionEndsAt ? (
+              <Text className="text-[11px] text-slate-400 mt-2">
+                Renews/ends {new Date(sub.data.subscriptionEndsAt).toLocaleDateString()}
+              </Text>
+            ) : null}
+            <Text className="text-[11px] text-slate-400 mt-2">
+              Manage billing on aitracker.run.
+            </Text>
+          </Card>
+        ) : null}
+
+        <Link href="/tools/notifications" asChild>
+          <Pressable className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 active:opacity-80 flex-row items-center justify-between">
+            <View className="flex-row items-center gap-3">
+              <Text style={{ fontSize: 22 }}>🔔</Text>
+              <View>
+                <Text className="text-base font-semibold text-slate-900 dark:text-white">
+                  Notifications
+                </Text>
+                <Text className="text-xs text-slate-500 mt-0.5">
+                  {notifs.data?.unreadCount
+                    ? `${notifs.data.unreadCount} unread`
+                    : "All caught up"}
+                </Text>
+              </View>
+            </View>
+            <Text className="text-slate-400 text-xl">›</Text>
+          </Pressable>
+        </Link>
 
         <Card title="Units">
           <View className="flex-row gap-2 mt-1">

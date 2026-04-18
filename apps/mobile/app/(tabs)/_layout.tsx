@@ -28,10 +28,17 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="predictor"
+        name="coach"
         options={{
-          title: "Predictor",
-          tabBarIcon: ({ focused }) => <TabIcon label="🎯" focused={focused} />,
+          title: "Coach",
+          tabBarIcon: ({ focused }) => <TabIcon label="💬" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="tools"
+        options={{
+          title: "Tools",
+          tabBarIcon: ({ focused }) => <TabIcon label="🧰" focused={focused} />,
         }}
       />
       <Tabs.Screen
@@ -41,6 +48,8 @@ export default function TabsLayout() {
           tabBarIcon: ({ focused }) => <TabIcon label="⚙️" focused={focused} />,
         }}
       />
+      {/* Predictor moved to /tools/predictor — hide from tab bar but keep working if pre-existing */}
+      <Tabs.Screen name="predictor" options={{ href: null }} />
     </Tabs>
   );
 }
