@@ -3,9 +3,7 @@ import { Text } from "react-native";
 import { useAuth } from "../../lib/auth";
 
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
-  return (
-    <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.55 }}>{label}</Text>
-  );
+  return <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.55 }}>{label}</Text>;
 }
 
 export default function TabsLayout() {
@@ -19,15 +17,21 @@ export default function TabsLayout() {
       screenOptions={{
         tabBarActiveTintColor: "#fc4c02",
         tabBarInactiveTintColor: "#5a6068",
-        headerStyle: { backgroundColor: "#fff" },
-        headerTitleStyle: { fontWeight: "600" },
+        headerShown: false,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Activities",
-          tabBarIcon: ({ focused }) => <TabIcon label="🏃" focused={focused} />,
+          title: "Home",
+          tabBarIcon: ({ focused }) => <TabIcon label="🏠" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="predictor"
+        options={{
+          title: "Predictor",
+          tabBarIcon: ({ focused }) => <TabIcon label="🎯" focused={focused} />,
         }}
       />
       <Tabs.Screen
