@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -38,7 +38,12 @@ export default function HomeScreen() {
 
   const activities = useQuery({
     queryKey: ["activities"],
-    queryFn: () => api<Activity[]>("/api/activities?limit=30"),
+    queryFn: async () => {
+      const res = await api<{ activities: Activity[] } | Activity[]>(
+        "/api/activities?page=1&pageSize=30",
+      );
+      return Array.isArray(res) ? res : (res.activities ?? []);
+    },
   });
 
   const score = useQuery({
@@ -54,16 +59,35 @@ export default function HomeScreen() {
     enabled: !!user?.id,
   });
 
-  const onRefresh = useCallback(() => {
-    dashboard.refetch();
-    activities.refetch();
-    score.refetch();
-    chart.refetch();
-  }, [dashboard, activities, score, chart]);
+  const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  const onRefresh = useCallback(async () => {
+    if (!user?.id) return;
+    setSyncError(null);
+    setSyncing(true);
+    try {
+      await api(`/api/strava/sync/${user.id}`, {
+        method: "POST",
+        body: JSON.stringify({ maxActivities: 30 }),
+      });
+    } catch (e) {
+      setSyncError(e instanceof Error ? e.message : "Sync failed");
+    } finally {
+      setSyncing(false);
+      await Promise.all([
+        dashboard.refetch(),
+        activities.refetch(),
+        score.refetch(),
+        chart.refetch(),
+      ]);
+    }
+  }, [user?.id, dashboard, activities, score, chart]);
 
   const stats = dashboard.data?.stats;
   const isInitialLoading = activities.isLoading && !activities.data;
   const isRefreshing =
+    syncing ||
     activities.isRefetching ||
     dashboard.isRefetching ||
     score.isRefetching ||
@@ -105,7 +129,15 @@ export default function HomeScreen() {
                 </Card>
               ) : null}
 
-              <Text className="text-sm text-slate-500 mt-3 mb-1">Recent activities</Text>
+              <View className="flex-row items-center justify-between mt-3 mb-1">
+                <Text className="text-sm text-slate-500">
+                  Recent activities ({activities.data?.length ?? 0})
+                </Text>
+                <Text className="text-[11px] text-slate-400">Pull down to sync</Text>
+              </View>
+              {syncError ? (
+                <Text className="text-xs text-red-500 mt-1">Sync: {syncError}</Text>
+              ) : null}
             </View>
           }
           ListEmptyComponent={
