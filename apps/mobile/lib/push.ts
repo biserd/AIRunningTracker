@@ -15,13 +15,25 @@ Notifications.setNotificationHandler({
 
 export interface RegisterPushResult {
   token: string | null;
-  status: "registered" | "denied" | "unsupported" | "error";
+  status: "registered" | "denied" | "unsupported" | "needs-eas-init" | "error";
   message?: string;
+}
+
+function getProjectId(): string | undefined {
+  const fromExtra = (
+    Constants.expoConfig?.extra as { eas?: { projectId?: string } } | undefined
+  )?.eas?.projectId;
+  const fromEas = (Constants.easConfig as { projectId?: string } | undefined)?.projectId;
+  return fromExtra || fromEas;
 }
 
 export async function registerForPushAsync(): Promise<RegisterPushResult> {
   if (!Device.isDevice) {
-    return { token: null, status: "unsupported", message: "Push only works on a real device." };
+    return {
+      token: null,
+      status: "unsupported",
+      message: "Push notifications only work on a physical device.",
+    };
   }
 
   if (Platform.OS === "android") {
@@ -39,17 +51,25 @@ export async function registerForPushAsync(): Promise<RegisterPushResult> {
     status = ask.status;
   }
   if (status !== "granted") {
-    return { token: null, status: "denied", message: "Notifications permission denied." };
+    return {
+      token: null,
+      status: "denied",
+      message: "You denied notification permission. Enable it in Settings → RunAnalytics.",
+    };
   }
 
-  const projectId =
-    (Constants.expoConfig?.extra as { eas?: { projectId?: string } } | undefined)?.eas?.projectId ||
-    (Constants.easConfig as { projectId?: string } | undefined)?.projectId;
+  const projectId = getProjectId();
+  if (!projectId) {
+    return {
+      token: null,
+      status: "needs-eas-init",
+      message:
+        "This Expo Go build is missing an EAS project ID. From apps/mobile run:\n\n  npx eas init\n\nThen restart Expo and try again.",
+    };
+  }
 
   try {
-    const tokenData = await Notifications.getExpoPushTokenAsync(
-      projectId ? { projectId } : undefined,
-    );
+    const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
     const token = tokenData.data;
     await api("/api/push/subscribe", {
       method: "POST",
@@ -61,11 +81,16 @@ export async function registerForPushAsync(): Promise<RegisterPushResult> {
     });
     return { token, status: "registered" };
   } catch (e) {
-    return {
-      token: null,
-      status: "error",
-      message: e instanceof Error ? e.message : "Failed to register for push.",
-    };
+    const raw = e instanceof Error ? e.message : String(e);
+    let friendly = raw;
+    if (/projectId/i.test(raw)) {
+      friendly =
+        "Missing EAS project ID. From apps/mobile run `npx eas init`, then restart Expo.";
+    } else if (/Firebase|FCM|google-services/i.test(raw)) {
+      friendly =
+        "Android push needs a Firebase config. Run an EAS build (not Expo Go) for full push support.";
+    }
+    return { token: null, status: "error", message: friendly };
   }
 }
 

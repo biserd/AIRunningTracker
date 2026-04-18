@@ -38,26 +38,64 @@ export interface Activity {
   endLongitude?: number | null;
 }
 
+export interface DashboardStats {
+  monthlyTotalDistance: string;
+  monthlyAvgPace: string;
+  monthlyTotalActivities: number;
+  monthlyTrainingLoad: number;
+  weeklyTotalDistance: string;
+  weeklyAvgPace: string;
+  weeklyTotalActivities: number;
+  weeklyTrainingLoad: number;
+  recovery: "Good" | "Moderate" | "Low";
+  unitPreference: "km" | "miles";
+  monthlyDistanceChange: number | null;
+  monthlyPaceChange: number | null;
+  monthlyActivitiesChange: number | null;
+  weeklyDistanceChange: number | null;
+  weeklyPaceChange: number | null;
+  weeklyActivitiesChange: number | null;
+}
+
 export interface DashboardData {
-  user: User;
-  activities: Activity[];
-  insights?: unknown[];
-  quickStats?: {
-    thisMonthDistance?: number;
-    thisMonthRuns?: number;
-    lastMonthDistance?: number;
-    lastMonthRuns?: number;
-    thisWeekDistance?: number;
-    thisWeekRuns?: number;
-    lastWeekDistance?: number;
-    lastWeekRuns?: number;
-    currentStreak?: number;
-    longestStreak?: number;
-    totalDistance?: number;
-    totalRuns?: number;
-    weeklyAverage?: number;
-  } | null;
-  syncState?: { status?: string; lastSyncAt?: string | null } | null;
+  user: {
+    name: string;
+    stravaConnected?: boolean;
+    unitPreference?: "km" | "miles";
+    subscriptionPlan?: string;
+    subscriptionStatus?: string;
+    lastSyncAt?: string | null;
+  };
+  stats: DashboardStats;
+}
+
+export interface ChartPoint {
+  week: string;
+  pace: number;
+  distance: number;
+  activitiesCount: number;
+}
+
+export interface ChartResponse {
+  chartData: ChartPoint[];
+}
+
+export interface RunnerScore {
+  totalScore: number;
+  grade: string;
+  percentile: number;
+  components: {
+    consistency: number;
+    performance: number;
+    volume: number;
+    improvement: number;
+  };
+  trends: {
+    weeklyChange: number;
+    monthlyChange: number;
+  };
+  badges: string[];
+  shareableMessage: string;
 }
 
 export interface SuitableActivity {
