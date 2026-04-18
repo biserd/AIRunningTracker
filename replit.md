@@ -46,7 +46,7 @@ Preferred communication style: Simple, everyday language.
   - Endpoints: `/api/push/vapid-public-key`, `/api/push/subscribe`, `/api/push/unsubscribe`, `/api/push/test`
   - Coach Recap flow queues both an email and a push notification (de-duped per activity); notification processor handles `push` channel via `pushService.sendPushToUser()`
   - Settings → Notifications has a per-device push toggle (`PushNotificationToggle`)
-  - Native mobile app planned as a separate Expo project — not in this repo yet
+  - Native mobile app lives at `apps/mobile/` (Expo SDK 52 + Expo Router + NativeWind). Self-contained sibling project; runs locally via `cd apps/mobile && npm install && npx expo start`. Hits the same `aitracker.run/api/*` backend. Phase 1: login → activities list → settings. Push, Strava OAuth, and remaining screens are follow-ups. See `apps/mobile/README.md`.
 
 ### System Design Choices
 - **Database Schema**: Comprehensive schema covering users, activities, AI insights, training plans, shoes, and more.
