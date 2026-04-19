@@ -143,7 +143,7 @@ export default function InjuryRiskScreen() {
                       }}
                     >
                       <Text style={{ fontSize: 11, fontWeight: "600", color: colors.muted }}>
-                        {Math.round(p.confidence * 100)}% confidence
+                        {Math.min(100, Math.round(p.confidence > 1 ? p.confidence : p.confidence * 100))}% confidence
                       </Text>
                     </View>
                   </View>

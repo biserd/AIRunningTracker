@@ -120,16 +120,25 @@ function RecapCard({ recap, onView }: { recap: CoachRecap; onView: () => void })
           >
             {recap.activityName}
           </Text>
-          <Text
+          <View
             style={{
-              fontSize: 11,
-              color: colors.muted,
-              fontWeight: "600",
-              letterSpacing: 0.4,
+              backgroundColor: "rgba(252,76,2,0.10)",
+              paddingHorizontal: 8,
+              paddingVertical: 3,
+              borderRadius: 999,
             }}
           >
-            {(NEXT_LABEL[recap.nextStep] || recap.nextStep).toUpperCase()}
-          </Text>
+            <Text
+              style={{
+                fontSize: 11,
+                color: colors.brand,
+                fontWeight: "700",
+                letterSpacing: 0.5,
+              }}
+            >
+              {(NEXT_LABEL[recap.nextStep] || recap.nextStep).toUpperCase()}
+            </Text>
+          </View>
         </View>
         <Text style={{ fontSize: 12, color: colors.faint, marginTop: 4 }}>
           {formatDate(recap.activityDate)}

@@ -538,7 +538,7 @@ function DistanceTrendCard({
         >
           <Text style={{ fontSize: 11, color: colors.faint }}>{recent[0]?.label}</Text>
           <Text style={{ fontSize: 11, color: colors.faint }}>
-            {recent[recent.length - 1]?.label} · {recent[recent.length - 1]?.value} {unitSuffix}
+            {recent[recent.length - 1]?.label} · {(recent[recent.length - 1]?.value ?? 0).toFixed(1)} {unitSuffix}
           </Text>
         </View>
       </View>
@@ -558,55 +558,52 @@ function ActivityRow({
   isFirst: boolean;
   isLast: boolean;
 }) {
+  const distVal = formatDistance(activity.distance, unit).split(" ")[0];
+  const distUnit = unit === "miles" ? "mi" : "km";
+  const paceVal = formatPace(activity.averageSpeed, unit).split(" ")[0];
   return (
     <Link href={`/activity/${activity.id}`} asChild>
       <Pressable
         style={({ pressed }) => ({
-          backgroundColor: colors.surface,
+          backgroundColor: pressed ? colors.surfaceAlt : colors.surface,
           borderTopLeftRadius: isFirst ? 16 : 0,
           borderTopRightRadius: isFirst ? 16 : 0,
           borderBottomLeftRadius: isLast ? 16 : 0,
           borderBottomRightRadius: isLast ? 16 : 0,
-          borderWidth: 0.5,
-          borderColor: colors.border,
+          borderLeftWidth: 0.5,
+          borderRightWidth: 0.5,
           borderTopWidth: isFirst ? 0.5 : 0,
-          paddingVertical: 16,
+          borderBottomWidth: isLast ? 0.5 : 0.5,
+          borderColor: colors.border,
+          paddingVertical: 14,
           paddingHorizontal: 16,
           flexDirection: "row",
           alignItems: "center",
-          opacity: pressed ? 0.85 : 1,
           ...(isFirst ? shadow.card : null),
         })}
       >
-        <View style={{ flex: 1, paddingRight: 8 }}>
+        <View style={{ flex: 1, paddingRight: 12, minWidth: 0 }}>
           <Text
             numberOfLines={1}
-            style={{ fontSize: 15, fontWeight: "600", color: colors.text, marginBottom: 2 }}
+            style={{
+              fontSize: 15,
+              fontWeight: "600",
+              color: colors.text,
+              marginBottom: 3,
+              letterSpacing: -0.1,
+            }}
           >
             {activity.name}
           </Text>
-          <Text style={{ fontSize: 13, color: colors.muted }}>
-            {formatDate(activity.startDate)} · {activity.type}
+          <Text numberOfLines={1} style={{ fontSize: 13, color: colors.muted }}>
+            {formatDate(activity.startDate)} · {distVal} {distUnit} · {paceVal} pace
           </Text>
         </View>
-        <View style={{ flexDirection: "row", gap: 16, marginRight: 10 }}>
-          <MiniMetric value={formatDistance(activity.distance, unit).split(" ")[0]} unit={unit === "miles" ? "MI" : "KM"} />
-          <MiniMetric value={formatPace(activity.averageSpeed, unit).split(" ")[0]} unit="PACE" />
-        </View>
-        <Text style={{ color: colors.faint, fontSize: 18, fontWeight: "300" }}>›</Text>
+        <Text style={{ color: colors.faint, fontSize: 22, fontWeight: "300", marginLeft: 4 }}>
+          ›
+        </Text>
       </Pressable>
     </Link>
-  );
-}
-
-function MiniMetric({ value, unit }: { value: string; unit: string }) {
-  return (
-    <View style={{ alignItems: "flex-end" }}>
-      <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text }}>{value}</Text>
-      <Text style={{ fontSize: 12, color: colors.muted, marginTop: 1, letterSpacing: 0.4 }}>
-        {unit}
-      </Text>
-    </View>
   );
 }
 
