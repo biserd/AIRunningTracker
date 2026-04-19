@@ -4,13 +4,13 @@ export const colors = {
   brandLight: "rgba(252,76,2,0.08)",
   brandMid: "rgba(252,76,2,0.14)",
 
-  bg: "#EAE7DF",
+  bg: "#DCD7CB",
   surface: "#FFFFFF",
-  surfaceAlt: "#F4F2EE",
+  surfaceAlt: "#F2EFE8",
 
-  border: "#D8D5CD",
-  borderStrong: "#C4C1B8",
-  line: "#E8E6E1",
+  border: "#B8B3A4",
+  borderStrong: "#9C9788",
+  line: "#E0DCD2",
 
   text: "#181715",
   textSoft: "#3A3935",
