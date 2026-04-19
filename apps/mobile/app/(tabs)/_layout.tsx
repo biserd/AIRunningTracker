@@ -1,20 +1,14 @@
 import { Redirect, Tabs } from "expo-router";
-import { Platform, Text, View } from "react-native";
+import { Platform } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../lib/auth";
 import { colors } from "../../lib/theme";
 
-function TabIcon({ glyph, focused }: { glyph: string; focused: boolean }) {
-  return (
-    <View style={{ alignItems: "center", justifyContent: "center", height: 28 }}>
-      <Text
-        style={{
-          fontSize: 22,
-          opacity: focused ? 1 : 0.45,
-        }}
-      >
-        {glyph}
-      </Text>
-    </View>
+type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
+
+function makeIcon(active: IoniconName, inactive: IoniconName) {
+  return ({ focused, color }: { focused: boolean; color: string }) => (
+    <Ionicons name={focused ? active : inactive} size={24} color={color} />
   );
 }
 
@@ -28,18 +22,18 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: colors.brand,
-        tabBarInactiveTintColor: colors.faint,
+        tabBarInactiveTintColor: colors.ink3,
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: "rgba(255,255,255,0.92)",
-          borderTopColor: colors.border,
+          backgroundColor: "rgba(255,255,255,0.94)",
+          borderTopColor: colors.line,
           borderTopWidth: 0.5,
-          height: Platform.OS === "ios" ? 88 : 68,
+          height: Platform.OS === "ios" ? 88 : 64,
           paddingTop: 8,
-          paddingBottom: Platform.OS === "ios" ? 28 : 10,
+          paddingBottom: Platform.OS === "ios" ? 28 : 8,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: "500",
           letterSpacing: 0.1,
           marginTop: 2,
@@ -50,31 +44,38 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ focused }) => <TabIcon glyph="🏠" focused={focused} />,
+          tabBarIcon: makeIcon("home", "home-outline"),
         }}
       />
       <Tabs.Screen
         name="coach"
         options={{
           title: "Coach",
-          tabBarIcon: ({ focused }) => <TabIcon glyph="💬" focused={focused} />,
+          tabBarIcon: makeIcon("chatbubble-ellipses", "chatbubble-ellipses-outline"),
         }}
       />
       <Tabs.Screen
-        name="tools"
+        name="score"
         options={{
-          title: "Tools",
-          tabBarIcon: ({ focused }) => <TabIcon glyph="🧰" focused={focused} />,
+          title: "Score",
+          tabBarIcon: makeIcon("grid", "grid-outline"),
+        }}
+      />
+      <Tabs.Screen
+        name="history"
+        options={{
+          title: "History",
+          tabBarIcon: makeIcon("list", "list-outline"),
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Settings",
-          tabBarIcon: ({ focused }) => <TabIcon glyph="⚙️" focused={focused} />,
+          title: "Profile",
+          tabBarIcon: makeIcon("person-circle", "person-circle-outline"),
         }}
       />
-      <Tabs.Screen name="predictor" options={{ href: null }} />
+      <Tabs.Screen name="tools" options={{ href: null }} />
     </Tabs>
   );
 }

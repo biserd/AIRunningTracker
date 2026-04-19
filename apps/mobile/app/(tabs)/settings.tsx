@@ -11,22 +11,23 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import * as SecureStore from "expo-secure-store";
 import { useAuth } from "../../lib/auth";
 import { api } from "../../lib/api";
-import { registerForPushAsync, unregisterPushAsync, sendTestPush } from "../../lib/push";
+import { registerForPushAsync, unregisterPushAsync } from "../../lib/push";
 import { colors, shadow } from "../../lib/theme";
-import type { User, SubscriptionStatus, NotificationsResponse } from "../../types";
+import type { User, SubscriptionStatus } from "../../types";
 
 const PUSH_TOKEN_KEY = "ra_push_token";
 
-export default function SettingsScreen() {
+export default function ProfileScreen() {
   const { user, signOut, setUser } = useAuth();
   const qc = useQueryClient();
 
   const [pushToken, setPushToken] = useState<string | null>(null);
   const [pushBusy, setPushBusy] = useState(false);
+  const [weeklyOn, setWeeklyOn] = useState(true);
 
   useEffect(() => {
     SecureStore.getItemAsync(PUSH_TOKEN_KEY).then(setPushToken);
@@ -35,12 +36,6 @@ export default function SettingsScreen() {
   const sub = useQuery({
     queryKey: ["subscription"],
     queryFn: () => api<SubscriptionStatus>("/api/stripe/subscription"),
-  });
-
-  const notifs = useQuery({
-    queryKey: ["notifications"],
-    queryFn: () => api<NotificationsResponse>("/api/notifications?limit=1"),
-    refetchInterval: 60000,
   });
 
   const updateUnits = useMutation({
@@ -52,7 +47,8 @@ export default function SettingsScreen() {
     onSuccess: (res) => {
       setUser(res.user);
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      qc.invalidateQueries({ queryKey: ["activities"] });
+      qc.invalidateQueries({ queryKey: ["activities-all"] });
+      qc.invalidateQueries({ queryKey: ["last-activity"] });
     },
     onError: (e) => Alert.alert("Couldn't update", (e as Error).message),
   });
@@ -66,10 +62,7 @@ export default function SettingsScreen() {
           await SecureStore.setItemAsync(PUSH_TOKEN_KEY, result.token);
           setPushToken(result.token);
         } else {
-          Alert.alert(
-            "Push not enabled",
-            result.message || "Could not enable notifications.",
-          );
+          Alert.alert("Push not enabled", result.message || "Could not enable notifications.");
         }
       } else if (pushToken) {
         await unregisterPushAsync(pushToken);
@@ -78,15 +71,6 @@ export default function SettingsScreen() {
       }
     } finally {
       setPushBusy(false);
-    }
-  };
-
-  const onTestPush = async () => {
-    try {
-      await sendTestPush();
-      Alert.alert("Sent", "Test push fired. Watch for it on your device.");
-    } catch (e) {
-      Alert.alert("Failed", (e as Error).message);
     }
   };
 
@@ -99,148 +83,116 @@ export default function SettingsScreen() {
 
   const unit = (user?.unitPreference || "km") as "km" | "miles";
   const initial = (user?.firstName?.[0] || user?.username?.[0] || "R").toUpperCase();
-  const planName = sub.data?.subscriptionPlan
-    ? sub.data.subscriptionPlan.charAt(0).toUpperCase() + sub.data.subscriptionPlan.slice(1)
-    : "Free";
   const planActive =
-    sub.data?.subscriptionStatus === "active" ||
-    sub.data?.subscriptionStatus === "trialing";
+    sub.data?.subscriptionStatus === "active" || sub.data?.subscriptionStatus === "trialing";
+  const renewalText = sub.data?.subscriptionEndsAt
+    ? `Renews ${new Date(sub.data.subscriptionEndsAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} · $7.99/mo`
+    : sub.data?.isReverseTrial && sub.data?.trialDaysRemaining
+      ? `${sub.data.trialDaysRemaining}-day trial · Manage at aitracker.run`
+      : "Manage billing at aitracker.run";
 
   return (
     <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-        <Text
-          style={{
-            fontSize: 32,
-            fontWeight: "800",
-            color: colors.text,
-            letterSpacing: -0.6,
-            marginTop: 4,
-            marginBottom: 18,
-          }}
-        >
-          Settings
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 32 }}>
+        <Text style={{ fontSize: 28, fontWeight: "700", color: colors.ink, letterSpacing: -0.6, marginBottom: 24 }}>
+          Profile
         </Text>
 
-        {/* Account card */}
+        {/* Account */}
         <Group>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              padding: 16,
-              gap: 14,
-            }}
-          >
+          <View style={{ flexDirection: "row", alignItems: "center", padding: 16, gap: 14 }}>
             <View
               style={{
-                width: 52,
-                height: 52,
-                borderRadius: 26,
-                backgroundColor: colors.brand,
+                width: 50,
+                height: 50,
+                borderRadius: 25,
                 alignItems: "center",
                 justifyContent: "center",
+                backgroundColor: colors.brand,
               }}
             >
               <Text style={{ color: "#fff", fontWeight: "700", fontSize: 20 }}>{initial}</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontSize: 17,
-                  fontWeight: "600",
-                  color: colors.text,
-                  letterSpacing: -0.2,
-                }}
-              >
+              <Text style={{ fontSize: 17, fontWeight: "600", color: colors.ink, letterSpacing: -0.2 }}>
                 {user?.firstName || user?.username || "Runner"}
               </Text>
-              <Text style={{ fontSize: 13, color: colors.muted, marginTop: 2 }}>
-                {user?.email || "—"}
-              </Text>
+              <Text style={{ fontSize: 13, color: colors.ink2, marginTop: 2 }}>{user?.email || "—"}</Text>
             </View>
           </View>
         </Group>
 
         {/* Subscription */}
-        {sub.data ? (
-          <>
-            <GroupLabel>Subscription</GroupLabel>
-            <Group>
-              <Pressable
-                onPress={() => Linking.openURL("https://aitracker.run/settings/billing")}
-              >
-                {({ pressed }) => (
-                  <View
-                    style={{
-                      backgroundColor: pressed ? colors.surfaceAlt : "transparent",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      paddingVertical: 15,
-                      paddingHorizontal: 16,
-                      borderBottomWidth: 0.5,
-                      borderBottomColor: colors.border,
-                      gap: 12,
-                    }}
-                  >
-                    <IconSquare bg={planActive ? colors.premium : colors.brand} glyph="★" />
-                    <Text style={rowLabel}>{planName}</Text>
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        color: planActive ? colors.successText : colors.muted,
-                        marginRight: 8,
-                      }}
-                    >
-                      {planActive ? "Active" : sub.data.subscriptionStatus.replace(/_/g, " ")}
-                    </Text>
-                    <Chevron />
-                  </View>
-                )}
-              </Pressable>
-              {sub.data.isReverseTrial && sub.data.trialDaysRemaining ? (
-                <SubRow>
-                  {sub.data.trialDaysRemaining}-day trial · Manage at aitracker.run
-                </SubRow>
-              ) : sub.data.subscriptionEndsAt ? (
-                <SubRow>
-                  Renews {new Date(sub.data.subscriptionEndsAt).toLocaleDateString()} · $7.99/mo
-                </SubRow>
-              ) : (
-                <SubRow>Manage billing at aitracker.run</SubRow>
-              )}
-            </Group>
-          </>
-        ) : null}
-
-        {/* Notifications row */}
-        <GroupLabel>Activity</GroupLabel>
+        <GroupLabel>Subscription</GroupLabel>
         <Group>
-          <Link href="/tools/notifications" asChild>
-            <Pressable>
-              {({ pressed }) => (
-                <View
+          <Pressable onPress={() => Linking.openURL("https://aitracker.run/settings/billing")}>
+            {({ pressed }) => (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingVertical: 15,
+                  paddingHorizontal: 16,
+                  gap: 12,
+                  borderBottomWidth: sub.data ? 0.5 : 0,
+                  borderBottomColor: colors.line,
+                  backgroundColor: pressed ? colors.surfaceAlt : "transparent",
+                }}
+              >
+                <IconSquare bg={colors.purple} icon="star" />
+                <Text style={rowLabel}>Premium</Text>
+                <Text
                   style={{
-                    backgroundColor: pressed ? colors.surfaceAlt : "transparent",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    paddingVertical: 15,
-                    paddingHorizontal: 16,
-                    gap: 12,
+                    fontSize: 14,
+                    fontWeight: "600",
+                    color: planActive ? colors.green : colors.ink2,
+                    marginRight: 8,
                   }}
                 >
-                  <IconSquare bg={colors.brand} glyph="🔔" />
-                  <Text style={rowLabel}>Notifications</Text>
-                  <Text style={{ fontSize: 14, color: colors.muted, marginRight: 8 }}>
-                    {notifs.data?.unreadCount
-                      ? `${notifs.data.unreadCount} new`
-                      : "All caught up"}
-                  </Text>
-                  <Chevron />
-                </View>
-              )}
-            </Pressable>
-          </Link>
+                  {planActive ? "Active" : sub.data?.subscriptionStatus?.replace(/_/g, " ") || "Free"}
+                </Text>
+                <Chevron />
+              </View>
+            )}
+          </Pressable>
+          {sub.data ? (
+            <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+              <Text style={{ fontSize: 13, color: colors.ink2 }}>{renewalText}</Text>
+            </View>
+          ) : null}
+        </Group>
+
+        {/* Connected */}
+        <GroupLabel>Connected</GroupLabel>
+        <Group>
+          <Pressable onPress={() => Linking.openURL("https://aitracker.run/settings")}>
+            {({ pressed }) => (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingVertical: 15,
+                  paddingHorizontal: 16,
+                  gap: 12,
+                  backgroundColor: pressed ? colors.surfaceAlt : "transparent",
+                }}
+              >
+                <IconSquare bg={colors.brand} icon="logo-strava" />
+                <Text style={rowLabel}>Strava</Text>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "600",
+                    color: user?.stravaConnected ? colors.green : colors.ink2,
+                    marginRight: 8,
+                  }}
+                >
+                  {user?.stravaConnected ? "Connected" : "Not connected"}
+                </Text>
+                <Chevron />
+              </View>
+            )}
+          </Pressable>
         </Group>
 
         {/* Preferences */}
@@ -248,14 +200,10 @@ export default function SettingsScreen() {
         <Group>
           <Row>
             <Text style={rowLabel}>Units</Text>
-            <Segment
-              value={unit}
-              onChange={(v) => updateUnits.mutate(v)}
-              disabled={updateUnits.isPending}
-            />
+            <Segment value={unit} onChange={(v) => updateUnits.mutate(v)} disabled={updateUnits.isPending} />
           </Row>
           <Row>
-            <Text style={rowLabel}>Push Notifications</Text>
+            <Text style={rowLabel}>Post-run notifications</Text>
             {pushBusy ? (
               <ActivityIndicator color={colors.brand} />
             ) : (
@@ -268,38 +216,30 @@ export default function SettingsScreen() {
               />
             )}
           </Row>
-          {pushToken ? (
-            <Pressable
-              onPress={onTestPush}
-              style={({ pressed }) => ({
-                backgroundColor: pressed ? colors.surfaceAlt : "transparent",
-                flexDirection: "row",
-                alignItems: "center",
-                paddingVertical: 15,
-                paddingHorizontal: 16,
-              })}
-            >
-              <Text style={[rowLabel, { color: colors.brand }]}>Send test push</Text>
-            </Pressable>
-          ) : null}
+          <Row last>
+            <Text style={rowLabel}>Weekly debrief</Text>
+            <Switch
+              value={weeklyOn}
+              onValueChange={setWeeklyOn}
+              trackColor={{ true: colors.brand, false: "#E5E3DE" }}
+              thumbColor="#FFFFFF"
+              ios_backgroundColor="#E5E3DE"
+            />
+          </Row>
         </Group>
 
-        {/* About */}
+        {/* Privacy */}
         <Group>
-          <Pressable
-            onPress={() => Linking.openURL("https://aitracker.run/privacy")}
-          >
+          <Pressable onPress={() => Linking.openURL("https://aitracker.run/privacy")}>
             {({ pressed }) => (
               <View
                 style={{
-                  backgroundColor: pressed ? colors.surfaceAlt : "transparent",
                   flexDirection: "row",
                   alignItems: "center",
                   paddingVertical: 15,
                   paddingHorizontal: 16,
-                  borderBottomWidth: 0.5,
-                  borderBottomColor: colors.border,
                   gap: 12,
+                  backgroundColor: pressed ? colors.surfaceAlt : "transparent",
                 }}
               >
                 <Text style={rowLabel}>Privacy Policy</Text>
@@ -307,52 +247,36 @@ export default function SettingsScreen() {
               </View>
             )}
           </Pressable>
-          <Row last>
-            <Text style={rowLabel}>Version</Text>
-            <Text style={{ fontSize: 14, color: colors.muted }}>1.0.0</Text>
-          </Row>
         </Group>
 
         {/* Sign out */}
         <Pressable
           onPress={onSignOut}
           style={({ pressed }) => ({
-            width: "100%",
-            paddingVertical: 14,
-            backgroundColor: "rgba(252,76,2,0.06)",
-            borderWidth: 0.5,
-            borderColor: "rgba(252,76,2,0.25)",
-            borderRadius: 14,
-            alignItems: "center",
             marginTop: 8,
+            paddingVertical: 14,
+            backgroundColor: colors.surface,
+            borderRadius: 16,
+            alignItems: "center",
             opacity: pressed ? 0.7 : 1,
+            ...shadow.card,
           })}
         >
-          <Text style={{ color: colors.brand, fontWeight: "600", fontSize: 16 }}>
-            Sign Out
-          </Text>
+          <Text style={{ color: colors.red, fontWeight: "600", fontSize: 16 }}>Sign Out</Text>
         </Pressable>
 
-        <Text
-          style={{
-            textAlign: "center",
-            fontSize: 12,
-            color: colors.faint,
-            marginTop: 12,
-          }}
-        >
-          Manage Strava connection and billing at aitracker.run
+        <Text style={{ textAlign: "center", fontSize: 12, color: colors.ink3, marginTop: 12 }}>
+          Manage billing at aitracker.run
         </Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-/* ─── Building blocks ────────────────────────────────────── */
 const rowLabel = {
   flex: 1,
   fontSize: 15,
-  color: colors.text,
+  color: colors.ink,
   fontWeight: "400" as const,
 };
 
@@ -362,8 +286,6 @@ function Group({ children }: { children: React.ReactNode }) {
       style={{
         backgroundColor: colors.surface,
         borderRadius: 16,
-        borderWidth: 0.5,
-        borderColor: colors.border,
         overflow: "hidden",
         marginBottom: 14,
         ...shadow.card,
@@ -379,13 +301,13 @@ function GroupLabel({ children }: { children: React.ReactNode }) {
     <Text
       style={{
         fontSize: 12,
-        fontWeight: "600",
+        fontWeight: "700",
         letterSpacing: 0.6,
-        color: colors.muted,
+        color: colors.ink3,
         textTransform: "uppercase",
-        marginLeft: 8,
-        marginBottom: 8,
-        marginTop: 4,
+        marginLeft: 4,
+        marginBottom: 6,
+        marginTop: 6,
       }}
     >
       {children}
@@ -393,13 +315,7 @@ function GroupLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Row({
-  children,
-  last = false,
-}: {
-  children: React.ReactNode;
-  last?: boolean;
-}) {
+function Row({ children, last = false }: { children: React.ReactNode; last?: boolean }) {
   return (
     <View
       style={{
@@ -408,7 +324,7 @@ function Row({
         paddingVertical: 15,
         paddingHorizontal: 16,
         borderBottomWidth: last ? 0 : 0.5,
-        borderBottomColor: colors.border,
+        borderBottomColor: colors.line,
         gap: 12,
       }}
     >
@@ -417,41 +333,25 @@ function Row({
   );
 }
 
-function SubRow({ children }: { children: React.ReactNode }) {
+function IconSquare({ bg, icon }: { bg: string; icon: React.ComponentProps<typeof Ionicons>["name"] }) {
   return (
     <View
       style={{
-        paddingHorizontal: 16,
-        paddingTop: 0,
-        paddingBottom: 12,
-      }}
-    >
-      <Text style={{ fontSize: 13, color: colors.muted }}>{children}</Text>
-    </View>
-  );
-}
-
-function IconSquare({ bg, glyph }: { bg: string; glyph: string }) {
-  return (
-    <View
-      style={{
-        width: 30,
-        height: 30,
-        borderRadius: 8,
+        width: 32,
+        height: 32,
+        borderRadius: 9,
         backgroundColor: bg,
         alignItems: "center",
         justifyContent: "center",
       }}
     >
-      <Text style={{ color: "#fff", fontSize: 14, fontWeight: "700" }}>{glyph}</Text>
+      <Ionicons name={icon} size={16} color="#fff" />
     </View>
   );
 }
 
 function Chevron() {
-  return (
-    <Text style={{ color: colors.faint, fontSize: 18, fontWeight: "300" }}>›</Text>
-  );
+  return <Ionicons name="chevron-forward" size={16} color={colors.ink3} />;
 }
 
 function Segment({
@@ -467,8 +367,8 @@ function Segment({
     <View
       style={{
         flexDirection: "row",
-        backgroundColor: colors.surfaceAlt,
-        borderRadius: 10,
+        backgroundColor: "#EEEDE9",
+        borderRadius: 9,
         padding: 2,
         gap: 2,
       }}
@@ -483,17 +383,15 @@ function Segment({
             style={{
               paddingHorizontal: 14,
               paddingVertical: 6,
-              borderRadius: 8,
+              borderRadius: 7,
               backgroundColor: active ? colors.surface : "transparent",
-              borderWidth: active ? 0.5 : 0,
-              borderColor: colors.border,
             }}
           >
             <Text
               style={{
                 fontSize: 13,
-                fontWeight: "600",
-                color: active ? colors.text : colors.muted,
+                fontWeight: active ? "600" : "500",
+                color: active ? colors.ink : colors.ink3,
               }}
             >
               {v === "km" ? "km" : "Miles"}

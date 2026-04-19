@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -10,18 +10,21 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { colors, shadow } from "../../lib/theme";
-import { formatDistance, formatPace, formatDate } from "../../lib/format";
+import { formatDistance, formatPace } from "../../lib/format";
 import type {
   Activity,
   RecoveryState,
   InjuryRiskAnalysis,
   CoachRecap,
+  RunnerScore,
+  DashboardData,
 } from "../../types";
 
-function greeting() {
+function greetingPart() {
   const h = new Date().getHours();
   if (h < 5) return "Good night";
   if (h < 12) return "Good morning";
@@ -29,17 +32,23 @@ function greeting() {
   return "Good evening";
 }
 
-const NEXT_STEP_LABEL: Record<string, string> = {
-  rest: "Rest day",
-  easy: "Easy run",
-  workout: "Workout",
-  long_run: "Long run",
-  recovery: "Recovery run",
-};
+function dateLine() {
+  const d = new Date();
+  return d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+}
+
+function shortDate(iso: string) {
+  const d = new Date(iso);
+  const m = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const w = d.toLocaleDateString(undefined, { weekday: "short" });
+  return `${m} · ${w}`;
+}
 
 export default function HomeScreen() {
   const { user } = useAuth();
   const unit = (user?.unitPreference || "km") as "km" | "miles";
+  const distUnit = unit === "miles" ? "miles" : "km";
+  const paceUnit = unit === "miles" ? "/ mile" : "/ km";
 
   const recovery = useQuery<RecoveryState, Error>({
     queryKey: ["recovery", user?.id],
@@ -77,6 +86,18 @@ export default function HomeScreen() {
     ? recap.data[0]
     : recap.data?.recaps?.[0];
 
+  const score = useQuery<RunnerScore, Error>({
+    queryKey: ["runner-score", user?.id],
+    queryFn: () => api<RunnerScore>(`/api/runner-score/${user!.id}`),
+    enabled: !!user?.id,
+  });
+
+  const dashboard = useQuery<DashboardData, Error>({
+    queryKey: ["dashboard"],
+    queryFn: () => api<DashboardData>("/api/dashboard"),
+    enabled: !!user?.id,
+  });
+
   const [syncing, setSyncing] = useState(false);
   const onRefresh = useCallback(async () => {
     if (!user?.id) return;
@@ -87,7 +108,7 @@ export default function HomeScreen() {
         body: JSON.stringify({ maxActivities: 30 }),
       });
     } catch {
-      // ignore — pull-to-refresh shouldn't blow up the UI
+      /* swallow */
     } finally {
       setSyncing(false);
       await Promise.all([
@@ -95,11 +116,13 @@ export default function HomeScreen() {
         lastRun.refetch(),
         injury.refetch(),
         recap.refetch(),
+        score.refetch(),
+        dashboard.refetch(),
       ]);
     }
-  }, [user?.id, recovery, lastRun, injury, recap]);
+  }, [user?.id, recovery, lastRun, injury, recap, score, dashboard]);
 
-  const isInitialLoading =
+  const isInitial =
     recovery.isLoading && lastRun.isLoading && !recovery.data && !lastRun.data;
   const isRefreshing =
     syncing ||
@@ -112,13 +135,13 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.bg }}>
-      {isInitialLoading ? (
+      {isInitial ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <ActivityIndicator size="large" color={colors.brand} />
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 14 }}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 }}
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
@@ -127,350 +150,250 @@ export default function HomeScreen() {
             />
           }
         >
-          {/* Greeting (small, calm) */}
-          <View style={{ marginBottom: 4, marginTop: 4 }}>
-            <Text style={{ fontSize: 13, color: colors.muted, fontWeight: "500" }}>
-              {greeting()}
-            </Text>
+          {/* Greeting */}
+          <View style={{ marginBottom: 24 }}>
             <Text
               style={{
-                fontSize: 28,
+                fontSize: 30,
                 fontWeight: "700",
-                color: colors.text,
-                letterSpacing: -0.5,
-                marginTop: 2,
+                color: colors.ink,
+                letterSpacing: -0.6,
+                lineHeight: 33,
               }}
             >
-              {name}
+              {greetingPart()},{"\n"}
+              <Text style={{ color: colors.brand }}>{name}.</Text>
+            </Text>
+            <Text style={{ fontSize: 14, color: colors.ink2, marginTop: 6 }}>
+              {dateLine()}
             </Text>
           </View>
 
-          <ReadinessHero r={recovery.data} loading={recovery.isLoading} />
-
-          <LastRunCard activity={lastRun.data ?? null} unit={unit} />
-
-          <InjuryRiskCard
-            data={injury.data}
-            isPremiumGate={
-              injury.error instanceof ApiError && injury.error.status === 403
-            }
-            loading={injury.isLoading}
+          {/* Last Run hero */}
+          <LastRunHero
+            activity={lastRun.data ?? null}
+            unit={unit}
+            distUnit={distUnit}
+            paceUnit={paceUnit}
+            recap={latestRecap}
           />
 
-          {latestRecap ? <AIBriefCard recap={latestRecap} /> : null}
+          {/* Status duo */}
+          <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
+            <ReadinessCard r={recovery.data} loading={recovery.isLoading} />
+            <InjuryCard
+              data={injury.data}
+              isPremiumGate={
+                injury.error instanceof ApiError && injury.error.status === 403
+              }
+              loading={injury.isLoading}
+            />
+          </View>
 
-          {/* Subtle escape hatch */}
-          <Link href="/runs" asChild>
-            <Pressable
-              style={({ pressed }) => ({
-                alignSelf: "center",
-                paddingVertical: 14,
-                paddingHorizontal: 20,
-                opacity: pressed ? 0.5 : 1,
-              })}
-            >
-              <Text
-                style={{
-                  fontSize: 15,
-                  fontWeight: "600",
-                  color: colors.brand,
-                  letterSpacing: -0.1,
-                }}
-              >
-                View all runs ›
-              </Text>
-            </Pressable>
-          </Link>
+          {/* Weekly whisper */}
+          <WeeklyWhisper dashboard={dashboard.data} unit={unit} />
+
+          {/* Runner Score quiet card */}
+          <ScoreQuiet score={score.data} />
         </ScrollView>
       )}
     </SafeAreaView>
   );
 }
 
-/* ─── Readiness hero (the answer to "should I run today?") ── */
-function ReadinessHero({
-  r,
-  loading,
-}: {
-  r: RecoveryState | undefined;
-  loading: boolean;
-}) {
-  const router = useRouter();
-
-  if (loading && !r) {
-    return (
-      <SkeletonCard height={210}>
-        <ActivityIndicator color={colors.brand} />
-      </SkeletonCard>
-    );
-  }
-  if (!r) {
-    return (
-      <Hero verdict="No recovery data yet" sub="Sync from Strava to begin." />
-    );
-  }
-
-  const ready = r.readyToRun;
-  const score = Math.round(r.freshnessScore);
-  const accent = ready ? colors.successText : colors.warningText;
-  const accentBg = ready ? colors.successBg : colors.warningBg;
-  const verdict = ready ? "You're ready to run" : "Take it easy today";
-  const next = NEXT_STEP_LABEL[r.recommendedNextStep] || r.recommendedNextStep;
-
-  return (
-    <Pressable
-      onPress={() => router.push("/tools/recovery")}
-      style={({ pressed }) => ({
-        backgroundColor: "#FFF8F5",
-        borderRadius: 22,
-        borderWidth: 0.5,
-        borderColor: "#F0EDE8",
-        padding: 22,
-        overflow: "hidden",
-        position: "relative",
-        opacity: pressed ? 0.92 : 1,
-        ...shadow.card,
-      })}
-    >
-      {/* Soft accent glow */}
-      <View
-        pointerEvents="none"
-        style={{
-          position: "absolute",
-          top: -50,
-          right: -50,
-          width: 200,
-          height: 200,
-          borderRadius: 100,
-          backgroundColor: ready
-            ? "rgba(45,122,31,0.10)"
-            : "rgba(194,96,32,0.10)",
-        }}
-      />
-      <Text
-        style={{
-          fontSize: 12,
-          fontWeight: "700",
-          letterSpacing: 0.8,
-          color: colors.muted,
-          textTransform: "uppercase",
-        }}
-      >
-        Readiness
-      </Text>
-      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 10, marginTop: 6 }}>
-        <Text
-          style={{
-            fontSize: 64,
-            fontWeight: "700",
-            color: colors.text,
-            letterSpacing: -2.5,
-            lineHeight: 64,
-          }}
-        >
-          {score}
-        </Text>
-        <Text
-          style={{
-            fontSize: 18,
-            color: colors.muted,
-            paddingBottom: 10,
-            fontWeight: "500",
-          }}
-        >
-          /100
-        </Text>
-      </View>
-      <Text
-        style={{
-          fontSize: 19,
-          fontWeight: "600",
-          color: colors.text,
-          marginTop: 10,
-          letterSpacing: -0.3,
-        }}
-      >
-        {verdict}
-      </Text>
-      {r.statusMessage ? (
-        <Text
-          numberOfLines={2}
-          style={{
-            fontSize: 14,
-            color: colors.muted,
-            marginTop: 4,
-            lineHeight: 20,
-          }}
-        >
-          {r.statusMessage}
-        </Text>
-      ) : null}
-      <View
-        style={{
-          alignSelf: "flex-start",
-          backgroundColor: accentBg,
-          borderRadius: 999,
-          paddingHorizontal: 12,
-          paddingVertical: 6,
-          marginTop: 14,
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 6,
-        }}
-      >
-        <View
-          style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: accent }}
-        />
-        <Text style={{ fontSize: 13, fontWeight: "600", color: accent }}>
-          Suggested: {next}
-        </Text>
-      </View>
-    </Pressable>
-  );
-}
-
-function Hero({ verdict, sub }: { verdict: string; sub?: string }) {
-  return (
-    <View
-      style={{
-        backgroundColor: colors.surface,
-        borderRadius: 22,
-        borderWidth: 0.5,
-        borderColor: colors.border,
-        padding: 22,
-        ...shadow.card,
-      }}
-    >
-      <Text style={{ fontSize: 17, fontWeight: "600", color: colors.text }}>
-        {verdict}
-      </Text>
-      {sub ? (
-        <Text style={{ fontSize: 14, color: colors.muted, marginTop: 6 }}>{sub}</Text>
-      ) : null}
-    </View>
-  );
-}
-
-/* ─── Last Run ─────────────────────────────────────────────── */
-function LastRunCard({
+/* ─── Last Run hero ──────────────────────────────────── */
+function LastRunHero({
   activity,
   unit,
+  distUnit,
+  paceUnit,
+  recap,
 }: {
   activity: Activity | null;
   unit: "km" | "miles";
+  distUnit: string;
+  paceUnit: string;
+  recap?: CoachRecap;
 }) {
+  const router = useRouter();
+
   if (!activity) {
     return (
       <View
         style={{
           backgroundColor: colors.surface,
-          borderRadius: 18,
-          borderWidth: 0.5,
-          borderColor: colors.border,
-          padding: 18,
+          borderRadius: 20,
+          padding: 24,
+          marginTop: 8,
           ...shadow.card,
         }}
       >
-        <Text style={{ fontSize: 12, fontWeight: "700", letterSpacing: 0.8, color: colors.muted, textTransform: "uppercase" }}>
-          Last Run
+        <Text style={{ fontSize: 12, fontWeight: "700", letterSpacing: 0.7, color: colors.ink3, textTransform: "uppercase" }}>
+          No runs yet
         </Text>
-        <Text style={{ fontSize: 15, color: colors.muted, marginTop: 8 }}>
-          No runs yet — pull down to sync.
+        <Text style={{ fontSize: 15, color: colors.ink2, marginTop: 8, lineHeight: 22 }}>
+          Pull down to sync from Strava and your latest run will land here.
         </Text>
       </View>
     );
   }
 
-  const dist = formatDistance(activity.distance, unit);
-  const pace = formatPace(activity.averageSpeed, unit);
+  const distVal = formatDistance(activity.distance, unit).split(" ")[0];
+  const paceVal = formatPace(activity.averageSpeed, unit).split(" ")[0];
+  const seconds = activity.movingTime || 0;
+  const mm = Math.floor(seconds / 60);
+  const ss = String(seconds % 60).padStart(2, "0");
+  const hh = Math.floor(mm / 60);
+  const timeStr = hh > 0 ? `${hh}:${String(mm % 60).padStart(2, "0")}:${ss}` : `${mm}:${ss}`;
+  const summary = recap?.coachingCue || recap?.recapBullets?.[0];
 
   return (
-    <Link href={`/activity/${activity.id}`} asChild>
-      <Pressable
-        style={({ pressed }) => ({
-          backgroundColor: colors.surface,
-          borderRadius: 18,
-          borderWidth: 0.5,
-          borderColor: colors.border,
-          borderLeftWidth: 3,
-          borderLeftColor: colors.brand,
-          padding: 18,
-          opacity: pressed ? 0.9 : 1,
-          ...shadow.card,
-        })}
-      >
-        <Text
-          style={{
-            fontSize: 12,
-            fontWeight: "700",
-            letterSpacing: 0.8,
-            color: colors.muted,
-            textTransform: "uppercase",
-          }}
-        >
-          Last Run
+    <Pressable
+      onPress={() => router.push(`/activity/${activity.id}`)}
+      style={({ pressed }) => ({
+        backgroundColor: colors.surface,
+        borderRadius: 20,
+        padding: 24,
+        marginTop: 8,
+        opacity: pressed ? 0.96 : 1,
+        ...shadow.card,
+      })}
+    >
+      {/* Top row */}
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
+        <Text style={{ fontSize: 12, fontWeight: "600", color: colors.ink3, letterSpacing: 0.4, textTransform: "uppercase" }}>
+          {shortDate(activity.startDate)}
         </Text>
-        <Text
-          numberOfLines={1}
-          style={{
-            fontSize: 17,
-            fontWeight: "600",
-            color: colors.text,
-            marginTop: 6,
-            letterSpacing: -0.2,
-          }}
-        >
-          {activity.name}
-        </Text>
-        <Text style={{ fontSize: 14, color: colors.muted, marginTop: 4 }}>
-          {formatDate(activity.startDate)}
-        </Text>
-        <View style={{ flexDirection: "row", marginTop: 14, gap: 24 }}>
-          <Stat label="Distance" value={dist} />
-          <Stat label="Pace" value={pace} />
+        <View style={{ backgroundColor: colors.brandLight, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 }}>
+          <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: "700", color: colors.brand, letterSpacing: 0.5, textTransform: "uppercase" }}>
+            {activity.name}
+          </Text>
         </View>
-      </Pressable>
-    </Link>
+      </View>
+
+      {/* Stats */}
+      <View style={{ flexDirection: "row", marginBottom: summary ? 18 : 0 }}>
+        <HeroStat value={distVal} unit={distUnit} />
+        <View style={{ width: 1, backgroundColor: colors.line, marginHorizontal: 18, alignSelf: "stretch", marginVertical: 4 }} />
+        <HeroStat value={paceVal} unit={paceUnit} />
+        <View style={{ width: 1, backgroundColor: colors.line, marginHorizontal: 18, alignSelf: "stretch", marginVertical: 4 }} />
+        <HeroStat value={timeStr} unit="time" />
+      </View>
+
+      {/* AI Summary */}
+      {summary ? (
+        <View style={{ borderTopWidth: 1, borderTopColor: colors.line, paddingTop: 16 }}>
+          <Text
+            style={{
+              fontSize: 11,
+              fontWeight: "700",
+              color: colors.brand,
+              letterSpacing: 0.7,
+              textTransform: "uppercase",
+              marginBottom: 6,
+            }}
+          >
+            AI Summary
+          </Text>
+          <Text numberOfLines={4} style={{ fontSize: 15, color: colors.ink2, lineHeight: 23 }}>
+            {summary}
+          </Text>
+          <Pressable
+            onPress={() => router.push("/tools/coach-recaps")}
+            style={{ marginTop: 12, flexDirection: "row", alignItems: "center", gap: 4 }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.brand }}>Read full brief</Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.brand} />
+          </Pressable>
+        </View>
+      ) : null}
+    </Pressable>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function HeroStat({ value, unit }: { value: string; unit: string }) {
   return (
-    <View>
-      <Text
-        style={{
-          fontSize: 11,
-          fontWeight: "700",
-          letterSpacing: 0.6,
-          color: colors.muted,
-          textTransform: "uppercase",
-        }}
-      >
-        {label}
-      </Text>
-      <Text
-        style={{
-          fontSize: 20,
-          fontWeight: "700",
-          color: colors.text,
-          marginTop: 3,
-          letterSpacing: -0.4,
-        }}
-      >
+    <View style={{ minWidth: 0, flexShrink: 1 }}>
+      <Text style={{ fontSize: 30, fontWeight: "700", color: colors.ink, letterSpacing: -1, lineHeight: 32 }}>
         {value}
+      </Text>
+      <Text style={{ fontSize: 12, fontWeight: "500", color: colors.ink3, marginTop: 4 }}>
+        {unit}
       </Text>
     </View>
   );
 }
 
-/* ─── Injury Risk ──────────────────────────────────────────── */
-const RISK_TONE: Record<string, { bg: string; text: string }> = {
-  low: { bg: colors.successBg, text: colors.successText },
-  medium: { bg: colors.warningBg, text: colors.warningText },
-  high: { bg: "rgba(217,52,43,0.12)", text: colors.danger },
-};
+/* ─── Readiness card ─────────────────────────────────── */
+function ReadinessCard({ r, loading }: { r: RecoveryState | undefined; loading: boolean }) {
+  const router = useRouter();
 
-function InjuryRiskCard({
+  let color = colors.ink2;
+  let value: string = "—";
+  let tagBg = colors.surfaceAlt;
+  let tagText = colors.ink2;
+  let tagDot = colors.ink3;
+  let tagLabel = "—";
+
+  if (r) {
+    const score = Math.round(r.freshnessScore);
+    value = String(score);
+    if (r.readyToRun) {
+      color = colors.green;
+      tagBg = colors.greenBg;
+      tagText = colors.green;
+      tagDot = colors.green;
+      tagLabel = "Go run";
+    } else if (r.riskLevel === "moderate") {
+      color = colors.amber;
+      tagBg = colors.amberBg;
+      tagText = colors.amber;
+      tagDot = colors.amber;
+      tagLabel = "Take it easy";
+    } else {
+      color = colors.red;
+      tagBg = colors.redBg;
+      tagText = colors.red;
+      tagDot = colors.red;
+      tagLabel = "Recover";
+    }
+  }
+
+  return (
+    <Pressable
+      onPress={() => router.push("/tools/recovery")}
+      style={({ pressed }) => ({
+        flex: 1,
+        backgroundColor: colors.surface,
+        borderRadius: 18,
+        paddingVertical: 18,
+        paddingHorizontal: 16,
+        opacity: pressed ? 0.92 : 1,
+        ...shadow.card,
+      })}
+    >
+      <Text style={{ fontSize: 11, fontWeight: "700", color: colors.ink3, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 10 }}>
+        Readiness
+      </Text>
+      {loading && !r ? (
+        <ActivityIndicator color={colors.brand} />
+      ) : (
+        <>
+          <Text style={{ fontSize: 28, fontWeight: "700", color, letterSpacing: -0.8, lineHeight: 30, marginBottom: 6 }}>
+            {value}
+          </Text>
+          <View style={{ alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999, backgroundColor: tagBg }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: tagDot }} />
+            <Text style={{ fontSize: 12, fontWeight: "600", color: tagText }}>{tagLabel}</Text>
+          </View>
+        </>
+      )}
+    </Pressable>
+  );
+}
+
+/* ─── Injury risk card ───────────────────────────────── */
+function InjuryCard({
   data,
   isPremiumGate,
   loading,
@@ -481,177 +404,167 @@ function InjuryRiskCard({
 }) {
   const router = useRouter();
 
-  const inner = (() => {
-    if (isPremiumGate) {
-      return {
-        pill: { label: "Premium", tone: { bg: colors.premiumBg, text: colors.premium } },
-        body: "Unlock injury risk on aitracker.run.",
-      };
+  let color = colors.ink2;
+  let value = "—";
+  let tagBg = colors.surfaceAlt;
+  let tagText = colors.ink2;
+  let tagDot = colors.ink3;
+  let tagLabel = "—";
+
+  if (isPremiumGate) {
+    value = "Pro";
+    color = colors.purple;
+    tagBg = colors.purpleBg;
+    tagText = colors.purple;
+    tagDot = colors.purple;
+    tagLabel = "Unlock";
+  } else if (data) {
+    const lvl = (data.riskLevel || "").toLowerCase();
+    if (lvl === "low") {
+      value = "Low";
+      color = colors.green;
+      tagBg = colors.greenBg;
+      tagText = colors.green;
+      tagDot = colors.green;
+      tagLabel = "All clear";
+    } else if (lvl === "high") {
+      value = "High";
+      color = colors.red;
+      tagBg = colors.redBg;
+      tagText = colors.red;
+      tagDot = colors.red;
+      tagLabel = "Back off";
+    } else {
+      value = "Med";
+      color = colors.amber;
+      tagBg = colors.amberBg;
+      tagText = colors.amber;
+      tagDot = colors.amber;
+      tagLabel = "Monitor load";
     }
-    if (loading && !data) {
-      return null;
-    }
-    if (!data) {
-      return {
-        pill: { label: "—", tone: { bg: colors.surfaceAlt, text: colors.muted } },
-        body: "Not enough data yet.",
-      };
-    }
-    const key = (data.riskLevel || "").toLowerCase();
-    const tone = RISK_TONE[key] || RISK_TONE.medium;
-    const label = data.riskLevel
-      ? data.riskLevel.charAt(0).toUpperCase() + data.riskLevel.slice(1).toLowerCase()
-      : "Unknown";
-    const body =
-      data.riskFactors?.[0] ||
-      (key === "low" ? "All clear — keep training as planned." : "Open for details.");
-    return { pill: { label, tone }, body };
-  })();
+  }
 
   return (
     <Pressable
       onPress={() => router.push("/tools/injury-risk")}
       style={({ pressed }) => ({
+        flex: 1,
         backgroundColor: colors.surface,
         borderRadius: 18,
-        borderWidth: 0.5,
-        borderColor: colors.border,
-        padding: 18,
-        opacity: pressed ? 0.9 : 1,
+        paddingVertical: 18,
+        paddingHorizontal: 16,
+        opacity: pressed ? 0.92 : 1,
         ...shadow.card,
       })}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <Text
-          style={{
-            fontSize: 12,
-            fontWeight: "700",
-            letterSpacing: 0.8,
-            color: colors.muted,
-            textTransform: "uppercase",
-          }}
-        >
-          Injury Risk
-        </Text>
-        {inner ? (
-          <View
-            style={{
-              backgroundColor: inner.pill.tone.bg,
-              paddingHorizontal: 10,
-              paddingVertical: 4,
-              borderRadius: 999,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: "700",
-                color: inner.pill.tone.text,
-                letterSpacing: 0.3,
-              }}
-            >
-              {inner.pill.label}
-            </Text>
+      <Text style={{ fontSize: 11, fontWeight: "700", color: colors.ink3, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 10 }}>
+        Injury Risk
+      </Text>
+      {loading && !data && !isPremiumGate ? (
+        <ActivityIndicator color={colors.brand} />
+      ) : (
+        <>
+          <Text style={{ fontSize: 28, fontWeight: "700", color, letterSpacing: -0.8, lineHeight: 30, marginBottom: 6 }}>
+            {value}
+          </Text>
+          <View style={{ alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999, backgroundColor: tagBg }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: tagDot }} />
+            <Text style={{ fontSize: 12, fontWeight: "600", color: tagText }}>{tagLabel}</Text>
           </View>
-        ) : (
-          <ActivityIndicator color={colors.brand} size="small" />
-        )}
-      </View>
-      {inner ? (
-        <Text
-          numberOfLines={2}
-          style={{ fontSize: 14, color: colors.muted, marginTop: 8, lineHeight: 20 }}
-        >
-          {inner.body}
-        </Text>
-      ) : null}
+        </>
+      )}
     </Pressable>
   );
 }
 
-/* ─── AI Brief (latest coach recap) ───────────────────────── */
-function AIBriefCard({ recap }: { recap: CoachRecap }) {
+/* ─── Weekly whisper row ─────────────────────────────── */
+function WeeklyWhisper({ dashboard, unit }: { dashboard: DashboardData | undefined; unit: "km" | "miles" }) {
   const router = useRouter();
-  const snippet = recap.coachingCue || recap.recapBullets?.[0] || "";
+  const stats = dashboard?.stats;
+  const u = unit === "miles" ? "miles" : "km";
+  const sub = stats
+    ? `${stats.weeklyTotalActivities} runs · ${stats.weeklyTotalDistance} ${u} this week`
+    : "Sync to see this week's progress";
 
   return (
     <Pressable
       onPress={() => router.push("/tools/coach-recaps")}
       style={({ pressed }) => ({
-        backgroundColor: colors.surface,
-        borderRadius: 18,
-        borderWidth: 0.5,
-        borderColor: colors.border,
-        padding: 18,
-        opacity: pressed ? 0.9 : 1,
-        ...shadow.card,
+        marginTop: 16,
+        backgroundColor: colors.surfaceAlt,
+        borderRadius: 16,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        opacity: pressed ? 0.85 : 1,
       })}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-        <View
-          style={{
-            width: 6,
-            height: 6,
-            borderRadius: 3,
-            backgroundColor: colors.brand,
-          }}
-        />
-        <Text
-          style={{
-            fontSize: 12,
-            fontWeight: "700",
-            letterSpacing: 0.8,
-            color: colors.muted,
-            textTransform: "uppercase",
-          }}
-        >
-          AI Brief
-        </Text>
-      </View>
-      {snippet ? (
-        <Text
-          numberOfLines={3}
-          style={{
-            fontSize: 15,
-            color: colors.text,
-            marginTop: 10,
-            lineHeight: 22,
-            letterSpacing: -0.1,
-          }}
-        >
-          {snippet}
-        </Text>
-      ) : null}
-      <Text
+      <View
         style={{
-          fontSize: 13,
-          fontWeight: "600",
-          color: colors.brand,
-          marginTop: 12,
+          width: 36,
+          height: 36,
+          borderRadius: 10,
+          backgroundColor: colors.brandLight,
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
-        Read full brief ›
-      </Text>
+        <Ionicons name="calendar-outline" size={18} color={colors.brand} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 14, fontWeight: "600", color: colors.ink, marginBottom: 2 }}>
+          Weekly Debrief
+        </Text>
+        <Text numberOfLines={1} style={{ fontSize: 13, color: colors.ink2 }}>
+          {sub}
+        </Text>
+      </View>
+      <Text style={{ fontSize: 13, fontWeight: "600", color: colors.brand }}>View →</Text>
     </Pressable>
   );
 }
 
-/* ─── Skeleton placeholder card ──────────────────────────── */
-function SkeletonCard({ height, children }: { height: number; children?: ReactNode }) {
+/* ─── Runner Score quiet card ─────────────────────────── */
+function ScoreQuiet({ score }: { score: RunnerScore | undefined }) {
   return (
-    <View
-      style={{
-        backgroundColor: colors.surface,
-        borderRadius: 22,
-        borderWidth: 0.5,
-        borderColor: colors.border,
-        height,
-        alignItems: "center",
-        justifyContent: "center",
-        ...shadow.card,
-      }}
-    >
-      {children}
-    </View>
+    <Link href="/score" asChild>
+      <Pressable
+        style={({ pressed }) => ({
+          marginTop: 16,
+          paddingVertical: 16,
+          paddingHorizontal: 20,
+          backgroundColor: colors.surface,
+          borderRadius: 16,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          opacity: pressed ? 0.92 : 1,
+          ...shadow.card,
+        })}
+      >
+        <View style={{ flex: 1, paddingRight: 12 }}>
+          <Text style={{ fontSize: 12, fontWeight: "700", color: colors.ink3, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 }}>
+            Runner Score
+          </Text>
+          <Text style={{ fontSize: 13, color: colors.ink2 }}>
+            {score
+              ? `Better than ${Math.round(score.percentile)}% of runners`
+              : "Updated after every run"}
+          </Text>
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 4 }}>
+          <Text style={{ fontSize: 40, fontWeight: "700", color: colors.brand, letterSpacing: -2, lineHeight: 40 }}>
+            {score ? Math.round(score.totalScore) : "—"}
+          </Text>
+          {score ? (
+            <Text style={{ fontSize: 20, fontWeight: "600", color: colors.ink2, paddingBottom: 4 }}>
+              {score.grade}
+            </Text>
+          ) : null}
+        </View>
+      </Pressable>
+    </Link>
   );
 }

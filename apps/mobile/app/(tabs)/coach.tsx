@@ -113,26 +113,26 @@ export default function CoachScreen() {
         }}
       >
         <View>
-          <Text style={{ fontSize: 22, fontWeight: "700", color: colors.text, letterSpacing: -0.4 }}>
+          <Text style={{ fontSize: 22, fontWeight: "700", color: colors.ink, letterSpacing: -0.4 }}>
             AI Coach
           </Text>
-          <Text style={{ fontSize: 12, color: colors.muted, marginTop: 1 }}>
-            Ask about training, pace, recovery
+          <Text style={{ fontSize: 13, color: colors.ink2, marginTop: 2 }}>
+            Trained on your runs
           </Text>
         </View>
         <Pressable
           onPress={newConversation}
           style={({ pressed }) => ({
             backgroundColor: colors.surface,
-            borderWidth: 0.5,
-            borderColor: colors.border,
-            paddingHorizontal: 12,
-            paddingVertical: 7,
-            borderRadius: 999,
+            borderWidth: 1,
+            borderColor: colors.line,
+            paddingHorizontal: 14,
+            paddingVertical: 6,
+            borderRadius: 10,
             opacity: pressed ? 0.7 : 1,
           })}
         >
-          <Text style={{ fontSize: 12, fontWeight: "600", color: colors.brand }}>+ New</Text>
+          <Text style={{ fontSize: 13, fontWeight: "600", color: colors.ink }}>+ New</Text>
         </Pressable>
       </View>
 
@@ -295,19 +295,33 @@ function Bubble({ role, content }: { role: string; content: string }) {
         style={{
           flex: 1,
           flexShrink: 1,
-          backgroundColor: colors.surfaceAlt,
-          borderWidth: 0.5,
-          borderColor: colors.border,
+          backgroundColor: colors.surface,
           borderRadius: 18,
           borderTopLeftRadius: 4,
           paddingHorizontal: 16,
           paddingVertical: 14,
+          shadowColor: "#000",
+          shadowOpacity: 0.05,
+          shadowOffset: { width: 0, height: 1 },
+          shadowRadius: 6,
+          elevation: 1,
         }}
       >
         <Text
           style={{
+            fontSize: 12,
+            fontWeight: "700",
+            color: colors.brand,
+            letterSpacing: 0.3,
+            marginBottom: 6,
+          }}
+        >
+          RunAnalytics Coach
+        </Text>
+        <Text
+          style={{
             fontSize: 15,
-            color: colors.text,
+            color: colors.ink,
             lineHeight: 23,
             flexShrink: 1,
           }}
