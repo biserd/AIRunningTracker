@@ -8,8 +8,8 @@ export const colors = {
   surface: "#FFFFFF",
   surfaceAlt: "#F7F6F3",
 
-  border: "#E8E6E1",
-  borderStrong: "#D4D2CC",
+  border: "#D8D5CD",
+  borderStrong: "#C4C1B8",
   line: "#E8E6E1",
 
   text: "#181715",
@@ -53,16 +53,16 @@ export const radii = {
 export const shadow = {
   card: {
     shadowColor: "#1A1815",
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 16,
-    elevation: 3,
+    shadowOpacity: 0.18,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 18,
+    elevation: 5,
   },
   raised: {
     shadowColor: "#1A1815",
-    shadowOpacity: 0.14,
-    shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 24,
-    elevation: 6,
+    shadowOpacity: 0.22,
+    shadowOffset: { width: 0, height: 10 },
+    shadowRadius: 28,
+    elevation: 8,
   },
 };
