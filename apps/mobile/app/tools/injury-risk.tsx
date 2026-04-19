@@ -20,10 +20,20 @@ interface PredictionsResponse {
 }
 
 const RISK_TONE: Record<string, "success" | "warning" | "danger"> = {
-  Low: "success",
-  Medium: "warning",
-  High: "danger",
+  low: "success",
+  medium: "warning",
+  high: "danger",
 };
+
+function toneFor(level: string | undefined | null): "success" | "warning" | "danger" {
+  if (!level) return "warning";
+  return RISK_TONE[level.toLowerCase()] ?? "warning";
+}
+
+function titleCase(s: string | undefined | null): string {
+  if (!s) return "";
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
 
 export default function InjuryRiskScreen() {
   const { user } = useAuth();
@@ -73,9 +83,9 @@ export default function InjuryRiskScreen() {
         ) : risk.data ? (
           <StatusBanner
             label="Injury risk"
-            title={risk.data.riskLevel}
+            title={titleCase(risk.data.riskLevel)}
             body="Based on training patterns over recent weeks."
-            tone={RISK_TONE[risk.data.riskLevel] || "warning"}
+            tone={toneFor(risk.data.riskLevel)}
           />
         ) : null}
 

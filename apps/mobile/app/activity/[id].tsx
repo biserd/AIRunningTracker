@@ -525,18 +525,6 @@ export default function ActivityDetailScreen() {
             )}
           </Card>
 
-          {/* LOCATION */}
-          {activity.startLatitude && activity.startLongitude ? (
-            <Card>
-              <SectionLabel style={{ marginLeft: 0 }}>Start Location</SectionLabel>
-              <Text style={{ fontSize: 14, color: colors.text }}>
-                {activity.startLatitude.toFixed(4)}, {activity.startLongitude.toFixed(4)}
-              </Text>
-              <Text style={{ fontSize: 12, color: colors.faint, marginTop: 6 }}>
-                Map view coming soon
-              </Text>
-            </Card>
-          ) : null}
         </ScrollView>
       )}
     </SafeAreaView>

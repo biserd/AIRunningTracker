@@ -95,7 +95,7 @@ function RecoveryContent({ r }: { r: RecoveryState }) {
             { label: "Freshness", value: `${Math.round(r.freshnessScore)}`, sub: "/100" },
             {
               label: "Risk",
-              value: r.riskLevel,
+              value: r.riskLevel ? r.riskLevel.charAt(0).toUpperCase() + r.riskLevel.slice(1).toLowerCase() : "—",
               color:
                 r.riskLevel === "low"
                   ? colors.successText

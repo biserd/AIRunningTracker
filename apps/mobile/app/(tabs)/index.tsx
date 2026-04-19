@@ -363,7 +363,7 @@ function ThisWeekStats({
           ...shadow.card,
         }}
       >
-        <Stat label={unit === "mi" ? "Miles" : "KM"} value={String(stats.weeklyTotalDistance)} align="left" />
+        <Stat label={unit === "mi" ? "Miles" : "KM"} value={Number(stats.weeklyTotalDistance ?? 0).toFixed(1)} align="left" />
         <View style={{ width: 0.5, backgroundColor: colors.border }} />
         <Stat label="Runs" value={String(stats.weeklyTotalActivities)} align="center" />
         <View style={{ width: 0.5, backgroundColor: colors.border }} />

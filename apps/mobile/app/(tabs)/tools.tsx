@@ -59,7 +59,7 @@ export default function ToolsScreen() {
     },
     {
       href: "/tools/recovery",
-      glyph: "❤︎",
+      glyph: "❤️",
       iconBg: "rgba(79,152,163,0.15)",
       title: "Recovery",
       desc: "Freshness, training load, and what to do next.",

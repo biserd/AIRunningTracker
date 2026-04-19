@@ -150,7 +150,7 @@ export default function CoachScreen() {
               <ActivityIndicator color={colors.brand} />
             </View>
           ) : (messagesQ.data?.length ?? 0) === 0 && !streamingText ? (
-            <EmptyState />
+            <EmptyState onPick={(p) => setInput(p)} />
           ) : (
             messagesQ.data?.map((m) => (
               <Bubble key={m.id} role={m.role} content={m.content} />
@@ -319,7 +319,7 @@ function Bubble({ role, content }: { role: string; content: string }) {
   );
 }
 
-function EmptyState() {
+function EmptyState({ onPick }: { onPick: (prompt: string) => void }) {
   const prompts = [
     "How was my last run?",
     "Suggest a workout for tomorrow",
@@ -344,23 +344,28 @@ function EmptyState() {
         Hey, I'm your AI running coach.
       </Text>
       <Text style={{ fontSize: 14, color: colors.muted, textAlign: "center", marginBottom: 18 }}>
-        Ask about training, pace, recovery, plans.
+        Tap a prompt to start, or type your own below.
       </Text>
       <View style={{ width: "100%", gap: 8 }}>
         {prompts.map((p) => (
-          <View
+          <Pressable
             key={p}
-            style={{
-              backgroundColor: colors.surface,
+            onPress={() => onPick(p)}
+            style={({ pressed }) => ({
+              backgroundColor: pressed ? colors.surfaceAlt : colors.surface,
               borderWidth: 0.5,
               borderColor: colors.border,
               borderRadius: 14,
               paddingHorizontal: 14,
               paddingVertical: 12,
-            }}
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+            })}
           >
-            <Text style={{ fontSize: 14, color: colors.textSoft }}>{p}</Text>
-          </View>
+            <Text style={{ fontSize: 16, color: colors.brand }}>›</Text>
+            <Text style={{ flex: 1, fontSize: 14, color: colors.textSoft }}>{p}</Text>
+          </Pressable>
         ))}
       </View>
     </View>

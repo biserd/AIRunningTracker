@@ -7,6 +7,7 @@ import {
   ScrollView,
   Switch,
   ActivityIndicator,
+  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -166,20 +167,37 @@ export default function SettingsScreen() {
           <>
             <GroupLabel>Subscription</GroupLabel>
             <Group>
-              <Row>
-                <IconSquare bg={planActive ? colors.premium : colors.faint} glyph="★" />
-                <Text style={rowLabel}>{planName}</Text>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    color: planActive ? colors.successText : colors.muted,
-                    marginRight: 8,
-                  }}
-                >
-                  {planActive ? "Active" : sub.data.subscriptionStatus.replace(/_/g, " ")}
-                </Text>
-                <Chevron />
-              </Row>
+              <Pressable
+                onPress={() => Linking.openURL("https://aitracker.run/settings/billing")}
+              >
+                {({ pressed }) => (
+                  <View
+                    style={{
+                      backgroundColor: pressed ? colors.surfaceAlt : "transparent",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      paddingVertical: 15,
+                      paddingHorizontal: 16,
+                      borderBottomWidth: 0.5,
+                      borderBottomColor: colors.border,
+                      gap: 12,
+                    }}
+                  >
+                    <IconSquare bg={planActive ? colors.premium : colors.brand} glyph="★" />
+                    <Text style={rowLabel}>{planName}</Text>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        color: planActive ? colors.successText : colors.muted,
+                        marginRight: 8,
+                      }}
+                    >
+                      {planActive ? "Active" : sub.data.subscriptionStatus.replace(/_/g, " ")}
+                    </Text>
+                    <Chevron />
+                  </View>
+                )}
+              </Pressable>
               {sub.data.isReverseTrial && sub.data.trialDaysRemaining ? (
                 <SubRow>
                   {sub.data.trialDaysRemaining}-day trial · Manage at aitracker.run
@@ -268,10 +286,27 @@ export default function SettingsScreen() {
 
         {/* About */}
         <Group>
-          <Row>
-            <Text style={rowLabel}>Privacy Policy</Text>
-            <Chevron />
-          </Row>
+          <Pressable
+            onPress={() => Linking.openURL("https://aitracker.run/privacy")}
+          >
+            {({ pressed }) => (
+              <View
+                style={{
+                  backgroundColor: pressed ? colors.surfaceAlt : "transparent",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingVertical: 15,
+                  paddingHorizontal: 16,
+                  borderBottomWidth: 0.5,
+                  borderBottomColor: colors.border,
+                  gap: 12,
+                }}
+              >
+                <Text style={rowLabel}>Privacy Policy</Text>
+                <Chevron />
+              </View>
+            )}
+          </Pressable>
           <Row last>
             <Text style={rowLabel}>Version</Text>
             <Text style={{ fontSize: 14, color: colors.muted }}>1.0.0</Text>
