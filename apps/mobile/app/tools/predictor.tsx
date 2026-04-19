@@ -8,10 +8,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Stack, router } from "expo-router";
+import { Stack } from "expo-router";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { formatDate } from "../../lib/format";
+import { colors, shadow } from "../../lib/theme";
+import { NavBar, SectionLabel, Card, PrimaryButton, EmptyState } from "../../components/ios";
 import type { SuitableActivity, RacePrediction } from "../../types";
 
 const RACE_DISTANCES = [
@@ -51,128 +53,161 @@ export default function PredictorScreen() {
   const candidates = useMemo(() => suitable.data?.activities ?? [], [suitable.data]);
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          title: "Race Predictor",
-          headerStyle: { backgroundColor: "#fc4c02" },
-          headerTintColor: "#fff",
-        }}
-      />
-      <SafeAreaView edges={["bottom"]} className="flex-1 bg-slate-50 dark:bg-slate-900">
-        <ScrollView contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}>
-          <Text className="text-sm text-slate-600 dark:text-slate-300">
-            Pick one of your recent harder efforts and a target distance. Uses Riegel's formula
-            to estimate finish time.
-          </Text>
+    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.bg }}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <NavBar title="Race Predictor" back="Tools" />
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 40 }}>
+        <Text style={{ fontSize: 14, color: colors.muted, lineHeight: 20 }}>
+          Pick one of your recent harder efforts and a target distance. Uses Riegel's formula
+          to estimate your finish time.
+        </Text>
 
-          <Section title="1. Choose a recent effort">
+        <View>
+          <SectionLabel>1. Choose a recent effort</SectionLabel>
+          <Card padded={false}>
             {suitable.isLoading ? (
-              <ActivityIndicator color="#fc4c02" />
+              <View style={{ padding: 24, alignItems: "center" }}>
+                <ActivityIndicator color={colors.brand} />
+              </View>
             ) : candidates.length === 0 ? (
-              <Text className="text-sm text-slate-500">
-                No suitable activities yet. Run something at least 5K and sync.
-              </Text>
+              <EmptyState
+                title="No suitable activities yet"
+                body="Run something at least 5K and sync from Strava."
+              />
             ) : (
-              candidates.slice(0, 8).map((a) => {
+              candidates.slice(0, 8).map((a, i, arr) => {
                 const selected = base?.id === a.id;
                 return (
                   <Pressable
                     key={a.id}
                     onPress={() => setBase(a)}
-                    className={`p-3 rounded-xl border ${
-                      selected
-                        ? "border-strava bg-orange-50 dark:bg-orange-950/30"
-                        : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
-                    } active:opacity-80`}
+                    style={({ pressed }) => ({
+                      paddingVertical: 14,
+                      paddingHorizontal: 16,
+                      backgroundColor: selected
+                        ? "rgba(252,76,2,0.06)"
+                        : pressed
+                          ? colors.surfaceAlt
+                          : "transparent",
+                      borderBottomWidth: i === arr.length - 1 ? 0 : 0.5,
+                      borderBottomColor: colors.border,
+                      borderLeftWidth: selected ? 3 : 0,
+                      borderLeftColor: colors.brand,
+                    })}
                   >
-                    <Text className="text-sm font-medium text-slate-900 dark:text-white" numberOfLines={1}>
-                      {a.name}
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          flex: 1,
+                          fontSize: 15,
+                          fontWeight: "600",
+                          color: colors.text,
+                        }}
+                      >
+                        {a.name}
+                      </Text>
+                      {selected ? (
+                        <Text style={{ color: colors.brand, fontWeight: "700" }}>✓</Text>
+                      ) : null}
+                    </View>
+                    <Text style={{ fontSize: 13, color: colors.muted, marginTop: 2 }}>
+                      {a.distanceFormatted} · {a.durationFormatted} · {a.paceFormatted}
                     </Text>
-                    <Text className="text-xs text-slate-500 mt-0.5">
-                      {a.distanceFormatted} • {a.durationFormatted} • {a.paceFormatted}
-                    </Text>
-                    <Text className="text-[11px] text-slate-400 mt-0.5">
+                    <Text style={{ fontSize: 12, color: colors.faint, marginTop: 2 }}>
                       {formatDate(a.startDate)}
                     </Text>
                   </Pressable>
                 );
               })
             )}
-          </Section>
+          </Card>
+        </View>
 
-          <Section title="2. Target distance">
-            <View className="flex-row flex-wrap gap-2">
-              {RACE_DISTANCES.map((d) => {
-                const selected = target === d.meters;
-                return (
-                  <Pressable
-                    key={d.label}
-                    onPress={() => setTarget(d.meters)}
-                    className={`px-4 py-2 rounded-full border ${
-                      selected
-                        ? "border-strava bg-strava"
-                        : "border-slate-300 dark:border-slate-600"
-                    } active:opacity-80`}
+        <View>
+          <SectionLabel>2. Target distance</SectionLabel>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {RACE_DISTANCES.map((d) => {
+              const selected = target === d.meters;
+              return (
+                <Pressable
+                  key={d.label}
+                  onPress={() => setTarget(d.meters)}
+                  style={({ pressed }) => ({
+                    paddingHorizontal: 18,
+                    paddingVertical: 9,
+                    borderRadius: 999,
+                    backgroundColor: selected ? colors.brand : colors.surface,
+                    borderWidth: 0.5,
+                    borderColor: selected ? colors.brand : colors.border,
+                    opacity: pressed ? 0.8 : 1,
+                  })}
+                >
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: "600",
+                      color: selected ? "#fff" : colors.text,
+                    }}
                   >
-                    <Text
-                      className={`text-sm font-semibold ${
-                        selected ? "text-white" : "text-slate-700 dark:text-slate-200"
-                      }`}
-                    >
-                      {d.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </Section>
+                    {d.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
 
-          <Pressable
-            disabled={!base || predict.isPending}
-            onPress={() => base && predict.mutate({ base, target })}
-            className={`rounded-xl py-4 items-center ${
-              !base || predict.isPending
-                ? "bg-slate-300 dark:bg-slate-700"
-                : "bg-strava active:opacity-80"
-            }`}
+        <PrimaryButton
+          label="Predict"
+          onPress={() => base && predict.mutate({ base, target })}
+          disabled={!base}
+          loading={predict.isPending}
+        />
+
+        {predict.error ? (
+          <Text style={{ color: colors.danger, fontSize: 14 }}>
+            {(predict.error as Error).message}
+          </Text>
+        ) : null}
+
+        {predict.data ? (
+          <View
+            style={{
+              backgroundColor: colors.brand,
+              borderRadius: 18,
+              padding: 20,
+              ...shadow.card,
+            }}
           >
-            {predict.isPending ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text className="text-white font-semibold text-base">Predict</Text>
-            )}
-          </Pressable>
-
-          {predict.error ? (
-            <Text className="text-red-500 text-sm">{(predict.error as Error).message}</Text>
-          ) : null}
-
-          {predict.data ? (
-            <View className="bg-gradient-to-br from-strava to-orange-600 bg-strava rounded-2xl p-5 mt-2">
-              <Text className="text-xs uppercase tracking-wide text-white/80">
-                Predicted {RACE_DISTANCES.find((r) => r.meters === target)?.label}
-              </Text>
-              <Text className="text-4xl font-bold text-white mt-1">
-                {predict.data.formattedTime}
-              </Text>
-              <Text className="text-sm text-white/90 mt-1">
-                {predict.data.formattedPace}/{unit === "miles" ? "mi" : "km"}
-              </Text>
-            </View>
-          ) : null}
-        </ScrollView>
-      </SafeAreaView>
-    </>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <View className="gap-2">
-      <Text className="text-xs uppercase tracking-wide text-slate-400">{title}</Text>
-      {children}
-    </View>
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: "700",
+                letterSpacing: 0.6,
+                color: "rgba(255,255,255,0.85)",
+                textTransform: "uppercase",
+              }}
+            >
+              Predicted {RACE_DISTANCES.find((r) => r.meters === target)?.label}
+            </Text>
+            <Text
+              style={{
+                fontSize: 48,
+                fontWeight: "700",
+                color: "#fff",
+                marginTop: 4,
+                letterSpacing: -1.5,
+              }}
+            >
+              {predict.data.formattedTime}
+            </Text>
+            <Text style={{ fontSize: 14, color: "rgba(255,255,255,0.92)", marginTop: 4 }}>
+              {predict.data.formattedPace} / {unit === "miles" ? "mi" : "km"}
+            </Text>
+          </View>
+        ) : null}
+      </ScrollView>
+    </SafeAreaView>
   );
 }

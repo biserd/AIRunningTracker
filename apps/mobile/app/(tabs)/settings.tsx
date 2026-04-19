@@ -206,7 +206,7 @@ export default function SettingsScreen() {
                     backgroundColor: pressed ? colors.surfaceAlt : "transparent",
                     flexDirection: "row",
                     alignItems: "center",
-                    paddingVertical: 13,
+                    paddingVertical: 15,
                     paddingHorizontal: 16,
                     gap: 12,
                   }}
@@ -257,7 +257,7 @@ export default function SettingsScreen() {
                 backgroundColor: pressed ? colors.surfaceAlt : "transparent",
                 flexDirection: "row",
                 alignItems: "center",
-                paddingVertical: 13,
+                paddingVertical: 15,
                 paddingHorizontal: 16,
               })}
             >
@@ -343,14 +343,14 @@ function GroupLabel({ children }: { children: React.ReactNode }) {
   return (
     <Text
       style={{
-        fontSize: 11,
-        fontWeight: "700",
-        letterSpacing: 0.7,
+        fontSize: 12,
+        fontWeight: "600",
+        letterSpacing: 0.6,
         color: colors.muted,
         textTransform: "uppercase",
         marginLeft: 8,
-        marginBottom: 6,
-        marginTop: 2,
+        marginBottom: 8,
+        marginTop: 4,
       }}
     >
       {children}
@@ -370,7 +370,7 @@ function Row({
       style={{
         flexDirection: "row",
         alignItems: "center",
-        paddingVertical: 13,
+        paddingVertical: 15,
         paddingHorizontal: 16,
         borderBottomWidth: last ? 0 : 0.5,
         borderBottomColor: colors.border,

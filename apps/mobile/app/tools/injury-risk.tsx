@@ -2,27 +2,38 @@ import { ScrollView, View, Text, ActivityIndicator, RefreshControl } from "react
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../../lib/api";
+import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
+import { colors } from "../../lib/theme";
+import {
+  NavBar,
+  SectionLabel,
+  Card,
+  StatusBanner,
+  EmptyState,
+  PremiumGate,
+} from "../../components/ios";
 import type { InjuryRiskAnalysis, MLRacePrediction } from "../../types";
-
-const RISK_COLOR: Record<string, string> = {
-  Low: "#10b981",
-  Medium: "#f59e0b",
-  High: "#ef4444",
-};
 
 interface PredictionsResponse {
   predictions: MLRacePrediction[];
 }
 
+const RISK_TONE: Record<string, "success" | "warning" | "danger"> = {
+  Low: "success",
+  Medium: "warning",
+  High: "danger",
+};
+
 export default function InjuryRiskScreen() {
   const { user } = useAuth();
 
-  const risk = useQuery({
+  const risk = useQuery<InjuryRiskAnalysis, Error>({
     queryKey: ["injury-risk", user?.id],
     queryFn: () => api<InjuryRiskAnalysis>(`/api/ml/injury-risk/${user!.id}`),
     enabled: !!user?.id,
+    retry: (failure, err) =>
+      err instanceof ApiError && err.status === 403 ? false : failure < 1,
   });
 
   const preds = useQuery({
@@ -36,122 +47,128 @@ export default function InjuryRiskScreen() {
     preds.refetch();
   };
 
-  return (
-    <>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          title: "Injury Risk & ML",
-          headerStyle: { backgroundColor: "#fc4c02" },
-          headerTintColor: "#fff",
-        }}
-      />
-      <SafeAreaView edges={["bottom"]} className="flex-1 bg-slate-50 dark:bg-slate-900">
-        <ScrollView
-          contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 40 }}
-          refreshControl={
-            <RefreshControl
-              refreshing={risk.isRefetching || preds.isRefetching}
-              onRefresh={refetchAll}
-              tintColor="#fc4c02"
-            />
-          }
-        >
-          {/* INJURY RISK */}
-          {risk.isLoading ? (
-            <ActivityIndicator color="#fc4c02" />
-          ) : risk.data ? (
-            <View
-              className="rounded-2xl p-5"
-              style={{ backgroundColor: RISK_COLOR[risk.data.riskLevel] || "#94a3b8" }}
-            >
-              <Text className="text-xs uppercase tracking-wide text-white/80">
-                Injury risk
-              </Text>
-              <Text className="text-3xl font-bold text-white mt-1">
-                {risk.data.riskLevel}
-              </Text>
-              <Text className="text-sm text-white/90 mt-2">
-                Based on training patterns over recent weeks.
-              </Text>
-            </View>
-          ) : null}
+  const isPremiumGate = risk.error instanceof ApiError && risk.error.status === 403;
 
-          {risk.data?.riskFactors && risk.data.riskFactors.length > 0 ? (
-            <Section title="Risk factors">
+  return (
+    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.bg }}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <NavBar title="Injury Risk & ML" back="Tools" />
+      <ScrollView
+        contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={risk.isRefetching || preds.isRefetching}
+            onRefresh={refetchAll}
+            tintColor={colors.brand}
+          />
+        }
+      >
+        {isPremiumGate ? (
+          <PremiumGate
+            feature="Injury risk"
+            description="Premium unlocks ML-driven injury risk and personalized race predictions."
+          />
+        ) : risk.isLoading ? (
+          <ActivityIndicator color={colors.brand} />
+        ) : risk.data ? (
+          <StatusBanner
+            label="Injury risk"
+            title={risk.data.riskLevel}
+            body="Based on training patterns over recent weeks."
+            tone={RISK_TONE[risk.data.riskLevel] || "warning"}
+          />
+        ) : null}
+
+        {risk.data?.riskFactors && risk.data.riskFactors.length > 0 ? (
+          <Card>
+            <SectionLabel style={{ marginLeft: 0 }}>Risk Factors</SectionLabel>
+            <View style={{ gap: 8 }}>
               {risk.data.riskFactors.map((f, i) => (
-                <View key={i} className="flex-row items-start gap-2 py-1">
-                  <Text className="text-orange-500">⚠️</Text>
-                  <Text className="text-sm text-slate-700 dark:text-slate-200 flex-1">
+                <View key={i} style={{ flexDirection: "row", gap: 8 }}>
+                  <Text style={{ color: colors.warningText, fontSize: 14 }}>⚠︎</Text>
+                  <Text style={{ flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 }}>
                     {f}
                   </Text>
                 </View>
               ))}
-            </Section>
-          ) : null}
+            </View>
+          </Card>
+        ) : null}
 
-          {risk.data?.recommendations && risk.data.recommendations.length > 0 ? (
-            <Section title="Recommendations">
+        {risk.data?.recommendations && risk.data.recommendations.length > 0 ? (
+          <Card>
+            <SectionLabel style={{ marginLeft: 0 }}>Recommendations</SectionLabel>
+            <View style={{ gap: 8 }}>
               {risk.data.recommendations.map((r, i) => (
-                <View key={i} className="flex-row items-start gap-2 py-1">
-                  <Text className="text-green-500">✓</Text>
-                  <Text className="text-sm text-slate-700 dark:text-slate-200 flex-1">
+                <View key={i} style={{ flexDirection: "row", gap: 8 }}>
+                  <Text style={{ color: colors.successText, fontSize: 14, fontWeight: "700" }}>
+                    ✓
+                  </Text>
+                  <Text style={{ flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 }}>
                     {r}
                   </Text>
                 </View>
               ))}
-            </Section>
-          ) : null}
+            </View>
+          </Card>
+        ) : null}
 
-          {/* ML RACE PREDICTIONS */}
-          <Section title="ML race predictions">
-            {preds.isLoading ? (
-              <ActivityIndicator color="#fc4c02" />
-            ) : !preds.data?.predictions || preds.data.predictions.length === 0 ? (
-              <Text className="text-sm text-slate-500">
-                Need more training history to predict races.
-              </Text>
-            ) : (
-              <View className="gap-3">
-                {preds.data.predictions.map((p, i) => (
-                  <View
-                    key={i}
-                    className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-700"
-                  >
-                    <View className="flex-row items-center justify-between">
-                      <Text className="text-base font-semibold text-slate-900 dark:text-white">
-                        {p.distance}
-                      </Text>
-                      <View className="px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700">
-                        <Text className="text-[10px] text-slate-600 dark:text-slate-300">
-                          {Math.round(p.confidence * 100)}% confidence
-                        </Text>
-                      </View>
-                    </View>
-                    <Text className="text-2xl font-bold text-strava mt-1">
-                      {p.predictedTime}
+        <View>
+          <SectionLabel>ML Race Predictions</SectionLabel>
+          {preds.isLoading ? (
+            <Card>
+              <ActivityIndicator color={colors.brand} />
+            </Card>
+          ) : !preds.data?.predictions || preds.data.predictions.length === 0 ? (
+            <Card>
+              <EmptyState
+                title="Need more history"
+                body="Keep training — predictions appear once you have enough runs."
+              />
+            </Card>
+          ) : (
+            <View style={{ gap: 10 }}>
+              {preds.data.predictions.map((p, i) => (
+                <Card key={i}>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Text style={{ flex: 1, fontSize: 16, fontWeight: "600", color: colors.text }}>
+                      {p.distance}
                     </Text>
-                    {p.recommendation ? (
-                      <Text className="text-xs text-slate-500 mt-2 leading-4">
-                        {p.recommendation}
+                    <View
+                      style={{
+                        backgroundColor: colors.surfaceAlt,
+                        paddingHorizontal: 9,
+                        paddingVertical: 4,
+                        borderRadius: 999,
+                      }}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: "600", color: colors.muted }}>
+                        {Math.round(p.confidence * 100)}% confidence
                       </Text>
-                    ) : null}
+                    </View>
                   </View>
-                ))}
-              </View>
-            )}
-          </Section>
-        </ScrollView>
-      </SafeAreaView>
-    </>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <View className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700">
-      <Text className="text-xs uppercase tracking-wide text-slate-400 mb-3">{title}</Text>
-      {children}
-    </View>
+                  <Text
+                    style={{
+                      fontSize: 28,
+                      fontWeight: "700",
+                      color: colors.brand,
+                      letterSpacing: -0.8,
+                      marginTop: 4,
+                    }}
+                  >
+                    {p.predictedTime}
+                  </Text>
+                  {p.recommendation ? (
+                    <Text style={{ fontSize: 13, color: colors.muted, marginTop: 6, lineHeight: 18 }}>
+                      {p.recommendation}
+                    </Text>
+                  ) : null}
+                </Card>
+              ))}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

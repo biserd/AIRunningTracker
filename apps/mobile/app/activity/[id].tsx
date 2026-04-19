@@ -1,15 +1,22 @@
-import { useLocalSearchParams, Stack, useRouter } from "expo-router";
+import { useLocalSearchParams, Stack } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   ScrollView,
   View,
   Text,
   ActivityIndicator,
-  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
+import { colors, shadow } from "../../lib/theme";
+import {
+  NavBar,
+  SectionLabel,
+  Card,
+  EmptyState,
+  PremiumGate,
+} from "../../components/ios";
 import {
   formatDistance,
   formatDuration,
@@ -52,11 +59,11 @@ interface PerformanceResponse {
 }
 
 const GRADE_COLOR: Record<string, string> = {
-  A: "#10b981",
-  B: "#22c55e",
-  C: "#f59e0b",
-  D: "#f97316",
-  F: "#ef4444",
+  A: "#2D7A1F",
+  B: "#3F9F2A",
+  C: "#C26020",
+  D: "#D9742B",
+  F: "#D9342B",
 };
 
 const DECOUPLING_LABEL: Record<string, string> = {
@@ -84,7 +91,6 @@ const NEXT_STEP_LABEL: Record<string, string> = {
 
 export default function ActivityDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
   const { user } = useAuth();
   const unit = (user?.unitPreference || "km") as "km" | "miles";
 
@@ -133,91 +139,88 @@ export default function ActivityDetailScreen() {
 
   const verdictPremiumGate =
     verdict.error instanceof ApiError && verdict.error.status === 403;
-  const recapPremiumGate =
-    recap.error instanceof ApiError && recap.error.status === 403;
 
   return (
-    <SafeAreaView edges={["top"]} className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.bg }}>
       <Stack.Screen options={{ headerShown: false }} />
-      <View className="flex-row items-center px-4 py-3">
-        <Pressable
-          onPress={() => router.back()}
-          className="w-10 h-10 items-center justify-center rounded-full active:opacity-60"
-        >
-          <Text className="text-2xl text-slate-700 dark:text-slate-200">‹</Text>
-        </Pressable>
-        <Text className="text-base font-semibold text-slate-900 dark:text-white">
-          Activity
-        </Text>
-      </View>
+      <NavBar title="Activity" back="Back" />
 
       {detail.isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#fc4c02" />
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <ActivityIndicator size="large" color={colors.brand} />
         </View>
       ) : detail.error || !activity ? (
-        <View className="flex-1 items-center justify-center px-8">
-          <Text className="text-base text-slate-600 dark:text-slate-400 text-center">
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 }}>
+          <Text style={{ fontSize: 15, color: colors.muted, textAlign: "center" }}>
             {(detail.error as Error)?.message || "Activity not found"}
           </Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 16 }}>
+          {/* TITLE */}
           <View>
-            <Text className="text-2xl font-bold text-slate-900 dark:text-white">
+            <Text style={{ fontSize: 26, fontWeight: "700", color: colors.text, letterSpacing: -0.6 }}>
               {activity.name}
             </Text>
-            <Text className="text-sm text-slate-500 mt-1">
-              {formatDate(activity.startDate)} • {formatTimeOnly(activity.startDate)}{" "}
-              • {activity.type}
+            <Text style={{ fontSize: 14, color: colors.muted, marginTop: 4 }}>
+              {formatDate(activity.startDate)} · {formatTimeOnly(activity.startDate)} · {activity.type}
             </Text>
           </View>
 
           {/* COACH VERDICT */}
           {verdict.isLoading ? (
             <Card>
-              <ActivityIndicator color="#fc4c02" />
+              <ActivityIndicator color={colors.brand} />
             </Card>
           ) : verdict.data ? (
-            <View className="rounded-2xl p-5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-              <View className="flex-row items-center gap-4">
+            <Card>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
                 <View
-                  className="w-16 h-16 rounded-2xl items-center justify-center"
-                  style={{ backgroundColor: GRADE_COLOR[verdict.data.grade] || "#94a3b8" }}
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: 16,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: GRADE_COLOR[verdict.data.grade] || colors.faint,
+                  }}
                 >
-                  <Text className="text-3xl font-bold text-white">
+                  <Text style={{ fontSize: 32, fontWeight: "700", color: "#fff" }}>
                     {verdict.data.grade}
                   </Text>
                 </View>
-                <View className="flex-1">
-                  <Text className="text-xs uppercase tracking-wide text-slate-400">
-                    Coach verdict
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "700",
+                      letterSpacing: 0.6,
+                      color: colors.muted,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Coach Verdict
                   </Text>
-                  <Text className="text-lg font-bold text-slate-900 dark:text-white">
+                  <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text, marginTop: 2 }}>
                     {verdict.data.gradeLabel}
                   </Text>
-                  <Text className="text-xs text-slate-500 mt-0.5">
-                    Effort {verdict.data.effortScore}/100 ·{" "}
-                    {verdict.data.consistencyDescription}
+                  <Text style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>
+                    Effort {verdict.data.effortScore}/100 · {verdict.data.consistencyDescription}
                   </Text>
                 </View>
               </View>
-              <Text className="text-sm text-slate-700 dark:text-slate-200 mt-3 leading-5">
+              <Text style={{ fontSize: 14, color: colors.text, marginTop: 12, lineHeight: 21 }}>
                 {verdict.data.summary}
               </Text>
 
               {verdict.data.evidenceBullets?.length ? (
-                <View className="mt-3 gap-1">
+                <View style={{ marginTop: 12, gap: 6 }}>
                   {verdict.data.evidenceBullets.map((b, i) => (
-                    <View key={i} className="flex-row gap-2">
+                    <View key={i} style={{ flexDirection: "row", gap: 8 }}>
                       <Text>
-                        {b.type === "positive"
-                          ? "✅"
-                          : b.type === "negative"
-                            ? "⚠️"
-                            : "•"}
+                        {b.type === "positive" ? "✅" : b.type === "negative" ? "⚠️" : "•"}
                       </Text>
-                      <Text className="flex-1 text-sm text-slate-700 dark:text-slate-200 leading-5">
+                      <Text style={{ flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 }}>
                         {b.text}
                       </Text>
                     </View>
@@ -226,88 +229,134 @@ export default function ActivityDetailScreen() {
               ) : null}
 
               {verdict.data.nextSteps?.length ? (
-                <View className="mt-3 bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
-                  <Text className="text-[10px] uppercase tracking-wide text-slate-400 mb-1">
+                <View
+                  style={{
+                    marginTop: 14,
+                    backgroundColor: colors.surfaceAlt,
+                    borderRadius: 12,
+                    padding: 12,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "700",
+                      letterSpacing: 0.6,
+                      color: colors.muted,
+                      textTransform: "uppercase",
+                      marginBottom: 4,
+                    }}
+                  >
                     Next steps
                   </Text>
                   {verdict.data.nextSteps.map((s, i) => (
-                    <Text
-                      key={i}
-                      className="text-sm text-slate-700 dark:text-slate-200 leading-5"
-                    >
+                    <Text key={i} style={{ fontSize: 14, color: colors.text, lineHeight: 20 }}>
                       → {s}
                     </Text>
                   ))}
                 </View>
               ) : null}
-            </View>
+            </Card>
           ) : verdictPremiumGate ? (
-            <PremiumGate label="Coach Verdict" />
+            <PremiumGate
+              feature="Coach Verdict"
+              description="Upgrade on aitracker.run to unlock per-run AI grading and recaps."
+            />
           ) : null}
 
           {/* COACH RECAP */}
           {recap.data?.recap ? (
-            <View className="rounded-2xl p-5 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900">
-              <Text className="text-xs uppercase tracking-wide text-orange-700 dark:text-orange-300 mb-2">
-                Coach recap
+            <View
+              style={{
+                backgroundColor: "#FFF5F1",
+                borderWidth: 0.5,
+                borderColor: "rgba(252,76,2,0.25)",
+                borderLeftWidth: 3,
+                borderLeftColor: colors.brand,
+                borderRadius: 18,
+                padding: 16,
+                ...shadow.card,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: "700",
+                  letterSpacing: 0.6,
+                  color: colors.brand,
+                  textTransform: "uppercase",
+                  marginBottom: 8,
+                }}
+              >
+                Coach Recap
               </Text>
               {(recap.data.recap.recapBullets || []).map((b, i) => (
-                <View key={i} className="flex-row gap-2 py-0.5">
-                  <Text className="text-strava">•</Text>
-                  <Text className="flex-1 text-sm text-slate-800 dark:text-slate-100 leading-5">
-                    {b}
-                  </Text>
+                <View key={i} style={{ flexDirection: "row", gap: 8, paddingVertical: 2 }}>
+                  <Text style={{ color: colors.brand }}>•</Text>
+                  <Text style={{ flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 }}>{b}</Text>
                 </View>
               ))}
               {recap.data.recap.coachingCue ? (
-                <View className="mt-3 bg-white dark:bg-slate-800 rounded-lg p-3">
-                  <Text className="text-[10px] uppercase tracking-wide text-slate-400 mb-1">
+                <View
+                  style={{
+                    marginTop: 12,
+                    backgroundColor: colors.surface,
+                    borderRadius: 10,
+                    padding: 12,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "700",
+                      letterSpacing: 0.6,
+                      color: colors.muted,
+                      textTransform: "uppercase",
+                      marginBottom: 4,
+                    }}
+                  >
                     Cue for next run
                   </Text>
-                  <Text className="text-sm text-slate-900 dark:text-white">
+                  <Text style={{ fontSize: 14, color: colors.text, lineHeight: 20 }}>
                     {recap.data.recap.coachingCue}
                   </Text>
                 </View>
               ) : null}
-              <View className="mt-3 flex-row items-center gap-2">
-                <Text className="text-[11px] text-slate-500">Next:</Text>
-                <Text className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+              <View style={{ marginTop: 12, flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Text style={{ fontSize: 12, color: colors.muted }}>Next:</Text>
+                <Text style={{ fontSize: 13, fontWeight: "600", color: colors.text }}>
                   {NEXT_STEP_LABEL[recap.data.recap.nextStep] || recap.data.recap.nextStep}
                 </Text>
               </View>
               {recap.data.recap.nextStepRationale ? (
-                <Text className="text-[11px] text-slate-500 mt-1 leading-4">
+                <Text style={{ fontSize: 12, color: colors.muted, marginTop: 4, lineHeight: 17 }}>
                   {recap.data.recap.nextStepRationale}
                 </Text>
               ) : null}
             </View>
-          ) : recapPremiumGate ? null /* gate already shown for verdict if premium */ : null}
+          ) : null}
 
           {/* HERO STATS */}
-          <View className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700">
-            <View className="flex-row gap-4 mb-4">
-              <HeroStat
-                label="Distance"
-                value={formatDistance(activity.distance, unit)}
-              />
+          <Card>
+            <View style={{ flexDirection: "row", marginBottom: 14 }}>
+              <HeroStat label="Distance" value={formatDistance(activity.distance, unit)} />
               <HeroStat label="Time" value={formatDuration(activity.movingTime)} />
             </View>
-            <View className="flex-row gap-4">
+            <View style={{ flexDirection: "row" }}>
               <HeroStat label="Pace" value={formatPace(activity.averageSpeed, unit)} />
               <HeroStat
                 label="Elevation"
                 value={formatElevation(activity.totalElevationGain, unit)}
               />
             </View>
-          </View>
+          </Card>
 
+          {/* HEART & CADENCE */}
           {(activity.averageHeartrate || activity.maxHeartrate || activity.averageCadence) && (
-            <View className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700">
-              <Text className="text-xs uppercase tracking-wide text-slate-400 mb-3">
-                Heart & cadence
-              </Text>
-              <View className="flex-row gap-4">
-                <Stat
+            <Card>
+              <SectionLabel style={{ marginLeft: 0 }}>Heart & Cadence</SectionLabel>
+              <View style={{ flexDirection: "row" }}>
+                <SmallStat
                   label="Avg HR"
                   value={
                     activity.averageHeartrate
@@ -315,15 +364,13 @@ export default function ActivityDetailScreen() {
                       : "—"
                   }
                 />
-                <Stat
+                <SmallStat
                   label="Max HR"
                   value={
-                    activity.maxHeartrate
-                      ? `${Math.round(activity.maxHeartrate)} bpm`
-                      : "—"
+                    activity.maxHeartrate ? `${Math.round(activity.maxHeartrate)} bpm` : "—"
                   }
                 />
-                <Stat
+                <SmallStat
                   label="Cadence"
                   value={
                     activity.averageCadence
@@ -332,17 +379,15 @@ export default function ActivityDetailScreen() {
                   }
                 />
               </View>
-            </View>
+            </Card>
           )}
 
           {/* EFFICIENCY */}
           {efficiency.data ? (
-            <View className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700">
-              <Text className="text-xs uppercase tracking-wide text-slate-400 mb-3">
-                Efficiency
-              </Text>
-              <View className="flex-row gap-3">
-                <Stat
+            <Card>
+              <SectionLabel style={{ marginLeft: 0 }}>Efficiency</SectionLabel>
+              <View style={{ flexDirection: "row" }}>
+                <SmallStat
                   label="Decoupling"
                   value={
                     efficiency.data.aerobicDecoupling != null
@@ -350,11 +395,11 @@ export default function ActivityDetailScreen() {
                       : "—"
                   }
                 />
-                <Stat
+                <SmallStat
                   label="Pacing"
                   value={`${Math.round(efficiency.data.pacingStability)}/100`}
                 />
-                <Stat
+                <SmallStat
                   label="Cadence drift"
                   value={
                     efficiency.data.cadenceDrift != null
@@ -363,16 +408,16 @@ export default function ActivityDetailScreen() {
                   }
                 />
               </View>
-              <View className="mt-3 gap-1">
-                <Text className="text-xs text-slate-500">
+              <View style={{ marginTop: 12, gap: 4 }}>
+                <Text style={{ fontSize: 12, color: colors.muted }}>
                   • {DECOUPLING_LABEL[efficiency.data.decouplingLabel]}
                 </Text>
-                <Text className="text-xs text-slate-500">
+                <Text style={{ fontSize: 12, color: colors.muted }}>
                   • {PACING_LABEL[efficiency.data.pacingLabel]}
                 </Text>
                 {efficiency.data.firstHalfPace != null &&
                 efficiency.data.secondHalfPace != null ? (
-                  <Text className="text-xs text-slate-500">
+                  <Text style={{ fontSize: 12, color: colors.muted }}>
                     • Negative split:{" "}
                     {(
                       efficiency.data.firstHalfPace - efficiency.data.secondHalfPace
@@ -381,94 +426,116 @@ export default function ActivityDetailScreen() {
                   </Text>
                 ) : null}
               </View>
-            </View>
+            </Card>
           ) : null}
 
           {/* DATA QUALITY */}
           {quality.data && quality.data.totalDataPoints > 0 ? (
-            <View className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700">
-              <View className="flex-row items-center justify-between mb-3">
-                <Text className="text-xs uppercase tracking-wide text-slate-400">
-                  Data quality
-                </Text>
+            <Card>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 12,
+                }}
+              >
+                <SectionLabel style={{ marginLeft: 0, marginBottom: 0 }}>
+                  Data Quality
+                </SectionLabel>
                 <Text
-                  className="text-sm font-bold"
                   style={{
+                    fontSize: 14,
+                    fontWeight: "700",
                     color:
                       quality.data.score >= 80
-                        ? "#10b981"
+                        ? colors.successText
                         : quality.data.score >= 60
-                          ? "#f59e0b"
-                          : "#ef4444",
+                          ? colors.warningText
+                          : colors.danger,
                   }}
                 >
                   {Math.round(quality.data.score)}/100
                 </Text>
               </View>
-              <View className="flex-row gap-3">
-                <Stat label="HR" value={`${Math.round(quality.data.hrQuality)}%`} />
-                <Stat label="GPS" value={`${Math.round(quality.data.gpsQuality)}%`} />
-                <Stat label="Pauses" value={`${Math.round(quality.data.pauseQuality)}%`} />
+              <View style={{ flexDirection: "row" }}>
+                <SmallStat label="HR" value={`${Math.round(quality.data.hrQuality)}%`} />
+                <SmallStat label="GPS" value={`${Math.round(quality.data.gpsQuality)}%`} />
+                <SmallStat label="Pauses" value={`${Math.round(quality.data.pauseQuality)}%`} />
               </View>
               {quality.data.flags?.length ? (
-                <View className="mt-3 gap-1">
+                <View style={{ marginTop: 12, gap: 4 }}>
                   {quality.data.flags.slice(0, 3).map((f, i) => (
-                    <Text key={i} className="text-xs text-orange-500">
+                    <Text key={i} style={{ fontSize: 12, color: colors.warningText }}>
                       ⚠️ {f}
                     </Text>
                   ))}
                 </View>
               ) : null}
-            </View>
+            </Card>
           ) : null}
 
           {/* SPLITS */}
-          <View className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700">
-            <Text className="text-xs uppercase tracking-wide text-slate-400 mb-3">
-              Splits
-            </Text>
+          <Card>
+            <SectionLabel style={{ marginLeft: 0 }}>Splits</SectionLabel>
             {perf.isLoading ? (
-              <ActivityIndicator color="#fc4c02" />
+              <ActivityIndicator color={colors.brand} />
             ) : laps && laps.length > 0 ? (
-              <View className="gap-2">
-                <View className="flex-row pb-2 border-b border-slate-200 dark:border-slate-700">
-                  <Text className="w-8 text-xs text-slate-400">#</Text>
-                  <Text className="flex-1 text-xs text-slate-400">Distance</Text>
-                  <Text className="flex-1 text-xs text-slate-400">Time</Text>
-                  <Text className="flex-1 text-xs text-slate-400 text-right">Pace</Text>
+              <View>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    paddingBottom: 8,
+                    borderBottomWidth: 0.5,
+                    borderBottomColor: colors.border,
+                  }}
+                >
+                  <Text style={[headStyle, { width: 28 }]}>#</Text>
+                  <Text style={[headStyle, { flex: 1 }]}>Distance</Text>
+                  <Text style={[headStyle, { flex: 1 }]}>Time</Text>
+                  <Text style={[headStyle, { flex: 1, textAlign: "right" }]}>Pace</Text>
                 </View>
                 {laps.slice(0, 30).map((lap) => (
-                  <View key={lap.lap_index} className="flex-row py-1">
-                    <Text className="w-8 text-sm text-slate-500">{lap.lap_index}</Text>
-                    <Text className="flex-1 text-sm text-slate-900 dark:text-white">
+                  <View
+                    key={lap.lap_index}
+                    style={{
+                      flexDirection: "row",
+                      paddingVertical: 7,
+                      borderBottomWidth: 0.5,
+                      borderBottomColor: colors.border,
+                    }}
+                  >
+                    <Text style={{ width: 28, fontSize: 13, color: colors.muted }}>
+                      {lap.lap_index}
+                    </Text>
+                    <Text style={{ flex: 1, fontSize: 14, color: colors.text }}>
                       {formatDistance(lap.distance, unit)}
                     </Text>
-                    <Text className="flex-1 text-sm text-slate-900 dark:text-white">
+                    <Text style={{ flex: 1, fontSize: 14, color: colors.text }}>
                       {formatDuration(lap.moving_time)}
                     </Text>
-                    <Text className="flex-1 text-sm text-slate-900 dark:text-white text-right">
+                    <Text style={{ flex: 1, fontSize: 14, color: colors.text, textAlign: "right" }}>
                       {formatPace(lap.average_speed, unit)}
                     </Text>
                   </View>
                 ))}
               </View>
             ) : (
-              <Text className="text-sm text-slate-500">
-                No splits available for this activity.
-              </Text>
+              <EmptyState title="No splits available for this activity" />
             )}
-          </View>
+          </Card>
 
+          {/* LOCATION */}
           {activity.startLatitude && activity.startLongitude ? (
-            <View className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700">
-              <Text className="text-xs uppercase tracking-wide text-slate-400 mb-2">
-                Start location
-              </Text>
-              <Text className="text-sm text-slate-700 dark:text-slate-200">
+            <Card>
+              <SectionLabel style={{ marginLeft: 0 }}>Start Location</SectionLabel>
+              <Text style={{ fontSize: 14, color: colors.text }}>
                 {activity.startLatitude.toFixed(4)}, {activity.startLongitude.toFixed(4)}
               </Text>
-              <Text className="text-xs text-slate-400 mt-2">Map view coming soon</Text>
-            </View>
+              <Text style={{ fontSize: 12, color: colors.faint, marginTop: 6 }}>
+                Map view coming soon
+              </Text>
+            </Card>
           ) : null}
         </ScrollView>
       )}
@@ -476,43 +543,58 @@ export default function ActivityDetailScreen() {
   );
 }
 
-function PremiumGate({ label }: { label: string }) {
-  return (
-    <View className="rounded-2xl p-5 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900">
-      <Text className="text-sm font-semibold text-orange-700 dark:text-orange-300">
-        {label} is a Premium feature
-      </Text>
-      <Text className="text-xs text-orange-700/80 dark:text-orange-300/80 mt-1">
-        Upgrade on aitracker.run to unlock per-run AI grading and recaps.
-      </Text>
-    </View>
-  );
-}
-
-function Card({ children }: { children: React.ReactNode }) {
-  return (
-    <View className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 items-center">
-      {children}
-    </View>
-  );
-}
+const headStyle = {
+  fontSize: 11,
+  fontWeight: "700" as const,
+  letterSpacing: 0.5,
+  color: colors.muted,
+  textTransform: "uppercase" as const,
+};
 
 function HeroStat({ label, value }: { label: string; value: string }) {
   return (
-    <View className="flex-1">
-      <Text className="text-[11px] uppercase tracking-wide text-slate-400">{label}</Text>
-      <Text className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+    <View style={{ flex: 1 }}>
+      <Text
+        style={{
+          fontSize: 11,
+          fontWeight: "700",
+          letterSpacing: 0.6,
+          color: colors.muted,
+          textTransform: "uppercase",
+        }}
+      >
+        {label}
+      </Text>
+      <Text
+        style={{
+          fontSize: 26,
+          fontWeight: "700",
+          color: colors.text,
+          marginTop: 4,
+          letterSpacing: -0.8,
+        }}
+      >
         {value}
       </Text>
     </View>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function SmallStat({ label, value }: { label: string; value: string }) {
   return (
-    <View className="flex-1">
-      <Text className="text-[11px] uppercase tracking-wide text-slate-400">{label}</Text>
-      <Text className="text-sm font-semibold text-slate-900 dark:text-white mt-0.5">
+    <View style={{ flex: 1 }}>
+      <Text
+        style={{
+          fontSize: 11,
+          fontWeight: "700",
+          letterSpacing: 0.5,
+          color: colors.muted,
+          textTransform: "uppercase",
+        }}
+      >
+        {label}
+      </Text>
+      <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text, marginTop: 2 }}>
         {value}
       </Text>
     </View>

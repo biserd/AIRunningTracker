@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  Pressable,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -13,6 +12,8 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { colors } from "../lib/theme";
+import { PrimaryButton } from "../components/ios";
 import type { LoginResponse } from "../types";
 
 export default function LoginScreen() {
@@ -44,7 +45,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-slate-900">
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -53,21 +54,33 @@ export default function LoginScreen() {
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="flex-1 px-6 pt-12 pb-6 justify-center">
-            <View className="mb-10">
-              <Text className="text-4xl font-bold text-slate-900 dark:text-white">
-                RunAnalytics
+          <View
+            style={{
+              flex: 1,
+              paddingHorizontal: 24,
+              paddingTop: 48,
+              paddingBottom: 24,
+              justifyContent: "center",
+            }}
+          >
+            <View style={{ marginBottom: 36 }}>
+              <Text
+                style={{
+                  fontSize: 38,
+                  fontWeight: "700",
+                  color: colors.text,
+                  letterSpacing: -1,
+                }}
+              >
+                <Text style={{ color: colors.brand }}>Run</Text>Analytics
               </Text>
-              <Text className="text-base text-slate-500 mt-2">
+              <Text style={{ fontSize: 16, color: colors.muted, marginTop: 8 }}>
                 Sign in to your account
               </Text>
             </View>
 
-            <View className="gap-4">
-              <View>
-                <Text className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  Email
-                </Text>
+            <View style={{ gap: 16 }}>
+              <Field label="Email">
                 <TextInput
                   value={email}
                   onChangeText={setEmail}
@@ -75,37 +88,40 @@ export default function LoginScreen() {
                   autoComplete="email"
                   keyboardType="email-address"
                   placeholder="you@example.com"
-                  placeholderTextColor="#9ca3af"
-                  className="border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-3.5 text-base text-slate-900 dark:text-white bg-white dark:bg-slate-800"
+                  placeholderTextColor={colors.faint}
+                  style={inputStyle}
                 />
-              </View>
+              </Field>
 
-              <View>
-                <Text className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  Password
-                </Text>
+              <Field label="Password">
                 <TextInput
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
                   autoComplete="password"
                   placeholder="••••••••"
-                  placeholderTextColor="#9ca3af"
-                  className="border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-3.5 text-base text-slate-900 dark:text-white bg-white dark:bg-slate-800"
+                  placeholderTextColor={colors.faint}
+                  style={inputStyle}
+                />
+              </Field>
+
+              <View style={{ marginTop: 8 }}>
+                <PrimaryButton
+                  label="Sign in"
+                  onPress={onSubmit}
+                  loading={submitting}
                 />
               </View>
 
-              <Pressable
-                onPress={onSubmit}
-                disabled={submitting}
-                className="bg-strava rounded-xl py-4 items-center mt-2 active:opacity-80 disabled:opacity-50"
+              <Text
+                style={{
+                  fontSize: 13,
+                  textAlign: "center",
+                  color: colors.muted,
+                  marginTop: 12,
+                  lineHeight: 19,
+                }}
               >
-                <Text className="text-white font-semibold text-base">
-                  {submitting ? "Signing in…" : "Sign in"}
-                </Text>
-              </Pressable>
-
-              <Text className="text-xs text-center text-slate-500 mt-4">
                 Don't have an account? Create one at aitracker.run, then sign in here.
               </Text>
             </View>
@@ -115,3 +131,33 @@ export default function LoginScreen() {
     </SafeAreaView>
   );
 }
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <View>
+      <Text
+        style={{
+          fontSize: 13,
+          fontWeight: "600",
+          color: colors.muted,
+          marginBottom: 6,
+          letterSpacing: 0.2,
+        }}
+      >
+        {label}
+      </Text>
+      {children}
+    </View>
+  );
+}
+
+const inputStyle = {
+  borderWidth: 0.5,
+  borderColor: colors.border,
+  backgroundColor: colors.surface,
+  borderRadius: 12,
+  paddingHorizontal: 16,
+  paddingVertical: 14,
+  fontSize: 16,
+  color: colors.text,
+} as const;

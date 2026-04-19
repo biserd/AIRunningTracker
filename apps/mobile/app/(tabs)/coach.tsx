@@ -255,17 +255,25 @@ function Bubble({ role, content }: { role: string; content: string }) {
   const isUser = role === "user";
   if (isUser) {
     return (
-      <View style={{ alignSelf: "flex-end", maxWidth: "82%" }}>
+      <View style={{ alignSelf: "flex-end", maxWidth: "75%" }}>
         <View
           style={{
             backgroundColor: colors.brand,
             borderRadius: 18,
             borderBottomRightRadius: 4,
             paddingHorizontal: 16,
-            paddingVertical: 11,
+            paddingVertical: 12,
           }}
         >
-          <Text style={{ color: "#fff", fontSize: 15, fontWeight: "500", lineHeight: 20 }}>
+          <Text
+            style={{
+              color: "#fff",
+              fontSize: 15,
+              fontWeight: "500",
+              lineHeight: 21,
+              flexShrink: 1,
+            }}
+          >
             {content}
           </Text>
         </View>
@@ -273,21 +281,39 @@ function Bubble({ role, content }: { role: string; content: string }) {
     );
   }
   return (
-    <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-start", maxWidth: "92%" }}>
+    <View
+      style={{
+        flexDirection: "row",
+        gap: 10,
+        alignItems: "flex-start",
+        maxWidth: "90%",
+        alignSelf: "flex-start",
+      }}
+    >
       <Avatar />
       <View
         style={{
           flex: 1,
-          backgroundColor: colors.surface,
+          flexShrink: 1,
+          backgroundColor: colors.surfaceAlt,
           borderWidth: 0.5,
           borderColor: colors.border,
           borderRadius: 18,
           borderTopLeftRadius: 4,
           paddingHorizontal: 16,
-          paddingVertical: 12,
+          paddingVertical: 14,
         }}
       >
-        <Text style={{ fontSize: 15, color: colors.text, lineHeight: 22 }}>{content}</Text>
+        <Text
+          style={{
+            fontSize: 15,
+            color: colors.text,
+            lineHeight: 23,
+            flexShrink: 1,
+          }}
+        >
+          {content}
+        </Text>
       </View>
     </View>
   );

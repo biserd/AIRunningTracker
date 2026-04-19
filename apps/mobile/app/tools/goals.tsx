@@ -13,6 +13,14 @@ import { Stack } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
+import { colors, shadow } from "../../lib/theme";
+import {
+  NavBar,
+  SectionLabel,
+  Card,
+  PrimaryButton,
+  EmptyState,
+} from "../../components/ios";
 import type { Goal } from "../../types";
 
 const GOAL_TYPES = ["distance", "speed", "endurance", "hills", "consistency"] as const;
@@ -71,116 +79,123 @@ export default function GoalsScreen() {
   const completed = goals.data?.filter((g) => g.status === "completed") ?? [];
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          title: "Goals",
-          headerStyle: { backgroundColor: "#fc4c02" },
-          headerTintColor: "#fff",
-        }}
-      />
-      <SafeAreaView edges={["bottom"]} className="flex-1 bg-slate-50 dark:bg-slate-900">
-        <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 40 }}>
-          <View className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700">
-            <Text className="text-xs uppercase tracking-wide text-slate-400 mb-3">
-              New goal
-            </Text>
-            <TextInput
-              value={newTitle}
-              onChangeText={setNewTitle}
-              placeholder="Title (e.g. Sub-25 5K)"
-              placeholderTextColor="#94a3b8"
-              className="px-3 py-3 bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-900 dark:text-white"
-            />
-            <TextInput
-              value={newDesc}
-              onChangeText={setNewDesc}
-              placeholder="Description (optional)"
-              placeholderTextColor="#94a3b8"
-              className="px-3 py-3 bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-900 dark:text-white mt-2"
-            />
-            <TextInput
-              value={newTarget}
-              onChangeText={setNewTarget}
-              placeholder="Target value (e.g. 24:59)"
-              placeholderTextColor="#94a3b8"
-              className="px-3 py-3 bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-900 dark:text-white mt-2"
-            />
-            <View className="flex-row flex-wrap gap-2 mt-3">
-              {GOAL_TYPES.map((t) => (
+    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.bg }}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <NavBar title="Goals" back="Tools" />
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }}>
+        <Card>
+          <SectionLabel style={{ marginLeft: 0 }}>New Goal</SectionLabel>
+          <TextInput
+            value={newTitle}
+            onChangeText={setNewTitle}
+            placeholder="Title (e.g. Sub-25 5K)"
+            placeholderTextColor={colors.faint}
+            style={inputStyle}
+          />
+          <TextInput
+            value={newDesc}
+            onChangeText={setNewDesc}
+            placeholder="Description (optional)"
+            placeholderTextColor={colors.faint}
+            style={[inputStyle, { marginTop: 8 }]}
+          />
+          <TextInput
+            value={newTarget}
+            onChangeText={setNewTarget}
+            placeholder="Target value (e.g. 24:59)"
+            placeholderTextColor={colors.faint}
+            style={[inputStyle, { marginTop: 8 }]}
+          />
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              gap: 8,
+              marginTop: 12,
+            }}
+          >
+            {GOAL_TYPES.map((t) => {
+              const selected = newType === t;
+              return (
                 <Pressable
                   key={t}
                   onPress={() => setNewType(t)}
-                  className={`px-3 py-1.5 rounded-full border ${
-                    newType === t
-                      ? "border-strava bg-strava"
-                      : "border-slate-300 dark:border-slate-600"
-                  } active:opacity-80`}
+                  style={({ pressed }) => ({
+                    paddingHorizontal: 14,
+                    paddingVertical: 7,
+                    borderRadius: 999,
+                    backgroundColor: selected ? colors.brand : colors.surface,
+                    borderWidth: 0.5,
+                    borderColor: selected ? colors.brand : colors.border,
+                    opacity: pressed ? 0.8 : 1,
+                  })}
                 >
                   <Text
-                    className={`text-xs font-medium ${
-                      newType === t ? "text-white" : "text-slate-700 dark:text-slate-200"
-                    }`}
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: selected ? "#fff" : colors.text,
+                      textTransform: "capitalize",
+                    }}
                   >
                     {t}
                   </Text>
                 </Pressable>
-              ))}
-            </View>
-            <Pressable
-              disabled={!newTitle.trim() || createGoal.isPending}
-              onPress={() => createGoal.mutate()}
-              className={`mt-4 rounded-xl py-3 items-center ${
-                !newTitle.trim() || createGoal.isPending
-                  ? "bg-slate-300 dark:bg-slate-700"
-                  : "bg-strava active:opacity-80"
-              }`}
-            >
-              {createGoal.isPending ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text className="text-white font-semibold">Add goal</Text>
-              )}
-            </Pressable>
+              );
+            })}
           </View>
+          <View style={{ marginTop: 14 }}>
+            <PrimaryButton
+              label="Add goal"
+              onPress={() => createGoal.mutate()}
+              disabled={!newTitle.trim()}
+              loading={createGoal.isPending}
+            />
+          </View>
+        </Card>
 
-          <Text className="text-xs uppercase tracking-wide text-slate-400 mt-2">
-            Active ({active.length})
-          </Text>
-          {goals.isLoading ? <ActivityIndicator color="#fc4c02" /> : null}
-          {active.length === 0 && !goals.isLoading ? (
-            <Text className="text-sm text-slate-500">No active goals yet.</Text>
-          ) : (
-            active.map((g) => (
+        <SectionLabel>Active ({active.length})</SectionLabel>
+        {goals.isLoading ? <ActivityIndicator color={colors.brand} /> : null}
+        {active.length === 0 && !goals.isLoading ? (
+          <EmptyState title="No active goals yet" />
+        ) : (
+          active.map((g) => (
+            <GoalCard
+              key={g.id}
+              goal={g}
+              onComplete={() => completeGoal.mutate(g.id)}
+              onDelete={() => deleteGoal.mutate(g.id)}
+            />
+          ))
+        )}
+
+        {completed.length > 0 ? (
+          <>
+            <SectionLabel>Completed ({completed.length})</SectionLabel>
+            {completed.map((g) => (
               <GoalCard
                 key={g.id}
                 goal={g}
-                onComplete={() => completeGoal.mutate(g.id)}
                 onDelete={() => deleteGoal.mutate(g.id)}
               />
-            ))
-          )}
-
-          {completed.length > 0 ? (
-            <>
-              <Text className="text-xs uppercase tracking-wide text-slate-400 mt-3">
-                Completed ({completed.length})
-              </Text>
-              {completed.map((g) => (
-                <GoalCard
-                  key={g.id}
-                  goal={g}
-                  onDelete={() => deleteGoal.mutate(g.id)}
-                />
-              ))}
-            </>
-          ) : null}
-        </ScrollView>
-      </SafeAreaView>
-    </>
+            ))}
+          </>
+        ) : null}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
+
+const inputStyle = {
+  paddingHorizontal: 14,
+  paddingVertical: 12,
+  backgroundColor: colors.surfaceAlt,
+  borderWidth: 0.5,
+  borderColor: colors.border,
+  borderRadius: 12,
+  color: colors.text,
+  fontSize: 15,
+} as const;
 
 function GoalCard({
   goal,
@@ -193,41 +208,68 @@ function GoalCard({
 }) {
   const done = goal.status === "completed";
   return (
-    <View className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700">
-      <View className="flex-row items-start justify-between">
-        <View className="flex-1 pr-2">
-          <Text
-            className={`text-base font-semibold ${
-              done
-                ? "text-slate-400 line-through"
-                : "text-slate-900 dark:text-white"
-            }`}
-          >
-            {goal.title}
-          </Text>
-          {goal.description && goal.description !== goal.title ? (
-            <Text className="text-xs text-slate-500 mt-1">{goal.description}</Text>
-          ) : null}
-          <View className="flex-row gap-2 mt-2">
-            <Tag>{goal.type}</Tag>
-            {goal.targetValue ? <Tag>🎯 {goal.targetValue}</Tag> : null}
-          </View>
-        </View>
+    <View
+      style={{
+        backgroundColor: colors.surface,
+        borderRadius: 16,
+        borderWidth: 0.5,
+        borderColor: colors.border,
+        padding: 14,
+        ...shadow.card,
+      }}
+    >
+      <Text
+        style={{
+          fontSize: 16,
+          fontWeight: "600",
+          color: done ? colors.faint : colors.text,
+          textDecorationLine: done ? "line-through" : "none",
+          letterSpacing: -0.2,
+        }}
+      >
+        {goal.title}
+      </Text>
+      {goal.description && goal.description !== goal.title ? (
+        <Text style={{ fontSize: 13, color: colors.muted, marginTop: 4 }}>
+          {goal.description}
+        </Text>
+      ) : null}
+      <View style={{ flexDirection: "row", gap: 6, marginTop: 8 }}>
+        <Tag>{goal.type}</Tag>
+        {goal.targetValue ? <Tag>🎯 {goal.targetValue}</Tag> : null}
       </View>
-      <View className="flex-row gap-2 mt-3">
+      <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
         {!done && onComplete ? (
           <Pressable
             onPress={onComplete}
-            className="flex-1 py-2 rounded-lg bg-green-500 items-center active:opacity-80"
+            style={({ pressed }) => ({
+              flex: 1,
+              backgroundColor: colors.successText,
+              paddingVertical: 10,
+              borderRadius: 10,
+              alignItems: "center",
+              opacity: pressed ? 0.85 : 1,
+            })}
           >
-            <Text className="text-white text-xs font-semibold">Mark complete</Text>
+            <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>
+              Mark complete
+            </Text>
           </Pressable>
         ) : null}
         <Pressable
           onPress={onDelete}
-          className="px-4 py-2 rounded-lg border border-red-200 dark:border-red-900 active:opacity-80"
+          style={({ pressed }) => ({
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            borderRadius: 10,
+            borderWidth: 0.5,
+            borderColor: "rgba(217,52,43,0.35)",
+            opacity: pressed ? 0.7 : 1,
+          })}
         >
-          <Text className="text-red-600 text-xs font-semibold">Delete</Text>
+          <Text style={{ color: colors.danger, fontSize: 13, fontWeight: "600" }}>
+            Delete
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -236,8 +278,23 @@ function GoalCard({
 
 function Tag({ children }: { children: React.ReactNode }) {
   return (
-    <View className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700">
-      <Text className="text-[10px] text-slate-600 dark:text-slate-300 uppercase">
+    <View
+      style={{
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 999,
+        backgroundColor: colors.surfaceAlt,
+      }}
+    >
+      <Text
+        style={{
+          fontSize: 11,
+          color: colors.muted,
+          textTransform: "uppercase",
+          fontWeight: "600",
+          letterSpacing: 0.4,
+        }}
+      >
         {children}
       </Text>
     </View>

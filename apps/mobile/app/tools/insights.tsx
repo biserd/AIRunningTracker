@@ -2,7 +2,6 @@ import {
   ScrollView,
   View,
   Text,
-  Pressable,
   ActivityIndicator,
   Alert,
 } from "react-native";
@@ -12,19 +11,36 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { formatDate } from "../../lib/format";
+import { colors } from "../../lib/theme";
+import {
+  NavBar,
+  SectionLabel,
+  PrimaryButton,
+  EmptyState,
+  InsightCard,
+} from "../../components/ios";
 import type { InsightDayGroup, InsightItem } from "../../types";
 
 interface InsightsResponse {
   timeline: InsightDayGroup[];
 }
 
-const CATEGORY_EMOJI: Record<string, string> = {
+const CATEGORY_GLYPH: Record<string, string> = {
   performance: "📈",
   pattern: "🔍",
   recovery: "💤",
   motivation: "💪",
   technique: "🦶",
   recommendation: "🎯",
+};
+
+const CATEGORY_BG: Record<string, string> = {
+  performance: "rgba(45,122,31,0.12)",
+  pattern: "rgba(79,152,163,0.15)",
+  recovery: "rgba(108,49,176,0.12)",
+  motivation: "rgba(252,76,2,0.12)",
+  technique: "rgba(194,96,32,0.12)",
+  recommendation: "rgba(252,76,2,0.12)",
 };
 
 export default function InsightsScreen() {
@@ -37,7 +53,6 @@ export default function InsightsScreen() {
       const data = await api<InsightsResponse | { timeline?: InsightDayGroup[] } | InsightDayGroup[]>(
         `/api/insights/history/${user!.id}`,
       );
-      // Handle either { timeline: [...] } or raw array
       if (Array.isArray(data)) return data as InsightDayGroup[];
       return (data as { timeline?: InsightDayGroup[] }).timeline ?? [];
     },
@@ -67,72 +82,47 @@ export default function InsightsScreen() {
   const days = insights.data ?? [];
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          title: "AI Insights",
-          headerStyle: { backgroundColor: "#fc4c02" },
-          headerTintColor: "#fff",
-        }}
-      />
-      <SafeAreaView edges={["bottom"]} className="flex-1 bg-slate-50 dark:bg-slate-900">
-        <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 40 }}>
-          <Pressable
-            onPress={() => generate.mutate()}
-            disabled={generate.isPending}
-            className={`rounded-xl py-3 items-center ${
-              generate.isPending ? "bg-slate-300 dark:bg-slate-700" : "bg-strava active:opacity-80"
-            }`}
-          >
-            {generate.isPending ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text className="text-white font-semibold">✨ Generate fresh insights</Text>
-            )}
-          </Pressable>
+    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.bg }}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <NavBar title="AI Insights" back="Tools" />
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }}>
+        <PrimaryButton
+          label="✨ Generate fresh insights"
+          onPress={() => generate.mutate()}
+          loading={generate.isPending}
+        />
 
-          {insights.isLoading ? (
-            <View className="items-center mt-12">
-              <ActivityIndicator color="#fc4c02" />
+        {insights.isLoading ? (
+          <View style={{ alignItems: "center", marginTop: 32 }}>
+            <ActivityIndicator color={colors.brand} />
+          </View>
+        ) : days.length === 0 ? (
+          <EmptyState
+            title="No insights yet"
+            body="Tap above to generate AI insights from your latest runs."
+          />
+        ) : (
+          days.map((d) => (
+            <View key={d.date} style={{ gap: 8 }}>
+              <SectionLabel>{formatDate(d.date)}</SectionLabel>
+              {(Object.keys(d.insights) as Array<keyof typeof d.insights>).map((cat) => {
+                const items = d.insights[cat];
+                if (!items || items.length === 0) return null;
+                return items.map((item: InsightItem) => (
+                  <InsightCard
+                    key={item.id}
+                    category={cat}
+                    title={item.title}
+                    body={item.content}
+                    glyph={CATEGORY_GLYPH[cat] || "💡"}
+                    iconBg={CATEGORY_BG[cat] || colors.surfaceAlt}
+                  />
+                ));
+              })}
             </View>
-          ) : days.length === 0 ? (
-            <Text className="text-sm text-slate-500 text-center mt-8">
-              No insights yet. Tap above to generate from your latest runs.
-            </Text>
-          ) : (
-            days.map((d) => (
-              <View key={d.date} className="gap-2">
-                <Text className="text-xs uppercase tracking-wide text-slate-400">
-                  {formatDate(d.date)}
-                </Text>
-                {(Object.keys(d.insights) as Array<keyof typeof d.insights>).map((cat) => {
-                  const items = d.insights[cat];
-                  if (!items || items.length === 0) return null;
-                  return items.map((item) => <InsightCard key={item.id} category={cat} item={item} />);
-                })}
-              </View>
-            ))
-          )}
-        </ScrollView>
-      </SafeAreaView>
-    </>
-  );
-}
-
-function InsightCard({ category, item }: { category: string; item: InsightItem }) {
-  return (
-    <View className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700">
-      <View className="flex-row items-center gap-2 mb-2">
-        <Text style={{ fontSize: 16 }}>{CATEGORY_EMOJI[category] || "💡"}</Text>
-        <Text className="text-[10px] uppercase tracking-wide text-slate-400">{category}</Text>
-      </View>
-      <Text className="text-sm font-semibold text-slate-900 dark:text-white">
-        {item.title}
-      </Text>
-      <Text className="text-sm text-slate-600 dark:text-slate-300 mt-1 leading-5">
-        {item.content}
-      </Text>
-    </View>
+          ))
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }

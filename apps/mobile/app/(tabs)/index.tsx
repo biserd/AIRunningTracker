@@ -13,6 +13,7 @@ import { Link } from "expo-router";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { colors, shadow } from "../../lib/theme";
+import { SectionLabel } from "../../components/ios";
 import {
   formatDistance,
   formatPace,
@@ -124,11 +125,11 @@ export default function HomeScreen() {
               <View style={{ marginBottom: 18 }}>
                 <Text
                   style={{
-                    fontSize: 28,
+                    fontSize: 30,
                     fontWeight: "700",
                     color: colors.text,
                     letterSpacing: -0.5,
-                    lineHeight: 34,
+                    lineHeight: 36,
                   }}
                 >
                   {greeting()},{"\n"}
@@ -196,67 +197,81 @@ export default function HomeScreen() {
   );
 }
 
-/* ─── Runner Score (gradient hero) ───────────────────────── */
+/* ─── Runner Score (white gradient hero, brand-orange number) ─ */
 function RunnerScoreCard({ score }: { score: RunnerScore }) {
   const trend = score.trends.weeklyChange;
   const trendArrow = trend > 0 ? "↑" : trend < 0 ? "↓" : "→";
   const trendText = `${trendArrow} ${trend > 0 ? "+" : ""}${Math.abs(trend).toFixed(0)} vs last week`;
+  const betterThan = Math.round(score.percentile);
 
   return (
     <View
       style={{
-        backgroundColor: colors.brand,
+        backgroundColor: "#FFF8F5",
         borderRadius: 22,
-        padding: 18,
+        borderWidth: 0.5,
+        borderColor: "#F0EDE8",
+        padding: 20,
         marginBottom: 14,
+        position: "relative",
+        overflow: "hidden",
         ...shadow.card,
       }}
     >
-      {/* Soft top sheen */}
+      {/* Soft brand glow top-right */}
       <View
         pointerEvents="none"
         style={{
           position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 80,
-          backgroundColor: "rgba(255,255,255,0.10)",
-          borderTopLeftRadius: 22,
-          borderTopRightRadius: 22,
+          top: -40,
+          right: -40,
+          width: 180,
+          height: 180,
+          borderRadius: 90,
+          backgroundColor: "rgba(252,76,2,0.10)",
         }}
       />
       <Text
         style={{
-          fontSize: 11,
+          fontSize: 13,
           fontWeight: "700",
-          letterSpacing: 1.2,
-          color: "rgba(255,255,255,0.85)",
+          letterSpacing: 0.8,
+          color: colors.muted,
           textTransform: "uppercase",
+          marginBottom: 6,
         }}
       >
         Runner Score
       </Text>
-      <View style={{ flexDirection: "row", alignItems: "flex-end", marginTop: 6 }}>
+      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 12 }}>
         <Text
           style={{
-            fontSize: 64,
-            fontWeight: "800",
-            color: "#fff",
-            letterSpacing: -2,
-            lineHeight: 64,
+            fontSize: 72,
+            fontWeight: "700",
+            color: colors.brand,
+            letterSpacing: -3,
+            lineHeight: 72,
           }}
         >
           {score.totalScore}
         </Text>
-        <View style={{ marginLeft: 14, marginBottom: 6 }}>
-          <Text style={{ fontSize: 28, fontWeight: "700", color: "#fff" }}>
+        <View style={{ paddingBottom: 10 }}>
+          <Text
+            style={{
+              fontSize: 28,
+              fontWeight: "700",
+              color: colors.text,
+              letterSpacing: -0.5,
+              lineHeight: 28,
+            }}
+          >
             {score.grade}
           </Text>
           <Text
             style={{
-              fontSize: 11,
-              color: "rgba(255,255,255,0.85)",
+              fontSize: 13,
+              fontWeight: "600",
+              color: trend >= 0 ? colors.successText : colors.warningText,
               marginTop: 2,
             }}
           >
@@ -266,16 +281,16 @@ function RunnerScoreCard({ score }: { score: RunnerScore }) {
       </View>
       <Text
         style={{
-          fontSize: 12,
-          color: "rgba(255,255,255,0.85)",
+          fontSize: 14,
+          color: colors.muted,
           marginTop: 6,
-          marginBottom: 14,
+          marginBottom: 16,
         }}
       >
-        Top {Math.max(1, 100 - Math.round(score.percentile))}% of runners
+        Better than {betterThan}% of runners
       </Text>
 
-      <View style={{ gap: 10 }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
         <SubScore label="Consistency" value={score.components.consistency} />
         <SubScore label="Performance" value={score.components.performance} />
         <SubScore label="Volume" value={score.components.volume} />
@@ -289,7 +304,7 @@ function SubScore({ label, value }: { label: string; value: number }) {
   const v = Math.max(0, Math.min(25, Math.round(value)));
   const pct = (v / 25) * 100;
   return (
-    <View>
+    <View style={{ width: "48%" }}>
       <View
         style={{
           flexDirection: "row",
@@ -297,24 +312,18 @@ function SubScore({ label, value }: { label: string; value: number }) {
           marginBottom: 4,
         }}
       >
-        <Text
-          style={{
-            fontSize: 12,
-            fontWeight: "600",
-            color: "rgba(255,255,255,0.92)",
-          }}
-        >
+        <Text style={{ fontSize: 12, fontWeight: "500", color: colors.muted }}>
           {label}
         </Text>
-        <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.85)" }}>
+        <Text style={{ fontSize: 12, fontWeight: "700", color: colors.text }}>
           {v}/25
         </Text>
       </View>
       <View
         style={{
-          height: 5,
-          backgroundColor: "rgba(255,255,255,0.20)",
-          borderRadius: 3,
+          height: 4,
+          backgroundColor: colors.surfaceAlt,
+          borderRadius: 4,
           overflow: "hidden",
         }}
       >
@@ -322,8 +331,9 @@ function SubScore({ label, value }: { label: string; value: number }) {
           style={{
             width: `${pct}%`,
             height: "100%",
-            backgroundColor: "rgba(255,255,255,0.95)",
-            borderRadius: 3,
+            backgroundColor: colors.brand,
+            opacity: 0.85,
+            borderRadius: 4,
           }}
         />
       </View>
@@ -341,7 +351,7 @@ function ThisWeekStats({
 }) {
   return (
     <View style={{ marginBottom: 14 }}>
-      <SectionLabel style={{ marginBottom: 8 }}>This Week</SectionLabel>
+      <SectionLabel>This Week</SectionLabel>
       <View
         style={{
           backgroundColor: colors.surface,
@@ -357,7 +367,7 @@ function ThisWeekStats({
         <View style={{ width: 0.5, backgroundColor: colors.border }} />
         <Stat label="Runs" value={String(stats.weeklyTotalActivities)} align="center" />
         <View style={{ width: 0.5, backgroundColor: colors.border }} />
-        <Stat label="Avg Pace" value={stats.weeklyAvgPace ? `${stats.weeklyAvgPace}` : "—"} align="right" />
+        <Stat label="Avg Pace" value={stats.weeklyAvgPace ? `${stats.weeklyAvgPace}` : "N/A"} align="right" />
       </View>
     </View>
   );
@@ -387,11 +397,12 @@ function Stat({
       </Text>
       <Text
         style={{
-          fontSize: 11,
+          fontSize: 12,
           color: colors.muted,
-          marginTop: 2,
+          marginTop: 3,
           textAlign: align,
           letterSpacing: 0.2,
+          fontWeight: "500",
         }}
       >
         {label}
@@ -400,21 +411,22 @@ function Stat({
   );
 }
 
-/* ─── Latest Brief card ──────────────────────────────────── */
+/* ─── Latest Brief card (gradient peach with brand-orange left border) ─ */
 function LatestBrief({ activity, unit }: { activity: Activity; unit: "km" | "miles" }) {
   return (
     <View style={{ marginBottom: 14 }}>
-      <SectionLabel style={{ marginBottom: 8 }}>Latest Brief</SectionLabel>
+      <SectionLabel>Latest Brief</SectionLabel>
       <Link href={`/activity/${activity.id}`} asChild>
         <Pressable
           style={({ pressed }) => ({
-            backgroundColor: colors.surface,
+            backgroundColor: "#FFF5F1",
             borderRadius: 18,
             borderWidth: 0.5,
             borderColor: colors.border,
+            borderLeftWidth: 3,
+            borderLeftColor: colors.brand,
             padding: 16,
             opacity: pressed ? 0.85 : 1,
-            ...shadow.card,
           })}
         >
           <View
@@ -431,30 +443,30 @@ function LatestBrief({ activity, unit }: { activity: Activity; unit: "km" | "mil
             }}
           >
             <View
-              style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.brand }}
+              style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: colors.brand }}
             />
-            <Text style={{ fontSize: 10, fontWeight: "700", color: colors.brand, letterSpacing: 0.3 }}>
+            <Text style={{ fontSize: 11, fontWeight: "700", color: colors.brand, letterSpacing: 0.6 }}>
               NEW BRIEF
             </Text>
           </View>
           <Text
             style={{
-              fontSize: 15,
+              fontSize: 17,
               fontWeight: "600",
               color: colors.text,
-              marginBottom: 4,
+              marginBottom: 6,
+              letterSpacing: -0.2,
             }}
           >
+            {activity.name}
+          </Text>
+          <Text style={{ fontSize: 15, color: colors.text, lineHeight: 22, marginBottom: 12 }}>
             {formatDate(activity.startDate)} · {formatDistance(activity.distance, unit)} ·{" "}
             {formatPace(activity.averageSpeed, unit)}
           </Text>
-          <Text style={{ fontSize: 14, color: colors.muted, lineHeight: 20 }}>
-            {activity.name}
-          </Text>
           <Text
             style={{
-              marginTop: 12,
-              fontSize: 13,
+              fontSize: 15,
               fontWeight: "600",
               color: colors.brand,
             }}
@@ -489,7 +501,7 @@ function DistanceTrendCard({
           ...shadow.card,
         }}
       >
-        <SectionLabel style={{ marginBottom: 12 }}>
+        <SectionLabel style={{ marginBottom: 12, marginLeft: 0 }}>
           Distance Trend · 30 Days
         </SectionLabel>
         <View
@@ -509,8 +521,8 @@ function DistanceTrendCard({
                   style={{
                     width: "85%",
                     height: h,
-                    backgroundColor: isLast ? colors.brand : "rgba(252,76,2,0.30)",
-                    borderRadius: 3,
+                    backgroundColor: isLast ? colors.brand : "rgba(252,76,2,0.18)",
+                    borderRadius: 4,
                   }}
                 />
               </View>
@@ -524,8 +536,8 @@ function DistanceTrendCard({
             marginTop: 8,
           }}
         >
-          <Text style={{ fontSize: 10, color: colors.faint }}>{recent[0]?.label}</Text>
-          <Text style={{ fontSize: 10, color: colors.faint }}>
+          <Text style={{ fontSize: 11, color: colors.faint }}>{recent[0]?.label}</Text>
+          <Text style={{ fontSize: 11, color: colors.faint }}>
             {recent[recent.length - 1]?.label} · {recent[recent.length - 1]?.value} {unitSuffix}
           </Text>
         </View>
@@ -558,8 +570,8 @@ function ActivityRow({
           borderWidth: 0.5,
           borderColor: colors.border,
           borderTopWidth: isFirst ? 0.5 : 0,
-          paddingVertical: 14,
-          paddingHorizontal: 14,
+          paddingVertical: 16,
+          paddingHorizontal: 16,
           flexDirection: "row",
           alignItems: "center",
           opacity: pressed ? 0.85 : 1,
@@ -573,13 +585,13 @@ function ActivityRow({
           >
             {activity.name}
           </Text>
-          <Text style={{ fontSize: 12, color: colors.muted }}>
+          <Text style={{ fontSize: 13, color: colors.muted }}>
             {formatDate(activity.startDate)} · {activity.type}
           </Text>
         </View>
-        <View style={{ flexDirection: "row", gap: 14, marginRight: 10 }}>
-          <MiniMetric value={formatDistance(activity.distance, unit).split(" ")[0]} unit={unit === "miles" ? "mi" : "km"} />
-          <MiniMetric value={formatPace(activity.averageSpeed, unit).split(" ")[0]} unit="pace" />
+        <View style={{ flexDirection: "row", gap: 16, marginRight: 10 }}>
+          <MiniMetric value={formatDistance(activity.distance, unit).split(" ")[0]} unit={unit === "miles" ? "MI" : "KM"} />
+          <MiniMetric value={formatPace(activity.averageSpeed, unit).split(" ")[0]} unit="PACE" />
         </View>
         <Text style={{ color: colors.faint, fontSize: 18, fontWeight: "300" }}>›</Text>
       </Pressable>
@@ -590,36 +602,11 @@ function ActivityRow({
 function MiniMetric({ value, unit }: { value: string; unit: string }) {
   return (
     <View style={{ alignItems: "flex-end" }}>
-      <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text }}>{value}</Text>
-      <Text style={{ fontSize: 10, color: colors.faint, marginTop: 1 }}>{unit}</Text>
+      <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text }}>{value}</Text>
+      <Text style={{ fontSize: 12, color: colors.muted, marginTop: 1, letterSpacing: 0.4 }}>
+        {unit}
+      </Text>
     </View>
-  );
-}
-
-/* ─── helpers ────────────────────────────────────────────── */
-function SectionLabel({
-  children,
-  style,
-}: {
-  children: React.ReactNode;
-  style?: any;
-}) {
-  return (
-    <Text
-      style={[
-        {
-          fontSize: 11,
-          fontWeight: "700",
-          letterSpacing: 1.0,
-          color: colors.muted,
-          textTransform: "uppercase",
-          marginLeft: 4,
-        },
-        style,
-      ]}
-    >
-      {children}
-    </Text>
   );
 }
 

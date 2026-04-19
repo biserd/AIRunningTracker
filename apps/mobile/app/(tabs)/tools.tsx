@@ -133,8 +133,8 @@ function ToolRow({ tool, isLast }: { tool: ToolDef; isLast: boolean }) {
         style={({ pressed }) => ({
           flexDirection: "row",
           alignItems: "center",
-          paddingVertical: 14,
-          paddingHorizontal: 14,
+          paddingVertical: 16,
+          paddingHorizontal: 16,
           borderBottomWidth: isLast ? 0 : 0.5,
           borderBottomColor: colors.border,
           backgroundColor: pressed ? colors.surfaceAlt : "transparent",
@@ -165,7 +165,7 @@ function ToolRow({ tool, isLast }: { tool: ToolDef; isLast: boolean }) {
           >
             {tool.title}
           </Text>
-          <Text style={{ fontSize: 12, color: colors.muted, lineHeight: 16 }}>{tool.desc}</Text>
+          <Text style={{ fontSize: 14, color: colors.muted, lineHeight: 19, marginTop: 2 }}>{tool.desc}</Text>
         </View>
         {tool.premium ? (
           <View
@@ -178,7 +178,7 @@ function ToolRow({ tool, isLast }: { tool: ToolDef; isLast: boolean }) {
           >
             <Text
               style={{
-                fontSize: 9,
+                fontSize: 11,
                 fontWeight: "700",
                 letterSpacing: 0.6,
                 color: colors.premium,
