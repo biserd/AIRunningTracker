@@ -107,12 +107,81 @@ export async function sendPushToUser(userId: number, payload: PushPayload): Prom
         }
       }
     } else {
-      // Native mobile push (Expo) will land in a separate dispatch branch.
-      console.log(`[Push] Skipping native ${sub.platform} subscription (no native provider configured yet)`);
+      // Native mobile push via Expo push service
+      if (!sub.nativeToken) continue;
+      result.attempted++;
+      try {
+        const sent = await sendExpoPush(sub.nativeToken, payload);
+        if (sent.delivered) {
+          result.delivered++;
+          await storage.touchPushSubscription(sub.id);
+        }
+        if (sent.removeSubscription) {
+          await storage.deletePushSubscription(sub.id);
+          result.removed++;
+          console.log(`[Push] Removed invalid Expo token for sub ${sub.id} user ${userId}: ${sent.error || ""}`);
+        }
+      } catch (err: any) {
+        console.error(`[Push] Expo send failed for sub ${sub.id}:`, err?.message || err);
+      }
     }
   }
 
   return result;
+}
+
+async function sendExpoPush(
+  expoToken: string,
+  payload: PushPayload
+): Promise<{ delivered: boolean; removeSubscription: boolean; error?: string }> {
+  const message = {
+    to: expoToken,
+    sound: "default",
+    title: payload.title,
+    body: payload.body,
+    data: { url: payload.url || "/dashboard", ...(payload.data || {}) },
+    ...(payload.tag ? { channelId: payload.tag } : {}),
+  };
+
+  const accessToken = process.env.EXPO_ACCESS_TOKEN;
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    "Accept-Encoding": "gzip, deflate",
+    "Content-Type": "application/json",
+  };
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+
+  const res = await fetch("https://exp.host/--/api/v2/push/send", {
+    method: "POST",
+    headers,
+    body: JSON.stringify(message),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    return { delivered: false, removeSubscription: false, error: `HTTP ${res.status} ${text}` };
+  }
+
+  const json: any = await res.json().catch(() => null);
+  const ticket = Array.isArray(json?.data) ? json.data[0] : json?.data;
+
+  if (!ticket) {
+    return { delivered: false, removeSubscription: false, error: "No ticket in Expo response" };
+  }
+
+  if (ticket.status === "ok") {
+    return { delivered: true, removeSubscription: false };
+  }
+
+  // status === "error"
+  const errCode = ticket.details?.error || "";
+  const removeSubscription =
+    errCode === "DeviceNotRegistered" || errCode === "InvalidCredentials";
+  return {
+    delivered: false,
+    removeSubscription,
+    error: ticket.message || errCode || "Unknown Expo error",
+  };
 }
 
 export const pushService = {
