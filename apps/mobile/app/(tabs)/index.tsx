@@ -223,6 +223,8 @@ function LastRunHero({
         style={{
           backgroundColor: colors.surface,
           borderRadius: 20,
+          borderWidth: 0.5,
+          borderColor: colors.line,
           padding: 24,
           marginTop: 8,
           ...shadow.card,
@@ -253,6 +255,8 @@ function LastRunHero({
       style={({ pressed }) => ({
         backgroundColor: colors.surface,
         borderRadius: 20,
+        borderWidth: 0.5,
+        borderColor: colors.line,
         padding: 24,
         marginTop: 8,
         opacity: pressed ? 0.96 : 1,
@@ -366,6 +370,8 @@ function ReadinessCard({ r, loading }: { r: RecoveryState | undefined; loading: 
         flex: 1,
         backgroundColor: colors.surface,
         borderRadius: 18,
+        borderWidth: 0.5,
+        borderColor: colors.line,
         paddingVertical: 18,
         paddingHorizontal: 16,
         opacity: pressed ? 0.92 : 1,
@@ -451,6 +457,8 @@ function InjuryCard({
         flex: 1,
         backgroundColor: colors.surface,
         borderRadius: 18,
+        borderWidth: 0.5,
+        borderColor: colors.line,
         paddingVertical: 18,
         paddingHorizontal: 16,
         opacity: pressed ? 0.92 : 1,
@@ -491,14 +499,17 @@ function WeeklyWhisper({ dashboard, unit }: { dashboard: DashboardData | undefin
       onPress={() => router.push("/tools/coach-recaps")}
       style={({ pressed }) => ({
         marginTop: 16,
-        backgroundColor: colors.surfaceAlt,
+        backgroundColor: colors.surface,
         borderRadius: 16,
+        borderWidth: 0.5,
+        borderColor: colors.line,
         paddingVertical: 14,
         paddingHorizontal: 16,
         flexDirection: "row",
         alignItems: "center",
         gap: 12,
         opacity: pressed ? 0.85 : 1,
+        ...shadow.card,
       })}
     >
       <View
@@ -537,6 +548,8 @@ function ScoreQuiet({ score }: { score: RunnerScore | undefined }) {
           paddingHorizontal: 20,
           backgroundColor: colors.surface,
           borderRadius: 16,
+          borderWidth: 0.5,
+          borderColor: colors.line,
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
