@@ -24,6 +24,7 @@ export default function RootLayout() {
               <Stack.Screen name="login" />
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="activity/[id]" />
+              <Stack.Screen name="runs" />
               <Stack.Screen name="tools/predictor" />
               <Stack.Screen name="tools/goals" />
               <Stack.Screen name="tools/insights" />

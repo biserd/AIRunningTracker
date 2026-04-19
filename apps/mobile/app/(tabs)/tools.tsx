@@ -104,7 +104,7 @@ export default function ToolsScreen() {
           Tools
         </Text>
         <Text style={{ fontSize: 14, color: colors.muted, marginTop: 4, marginBottom: 18 }}>
-          Everything beyond the dashboard.
+          Go deeper when you need it.
         </Text>
 
         <View
