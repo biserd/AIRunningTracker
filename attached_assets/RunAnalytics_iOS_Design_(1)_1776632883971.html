@@ -1,0 +1,1825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RunAnalytics iOS — Design Mockups</title>
+<style>
+  /* ─── Reset ───────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ─── Design tokens (matches spec) ─────────────────────── */
+  :root {
+    --brand:        #FC4C02;
+    --brand-dark:   #E03D00;
+    --bg:           #F2F1EE;
+    --surface:      #FFFFFF;
+    --surface-alt:  #F7F6F3;
+    --border:       #E2E0DB;
+    --text:         #1A1916;
+    --muted:        #6B6A67;
+    --faint:        #A8A7A3;
+    --premium:      #6C31B0;
+    --success:      #2D6317;
+    --success-text: #2D7A1F;
+    --warning:      #994F1A;
+    --warning-text: #C26020;
+
+    /* iOS phone shell */
+    --shell-w: 393px;
+    --shell-h: 852px;
+    --corner:  50px;
+
+    --font: -apple-system, "SF Pro Display", "SF Pro Text", BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  }
+
+  body {
+    background: #ECEAE5;
+    font-family: var(--font);
+    min-height: 100vh;
+    padding: 40px 20px 80px;
+  }
+
+  /* ─── Page layout ────────────────────────────────────── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .page-header h1 {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--brand);
+    margin-bottom: 8px;
+  }
+  .page-header p {
+    font-size: 13px;
+    color: #888;
+  }
+
+  .screens-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 48px;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  .screen-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .screen-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #888;
+  }
+
+  /* ─── iPhone Shell ───────────────────────────────────── */
+  .iphone {
+    width: var(--shell-w);
+    height: var(--shell-h);
+    background: var(--bg);
+    border-radius: var(--corner);
+    border: 1.5px solid #D0CEC9;
+    box-shadow:
+      0 0 0 6px #DEDAD4,
+      0 0 0 7px #C8C5BF,
+      0 40px 80px rgba(0,0,0,0.18);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Dynamic island */
+  .dynamic-island {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 34px;
+    background: #000;
+    border-radius: 20px;
+    z-index: 100;
+  }
+
+  /* Status bar */
+  .status-bar {
+    height: 59px;
+    padding: 18px 24px 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+  }
+  .status-time {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+  .status-icons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .status-icons svg {
+    fill: var(--text);
+  }
+
+  /* Scroll content */
+  .screen-content {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+  .scroll-area {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 84px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  /* ─── Tab Bar ─────────────────────────────────────────── */
+  .tab-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 84px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-around;
+    padding-top: 10px;
+    z-index: 50;
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 60px;
+  }
+  .tab-item .tab-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tab-item .tab-icon svg {
+    width: 22px;
+    height: 22px;
+    fill: var(--faint);
+  }
+  .tab-item.active .tab-icon svg { fill: var(--brand); }
+  .tab-item .tab-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--faint);
+    letter-spacing: 0.01em;
+  }
+  .tab-item.active .tab-label { color: var(--brand); }
+
+  /* ─── Typography helpers ──────────────────────────────── */
+  .screen-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+  .section-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .body-text {
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .caption {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* ─── Cards ──────────────────────────────────────────── */
+  .card {
+    background: var(--surface);
+    border-radius: 18px;
+    border: 0.5px solid var(--border);
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .card-inner { padding: 16px; }
+
+  /* ─── Runner Score Card ───────────────────────────────── */
+  .score-card {
+    background: linear-gradient(145deg, #FFFFFF 0%, #FFF8F5 100%);
+    border-radius: 22px;
+    border: 0.5px solid #F0EDE8;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  }
+  .score-card::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 180px; height: 180px;
+    background: radial-gradient(circle, rgba(252,76,2,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .score-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .score-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  .score-number {
+    font-size: 72px;
+    font-weight: 700;
+    color: var(--brand);
+    letter-spacing: -3px;
+    line-height: 1;
+  }
+  .score-grade-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding-bottom: 10px;
+  }
+  .score-grade {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+  .score-delta {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--success-text);
+  }
+  .score-percentile {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  /* Sub-score bars */
+  .subscores {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .subscore-item {}
+  .subscore-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .subscore-name {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .subscore-val {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .subscore-bar-track {
+    height: 4px;
+    background: var(--surface-alt);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .subscore-bar-fill {
+    height: 100%;
+    background: var(--brand);
+    border-radius: 4px;
+    opacity: 0.85;
+  }
+
+  /* ─── Week Stats Row ──────────────────────────────────── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .stat-cell {
+    background: var(--surface);
+    padding: 14px 12px;
+  }
+  .stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  /* ─── Activity Row ─────────────────────────────────────── */
+  .activity-row {
+    padding: 14px 16px;
+    border-bottom: 0.5px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .activity-row:last-child { border-bottom: none; }
+  .activity-left {}
+  .activity-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .activity-meta {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .activity-stats {
+    display: flex;
+    gap: 16px;
+  }
+  .act-stat {}
+  .act-stat-val {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    text-align: right;
+  }
+  .act-stat-label {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: right;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .chevron-icon {
+    width: 7px;
+    height: 12px;
+    fill: none;
+    stroke: var(--faint);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    margin-left: 8px;
+  }
+
+  /* ─── Chart ───────────────────────────────────────────── */
+  .chart-area {
+    padding: 4px 0 0;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 80px;
+  }
+  .chart-bar-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    height: 100%;
+    justify-content: flex-end;
+  }
+  .chart-bar {
+    width: 100%;
+    background: rgba(252,76,2,0.18);
+    border-radius: 4px 4px 0 0;
+    position: relative;
+  }
+  .chart-bar.current {
+    background: var(--brand);
+  }
+  .chart-bar-label {
+    font-size: 9px;
+    color: var(--faint);
+    text-align: center;
+    white-space: nowrap;
+  }
+  .chart-value {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  /* ─── Brief Card ──────────────────────────────────────── */
+  .brief-card {
+    background: linear-gradient(135deg, #FFF5F1 0%, #FEF0EB 100%);
+    border-radius: 18px;
+    border: 0.5px solid var(--border);
+    border-left: 3px solid var(--brand);
+    padding: 16px;
+  }
+  .brief-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(252,76,2,0.10);
+    color: var(--brand);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 9px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+  }
+  .brief-badge-dot {
+    width: 5px; height: 5px;
+    background: var(--brand);
+    border-radius: 50%;
+  }
+  .brief-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+    letter-spacing: -0.2px;
+  }
+  .brief-text {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+  .brief-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--brand);
+  }
+
+  /* ─── Coach Screen ────────────────────────────────────── */
+  .chat-bubble-ai {
+    background: var(--surface-alt);
+    border: 0.5px solid var(--border);
+    border-radius: 4px 18px 18px 18px;
+    padding: 14px 16px;
+    font-size: 15px;
+    color: var(--text);
+    line-height: 1.55;
+  }
+  .chat-bubble-user {
+    background: var(--brand);
+    border-radius: 18px 18px 4px 18px;
+    padding: 12px 16px;
+    font-size: 15px;
+    color: #fff;
+    font-weight: 500;
+    line-height: 1.4;
+    align-self: flex-end;
+    max-width: 80%;
+  }
+  .chat-area {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .chat-avatar {
+    width: 32px; height: 32px;
+    background: var(--brand);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .chat-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .chat-input-bar {
+    position: absolute;
+    bottom: 84px;
+    left: 0; right: 0;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(20px);
+    border-top: 0.5px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .chat-input {
+    flex: 1;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 22px;
+    padding: 10px 16px;
+    font-size: 15px;
+    color: var(--muted);
+    font-family: var(--font);
+  }
+  .chat-send-btn {
+    width: 34px; height: 34px;
+    background: var(--brand);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* ─── Tools List ──────────────────────────────────────── */
+  .tools-list {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border-radius: 18px;
+    border: 0.5px solid var(--border);
+    overflow: hidden;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  }
+  .tool-row {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    gap: 14px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .tool-row:last-child { border-bottom: none; }
+  .tool-icon-wrap {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .tool-icon-wrap svg {
+    width: 20px; height: 20px;
+  }
+  .tool-text { flex: 1; }
+  .tool-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.1px;
+    margin-bottom: 1px;
+  }
+  .tool-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.3;
+  }
+  .premium-badge {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--premium);
+    background: rgba(108,49,176,0.10);
+    padding: 3px 7px;
+    border-radius: 10px;
+  }
+
+  /* ─── Settings ────────────────────────────────────────── */
+  .settings-group {
+    background: var(--surface);
+    border-radius: 16px;
+    border: 0.5px solid var(--border);
+    overflow: hidden;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .settings-group-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 4px 6px;
+  }
+  .settings-row {
+    display: flex;
+    align-items: center;
+    padding: 13px 16px;
+    border-bottom: 0.5px solid var(--border);
+    gap: 12px;
+  }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-row-icon {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .settings-row-icon svg { width: 16px; height: 16px; fill: #fff; }
+  .settings-label {
+    flex: 1;
+    font-size: 15px;
+    color: var(--text);
+    font-weight: 400;
+  }
+  .settings-value {
+    font-size: 14px;
+    color: var(--muted);
+  }
+  /* Toggle */
+  .toggle {
+    width: 50px; height: 30px;
+    background: var(--brand);
+    border-radius: 15px;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .toggle-thumb {
+    position: absolute;
+    top: 3px; right: 3px;
+    width: 24px; height: 24px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  /* Segment control */
+  .segment {
+    display: flex;
+    background: var(--surface-alt);
+    border-radius: 10px;
+    padding: 2px;
+    gap: 2px;
+  }
+  .segment-btn {
+    flex: 1;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-align: center;
+  }
+  .segment-btn.active {
+    background: var(--surface);
+    color: var(--text);
+    border: 0.5px solid var(--border);
+  }
+  /* Account card */
+  .account-card {
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .account-avatar {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--brand), #FF8A60);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .account-info {}
+  .account-name {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.2px;
+    margin-bottom: 2px;
+  }
+  .account-email { font-size: 13px; color: var(--muted); }
+
+  /* ─── Detail Navigation Bar ───────────────────────────── */
+  .nav-bar {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    padding: 0 8px 0 4px;
+    border-bottom: 0.5px solid var(--border);
+    position: relative;
+    flex-shrink: 0;
+  }
+  .nav-back {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+    color: var(--brand);
+    font-size: 16px;
+    font-weight: 400;
+  }
+  .nav-back svg {
+    width: 10px; height: 17px;
+    fill: none;
+    stroke: var(--brand);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .nav-title {
+    position: absolute;
+    left: 50%; transform: translateX(-50%);
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.2px;
+    white-space: nowrap;
+  }
+
+  /* ─── Metric big display ──────────────────────────────── */
+  .metric-hero {
+    padding: 20px 20px 16px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .metric-label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .metric-big {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .metric-value { font-size: 52px; font-weight: 700; color: var(--text); letter-spacing: -2px; line-height: 1; }
+  .metric-unit { font-size: 18px; font-weight: 500; color: var(--muted); padding-bottom: 8px; }
+  .metric-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--success-text);
+    background: rgba(45,122,31,0.10);
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .metric-context { font-size: 14px; color: var(--muted); margin-top: 8px; }
+  .metric-rows {}
+  .metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 13px 20px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .metric-row:last-child { border-bottom: none; }
+  .metric-row-label { font-size: 15px; color: var(--text); }
+  .metric-row-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .metric-row-val { font-size: 15px; font-weight: 600; color: var(--text); }
+
+  /* CTL/ATL/TSB pills */
+  .load-pills {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .load-pill {
+    background: var(--surface);
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .load-pill-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .load-pill-val { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .load-pill-sub { font-size: 10px; color: var(--faint); }
+
+  /* Mini bar chart */
+  .mini-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 60px;
+  }
+  .mini-bar {
+    flex: 1;
+    border-radius: 2px 2px 0 0;
+  }
+
+  /* ─── Insight cards ───────────────────────────────────── */
+  .insight-card {
+    background: var(--surface);
+    border-radius: 16px;
+    border: 0.5px solid var(--border);
+    padding: 14px 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .insight-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .insight-icon-wrap {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .insight-icon-wrap svg { width: 18px; height: 18px; }
+  .insight-cat {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1px;
+  }
+  .insight-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.1px;
+  }
+  .insight-body {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* ─── Sign out btn ────────────────────────────────────── */
+  .danger-btn {
+    width: 100%;
+    padding: 14px;
+    background: rgba(252,76,2,0.06);
+    border: 0.5px solid rgba(252,76,2,0.25);
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--brand);
+    text-align: center;
+  }
+  .primary-btn {
+    width: 100%;
+    padding: 15px;
+    background: var(--brand);
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    text-align: center;
+    letter-spacing: -0.1px;
+  }
+
+  /* Spacing utilities */
+  .px16 { padding-left: 16px; padding-right: 16px; }
+  .mt8  { margin-top: 8px; }
+  .mt12 { margin-top: 12px; }
+  .mt16 { margin-top: 16px; }
+  .mt20 { margin-top: 20px; }
+  .mt24 { margin-top: 24px; }
+  .mb4  { margin-bottom: 4px; }
+  .mb8  { margin-bottom: 8px; }
+  .mb12 { margin-bottom: 12px; }
+
+  /* Load bar */
+  .load-bar-track {
+    height: 6px;
+    background: var(--surface-alt);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .load-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+  }
+
+  /* Strava connect pill */
+  .strava-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(252,76,2,0.07);
+    border: 0.5px solid rgba(252,76,2,0.22);
+    border-radius: 10px;
+    padding: 10px 14px;
+  }
+  .strava-dot { width: 8px; height: 8px; background: var(--brand); border-radius: 50%; }
+  .strava-text { flex: 1; font-size: 13px; color: var(--text); font-weight: 500; }
+  .strava-badge { font-size: 11px; font-weight: 600; color: var(--brand); }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>RunAnalytics · iOS Design</h1>
+  <p>Light theme · SF Pro · iOS 17+</p>
+</div>
+
+<div class="screens-grid">
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- SCREEN 1: HOME -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="iphone">
+      <div class="dynamic-island"></div>
+
+      <!-- Status Bar -->
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <svg width="17" height="12" viewBox="0 0 17 12"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1" opacity="0.3"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 2.5C10.8 2.5 13.3 3.7 15 5.7L16 4.5C14 2.2 11.2 0.8 8 0.8C4.8 0.8 2 2.2 0 4.5L1 5.7C2.7 3.7 5.2 2.5 8 2.5Z" opacity="0.3"/><path d="M8 5.5C9.9 5.5 11.6 6.3 12.9 7.6L14 6.4C12.4 4.8 10.3 3.8 8 3.8C5.7 3.8 3.6 4.8 2 6.4L3.1 7.6C4.4 6.3 6.1 5.5 8 5.5Z" opacity="0.6"/><path d="M8 8.5C9.1 8.5 10.1 9 10.8 9.8L12 8.6C10.9 7.5 9.5 6.8 8 6.8C6.5 6.8 5.1 7.5 4 8.6L5.2 9.8C5.9 9 6.9 8.5 8 8.5Z"/><circle cx="8" cy="11.5" r="1.5"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0" y="1" width="22" height="10" rx="3.5" stroke="#CDCCCA" stroke-width="1" fill="none"/><rect x="23" y="3.5" width="2" height="5" rx="1" fill="#CDCCCA" opacity="0.4"/><rect x="1.5" y="2.5" width="16" height="7" rx="2" fill="#CDCCCA"/></svg>
+        </div>
+      </div>
+
+      <div class="screen-content">
+        <div class="scroll-area">
+          <div style="padding: 8px 16px 0">
+
+            <!-- Greeting -->
+            <div style="margin-bottom: 16px;">
+              <div style="font-size: 28px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; line-height: 1.15;">Good evening,<br><span style="color: var(--brand);">Biser</span></div>
+            </div>
+
+            <!-- Runner Score Card -->
+            <div class="score-card mb12">
+              <div class="score-label">Runner Score</div>
+              <div class="score-row">
+                <div class="score-number">56</div>
+                <div class="score-grade-block">
+                  <div class="score-grade">C</div>
+                  <div class="score-delta">↑ +4 vs last week</div>
+                </div>
+              </div>
+              <div class="score-percentile">Top 65% of runners</div>
+              <div class="subscores">
+                <div class="subscore-item">
+                  <div class="subscore-header">
+                    <span class="subscore-name">Consistency</span>
+                    <span class="subscore-val">5/25</span>
+                  </div>
+                  <div class="subscore-bar-track"><div class="subscore-bar-fill" style="width:20%"></div></div>
+                </div>
+                <div class="subscore-item">
+                  <div class="subscore-header">
+                    <span class="subscore-name">Performance</span>
+                    <span class="subscore-val">13/25</span>
+                  </div>
+                  <div class="subscore-bar-track"><div class="subscore-bar-fill" style="width:52%"></div></div>
+                </div>
+                <div class="subscore-item">
+                  <div class="subscore-header">
+                    <span class="subscore-name">Volume</span>
+                    <span class="subscore-val">16/25</span>
+                  </div>
+                  <div class="subscore-bar-track"><div class="subscore-bar-fill" style="width:64%"></div></div>
+                </div>
+                <div class="subscore-item">
+                  <div class="subscore-header">
+                    <span class="subscore-name">Improvement</span>
+                    <span class="subscore-val">22/25</span>
+                  </div>
+                  <div class="subscore-bar-track"><div class="subscore-bar-fill" style="width:88%"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- This Week Stats -->
+            <div class="mb12">
+              <div class="section-label mb8">This Week</div>
+              <div class="stats-row">
+                <div class="stat-cell">
+                  <div class="stat-value">0.0</div>
+                  <div class="stat-label">Miles</div>
+                </div>
+                <div class="stat-cell" style="text-align:center;">
+                  <div class="stat-value" style="text-align:center;">0</div>
+                  <div class="stat-label" style="text-align:center;">Runs</div>
+                </div>
+                <div class="stat-cell" style="text-align:right;">
+                  <div class="stat-value" style="text-align:right;">—</div>
+                  <div class="stat-label" style="text-align:right;">Avg Pace</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Latest Brief -->
+            <div class="mb12">
+              <div class="section-label mb8">Latest Brief</div>
+              <div class="brief-card">
+                <div class="brief-badge"><div class="brief-badge-dot"></div>New Brief Ready</div>
+                <div class="brief-title">Apr 12 · 4.06 mi · 7:33/mi</div>
+                <div class="brief-text">Strong aerobic effort — decoupling held under 4%. You ran this one smarter than last week.</div>
+                <div class="brief-cta">Read Full Brief
+                  <svg width="5" height="9" viewBox="0 0 5 9" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,1 4.5,4.5 1,8"/></svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Distance Trend -->
+            <div class="mb12">
+              <div class="card">
+                <div class="card-inner">
+                  <div class="section-label mb12">Distance Trend · 30 Days</div>
+                  <div class="chart-area">
+                    <div class="chart-bar-group">
+                      <div class="chart-value">22.6</div>
+                      <div class="chart-bar" style="height:74%"></div>
+                      <div class="chart-bar-label">3/16</div>
+                    </div>
+                    <div class="chart-bar-group">
+                      <div class="chart-value">30.2</div>
+                      <div class="chart-bar" style="height:100%"></div>
+                      <div class="chart-bar-label">3/23</div>
+                    </div>
+                    <div class="chart-bar-group">
+                      <div class="chart-value">5.1</div>
+                      <div class="chart-bar current" style="height:17%"></div>
+                      <div class="chart-bar-label">4/6</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Activities -->
+            <div class="section-label mb8">Recent Activities</div>
+            <div class="card">
+              <div class="activity-row">
+                <div class="activity-left">
+                  <div class="activity-name">Morning Run</div>
+                  <div class="activity-meta">Apr 12, 2026 · Run</div>
+                </div>
+                <div class="activity-stats">
+                  <div class="act-stat">
+                    <div class="act-stat-val">4.06</div>
+                    <div class="act-stat-label">mi</div>
+                  </div>
+                  <div class="act-stat">
+                    <div class="act-stat-val">7:33</div>
+                    <div class="act-stat-label">pace</div>
+                  </div>
+                </div>
+                <svg class="chevron-icon" viewBox="0 0 7 12"><polyline points="1,1 6,6 1,11"/></svg>
+              </div>
+              <div class="activity-row">
+                <div class="activity-left">
+                  <div class="activity-name">OSR30 Race</div>
+                  <div class="activity-meta">Mar 29, 2026 · Race</div>
+                </div>
+                <div class="activity-stats">
+                  <div class="act-stat">
+                    <div class="act-stat-val">30.2</div>
+                    <div class="act-stat-label">mi</div>
+                  </div>
+                  <div class="act-stat">
+                    <div class="act-stat-val">4:55</div>
+                    <div class="act-stat-label">pace</div>
+                  </div>
+                </div>
+                <svg class="chevron-icon" viewBox="0 0 7 12"><polyline points="1,1 6,6 1,11"/></svg>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+          <div class="tab-item active">
+            <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
+            <div class="tab-label">Home</div>
+          </div>
+          <div class="tab-item">
+            <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg></div>
+            <div class="tab-label">Coach</div>
+          </div>
+          <div class="tab-item">
+            <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg></div>
+            <div class="tab-label">Tools</div>
+          </div>
+          <div class="tab-item">
+            <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></div>
+            <div class="tab-label">Settings</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="screen-label">Home</div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- SCREEN 2: AI COACH -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="iphone">
+      <div class="dynamic-island"></div>
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <svg width="17" height="12" viewBox="0 0 17 12"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1" opacity="0.3"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 2.5C10.8 2.5 13.3 3.7 15 5.7L16 4.5C14 2.2 11.2 0.8 8 0.8C4.8 0.8 2 2.2 0 4.5L1 5.7C2.7 3.7 5.2 2.5 8 2.5Z" opacity="0.3"/><path d="M8 5.5C9.9 5.5 11.6 6.3 12.9 7.6L14 6.4C12.4 4.8 10.3 3.8 8 3.8C5.7 3.8 3.6 4.8 2 6.4L3.1 7.6C4.4 6.3 6.1 5.5 8 5.5Z" opacity="0.6"/><path d="M8 8.5C9.1 8.5 10.1 9 10.8 9.8L12 8.6C10.9 7.5 9.5 6.8 8 6.8C6.5 6.8 5.1 7.5 4 8.6L5.2 9.8C5.9 9 6.9 8.5 8 8.5Z"/><circle cx="8" cy="11.5" r="1.5"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0" y="1" width="22" height="10" rx="3.5" stroke="#CDCCCA" stroke-width="1" fill="none"/><rect x="23" y="3.5" width="2" height="5" rx="1" fill="#CDCCCA" opacity="0.4"/><rect x="1.5" y="2.5" width="16" height="7" rx="2" fill="#CDCCCA"/></svg>
+        </div>
+      </div>
+
+      <div class="screen-content">
+
+        <!-- Nav -->
+        <div style="height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 16px; border-bottom:0.5px solid var(--border); flex-shrink:0;">
+          <div>
+            <div style="font-size:22px; font-weight:700; color:var(--text); letter-spacing:-0.3px;">AI Coach</div>
+            <div style="font-size:12px; color:var(--muted);">Based on your last 278 mi</div>
+          </div>
+          <div style="background:var(--surface); border:0.5px solid var(--border); border-radius:10px; padding:6px 12px; font-size:13px; font-weight:600; color:var(--text);">+ New</div>
+        </div>
+
+        <div class="scroll-area">
+          <div style="padding:16px; display:flex; flex-direction:column; gap:12px;">
+
+            <div class="chat-row">
+              <div class="chat-avatar" style="background:linear-gradient(135deg, var(--brand), #FF8A60);">R</div>
+              <div class="chat-bubble-ai">
+                <div style="font-size:13px; font-weight:600; color:var(--brand); margin-bottom:6px;">RunAnalytics Coach</div>
+                Hey Biser — big month. 278 miles including the OSR30 and a 22.6-mile long run. You're not jogging.<br><br>
+                You're in Week 1 of a 12-week marathon plan targeting sub-5:00, but your current fitness suggests ~4:20 is realistic right now.<br><br>
+                What do you want to dial in?<br>
+                <div style="margin-top:10px; display:flex; flex-direction:column; gap:5px;">
+                  <div style="font-size:13px; color:var(--muted);">· Adjust the marathon plan</div>
+                  <div style="font-size:13px; color:var(--muted);">· Recover after OSR30</div>
+                  <div style="font-size:13px; color:var(--muted);">· Pace strategy for long runs</div>
+                  <div style="font-size:13px; color:var(--muted);">· Strength and weekly structure</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end;">
+              <div class="chat-bubble-user">How aggressive should my long run be this weekend?</div>
+            </div>
+
+            <div class="chat-row">
+              <div class="chat-avatar" style="background:linear-gradient(135deg, var(--brand), #FF8A60);">R</div>
+              <div class="chat-bubble-ai">
+                Given you just did OSR30 nine days ago, keep it conversational — Zone 2, HR below 145. Aim for 14–16 miles max. No pace target. This week is about getting the legs back, not fitness gains.
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Input bar -->
+        <div class="chat-input-bar">
+          <div class="chat-input" style="display:flex; align-items:center; color:var(--faint);">Ask your coach...</div>
+          <div class="chat-send-btn">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M7 1l6 6-6 6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+          <div class="tab-item">
+            <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
+            <div class="tab-label">Home</div>
+          </div>
+          <div class="tab-item active">
+            <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg></div>
+            <div class="tab-label">Coach</div>
+          </div>
+          <div class="tab-item">
+            <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg></div>
+            <div class="tab-label">Tools</div>
+          </div>
+          <div class="tab-item">
+            <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></div>
+            <div class="tab-label">Settings</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="screen-label">AI Coach</div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- SCREEN 3: TOOLS -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="iphone">
+      <div class="dynamic-island"></div>
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <svg width="17" height="12" viewBox="0 0 17 12"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1" opacity="0.3"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 2.5C10.8 2.5 13.3 3.7 15 5.7L16 4.5C14 2.2 11.2 0.8 8 0.8C4.8 0.8 2 2.2 0 4.5L1 5.7C2.7 3.7 5.2 2.5 8 2.5Z" opacity="0.3"/><path d="M8 5.5C9.9 5.5 11.6 6.3 12.9 7.6L14 6.4C12.4 4.8 10.3 3.8 8 3.8C5.7 3.8 3.6 4.8 2 6.4L3.1 7.6C4.4 6.3 6.1 5.5 8 5.5Z" opacity="0.6"/><path d="M8 8.5C9.1 8.5 10.1 9 10.8 9.8L12 8.6C10.9 7.5 9.5 6.8 8 6.8C6.5 6.8 5.1 7.5 4 8.6L5.2 9.8C5.9 9 6.9 8.5 8 8.5Z"/><circle cx="8" cy="11.5" r="1.5"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0" y="1" width="22" height="10" rx="3.5" stroke="#CDCCCA" stroke-width="1" fill="none"/><rect x="23" y="3.5" width="2" height="5" rx="1" fill="#CDCCCA" opacity="0.4"/><rect x="1.5" y="2.5" width="16" height="7" rx="2" fill="#CDCCCA"/></svg>
+        </div>
+      </div>
+      <div class="screen-content">
+        <div class="scroll-area">
+          <div style="padding:16px 16px 0">
+            <div class="screen-title mb4">Tools</div>
+            <div style="font-size:14px; color:var(--muted); margin-bottom:20px;">Everything beyond the dashboard.</div>
+
+            <div class="tools-list">
+              <div class="tool-row">
+                <div class="tool-icon-wrap" style="background:rgba(252,76,2,0.15);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div class="tool-text">
+                  <div class="tool-name">Race Predictor</div>
+                  <div class="tool-desc">Estimate your 5K, 10K, half, or marathon time from a recent effort.</div>
+                </div>
+                <svg class="chevron-icon" viewBox="0 0 7 12"><polyline points="1,1 6,6 1,11"/></svg>
+              </div>
+
+              <div class="tool-row">
+                <div class="tool-icon-wrap" style="background:rgba(67,122,34,0.15);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--success-text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </div>
+                <div class="tool-text">
+                  <div class="tool-name">Fitness &amp; VO2 Max</div>
+                  <div class="tool-desc">Aerobic capacity, fitness, fatigue, and form trend.</div>
+                </div>
+                <svg class="chevron-icon" viewBox="0 0 7 12"><polyline points="1,1 6,6 1,11"/></svg>
+              </div>
+
+              <div class="tool-row">
+                <div class="tool-icon-wrap" style="background:rgba(122,57,187,0.15);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--premium)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                </div>
+                <div class="tool-text">
+                  <div class="tool-name">AI Insights</div>
+                  <div class="tool-desc">Performance, recovery, and technique insights.</div>
+                </div>
+                <svg class="chevron-icon" viewBox="0 0 7 12"><polyline points="1,1 6,6 1,11"/></svg>
+              </div>
+
+              <div class="tool-row">
+                <div class="tool-icon-wrap" style="background:rgba(187,101,59,0.15);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--warning-text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+                </div>
+                <div class="tool-text">
+                  <div class="tool-name">Coach Recaps</div>
+                  <div class="tool-desc">Post-run summaries with focus cues and next steps.</div>
+                </div>
+                <div class="premium-badge">Pro</div>
+                <svg class="chevron-icon" viewBox="0 0 7 12"><polyline points="1,1 6,6 1,11"/></svg>
+              </div>
+
+              <div class="tool-row">
+                <div class="tool-icon-wrap" style="background:rgba(79,152,163,0.15);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#4F98A3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                </div>
+                <div class="tool-text">
+                  <div class="tool-name">Recovery</div>
+                  <div class="tool-desc">Freshness, training load, and what to do next.</div>
+                </div>
+                <svg class="chevron-icon" viewBox="0 0 7 12"><polyline points="1,1 6,6 1,11"/></svg>
+              </div>
+
+              <div class="tool-row">
+                <div class="tool-icon-wrap" style="background:rgba(252,76,2,0.1);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <div class="tool-text">
+                  <div class="tool-name">Injury Risk</div>
+                  <div class="tool-desc">Risk analysis with ML race-time predictions.</div>
+                </div>
+                <div class="premium-badge">Pro</div>
+                <svg class="chevron-icon" viewBox="0 0 7 12"><polyline points="1,1 6,6 1,11"/></svg>
+              </div>
+
+              <div class="tool-row">
+                <div class="tool-icon-wrap" style="background:rgba(67,122,34,0.12);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--success-text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+                </div>
+                <div class="tool-text">
+                  <div class="tool-name">Goals &amp; Alerts</div>
+                  <div class="tool-desc">Track training goals and get smart notifications.</div>
+                </div>
+                <svg class="chevron-icon" viewBox="0 0 7 12"><polyline points="1,1 6,6 1,11"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab-item">
+            <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
+            <div class="tab-label">Home</div>
+          </div>
+          <div class="tab-item">
+            <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg></div>
+            <div class="tab-label">Coach</div>
+          </div>
+          <div class="tab-item active">
+            <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg></div>
+            <div class="tab-label">Tools</div>
+          </div>
+          <div class="tab-item">
+            <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></div>
+            <div class="tab-label">Settings</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="screen-label">Tools</div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- SCREEN 4: SETTINGS -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="iphone">
+      <div class="dynamic-island"></div>
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <svg width="17" height="12" viewBox="0 0 17 12"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1" opacity="0.3"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 2.5C10.8 2.5 13.3 3.7 15 5.7L16 4.5C14 2.2 11.2 0.8 8 0.8C4.8 0.8 2 2.2 0 4.5L1 5.7C2.7 3.7 5.2 2.5 8 2.5Z" opacity="0.3"/><path d="M8 5.5C9.9 5.5 11.6 6.3 12.9 7.6L14 6.4C12.4 4.8 10.3 3.8 8 3.8C5.7 3.8 3.6 4.8 2 6.4L3.1 7.6C4.4 6.3 6.1 5.5 8 5.5Z" opacity="0.6"/><path d="M8 8.5C9.1 8.5 10.1 9 10.8 9.8L12 8.6C10.9 7.5 9.5 6.8 8 6.8C6.5 6.8 5.1 7.5 4 8.6L5.2 9.8C5.9 9 6.9 8.5 8 8.5Z"/><circle cx="8" cy="11.5" r="1.5"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0" y="1" width="22" height="10" rx="3.5" stroke="#CDCCCA" stroke-width="1" fill="none"/><rect x="23" y="3.5" width="2" height="5" rx="1" fill="#CDCCCA" opacity="0.4"/><rect x="1.5" y="2.5" width="16" height="7" rx="2" fill="#CDCCCA"/></svg>
+        </div>
+      </div>
+      <div class="screen-content">
+        <div class="scroll-area">
+          <div style="padding:16px 16px 0">
+            <div class="screen-title" style="margin-bottom:20px;">Settings</div>
+
+            <!-- Account -->
+            <div class="settings-group mb12">
+              <div class="account-card">
+                <div class="account-avatar">B</div>
+                <div class="account-info">
+                  <div class="account-name">Biser</div>
+                  <div class="account-email">biserd@gmail.com</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Subscription -->
+            <div class="settings-group-label">Subscription</div>
+            <div class="settings-group mb16">
+              <div class="settings-row">
+                <div class="settings-row-icon" style="background:var(--premium);">
+                  <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                </div>
+                <div class="settings-label">Premium</div>
+                <div class="settings-value">Active</div>
+                <svg class="chevron-icon" viewBox="0 0 7 12"><polyline points="1,1 6,6 1,11"/></svg>
+              </div>
+              <div class="settings-row" style="border-bottom:none;">
+                <div style="flex:1; font-size:13px; color:var(--muted);">Renews May 13, 2026 · $7.99/mo</div>
+              </div>
+            </div>
+
+            <!-- Strava -->
+            <div class="settings-group-label">Connected Apps</div>
+            <div class="settings-group mb16">
+              <div class="settings-row">
+                <div class="settings-row-icon" style="background:var(--brand);">
+                  <svg viewBox="0 0 24 24"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
+                </div>
+                <div class="settings-label">Strava</div>
+                <div class="settings-value" style="color:var(--success-text);">Connected</div>
+                <svg class="chevron-icon" viewBox="0 0 7 12"><polyline points="1,1 6,6 1,11"/></svg>
+              </div>
+            </div>
+
+            <!-- Units -->
+            <div class="settings-group-label">Preferences</div>
+            <div class="settings-group mb16">
+              <div class="settings-row">
+                <div class="settings-label">Units</div>
+                <div class="segment">
+                  <div class="segment-btn">km</div>
+                  <div class="segment-btn active">Miles</div>
+                </div>
+              </div>
+              <div class="settings-row">
+                <div class="settings-label">Push Notifications</div>
+                <div class="toggle"><div class="toggle-thumb"></div></div>
+              </div>
+              <div class="settings-row">
+                <div class="settings-label">Weekly Debrief</div>
+                <div class="toggle"><div class="toggle-thumb"></div></div>
+              </div>
+            </div>
+
+            <!-- About -->
+            <div class="settings-group mb16">
+              <div class="settings-row">
+                <div class="settings-label">Privacy Policy</div>
+                <svg class="chevron-icon" viewBox="0 0 7 12"><polyline points="1,1 6,6 1,11"/></svg>
+              </div>
+              <div class="settings-row">
+                <div class="settings-label">Version</div>
+                <div class="settings-value">1.0.0</div>
+              </div>
+            </div>
+
+            <div class="danger-btn">Sign Out</div>
+            <div style="margin-top:12px; font-size:12px; color:var(--faint); text-align:center;">Manage billing at aitracker.run</div>
+
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item">
+            <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
+            <div class="tab-label">Home</div>
+          </div>
+          <div class="tab-item">
+            <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg></div>
+            <div class="tab-label">Coach</div>
+          </div>
+          <div class="tab-item">
+            <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg></div>
+            <div class="tab-label">Tools</div>
+          </div>
+          <div class="tab-item active">
+            <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></div>
+            <div class="tab-label">Settings</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="screen-label">Settings</div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- SCREEN 5: FITNESS & VO2 MAX DETAIL -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="iphone">
+      <div class="dynamic-island"></div>
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <svg width="17" height="12" viewBox="0 0 17 12"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1" opacity="0.3"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 2.5C10.8 2.5 13.3 3.7 15 5.7L16 4.5C14 2.2 11.2 0.8 8 0.8C4.8 0.8 2 2.2 0 4.5L1 5.7C2.7 3.7 5.2 2.5 8 2.5Z" opacity="0.3"/><path d="M8 5.5C9.9 5.5 11.6 6.3 12.9 7.6L14 6.4C12.4 4.8 10.3 3.8 8 3.8C5.7 3.8 3.6 4.8 2 6.4L3.1 7.6C4.4 6.3 6.1 5.5 8 5.5Z" opacity="0.6"/><path d="M8 8.5C9.1 8.5 10.1 9 10.8 9.8L12 8.6C10.9 7.5 9.5 6.8 8 6.8C6.5 6.8 5.1 7.5 4 8.6L5.2 9.8C5.9 9 6.9 8.5 8 8.5Z"/><circle cx="8" cy="11.5" r="1.5"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0" y="1" width="22" height="10" rx="3.5" stroke="#CDCCCA" stroke-width="1" fill="none"/><rect x="23" y="3.5" width="2" height="5" rx="1" fill="#CDCCCA" opacity="0.4"/><rect x="1.5" y="2.5" width="16" height="7" rx="2" fill="#CDCCCA"/></svg>
+        </div>
+      </div>
+      <div class="screen-content">
+        <div class="nav-bar">
+          <div class="nav-back">
+            <svg viewBox="0 0 10 17"><polyline points="9,1 1,8.5 9,16"/></svg>
+            Tools
+          </div>
+          <div class="nav-title">Fitness &amp; VO2 Max</div>
+        </div>
+        <div class="scroll-area">
+
+          <!-- VO2 Max Hero -->
+          <div class="metric-hero">
+            <div class="metric-label">VO2 Max</div>
+            <div class="metric-big">
+              <div class="metric-value">50.4</div>
+              <div class="metric-unit">ml/kg/min</div>
+            </div>
+            <div class="metric-status">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 9V1M5 1L2 4M5 1L8 4" stroke="var(--success-text)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Stable
+            </div>
+            <div class="metric-context" style="margin-top:10px; font-size:14px; color:var(--muted);">Competitive runner level · 30th age-graded percentile</div>
+          </div>
+
+          <!-- Sub-metrics -->
+          <div class="metric-rows">
+            <div class="metric-row">
+              <div>
+                <div class="metric-row-label">From races</div>
+                <div class="metric-row-sub">Very good — Competitive level</div>
+              </div>
+              <div class="metric-row-val">50.4</div>
+            </div>
+            <div class="metric-row">
+              <div>
+                <div class="metric-row-label">From training</div>
+                <div class="metric-row-sub">Very good — Competitive level</div>
+              </div>
+              <div class="metric-row-val">53.8</div>
+            </div>
+            <div class="metric-row">
+              <div>
+                <div class="metric-row-label">Target range</div>
+                <div class="metric-row-sub">Based on recent PRs and plan</div>
+              </div>
+              <div class="metric-row-val" style="color:var(--brand);">53 – 58</div>
+            </div>
+          </div>
+
+          <!-- Training Load -->
+          <div style="padding:16px 16px 0">
+            <div class="section-label mb12">Training Load · CTL / ATL / TSB</div>
+            <div class="load-pills mb12">
+              <div class="load-pill">
+                <div class="load-pill-label">Fitness</div>
+                <div class="load-pill-val" style="color:var(--success-text);">1.7</div>
+                <div class="load-pill-sub">CTL · 42-day</div>
+              </div>
+              <div class="load-pill">
+                <div class="load-pill-label">Fatigue</div>
+                <div class="load-pill-val" style="color:var(--warning-text);">0.3</div>
+                <div class="load-pill-sub">ATL · 7-day</div>
+              </div>
+              <div class="load-pill">
+                <div class="load-pill-label">Form</div>
+                <div class="load-pill-val" style="color:#4F98A3;">1.4</div>
+                <div class="load-pill-sub">TSB</div>
+              </div>
+            </div>
+
+            <div style="background:rgba(67,122,34,0.1); border:0.5px solid rgba(109,170,69,0.25); border-radius:12px; padding:12px 14px; margin-bottom:16px;">
+              <div style="font-size:13px; font-weight:600; color:var(--success-text); margin-bottom:2px;">Balanced state</div>
+              <div style="font-size:13px; color:var(--muted);">Good for moderate training — you have room to push this week.</div>
+            </div>
+
+            <!-- Mini bar chart -->
+            <div class="section-label mb8">Last 30 Days</div>
+            <div class="card" style="padding:14px;">
+              <div style="display:flex; align-items:flex-end; gap:3px; height:64px;">
+                <!-- Fitness bars (green) + fatigue (orange) stacked -->
+                <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%; gap:1px;">
+                  <div style="height:30%; background:rgba(252,76,2,0.5); border-radius:1px;"></div>
+                  <div style="height:50%; background:rgba(109,170,69,0.6); border-radius:1px;"></div>
+                </div>
+                <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%; gap:1px;">
+                  <div style="height:25%; background:rgba(252,76,2,0.5); border-radius:1px;"></div>
+                  <div style="height:55%; background:rgba(109,170,69,0.6); border-radius:1px;"></div>
+                </div>
+                <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%; gap:1px;">
+                  <div style="height:35%; background:rgba(252,76,2,0.5); border-radius:1px;"></div>
+                  <div style="height:60%; background:rgba(109,170,69,0.6); border-radius:1px;"></div>
+                </div>
+                <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%; gap:1px;">
+                  <div style="height:60%; background:rgba(252,76,2,0.5); border-radius:1px;"></div>
+                  <div style="height:38%; background:rgba(109,170,69,0.6); border-radius:1px;"></div>
+                </div>
+                <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%; gap:1px;">
+                  <div style="height:80%; background:rgba(252,76,2,0.5); border-radius:1px;"></div>
+                  <div style="height:18%; background:rgba(109,170,69,0.6); border-radius:1px;"></div>
+                </div>
+                <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%; gap:1px;">
+                  <div style="height:90%; background:rgba(252,76,2,0.5); border-radius:1px;"></div>
+                  <div style="height:10%; background:rgba(109,170,69,0.6); border-radius:1px;"></div>
+                </div>
+                <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%; gap:1px;">
+                  <div style="height:70%; background:rgba(252,76,2,0.5); border-radius:1px;"></div>
+                  <div style="height:28%; background:rgba(109,170,69,0.6); border-radius:1px;"></div>
+                </div>
+                <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%; gap:1px;">
+                  <div style="height:50%; background:rgba(252,76,2,0.5); border-radius:1px;"></div>
+                  <div style="height:45%; background:rgba(109,170,69,0.6); border-radius:1px;"></div>
+                </div>
+                <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%; gap:1px;">
+                  <div style="height:20%; background:rgba(252,76,2,0.5); border-radius:1px;"></div>
+                  <div style="height:72%; background:rgba(109,170,69,0.6); border-radius:1px;"></div>
+                </div>
+                <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%; gap:1px;">
+                  <div style="height:15%; background:rgba(252,76,2,0.5); border-radius:1px;"></div>
+                  <div style="height:80%; background:rgba(109,170,69,0.6); border-radius:1px;"></div>
+                </div>
+              </div>
+              <div style="display:flex; gap:12px; margin-top:8px;">
+                <div style="display:flex; align-items:center; gap:4px; font-size:11px; color:var(--muted);">
+                  <div style="width:8px;height:8px;background:rgba(109,170,69,0.7);border-radius:2px;"></div>Fitness
+                </div>
+                <div style="display:flex; align-items:center; gap:4px; font-size:11px; color:var(--muted);">
+                  <div style="width:8px;height:8px;background:rgba(252,76,2,0.6);border-radius:2px;"></div>Fatigue
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="screen-label">Fitness &amp; VO2 Max</div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- SCREEN 6: AI INSIGHTS DETAIL -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="iphone">
+      <div class="dynamic-island"></div>
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <svg width="17" height="12" viewBox="0 0 17 12"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1" opacity="0.3"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 2.5C10.8 2.5 13.3 3.7 15 5.7L16 4.5C14 2.2 11.2 0.8 8 0.8C4.8 0.8 2 2.2 0 4.5L1 5.7C2.7 3.7 5.2 2.5 8 2.5Z" opacity="0.3"/><path d="M8 5.5C9.9 5.5 11.6 6.3 12.9 7.6L14 6.4C12.4 4.8 10.3 3.8 8 3.8C5.7 3.8 3.6 4.8 2 6.4L3.1 7.6C4.4 6.3 6.1 5.5 8 5.5Z" opacity="0.6"/><path d="M8 8.5C9.1 8.5 10.1 9 10.8 9.8L12 8.6C10.9 7.5 9.5 6.8 8 6.8C6.5 6.8 5.1 7.5 4 8.6L5.2 9.8C5.9 9 6.9 8.5 8 8.5Z"/><circle cx="8" cy="11.5" r="1.5"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0" y="1" width="22" height="10" rx="3.5" stroke="#CDCCCA" stroke-width="1" fill="none"/><rect x="23" y="3.5" width="2" height="5" rx="1" fill="#CDCCCA" opacity="0.4"/><rect x="1.5" y="2.5" width="16" height="7" rx="2" fill="#CDCCCA"/></svg>
+        </div>
+      </div>
+      <div class="screen-content">
+        <div class="nav-bar">
+          <div class="nav-back">
+            <svg viewBox="0 0 10 17"><polyline points="9,1 1,8.5 9,16"/></svg>
+            Tools
+          </div>
+          <div class="nav-title">AI Insights</div>
+        </div>
+        <div class="scroll-area">
+          <!-- Refresh button -->
+          <div style="padding:12px 16px;">
+            <div class="primary-btn" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><path d="M13 2v4H9"/><path d="M1 12v-4h4"/><path d="M11.5 5A6 6 0 0 0 2.5 5M2.5 9a6 6 0 0 0 9 0"/></svg>
+              Generate Fresh Insights
+            </div>
+            <div style="font-size:11px; color:var(--faint); text-align:center; margin-top:6px;">Last generated Apr 11, 2026</div>
+          </div>
+
+          <div style="padding:0 16px; display:flex; flex-direction:column; gap:10px;">
+
+            <div class="insight-card">
+              <div class="insight-header">
+                <div class="insight-icon-wrap" style="background:rgba(252,76,2,0.12);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </div>
+                <div>
+                  <div class="insight-cat">Performance</div>
+                  <div class="insight-title">Performance Analysis</div>
+                </div>
+              </div>
+              <div class="insight-body">Handling strong volume with frequent PRs — current pace and race results show solid aerobic development.</div>
+            </div>
+
+            <div class="insight-card">
+              <div class="insight-header">
+                <div class="insight-icon-wrap" style="background:rgba(79,152,163,0.12);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#4F98A3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </div>
+                <div>
+                  <div class="insight-cat">Pattern</div>
+                  <div class="insight-title">Training Pattern</div>
+                </div>
+              </div>
+              <div class="insight-body">Neutral form (TSB -0.1) plus ~45h training suggests you're on the edge of sustainable but not overreached.</div>
+            </div>
+
+            <div class="insight-card">
+              <div class="insight-header">
+                <div class="insight-icon-wrap" style="background:rgba(122,57,187,0.12);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--premium)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V12M12 12C12 12 8 10 8 6a4 4 0 0 1 8 0c0 4-4 6-4 6z"/></svg>
+                </div>
+                <div>
+                  <div class="insight-cat">Recovery</div>
+                  <div class="insight-title">Recovery Insights</div>
+                </div>
+              </div>
+              <div class="insight-body">With neutral TSB, hold current load but add 1 lighter week (25–35% less volume) after big races or 30mi efforts.</div>
+            </div>
+
+            <div class="insight-card">
+              <div class="insight-header">
+                <div class="insight-icon-wrap" style="background:rgba(253,171,67,0.12);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--warning-text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                </div>
+                <div>
+                  <div class="insight-cat">Motivation</div>
+                  <div class="insight-title">Momentum Boost</div>
+                </div>
+              </div>
+              <div class="insight-body">You're converting training into race-day PRs — clear sign your consistency and long runs are paying off.</div>
+            </div>
+
+            <div class="insight-card">
+              <div class="insight-header">
+                <div class="insight-icon-wrap" style="background:rgba(67,122,34,0.12);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--success-text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                </div>
+                <div>
+                  <div class="insight-cat">Technique</div>
+                  <div class="insight-title">Technique Tips</div>
+                </div>
+              </div>
+              <div class="insight-body">Avg HR 160 at ~9:45–10:00/mi hints you may be working hard; keep easy runs relaxed and cadence smooth.</div>
+            </div>
+
+            <div class="insight-card">
+              <div class="insight-header">
+                <div class="insight-icon-wrap" style="background:rgba(252,76,2,0.1);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                </div>
+                <div>
+                  <div class="insight-cat">Recommendation</div>
+                  <div class="insight-title">Gear &amp; Shoes</div>
+                </div>
+              </div>
+              <div class="insight-body">661 miles in 90 days = high shoe wear. Rotate pairs and use Shoe Finder to match your mileage demands.</div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="screen-label">AI Insights</div>
+  </div>
+
+</div><!-- .screens-grid -->
+
+<script data-pplx-inline-edit>
+(function(){
+  if(window===window.top)return;
+  function inlineAll(orig,clone){
+    if(orig.nodeType!==1)return;
+    try{
+      var cs=getComputedStyle(orig);
+      var t='';
+      for(var i=0;i<cs.length;i++){t+=cs[i]+':'+cs.getPropertyValue(cs[i])+';';}
+      clone.style.cssText=t;
+    }catch(e){}
+    var oc=orig.children,cc=clone.children;
+    for(var j=0;j<oc.length&&j<cc.length;j++){inlineAll(oc[j],cc[j]);}
+  }
+  function stripExternal(clone){
+    var imgs=clone.querySelectorAll('img');
+    for(var i=0;i<imgs.length;i++){
+      var s=imgs[i].getAttribute('src');
+      if(s&&!s.startsWith('data:'))imgs[i].removeAttribute('src');
+    }
+    var all=clone.querySelectorAll('*');
+    for(var i=0;i<all.length;i++){
+      var st=all[i].style.cssText;
+      if(st&&st.indexOf('url(')>=0){
+        all[i].style.cssText=st.replace(/url\(["']?(?!data:)[^)"']*["']?\)/gi,'none');
+      }
+    }
+  }
+  window.addEventListener('message',function(e){
+    if(!e.data||e.data.type!=='INLINE_EDIT_CAPTURE_REQUEST')return;
+    var scrollX=window.scrollX||window.pageXOffset||0;
+    var scrollY=window.scrollY||window.pageYOffset||0;
+    var w=window.innerWidth,h=window.innerHeight;
+    try{
+      var clone=document.documentElement.cloneNode(true);
+      var rm=clone.querySelectorAll('script,link[rel="stylesheet"],style');
+      for(var i=0;i<rm.length;i++){rm[i].remove();}
+      inlineAll(document.documentElement,clone);
+      stripExternal(clone);
+      var html=new XMLSerializer().serializeToString(clone);
+      var svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'">'
+        +'<foreignObject width="100%" height="100%">'
+        +'<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+w+'px;height:'+h+'px;overflow:hidden">'
+        +'<div style="transform:translate(-'+scrollX+'px,-'+scrollY+'px);transform-origin:top left">'
+        +html+'</div></div></foreignObject></svg>';
+      var svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+      var img=new Image();
+      img.onload=function(){
+        var c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0);
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:c.toDataURL('image/png'),scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.onerror=function(){
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.src=svgUrl;
+    }catch(err){
+      window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+    }
+  });
+})();
+</script></body>
+</html>

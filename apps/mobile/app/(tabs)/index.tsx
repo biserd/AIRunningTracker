@@ -12,13 +12,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "expo-router";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
+import { colors, shadow } from "../../lib/theme";
 import {
   formatDistance,
-  formatDuration,
   formatPace,
   formatDate,
 } from "../../lib/format";
-import { MiniBarChart } from "../../components/MiniBarChart";
 import type {
   Activity,
   DashboardData,
@@ -26,9 +25,18 @@ import type {
   ChartResponse,
 } from "../../types";
 
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 5) return "Good night";
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
+
 export default function HomeScreen() {
   const { user } = useAuth();
   const unit = (user?.unitPreference || "km") as "km" | "miles";
+  const unitShort = unit === "miles" ? "mi" : "km";
 
   const dashboard = useQuery({
     queryKey: ["dashboard", user?.id],
@@ -85,6 +93,7 @@ export default function HomeScreen() {
   }, [user?.id, dashboard, activities, score, chart]);
 
   const stats = dashboard.data?.stats;
+  const latestActivity = activities.data?.[0];
   const isInitialLoading = activities.isLoading && !activities.data;
   const isRefreshing =
     syncing ||
@@ -93,50 +102,68 @@ export default function HomeScreen() {
     score.isRefetching ||
     chart.isRefetching;
 
+  const name = user?.firstName || user?.username || "Runner";
+
   return (
-    <SafeAreaView edges={["top"]} className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.bg }}>
       {isInitialLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#fc4c02" />
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <ActivityIndicator size="large" color={colors.brand} />
         </View>
       ) : (
         <FlatList
-          data={activities.data || []}
+          data={activities.data?.slice(0, 6) || []}
           keyExtractor={(a) => String(a.id)}
-          contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 40 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 0 }}
           refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="#fc4c02" />
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={colors.brand} />
           }
           ListHeaderComponent={
-            <View className="gap-3 mb-2">
-              <Text className="text-2xl font-bold text-slate-900 dark:text-white">
-                Hi {user?.firstName || user?.username || "Runner"} 👋
-              </Text>
+            <View>
+              {/* Greeting */}
+              <View style={{ marginBottom: 18 }}>
+                <Text
+                  style={{
+                    fontSize: 28,
+                    fontWeight: "700",
+                    color: colors.text,
+                    letterSpacing: -0.5,
+                    lineHeight: 34,
+                  }}
+                >
+                  {greeting()},{"\n"}
+                  <Text style={{ color: colors.brand }}>{name}</Text>
+                </Text>
+              </View>
 
               {score.data ? <RunnerScoreCard score={score.data} /> : null}
 
-              {stats ? <StatsSummary stats={stats} unit={unit} /> : null}
-
-              {chart.data?.chartData?.length ? (
-                <Card title="Distance trend (last 30 days)">
-                  <MiniBarChart
-                    data={chart.data.chartData.map((c) => ({
-                      label: c.week,
-                      value: c.distance,
-                    }))}
-                    unitSuffix={` ${unit === "miles" ? "mi" : "km"}`}
-                  />
-                </Card>
+              {stats ? (
+                <ThisWeekStats stats={stats} unit={unitShort} />
               ) : null}
 
-              <View className="flex-row items-center justify-between mt-3 mb-1">
-                <Text className="text-sm text-slate-500">
-                  Recent activities ({activities.data?.length ?? 0})
-                </Text>
-                <Text className="text-[11px] text-slate-400">Pull down to sync</Text>
-              </View>
+              {latestActivity ? (
+                <LatestBrief activity={latestActivity} unit={unit} />
+              ) : null}
+
+              {chart.data?.chartData?.length ? (
+                <DistanceTrendCard
+                  data={chart.data.chartData.map((c) => ({
+                    label: c.week,
+                    value: c.distance,
+                  }))}
+                  unitSuffix={unitShort}
+                />
+              ) : null}
+
+              <SectionLabel style={{ marginBottom: 8, marginTop: 4 }}>
+                Recent Activities
+              </SectionLabel>
+
               {syncError ? (
-                <Text className="text-xs text-red-500 mt-1">Sync: {syncError}</Text>
+                <Text style={{ color: colors.danger, fontSize: 12, marginBottom: 8 }}>
+                  Sync: {syncError}
+                </Text>
               ) : null}
             </View>
           }
@@ -147,217 +174,473 @@ export default function HomeScreen() {
                 onRetry={() => activities.refetch()}
               />
             ) : (
-              <View className="items-center mt-12">
-                <Text className="text-base text-slate-500">No activities yet.</Text>
-                <Text className="text-sm text-slate-400 mt-1">
-                  Connect Strava on the web to sync runs.
+              <View style={{ alignItems: "center", marginTop: 32 }}>
+                <Text style={{ fontSize: 15, color: colors.muted }}>No activities yet.</Text>
+                <Text style={{ fontSize: 13, color: colors.faint, marginTop: 4 }}>
+                  Pull down to sync from Strava.
                 </Text>
               </View>
             )
           }
-          renderItem={({ item }) => <ActivityCard activity={item} unit={unit} />}
+          renderItem={({ item, index }) => (
+            <ActivityRow
+              activity={item}
+              unit={unit}
+              isFirst={index === 0}
+              isLast={index === Math.min((activities.data?.length ?? 1) - 1, 5)}
+            />
+          )}
         />
       )}
     </SafeAreaView>
   );
 }
 
+/* ─── Runner Score (gradient hero) ───────────────────────── */
 function RunnerScoreCard({ score }: { score: RunnerScore }) {
   const trend = score.trends.weeklyChange;
-  const trendColor =
-    trend > 0 ? "text-green-500" : trend < 0 ? "text-red-500" : "text-slate-400";
   const trendArrow = trend > 0 ? "↑" : trend < 0 ? "↓" : "→";
+  const trendText = `${trendArrow} ${trend > 0 ? "+" : ""}${Math.abs(trend).toFixed(0)} vs last week`;
 
   return (
-    <View className="bg-gradient-to-br from-strava to-orange-600 bg-strava rounded-2xl p-5">
-      <View className="flex-row items-start justify-between">
-        <View>
-          <Text className="text-xs uppercase tracking-wide text-white/80">
-            Runner Score
+    <View
+      style={{
+        backgroundColor: colors.brand,
+        borderRadius: 22,
+        padding: 18,
+        marginBottom: 14,
+        ...shadow.card,
+      }}
+    >
+      {/* Soft top sheen */}
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 80,
+          backgroundColor: "rgba(255,255,255,0.10)",
+          borderTopLeftRadius: 22,
+          borderTopRightRadius: 22,
+        }}
+      />
+      <Text
+        style={{
+          fontSize: 11,
+          fontWeight: "700",
+          letterSpacing: 1.2,
+          color: "rgba(255,255,255,0.85)",
+          textTransform: "uppercase",
+        }}
+      >
+        Runner Score
+      </Text>
+      <View style={{ flexDirection: "row", alignItems: "flex-end", marginTop: 6 }}>
+        <Text
+          style={{
+            fontSize: 64,
+            fontWeight: "800",
+            color: "#fff",
+            letterSpacing: -2,
+            lineHeight: 64,
+          }}
+        >
+          {score.totalScore}
+        </Text>
+        <View style={{ marginLeft: 14, marginBottom: 6 }}>
+          <Text style={{ fontSize: 28, fontWeight: "700", color: "#fff" }}>
+            {score.grade}
           </Text>
-          <View className="flex-row items-baseline gap-2 mt-1">
-            <Text className="text-5xl font-bold text-white">{score.totalScore}</Text>
-            <Text className="text-xl font-semibold text-white/90">{score.grade}</Text>
-          </View>
-          <Text className="text-xs text-white/80 mt-1">
-            Top {Math.max(1, 100 - Math.round(score.percentile))}% of runners
+          <Text
+            style={{
+              fontSize: 11,
+              color: "rgba(255,255,255,0.85)",
+              marginTop: 2,
+            }}
+          >
+            {trendText}
           </Text>
-        </View>
-        <View className="items-end">
-          <Text className={`text-sm font-semibold ${trendColor}`}>
-            {trendArrow} {Math.abs(trend).toFixed(1)}
-          </Text>
-          <Text className="text-[10px] text-white/70">vs last week</Text>
         </View>
       </View>
-      <View className="flex-row gap-2 mt-4">
-        <Component label="Consistency" value={score.components.consistency} />
-        <Component label="Performance" value={score.components.performance} />
-        <Component label="Volume" value={score.components.volume} />
-        <Component label="Improvement" value={score.components.improvement} />
+      <Text
+        style={{
+          fontSize: 12,
+          color: "rgba(255,255,255,0.85)",
+          marginTop: 6,
+          marginBottom: 14,
+        }}
+      >
+        Top {Math.max(1, 100 - Math.round(score.percentile))}% of runners
+      </Text>
+
+      <View style={{ gap: 10 }}>
+        <SubScore label="Consistency" value={score.components.consistency} />
+        <SubScore label="Performance" value={score.components.performance} />
+        <SubScore label="Volume" value={score.components.volume} />
+        <SubScore label="Improvement" value={score.components.improvement} />
       </View>
     </View>
   );
 }
 
-function Component({ label, value }: { label: string; value: number }) {
+function SubScore({ label, value }: { label: string; value: number }) {
+  const v = Math.max(0, Math.min(25, Math.round(value)));
+  const pct = (v / 25) * 100;
   return (
-    <View className="flex-1 bg-white/15 rounded-lg p-2">
-      <Text className="text-[9px] uppercase text-white/70" numberOfLines={1}>
-        {label}
-      </Text>
-      <Text className="text-base font-bold text-white mt-0.5">
-        {Math.round(value)}<Text className="text-xs text-white/60">/25</Text>
-      </Text>
+    <View>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          marginBottom: 4,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 12,
+            fontWeight: "600",
+            color: "rgba(255,255,255,0.92)",
+          }}
+        >
+          {label}
+        </Text>
+        <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.85)" }}>
+          {v}/25
+        </Text>
+      </View>
+      <View
+        style={{
+          height: 5,
+          backgroundColor: "rgba(255,255,255,0.20)",
+          borderRadius: 3,
+          overflow: "hidden",
+        }}
+      >
+        <View
+          style={{
+            width: `${pct}%`,
+            height: "100%",
+            backgroundColor: "rgba(255,255,255,0.95)",
+            borderRadius: 3,
+          }}
+        />
+      </View>
     </View>
   );
 }
 
-function StatsSummary({
+/* ─── This Week stats row ────────────────────────────────── */
+function ThisWeekStats({
   stats,
   unit,
 }: {
   stats: NonNullable<DashboardData["stats"]>;
-  unit: "km" | "miles";
+  unit: string;
 }) {
-  const u = unit === "miles" ? "mi" : "km";
-  const recColor =
-    stats.recovery === "Good"
-      ? "bg-green-100 text-green-700"
-      : stats.recovery === "Moderate"
-        ? "bg-yellow-100 text-yellow-700"
-        : "bg-red-100 text-red-700";
-
   return (
-    <Card title="This week">
-      <View className="flex-row gap-4">
-        <BigStat
-          label="Distance"
-          value={`${stats.weeklyTotalDistance} ${u}`}
-          change={stats.weeklyDistanceChange}
-        />
-        <BigStat
-          label="Runs"
-          value={String(stats.weeklyTotalActivities)}
-          change={stats.weeklyActivitiesChange}
-        />
-        <BigStat label="Avg pace" value={`${stats.weeklyAvgPace}/${u}`} />
+    <View style={{ marginBottom: 14 }}>
+      <SectionLabel style={{ marginBottom: 8 }}>This Week</SectionLabel>
+      <View
+        style={{
+          backgroundColor: colors.surface,
+          borderRadius: 18,
+          borderWidth: 0.5,
+          borderColor: colors.border,
+          padding: 16,
+          flexDirection: "row",
+          ...shadow.card,
+        }}
+      >
+        <Stat label={unit === "mi" ? "Miles" : "KM"} value={String(stats.weeklyTotalDistance)} align="left" />
+        <View style={{ width: 0.5, backgroundColor: colors.border }} />
+        <Stat label="Runs" value={String(stats.weeklyTotalActivities)} align="center" />
+        <View style={{ width: 0.5, backgroundColor: colors.border }} />
+        <Stat label="Avg Pace" value={stats.weeklyAvgPace ? `${stats.weeklyAvgPace}` : "—"} align="right" />
       </View>
-      <View className="h-px bg-slate-200 dark:bg-slate-700 my-3" />
-      <View className="flex-row items-center justify-between">
-        <View>
-          <Text className="text-[11px] uppercase tracking-wide text-slate-400">
-            Recovery
-          </Text>
-          <Text className={`text-xs font-semibold mt-1 px-2 py-1 rounded-full self-start ${recColor}`}>
-            {stats.recovery}
-          </Text>
-        </View>
-        <View className="items-end">
-          <Text className="text-[11px] uppercase tracking-wide text-slate-400">
-            This month
-          </Text>
-          <Text className="text-sm font-semibold text-slate-900 dark:text-white mt-1">
-            {stats.monthlyTotalDistance} {u} • {stats.monthlyTotalActivities} runs
-          </Text>
-        </View>
-      </View>
-    </Card>
+    </View>
   );
 }
 
-function BigStat({
+function Stat({
   label,
   value,
-  change,
+  align,
 }: {
   label: string;
   value: string;
-  change?: number | null;
+  align: "left" | "center" | "right";
 }) {
-  const showChange = change !== null && change !== undefined;
-  const positive = (change ?? 0) > 0;
-  const arrow = positive ? "↑" : (change ?? 0) < 0 ? "↓" : "";
-  const color = positive
-    ? "text-green-500"
-    : (change ?? 0) < 0
-      ? "text-red-500"
-      : "text-slate-400";
-
   return (
-    <View className="flex-1">
-      <Text className="text-[11px] uppercase tracking-wide text-slate-400">{label}</Text>
-      <Text className="text-lg font-bold text-slate-900 dark:text-white mt-1" numberOfLines={1}>
+    <View style={{ flex: 1, paddingHorizontal: 8 }}>
+      <Text
+        style={{
+          fontSize: 24,
+          fontWeight: "700",
+          color: colors.text,
+          letterSpacing: -0.6,
+          textAlign: align,
+        }}
+      >
         {value}
       </Text>
-      {showChange ? (
-        <Text className={`text-[10px] font-medium mt-0.5 ${color}`}>
-          {arrow} {Math.abs(change!)}%
-        </Text>
-      ) : null}
+      <Text
+        style={{
+          fontSize: 11,
+          color: colors.muted,
+          marginTop: 2,
+          textAlign: align,
+          letterSpacing: 0.2,
+        }}
+      >
+        {label}
+      </Text>
     </View>
   );
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+/* ─── Latest Brief card ──────────────────────────────────── */
+function LatestBrief({ activity, unit }: { activity: Activity; unit: "km" | "miles" }) {
   return (
-    <View className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700">
-      <Text className="text-xs uppercase tracking-wide text-slate-400 mb-3">{title}</Text>
-      {children}
-    </View>
-  );
-}
-
-function ActivityCard({ activity, unit }: { activity: Activity; unit: "km" | "miles" }) {
-  return (
-    <Link href={`/activity/${activity.id}`} asChild>
-      <Pressable className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 active:opacity-80">
-        <View className="flex-row items-start justify-between">
-          <View className="flex-1 pr-3">
-            <Text
-              className="text-base font-semibold text-slate-900 dark:text-white"
-              numberOfLines={1}
-            >
-              {activity.name}
-            </Text>
-            <Text className="text-xs text-slate-500 mt-0.5">
-              {formatDate(activity.startDate)} • {activity.type}
+    <View style={{ marginBottom: 14 }}>
+      <SectionLabel style={{ marginBottom: 8 }}>Latest Brief</SectionLabel>
+      <Link href={`/activity/${activity.id}`} asChild>
+        <Pressable
+          style={({ pressed }) => ({
+            backgroundColor: colors.surface,
+            borderRadius: 18,
+            borderWidth: 0.5,
+            borderColor: colors.border,
+            padding: 16,
+            opacity: pressed ? 0.85 : 1,
+            ...shadow.card,
+          })}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              alignSelf: "flex-start",
+              backgroundColor: "rgba(252,76,2,0.10)",
+              paddingHorizontal: 9,
+              paddingVertical: 4,
+              borderRadius: 999,
+              marginBottom: 10,
+            }}
+          >
+            <View
+              style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.brand }}
+            />
+            <Text style={{ fontSize: 10, fontWeight: "700", color: colors.brand, letterSpacing: 0.3 }}>
+              NEW BRIEF
             </Text>
           </View>
-          <Text className="text-slate-400 text-lg">›</Text>
+          <Text
+            style={{
+              fontSize: 15,
+              fontWeight: "600",
+              color: colors.text,
+              marginBottom: 4,
+            }}
+          >
+            {formatDate(activity.startDate)} · {formatDistance(activity.distance, unit)} ·{" "}
+            {formatPace(activity.averageSpeed, unit)}
+          </Text>
+          <Text style={{ fontSize: 14, color: colors.muted, lineHeight: 20 }}>
+            {activity.name}
+          </Text>
+          <Text
+            style={{
+              marginTop: 12,
+              fontSize: 13,
+              fontWeight: "600",
+              color: colors.brand,
+            }}
+          >
+            Read full brief ›
+          </Text>
+        </Pressable>
+      </Link>
+    </View>
+  );
+}
+
+/* ─── Distance trend (mini bars) ─────────────────────────── */
+function DistanceTrendCard({
+  data,
+  unitSuffix,
+}: {
+  data: { label: string; value: number }[];
+  unitSuffix: string;
+}) {
+  const max = Math.max(1, ...data.map((d) => d.value));
+  const recent = data.slice(-12);
+  return (
+    <View style={{ marginBottom: 14 }}>
+      <View
+        style={{
+          backgroundColor: colors.surface,
+          borderRadius: 18,
+          borderWidth: 0.5,
+          borderColor: colors.border,
+          padding: 16,
+          ...shadow.card,
+        }}
+      >
+        <SectionLabel style={{ marginBottom: 12 }}>
+          Distance Trend · 30 Days
+        </SectionLabel>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "flex-end",
+            height: 90,
+            gap: 4,
+          }}
+        >
+          {recent.map((d, i) => {
+            const h = Math.max(4, (d.value / max) * 90);
+            const isLast = i === recent.length - 1;
+            return (
+              <View key={i} style={{ flex: 1, alignItems: "center" }}>
+                <View
+                  style={{
+                    width: "85%",
+                    height: h,
+                    backgroundColor: isLast ? colors.brand : "rgba(252,76,2,0.30)",
+                    borderRadius: 3,
+                  }}
+                />
+              </View>
+            );
+          })}
         </View>
-        <View className="flex-row mt-3 gap-4">
-          <Mini label="Distance" value={formatDistance(activity.distance, unit)} />
-          <Mini label="Time" value={formatDuration(activity.movingTime)} />
-          <Mini label="Pace" value={formatPace(activity.averageSpeed, unit)} />
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            marginTop: 8,
+          }}
+        >
+          <Text style={{ fontSize: 10, color: colors.faint }}>{recent[0]?.label}</Text>
+          <Text style={{ fontSize: 10, color: colors.faint }}>
+            {recent[recent.length - 1]?.label} · {recent[recent.length - 1]?.value} {unitSuffix}
+          </Text>
         </View>
+      </View>
+    </View>
+  );
+}
+
+/* ─── Activity row (grouped list style) ──────────────────── */
+function ActivityRow({
+  activity,
+  unit,
+  isFirst,
+  isLast,
+}: {
+  activity: Activity;
+  unit: "km" | "miles";
+  isFirst: boolean;
+  isLast: boolean;
+}) {
+  return (
+    <Link href={`/activity/${activity.id}`} asChild>
+      <Pressable
+        style={({ pressed }) => ({
+          backgroundColor: colors.surface,
+          borderTopLeftRadius: isFirst ? 16 : 0,
+          borderTopRightRadius: isFirst ? 16 : 0,
+          borderBottomLeftRadius: isLast ? 16 : 0,
+          borderBottomRightRadius: isLast ? 16 : 0,
+          borderWidth: 0.5,
+          borderColor: colors.border,
+          borderTopWidth: isFirst ? 0.5 : 0,
+          paddingVertical: 14,
+          paddingHorizontal: 14,
+          flexDirection: "row",
+          alignItems: "center",
+          opacity: pressed ? 0.85 : 1,
+          ...(isFirst ? shadow.card : null),
+        })}
+      >
+        <View style={{ flex: 1, paddingRight: 8 }}>
+          <Text
+            numberOfLines={1}
+            style={{ fontSize: 15, fontWeight: "600", color: colors.text, marginBottom: 2 }}
+          >
+            {activity.name}
+          </Text>
+          <Text style={{ fontSize: 12, color: colors.muted }}>
+            {formatDate(activity.startDate)} · {activity.type}
+          </Text>
+        </View>
+        <View style={{ flexDirection: "row", gap: 14, marginRight: 10 }}>
+          <MiniMetric value={formatDistance(activity.distance, unit).split(" ")[0]} unit={unit === "miles" ? "mi" : "km"} />
+          <MiniMetric value={formatPace(activity.averageSpeed, unit).split(" ")[0]} unit="pace" />
+        </View>
+        <Text style={{ color: colors.faint, fontSize: 18, fontWeight: "300" }}>›</Text>
       </Pressable>
     </Link>
   );
 }
 
-function Mini({ label, value }: { label: string; value: string }) {
+function MiniMetric({ value, unit }: { value: string; unit: string }) {
   return (
-    <View className="flex-1">
-      <Text className="text-[11px] uppercase tracking-wide text-slate-400">{label}</Text>
-      <Text className="text-sm font-semibold text-slate-900 dark:text-white mt-0.5">
-        {value}
-      </Text>
+    <View style={{ alignItems: "flex-end" }}>
+      <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text }}>{value}</Text>
+      <Text style={{ fontSize: 10, color: colors.faint, marginTop: 1 }}>{unit}</Text>
     </View>
+  );
+}
+
+/* ─── helpers ────────────────────────────────────────────── */
+function SectionLabel({
+  children,
+  style,
+}: {
+  children: React.ReactNode;
+  style?: any;
+}) {
+  return (
+    <Text
+      style={[
+        {
+          fontSize: 11,
+          fontWeight: "700",
+          letterSpacing: 1.0,
+          color: colors.muted,
+          textTransform: "uppercase",
+          marginLeft: 4,
+        },
+        style,
+      ]}
+    >
+      {children}
+    </Text>
   );
 }
 
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <View className="items-center mt-12">
-      <Text className="text-base text-slate-600 dark:text-slate-400 text-center px-6">
+    <View style={{ alignItems: "center", marginTop: 32 }}>
+      <Text style={{ fontSize: 14, color: colors.muted, textAlign: "center", paddingHorizontal: 24 }}>
         {message}
       </Text>
       <Pressable
         onPress={onRetry}
-        className="mt-4 bg-strava px-5 py-3 rounded-lg active:opacity-80"
+        style={({ pressed }) => ({
+          marginTop: 16,
+          backgroundColor: colors.brand,
+          paddingHorizontal: 20,
+          paddingVertical: 12,
+          borderRadius: 12,
+          opacity: pressed ? 0.85 : 1,
+        })}
       >
-        <Text className="text-white font-medium">Try again</Text>
+        <Text style={{ color: "#fff", fontWeight: "600" }}>Try again</Text>
       </Pressable>
     </View>
   );

@@ -15,6 +15,7 @@ import * as SecureStore from "expo-secure-store";
 import { useAuth } from "../../lib/auth";
 import { api } from "../../lib/api";
 import { registerForPushAsync, unregisterPushAsync, sendTestPush } from "../../lib/push";
+import { colors, shadow } from "../../lib/theme";
 import type { User, SubscriptionStatus, NotificationsResponse } from "../../types";
 
 const PUSH_TOKEN_KEY = "ra_push_token";
@@ -95,156 +96,376 @@ export default function SettingsScreen() {
     ]);
   };
 
-  const unit = user?.unitPreference || "km";
+  const unit = (user?.unitPreference || "km") as "km" | "miles";
+  const initial = (user?.firstName?.[0] || user?.username?.[0] || "R").toUpperCase();
+  const planName = sub.data?.subscriptionPlan
+    ? sub.data.subscriptionPlan.charAt(0).toUpperCase() + sub.data.subscriptionPlan.slice(1)
+    : "Free";
+  const planActive =
+    sub.data?.subscriptionStatus === "active" ||
+    sub.data?.subscriptionStatus === "trialing";
 
   return (
-    <SafeAreaView edges={["top"]} className="flex-1 bg-slate-50 dark:bg-slate-900">
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 16 }}>
-        <Text className="text-2xl font-bold text-slate-900 dark:text-white">
+    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.bg }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
+        <Text
+          style={{
+            fontSize: 32,
+            fontWeight: "800",
+            color: colors.text,
+            letterSpacing: -0.6,
+            marginTop: 4,
+            marginBottom: 18,
+          }}
+        >
           Settings
         </Text>
 
-        <Card title="Account">
-          <Text className="text-base font-medium text-slate-900 dark:text-white">
-            {user?.firstName || user?.username || "Runner"}
-          </Text>
-          <Text className="text-sm text-slate-500 mt-0.5">{user?.email || "—"}</Text>
-        </Card>
-
-        {sub.data ? (
-          <Card title="Subscription">
-            <View className="flex-row items-center justify-between">
-              <View>
-                <Text className="text-base font-semibold text-slate-900 dark:text-white capitalize">
-                  {sub.data.subscriptionPlan}
-                </Text>
-                <Text className="text-xs text-slate-500 mt-0.5 capitalize">
-                  {sub.data.subscriptionStatus.replace(/_/g, " ")}
-                </Text>
-              </View>
-              {sub.data.isReverseTrial ? (
-                <View className="bg-orange-100 dark:bg-orange-950/40 px-3 py-1.5 rounded-full">
-                  <Text className="text-xs font-semibold text-orange-700 dark:text-orange-300">
-                    {sub.data.trialDaysRemaining}d trial left
-                  </Text>
-                </View>
-              ) : null}
+        {/* Account card */}
+        <Group>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              padding: 16,
+              gap: 14,
+            }}
+          >
+            <View
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 26,
+                backgroundColor: colors.brand,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 20 }}>{initial}</Text>
             </View>
-            {sub.data.subscriptionEndsAt ? (
-              <Text className="text-[11px] text-slate-400 mt-2">
-                Renews/ends {new Date(sub.data.subscriptionEndsAt).toLocaleDateString()}
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 17,
+                  fontWeight: "600",
+                  color: colors.text,
+                  letterSpacing: -0.2,
+                }}
+              >
+                {user?.firstName || user?.username || "Runner"}
               </Text>
-            ) : null}
-            <Text className="text-[11px] text-slate-400 mt-2">
-              Manage billing on aitracker.run.
-            </Text>
-          </Card>
+              <Text style={{ fontSize: 13, color: colors.muted, marginTop: 2 }}>
+                {user?.email || "—"}
+              </Text>
+            </View>
+          </View>
+        </Group>
+
+        {/* Subscription */}
+        {sub.data ? (
+          <>
+            <GroupLabel>Subscription</GroupLabel>
+            <Group>
+              <Row>
+                <IconSquare bg={planActive ? colors.premium : colors.faint} glyph="★" />
+                <Text style={rowLabel}>{planName}</Text>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: planActive ? colors.successText : colors.muted,
+                    marginRight: 8,
+                  }}
+                >
+                  {planActive ? "Active" : sub.data.subscriptionStatus.replace(/_/g, " ")}
+                </Text>
+                <Chevron />
+              </Row>
+              {sub.data.isReverseTrial && sub.data.trialDaysRemaining ? (
+                <SubRow>
+                  {sub.data.trialDaysRemaining}-day trial · Manage at aitracker.run
+                </SubRow>
+              ) : sub.data.subscriptionEndsAt ? (
+                <SubRow>
+                  Renews {new Date(sub.data.subscriptionEndsAt).toLocaleDateString()} · $7.99/mo
+                </SubRow>
+              ) : (
+                <SubRow>Manage billing at aitracker.run</SubRow>
+              )}
+            </Group>
+          </>
         ) : null}
 
-        <Link href="/tools/notifications" asChild>
-          <Pressable className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 active:opacity-80 flex-row items-center justify-between">
-            <View className="flex-row items-center gap-3">
-              <Text style={{ fontSize: 22 }}>🔔</Text>
-              <View>
-                <Text className="text-base font-semibold text-slate-900 dark:text-white">
-                  Notifications
-                </Text>
-                <Text className="text-xs text-slate-500 mt-0.5">
-                  {notifs.data?.unreadCount
-                    ? `${notifs.data.unreadCount} unread`
-                    : "All caught up"}
-                </Text>
-              </View>
-            </View>
-            <Text className="text-slate-400 text-xl">›</Text>
-          </Pressable>
-        </Link>
-
-        <Card title="Units">
-          <View className="flex-row gap-2 mt-1">
-            {(["km", "miles"] as const).map((u) => (
-              <Pressable
-                key={u}
-                onPress={() => updateUnits.mutate(u)}
-                disabled={updateUnits.isPending}
-                className={`flex-1 py-3 rounded-xl border items-center ${
-                  unit === u
-                    ? "bg-strava border-strava"
-                    : "border-slate-300 dark:border-slate-600"
-                } active:opacity-80`}
-              >
-                <Text
-                  className={`text-sm font-semibold ${
-                    unit === u ? "text-white" : "text-slate-700 dark:text-slate-200"
-                  }`}
+        {/* Notifications row */}
+        <GroupLabel>Activity</GroupLabel>
+        <Group>
+          <Link href="/tools/notifications" asChild>
+            <Pressable>
+              {({ pressed }) => (
+                <View
+                  style={{
+                    backgroundColor: pressed ? colors.surfaceAlt : "transparent",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingVertical: 13,
+                    paddingHorizontal: 16,
+                    gap: 12,
+                  }}
                 >
-                  {u === "km" ? "Kilometers" : "Miles"}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-          {updateUnits.isPending ? (
-            <View className="mt-2 flex-row items-center gap-2">
-              <ActivityIndicator size="small" color="#fc4c02" />
-              <Text className="text-xs text-slate-500">Saving…</Text>
-            </View>
-          ) : null}
-        </Card>
+                  <IconSquare bg={colors.brand} glyph="🔔" />
+                  <Text style={rowLabel}>Notifications</Text>
+                  <Text style={{ fontSize: 14, color: colors.muted, marginRight: 8 }}>
+                    {notifs.data?.unreadCount
+                      ? `${notifs.data.unreadCount} new`
+                      : "All caught up"}
+                  </Text>
+                  <Chevron />
+                </View>
+              )}
+            </Pressable>
+          </Link>
+        </Group>
 
-        <Card title="Push notifications">
-          <View className="flex-row items-center justify-between">
-            <View className="flex-1 pr-4">
-              <Text className="text-sm font-medium text-slate-900 dark:text-white">
-                Enable on this device
-              </Text>
-              <Text className="text-xs text-slate-500 mt-0.5">
-                Coach recaps and important alerts.
-              </Text>
-            </View>
+        {/* Preferences */}
+        <GroupLabel>Preferences</GroupLabel>
+        <Group>
+          <Row>
+            <Text style={rowLabel}>Units</Text>
+            <Segment
+              value={unit}
+              onChange={(v) => updateUnits.mutate(v)}
+              disabled={updateUnits.isPending}
+            />
+          </Row>
+          <Row>
+            <Text style={rowLabel}>Push Notifications</Text>
             {pushBusy ? (
-              <ActivityIndicator color="#fc4c02" />
+              <ActivityIndicator color={colors.brand} />
             ) : (
               <Switch
                 value={!!pushToken}
                 onValueChange={togglePush}
-                trackColor={{ true: "#fc4c02" }}
+                trackColor={{ true: colors.brand, false: "#E5E3DE" }}
+                thumbColor="#FFFFFF"
+                ios_backgroundColor="#E5E3DE"
               />
             )}
-          </View>
+          </Row>
           {pushToken ? (
             <Pressable
               onPress={onTestPush}
-              className="mt-4 bg-slate-100 dark:bg-slate-700 rounded-xl py-3 items-center active:opacity-80"
+              style={({ pressed }) => ({
+                backgroundColor: pressed ? colors.surfaceAlt : "transparent",
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: 13,
+                paddingHorizontal: 16,
+              })}
             >
-              <Text className="text-sm font-medium text-slate-900 dark:text-white">
-                Send test push
-              </Text>
+              <Text style={[rowLabel, { color: colors.brand }]}>Send test push</Text>
             </Pressable>
           ) : null}
-        </Card>
+        </Group>
 
+        {/* About */}
+        <Group>
+          <Row>
+            <Text style={rowLabel}>Privacy Policy</Text>
+            <Chevron />
+          </Row>
+          <Row last>
+            <Text style={rowLabel}>Version</Text>
+            <Text style={{ fontSize: 14, color: colors.muted }}>1.0.0</Text>
+          </Row>
+        </Group>
+
+        {/* Sign out */}
         <Pressable
           onPress={onSignOut}
-          className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-red-200 dark:border-red-900 active:opacity-80"
+          style={({ pressed }) => ({
+            width: "100%",
+            paddingVertical: 14,
+            backgroundColor: "rgba(252,76,2,0.06)",
+            borderWidth: 0.5,
+            borderColor: "rgba(252,76,2,0.25)",
+            borderRadius: 14,
+            alignItems: "center",
+            marginTop: 8,
+            opacity: pressed ? 0.7 : 1,
+          })}
         >
-          <Text className="text-center text-red-600 font-semibold">Sign out</Text>
+          <Text style={{ color: colors.brand, fontWeight: "600", fontSize: 16 }}>
+            Sign Out
+          </Text>
         </Pressable>
 
-        <Text className="text-xs text-center text-slate-400 mt-2">
-          Manage Strava connection and billing on aitracker.run.
+        <Text
+          style={{
+            textAlign: "center",
+            fontSize: 12,
+            color: colors.faint,
+            marginTop: 12,
+          }}
+        >
+          Manage Strava connection and billing at aitracker.run
         </Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+/* ─── Building blocks ────────────────────────────────────── */
+const rowLabel = {
+  flex: 1,
+  fontSize: 15,
+  color: colors.text,
+  fontWeight: "400" as const,
+};
+
+function Group({ children }: { children: React.ReactNode }) {
   return (
-    <View className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700">
-      <Text className="text-xs uppercase tracking-wide text-slate-400 mb-3">
-        {title}
-      </Text>
+    <View
+      style={{
+        backgroundColor: colors.surface,
+        borderRadius: 16,
+        borderWidth: 0.5,
+        borderColor: colors.border,
+        overflow: "hidden",
+        marginBottom: 14,
+        ...shadow.card,
+      }}
+    >
       {children}
+    </View>
+  );
+}
+
+function GroupLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <Text
+      style={{
+        fontSize: 11,
+        fontWeight: "700",
+        letterSpacing: 0.7,
+        color: colors.muted,
+        textTransform: "uppercase",
+        marginLeft: 8,
+        marginBottom: 6,
+        marginTop: 2,
+      }}
+    >
+      {children}
+    </Text>
+  );
+}
+
+function Row({
+  children,
+  last = false,
+}: {
+  children: React.ReactNode;
+  last?: boolean;
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        paddingVertical: 13,
+        paddingHorizontal: 16,
+        borderBottomWidth: last ? 0 : 0.5,
+        borderBottomColor: colors.border,
+        gap: 12,
+      }}
+    >
+      {children}
+    </View>
+  );
+}
+
+function SubRow({ children }: { children: React.ReactNode }) {
+  return (
+    <View
+      style={{
+        paddingHorizontal: 16,
+        paddingTop: 0,
+        paddingBottom: 12,
+      }}
+    >
+      <Text style={{ fontSize: 13, color: colors.muted }}>{children}</Text>
+    </View>
+  );
+}
+
+function IconSquare({ bg, glyph }: { bg: string; glyph: string }) {
+  return (
+    <View
+      style={{
+        width: 30,
+        height: 30,
+        borderRadius: 8,
+        backgroundColor: bg,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Text style={{ color: "#fff", fontSize: 14, fontWeight: "700" }}>{glyph}</Text>
+    </View>
+  );
+}
+
+function Chevron() {
+  return (
+    <Text style={{ color: colors.faint, fontSize: 18, fontWeight: "300" }}>›</Text>
+  );
+}
+
+function Segment({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: "km" | "miles";
+  onChange: (v: "km" | "miles") => void;
+  disabled?: boolean;
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        backgroundColor: colors.surfaceAlt,
+        borderRadius: 10,
+        padding: 2,
+        gap: 2,
+      }}
+    >
+      {(["km", "miles"] as const).map((v) => {
+        const active = v === value;
+        return (
+          <Pressable
+            key={v}
+            onPress={() => !disabled && onChange(v)}
+            disabled={disabled}
+            style={{
+              paddingHorizontal: 14,
+              paddingVertical: 6,
+              borderRadius: 8,
+              backgroundColor: active ? colors.surface : "transparent",
+              borderWidth: active ? 0.5 : 0,
+              borderColor: colors.border,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: "600",
+                color: active ? colors.text : colors.muted,
+              }}
+            >
+              {v === "km" ? "km" : "Miles"}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }

@@ -4,14 +4,17 @@ import { Link } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
+import { colors, shadow } from "../../lib/theme";
 import type { NotificationsResponse } from "../../types";
 
 interface ToolDef {
   href: string;
-  emoji: string;
+  glyph: string;
+  iconBg: string;
   title: string;
   desc: string;
   badge?: number;
+  premium?: boolean;
 }
 
 export default function ToolsScreen() {
@@ -27,49 +30,59 @@ export default function ToolsScreen() {
   const tools: ToolDef[] = [
     {
       href: "/tools/predictor",
-      emoji: "🎯",
+      glyph: "⏱",
+      iconBg: "rgba(252,76,2,0.15)",
       title: "Race Predictor",
       desc: "Estimate your 5K, 10K, half, or marathon time from a recent effort.",
     },
     {
-      href: "/tools/goals",
-      emoji: "🏁",
-      title: "Goals",
-      desc: "Track training goals — speed, endurance, distance, hills.",
-    },
-    {
-      href: "/tools/insights",
-      emoji: "✨",
-      title: "AI Insights",
-      desc: "Latest performance, recovery, and technique insights from your AI coach.",
-    },
-    {
-      href: "/tools/coach-recaps",
-      emoji: "📝",
-      title: "Coach Recaps",
-      desc: "Post-run summaries with focus cues and next steps. (Premium)",
-    },
-    {
-      href: "/tools/recovery",
-      emoji: "❤️",
-      title: "Recovery",
-      desc: "Freshness, training load, and what to do next.",
-    },
-    {
       href: "/tools/fitness",
-      emoji: "🫁",
+      glyph: "📈",
+      iconBg: "rgba(45,122,31,0.15)",
       title: "Fitness & VO2 Max",
       desc: "Aerobic capacity, fitness, fatigue, and form trend.",
     },
     {
+      href: "/tools/insights",
+      glyph: "💡",
+      iconBg: "rgba(108,49,176,0.15)",
+      title: "AI Insights",
+      desc: "Performance, recovery, and technique insights.",
+    },
+    {
+      href: "/tools/coach-recaps",
+      glyph: "📝",
+      iconBg: "rgba(194,96,32,0.15)",
+      title: "Coach Recaps",
+      desc: "Post-run summaries with focus cues and next steps.",
+      premium: true,
+    },
+    {
+      href: "/tools/recovery",
+      glyph: "❤︎",
+      iconBg: "rgba(79,152,163,0.15)",
+      title: "Recovery",
+      desc: "Freshness, training load, and what to do next.",
+    },
+    {
       href: "/tools/injury-risk",
-      emoji: "⚠️",
-      title: "Injury Risk & ML",
+      glyph: "🛡",
+      iconBg: "rgba(252,76,2,0.10)",
+      title: "Injury Risk",
       desc: "Risk analysis with ML race-time predictions.",
+      premium: true,
+    },
+    {
+      href: "/tools/goals",
+      glyph: "🎯",
+      iconBg: "rgba(45,122,31,0.12)",
+      title: "Goals & Alerts",
+      desc: "Track training goals and get smart notifications.",
     },
     {
       href: "/tools/notifications",
-      emoji: "🔔",
+      glyph: "🔔",
+      iconBg: "rgba(108,49,176,0.12)",
       title: "Notifications",
       desc: "Coach recaps, weekly summaries, and alerts.",
       badge: notifs.data?.unreadCount,
@@ -77,35 +90,123 @@ export default function ToolsScreen() {
   ];
 
   return (
-    <SafeAreaView edges={["top"]} className="flex-1 bg-slate-50 dark:bg-slate-900">
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 12 }}>
-        <Text className="text-2xl font-bold text-slate-900 dark:text-white">Tools</Text>
-        <Text className="text-sm text-slate-500 -mt-2 mb-1">
+    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.bg }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
+        <Text
+          style={{
+            fontSize: 32,
+            fontWeight: "800",
+            color: colors.text,
+            letterSpacing: -0.6,
+            marginTop: 4,
+          }}
+        >
+          Tools
+        </Text>
+        <Text style={{ fontSize: 14, color: colors.muted, marginTop: 4, marginBottom: 18 }}>
           Everything beyond the dashboard.
         </Text>
 
-        {tools.map((t) => (
-          <Link key={t.href} href={t.href as never} asChild>
-            <Pressable className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 active:opacity-80 flex-row items-center">
-              <Text style={{ fontSize: 28 }}>{t.emoji}</Text>
-              <View className="flex-1 ml-4">
-                <View className="flex-row items-center gap-2">
-                  <Text className="text-base font-semibold text-slate-900 dark:text-white">
-                    {t.title}
-                  </Text>
-                  {t.badge && t.badge > 0 ? (
-                    <View className="bg-strava rounded-full px-2 py-0.5 min-w-[20px] items-center">
-                      <Text className="text-[10px] text-white font-bold">{t.badge}</Text>
-                    </View>
-                  ) : null}
-                </View>
-                <Text className="text-xs text-slate-500 mt-0.5">{t.desc}</Text>
-              </View>
-              <Text className="text-slate-400 text-xl">›</Text>
-            </Pressable>
-          </Link>
-        ))}
+        <View
+          style={{
+            backgroundColor: colors.surface,
+            borderRadius: 18,
+            borderWidth: 0.5,
+            borderColor: colors.border,
+            overflow: "hidden",
+            ...shadow.card,
+          }}
+        >
+          {tools.map((t, i) => (
+            <ToolRow key={t.href} tool={t} isLast={i === tools.length - 1} />
+          ))}
+        </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function ToolRow({ tool, isLast }: { tool: ToolDef; isLast: boolean }) {
+  return (
+    <Link href={tool.href as never} asChild>
+      <Pressable
+        style={({ pressed }) => ({
+          flexDirection: "row",
+          alignItems: "center",
+          paddingVertical: 14,
+          paddingHorizontal: 14,
+          borderBottomWidth: isLast ? 0 : 0.5,
+          borderBottomColor: colors.border,
+          backgroundColor: pressed ? colors.surfaceAlt : "transparent",
+          gap: 14,
+        })}
+      >
+        <View
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 10,
+            backgroundColor: tool.iconBg,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text style={{ fontSize: 18 }}>{tool.glyph}</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text
+            style={{
+              fontSize: 15,
+              fontWeight: "600",
+              color: colors.text,
+              letterSpacing: -0.1,
+              marginBottom: 1,
+            }}
+          >
+            {tool.title}
+          </Text>
+          <Text style={{ fontSize: 12, color: colors.muted, lineHeight: 16 }}>{tool.desc}</Text>
+        </View>
+        {tool.premium ? (
+          <View
+            style={{
+              backgroundColor: colors.premiumBg,
+              paddingHorizontal: 7,
+              paddingVertical: 3,
+              borderRadius: 10,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 9,
+                fontWeight: "700",
+                letterSpacing: 0.6,
+                color: colors.premium,
+              }}
+            >
+              PRO
+            </Text>
+          </View>
+        ) : null}
+        {tool.badge && tool.badge > 0 ? (
+          <View
+            style={{
+              minWidth: 20,
+              height: 20,
+              borderRadius: 10,
+              backgroundColor: colors.brand,
+              paddingHorizontal: 6,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text style={{ fontSize: 11, color: "#fff", fontWeight: "700" }}>
+              {tool.badge}
+            </Text>
+          </View>
+        ) : null}
+        <Text style={{ color: colors.faint, fontSize: 18, fontWeight: "300" }}>›</Text>
+      </Pressable>
+    </Link>
   );
 }
