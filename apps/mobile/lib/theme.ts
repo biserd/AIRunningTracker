@@ -4,9 +4,9 @@ export const colors = {
   brandLight: "rgba(252,76,2,0.08)",
   brandMid: "rgba(252,76,2,0.14)",
 
-  bg: "#F0EEE9",
+  bg: "#EAE7DF",
   surface: "#FFFFFF",
-  surfaceAlt: "#F7F6F3",
+  surfaceAlt: "#F4F2EE",
 
   border: "#D8D5CD",
   borderStrong: "#C4C1B8",
