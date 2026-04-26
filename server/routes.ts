@@ -1483,6 +1483,18 @@ ${allPages.map(page => `  <url>
         console.error('[StravaLogin] Drip campaign error:', campaignError);
       }
 
+      // Notify admin of the new Strava signup (non-blocking)
+      try {
+        await emailService.sendStravaSignupNotification({
+          userId: newUser.id,
+          firstName: newUser.firstName,
+          lastName: newUser.lastName,
+          stravaAthleteId: athleteId,
+        });
+      } catch (notifyError) {
+        console.error('[StravaLogin] Admin notification error:', notifyError);
+      }
+
       const token = authService.generateToken(newUser);
       // Pass JWT via short-lived cookie to avoid token in URL (security)
       res.cookie('_sta', token, { maxAge: 60000, path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });

@@ -90,6 +90,34 @@ class EmailService {
     });
   }
 
+  async sendStravaSignupNotification(params: {
+    userId: number;
+    firstName?: string | null;
+    lastName?: string | null;
+    stravaAthleteId: string;
+  }): Promise<void> {
+    const fullName = [params.firstName, params.lastName].filter(Boolean).join(' ') || '(no name on Strava profile)';
+    const subject = 'New Strava Signup - RunAnalytics';
+    const html = `
+      <h2>New User Signed Up via Strava</h2>
+      <p>A new user just connected through Strava OAuth:</p>
+      <ul>
+        <li><strong>Name:</strong> ${fullName}</li>
+        <li><strong>User ID:</strong> ${params.userId}</li>
+        <li><strong>Strava Athlete ID:</strong> ${params.stravaAthleteId}</li>
+        <li><strong>Date:</strong> ${new Date().toLocaleString()}</li>
+      </ul>
+      <p style="color:#666; font-size:13px;">No email on file yet — will be collected at billing checkout.</p>
+    `;
+
+    await this.sendEmail({
+      to: 'hello@bigappledigital.nyc',
+      subject,
+      html,
+      text: `New Strava signup: ${fullName} (user #${params.userId}, athlete ${params.stravaAthleteId}) at ${new Date().toLocaleString()}`
+    });
+  }
+
   async sendFeedbackNotification(type: string, title: string, description: string, userEmail: string): Promise<void> {
     const feedbackType = type === 'bug' ? 'Bug Report' : 'Feature Suggestion';
     const subject = `[RunAnalytics] New ${feedbackType}: ${title}`;
