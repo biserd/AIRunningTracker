@@ -1518,6 +1518,8 @@ ${allPages.map(page => `  <url>
       }
 
       await storage.updateUser(userId, { email });
+      // Invalidate the cached dashboard payload so the saved email shows up immediately
+      deleteCachedResponse(`dashboard:${userId}`);
       res.json({ success: true });
     } catch (error: any) {
       console.error('[AddEmail] Error:', error);
