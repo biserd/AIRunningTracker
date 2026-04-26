@@ -3,6 +3,7 @@ import { apiRequest } from "./queryClient";
 export interface DashboardData {
   user: {
     name: string;
+    email?: string | null;
     stravaConnected: boolean;
     stravaHasWriteScope?: boolean;
     stravaBrandingEnabled?: boolean;

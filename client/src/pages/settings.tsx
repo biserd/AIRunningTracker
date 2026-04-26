@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Save, Unlink, Trash2, Crown, Zap, CreditCard, ExternalLink, Loader2, Share2, Check, AlertTriangle, MessageSquare, Target, Calendar, Bell } from "lucide-react";
+import { Settings, Save, Unlink, Trash2, Crown, Zap, CreditCard, ExternalLink, Loader2, Share2, Check, AlertTriangle, MessageSquare, Target, Calendar, Bell, Mail, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import PushNotificationToggle from "@/components/PushNotificationToggle";
@@ -36,6 +36,8 @@ function SettingsPageContent() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [notifyPostRun, setNotifyPostRun] = useState(true);
   const [postRunEmailFrequency, setPostRunEmailFrequency] = useState("every_run");
+  const [emailEditing, setEmailEditing] = useState(false);
+  const [emailDraft, setEmailDraft] = useState("");
 
   useEffect(() => {
     if (dashboardData?.user?.unitPreference) {
@@ -71,6 +73,29 @@ function SettingsPageContent() {
       toast({
         title: "Update failed",
         description: error.message || "Failed to update settings",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateEmailMutation = useMutation({
+    mutationFn: async (email: string) => {
+      return apiRequest("/api/auth/add-email", "POST", { email });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user!.id}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      setEmailEditing(false);
+      setEmailDraft("");
+      toast({
+        title: "Email saved",
+        description: "We'll use this for run briefings and important account alerts.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Couldn't save email",
+        description: error.message || "Please try a different email address.",
         variant: "destructive",
       });
     },
@@ -224,6 +249,93 @@ function SettingsPageContent() {
               <Label className="text-sm font-medium text-gray-700">Username</Label>
               <p className="text-gray-900">{dashboardData?.user?.name || "Loading..."}</p>
             </div>
+
+            {dashboardData?.user?.stravaConnected && (
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Email address</Label>
+                {dashboardData.user.email && !emailEditing ? (
+                  <div className="flex items-center justify-between mt-1 gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="inline-block w-2 h-2 rounded-full bg-green-500 shrink-0" aria-hidden="true" />
+                      <p className="text-gray-900 truncate" data-testid="text-user-email">{dashboardData.user.email}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEmailDraft(dashboardData.user.email || "");
+                        setEmailEditing(true);
+                      }}
+                      data-testid="button-edit-email"
+                    >
+                      Edit
+                    </Button>
+                  </div>
+                ) : emailEditing ? (
+                  <div className="mt-1 space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        type="email"
+                        placeholder="your@email.com"
+                        value={emailDraft}
+                        onChange={(e) => setEmailDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && emailDraft.trim()) {
+                            updateEmailMutation.mutate(emailDraft.trim());
+                          }
+                          if (e.key === "Escape") {
+                            setEmailEditing(false);
+                            setEmailDraft("");
+                          }
+                        }}
+                        autoFocus
+                        data-testid="input-email-address"
+                      />
+                      <Button
+                        onClick={() => updateEmailMutation.mutate(emailDraft.trim())}
+                        disabled={updateEmailMutation.isPending || !emailDraft.trim()}
+                        data-testid="button-save-email"
+                      >
+                        {updateEmailMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                      </Button>
+                      {dashboardData.user.email && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setEmailEditing(false);
+                            setEmailDraft("");
+                          }}
+                          data-testid="button-cancel-email"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-1 space-y-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-gray-500 italic text-sm">No email on file</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmailDraft("");
+                          setEmailEditing(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-strava-orange text-white text-xs font-medium hover:bg-strava-orange/90 transition-colors"
+                        data-testid="button-add-email"
+                      >
+                        <Mail className="h-3 w-3" />
+                        Add email
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500">Required for run briefings and alerts</p>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div>
               <Label className="text-sm font-medium text-gray-700">Strava Connection</Label>
               <div className="flex items-center justify-between mt-1">

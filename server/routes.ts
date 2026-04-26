@@ -2259,6 +2259,7 @@ ${allPages.map(page => `  <url>
       const dashboardData = {
         user: {
           name: user.username,
+          email: user.email || null,
           stravaConnected: user.stravaConnected,
           stravaHasWriteScope: user.stravaHasWriteScope || false,
           stravaBrandingEnabled: user.stravaBrandingEnabled || false,
