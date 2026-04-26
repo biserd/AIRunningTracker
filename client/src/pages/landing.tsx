@@ -155,17 +155,8 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Action Buttons — single primary CTA: Strava OAuth IS the free trial signup */}
+          {/* Secondary path for returning users — primary Strava CTA is in the header */}
           <div className="flex flex-col items-center gap-3 mb-6 sm:mb-8 px-4">
-            <a href="/api/auth/strava-login" className="w-full sm:w-auto">
-              <Button
-                className="w-full sm:w-auto bg-gradient-to-r from-strava-orange via-orange-500 to-red-500 text-white hover:from-orange-600 hover:via-orange-500 hover:to-red-600 h-14 px-8 sm:px-12 text-base sm:text-lg font-bold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-200 ring-2 ring-orange-300/50 flex items-center gap-3"
-                data-testid="hero-cta-strava"
-              >
-                <SiStrava className="h-5 w-5" />
-                Continue with Strava — Start Free Trial
-              </Button>
-            </a>
             <p className="text-sm text-gray-600">
               Already have an account?{" "}
               <Link href="/auth">

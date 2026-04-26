@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Activity, Menu, X } from "lucide-react";
+import { SiStrava } from "react-icons/si";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 
@@ -50,15 +51,15 @@ export default function PublicHeader() {
 
           {/* Desktop right side */}
           <div className="hidden md:flex items-center gap-4">
-            <Link href="/auth">
+            <a href="/api/auth/strava-login">
               <Button
-                variant="outline"
-                className="border-strava-orange text-strava-orange hover:bg-strava-orange hover:text-white"
-                data-testid="header-sign-in"
+                className="bg-strava-orange text-white hover:bg-strava-orange/90 flex items-center gap-2"
+                data-testid="header-continue-strava"
               >
-                Sign In
+                <SiStrava className="h-4 w-4" />
+                Continue with Strava
               </Button>
-            </Link>
+            </a>
           </div>
 
           {/* Mobile hamburger */}
@@ -91,15 +92,15 @@ export default function PublicHeader() {
               </Link>
             ))}
             <div className="px-6 py-4">
-              <Link href="/auth">
+              <a href="/api/auth/strava-login">
                 <Button
-                  variant="outline"
-                  className="w-full border-strava-orange text-strava-orange hover:bg-strava-orange hover:text-white"
+                  className="w-full bg-strava-orange text-white hover:bg-strava-orange/90 flex items-center justify-center gap-2"
                   onClick={() => setMobileOpen(false)}
                 >
-                  Sign In
+                  <SiStrava className="h-4 w-4" />
+                  Continue with Strava
                 </Button>
-              </Link>
+              </a>
             </div>
           </nav>
         </div>
