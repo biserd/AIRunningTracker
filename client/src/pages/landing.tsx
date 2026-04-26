@@ -155,25 +155,28 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-3 mb-6 sm:mb-8 px-4">
-            <Link href="/auth" className="w-full sm:w-auto">
-              <Button
-                className="w-full sm:w-auto bg-gradient-to-r from-strava-orange via-orange-500 to-red-500 text-white hover:from-orange-600 hover:via-orange-500 hover:to-red-600 h-14 px-8 sm:px-12 text-base sm:text-lg font-bold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-200 ring-2 ring-orange-300/50"
-                data-testid="hero-cta-getstarted"
-              >
-                Start Free Trial
-              </Button>
-            </Link>
+          {/* Action Buttons — single primary CTA: Strava OAuth IS the free trial signup */}
+          <div className="flex flex-col items-center gap-3 mb-6 sm:mb-8 px-4">
             <a href="/api/auth/strava-login" className="w-full sm:w-auto">
               <Button
-                variant="outline"
-                className="w-full sm:w-auto h-14 px-8 sm:px-10 text-base font-semibold border-2 border-[#FC4C02] text-[#FC4C02] hover:bg-[#FC4C02] hover:text-white transition-all duration-200 flex items-center gap-2"
+                className="w-full sm:w-auto bg-gradient-to-r from-strava-orange via-orange-500 to-red-500 text-white hover:from-orange-600 hover:via-orange-500 hover:to-red-600 h-14 px-8 sm:px-12 text-base sm:text-lg font-bold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-200 ring-2 ring-orange-300/50 flex items-center gap-3"
+                data-testid="hero-cta-strava"
               >
                 <SiStrava className="h-5 w-5" />
-                Continue with Strava — instant access
+                Continue with Strava — Start Free Trial
               </Button>
             </a>
+            <p className="text-sm text-gray-600">
+              Already have an account?{" "}
+              <Link href="/auth">
+                <span
+                  className="text-strava-orange font-medium hover:underline cursor-pointer"
+                  data-testid="hero-link-signin"
+                >
+                  Sign in
+                </span>
+              </Link>
+            </p>
           </div>
 
           {/* Trust Indicators */}

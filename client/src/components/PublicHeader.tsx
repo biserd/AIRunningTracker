@@ -52,10 +52,11 @@ export default function PublicHeader() {
           <div className="hidden md:flex items-center gap-4">
             <Link href="/auth">
               <Button
-                className="bg-strava-orange text-white hover:bg-strava-orange/90"
+                variant="outline"
+                className="border-strava-orange text-strava-orange hover:bg-strava-orange hover:text-white"
                 data-testid="header-sign-in"
               >
-                Analyze My Data
+                Sign In
               </Button>
             </Link>
           </div>
@@ -92,10 +93,11 @@ export default function PublicHeader() {
             <div className="px-6 py-4">
               <Link href="/auth">
                 <Button
-                  className="w-full bg-strava-orange text-white hover:bg-strava-orange/90"
+                  variant="outline"
+                  className="w-full border-strava-orange text-strava-orange hover:bg-strava-orange hover:text-white"
                   onClick={() => setMobileOpen(false)}
                 >
-                  Analyze My Data
+                  Sign In
                 </Button>
               </Link>
             </div>
