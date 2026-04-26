@@ -27,7 +27,7 @@ import { FloatingAICoach } from "@/components/FloatingAICoach";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import RecentConversations from "@/components/RecentConversations";
 import TrialBadge from "@/components/TrialBadge";
-import { Gift, ChevronRight, Crown } from "lucide-react";
+import { Gift, ChevronRight, Crown, Mail, X } from "lucide-react";
 import { Link } from "wouter";
 import { useFeatureAccess, useSubscription } from "@/hooks/useSubscription";
 
@@ -37,6 +37,10 @@ export default function Dashboard() {
   const { isReverseTrial, trialDaysRemaining } = useSubscription();
   const [chartTimeRange, setChartTimeRange] = useState<string>("30days");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [emailBannerDismissed, setEmailBannerDismissed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem("addEmailBannerDismissed") === "1";
+  });
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<number | undefined>();
   const [syncProgress, setSyncProgress] = useState<{
@@ -378,10 +382,54 @@ export default function Dashboard() {
     );
   }
 
+  const showAddEmailBanner =
+    dashboardData?.user?.stravaConnected &&
+    !dashboardData?.user?.email &&
+    !emailBannerDismissed;
+
+  const dismissEmailBanner = () => {
+    sessionStorage.setItem("addEmailBannerDismissed", "1");
+    setEmailBannerDismissed(true);
+  };
+
   return (
     <div className="min-h-screen bg-light-grey">
       <AppHeader />
-      
+
+      {/* Post-signup: prompt Strava-only users to add an email */}
+      {showAddEmailBanner && (
+        <div className="bg-amber-50 border-b border-amber-200" data-testid="banner-add-email">
+          <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-4">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="shrink-0 w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+                <Mail className="h-4 w-4 text-amber-700" />
+              </div>
+              <p className="text-sm text-amber-900 truncate">
+                <span className="font-medium">Add your email</span> to receive your weekly AI run debrief and stay connected.
+              </p>
+            </div>
+            <Link href="/settings">
+              <Button
+                size="sm"
+                className="bg-amber-600 hover:bg-amber-700 text-white shrink-0"
+                data-testid="button-banner-add-email"
+              >
+                Add email
+              </Button>
+            </Link>
+            <button
+              type="button"
+              onClick={dismissEmailBanner}
+              className="shrink-0 p-1 rounded hover:bg-amber-100 text-amber-700"
+              aria-label="Dismiss"
+              data-testid="button-banner-dismiss"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Onboarding Modal */}
       <Onboarding 
         isOpen={showOnboarding}
