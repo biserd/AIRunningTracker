@@ -628,7 +628,19 @@ export default function AuditReportPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('upgraded') === 'true') {
-      navigate('/dashboard');
+      // Sync subscription from Stripe immediately so the user lands on the
+      // dashboard already showing Premium, even if the webhook is delayed.
+      (async () => {
+        try {
+          await apiRequest("/api/stripe/sync-subscription", "POST");
+        } catch (err) {
+          console.warn("sync-subscription failed:", err);
+        } finally {
+          queryClient.invalidateQueries({ queryKey: ["/api/stripe/subscription"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+          navigate('/dashboard');
+        }
+      })();
     }
   }, [navigate]);
 

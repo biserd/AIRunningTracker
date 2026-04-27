@@ -61,6 +61,28 @@ Preferred communication style: Simple, everyday language.
   - 180-day race history window for users who race infrequently
   - Minimum 5K distance filter for Riegel formula predictions
 
+## Stripe Subscription Resolver
+The webhook handler (`server/webhookHandlers.ts`) is **price-ID-agnostic** to avoid the test/live mode pitfall that broke billing previously. `resolvePlan(subscription)` decides the plan in this order:
+1. `subscription.items[0].price.metadata.plan` (Stripe-native — this is the recommended way to tag prices)
+2. Cached fetch of `subscription.items[0].price.product` → `product.metadata.plan`
+3. Env-var override: `STRIPE_PRICE_PREMIUM_MONTHLY`, `STRIPE_PRICE_PREMIUM_ANNUAL`
+4. Status fallback: `active` / `trialing` / `past_due` ⇒ `'premium'` (Premium is the only paid tier; admin email is sent so we notice missing tags)
+5. Terminal status (`canceled` / `incomplete_expired` / `unpaid`) ⇒ `'free'`
+
+**Safety rule**: an existing `'premium'` user is never silently downgraded to `'free'` on `customer.subscription.created`/`.updated`. Downgrade only happens on `customer.subscription.deleted` or an explicit terminal status.
+
+**`shouldProcessEvent` accepts owned customers**: any event whose `customer` ID matches a row in `users.stripe_customer_id` is processed regardless of metadata, so Customer-Portal updates and legacy subscriptions still flow through.
+
+**Frontend price IDs are dynamic**: `client/src/pages/pricing.tsx` fetches `/api/stripe/products` and picks the right price by metadata + recurring interval — no hardcoded test-mode IDs. The audit-report checkout endpoint (`/api/stripe/create-audit-checkout`) resolves the live monthly Premium price via `STRIPE_PRICE_PREMIUM_MONTHLY` env var or a metadata lookup against the `stripe.prices` sync table.
+
+**Manual sync after checkout**: `/api/stripe/sync-subscription` (called from `/billing?success=true` and `/audit-report?upgraded=true`) lists the current user's Stripe subscriptions and runs the same resolver. The UI shows Premium immediately even if the webhook is delayed/filtered.
+
+**Backfill script**: `scripts/backfill-stripe-plans.ts` — dry-run by default; pass `--apply` to write. Use after deploys to catch any users stuck on `'free'` despite an active Stripe subscription.
+
+### Optional Stripe env vars
+- `STRIPE_PRICE_PREMIUM_MONTHLY` — pin the live monthly Premium price ID (skips the metadata lookup)
+- `STRIPE_PRICE_PREMIUM_ANNUAL` — pin the live annual Premium price ID
+
 ## External Dependencies
 
 ### Core Services

@@ -10,6 +10,7 @@ import { SEO } from "@/components/SEO";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
 import AppHeader from "@/components/AppHeader";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function BillingPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -25,6 +26,18 @@ export default function BillingPage() {
         title: "Subscription Activated!",
         description: "Thank you for subscribing. Your account has been upgraded.",
       });
+      // Sync immediately from Stripe so the UI flips to Premium even if the
+      // webhook is delayed or filtered. Then refresh the subscription query.
+      (async () => {
+        try {
+          await apiRequest("/api/stripe/sync-subscription", "POST");
+        } catch (err) {
+          console.warn("sync-subscription failed:", err);
+        } finally {
+          queryClient.invalidateQueries({ queryKey: ["/api/stripe/subscription"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        }
+      })();
     }
   }, []);
 

@@ -30,6 +30,7 @@ import { shoeData } from "./shoe-data";
 import { validateAllShoes, getPipelineStats, findDuplicates, getShoeDataWithMetadata, getShoesWithMetadataFromStorage, getEnrichedShoeData, enrichShoeWithAIData } from "./shoe-pipeline";
 import { z } from "zod";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
+import { resolvePlan } from "./webhookHandlers";
 import { db } from "./db";
 import { sql, eq, isNull } from "drizzle-orm";
 import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getActivityHistoryLimit, RATE_LIMITS } from "./rateLimits";
@@ -149,6 +150,49 @@ export function deleteCachedByPrefix(prefix: string): void {
     if (key.startsWith(prefix)) {
       responseCache.delete(key);
     }
+  }
+}
+
+// Resolve the price ID for the Premium plan (current Stripe environment).
+// Strategy:
+//   1. Env-var override (STRIPE_PRICE_PREMIUM_MONTHLY / STRIPE_PRICE_PREMIUM_ANNUAL)
+//   2. Active price in stripe.prices sync table whose product/price metadata
+//      matches { plan: 'premium', billing: 'monthly' | 'annual' }.
+// Returns null if nothing matches so the caller can return a clear 500.
+const _priceCache = new Map<string, { value: string | null; at: number }>();
+const PRICE_CACHE_TTL = 60_000; // 60s
+async function resolvePremiumPriceId(billing: 'monthly' | 'annual'): Promise<string | null> {
+  const envName = billing === 'monthly' ? 'STRIPE_PRICE_PREMIUM_MONTHLY' : 'STRIPE_PRICE_PREMIUM_ANNUAL';
+  const envVal = process.env[envName];
+  if (envVal) return envVal;
+
+  const cached = _priceCache.get(billing);
+  if (cached && Date.now() - cached.at < PRICE_CACHE_TTL) return cached.value;
+
+  try {
+    const result = await db.execute(sql`
+      SELECT pr.id
+      FROM stripe.prices pr
+      JOIN stripe.products p ON p.id = pr.product
+      WHERE pr.active = true
+        AND p.active = true
+        AND (
+          (pr.metadata->>'plan' = 'premium' AND pr.metadata->>'billing' = ${billing})
+          OR (
+            p.metadata->>'plan' = 'premium'
+            AND (pr.recurring->>'interval' = ${billing === 'monthly' ? 'month' : 'year'})
+          )
+        )
+      ORDER BY pr.created DESC
+      LIMIT 1
+    `);
+    const row: any = result.rows?.[0];
+    const id = row?.id ? String(row.id) : null;
+    _priceCache.set(billing, { value: id, at: Date.now() });
+    return id;
+  } catch (err) {
+    console.warn(`[resolvePremiumPriceId] DB lookup failed for ${billing}:`, (err as any)?.message);
+    return null;
   }
 }
 
@@ -980,8 +1024,16 @@ ${allPages.map(page => `  <url>
         customerId = customer.id;
       }
 
-      // Use the hardcoded Premium monthly price ID (same as pricing page)
-      const premiumPriceId = "price_1Sbr5WDfI9wxczZNEbTKSR12";
+      // Resolve the Premium monthly price ID for the current Stripe mode
+      // (test or live). Prefer env-var override, else look it up from the
+      // synced stripe.prices table by metadata.
+      const premiumPriceId = await resolvePremiumPriceId('monthly');
+      if (!premiumPriceId) {
+        console.error('Audit checkout: no Premium monthly price ID could be resolved (set STRIPE_PRICE_PREMIUM_MONTHLY or tag the live Premium product/price with metadata.plan=premium, metadata.billing=monthly)');
+        return res.status(500).json({
+          message: 'Premium plan is not configured for the current Stripe environment.'
+        });
+      }
 
       const appSlug = process.env.APP_SLUG || 'aitracker';
       const session = await stripe.checkout.sessions.create({
@@ -1005,6 +1057,73 @@ ${allPages.map(page => `  <url>
       res.status(500).json({ 
         message: error.message || "Failed to create checkout session"
       });
+    }
+  });
+
+  // Sync the current user's subscription from Stripe directly. Used by the
+  // /billing?success=true and /audit-report?upgraded=true landing pages so
+  // the UI shows Premium immediately, even if the webhook is delayed,
+  // filtered, or replayed out of order.
+  app.post("/api/stripe/sync-subscription", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      if (!user.stripeCustomerId) {
+        return res.json({ synced: false, reason: 'no_stripe_customer' });
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const subs = await stripe.subscriptions.list({
+        customer: user.stripeCustomerId,
+        status: 'all',
+        limit: 5,
+      });
+
+      // Pick the most relevant subscription: prefer non-terminal, then most
+      // recently created.
+      const TERMINAL = new Set(['canceled', 'incomplete_expired', 'unpaid']);
+      const sorted = [...subs.data].sort((a, b) => (b.created || 0) - (a.created || 0));
+      const chosen = sorted.find(s => !TERMINAL.has(s.status)) || sorted[0];
+
+      if (!chosen) {
+        return res.json({ synced: false, reason: 'no_subscriptions' });
+      }
+
+      const resolved = await resolvePlan(chosen);
+      const previousPlan = user.subscriptionPlan || 'free';
+      let planToWrite = resolved.plan;
+      // Same downgrade safety as the webhook handler.
+      if (
+        previousPlan === 'premium' &&
+        planToWrite === 'free' &&
+        !TERMINAL.has(chosen.status)
+      ) {
+        planToWrite = 'premium';
+      }
+
+      await storage.updateStripeSubscriptionId(userId, chosen.id);
+      await storage.updateSubscriptionStatus(userId, chosen.status, planToWrite);
+
+      console.log('[sync-subscription] updated user', {
+        userId,
+        previousPlan,
+        plan: planToWrite,
+        status: chosen.status,
+        source: resolved.source,
+        priceId: resolved.priceId,
+      });
+
+      return res.json({
+        synced: true,
+        subscriptionId: chosen.id,
+        status: chosen.status,
+        plan: planToWrite,
+        source: resolved.source,
+      });
+    } catch (error: any) {
+      console.error('Sync subscription error:', error);
+      res.status(500).json({ message: error.message || 'Failed to sync subscription' });
     }
   });
 
