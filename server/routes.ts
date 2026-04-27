@@ -1080,11 +1080,18 @@ ${allPages.map(page => `  <url>
         limit: 5,
       });
 
-      // Pick the most relevant subscription: prefer non-terminal, then most
-      // recently created.
+      // Pick the most relevant subscription. Priority:
+      //   1. Newest active/trialing/past_due (a real paying state)
+      //   2. Newest non-terminal (e.g. incomplete, paused) -- avoids picking
+      //      a stale `incomplete` over a real `active` one
+      //   3. Newest of anything (terminal subs)
       const TERMINAL = new Set(['canceled', 'incomplete_expired', 'unpaid']);
+      const ACTIVE = new Set(['active', 'trialing', 'past_due']);
       const sorted = [...subs.data].sort((a, b) => (b.created || 0) - (a.created || 0));
-      const chosen = sorted.find(s => !TERMINAL.has(s.status)) || sorted[0];
+      const chosen =
+        sorted.find(s => ACTIVE.has(s.status)) ||
+        sorted.find(s => !TERMINAL.has(s.status)) ||
+        sorted[0];
 
       if (!chosen) {
         return res.json({ synced: false, reason: 'no_subscriptions' });

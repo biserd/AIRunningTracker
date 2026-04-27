@@ -5,7 +5,7 @@ import { getStripeSync, getUncachableStripeClient } from './stripeClient';
 import { storage } from './storage';
 import { emailService } from './services/email';
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'biserd@gmail.com';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'hello@bigappledigital.nyc';
 const APP_SLUG = process.env.APP_SLUG || 'aitracker';
 const ALLOWED_PRICE_IDS = (process.env.ALLOWED_PRICE_IDS || '').split(',').filter(Boolean);
 

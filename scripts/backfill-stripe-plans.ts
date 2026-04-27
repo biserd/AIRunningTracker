@@ -16,7 +16,7 @@ import { emailService } from '../server/services/email';
 
 const APPLY = process.argv.includes('--apply');
 const TERMINAL = new Set(['canceled', 'incomplete_expired', 'unpaid']);
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'biserd@gmail.com';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'hello@bigappledigital.nyc';
 
 interface RowReport {
   userId: number;
@@ -76,8 +76,14 @@ async function main() {
       continue;
     }
 
+    // Same priority as /api/stripe/sync-subscription:
+    //   active/trialing/past_due > non-terminal > anything
+    const ACTIVE = new Set(['active', 'trialing', 'past_due']);
     const sorted = [...subs.data].sort((a, b) => (b.created || 0) - (a.created || 0));
-    const chosen = sorted.find(s => !TERMINAL.has(s.status)) || sorted[0];
+    const chosen =
+      sorted.find(s => ACTIVE.has(s.status)) ||
+      sorted.find(s => !TERMINAL.has(s.status)) ||
+      sorted[0];
 
     if (!chosen) {
       reports.push({

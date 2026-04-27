@@ -233,12 +233,55 @@ async function initStripe() {
     );
     console.log(`Webhook configured: ${webhook.url} (UUID: ${uuid})`);
 
-    // Sync Stripe data in background
+    // Sync Stripe data in background, then verify Premium price config so we
+    // surface "no live Premium price tagged + no env override" loudly at boot
+    // instead of silently failing checkout later.
     stripeSync.syncBackfill()
-      .then(() => console.log('Stripe data synced'))
+      .then(async () => {
+        console.log('Stripe data synced');
+        await verifyPremiumPriceConfig();
+      })
       .catch((err: any) => console.error('Error syncing Stripe data:', err));
   } catch (error) {
     console.error('Failed to initialize Stripe:', error);
+  }
+}
+
+async function verifyPremiumPriceConfig(): Promise<void> {
+  try {
+    const envMonthly = process.env.STRIPE_PRICE_PREMIUM_MONTHLY;
+    if (envMonthly) {
+      console.log(`[startup-check] STRIPE_PRICE_PREMIUM_MONTHLY=${envMonthly} (env override active)`);
+      return;
+    }
+    // No env override -- check that at least one live Stripe price is tagged
+    // with metadata.plan='premium' & metadata.billing='monthly'.
+    const { db } = await import('./db');
+    const { sql } = await import('drizzle-orm');
+    const result = await db.execute(sql`
+      SELECT id FROM stripe.prices
+      WHERE active = true
+        AND metadata->>'plan' = 'premium'
+        AND metadata->>'billing' = 'monthly'
+      LIMIT 1
+    `);
+    const rows: any[] = (result as any).rows || (result as any) || [];
+    if (rows.length === 0) {
+      const msg =
+        '[startup-check] WARNING: no Premium monthly price found. ' +
+        'Either set env STRIPE_PRICE_PREMIUM_MONTHLY, or tag a live Stripe price ' +
+        "with metadata.plan='premium' and metadata.billing='monthly'. " +
+        'The /api/stripe/create-audit-checkout endpoint will fail at request time until this is fixed.';
+      if (process.env.NODE_ENV === 'production') {
+        console.error(msg);
+      } else {
+        console.warn(msg);
+      }
+    } else {
+      console.log(`[startup-check] Premium monthly price OK (priceId=${rows[0].id})`);
+    }
+  } catch (err: any) {
+    console.warn('[startup-check] Could not verify Premium price config:', err?.message || err);
   }
 }
 
