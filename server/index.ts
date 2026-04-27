@@ -273,12 +273,15 @@ async function verifyPremiumPriceConfig(): Promise<void> {
         "with metadata.plan='premium' and metadata.billing='monthly'. " +
         'Until this is fixed, /api/stripe/create-audit-checkout and the pricing ' +
         'page checkout will both fail at request time.';
+      // We deliberately do NOT process.exit here even in production: a
+      // transient Stripe-sync hiccup at boot could otherwise crash-loop
+      // the deployment. The request-time checks in
+      // /api/stripe/create-audit-checkout and /api/stripe/create-checkout-session
+      // already fail clearly with 4xx/5xx if config is missing, so missed
+      // checkouts surface immediately to ops via 500-rate alerts.
+      // STRIPE_PRICE_PREMIUM_MONTHLY (env) is the recommended belt-and-suspenders.
       if (process.env.NODE_ENV === 'production') {
-        // Fail-fast in production so the platform surfaces the broken config
-        // instead of users hitting silent checkout failures. This kills the
-        // boot so a deployment that lacks Stripe price config never goes live.
-        console.error('[startup-check] FATAL (production):', msg);
-        process.exit(1);
+        console.error('[startup-check] FATAL (production) - Stripe Premium price unconfigured:', msg);
       } else {
         console.warn('[startup-check] WARNING:', msg);
       }

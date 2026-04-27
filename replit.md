@@ -83,6 +83,8 @@ The webhook handler (`server/webhookHandlers.ts`) is **price-ID-agnostic** to av
 - `STRIPE_PRICE_PREMIUM_MONTHLY` — pin the live monthly Premium price ID (skips the metadata lookup)
 - `STRIPE_PRICE_PREMIUM_ANNUAL` — pin the live annual Premium price ID
 
+**Note for ops:** these env vars are read once at module load (when `server/webhookHandlers.ts` first imports). Changing them at runtime requires a workflow/deployment restart to take effect. The startup check in `server/index.ts` logs whether the env override is active or whether it fell back to the synced metadata table, so you can verify configuration at boot.
+
 ## External Dependencies
 
 ### Core Services
