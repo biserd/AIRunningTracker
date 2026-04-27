@@ -268,14 +268,19 @@ async function verifyPremiumPriceConfig(): Promise<void> {
     const rows: any[] = (result as any).rows || (result as any) || [];
     if (rows.length === 0) {
       const msg =
-        '[startup-check] WARNING: no Premium monthly price found. ' +
+        '[startup-check] no Premium monthly price found. ' +
         'Either set env STRIPE_PRICE_PREMIUM_MONTHLY, or tag a live Stripe price ' +
         "with metadata.plan='premium' and metadata.billing='monthly'. " +
-        'The /api/stripe/create-audit-checkout endpoint will fail at request time until this is fixed.';
+        'Until this is fixed, /api/stripe/create-audit-checkout and the pricing ' +
+        'page checkout will both fail at request time.';
       if (process.env.NODE_ENV === 'production') {
-        console.error(msg);
+        // Fail-fast in production so the platform surfaces the broken config
+        // instead of users hitting silent checkout failures. This kills the
+        // boot so a deployment that lacks Stripe price config never goes live.
+        console.error('[startup-check] FATAL (production):', msg);
+        process.exit(1);
       } else {
-        console.warn(msg);
+        console.warn('[startup-check] WARNING:', msg);
       }
     } else {
       console.log(`[startup-check] Premium monthly price OK (priceId=${rows[0].id})`);

@@ -45,6 +45,40 @@ const cases: Case[] = [
     expectSource: 'price-metadata',
   },
   {
+    name: 'product.metadata.plan=premium used when price metadata absent',
+    sub: {
+      status: 'incomplete', // unknown status; resolver must use product metadata
+      items: {
+        data: [{
+          price: {
+            id: 'price_PM1',
+            metadata: {},
+            product: { id: 'prod_PREMIUM', metadata: { plan: 'premium' } },
+          },
+        }],
+      },
+    },
+    expectPlan: 'premium',
+    expectSource: 'product-metadata',
+  },
+  {
+    name: 'product.metadata.plan=free used when price metadata absent',
+    sub: {
+      status: 'active', // would otherwise go premium via status-fallback
+      items: {
+        data: [{
+          price: {
+            id: 'price_PM2',
+            metadata: {},
+            product: { id: 'prod_FREE', metadata: { plan: 'free' } },
+          },
+        }],
+      },
+    },
+    expectPlan: 'free',
+    expectSource: 'product-metadata',
+  },
+  {
     name: 'env override -> premium when no price/product metadata',
     sub: {
       status: 'incomplete', // unknown status, should not auto-decide

@@ -78,7 +78,15 @@ export async function resolvePlan(subscription: any): Promise<ResolvedPlan> {
     return { plan: priceMetaPlan, source: 'price-metadata', priceId, productId };
   }
 
-  // 2. product.metadata.plan
+  // 2. product.metadata.plan -- prefer inline expanded product when present,
+  //    otherwise fall back to a cached Stripe API fetch.
+  const inlineProductMeta =
+    typeof price?.product === 'object' && price.product
+      ? (price.product as any).metadata
+      : null;
+  if (inlineProductMeta?.plan === 'premium' || inlineProductMeta?.plan === 'free') {
+    return { plan: inlineProductMeta.plan, source: 'product-metadata', priceId, productId };
+  }
   if (productId) {
     const productMeta = await getProductMetadata(productId);
     const productPlan = productMeta?.plan;
