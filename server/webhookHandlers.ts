@@ -45,7 +45,7 @@ async function getProductMetadata(productId: string): Promise<Record<string, str
 
 export interface ResolvedPlan {
   plan: string;
-  source: 'price-metadata' | 'product-metadata' | 'env-override' | 'status-fallback' | 'terminal';
+  source: 'price-metadata' | 'product-metadata' | 'env-override' | 'status-fallback' | 'terminal-status' | 'unknown-status';
   priceId?: string;
   productId?: string;
 }
@@ -94,7 +94,7 @@ export async function resolvePlan(subscription: any): Promise<ResolvedPlan> {
 
   // 4/5. status-based fallback
   if (TERMINAL_STATUSES.has(status)) {
-    return { plan: 'free', source: 'terminal', priceId, productId };
+    return { plan: 'free', source: 'terminal-status', priceId, productId };
   }
   if (ACTIVE_STATUSES.has(status)) {
     // Premium is the only paid tier; if a real customer is in a paying state,
@@ -103,8 +103,10 @@ export async function resolvePlan(subscription: any): Promise<ResolvedPlan> {
   }
 
   // Unknown status (incomplete, paused, etc.). Don't downgrade -- treat as free
-  // only if there's no signal at all.
-  return { plan: 'free', source: 'terminal', priceId, productId };
+  // only if there's no signal at all. The downgrade-safety rule in the
+  // webhook handlers will still refuse to flip an existing 'premium' user
+  // when this branch returns 'free'.
+  return { plan: 'free', source: 'unknown-status', priceId, productId };
 }
 
 const processedEvents = new Set<string>();

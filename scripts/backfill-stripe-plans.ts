@@ -12,9 +12,11 @@ import { isNotNull } from 'drizzle-orm';
 import { storage } from '../server/storage';
 import { getUncachableStripeClient } from '../server/stripeClient';
 import { resolvePlan } from '../server/webhookHandlers';
+import { emailService } from '../server/services/email';
 
 const APPLY = process.argv.includes('--apply');
 const TERMINAL = new Set(['canceled', 'incomplete_expired', 'unpaid']);
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'biserd@gmail.com';
 
 interface RowReport {
   userId: number;
@@ -166,6 +168,108 @@ async function main() {
   console.log(`[backfill] ${changed} user(s) ${APPLY ? 'updated' : 'would be updated'} of ${candidates.length}.`);
   if (!APPLY) {
     console.log('[backfill] Re-run with --apply to actually write to the DB.');
+  }
+
+  // Send a one-time admin email summary so ops can confirm the run happened
+  // and review every change/failure without grepping logs.
+  await sendAdminSummary({
+    mode: APPLY ? 'APPLY' : 'DRY-RUN',
+    totalCandidates: candidates.length,
+    changed,
+    reports,
+  });
+}
+
+async function sendAdminSummary(opts: {
+  mode: string;
+  totalCandidates: number;
+  changed: number;
+  reports: RowReport[];
+}): Promise<void> {
+  if (!emailService.isConfigured()) {
+    console.log('[backfill] Email service not configured, skipping admin summary email.');
+    return;
+  }
+
+  const failures = opts.reports.filter(r => !r.after);
+  const updates = opts.reports.filter(r => {
+    const a = r.after;
+    return a && (r.before.plan !== a.plan || r.before.status !== a.status || r.before.subId !== a.subId);
+  });
+
+  const escape = (s: any) =>
+    String(s ?? '-').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+
+  const updatesRows = updates.map(r => {
+    const a = r.after!;
+    return `<tr>
+      <td>${r.userId}</td>
+      <td>${escape(r.email)}</td>
+      <td>${escape(r.customerId)}</td>
+      <td>${escape(r.before.plan)} → <strong>${escape(a.plan)}</strong></td>
+      <td>${escape(r.before.status)} → ${escape(a.status)}</td>
+      <td>${escape(a.source)}</td>
+      <td>${escape(r.note ?? '')}</td>
+    </tr>`;
+  }).join('');
+
+  const failuresRows = failures.map(r => `<tr>
+    <td>${r.userId}</td>
+    <td>${escape(r.email)}</td>
+    <td>${escape(r.customerId)}</td>
+    <td>${escape(r.note ?? '')}</td>
+  </tr>`).join('');
+
+  const html = `
+    <h2>Stripe plan backfill report</h2>
+    <p><strong>Mode:</strong> ${opts.mode}<br/>
+       <strong>Candidates scanned:</strong> ${opts.totalCandidates}<br/>
+       <strong>Users ${opts.mode === 'APPLY' ? 'updated' : 'that would be updated'}:</strong> ${opts.changed}<br/>
+       <strong>Failures / skips:</strong> ${failures.length}</p>
+
+    ${updates.length ? `
+      <h3>${opts.mode === 'APPLY' ? 'Updated' : 'Would update'} (${updates.length})</h3>
+      <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-family:sans-serif;font-size:13px">
+        <tr><th>User</th><th>Email</th><th>Customer</th><th>Plan</th><th>Status</th><th>Source</th><th>Note</th></tr>
+        ${updatesRows}
+      </table>
+    ` : '<p><em>No plan/status/sub-id changes needed.</em></p>'}
+
+    ${failures.length ? `
+      <h3>Skipped / failed (${failures.length})</h3>
+      <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-family:sans-serif;font-size:13px">
+        <tr><th>User</th><th>Email</th><th>Customer</th><th>Reason</th></tr>
+        ${failuresRows}
+      </table>
+    ` : ''}
+
+    <p style="color:#666;font-size:12px">Sent automatically by <code>scripts/backfill-stripe-plans.ts</code>.</p>
+  `;
+
+  const text =
+    `Stripe plan backfill report\n` +
+    `Mode: ${opts.mode}\n` +
+    `Candidates scanned: ${opts.totalCandidates}\n` +
+    `Users ${opts.mode === 'APPLY' ? 'updated' : 'that would be updated'}: ${opts.changed}\n` +
+    `Failures/skips: ${failures.length}\n\n` +
+    opts.reports.map(r => {
+      const a = r.after;
+      return `user=${r.userId} email=${r.email ?? '-'} customer=${r.customerId} ` +
+        `before(plan=${r.before.plan ?? '-'} status=${r.before.status ?? '-'} sub=${r.before.subId ?? '-'})` +
+        (a ? ` after(plan=${a.plan} status=${a.status} sub=${a.subId} via=${a.source})` : '') +
+        (r.note ? ` note: ${r.note}` : '');
+    }).join('\n');
+
+  try {
+    const ok = await emailService.sendEmail({
+      to: ADMIN_EMAIL,
+      subject: `[RunAnalytics] Stripe plan backfill ${opts.mode} — ${opts.changed}/${opts.totalCandidates} changes, ${failures.length} skipped`,
+      html,
+      text,
+    });
+    console.log(`[backfill] Admin summary email ${ok ? 'sent' : 'failed'} to ${ADMIN_EMAIL}.`);
+  } catch (err: any) {
+    console.warn(`[backfill] Failed to send admin summary email:`, err?.message || err);
   }
 }
 
