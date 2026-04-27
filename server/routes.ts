@@ -196,6 +196,46 @@ async function resolvePremiumPriceId(billing: 'monthly' | 'annual'): Promise<str
   }
 }
 
+// Server-side allow-list for /api/stripe/create-checkout-session. We never
+// trust a client-supplied priceId blindly: it must either match a configured
+// env override or be tagged as Premium in our synced stripe.prices table.
+// 60s cache to keep happy paths fast.
+const _allowedPriceCache = new Map<string, { allowed: boolean; at: number }>();
+async function isAllowedCheckoutPriceId(priceId: unknown): Promise<boolean> {
+  if (typeof priceId !== 'string' || !priceId.startsWith('price_')) return false;
+
+  // Env-pinned IDs are always allowed.
+  if (
+    priceId === process.env.STRIPE_PRICE_PREMIUM_MONTHLY ||
+    priceId === process.env.STRIPE_PRICE_PREMIUM_ANNUAL
+  ) {
+    return true;
+  }
+
+  const cached = _allowedPriceCache.get(priceId);
+  if (cached && Date.now() - cached.at < PRICE_CACHE_TTL) return cached.allowed;
+
+  let allowed = false;
+  try {
+    const result = await db.execute(sql`
+      SELECT 1
+      FROM stripe.prices pr
+      JOIN stripe.products p ON p.id = pr.product
+      WHERE pr.id = ${priceId}
+        AND pr.active = true
+        AND p.active = true
+        AND (pr.metadata->>'plan' = 'premium' OR p.metadata->>'plan' = 'premium')
+      LIMIT 1
+    `);
+    allowed = (result.rows?.length ?? 0) > 0;
+  } catch (err) {
+    console.warn('[isAllowedCheckoutPriceId] DB lookup failed:', (err as any)?.message);
+    allowed = false;
+  }
+  _allowedPriceCache.set(priceId, { allowed, at: Date.now() });
+  return allowed;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   
   // SEO: Page-specific meta data for dynamic rendering
@@ -947,6 +987,14 @@ ${allPages.map(page => `  <url>
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
+      }
+
+      // Don't trust client-supplied priceId blindly. Allow only Premium-tagged
+      // prices (env override or metadata in our synced stripe.prices table).
+      const allowed = await isAllowedCheckoutPriceId(priceId);
+      if (!allowed) {
+        console.warn('[checkout] rejected priceId not tagged as premium', { userId, priceId });
+        return res.status(400).json({ message: 'Invalid priceId for checkout' });
       }
 
       const stripe = await getUncachableStripeClient();
