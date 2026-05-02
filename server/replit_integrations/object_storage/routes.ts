@@ -82,5 +82,31 @@ export function registerObjectStorageRoutes(app: Express): void {
       return res.status(500).json({ error: "Failed to serve object" });
     }
   });
+
+  /**
+   * Serve public objects from any of the configured PUBLIC_OBJECT_SEARCH_PATHS.
+   *
+   * GET /public-objects/:filePath(*)
+   *
+   * Used for assets (e.g. mirrored running-shoe product photos) that should
+   * be cacheable and openly readable. Long cache lifetime since file paths
+   * include a deterministic key.
+   */
+  app.get("/public-objects/:filePath(*)", async (req, res) => {
+    const filePath = req.params.filePath;
+    if (!filePath) {
+      return res.status(400).json({ error: "Missing file path" });
+    }
+    try {
+      const file = await objectStorageService.searchPublicObject(filePath);
+      if (!file) {
+        return res.status(404).json({ error: "Public object not found" });
+      }
+      await objectStorageService.downloadObject(file, res, 86400);
+    } catch (error) {
+      console.error("Error serving public object:", error);
+      return res.status(500).json({ error: "Failed to serve public object" });
+    }
+  });
 }
 

@@ -36,6 +36,7 @@ import { sql, eq, isNull } from "drizzle-orm";
 import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getActivityHistoryLimit, RATE_LIMITS } from "./rateLimits";
 import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage, renderToolPage, getAllToolSlugs } from "./ssr/renderer";
 import { getAllBlogPosts } from "./ssr/blogContent";
+import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 
 // Authentication middleware
 const authenticateJWT = async (req: any, res: Response, next: NextFunction) => {
@@ -237,6 +238,8 @@ async function isAllowedCheckoutPriceId(priceId: unknown): Promise<boolean> {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  registerObjectStorageRoutes(app);
+
   
   // SEO: Page-specific meta data for dynamic rendering
   // Maps routes to SEO metadata for crawler-optimized responses
