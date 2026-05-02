@@ -92,7 +92,8 @@ async function normalize() {
   const counts = await db.execute<{ brand: string; count: number }>(
     sql`SELECT brand, COUNT(*)::int AS count FROM running_shoes GROUP BY brand ORDER BY brand`
   );
-  for (const row of counts.rows as any[]) {
+  const rows = counts.rows as ReadonlyArray<{ brand: string; count: number }>;
+  for (const row of rows) {
     console.log(`  ${row.brand}: ${row.count}`);
   }
 
