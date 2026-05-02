@@ -14,14 +14,18 @@ import { useAuth } from "@/hooks/useAuth";
 import { SEO } from "@/components/SEO";
 import AppHeader from "@/components/AppHeader";
 import PublicHeader from "@/components/PublicHeader";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+
+// Recharts is heavy (~150KB+ gzipped) and the chart only renders AFTER
+// the user clicks Calculate. Defer the import so it doesn't bloat the
+// initial bundle / hurt mobile LCP.
+const RacePredictorChart = lazy(() => import("./race-predictor-chart"));
 import { 
   RacePredictionInput, 
   RacePredictionResult, 
@@ -690,47 +694,9 @@ export default function RacePredictor() {
                       <CardDescription>Predicted time range throughout the race</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <AreaChart data={getConfidenceChartData()}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis 
-                            dataKey="distance" 
-                            label={{ value: 'Distance (km)', position: 'insideBottom', offset: -5 }}
-                          />
-                          <YAxis 
-                            label={{ value: 'Time (minutes)', angle: -90, position: 'insideLeft' }}
-                          />
-                          <Tooltip 
-                            formatter={(value: number) => `${value.toFixed(1)} min`}
-                            labelFormatter={(label) => `${label} km`}
-                          />
-                          <Legend />
-                          <Area 
-                            type="monotone" 
-                            dataKey="upper" 
-                            stackId="1"
-                            stroke="#93c5fd" 
-                            fill="#dbeafe" 
-                            name="Upper Bound"
-                          />
-                          <Area 
-                            type="monotone" 
-                            dataKey="predicted" 
-                            stackId="2"
-                            stroke="#3b82f6" 
-                            fill="#3b82f6" 
-                            name="Predicted"
-                          />
-                          <Area 
-                            type="monotone" 
-                            dataKey="lower" 
-                            stackId="3"
-                            stroke="#93c5fd" 
-                            fill="#dbeafe" 
-                            name="Lower Bound"
-                          />
-                        </AreaChart>
-                      </ResponsiveContainer>
+                      <Suspense fallback={<div style={{ height: 300 }} className="flex items-center justify-center text-sm text-gray-400">Loading chart…</div>}>
+                        <RacePredictorChart data={getConfidenceChartData()} />
+                      </Suspense>
                     </CardContent>
                   </Card>
 
