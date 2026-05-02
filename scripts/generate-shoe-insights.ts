@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { db } from '../server/db';
 import { runningShoes } from '../shared/schema';
-import { eq, isNull, or, and } from 'drizzle-orm';
+import { eq, isNull, or } from 'drizzle-orm';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
