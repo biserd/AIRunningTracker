@@ -159,8 +159,8 @@ Keep it factual, highlighting key features. Start with "The ${shoe.brand} ${shoe
 }
 
 async function generateInsights() {
-  console.log('Starting AI insights generation for 2025 shoes...');
-  
+  console.log('Starting AI insights generation (any year, missing aiNarrative)...');
+
   const shoesNeedingInsights = await db.select({
     id: runningShoes.id,
     brand: runningShoes.brand,
@@ -181,15 +181,12 @@ async function generateInsights() {
     comfortRating: runningShoes.comfortRating,
   })
   .from(runningShoes)
-  .where(and(
-    eq(runningShoes.releaseYear, 2025),
-    isNull(runningShoes.aiNarrative)
-  ));
-  
+  .where(isNull(runningShoes.aiNarrative));
+
   console.log(`Found ${shoesNeedingInsights.length} shoes needing AI insights`);
-  
+
   if (shoesNeedingInsights.length === 0) {
-    console.log('All 2025 shoes already have AI insights!');
+    console.log('All shoes already have AI insights!');
     return;
   }
   

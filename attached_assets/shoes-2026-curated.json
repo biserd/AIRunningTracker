@@ -1,0 +1,409 @@
+{
+  "_meta": {
+    "compiled": "2026-05-02",
+    "sources": [
+      "https://www.solereview.com/release-date-calendar-for-running-shoes/",
+      "https://believeintherun.com/shoe-reviews/best-road-running-shoes-2026/",
+      "https://theruntesters.com/running-shoes/the-best-running-shoes-to-buy/",
+      "https://www.doctorsofrunning.com/",
+      "https://www.220triathlon.com/gear/run/run-shoes/best-running-shoes",
+      "https://runtothefinish.com/running-shoe-release-dates/",
+      "https://www.brooksrunning.com/",
+      "https://www.saucony.com/",
+      "https://www.asics.com/",
+      "https://www.newbalance.com/",
+      "https://www.adidas.com/",
+      "https://www.on.com/",
+      "https://www.hoka.com/"
+    ]
+  },
+  "shoes": [
+    {
+      "brand": "Brooks", "model": "Ghost 18", "category": "daily_trainer",
+      "weight": 9.5, "heelStackHeight": 36, "forefootStackHeight": 26, "heelToToeDrop": 10,
+      "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
+      "price": 150, "bestFor": ["easy_runs","long_runs","tempo"],
+      "durabilityRating": 4.5, "responsivenessRating": 3.0, "comfortRating": 4.5,
+      "releaseYear": 2026, "sourceUrl": "https://www.brooksrunning.com/en_us/mens/shoes/road-running-shoes/ghost-18/110493.html"
+    },
+    {
+      "brand": "Brooks", "model": "Glycerin 23", "category": "long_run",
+      "weight": 10.6, "heelStackHeight": 38, "forefootStackHeight": 30, "heelToToeDrop": 8,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 175, "bestFor": ["long_runs","easy_runs"],
+      "durabilityRating": 4.0, "responsivenessRating": 3.0, "comfortRating": 4.8,
+      "releaseYear": 2026, "sourceUrl": "https://www.brooksrunning.com/"
+    },
+    {
+      "brand": "Brooks", "model": "Glycerin GTS 23", "category": "long_run",
+      "weight": 10.8, "heelStackHeight": 38, "forefootStackHeight": 28, "heelToToeDrop": 10,
+      "cushioningLevel": "soft", "stability": "mild_stability", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 180, "bestFor": ["long_runs","easy_runs"],
+      "durabilityRating": 4.0, "responsivenessRating": 3.0, "comfortRating": 4.6,
+      "releaseYear": 2026, "sourceUrl": "https://www.brooksrunning.com/"
+    },
+    {
+      "brand": "Brooks", "model": "Adrenaline GTS 26", "category": "daily_trainer",
+      "weight": 10.0, "heelStackHeight": 35, "forefootStackHeight": 23, "heelToToeDrop": 12,
+      "cushioningLevel": "medium", "stability": "mild_stability", "hasCarbonPlate": false, "hasSuperFoam": false,
+      "price": 145, "bestFor": ["easy_runs","long_runs"],
+      "durabilityRating": 4.5, "responsivenessRating": 3.0, "comfortRating": 4.4,
+      "releaseYear": 2026, "sourceUrl": "https://www.brooksrunning.com/"
+    },
+    {
+      "brand": "Brooks", "model": "Hyperion Elite 5", "category": "racing",
+      "weight": 7.4, "heelStackHeight": 39, "forefootStackHeight": 31, "heelToToeDrop": 8,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
+      "price": 250, "bestFor": ["racing","speed_work"],
+      "durabilityRating": 2.5, "responsivenessRating": 4.7, "comfortRating": 3.8,
+      "releaseYear": 2026, "sourceUrl": "https://www.brooksrunning.com/"
+    },
+
+    {
+      "brand": "Saucony", "model": "Endorphin Elite 3", "category": "racing",
+      "weight": 7.2, "heelStackHeight": 39.5, "forefootStackHeight": 31.5, "heelToToeDrop": 8,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
+      "price": 290, "bestFor": ["racing","speed_work"],
+      "durabilityRating": 2.5, "responsivenessRating": 4.9, "comfortRating": 4.0,
+      "releaseYear": 2026, "sourceUrl": "https://www.doctorsofrunning.com/2026/04/saucony-endorphin-elite-3-review-2026.html"
+    },
+    {
+      "brand": "Saucony", "model": "Triumph 24", "category": "long_run",
+      "weight": 9.8, "heelStackHeight": 37, "forefootStackHeight": 27, "heelToToeDrop": 10,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 170, "bestFor": ["long_runs","easy_runs"],
+      "durabilityRating": 4.0, "responsivenessRating": 3.2, "comfortRating": 4.7,
+      "releaseYear": 2026, "sourceUrl": "https://www.saucony.com/"
+    },
+    {
+      "brand": "Saucony", "model": "Ride 19", "category": "daily_trainer",
+      "weight": 9.4, "heelStackHeight": 35, "forefootStackHeight": 27, "heelToToeDrop": 8,
+      "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
+      "price": 150, "bestFor": ["easy_runs","long_runs","tempo"],
+      "durabilityRating": 4.3, "responsivenessRating": 3.5, "comfortRating": 4.4,
+      "releaseYear": 2026, "sourceUrl": "https://www.saucony.com/"
+    },
+    {
+      "brand": "Saucony", "model": "Kinvara 16", "category": "speed_training",
+      "weight": 7.7, "heelStackHeight": 30, "forefootStackHeight": 26, "heelToToeDrop": 4,
+      "cushioningLevel": "firm", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
+      "price": 120, "bestFor": ["tempo","speed_work","easy_runs"],
+      "durabilityRating": 3.5, "responsivenessRating": 4.2, "comfortRating": 3.8,
+      "releaseYear": 2026, "sourceUrl": "https://www.saucony.com/"
+    },
+    {
+      "brand": "Saucony", "model": "Endorphin Speed 6", "category": "speed_training",
+      "weight": 8.0, "heelStackHeight": 36, "forefootStackHeight": 28, "heelToToeDrop": 8,
+      "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 180, "bestFor": ["tempo","speed_work","racing"],
+      "durabilityRating": 3.5, "responsivenessRating": 4.6, "comfortRating": 4.0,
+      "releaseYear": 2026, "sourceUrl": "https://www.saucony.com/"
+    },
+    {
+      "brand": "Saucony", "model": "Peregrine 16", "category": "trail",
+      "weight": 9.2, "heelStackHeight": 33, "forefootStackHeight": 29, "heelToToeDrop": 4,
+      "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
+      "price": 145, "bestFor": ["easy_runs","long_runs"],
+      "durabilityRating": 4.3, "responsivenessRating": 3.5, "comfortRating": 4.0,
+      "releaseYear": 2026, "sourceUrl": "https://www.saucony.com/"
+    },
+
+    {
+      "brand": "HOKA", "model": "Clifton 11", "category": "daily_trainer",
+      "weight": 9.4, "heelStackHeight": 42, "forefootStackHeight": 34, "heelToToeDrop": 8,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
+      "price": 150, "bestFor": ["easy_runs","long_runs"],
+      "durabilityRating": 4.2, "responsivenessRating": 3.0, "comfortRating": 4.7,
+      "releaseYear": 2026, "sourceUrl": "https://www.hoka.com/"
+    },
+    {
+      "brand": "HOKA", "model": "Bondi 10", "category": "long_run",
+      "weight": 10.4, "heelStackHeight": 43, "forefootStackHeight": 38, "heelToToeDrop": 5,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
+      "price": 170, "bestFor": ["long_runs","easy_runs"],
+      "durabilityRating": 4.2, "responsivenessRating": 2.8, "comfortRating": 4.8,
+      "releaseYear": 2026, "sourceUrl": "https://www.hoka.com/"
+    },
+    {
+      "brand": "HOKA", "model": "Mach 7", "category": "speed_training",
+      "weight": 8.2, "heelStackHeight": 37, "forefootStackHeight": 32, "heelToToeDrop": 5,
+      "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 145, "bestFor": ["tempo","speed_work","easy_runs"],
+      "durabilityRating": 3.5, "responsivenessRating": 4.4, "comfortRating": 4.2,
+      "releaseYear": 2026, "sourceUrl": "https://www.hoka.com/"
+    },
+    {
+      "brand": "HOKA", "model": "Skyflow 2", "category": "long_run",
+      "weight": 9.2, "heelStackHeight": 40, "forefootStackHeight": 34, "heelToToeDrop": 6,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 165, "bestFor": ["long_runs","easy_runs"],
+      "durabilityRating": 4.0, "responsivenessRating": 3.4, "comfortRating": 4.6,
+      "releaseYear": 2026, "sourceUrl": "https://www.hoka.com/"
+    },
+    {
+      "brand": "HOKA", "model": "Speedgoat 7", "category": "trail",
+      "weight": 9.7, "heelStackHeight": 37, "forefootStackHeight": 32, "heelToToeDrop": 5,
+      "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
+      "price": 165, "bestFor": ["long_runs","easy_runs"],
+      "durabilityRating": 4.5, "responsivenessRating": 3.5, "comfortRating": 4.3,
+      "releaseYear": 2026, "sourceUrl": "https://www.hoka.com/"
+    },
+    {
+      "brand": "HOKA", "model": "Rocket X 3", "category": "racing",
+      "weight": 7.4, "heelStackHeight": 39, "forefootStackHeight": 35, "heelToToeDrop": 4,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
+      "price": 250, "bestFor": ["racing","speed_work"],
+      "durabilityRating": 2.6, "responsivenessRating": 4.7, "comfortRating": 4.0,
+      "releaseYear": 2026, "sourceUrl": "https://www.hoka.com/"
+    },
+    {
+      "brand": "HOKA", "model": "Mach X4", "category": "speed_training",
+      "weight": 8.7, "heelStackHeight": 39, "forefootStackHeight": 34, "heelToToeDrop": 5,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 190, "bestFor": ["tempo","speed_work","long_runs"],
+      "durabilityRating": 3.5, "responsivenessRating": 4.5, "comfortRating": 4.3,
+      "releaseYear": 2026, "sourceUrl": "https://www.hoka.com/"
+    },
+
+    {
+      "brand": "ASICS", "model": "Gel-Nimbus 28", "category": "long_run",
+      "weight": 9.9, "heelStackHeight": 43.5, "forefootStackHeight": 35.5, "heelToToeDrop": 8,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 170, "bestFor": ["long_runs","easy_runs"],
+      "durabilityRating": 4.3, "responsivenessRating": 3.0, "comfortRating": 4.8,
+      "releaseYear": 2026, "sourceUrl": "https://www.asics.com/us/en-us/gel-nimbus-28/p/ANA_1011C127-800.html"
+    },
+    {
+      "brand": "ASICS", "model": "Novablast 6", "category": "daily_trainer",
+      "weight": 8.9, "heelStackHeight": 41.5, "forefootStackHeight": 33.5, "heelToToeDrop": 8,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 145, "bestFor": ["easy_runs","long_runs","tempo"],
+      "durabilityRating": 4.0, "responsivenessRating": 4.0, "comfortRating": 4.5,
+      "releaseYear": 2026, "sourceUrl": "https://www.asics.com/"
+    },
+    {
+      "brand": "ASICS", "model": "Superblast 3", "category": "speed_training",
+      "weight": 8.6, "heelStackHeight": 45.5, "forefootStackHeight": 37.5, "heelToToeDrop": 8,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 210, "bestFor": ["tempo","long_runs","racing"],
+      "durabilityRating": 3.8, "responsivenessRating": 4.6, "comfortRating": 4.6,
+      "releaseYear": 2026, "sourceUrl": "https://www.asics.com/"
+    },
+    {
+      "brand": "ASICS", "model": "Magic Speed 5", "category": "speed_training",
+      "weight": 8.4, "heelStackHeight": 38, "forefootStackHeight": 31, "heelToToeDrop": 7,
+      "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
+      "price": 160, "bestFor": ["tempo","speed_work","racing"],
+      "durabilityRating": 3.4, "responsivenessRating": 4.5, "comfortRating": 4.0,
+      "releaseYear": 2026, "sourceUrl": "https://www.asics.com/"
+    },
+    {
+      "brand": "ASICS", "model": "Gel-Kayano 32", "category": "daily_trainer",
+      "weight": 10.4, "heelStackHeight": 40, "forefootStackHeight": 30, "heelToToeDrop": 10,
+      "cushioningLevel": "soft", "stability": "mild_stability", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 170, "bestFor": ["easy_runs","long_runs"],
+      "durabilityRating": 4.5, "responsivenessRating": 3.0, "comfortRating": 4.7,
+      "releaseYear": 2026, "sourceUrl": "https://www.asics.com/"
+    },
+    {
+      "brand": "ASICS", "model": "Metaspeed Sky Tokyo", "category": "racing",
+      "weight": 6.5, "heelStackHeight": 39.5, "forefootStackHeight": 34.5, "heelToToeDrop": 5,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
+      "price": 275, "bestFor": ["racing"],
+      "durabilityRating": 2.4, "responsivenessRating": 4.9, "comfortRating": 4.0,
+      "releaseYear": 2026, "sourceUrl": "https://www.asics.com/"
+    },
+    {
+      "brand": "ASICS", "model": "Metaspeed Edge Tokyo", "category": "racing",
+      "weight": 6.6, "heelStackHeight": 39, "forefootStackHeight": 34, "heelToToeDrop": 5,
+      "cushioningLevel": "firm", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
+      "price": 275, "bestFor": ["racing","speed_work"],
+      "durabilityRating": 2.4, "responsivenessRating": 4.9, "comfortRating": 3.8,
+      "releaseYear": 2026, "sourceUrl": "https://www.asics.com/"
+    },
+
+    {
+      "brand": "New Balance", "model": "Fresh Foam X 1080v15", "category": "long_run",
+      "weight": 9.2, "heelStackHeight": 40, "forefootStackHeight": 34, "heelToToeDrop": 6,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 170, "bestFor": ["long_runs","easy_runs"],
+      "durabilityRating": 4.3, "responsivenessRating": 3.6, "comfortRating": 4.8,
+      "releaseYear": 2026, "sourceUrl": "https://www.newbalance.com/pd/1080v15/M1080V15_RU-FTW-802829-PMG-NA.html"
+    },
+    {
+      "brand": "New Balance", "model": "FuelCell SuperComp Elite v5", "category": "racing",
+      "weight": 7.6, "heelStackHeight": 40, "forefootStackHeight": 36, "heelToToeDrop": 4,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
+      "price": 280, "bestFor": ["racing","speed_work"],
+      "durabilityRating": 2.6, "responsivenessRating": 4.7, "comfortRating": 4.0,
+      "releaseYear": 2026, "sourceUrl": "https://www.newbalance.com/"
+    },
+    {
+      "brand": "New Balance", "model": "FuelCell SuperComp Trainer v4", "category": "speed_training",
+      "weight": 9.4, "heelStackHeight": 47, "forefootStackHeight": 41, "heelToToeDrop": 6,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
+      "price": 200, "bestFor": ["tempo","long_runs","speed_work"],
+      "durabilityRating": 3.6, "responsivenessRating": 4.6, "comfortRating": 4.5,
+      "releaseYear": 2026, "sourceUrl": "https://www.newbalance.com/"
+    },
+    {
+      "brand": "New Balance", "model": "Fresh Foam X More v6", "category": "long_run",
+      "weight": 10.4, "heelStackHeight": 47, "forefootStackHeight": 43, "heelToToeDrop": 4,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 170, "bestFor": ["long_runs","easy_runs"],
+      "durabilityRating": 4.3, "responsivenessRating": 2.8, "comfortRating": 4.8,
+      "releaseYear": 2026, "sourceUrl": "https://www.newbalance.com/"
+    },
+
+    {
+      "brand": "On", "model": "Cloudsurfer 8", "category": "daily_trainer",
+      "weight": 9.0, "heelStackHeight": 36, "forefootStackHeight": 27, "heelToToeDrop": 9,
+      "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 160, "bestFor": ["easy_runs","tempo"],
+      "durabilityRating": 4.0, "responsivenessRating": 4.0, "comfortRating": 4.4,
+      "releaseYear": 2026, "sourceUrl": "https://www.on.com/"
+    },
+    {
+      "brand": "On", "model": "Cloudboom Strike LS", "category": "racing",
+      "weight": 6.0, "heelStackHeight": 43, "forefootStackHeight": 39, "heelToToeDrop": 4,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
+      "price": 330, "bestFor": ["racing"],
+      "durabilityRating": 2.3, "responsivenessRating": 4.9, "comfortRating": 4.0,
+      "releaseYear": 2026, "sourceUrl": "https://www.on.com/"
+    },
+    {
+      "brand": "On", "model": "Cloudmonster 3", "category": "long_run",
+      "weight": 10.6, "heelStackHeight": 38, "forefootStackHeight": 32, "heelToToeDrop": 6,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 180, "bestFor": ["long_runs","easy_runs"],
+      "durabilityRating": 4.2, "responsivenessRating": 3.4, "comfortRating": 4.6,
+      "releaseYear": 2026, "sourceUrl": "https://www.on.com/"
+    },
+
+    {
+      "brand": "Adidas", "model": "Adizero Adios Pro Evo 3", "category": "racing",
+      "weight": 3.4, "heelStackHeight": 39, "forefootStackHeight": 36, "heelToToeDrop": 3,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
+      "price": 500, "bestFor": ["racing"],
+      "durabilityRating": 1.8, "responsivenessRating": 5.0, "comfortRating": 3.8,
+      "releaseYear": 2026, "sourceUrl": "https://www.adidas.com/"
+    },
+    {
+      "brand": "Adidas", "model": "Adizero Adios Pro 5", "category": "racing",
+      "weight": 7.2, "heelStackHeight": 39, "forefootStackHeight": 33, "heelToToeDrop": 6,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
+      "price": 250, "bestFor": ["racing","speed_work"],
+      "durabilityRating": 2.6, "responsivenessRating": 4.8, "comfortRating": 4.0,
+      "releaseYear": 2026, "sourceUrl": "https://www.adidas.com/"
+    },
+    {
+      "brand": "Adidas", "model": "Takumi Sen 11", "category": "racing",
+      "weight": 6.4, "heelStackHeight": 33, "forefootStackHeight": 27, "heelToToeDrop": 6,
+      "cushioningLevel": "firm", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
+      "price": 200, "bestFor": ["racing","speed_work"],
+      "durabilityRating": 2.5, "responsivenessRating": 4.8, "comfortRating": 3.8,
+      "releaseYear": 2026, "sourceUrl": "https://www.adidas.com/"
+    },
+
+    {
+      "brand": "Mizuno", "model": "Wave Sky 9", "category": "long_run",
+      "weight": 10.0, "heelStackHeight": 41, "forefootStackHeight": 33, "heelToToeDrop": 8,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 195, "bestFor": ["long_runs","easy_runs"],
+      "durabilityRating": 4.2, "responsivenessRating": 3.0, "comfortRating": 4.7,
+      "releaseYear": 2026, "sourceUrl": "https://www.mizunousa.com/"
+    },
+    {
+      "brand": "Mizuno", "model": "Wave Rebellion Sonic 2", "category": "speed_training",
+      "weight": 7.5, "heelStackHeight": 33, "forefootStackHeight": 25, "heelToToeDrop": 8,
+      "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 140, "bestFor": ["tempo","speed_work"],
+      "durabilityRating": 3.4, "responsivenessRating": 4.5, "comfortRating": 3.8,
+      "releaseYear": 2026, "sourceUrl": "https://www.mizunousa.com/"
+    },
+
+    {
+      "brand": "Puma", "model": "Deviate Nitro 4", "category": "speed_training",
+      "weight": 8.8, "heelStackHeight": 38, "forefootStackHeight": 30, "heelToToeDrop": 8,
+      "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
+      "price": 170, "bestFor": ["tempo","speed_work","racing"],
+      "durabilityRating": 3.6, "responsivenessRating": 4.5, "comfortRating": 4.2,
+      "releaseYear": 2026, "sourceUrl": "https://www.puma.com/"
+    },
+
+    {
+      "brand": "Topo Athletic", "model": "Magnifly 6", "category": "daily_trainer",
+      "weight": 9.0, "heelStackHeight": 26, "forefootStackHeight": 26, "heelToToeDrop": 0,
+      "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
+      "price": 140, "bestFor": ["easy_runs","long_runs"],
+      "durabilityRating": 4.0, "responsivenessRating": 3.4, "comfortRating": 4.4,
+      "releaseYear": 2026, "sourceUrl": "https://www.topoathletic.com/"
+    },
+    {
+      "brand": "Topo Athletic", "model": "Phantom 4", "category": "long_run",
+      "weight": 9.2, "heelStackHeight": 35, "forefootStackHeight": 30, "heelToToeDrop": 5,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 145, "bestFor": ["long_runs","easy_runs"],
+      "durabilityRating": 4.0, "responsivenessRating": 3.4, "comfortRating": 4.6,
+      "releaseYear": 2026, "sourceUrl": "https://www.topoathletic.com/"
+    },
+
+    {
+      "brand": "Altra", "model": "Torin 9", "category": "daily_trainer",
+      "weight": 9.4, "heelStackHeight": 30, "forefootStackHeight": 30, "heelToToeDrop": 0,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
+      "price": 160, "bestFor": ["easy_runs","long_runs"],
+      "durabilityRating": 4.2, "responsivenessRating": 3.0, "comfortRating": 4.5,
+      "releaseYear": 2026, "sourceUrl": "https://www.altrarunning.com/"
+    },
+    {
+      "brand": "Altra", "model": "Escalante 5", "category": "speed_training",
+      "weight": 8.0, "heelStackHeight": 24, "forefootStackHeight": 24, "heelToToeDrop": 0,
+      "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
+      "price": 130, "bestFor": ["tempo","easy_runs"],
+      "durabilityRating": 3.8, "responsivenessRating": 4.0, "comfortRating": 4.0,
+      "releaseYear": 2026, "sourceUrl": "https://www.altrarunning.com/"
+    },
+    {
+      "brand": "Altra", "model": "Lone Peak 9", "category": "trail",
+      "weight": 10.6, "heelStackHeight": 25, "forefootStackHeight": 25, "heelToToeDrop": 0,
+      "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
+      "price": 140, "bestFor": ["easy_runs","long_runs"],
+      "durabilityRating": 4.3, "responsivenessRating": 3.0, "comfortRating": 4.0,
+      "releaseYear": 2025, "sourceUrl": "https://www.altrarunning.com/"
+    },
+    {
+      "brand": "Altra", "model": "Olympus 7", "category": "trail",
+      "weight": 11.6, "heelStackHeight": 33, "forefootStackHeight": 33, "heelToToeDrop": 0,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
+      "price": 175, "bestFor": ["long_runs","easy_runs"],
+      "durabilityRating": 4.4, "responsivenessRating": 2.8, "comfortRating": 4.4,
+      "releaseYear": 2026, "sourceUrl": "https://www.altrarunning.com/"
+    },
+
+    {
+      "brand": "Salomon", "model": "Glide Max TR", "category": "trail",
+      "weight": 9.8, "heelStackHeight": 38, "forefootStackHeight": 32, "heelToToeDrop": 6,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
+      "price": 160, "bestFor": ["long_runs","easy_runs"],
+      "durabilityRating": 4.2, "responsivenessRating": 3.2, "comfortRating": 4.6,
+      "releaseYear": 2026, "sourceUrl": "https://www.salomon.com/"
+    },
+    {
+      "brand": "Salomon", "model": "Aero Glide 3", "category": "daily_trainer",
+      "weight": 9.4, "heelStackHeight": 38, "forefootStackHeight": 32, "heelToToeDrop": 6,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 150, "bestFor": ["easy_runs","long_runs"],
+      "durabilityRating": 4.0, "responsivenessRating": 3.4, "comfortRating": 4.5,
+      "releaseYear": 2026, "sourceUrl": "https://www.salomon.com/"
+    },
+    {
+      "brand": "Salomon", "model": "S/Lab Phantasm 2", "category": "racing",
+      "weight": 6.8, "heelStackHeight": 36, "forefootStackHeight": 32, "heelToToeDrop": 4,
+      "cushioningLevel": "firm", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
+      "price": 240, "bestFor": ["racing","speed_work"],
+      "durabilityRating": 2.6, "responsivenessRating": 4.7, "comfortRating": 3.8,
+      "releaseYear": 2026, "sourceUrl": "https://www.salomon.com/"
+    }
+  ]
+}
