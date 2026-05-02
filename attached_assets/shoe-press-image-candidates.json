@@ -1,0 +1,551 @@
+{
+  "brooks-ghost-18": {
+    "brand": "Brooks",
+    "model": "Ghost 18",
+    "url": "https://www.holabirdsports.com/cdn/shop/files/044654_2.jpg?v=1776442289&width=2048",
+    "host": "www.holabirdsports.com",
+    "w": 2048,
+    "h": 2048,
+    "score": 250
+  },
+  "brooks-glycerin-23": {
+    "brand": "Brooks",
+    "model": "Glycerin 23",
+    "url": "https://m.media-amazon.com/images/I/71OdDX8qzGL.jpg",
+    "host": "www.amazon.com",
+    "w": 2560,
+    "h": 2560,
+    "score": 150
+  },
+  "brooks-glycerin-gts-23": {
+    "brand": "Brooks",
+    "model": "Glycerin GTS 23",
+    "url": "https://images-na.ssl-images-amazon.com/images/I/810drJRh8zL.jpg",
+    "host": "www.amazon.com",
+    "w": 2560,
+    "h": 2560,
+    "score": 150
+  },
+  "brooks-adrenaline-gts-26": {
+    "brand": "Brooks",
+    "model": "Adrenaline GTS 26",
+    "url": "https://images-na.ssl-images-amazon.com/images/I/810drJRh8zL.jpg",
+    "host": "www.amazon.com",
+    "w": 2560,
+    "h": 2560,
+    "score": 150
+  },
+  "brooks-hyperion-elite-5": {
+    "brand": "Brooks",
+    "model": "Hyperion Elite 5",
+    "url": "https://m.media-amazon.com/images/I/71SmJ4Qex3L.jpg",
+    "host": "www.amazon.com",
+    "w": 2560,
+    "h": 2560,
+    "score": 150
+  },
+  "brooks-hyperion-max-4": {
+    "brand": "Brooks",
+    "model": "Hyperion Max 4",
+    "url": "https://m.media-amazon.com/images/I/81byIvYYJjL.jpg",
+    "host": "www.amazon.com",
+    "w": 2560,
+    "h": 2560,
+    "score": 150
+  },
+  "saucony-endorphin-elite-3": {
+    "brand": "Saucony",
+    "model": "Endorphin Elite 3",
+    "url": "https://preview.redd.it/saucony-endorphin-elite-first-20-mile-review-v0-sjubwry98i9c1.jpg?width=3610&format=pjpg&auto=webp&s=0fa482e635b69c5c514ea86bc3f5eeba30cbd803",
+    "host": "www.reddit.com",
+    "w": 3610,
+    "h": 2468,
+    "score": 50
+  },
+  "saucony-triumph-24": {
+    "brand": "Saucony",
+    "model": "Triumph 24",
+    "url": "https://thekit.wolverineworldwide.com/match/media_lookup/S30994-172_1/?preset=dw-medium",
+    "host": "www.saucony.com",
+    "w": 600,
+    "h": 600,
+    "score": 1007
+  },
+  "saucony-ride-19": {
+    "brand": "Saucony",
+    "model": "Ride 19",
+    "url": "https://www.saucony.com/on/demandware.static/-/Sites-saucony_us-Library/default/dw869782da/content/seasonal-content/homepage/2026/05/01/images/ride-19-d.jpg",
+    "host": "www.saucony.com",
+    "w": 3840,
+    "h": 1800,
+    "score": 1050
+  },
+  "saucony-kinvara-16": {
+    "brand": "Saucony",
+    "model": "Kinvara 16",
+    "url": "https://m.media-amazon.com/images/I/812U2tx5MXL.jpg",
+    "host": "www.amazon.com",
+    "w": 2520,
+    "h": 1229,
+    "score": 150
+  },
+  "saucony-endorphin-speed-6": {
+    "brand": "Saucony",
+    "model": "Endorphin Speed 6",
+    "url": "https://thekit.wolverineworldwide.com/match/media_lookup/S21007-10_1/?preset=dw-medium",
+    "host": "www.saucony.com",
+    "w": 600,
+    "h": 600,
+    "score": 1007
+  },
+  "saucony-peregrine-16": {
+    "brand": "Saucony",
+    "model": "Peregrine 16",
+    "url": "https://thekit.wolverineworldwide.com/match/media_lookup/S11068-101_1/?preset=dw-medium",
+    "host": "www.saucony.com",
+    "w": 600,
+    "h": 600,
+    "score": 1007
+  },
+  "hoka-clifton-11": {
+    "brand": "HOKA",
+    "model": "Clifton 11",
+    "url": "https://media.au.hoka.com/cdn-cgi/image/fit=scale-down,f=auto,w=1280/products/f1cf607a-b08e-497c-aad9-227ff1b17915/83b71e40/1168873-bblc_bblc_01.jpg",
+    "host": "au.hoka.com",
+    "w": 1280,
+    "h": 960,
+    "score": 1024
+  },
+  "hoka-bondi-10": {
+    "brand": "HOKA",
+    "model": "Bondi 10",
+    "url": "https://m.media-amazon.com/images/I/81KSOQHFvqL.jpg",
+    "host": "www.amazon.com",
+    "w": 1920,
+    "h": 1440,
+    "score": 150
+  },
+  "hoka-mach-7": {
+    "brand": "HOKA",
+    "model": "Mach 7",
+    "url": "https://www.gearpatrol.com/wp-content/uploads/sites/2/2026/02/hoka-mach-7-gear-patrol-7.webp?w=1920",
+    "host": "www.gearpatrol.com",
+    "w": 1920,
+    "h": 1536,
+    "score": 50
+  },
+  "hoka-skyflow-2": {
+    "brand": "HOKA",
+    "model": "Skyflow 2",
+    "url": "https://www.holabirdsports.com/cdn/shop/files/hoka-skyflow-feature-1_1080x.jpg?v=1720209155",
+    "host": "www.holabirdsports.com",
+    "w": 1080,
+    "h": 720,
+    "score": 215
+  },
+  "hoka-speedgoat-7": {
+    "brand": "HOKA",
+    "model": "Speedgoat 7",
+    "url": "https://i.ytimg.com/vi/qywtvbMaX3w/maxresdefault.jpg",
+    "host": "www.rei.com",
+    "w": 1280,
+    "h": 720,
+    "score": 218
+  },
+  "hoka-rocket-x-3": {
+    "brand": "HOKA",
+    "model": "Rocket X 3",
+    "url": "https://media.gq.com/photos/68f120115090cf2c61d2cad0/master/w_1600,c_limit/IMG_6826.jpeg",
+    "host": "www.gq.com",
+    "w": 1600,
+    "h": 2133,
+    "score": 50
+  },
+  "hoka-mach-x4": {
+    "brand": "HOKA",
+    "model": "Mach X4",
+    "url": "https://i.ytimg.com/vi/b8WKyiqTZcg/maxresdefault.jpg",
+    "host": "www.rei.com",
+    "w": 1280,
+    "h": 720,
+    "score": 218
+  },
+  "asics-gel-nimbus-28": {
+    "brand": "ASICS",
+    "model": "Gel-Nimbus 28",
+    "url": "https://m.media-amazon.com/images/I/61v4iWUJz-L.jpg",
+    "host": "www.amazon.com",
+    "w": 1200,
+    "h": 1200,
+    "score": 128
+  },
+  "asics-novablast-6": {
+    "brand": "ASICS",
+    "model": "Novablast 6",
+    "url": "https://images.contentstack.io/v3/assets/bltf5897c13eaa5d1f0/bltf09cf6735a1fd4b4/69f2213e65549f2173648207/asics_homepage_mobile_banner_legends_051026.jpg?branch=production",
+    "host": "www.asics.com",
+    "w": 750,
+    "h": 954,
+    "score": 1014
+  },
+  "asics-superblast-3": {
+    "brand": "ASICS",
+    "model": "Superblast 3",
+    "url": "https://images.contentstack.io/v3/assets/bltf5897c13eaa5d1f0/bltafdefb3e3d46cf78/690a5b26f78cb497d65e3eac/asics_mobile_plp_tile_2_wide_blast_blog_110625.jpg?branch=production",
+    "host": "www.asics.com",
+    "w": 2048,
+    "h": 1112,
+    "score": 1045
+  },
+  "asics-magic-speed-5": {
+    "brand": "ASICS",
+    "model": "Magic Speed 5",
+    "url": "https://m.media-amazon.com/images/I/61qDSIExehL.jpg",
+    "host": "www.amazon.com",
+    "w": 1506,
+    "h": 1129,
+    "score": 134
+  },
+  "asics-gel-kayano-32": {
+    "brand": "ASICS",
+    "model": "Gel-Kayano 32",
+    "url": "https://preview.thenewsmarket.com/Previews/ASIC/StillAssets/1920x1080/693802_v2.jpg",
+    "host": "news-emea.asics.com",
+    "w": 1920,
+    "h": 1080,
+    "score": 1041
+  },
+  "asics-metaspeed-sky-tokyo": {
+    "brand": "ASICS",
+    "model": "Metaspeed Sky Tokyo",
+    "url": "https://images.contentstack.io/v3/assets/bltf5897c13eaa5d1f0/blt6c1fe304189940f0/69f223d7f3d0ca1e7c98f082/asics_homepage_mobile_banner_trail_051026.jpg?branch=production",
+    "host": "www.asics.com",
+    "w": 750,
+    "h": 912,
+    "score": 1013
+  },
+  "asics-metaspeed-edge-tokyo": {
+    "brand": "ASICS",
+    "model": "Metaspeed Edge Tokyo",
+    "url": "https://cdn.mos.cms.futurecdn.net/L8jC4o8KazzwnvMy8hD2qX.jpg",
+    "host": "www.tomsguide.com",
+    "w": 3840,
+    "h": 2160,
+    "score": 50
+  },
+  "nike-vaporfly-5": {
+    "brand": "Nike",
+    "model": "Vaporfly 5",
+    "url": "https://cdn.fleetfeet.com/a:1.5124688279302-f:cover-w:1440/assets/Nike-Vaporfly-NEXT.png?s=e4a7a9c5",
+    "host": "www.fleetfeet.com",
+    "w": 1440,
+    "h": 953,
+    "score": 227
+  },
+  "nike-alphafly-4": {
+    "brand": "Nike",
+    "model": "Alphafly 4",
+    "url": "https://cdn.runrepeat.com/storage/gallery/product_content/40255/nike-alphafly-3-atomknit-3-21208064-main.jpg",
+    "host": "runrepeat.com",
+    "w": 3000,
+    "h": 2000,
+    "score": 50
+  },
+  "nike-vomero-19": {
+    "brand": "Nike",
+    "model": "Vomero 19",
+    "url": "https://media.about.nike.com/img/b5ef2dc5-c8c9-4a01-9023-a058e04d3821/nike-vomero-18-mens-dusty-cactus-1.jpeg?m=eyJlZGl0cyI6eyJqcGVnIjp7InF1YWxpdHkiOjEwMH0sIndlYnAiOnsicXVhbGl0eSI6MTAwfSwiZXh0cmFjdCI6eyJsZWZ0IjowLCJ0b3AiOjAsIndpZHRoIjozMjAwLCJoZWlnaHQiOjI1OTV9LCJyZXNpemUiOnsid2lkdGgiOjM4NDB9fX0=&s=412c60d80ff59f8f6e278c625038f1774ab075c501e9d337bff232b1800f0a94",
+    "host": "about.nike.com",
+    "w": 3840,
+    "h": 3114,
+    "score": 1050
+  },
+  "nike-pegasus-42": {
+    "brand": "Nike",
+    "model": "Pegasus 42",
+    "url": "https://media.about.nike.com/img/e3e7e739-589f-4821-893e-0674b9b3a7df/nike-pegasus-42-5.jpg?m=eyJlZGl0cyI6eyJqcGVnIjp7InF1YWxpdHkiOjEwMH0sIndlYnAiOnsicXVhbGl0eSI6MTAwfSwiZXh0cmFjdCI6eyJsZWZ0IjowLCJ0b3AiOjAsIndpZHRoIjozMjAwLCJoZWlnaHQiOjMyMDB9LCJyZXNpemUiOnsid2lkdGgiOjM4NDB9fX0=&s=b3e1b6313c76713a58c4231c30ea0975c8f93b18d9cacccfbe872aa7969d2a99",
+    "host": "about.nike.com",
+    "w": 3840,
+    "h": 3840,
+    "score": 1050
+  },
+  "nike-pegasus-premium-2": {
+    "brand": "Nike",
+    "model": "Pegasus Premium 2",
+    "url": "https://cdn.fleetfeet.com/a:1.5-f:cover-w:1440/assets/NIKE-Pegasus-Premium-49.jpg?s=2c62697d",
+    "host": "www.fleetfeet.com",
+    "w": 1440,
+    "h": 960,
+    "score": 227
+  },
+  "nike-pegasus-42-trail": {
+    "brand": "Nike",
+    "model": "Pegasus 42 Trail",
+    "url": "https://img.runningwarehouse.com/watermark/rs.php?path=NAP42W2-4.jpg&nw=1408&nw=296",
+    "host": "www.runningwarehouse.com",
+    "w": 1408,
+    "h": 1055,
+    "score": 229
+  },
+  "nike-structure-27": {
+    "brand": "Nike",
+    "model": "Structure 27",
+    "url": "https://m.media-amazon.com/images/I/71Dwoub9-GL.jpg",
+    "host": "www.amazon.com",
+    "w": 1728,
+    "h": 1728,
+    "score": 150
+  },
+  "nike-streakfly-2": {
+    "brand": "Nike",
+    "model": "Streakfly 2",
+    "url": "https://media.about.nike.com/img/52413285-44f2-446c-b418-41065770e03c/nike-zoomx-streakfly-2-1.jpeg?m=eyJlZGl0cyI6eyJqcGVnIjp7InF1YWxpdHkiOjEwMH0sIndlYnAiOnsicXVhbGl0eSI6MTAwfSwiZXh0cmFjdCI6eyJsZWZ0IjowLCJ0b3AiOjAsIndpZHRoIjozMjAwLCJoZWlnaHQiOjE4MDB9LCJyZXNpemUiOnsid2lkdGgiOjM4NDB9fX0=&s=5aa21b75f7c1d6c9a7cc96814f1fddf04e93b614b73c7aa1ceb3b21253937e0a",
+    "host": "about.nike.com",
+    "w": 3840,
+    "h": 2160,
+    "score": 1050
+  },
+  "nike-zegama-3": {
+    "brand": "Nike",
+    "model": "Zegama 3",
+    "url": "https://m.media-amazon.com/images/I/71j4VCxToGL.jpg",
+    "host": "www.amazon.com",
+    "w": 2000,
+    "h": 2000,
+    "score": 150
+  },
+  "new-balance-fresh-foam-x-1080v15": {
+    "brand": "New Balance",
+    "model": "Fresh Foam X 1080v15",
+    "url": "https://images-na.ssl-images-amazon.com/images/I/81O9+1-c-ZL.jpg",
+    "host": "www.amazon.com",
+    "w": 2500,
+    "h": 2500,
+    "score": 150
+  },
+  "new-balance-fuelcell-supercomp-elite-v5": {
+    "brand": "New Balance",
+    "model": "FuelCell SuperComp Elite v5",
+    "url": "https://images-na.ssl-images-amazon.com/images/I/710rPVKd6gL.jpg",
+    "host": "www.amazon.com",
+    "w": 2500,
+    "h": 2500,
+    "score": 150
+  },
+  "new-balance-fuelcell-supercomp-trainer-v4": {
+    "brand": "New Balance",
+    "model": "FuelCell SuperComp Trainer v4",
+    "url": "https://images-na.ssl-images-amazon.com/images/I/71kceFKSR3L.jpg",
+    "host": "www.amazon.com",
+    "w": 2000,
+    "h": 2000,
+    "score": 150
+  },
+  "new-balance-fresh-foam-x-more-v6": {
+    "brand": "New Balance",
+    "model": "Fresh Foam X More v6",
+    "url": "https://nb.scene7.com/is/image/NB/mmorla6_nb_05_i?$dw_detail_main_lg$&bgc=f1f1f1&layer=1&bgcolor=f1f1f1&blendMode=mult&scale=10&wid=1600&hei=1600",
+    "host": "www.newbalance.com",
+    "w": 1600,
+    "h": 1600,
+    "score": 1050
+  },
+  "new-balance-fuelcell-rebel-v5": {
+    "brand": "New Balance",
+    "model": "FuelCell Rebel v5",
+    "url": "https://i.ytimg.com/vi/ywcUtQLNTSo/maxresdefault.jpg",
+    "host": "www.rei.com",
+    "w": 1280,
+    "h": 720,
+    "score": 218
+  },
+  "on-cloudsurfer-8": {
+    "brand": "On",
+    "model": "Cloudsurfer 8",
+    "url": "https://images.squarespace-cdn.com/content/v1/5b4544e485ede17941bc95fc/701d035f-ddea-4505-96de-71295437287d/on-cloudsurfer-2-road-running-shoe.jpg",
+    "host": "www.treelinereview.com",
+    "w": 2400,
+    "h": 1600,
+    "score": 50
+  },
+  "on-cloudboom-strike-ls": {
+    "brand": "On",
+    "model": "Cloudboom Strike LS",
+    "url": "https://cdn.mos.cms.futurecdn.net/ANrtNqfgZtwSt7hh6HnPWK.jpg",
+    "host": "www.tomsguide.com",
+    "w": 4032,
+    "h": 2268,
+    "score": 50
+  },
+  "on-cloudmonster-3": {
+    "brand": "On",
+    "model": "Cloudmonster 3",
+    "url": "https://alssports.vteximg.com.br/arquivos/ids/3914712/10617448x1323403_alt6.jpg?v=639077041356670000",
+    "host": "www.als.com",
+    "w": 1550,
+    "h": 1550,
+    "score": 48
+  },
+  "adidas-adizero-adios-pro-evo-3": {
+    "brand": "Adidas",
+    "model": "Adizero Adios Pro Evo 3",
+    "url": "https://www.gearpatrol.com/wp-content/uploads/sites/2/2026/04/adidas-adizero-adios-pro-evo-3-6.webp?w=1920",
+    "host": "www.gearpatrol.com",
+    "w": 1920,
+    "h": 1536,
+    "score": 50
+  },
+  "adidas-adizero-adios-pro-5": {
+    "brand": "Adidas",
+    "model": "Adizero Adios Pro 5",
+    "url": "https://assets.adidas.com/images/w_600,f_auto,q_auto/08cd4a33b6f645f181ecb19d4fd6cb69_9366/Adizero_Adios_Pro_3_Running_Shoes_White_IG6426_HM1.jpg",
+    "host": "www.adidas.com",
+    "w": 600,
+    "h": 600,
+    "score": 1007
+  },
+  "adidas-takumi-sen-11": {
+    "brand": "Adidas",
+    "model": "Takumi Sen 11",
+    "url": "https://cdn.mos.cms.futurecdn.net/6WAmFnxxeifLpaedi8m4LQ.jpg",
+    "host": "www.coachweb.com",
+    "w": 5604,
+    "h": 3152,
+    "score": 50
+  },
+  "adidas-adizero-boston-13": {
+    "brand": "Adidas",
+    "model": "Adizero Boston 13",
+    "url": "https://m.media-amazon.com/images/I/71Zz4D6rjVL.jpg",
+    "host": "www.amazon.com",
+    "w": 2000,
+    "h": 1500,
+    "score": 150
+  },
+  "mizuno-wave-sky-9": {
+    "brand": "Mizuno",
+    "model": "Wave Sky 9",
+    "url": "https://m.media-amazon.com/images/I/7101fjZNzIL.jpg",
+    "host": "www.amazon.com",
+    "w": 2000,
+    "h": 2000,
+    "score": 150
+  },
+  "mizuno-wave-rebellion-sonic-2": {
+    "brand": "Mizuno",
+    "model": "Wave Rebellion Sonic 2",
+    "url": "https://www.mizuno.com/on/demandware.static/-/Sites-mizuno-master-catalog/default/dwad9c8301/images/hi-res/23SS/Running/J1GC233053/SH_J1GC233053_00.png",
+    "host": "www.mizuno.com",
+    "w": 1000,
+    "h": 1000,
+    "score": 1020
+  },
+  "mizuno-wave-rebellion-pro-4": {
+    "brand": "Mizuno",
+    "model": "Wave Rebellion Pro 4",
+    "url": "https://m.media-amazon.com/images/I/71vnzJFGloL.jpg",
+    "host": "www.amazon.com",
+    "w": 2261,
+    "h": 1548,
+    "score": 150
+  },
+  "puma-deviate-nitro-4": {
+    "brand": "Puma",
+    "model": "Deviate Nitro 4",
+    "url": "https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_600,h_600/global/312906/01/sv02/fnd/PNA/fmt/png/PUMA-x-HYROX-Deviate-NITRO%E2%84%A2-4-Men's-Running-Shoes",
+    "host": "us.puma.com",
+    "w": 600,
+    "h": 600,
+    "score": 1007
+  },
+  "puma-fast-r-nitro-elite-3": {
+    "brand": "Puma",
+    "model": "Fast-R Nitro Elite 3",
+    "url": "https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_600,h_600/global/310683/04/fnd/PNA/fmt/png/FAST-R-NITRO%E2%84%A2-Elite-2-Men's-Running-Shoes",
+    "host": "us.puma.com",
+    "w": 600,
+    "h": 600,
+    "score": 1007
+  },
+  "topo-athletic-magnifly-6": {
+    "brand": "Topo Athletic",
+    "model": "Magnifly 6",
+    "url": "https://m.media-amazon.com/images/I/71FuApMY1NL.jpg",
+    "host": "www.amazon.com",
+    "w": 1888,
+    "h": 1440,
+    "score": 150
+  },
+  "topo-athletic-phantom-4": {
+    "brand": "Topo Athletic",
+    "model": "Phantom 4",
+    "url": "https://m.media-amazon.com/images/I/71pKjaHHyBL.jpg",
+    "host": "www.amazon.com",
+    "w": 1888,
+    "h": 1440,
+    "score": 150
+  },
+  "altra-torin-9": {
+    "brand": "Altra",
+    "model": "Torin 9",
+    "url": "https://www.altrarunning.com/cdn/shop/files/AL0A85V091Z-HERO.png?v=1776353065&width=600",
+    "host": "www.altrarunning.com",
+    "w": 600,
+    "h": 600,
+    "score": 1007
+  },
+  "altra-escalante-5": {
+    "brand": "Altra",
+    "model": "Escalante 5",
+    "url": "https://www.altrarunning.com/cdn/shop/files/AL0A85Q7280-HERO.png?v=1776074851&width=600",
+    "host": "www.altrarunning.com",
+    "w": 600,
+    "h": 600,
+    "score": 1007
+  },
+  "altra-lone-peak-9": {
+    "brand": "Altra",
+    "model": "Lone Peak 9",
+    "url": "https://www.altrarunning.com/cdn/shop/articles/blog_featureimage_lp9plus_award_2025_1200x900_f9136427-4a4f-400c-8e3e-2fe4d4cc3496.jpg?v=1772774266&width=2000",
+    "host": "www.altrarunning.com",
+    "w": 1200,
+    "h": 900,
+    "score": 1021
+  },
+  "altra-olympus-7": {
+    "brand": "Altra",
+    "model": "Olympus 7",
+    "url": "https://www.altrarunning.com/cdn/shop/files/AL0A85SP001-HERO.png?v=1776075142&width=600",
+    "host": "altrarunning.com",
+    "w": 600,
+    "h": 600,
+    "score": 1007
+  },
+  "salomon-glide-max-tr": {
+    "brand": "Salomon",
+    "model": "Glide Max TR",
+    "url": "https://m.media-amazon.com/images/I/81W4shmBhqL.jpg",
+    "host": "www.amazon.com",
+    "w": 2000,
+    "h": 2000,
+    "score": 150
+  },
+  "salomon-aero-glide-3": {
+    "brand": "Salomon",
+    "model": "Aero Glide 3",
+    "url": "https://i.ytimg.com/vi/1WpcUtgPijc/maxresdefault.jpg",
+    "host": "www.rei.com",
+    "w": 1280,
+    "h": 720,
+    "score": 218
+  },
+  "salomon-s-lab-phantasm-2": {
+    "brand": "Salomon",
+    "model": "S/Lab Phantasm 2",
+    "url": "https://m.media-amazon.com/images/I/61jLwXgKdQL.jpg",
+    "host": "www.amazon.com",
+    "w": 1000,
+    "h": 1000,
+    "score": 120
+  }
+}
