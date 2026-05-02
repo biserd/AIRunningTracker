@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { AlertTriangle, Target, Lock, ArrowRight, CheckCircle, Sparkles, Zap, TrendingUp } from "lucide-react";
+import { Lock, ArrowRight, CheckCircle, Sparkles, Zap, TrendingUp, Calendar, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -304,24 +304,24 @@ function getPersonalizedCopy(
   // --- CTA copy by goal ---
   const ctaByGoal: Record<string, PersonalizedCopy['cta']> = {
     race: {
-      headline: `Get race-ready with a plan built for your body.`,
-      subtext: `Personalized paces, structured weekly plan, and race-day strategy.`,
-      button: `Continue`,
+      headline: `Your race-ready plan is built from your Strava history.`,
+      subtext: `14-day free trial. Cancel anytime.`,
+      button: `Unlock My 14-Day Plan`,
     },
     faster: {
-      headline: `Unlock the speed your training is missing.`,
-      subtext: `Personalized pace zones, structured speed sessions, and recovery timing.`,
-      button: `Continue`,
+      headline: `Your speed plan is built from your Strava history.`,
+      subtext: `14-day free trial. Cancel anytime.`,
+      button: `Unlock My 14-Day Plan`,
     },
     endurance: {
-      headline: `Build the aerobic base to run longer than ever.`,
-      subtext: `Personalized easy pace, progressive long runs, and endurance tracking.`,
-      button: `Continue`,
+      headline: `Your endurance plan is built from your Strava history.`,
+      subtext: `14-day free trial. Cancel anytime.`,
+      button: `Unlock My 14-Day Plan`,
     },
     injury_free: {
-      headline: `Train consistently without the injury setbacks.`,
-      subtext: `Safe pace zones, load monitoring, and recovery-first planning.`,
-      button: `Continue`,
+      headline: `Your injury-prevention plan is built from your Strava history.`,
+      subtext: `14-day free trial. Cancel anytime.`,
+      button: `Unlock My 14-Day Plan`,
     },
   };
 
@@ -543,6 +543,95 @@ interface SyncStatus {
   syncTotal: number;
   pendingJobs: number;
   processingJobs: number;
+}
+
+interface HeroCopy {
+  outcomeHeadline: string;
+  subheadline: string;
+  current: string | null;
+  potential: string | null;
+  distanceLabel: string;
+  timeSavedClean: string | null;
+  heroIndex: number;
+  stickyBarHeadline: string;
+  blockerLine: string;
+}
+
+function getHeroCopy(
+  auditData: AuditData,
+  goal: string | null | undefined,
+  activityCount: number
+): HeroCopy {
+  const greyZoneTooFast = auditData.greyZone.easyRunsAreTooFast;
+  const blockerLine = greyZoneTooFast
+    ? "your easy runs are too fast"
+    : "your training intensity is unstructured";
+
+  // Pick hero distance based on the user's stated goal
+  let preferredIndex = 2; // Half by default
+  if (goal === "faster") preferredIndex = 0; // 5K
+  else if (goal === "race") preferredIndex = 2; // Half
+  else if (goal === "endurance") preferredIndex = 2; // Half
+  else if (goal === "injury_free") preferredIndex = 2; // Half
+
+  const preds = auditData.racePotential?.predictions ?? [];
+  if (preds.length === 0) {
+    return {
+      outcomeHeadline: "Your 14-day plan is ready.",
+      subheadline: `We've analyzed ${activityCount} of your runs and built a plan that helps you train smarter — not just harder.`,
+      current: null,
+      potential: null,
+      distanceLabel: "",
+      timeSavedClean: null,
+      heroIndex: -1,
+      stickyBarHeadline: "Your 14-day plan is ready — built from your Strava history.",
+      blockerLine,
+    };
+  }
+
+  const idx = Math.min(preferredIndex, preds.length - 1);
+  const hero = preds[idx];
+  const timeSavedClean = (hero.timeSaved || "").replace(/^-/, "");
+  const distanceLabel = hero.distance === "Half"
+    ? "half marathon"
+    : hero.distance === "Marathon"
+      ? "marathon"
+      : hero.distance.toLowerCase();
+
+  // If there's no meaningful gap, fall back to a generic outcome line.
+  // Parse cleaned time ("M:SS" or "H:MM:SS") into seconds; treat <30s as no-gap.
+  const parseToSeconds = (s: string): number => {
+    const parts = s.split(":").map((n) => parseInt(n, 10) || 0);
+    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    if (parts.length === 2) return parts[0] * 60 + parts[1];
+    return parts[0] || 0;
+  };
+  const hasGap = !!timeSavedClean && parseToSeconds(timeSavedClean) >= 30;
+  if (!hasGap) {
+    return {
+      outcomeHeadline: `Your ${distanceLabel} potential is ${hero.potentialTime}.`,
+      subheadline: `Based on your last ${activityCount} runs, your structured 14-day plan is ready to help you peak when it matters.`,
+      current: hero.currentTime,
+      potential: hero.potentialTime,
+      distanceLabel,
+      timeSavedClean: null,
+      heroIndex: idx,
+      stickyBarHeadline: `Your ${distanceLabel} plan is ready — built from your Strava history.`,
+      blockerLine,
+    };
+  }
+
+  return {
+    outcomeHeadline: `You could be ${timeSavedClean} faster in the ${distanceLabel}.`,
+    subheadline: `Based on your last ${activityCount} runs, your current trajectory is ${hero.currentTime}, but your true potential is ${hero.potentialTime} if you fix one key issue: ${blockerLine}.`,
+    current: hero.currentTime,
+    potential: hero.potentialTime,
+    distanceLabel,
+    timeSavedClean,
+    heroIndex: idx,
+    stickyBarHeadline: `Start the plan that helps close your ${timeSavedClean} ${distanceLabel} gap.`,
+    blockerLine,
+  };
 }
 
 export default function AuditReportPage() {
@@ -780,70 +869,97 @@ export default function AuditReportPage() {
     ? getPersonalizedCopy(calibrationData?.goal ?? null, calibrationData?.struggle ?? null, calibrationData?.days ?? null, auditData)
     : null;
 
+  const hero = auditData
+    ? getHeroCopy(auditData, calibrationData?.goal, greyZone.activityCount)
+    : null;
+
+  const daysLabel = calibrationData?.days === "5+" ? "5+" : (calibrationData?.days || "3");
+  const heroIndex = hero?.heroIndex ?? -1;
+
+  const samplePlan = [
+    { day: "Mon", session: `Easy ${daysLabel === "5+" ? 8 : 6}km @ ${greyZone.optimalEasyPaceKm.split(" - ")[0]}/km` },
+    { day: "Wed", session: `Tempo intervals · 6×3min @ threshold` },
+    { day: "Sat", session: `Long Run · build to ${daysLabel === "5+" ? 18 : 14}km easy` },
+  ];
+
+  const planBullets = [
+    `${daysLabel} runs matched to your schedule`,
+    `Easy pace target based on your actual data`,
+    `One workout each week to improve race speed`,
+    `Recovery guidance after each Strava upload`,
+    `Plan adapts automatically as new runs sync`,
+  ];
+
   return (
     <>
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-orange-50 pb-28">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-orange-50 pb-32">
       <SEO 
-        title="Your Training Audit | AITracker.run"
-        description="We found gaps in your training. Get personalized insights to train smarter."
+        title="Your Race Potential | AITracker.run"
+        description="See how much faster you could be — and unlock your personalized 14-day plan."
       />
 
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="flex justify-center mb-6">
-          <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-orange-100 text-orange-700">
-            <CheckCircle className="h-4 w-4 mr-1.5" />
-            Audit Complete
+      <div className="max-w-2xl mx-auto px-4 py-6 md:py-8">
+        {/* Audit Complete badge */}
+        <div className="flex justify-center mb-5">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700" data-testid="badge-audit-complete">
+            <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+            Audit Complete · {greyZone.activityCount} runs analyzed
           </span>
         </div>
 
-        <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-charcoal mb-3">
-            {personalizedCopy?.headline || "We found a gap in your training."}
+        {/* A. HERO — outcome-driven */}
+        <section className="text-center mb-8" data-testid="section-hero">
+          <h1 className="text-3xl md:text-4xl font-bold text-charcoal leading-tight mb-3" data-testid="text-hero-headline">
+            {hero?.outcomeHeadline || "Your 14-day plan is ready."}
           </h1>
-          <p className="text-xl text-gray-600">
-            {personalizedCopy?.hook || "Your Effort is High, but your Efficiency is Low."}
+          <p className="text-base md:text-lg text-gray-600 leading-relaxed mb-5" data-testid="text-hero-subheadline">
+            {hero?.subheadline}
           </p>
-        </div>
 
-        <div className="space-y-4">
-          <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0">
-                <MiniRadarChart data={runnerIQ.components} />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <h2 className="text-xl font-bold text-charcoal">
-                    {personalizedCopy?.runnerIQ.title || `Your 'Runner IQ' is ${runnerIQ.score}`}
-                  </h2>
-                  <span className={`px-2 py-0.5 rounded text-xs font-bold ${getGradeColor(runnerIQ.grade)}`}>
-                    Grade {runnerIQ.grade}
-                  </span>
-                </div>
-                <p className="text-gray-700 leading-relaxed">
-                  {personalizedCopy?.runnerIQ.body || (
-                    <>You are putting in <strong className="text-orange-600">Grade {runnerIQ.volumeGrade} effort</strong> (Volume), but getting <strong className="text-orange-600">Grade {runnerIQ.performanceGrade} results</strong> (Performance). Your runs are not consistently targeted at a specific training adaptation.</>
-                  )}
+          {hero?.current && hero?.potential && (
+            <div className="flex justify-center items-end gap-3 md:gap-6 mb-6" data-testid="block-current-vs-potential">
+              <div className="text-center">
+                <p className="text-[10px] md:text-xs uppercase tracking-wide text-gray-500 mb-1">Current</p>
+                <p className="text-2xl md:text-3xl font-bold text-gray-400 line-through decoration-2 decoration-gray-300">
+                  {hero.current}
                 </p>
-                <p className="text-sm text-orange-700 mt-3 font-medium">
-                  {personalizedCopy?.runnerIQ.takeaway || "You are working harder than you need to."}
+              </div>
+              <ArrowRight className="h-5 w-5 md:h-6 md:w-6 text-strava-orange mb-1.5" />
+              <div className="text-center">
+                <p className="text-[10px] md:text-xs uppercase tracking-wide text-strava-orange font-bold mb-1">Your Potential</p>
+                <p className="text-3xl md:text-4xl font-bold text-strava-orange">
+                  {hero.potential}
                 </p>
               </div>
             </div>
-          </div>
+          )}
 
+          <Button
+            onClick={handleUpgrade}
+            disabled={checkout.isPending}
+            className="bg-strava-orange hover:bg-orange-700 text-white font-bold py-3 px-8 rounded-xl text-base shadow-md w-full md:w-auto"
+            data-testid="button-hero-cta"
+          >
+            {checkout.isPending ? "Redirecting…" : "Unlock My 14-Day Plan"}
+            {!checkout.isPending && <ArrowRight className="h-4 w-4 ml-2" />}
+          </Button>
+          <p className="text-xs text-gray-500 mt-2">Free for 14 days. Cancel anytime.</p>
+        </section>
+
+        <div className="space-y-4">
+          {/* B. RACE POTENTIAL — table near the top, hero row highlighted */}
           {auditData?.racePotential && (
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-              <div className="flex items-start gap-4 mb-5">
-                <div className="w-12 h-12 flex-shrink-0 bg-amber-100 rounded-xl flex items-center justify-center">
-                  <TrendingUp className="h-7 w-7 text-amber-600" />
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 md:p-6 shadow-sm" data-testid="card-race-potential">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 flex-shrink-0 bg-amber-100 rounded-xl flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-amber-600" />
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-xl font-bold text-charcoal mb-1">
-                    You are leaving speed on the table at every distance.
+                  <h2 className="text-lg md:text-xl font-bold text-charcoal mb-1">
+                    Your race potential at every distance
                   </h2>
                   <p className="text-gray-600 text-sm">
-                    Based on your VO2 Max and volume data, your current trajectory is underperforming your potential by ~{auditData.racePotential.gapPercent}%.
+                    Based on your last {greyZone.activityCount} runs. Your current trajectory is underperforming your potential by ~{auditData.racePotential.gapPercent}%.
                   </p>
                 </div>
               </div>
@@ -852,123 +968,169 @@ export default function AuditReportPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-gray-50">
-                      <th className="text-left py-3 px-4 font-semibold text-gray-600">Distance</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-600">Current Trajectory</th>
-                      <th className="text-left py-3 px-4 font-bold text-charcoal">Your True Potential</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-600">Time Unlocked</th>
+                      <th className="text-left py-2.5 px-3 md:px-4 font-semibold text-gray-600 text-xs uppercase tracking-wide">Distance</th>
+                      <th className="text-left py-2.5 px-3 md:px-4 font-semibold text-gray-600 text-xs uppercase tracking-wide">Current</th>
+                      <th className="text-left py-2.5 px-3 md:px-4 font-semibold text-charcoal text-xs uppercase tracking-wide">Potential</th>
+                      <th className="text-left py-2.5 px-3 md:px-4 font-semibold text-strava-orange text-xs uppercase tracking-wide">Time Unlocked</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {auditData.racePotential.predictions.map((p, i) => (
-                      <tr key={p.distance} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                        <td className="py-3 px-4 font-bold text-charcoal">{p.distance}</td>
-                        <td className="py-3 px-4 text-gray-500">{p.currentTime}</td>
-                        <td className="py-3 px-4 font-bold text-charcoal">{p.potentialTime}</td>
-                        <td className="py-3 px-4">
-                          <span className="inline-flex items-center gap-1 text-amber-600 font-semibold">
-                            <Zap className="h-3.5 w-3.5" />
-                            {p.timeSaved}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {auditData.racePotential.predictions.map((p, i) => {
+                      const isHero = i === heroIndex;
+                      return (
+                        <tr
+                          key={p.distance}
+                          className={isHero ? 'bg-orange-50 border-l-4 border-strava-orange' : (i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50')}
+                          data-testid={`row-prediction-${p.distance}`}
+                        >
+                          <td className="py-3 px-3 md:px-4 font-bold text-charcoal">
+                            <span className="flex items-center gap-1.5">
+                              {p.distance}
+                              {isHero && <span className="text-[10px] uppercase tracking-wide bg-strava-orange text-white px-1.5 py-0.5 rounded">Best opportunity</span>}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 md:px-4 text-gray-500">{p.currentTime}</td>
+                          <td className="py-3 px-3 md:px-4 font-bold text-charcoal">{p.potentialTime}</td>
+                          <td className="py-3 px-3 md:px-4">
+                            <span className={`inline-flex items-center gap-1 font-bold ${isHero ? 'text-strava-orange text-base' : 'text-amber-600'}`}>
+                              <Zap className="h-3.5 w-3.5" />
+                              {p.timeSaved.replace(/^-/, '')}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
-              </div>
-
-              <div className="mt-4 bg-gray-50 rounded-xl p-4 border border-gray-100">
-                <p className="text-sm text-gray-600">
-                  <strong className="text-charcoal">The Insight:</strong>{' '}
-                  {personalizedCopy ? (
-                    calibrationData?.goal === 'race' ? (
-                      <>You have the aerobic engine to run a <strong className="text-charcoal">{auditData.racePotential.predictions[3]?.potentialTime} Marathon</strong>, but your current training structure is anchoring you at <strong>{auditData.racePotential.predictions[3]?.currentTime}</strong>. Fix your intensity distribution and unlock those times.</>
-                    ) : calibrationData?.goal === 'faster' ? (
-                      <>Your current training predicts a <strong>{auditData.racePotential.predictions[0]?.currentTime} 5K</strong>, but your true speed ceiling is <strong className="text-charcoal">{auditData.racePotential.predictions[0]?.potentialTime}</strong>. The gap is not fitness. It is how you structure your effort across training days.</>
-                    ) : calibrationData?.goal === 'endurance' ? (
-                      <>Your half marathon potential is <strong className="text-charcoal">{auditData.racePotential.predictions[2]?.potentialTime}</strong>, but running too fast on easy days is costing you <strong>{auditData.racePotential.predictions[2]?.timeSaved}</strong>. Slower easy runs build a bigger aerobic base, which means longer distances feel manageable.</>
-                    ) : (
-                      <>You are working hard enough for the faster time, but your efficiency is too low to sustain it. Fixing your intensity distribution reduces impact stress while making you faster.</>
-                    )
-                  ) : (
-                    <>You are working hard enough for the faster times, but your efficiency is too low to sustain it. Restructuring your training intensity unlocks speed at every distance.</>
-                  )}
-                </p>
               </div>
             </div>
           )}
 
-          <div className={`${trainingLoad.isCritical ? 'bg-red-50 border-red-200' : 'bg-teal-50 border-teal-200'} border rounded-2xl p-6`}>
-            <div className="flex items-start gap-4">
-              <div className={`w-12 h-12 flex-shrink-0 ${trainingLoad.isCritical ? 'bg-red-100' : 'bg-teal-100'} rounded-xl flex items-center justify-center`}>
-                {trainingLoad.isCritical ? (
-                  <AlertTriangle className="h-7 w-7 text-red-600" />
-                ) : (
-                  <CheckCircle className="h-7 w-7 text-teal-600" />
-                )}
+          {/* C. MAIN BLOCKER — supportive, not shaming */}
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 md:p-6" data-testid="card-blocker">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 flex-shrink-0 bg-amber-100 rounded-xl flex items-center justify-center">
+                <Sparkles className="h-5 w-5 text-amber-600" />
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <h2 className="text-xl font-bold text-charcoal">
-                    {personalizedCopy?.loadWarning.title || `Load Warning: ${trainingLoad.change ?? 0}% Change`}
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <h2 className="text-lg md:text-xl font-bold text-charcoal" data-testid="text-aerobic-base-score">
+                    Your Aerobic Base Score: {runnerIQ.score}/100
                   </h2>
-                  {trainingLoad.isCritical && (
-                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-red-600 text-white">
-                      Critical
-                    </span>
-                  )}
+                  <span className="px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800">
+                    Big improvement opportunity
+                  </span>
                 </div>
-                <p className="text-gray-700 leading-relaxed">
-                  {personalizedCopy?.loadWarning.body || `Your training load has changed compared to last week. This week: ${trainingLoad.thisWeekActivities} activities. Last week: ${trainingLoad.lastWeekActivities} activities.`}
+                <p className="text-charcoal font-semibold mb-2">
+                  {greyZone.easyRunsAreTooFast
+                    ? "Your easy runs are limiting your endurance gains."
+                    : "Your training intensity isn't structured around a clear adaptation."}
                 </p>
-                <p className={`text-sm ${trainingLoad.isCritical ? 'text-red-700' : 'text-teal-700'} mt-3 font-medium`}>
-                  {personalizedCopy?.loadWarning.takeaway || "A structured plan manages your load automatically."}
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  {greyZone.easyRunsAreTooFast
+                    ? "Most of your easy miles are being run faster than your aerobic adaptation pace. Slowing down on the right days can help you build a stronger base and run faster on race day."
+                    : "Your runs sit in the moderate \"grey zone\" — too hard to recover well, too easy to drive real adaptation. Targeted easy and workout days unlock progress without adding mileage."}
                 </p>
+
+                {greyZone.easyRunsAreTooFast && (
+                  <div className="grid grid-cols-2 gap-3 mt-4">
+                    <div className="bg-white rounded-lg p-3 border border-amber-100">
+                      <p className="text-[10px] uppercase tracking-wide text-gray-500 mb-1">Your easy pace now</p>
+                      <p className="text-base font-bold text-gray-700">{greyZone.currentEasyPaceKm}/km</p>
+                      <p className="text-[11px] text-gray-500 mt-0.5">{greyZone.currentEasyPaceMiles}/mi</p>
+                    </div>
+                    <div className="bg-white rounded-lg p-3 border-2 border-amber-300">
+                      <p className="text-[10px] uppercase tracking-wide text-amber-700 font-bold mb-1">Aerobic target</p>
+                      <p className="text-base font-bold text-amber-700">{greyZone.optimalEasyPaceKm}/km</p>
+                      <p className="text-[11px] text-amber-600 mt-0.5">{greyZone.optimalEasyPaceMiles}/mi</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          <div className="bg-purple-50 border border-purple-200 rounded-2xl p-6">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 flex-shrink-0 bg-purple-100 rounded-xl flex items-center justify-center">
-                <Target className="h-7 w-7 text-purple-600" />
+          {/* D. TRAINING GAP — schedule consistency */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-5 md:p-6" data-testid="card-training-gap">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 flex-shrink-0 bg-blue-100 rounded-xl flex items-center justify-center">
+                <Calendar className="h-5 w-5 text-blue-600" />
               </div>
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <h2 className="text-xl font-bold text-charcoal">
-                    {personalizedCopy?.insightCard.title || "Your Training Insight"}
-                  </h2>
-                  <span className="px-2 py-0.5 rounded text-xs font-bold bg-purple-100 text-purple-800">
-                    Insight
-                  </span>
-                </div>
-                <p className="text-gray-700 leading-relaxed">
-                  {personalizedCopy?.insightCard.body || `We analyzed your pace distribution across ${greyZone.activityCount} activities. ${greyZone.percentage}% of your easy days are running faster than optimal for your goal.`}
+                <h2 className="text-lg md:text-xl font-bold text-charcoal mb-1">
+                  Your weekly schedule shifts week to week
+                </h2>
+                <p className="text-gray-700 text-sm leading-relaxed mb-3">
+                  This week: <strong className="text-charcoal">{trainingLoad.thisWeekActivities} runs</strong>. Last week: <strong className="text-charcoal">{trainingLoad.lastWeekActivities} runs</strong>. A flexible {daysLabel}-day plan adapts when your week shifts — you don't have to start over.
                 </p>
-
-                <div className="relative mt-4">
-                  <div className="bg-white rounded-lg p-4 border border-purple-200 blur-sm">
-                    <p className="text-lg font-semibold text-charcoal">
-                      Optimal Easy Pace: {greyZone.optimalEasyPaceMiles} /mile
-                    </p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      ({greyZone.optimalEasyPaceKm} /km)
-                    </p>
-                  </div>
-                  
-                  <button
-                    onClick={handleUpgrade}
-                    disabled={checkout.isPending}
-                    className="absolute inset-0 flex items-center justify-center bg-white/60 rounded-lg cursor-pointer hover:bg-white/70 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 text-purple-700 font-semibold">
-                      <Lock className="h-5 w-5" />
-                      {checkout.isPending ? "Redirecting..." : (personalizedCopy?.insightCard.lockedLabel || "Unlock to reveal")}
-                    </div>
-                  </button>
+                <div className="flex items-center gap-2 text-sm text-blue-700 font-medium">
+                  <CheckCircle className="h-4 w-4" />
+                  <span>Reschedule any run from your phone in 2 taps</span>
                 </div>
+              </div>
+            </div>
+          </div>
 
-                <p className="text-sm text-purple-700 mt-3">
-                  {personalizedCopy?.insightCard.lockedDescription || "We have calculated your actual optimal training zones based on your physiological profile."}
+          {/* E. LOCKED PLAN PREVIEW — concrete value */}
+          <div className="bg-purple-50 border border-purple-200 rounded-2xl p-5 md:p-6" data-testid="card-plan-preview">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 flex-shrink-0 bg-purple-100 rounded-xl flex items-center justify-center">
+                <Sparkles className="h-5 w-5 text-purple-600" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-lg md:text-xl font-bold text-charcoal">
+                  Your first 7 days are ready.
+                </h2>
+                <p className="text-gray-700 text-sm mt-1">
+                  Built from your Strava history and tuned to your goal.
+                </p>
+              </div>
+            </div>
+
+            <ul className="space-y-2 mb-5">
+              {planBullets.map((item) => (
+                <li key={item} className="flex items-start gap-2 text-sm text-charcoal">
+                  <CheckCircle className="h-4 w-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="relative bg-white rounded-xl border border-purple-200 overflow-hidden">
+              <div className="blur-[3px] select-none p-4 space-y-2.5">
+                {samplePlan.map((row) => (
+                  <div key={row.day} className="flex items-center justify-between text-sm">
+                    <span className="font-semibold text-charcoal w-12">{row.day}</span>
+                    <span className="text-gray-600 flex-1 text-right">{row.session}</span>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={handleUpgrade}
+                disabled={checkout.isPending}
+                className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-[1px] hover:bg-white/70 transition-colors"
+                data-testid="button-unlock-week"
+              >
+                <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 text-white font-semibold text-sm shadow-md">
+                  <Lock className="h-4 w-4" />
+                  {checkout.isPending ? "Redirecting…" : "Unlock My First Week"}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* F. URGENCY */}
+          <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5 md:p-6" data-testid="card-urgency">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 flex-shrink-0 bg-orange-100 rounded-xl flex items-center justify-center">
+                <Clock className="h-5 w-5 text-orange-600" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-lg md:text-xl font-bold text-charcoal mb-1">
+                  Your next 7 days matter.
+                </h2>
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  Based on your current pattern, another week of unstructured running may continue reinforcing the same plateau. Your plan starts with low-risk aerobic corrections first — no extra mileage required.
                 </p>
               </div>
             </div>
@@ -976,39 +1138,33 @@ export default function AuditReportPage() {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-strava-orange px-4 py-4 shadow-lg">
+      {/* Sticky bottom CTA */}
+      <div className="fixed bottom-0 left-0 right-0 bg-strava-orange px-4 py-3 shadow-lg z-50" data-testid="sticky-cta">
         <div className="max-w-2xl mx-auto">
-          <div className="text-center mb-3">
-            <h3 className="text-white font-bold text-lg">
-              {personalizedCopy?.cta.headline || "Stop guessing. Start training efficiently."}
-            </h3>
-            <p className="text-white/80 text-sm">
-              {personalizedCopy?.cta.subtext || "Get your personalized training plan optimized for your unique physiology."}
-            </p>
-          </div>
-          
-          <div className="space-y-2">
-            <Button
-              onClick={handleUpgrade}
-              disabled={checkout.isPending}
-              className="w-full bg-white text-strava-orange hover:bg-gray-100 font-bold py-3 rounded-xl"
-            >
-              {checkout.isPending ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-strava-orange" />
-                  Redirecting to checkout...
-                </div>
-              ) : (
-                <>
-                  {personalizedCopy?.cta.button || "Continue"}
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                </>
-              )}
-            </Button>
-            <p className="text-center text-white/90 text-sm font-medium">
-              14-Day Free Trial. Cancel anytime.
-            </p>
-          </div>
+          <p className="text-white font-bold text-sm md:text-base text-center mb-2 leading-tight" data-testid="text-sticky-headline">
+            {hero?.stickyBarHeadline || personalizedCopy?.cta.headline || "Your 14-day plan is ready — built from your Strava history."}
+          </p>
+          <Button
+            onClick={handleUpgrade}
+            disabled={checkout.isPending}
+            className="w-full bg-white text-strava-orange hover:bg-gray-100 font-bold py-3 rounded-xl"
+            data-testid="button-sticky-cta"
+          >
+            {checkout.isPending ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-strava-orange" />
+                Redirecting to checkout…
+              </div>
+            ) : (
+              <>
+                Unlock My 14-Day Plan
+                <ArrowRight className="h-5 w-5 ml-2" />
+              </>
+            )}
+          </Button>
+          <p className="text-center text-white/90 text-xs mt-1.5">
+            14-day free trial. Cancel anytime.
+          </p>
         </div>
       </div>
     </div>

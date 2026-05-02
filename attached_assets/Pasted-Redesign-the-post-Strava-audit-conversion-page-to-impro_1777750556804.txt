@@ -1,0 +1,148 @@
+Redesign the post-Strava audit conversion page to improve free-trial starts.
+
+Current issue:
+Users connect Strava and view the audit, but they are not starting the free trial. The page is too informational and the main value is buried. The strongest hook is the user’s race prediction/time unlocked, especially the half marathon potential.
+
+UX goal:
+Make the page feel immediately personal, outcome-driven, and urgent. The user should instantly understand:
+1. How much faster they could become
+2. What is holding them back
+3. What they get after starting the free trial
+4. Why they should start now
+
+Key UX changes:
+
+1. Make race potential the hero
+Replace the current generic headline with a personalized performance hook.
+
+Example:
+“You could be 10:55 faster in the half marathon.”
+
+Subheadline:
+“Based on your last 97 runs, your current trajectory is 1:52:02, but your true potential is 1:41:07 if you fix one key issue: your easy runs are too fast.”
+
+Primary CTA:
+“Unlock My 14-Day Plan”
+
+Small text below CTA:
+“Free for 14 days. Cancel anytime.”
+
+2. Move the race prediction table near the top
+The 5K / 10K / Half / Marathon prediction table should be one of the first things users see. This is the strongest value prop. Keep the “time unlocked” column visually emphasized.
+
+3. Replace vague CTA language
+Do not use “Continue.” Use more specific CTAs such as:
+- “Unlock My 14-Day Plan”
+- “Start My Free Trial”
+- “Show Me How to Run 1:41”
+- “Unlock My First Week”
+
+Primary CTA preference:
+“Unlock My 14-Day Plan”
+
+4. Reduce negative/shaming language
+Avoid making users feel judged.
+
+Change:
+“Runner IQ is 41, Grade D”
+
+To:
+“Your Aerobic Base Score: 41/100”
+Badge:
+“Big improvement opportunity”
+
+Tone should be supportive, not critical.
+
+5. Make the problem very clear
+Add a card that explains the main blocker in simple language.
+
+Example:
+“Your easy runs are limiting your endurance gains.”
+
+Body:
+“Most of your easy miles are being run faster than your aerobic adaptation pace. Slowing down on the right days can help you build a stronger base and run faster on race day.”
+
+6. Make the locked value concrete
+The locked section should not just say “Unlock Your Endurance Plan.” It should preview exactly what they get.
+
+Example:
+“Your first 7 days are ready.”
+
+Locked preview bullets:
+- 3 runs matched to your schedule
+- Easy pace target based on your data
+- One workout to improve race speed
+- Recovery guidance after each Strava upload
+- Plan adapts automatically as new runs sync
+
+CTA:
+“Unlock My First Week”
+
+7. Add urgency / reason to act now
+Add a small urgency card before the final CTA.
+
+Example:
+“Your next 7 days matter.”
+
+Body:
+“Based on your current pattern, another week of unstructured running may continue reinforcing the same plateau. Your plan starts with low-risk aerobic corrections first — no extra mileage required.”
+
+8. Improve page hierarchy
+Recommended order:
+
+A. Hero
+- Personalized race outcome headline
+- Current trajectory vs true potential
+- Main blocker
+- Primary CTA
+
+B. Race potential card
+- 5K, 10K, Half, Marathon table
+- Highlight best opportunity, especially Half Marathon
+
+C. Main blocker card
+- Easy runs too fast / aerobic base gap
+- Supportive explanation
+
+D. Training gap card
+- Show schedule inconsistency
+- Explain how flexible 3-day plan adapts
+
+E. Locked plan preview
+- “Your first 7 days are ready”
+- Show blurred sample plan
+- Clear benefits
+- CTA
+
+F. Final sticky CTA
+- Outcome-driven text
+- Button: “Unlock My 14-Day Plan”
+- Subtext: “14-day free trial. Cancel anytime.”
+
+9. Adjust sticky bottom bar
+Current sticky bar says:
+“Build the aerobic base to run longer than ever.”
+
+Replace with something more specific and tied to the user’s data:
+
+Option A:
+“Start the plan that helps close your 10:55 half marathon gap.”
+
+Option B:
+“Your 14-day plan is ready — built from your Strava history.”
+
+Button:
+“Unlock My 14-Day Plan”
+
+10. Overall visual direction
+Keep the design clean, premium, and mobile-first. Use strong contrast for the main numbers:
+- Current trajectory
+- True potential
+- Time unlocked
+- Aerobic Base Score
+
+The user should not have to read long paragraphs to understand the value. Use short cards, bold numbers, and clear CTAs.
+
+Important:
+The page should sell the outcome, not just the free trial. The core message is:
+“Start the plan that gets you from 1:52 to 1:41.”
