@@ -14,8 +14,10 @@
       "https://www.newbalance.com/",
       "https://www.adidas.com/",
       "https://www.on.com/",
-      "https://www.hoka.com/"
-    ]
+      "https://www.hoka.com/",
+      "https://www.nike.com/"
+    ],
+    "notes": "imageUrl for hero models populated from public image-search results (manufacturer/retailer/review CDNs). Older entries left null since the upstream curation step did not capture them; backfill is tracked as a separate follow-up task."
   },
   "shoes": [
     {
@@ -24,7 +26,9 @@
       "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
       "price": 150, "bestFor": ["easy_runs","long_runs","tempo"],
       "durabilityRating": 4.5, "responsivenessRating": 3.0, "comfortRating": 4.5,
-      "releaseYear": 2026, "sourceUrl": "https://www.brooksrunning.com/en_us/mens/shoes/road-running-shoes/ghost-18/110493.html"
+      "releaseYear": 2026, "sourceUrl": "https://www.brooksrunning.com/en_us/mens/shoes/road-running-shoes/ghost-18/110493.html",
+      "imageUrl": "https://www.nj.com/resizer/v2/ZF6QSEKBANA7RK2LP5QUHFMBMM.png?auth=97df1e3032ea152008d68a884faee9eaaab0c91d4d97e4cad0d7c6b69c6f0c0c&width=1280&quality=90",
+      "description": "Brooks' iconic neutral daily trainer, refreshed in 2026 with a smoother DNA Loft v3 midsole and lighter mesh upper for everyday miles."
     },
     {
       "brand": "Brooks", "model": "Glycerin 23", "category": "long_run",
@@ -32,7 +36,9 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
       "price": 175, "bestFor": ["long_runs","easy_runs"],
       "durabilityRating": 4.0, "responsivenessRating": 3.0, "comfortRating": 4.8,
-      "releaseYear": 2026, "sourceUrl": "https://www.brooksrunning.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.brooksrunning.com/",
+      "imageUrl": "https://www.masslive.com/resizer/v2/B4DCFXCNC5GSDKNFOHGMZWKSQE.png?auth=97929386a625545b3b499cb93d3f0f0e&width=1280&quality=90",
+      "description": "Premium max-cushioned long-run shoe with nitrogen-infused DNA Tuned foam, offering plush comfort for high-mileage neutral runners."
     },
     {
       "brand": "Brooks", "model": "Glycerin GTS 23", "category": "long_run",
@@ -40,7 +46,8 @@
       "cushioningLevel": "soft", "stability": "mild_stability", "hasCarbonPlate": false, "hasSuperFoam": true,
       "price": 180, "bestFor": ["long_runs","easy_runs"],
       "durabilityRating": 4.0, "responsivenessRating": 3.0, "comfortRating": 4.6,
-      "releaseYear": 2026, "sourceUrl": "https://www.brooksrunning.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.brooksrunning.com/",
+      "description": "Stability-focused version of the Glycerin 23 with GuideRails support, ideal for mild over-pronators wanting plush long-run cushioning."
     },
     {
       "brand": "Brooks", "model": "Adrenaline GTS 26", "category": "daily_trainer",
@@ -48,7 +55,8 @@
       "cushioningLevel": "medium", "stability": "mild_stability", "hasCarbonPlate": false, "hasSuperFoam": false,
       "price": 145, "bestFor": ["easy_runs","long_runs"],
       "durabilityRating": 4.5, "responsivenessRating": 3.0, "comfortRating": 4.4,
-      "releaseYear": 2026, "sourceUrl": "https://www.brooksrunning.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.brooksrunning.com/",
+      "description": "Reliable stability daily trainer with GuideRails holistic support, the go-to pick for runners needing dependable mileage with mild pronation control."
     },
     {
       "brand": "Brooks", "model": "Hyperion Elite 5", "category": "racing",
@@ -56,7 +64,17 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
       "price": 250, "bestFor": ["racing","speed_work"],
       "durabilityRating": 2.5, "responsivenessRating": 4.7, "comfortRating": 3.8,
-      "releaseYear": 2026, "sourceUrl": "https://www.brooksrunning.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.brooksrunning.com/",
+      "description": "Brooks' flagship marathon racer with full-length carbon plate and SpeedVault Race+ PEBA midsole for explosive race-day performance."
+    },
+    {
+      "brand": "Brooks", "model": "Hyperion Max 4", "category": "speed_training",
+      "weight": 8.2, "heelStackHeight": 38, "forefootStackHeight": 30, "heelToToeDrop": 8,
+      "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 175, "bestFor": ["tempo","speed_work","long_runs"],
+      "durabilityRating": 3.6, "responsivenessRating": 4.5, "comfortRating": 4.2,
+      "releaseYear": 2026, "sourceUrl": "https://www.brooksrunning.com/",
+      "description": "Plateless speed trainer with DNA Flash v2 nitrogen-infused foam, designed as a high-mileage tempo and uptempo workout shoe."
     },
 
     {
@@ -65,7 +83,9 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
       "price": 290, "bestFor": ["racing","speed_work"],
       "durabilityRating": 2.5, "responsivenessRating": 4.9, "comfortRating": 4.0,
-      "releaseYear": 2026, "sourceUrl": "https://www.doctorsofrunning.com/2026/04/saucony-endorphin-elite-3-review-2026.html"
+      "releaseYear": 2026, "sourceUrl": "https://www.doctorsofrunning.com/2026/04/saucony-endorphin-elite-3-review-2026.html",
+      "imageUrl": "https://preview.redd.it/saucony-endorphin-elite-first-20-mile-review-v0-sjubwry98i9c1.jpg?width=3610",
+      "description": "Top-tier marathon super-shoe with PWRRUN HG PEBA midsole and a forked carbon plate, built for elite-level race performances over 5K to marathon."
     },
     {
       "brand": "Saucony", "model": "Triumph 24", "category": "long_run",
@@ -73,7 +93,9 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
       "price": 170, "bestFor": ["long_runs","easy_runs"],
       "durabilityRating": 4.0, "responsivenessRating": 3.2, "comfortRating": 4.7,
-      "releaseYear": 2026, "sourceUrl": "https://www.saucony.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.saucony.com/",
+      "imageUrl": "https://photos-us.bazaarvoice.com/photo/2/cGhvdG86c2F1Y29ueQ/af6c817a-7243-5dd5-b9dc-29ddddffcac3",
+      "description": "Saucony's flagship max-cushion daily trainer with PWRRUN PB midsole, offering plush comfort and a smooth ride for long runs and recovery miles."
     },
     {
       "brand": "Saucony", "model": "Ride 19", "category": "daily_trainer",
@@ -81,7 +103,8 @@
       "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
       "price": 150, "bestFor": ["easy_runs","long_runs","tempo"],
       "durabilityRating": 4.3, "responsivenessRating": 3.5, "comfortRating": 4.4,
-      "releaseYear": 2026, "sourceUrl": "https://www.saucony.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.saucony.com/",
+      "description": "Versatile neutral daily trainer with PWRRUN+ midsole, the workhorse of Saucony's lineup for everyday training across paces."
     },
     {
       "brand": "Saucony", "model": "Kinvara 16", "category": "speed_training",
@@ -89,7 +112,9 @@
       "cushioningLevel": "firm", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
       "price": 120, "bestFor": ["tempo","speed_work","easy_runs"],
       "durabilityRating": 3.5, "responsivenessRating": 4.2, "comfortRating": 3.8,
-      "releaseYear": 2026, "sourceUrl": "https://www.saucony.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.saucony.com/",
+      "imageUrl": "https://m.media-amazon.com/images/I/81IVlSJKawL.jpg",
+      "description": "Lightweight, low-drop neutral trainer ideal for tempo runs, intervals, and runners who want a fast, ground-feel shoe at an affordable price."
     },
     {
       "brand": "Saucony", "model": "Endorphin Speed 6", "category": "speed_training",
@@ -97,7 +122,8 @@
       "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
       "price": 180, "bestFor": ["tempo","speed_work","racing"],
       "durabilityRating": 3.5, "responsivenessRating": 4.6, "comfortRating": 4.0,
-      "releaseYear": 2026, "sourceUrl": "https://www.saucony.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.saucony.com/",
+      "description": "Nylon-plated PWRRUN PB super-trainer that doubles as a budget marathon racer, beloved for its lively, propulsive ride."
     },
     {
       "brand": "Saucony", "model": "Peregrine 16", "category": "trail",
@@ -105,7 +131,8 @@
       "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
       "price": 145, "bestFor": ["easy_runs","long_runs"],
       "durabilityRating": 4.3, "responsivenessRating": 3.5, "comfortRating": 4.0,
-      "releaseYear": 2026, "sourceUrl": "https://www.saucony.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.saucony.com/",
+      "description": "Aggressive 5mm-lug trail shoe with PWRTRAC outsole and rock plate, built for technical singletrack and varied off-road terrain."
     },
 
     {
@@ -114,7 +141,9 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
       "price": 150, "bestFor": ["easy_runs","long_runs"],
       "durabilityRating": 4.2, "responsivenessRating": 3.0, "comfortRating": 4.7,
-      "releaseYear": 2026, "sourceUrl": "https://www.hoka.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.hoka.com/",
+      "imageUrl": "https://www.al.com/resizer/v2/ZQEK2TYZPRFE5FIQUVR3CJDKX4.png?auth=b6025f22aa9cf67ff0d99fe25088563e1a&width=1280&quality=90",
+      "description": "HOKA's most popular max-cushioned daily trainer, refreshed for 2026 with a refined supercritical EVA midsole and engineered jacquard upper."
     },
     {
       "brand": "HOKA", "model": "Bondi 10", "category": "long_run",
@@ -122,7 +151,9 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
       "price": 170, "bestFor": ["long_runs","easy_runs"],
       "durabilityRating": 4.2, "responsivenessRating": 2.8, "comfortRating": 4.8,
-      "releaseYear": 2026, "sourceUrl": "https://www.hoka.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.hoka.com/",
+      "imageUrl": "https://bennysjolind.com/wp-content/uploads/2025/05/hoka-bondi-9-running-shoes-for-men-1024x757.jpg",
+      "description": "HOKA's max-stack long-distance cushioning king, ideal for big runners, recovery days, and ultra-comfortable long mileage."
     },
     {
       "brand": "HOKA", "model": "Mach 7", "category": "speed_training",
@@ -130,7 +161,8 @@
       "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
       "price": 145, "bestFor": ["tempo","speed_work","easy_runs"],
       "durabilityRating": 3.5, "responsivenessRating": 4.4, "comfortRating": 4.2,
-      "releaseYear": 2026, "sourceUrl": "https://www.hoka.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.hoka.com/",
+      "description": "Lightweight supercritical-foam tempo shoe that doubles as a daily trainer for fast runners, with a snappy, propulsive ride."
     },
     {
       "brand": "HOKA", "model": "Skyflow 2", "category": "long_run",
@@ -138,7 +170,8 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
       "price": 165, "bestFor": ["long_runs","easy_runs"],
       "durabilityRating": 4.0, "responsivenessRating": 3.4, "comfortRating": 4.6,
-      "releaseYear": 2026, "sourceUrl": "https://www.hoka.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.hoka.com/",
+      "description": "Plush nitrogen-infused EVA long-run shoe positioned between the Clifton and Bondi, with a smooth, balanced ride."
     },
     {
       "brand": "HOKA", "model": "Speedgoat 7", "category": "trail",
@@ -146,7 +179,9 @@
       "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
       "price": 165, "bestFor": ["long_runs","easy_runs"],
       "durabilityRating": 4.5, "responsivenessRating": 3.5, "comfortRating": 4.3,
-      "releaseYear": 2026, "sourceUrl": "https://www.hoka.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.hoka.com/",
+      "imageUrl": "https://www.al.com/resizer/v2/NPEDMRBARZEMNHMOFYQ6YY73GU.png?auth=df99d912d0119595a0fab83530442ba52b&width=1280&quality=90",
+      "description": "HOKA's iconic do-everything trail shoe with Vibram Megagrip outsole and 5mm lugs, refreshed in 2026 with an updated supercritical midsole."
     },
     {
       "brand": "HOKA", "model": "Rocket X 3", "category": "racing",
@@ -154,7 +189,8 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
       "price": 250, "bestFor": ["racing","speed_work"],
       "durabilityRating": 2.6, "responsivenessRating": 4.7, "comfortRating": 4.0,
-      "releaseYear": 2026, "sourceUrl": "https://www.hoka.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.hoka.com/",
+      "description": "HOKA's premier carbon-plated racer with PEBA-infused midsole and Vaporfly-rivalling efficiency for marathon and shorter race distances."
     },
     {
       "brand": "HOKA", "model": "Mach X4", "category": "speed_training",
@@ -162,7 +198,8 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
       "price": 190, "bestFor": ["tempo","speed_work","long_runs"],
       "durabilityRating": 3.5, "responsivenessRating": 4.5, "comfortRating": 4.3,
-      "releaseYear": 2026, "sourceUrl": "https://www.hoka.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.hoka.com/",
+      "description": "Plated PEBA super-trainer with a Pebax energy plate, marketed as a daily-driver alternative to traditional carbon racers."
     },
 
     {
@@ -171,7 +208,9 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
       "price": 170, "bestFor": ["long_runs","easy_runs"],
       "durabilityRating": 4.3, "responsivenessRating": 3.0, "comfortRating": 4.8,
-      "releaseYear": 2026, "sourceUrl": "https://www.asics.com/us/en-us/gel-nimbus-28/p/ANA_1011C127-800.html"
+      "releaseYear": 2026, "sourceUrl": "https://www.asics.com/us/en-us/gel-nimbus-28/p/ANA_1011C127-800.html",
+      "imageUrl": "https://www.masslive.com/resizer/v2/ZEBO2KJ6OVG7DB5VD4PMCHGMZQ.png?auth=e7f0db653bcbad7373933dc2a9f9&width=1280&quality=90",
+      "description": "Premium max-cushioned long-run trainer with FF Blast Plus Eco midsole and PureGel heel insert, the gold-standard for plush mileage."
     },
     {
       "brand": "ASICS", "model": "Novablast 6", "category": "daily_trainer",
@@ -179,7 +218,9 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
       "price": 145, "bestFor": ["easy_runs","long_runs","tempo"],
       "durabilityRating": 4.0, "responsivenessRating": 4.0, "comfortRating": 4.5,
-      "releaseYear": 2026, "sourceUrl": "https://www.asics.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.asics.com/",
+      "imageUrl": "https://m.media-amazon.com/images/I/71RpBLK1jBL.jpg",
+      "description": "ASICS' bouncy versatile daily trainer with FF Blast Max foam, capable of handling everything from easy runs to fast tempos."
     },
     {
       "brand": "ASICS", "model": "Superblast 3", "category": "speed_training",
@@ -187,7 +228,9 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
       "price": 210, "bestFor": ["tempo","long_runs","racing"],
       "durabilityRating": 3.8, "responsivenessRating": 4.6, "comfortRating": 4.6,
-      "releaseYear": 2026, "sourceUrl": "https://www.asics.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.asics.com/",
+      "imageUrl": "https://scssports.in/cdn/shop/files/s-l1600_9_e0eed72f-2e91-4883-855d-6ae778242168.webp?v=1777119125",
+      "description": "Cult-favorite plateless super-trainer with dual-density FF Turbo + FF Blast Plus midsole, fast enough for racing yet comfortable for daily long runs."
     },
     {
       "brand": "ASICS", "model": "Magic Speed 5", "category": "speed_training",
@@ -195,7 +238,8 @@
       "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
       "price": 160, "bestFor": ["tempo","speed_work","racing"],
       "durabilityRating": 3.4, "responsivenessRating": 4.5, "comfortRating": 4.0,
-      "releaseYear": 2026, "sourceUrl": "https://www.asics.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.asics.com/",
+      "description": "Affordable carbon-plated tempo and race shoe with FF Blast Turbo midsole, a high-value alternative to flagship super-shoes."
     },
     {
       "brand": "ASICS", "model": "Gel-Kayano 32", "category": "daily_trainer",
@@ -203,7 +247,8 @@
       "cushioningLevel": "soft", "stability": "mild_stability", "hasCarbonPlate": false, "hasSuperFoam": true,
       "price": 170, "bestFor": ["easy_runs","long_runs"],
       "durabilityRating": 4.5, "responsivenessRating": 3.0, "comfortRating": 4.7,
-      "releaseYear": 2026, "sourceUrl": "https://www.asics.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.asics.com/",
+      "description": "Premier stability daily trainer with 4D Guidance System and FF Blast Plus Eco foam, ideal for over-pronators logging high mileage."
     },
     {
       "brand": "ASICS", "model": "Metaspeed Sky Tokyo", "category": "racing",
@@ -211,7 +256,8 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
       "price": 275, "bestFor": ["racing"],
       "durabilityRating": 2.4, "responsivenessRating": 4.9, "comfortRating": 4.0,
-      "releaseYear": 2026, "sourceUrl": "https://www.asics.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.asics.com/",
+      "description": "ASICS' top-tier marathon racer for stride-runners, with FF Turbo Plus PEBA foam and a full-length carbon plate built for elite race performances."
     },
     {
       "brand": "ASICS", "model": "Metaspeed Edge Tokyo", "category": "racing",
@@ -219,7 +265,95 @@
       "cushioningLevel": "firm", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
       "price": 275, "bestFor": ["racing","speed_work"],
       "durabilityRating": 2.4, "responsivenessRating": 4.9, "comfortRating": 3.8,
-      "releaseYear": 2026, "sourceUrl": "https://www.asics.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.asics.com/",
+      "description": "ASICS' cadence-runner racing super-shoe with FF Turbo Plus and a stiffer plate geometry, optimized for higher turnover styles."
+    },
+
+    {
+      "brand": "Nike", "model": "Vaporfly 5", "category": "racing",
+      "weight": 6.6, "heelStackHeight": 39, "forefootStackHeight": 31, "heelToToeDrop": 8,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
+      "price": 260, "bestFor": ["racing","speed_work"],
+      "durabilityRating": 2.5, "responsivenessRating": 4.9, "comfortRating": 4.0,
+      "releaseYear": 2026, "sourceUrl": "https://www.nike.com/",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0570/3041/0402/files/Nike_Vaporfly_4_Running_Shoes_-_Medial_view.jpg",
+      "description": "Latest generation of Nike's iconic carbon-plated marathon racer with refined ZoomX foam and a Flyknit upper, built for 5K to marathon PRs."
+    },
+    {
+      "brand": "Nike", "model": "Alphafly 4", "category": "racing",
+      "weight": 7.2, "heelStackHeight": 40, "forefootStackHeight": 36, "heelToToeDrop": 4,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
+      "price": 285, "bestFor": ["racing"],
+      "durabilityRating": 2.7, "responsivenessRating": 5.0, "comfortRating": 4.2,
+      "releaseYear": 2026, "sourceUrl": "https://www.nike.com/",
+      "imageUrl": "https://cdn.runrepeat.com/storage/gallery/product_content/40255/nike-alphafly-3-running-21204945-main.jpg",
+      "description": "Top-tier marathon super-shoe with twin Air Zoom pods, ZoomX midsole, and full-length carbon plate, worn by elite athletes for major-marathon victories."
+    },
+    {
+      "brand": "Nike", "model": "Vomero 19", "category": "long_run",
+      "weight": 10.5, "heelStackHeight": 40, "forefootStackHeight": 30, "heelToToeDrop": 10,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 150, "bestFor": ["long_runs","easy_runs"],
+      "durabilityRating": 4.3, "responsivenessRating": 3.2, "comfortRating": 4.7,
+      "releaseYear": 2026, "sourceUrl": "https://www.nike.com/",
+      "imageUrl": "https://m.media-amazon.com/images/I/71H9DEotSNL.jpg",
+      "description": "Nike's plush max-cushion daily trainer with ZoomX over ReactX dual-foam stack, the soft long-run workhorse of the Nike lineup."
+    },
+    {
+      "brand": "Nike", "model": "Pegasus 42", "category": "daily_trainer",
+      "weight": 9.5, "heelStackHeight": 36, "forefootStackHeight": 26, "heelToToeDrop": 10,
+      "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
+      "price": 140, "bestFor": ["easy_runs","long_runs","tempo"],
+      "durabilityRating": 4.5, "responsivenessRating": 3.5, "comfortRating": 4.4,
+      "releaseYear": 2026, "sourceUrl": "https://www.nike.com/",
+      "imageUrl": "https://dks.scene7.com/is/image/dkscdn/26NIKWRUNNPGSS42BLDKC_Light_Bone_Metallic_Silver_Arctic_Orange",
+      "description": "Nike's iconic do-it-all daily trainer with ReactX foam and dual Zoom Air units, the mileage workhorse of the Pegasus dynasty."
+    },
+    {
+      "brand": "Nike", "model": "Pegasus Premium 2", "category": "speed_training",
+      "weight": 9.8, "heelStackHeight": 38, "forefootStackHeight": 28, "heelToToeDrop": 10,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 210, "bestFor": ["tempo","speed_work","long_runs"],
+      "durabilityRating": 3.8, "responsivenessRating": 4.5, "comfortRating": 4.5,
+      "releaseYear": 2026, "sourceUrl": "https://www.nike.com/",
+      "imageUrl": "https://www.gearpatrol.com/wp-content/uploads/sites/2/2025/01/nike-pegasus-plus-premium-gear-patrol-lead-full.jpg",
+      "description": "Premium Pegasus variant with sculpted Zoom Air, ZoomX, and ReactX triple-foam stack, designed as a do-everything uptempo trainer."
+    },
+    {
+      "brand": "Nike", "model": "Pegasus 42 Trail", "category": "trail",
+      "weight": 10.4, "heelStackHeight": 33, "forefootStackHeight": 24, "heelToToeDrop": 9,
+      "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
+      "price": 145, "bestFor": ["easy_runs","long_runs"],
+      "durabilityRating": 4.2, "responsivenessRating": 3.4, "comfortRating": 4.2,
+      "releaseYear": 2026, "sourceUrl": "https://www.nike.com/",
+      "description": "Trail-ready Pegasus with rugged outsole, gusseted tongue, and weather-resistant upper for mixed-surface runs and light technical trails."
+    },
+    {
+      "brand": "Nike", "model": "Structure 27", "category": "daily_trainer",
+      "weight": 10.4, "heelStackHeight": 33, "forefootStackHeight": 23, "heelToToeDrop": 10,
+      "cushioningLevel": "medium", "stability": "mild_stability", "hasCarbonPlate": false, "hasSuperFoam": false,
+      "price": 140, "bestFor": ["easy_runs","long_runs"],
+      "durabilityRating": 4.4, "responsivenessRating": 3.2, "comfortRating": 4.3,
+      "releaseYear": 2026, "sourceUrl": "https://www.nike.com/",
+      "description": "Nike's mainstay stability daily trainer with arch-support sidewalls and Cushlon 3.0 midsole, built for mild over-pronators logging consistent miles."
+    },
+    {
+      "brand": "Nike", "model": "Streakfly 2", "category": "racing",
+      "weight": 5.6, "heelStackHeight": 32, "forefootStackHeight": 24, "heelToToeDrop": 8,
+      "cushioningLevel": "firm", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 170, "bestFor": ["racing","speed_work"],
+      "durabilityRating": 2.6, "responsivenessRating": 4.7, "comfortRating": 3.6,
+      "releaseYear": 2026, "sourceUrl": "https://www.nike.com/",
+      "description": "Nike's plateless short-distance racing flat with ZoomX midsole, optimized for 5K and 10K race-day speed."
+    },
+    {
+      "brand": "Nike", "model": "Zegama 3", "category": "trail",
+      "weight": 10.6, "heelStackHeight": 33, "forefootStackHeight": 29, "heelToToeDrop": 4,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 170, "bestFor": ["long_runs","easy_runs"],
+      "durabilityRating": 4.3, "responsivenessRating": 3.5, "comfortRating": 4.4,
+      "releaseYear": 2026, "sourceUrl": "https://www.nike.com/",
+      "description": "Nike's premier max-cushioned trail shoe with ZoomX midsole and Vibram Megagrip outsole, built for ultras and rugged singletrack."
     },
 
     {
@@ -228,7 +362,9 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
       "price": 170, "bestFor": ["long_runs","easy_runs"],
       "durabilityRating": 4.3, "responsivenessRating": 3.6, "comfortRating": 4.8,
-      "releaseYear": 2026, "sourceUrl": "https://www.newbalance.com/pd/1080v15/M1080V15_RU-FTW-802829-PMG-NA.html"
+      "releaseYear": 2026, "sourceUrl": "https://www.newbalance.com/pd/1080v15/M1080V15_RU-FTW-802829-PMG-NA.html",
+      "imageUrl": "https://m.media-amazon.com/images/I/51URN+mtRkL.jpg",
+      "description": "New Balance's flagship neutral max-cushioned trainer with Fresh Foam X midsole, balancing plush comfort and a smooth, responsive ride."
     },
     {
       "brand": "New Balance", "model": "FuelCell SuperComp Elite v5", "category": "racing",
@@ -236,7 +372,8 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
       "price": 280, "bestFor": ["racing","speed_work"],
       "durabilityRating": 2.6, "responsivenessRating": 4.7, "comfortRating": 4.0,
-      "releaseYear": 2026, "sourceUrl": "https://www.newbalance.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.newbalance.com/",
+      "description": "New Balance's flagship marathon super-shoe with PEBA-based FuelCell midsole and full-length carbon plate, built for elite race-day performance."
     },
     {
       "brand": "New Balance", "model": "FuelCell SuperComp Trainer v4", "category": "speed_training",
@@ -244,7 +381,8 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
       "price": 200, "bestFor": ["tempo","long_runs","speed_work"],
       "durabilityRating": 3.6, "responsivenessRating": 4.6, "comfortRating": 4.5,
-      "releaseYear": 2026, "sourceUrl": "https://www.newbalance.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.newbalance.com/",
+      "description": "Maximally-cushioned plated super-trainer for high-mileage marathon prep, with PEBA midsole and full-length carbon Energy Arc plate."
     },
     {
       "brand": "New Balance", "model": "Fresh Foam X More v6", "category": "long_run",
@@ -252,7 +390,17 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
       "price": 170, "bestFor": ["long_runs","easy_runs"],
       "durabilityRating": 4.3, "responsivenessRating": 2.8, "comfortRating": 4.8,
-      "releaseYear": 2026, "sourceUrl": "https://www.newbalance.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.newbalance.com/",
+      "description": "Maximum-stack neutral cushioning shoe with low-drop platform and PEBA-blend Fresh Foam X, ideal for ultra-comfortable long runs."
+    },
+    {
+      "brand": "New Balance", "model": "FuelCell Rebel v5", "category": "speed_training",
+      "weight": 7.8, "heelStackHeight": 32, "forefootStackHeight": 26, "heelToToeDrop": 6,
+      "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 140, "bestFor": ["tempo","speed_work","easy_runs"],
+      "durabilityRating": 3.6, "responsivenessRating": 4.5, "comfortRating": 4.0,
+      "releaseYear": 2026, "sourceUrl": "https://www.newbalance.com/",
+      "description": "Lightweight plateless tempo trainer with PEBA-based FuelCell foam, the everyday speed shoe for runners chasing turnover."
     },
 
     {
@@ -261,7 +409,9 @@
       "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
       "price": 160, "bestFor": ["easy_runs","tempo"],
       "durabilityRating": 4.0, "responsivenessRating": 4.0, "comfortRating": 4.4,
-      "releaseYear": 2026, "sourceUrl": "https://www.on.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.on.com/",
+      "imageUrl": "https://photos-us.bazaarvoice.com/photo/2/cGhvdG86cmVpLWluYw/0ff15978-e1bd-5d67-b0af-b691cfb55fca",
+      "description": "On's neutral daily trainer with CloudTec Phase midsole, offering a smooth heel-to-toe transition and signature On ride feel."
     },
     {
       "brand": "On", "model": "Cloudboom Strike LS", "category": "racing",
@@ -269,7 +419,9 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
       "price": 330, "bestFor": ["racing"],
       "durabilityRating": 2.3, "responsivenessRating": 4.9, "comfortRating": 4.0,
-      "releaseYear": 2026, "sourceUrl": "https://www.on.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.on.com/",
+      "imageUrl": "https://theawesomer.com/photos/2024/07/on_cloudboom_strike_ls_lightspray_1.jpg",
+      "description": "On's revolutionary LightSpray-construction marathon super-shoe — the upper is robotically sprayed in 3 minutes — combined with carbon Speedboard for the ultimate race-day weapon."
     },
     {
       "brand": "On", "model": "Cloudmonster 3", "category": "long_run",
@@ -277,7 +429,8 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
       "price": 180, "bestFor": ["long_runs","easy_runs"],
       "durabilityRating": 4.2, "responsivenessRating": 3.4, "comfortRating": 4.6,
-      "releaseYear": 2026, "sourceUrl": "https://www.on.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.on.com/",
+      "description": "On's max-cushioned long-run shoe with oversized CloudTec elements and Helion superfoam, built for big mileage and recovery days."
     },
 
     {
@@ -286,7 +439,9 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
       "price": 500, "bestFor": ["racing"],
       "durabilityRating": 1.8, "responsivenessRating": 5.0, "comfortRating": 3.8,
-      "releaseYear": 2026, "sourceUrl": "https://www.adidas.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.adidas.com/",
+      "imageUrl": "https://cdn.sanity.io/images/pu5wtzfc/production/e093101f184c955618d02ae6a7dedbb13346dbfc-2000x2000.png",
+      "description": "Adidas' ultra-lightweight super-shoe with Lightstrike Pro midsole and Energyrods 3.0 carbon plate — the marathon record-setter at just 3.4oz, designed for one-or-two race uses."
     },
     {
       "brand": "Adidas", "model": "Adizero Adios Pro 5", "category": "racing",
@@ -294,7 +449,8 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
       "price": 250, "bestFor": ["racing","speed_work"],
       "durabilityRating": 2.6, "responsivenessRating": 4.8, "comfortRating": 4.0,
-      "releaseYear": 2026, "sourceUrl": "https://www.adidas.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.adidas.com/",
+      "description": "Adidas' flagship marathon super-shoe with Lightstrike Pro and Energyrods 2.0, providing race-ready snap with more durability than the Evo."
     },
     {
       "brand": "Adidas", "model": "Takumi Sen 11", "category": "racing",
@@ -302,7 +458,17 @@
       "cushioningLevel": "firm", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
       "price": 200, "bestFor": ["racing","speed_work"],
       "durabilityRating": 2.5, "responsivenessRating": 4.8, "comfortRating": 3.8,
-      "releaseYear": 2026, "sourceUrl": "https://www.adidas.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.adidas.com/",
+      "description": "Lightweight short-distance racing shoe with Lightstrike Pro and carbon Energyrods, optimized for 5K to half-marathon racing."
+    },
+    {
+      "brand": "Adidas", "model": "Adizero Boston 13", "category": "speed_training",
+      "weight": 9.4, "heelStackHeight": 37, "forefootStackHeight": 30, "heelToToeDrop": 7,
+      "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "price": 165, "bestFor": ["tempo","speed_work","long_runs"],
+      "durabilityRating": 3.8, "responsivenessRating": 4.5, "comfortRating": 4.2,
+      "releaseYear": 2026, "sourceUrl": "https://www.adidas.com/",
+      "description": "Adidas' versatile workout-day trainer with Lightstrike Pro forefoot and glass-fiber Energyrods, the long-time tempo and marathon-prep favorite."
     },
 
     {
@@ -311,7 +477,9 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
       "price": 195, "bestFor": ["long_runs","easy_runs"],
       "durabilityRating": 4.2, "responsivenessRating": 3.0, "comfortRating": 4.7,
-      "releaseYear": 2026, "sourceUrl": "https://www.mizunousa.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.mizunousa.com/",
+      "imageUrl": "https://www.holabirdsports.com/cdn/shop/collections/mizuno-wave-sky-9-running-shoes-800x450.jpg?v=17",
+      "description": "Mizuno's premium max-cushioned long-run shoe with ENERZY NXT foam and Wave Plate technology for a smooth, plush ride."
     },
     {
       "brand": "Mizuno", "model": "Wave Rebellion Sonic 2", "category": "speed_training",
@@ -319,7 +487,17 @@
       "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
       "price": 140, "bestFor": ["tempo","speed_work"],
       "durabilityRating": 3.4, "responsivenessRating": 4.5, "comfortRating": 3.8,
-      "releaseYear": 2026, "sourceUrl": "https://www.mizunousa.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.mizunousa.com/",
+      "description": "Lightweight tempo and interval trainer with ENERZY foam and Smooth Speed Assist geometry, designed for fast workouts."
+    },
+    {
+      "brand": "Mizuno", "model": "Wave Rebellion Pro 4", "category": "racing",
+      "weight": 7.6, "heelStackHeight": 39, "forefootStackHeight": 34, "heelToToeDrop": 5,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
+      "price": 250, "bestFor": ["racing","speed_work"],
+      "durabilityRating": 2.7, "responsivenessRating": 4.8, "comfortRating": 4.0,
+      "releaseYear": 2026, "sourceUrl": "https://www.mizunousa.com/",
+      "description": "Mizuno's flagship marathon super-shoe with ENERZY NXT foam and full-length carbon plate, refined for elite-level race performances."
     },
 
     {
@@ -328,7 +506,18 @@
       "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
       "price": 170, "bestFor": ["tempo","speed_work","racing"],
       "durabilityRating": 3.6, "responsivenessRating": 4.5, "comfortRating": 4.2,
-      "releaseYear": 2026, "sourceUrl": "https://www.puma.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.puma.com/",
+      "imageUrl": "https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_600,h_600/global/310034/01/dt01/fnd/IND/fmt/png/Deviate-Nitro-4-Men's-Running-Shoes",
+      "description": "Puma's premium plated daily trainer with NITROFOAM Pro and PWRPLATE carbon, offering super-shoe feel at a more accessible price point."
+    },
+    {
+      "brand": "Puma", "model": "Fast-R Nitro Elite 3", "category": "racing",
+      "weight": 7.8, "heelStackHeight": 40, "forefootStackHeight": 32, "heelToToeDrop": 8,
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
+      "price": 280, "bestFor": ["racing"],
+      "durabilityRating": 2.6, "responsivenessRating": 4.9, "comfortRating": 4.0,
+      "releaseYear": 2026, "sourceUrl": "https://www.puma.com/",
+      "description": "Puma's flagship marathon super-shoe with split-midsole geometry, NITROFOAM Pro, and a full-length PWRPLATE carbon plate."
     },
 
     {
@@ -337,7 +526,9 @@
       "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
       "price": 140, "bestFor": ["easy_runs","long_runs"],
       "durabilityRating": 4.0, "responsivenessRating": 3.4, "comfortRating": 4.4,
-      "releaseYear": 2026, "sourceUrl": "https://www.topoathletic.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.topoathletic.com/",
+      "imageUrl": "https://m.media-amazon.com/images/I/619AC-RgBUL.jpg",
+      "description": "Zero-drop neutral trainer with anatomical wide toe box and balanced cushioning, ideal for natural-form runners and zero-drop converts."
     },
     {
       "brand": "Topo Athletic", "model": "Phantom 4", "category": "long_run",
@@ -345,7 +536,8 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
       "price": 145, "bestFor": ["long_runs","easy_runs"],
       "durabilityRating": 4.0, "responsivenessRating": 3.4, "comfortRating": 4.6,
-      "releaseYear": 2026, "sourceUrl": "https://www.topoathletic.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.topoathletic.com/",
+      "description": "Premium max-cushion long-run shoe with PEBA-blend foam and roomy toe box, Topo's plush flagship for marathon training."
     },
 
     {
@@ -354,7 +546,9 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
       "price": 160, "bestFor": ["easy_runs","long_runs"],
       "durabilityRating": 4.2, "responsivenessRating": 3.0, "comfortRating": 4.5,
-      "releaseYear": 2026, "sourceUrl": "https://www.altrarunning.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.altrarunning.com/",
+      "imageUrl": "https://photos-us.bazaarvoice.com/photo/2/cGhvdG86YWx0cmFmb290d2VhcnB3cg/3fad2696-0bac-5b9b-b89f-6f0",
+      "description": "Altra's flagship zero-drop daily trainer with EGO MAX midsole and FootShape toe box, designed for natural foot positioning across all paces."
     },
     {
       "brand": "Altra", "model": "Escalante 5", "category": "speed_training",
@@ -362,7 +556,8 @@
       "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
       "price": 130, "bestFor": ["tempo","easy_runs"],
       "durabilityRating": 3.8, "responsivenessRating": 4.0, "comfortRating": 4.0,
-      "releaseYear": 2026, "sourceUrl": "https://www.altrarunning.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.altrarunning.com/",
+      "description": "Lightweight zero-drop tempo trainer with knit upper and EGO midsole, the go-to fast-feeling Altra for shorter, quicker runs."
     },
     {
       "brand": "Altra", "model": "Lone Peak 9", "category": "trail",
@@ -370,7 +565,8 @@
       "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
       "price": 140, "bestFor": ["easy_runs","long_runs"],
       "durabilityRating": 4.3, "responsivenessRating": 3.0, "comfortRating": 4.0,
-      "releaseYear": 2025, "sourceUrl": "https://www.altrarunning.com/"
+      "releaseYear": 2025, "sourceUrl": "https://www.altrarunning.com/",
+      "description": "Iconic zero-drop trail shoe with MaxTrac outsole and StoneGuard rock plate, the long-time darling of thru-hikers and ultra-trail runners."
     },
     {
       "brand": "Altra", "model": "Olympus 7", "category": "trail",
@@ -378,7 +574,8 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
       "price": 175, "bestFor": ["long_runs","easy_runs"],
       "durabilityRating": 4.4, "responsivenessRating": 2.8, "comfortRating": 4.4,
-      "releaseYear": 2026, "sourceUrl": "https://www.altrarunning.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.altrarunning.com/",
+      "description": "Maximum-stack zero-drop trail shoe with Vibram Megagrip outsole, built for ultra-distance trail and rugged backpacking."
     },
 
     {
@@ -387,7 +584,9 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": false,
       "price": 160, "bestFor": ["long_runs","easy_runs"],
       "durabilityRating": 4.2, "responsivenessRating": 3.2, "comfortRating": 4.6,
-      "releaseYear": 2026, "sourceUrl": "https://www.salomon.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.salomon.com/",
+      "imageUrl": "https://m.media-amazon.com/images/I/61SEyRyDxdL.jpg",
+      "description": "Salomon's max-cushioned door-to-trail shoe with Energy Foam midsole, suitable for road approaches plus mellow off-road terrain."
     },
     {
       "brand": "Salomon", "model": "Aero Glide 3", "category": "daily_trainer",
@@ -395,7 +594,8 @@
       "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
       "price": 150, "bestFor": ["easy_runs","long_runs"],
       "durabilityRating": 4.0, "responsivenessRating": 3.4, "comfortRating": 4.5,
-      "releaseYear": 2026, "sourceUrl": "https://www.salomon.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.salomon.com/",
+      "description": "Salomon's road-running daily trainer with Energy Foam and Energy Blade plate, offering plush comfort for everyday road miles."
     },
     {
       "brand": "Salomon", "model": "S/Lab Phantasm 2", "category": "racing",
@@ -403,7 +603,8 @@
       "cushioningLevel": "firm", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
       "price": 240, "bestFor": ["racing","speed_work"],
       "durabilityRating": 2.6, "responsivenessRating": 4.7, "comfortRating": 3.8,
-      "releaseYear": 2026, "sourceUrl": "https://www.salomon.com/"
+      "releaseYear": 2026, "sourceUrl": "https://www.salomon.com/",
+      "description": "Salomon's road-racing super-shoe with Energy Foam HD and full-length carbon plate, built for marathon and shorter race distances."
     }
   ]
 }
