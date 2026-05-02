@@ -43,7 +43,7 @@ Preferred communication style: Simple, everyday language.
   - Web push notifications via VAPID (persisted in `system_settings`), managed through a `push_subscriptions` table.
   - Integrated with Coach Recap flow to queue both email and push notifications.
   - Settings → Notifications includes a per-device push toggle.
-- **Native Mobile App**: Expo-based companion app (`apps/mobile/`) mirroring core web features like Home (Last Run hero, Readiness status), Coach Chat (SSE streaming), Runner Score, History, and Profile. Uses a custom iOS 17+ light theme (tokens in `lib/theme.ts`) with brand orange accents and a minimalist 5-tab structure. Built with Expo SDK 54, Expo Router, and NativeWind.
+- **Native Mobile App**: Expo-based companion app (`apps/mobile/`) mirroring core web features like Home (Last Run hero, Readiness status), Coach Chat (SSE streaming), Runner Score, History, and Profile. Uses a custom iOS 17+ light theme (tokens in `lib/theme.ts`) with brand orange accents and a minimalist 5-tab structure. Built with Expo SDK 54, Expo Router, and NativeWind. **Auth screen** (`app/login.tsx`) supports both Sign In and Create Account in a tabbed UI; new accounts auto-receive the existing 7-day Premium reverse trial via `POST /api/auth/register` (no card required). Paid upgrades are still web-only (point users to aitracker.run); native IAP via RevenueCat is a future task gated on App Store submission.
 
 ### System Design Choices
 - **Database Schema**: Comprehensive schema for users, activities, AI insights, training plans, shoes, etc.
