@@ -615,7 +615,7 @@ export default function AuditReportPage() {
     }
   }, [isSyncing, syncStatus, justConnected, isNewStravaUser, refetchAudit]);
 
-  const shouldShowWizard = isStravaConnected && hasInsights && !hasCalibration && !calibrationLoading && !wizardDismissed;
+  const shouldShowWizard = isStravaConnected && !hasCalibration && !calibrationLoading && !wizardDismissed;
 
   useEffect(() => {
     if (!subLoading && !authLoading && !calibrationLoading && (hasActiveSubscription || isReverseTrial)) {
