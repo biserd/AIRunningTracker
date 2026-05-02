@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   RefreshControl,
-  ActivityIndicator,
   Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -13,8 +12,10 @@ import { Link, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
+import { useToast } from "../../lib/toast";
 import { colors, shadow } from "../../lib/theme";
 import { formatDistance, formatPace } from "../../lib/format";
+import { HeroSkeleton, StatusDuoSkeleton, Skeleton } from "../../components/Skeleton";
 import type {
   Activity,
   RecoveryState,
@@ -46,6 +47,7 @@ function shortDate(iso: string) {
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const toast = useToast();
   const unit = (user?.unitPreference || "km") as "km" | "miles";
   const distUnit = unit === "miles" ? "miles" : "km";
   const paceUnit = unit === "miles" ? "/ mile" : "/ km";
@@ -101,17 +103,30 @@ export default function HomeScreen() {
   const [syncing, setSyncing] = useState(false);
   const onRefresh = useCallback(async () => {
     if (!user?.id) return;
+    // Snapshot the latest run id BEFORE refetch so we can detect a brand-new run.
+    const beforeId = lastRun.data?.id;
     setSyncing(true);
+    let synced = false;
     try {
       await api(`/api/strava/sync/${user.id}`, {
         method: "POST",
         body: JSON.stringify({ maxActivities: 30 }),
       });
-    } catch {
-      /* swallow */
+      synced = true;
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        toast.show("Connect Strava on aitracker.run to sync new runs.", "info");
+      } else if (err instanceof ApiError && err.status === 429) {
+        toast.show("Strava is rate-limited. Try again in a minute.", "info");
+      } else {
+        toast.show(
+          err instanceof Error ? `Sync failed: ${err.message}` : "Sync failed",
+          "error",
+        );
+      }
     } finally {
       setSyncing(false);
-      await Promise.all([
+      const results = await Promise.all([
         recovery.refetch(),
         lastRun.refetch(),
         injury.refetch(),
@@ -119,8 +134,14 @@ export default function HomeScreen() {
         score.refetch(),
         dashboard.refetch(),
       ]);
+      if (synced) {
+        const afterId = results[1].data?.id;
+        if (afterId && afterId !== beforeId) {
+          toast.show("New run synced from Strava.", "success");
+        }
+      }
     }
-  }, [user?.id, recovery, lastRun, injury, recap, score, dashboard]);
+  }, [user?.id, recovery, lastRun, injury, recap, score, dashboard, toast]);
 
   const isInitial =
     recovery.isLoading && lastRun.isLoading && !recovery.data && !lastRun.data;
@@ -135,68 +156,92 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.bg }}>
-      {isInitial ? (
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator size="large" color={colors.brand} />
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.brand}
+          />
+        }
+      >
+        {/* Greeting */}
+        <View style={{ marginBottom: 24 }}>
+          <Text
+            style={{
+              fontSize: 30,
+              fontWeight: "700",
+              color: colors.ink,
+              letterSpacing: -0.6,
+              lineHeight: 33,
+            }}
+          >
+            {greetingPart()},{"\n"}
+            <Text style={{ color: colors.brand }}>{name}.</Text>
+          </Text>
+          <Text style={{ fontSize: 14, color: colors.ink2, marginTop: 6 }}>
+            {dateLine()}
+          </Text>
         </View>
-      ) : (
-        <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 }}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.brand}
-            />
-          }
-        >
-          {/* Greeting */}
-          <View style={{ marginBottom: 24 }}>
-            <Text
+
+        {isInitial ? (
+          <>
+            <View style={{ marginTop: 8 }}>
+              <HeroSkeleton />
+            </View>
+            <StatusDuoSkeleton />
+            <View
               style={{
-                fontSize: 30,
-                fontWeight: "700",
-                color: colors.ink,
-                letterSpacing: -0.6,
-                lineHeight: 33,
+                marginTop: 16,
+                backgroundColor: colors.surface,
+                borderRadius: 16,
+                borderWidth: 0.5,
+                borderColor: colors.line,
+                paddingVertical: 14,
+                paddingHorizontal: 16,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 12,
+                ...shadow.card,
               }}
             >
-              {greetingPart()},{"\n"}
-              <Text style={{ color: colors.brand }}>{name}.</Text>
-            </Text>
-            <Text style={{ fontSize: 14, color: colors.ink2, marginTop: 6 }}>
-              {dateLine()}
-            </Text>
-          </View>
-
-          {/* Last Run hero */}
-          <LastRunHero
-            activity={lastRun.data ?? null}
-            unit={unit}
-            distUnit={distUnit}
-            paceUnit={paceUnit}
-            recap={latestRecap}
-          />
-
-          {/* Status duo */}
-          <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
-            <ReadinessCard r={recovery.data} loading={recovery.isLoading} />
-            <InjuryCard
-              data={injury.data}
-              isPremiumGate={
-                injury.error instanceof ApiError && injury.error.status === 403
-              }
-              loading={injury.isLoading}
+              <Skeleton width={36} height={36} radius={10} />
+              <View style={{ flex: 1, gap: 7 }}>
+                <Skeleton width="40%" height={13} />
+                <Skeleton width="65%" height={11} />
+              </View>
+            </View>
+          </>
+        ) : (
+          <>
+            <LastRunHero
+              activity={lastRun.data ?? null}
+              unit={unit}
+              distUnit={distUnit}
+              paceUnit={paceUnit}
+              recap={latestRecap}
+              onSync={onRefresh}
+              syncing={syncing}
             />
-          </View>
 
-          {/* Weekly whisper */}
-          <WeeklyWhisper dashboard={dashboard.data} unit={unit} />
+            <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
+              <ReadinessCard r={recovery.data} loading={recovery.isLoading} />
+              <InjuryCard
+                data={injury.data}
+                isPremiumGate={
+                  injury.error instanceof ApiError && injury.error.status === 403
+                }
+                loading={injury.isLoading}
+              />
+            </View>
 
-          {/* Runner Score quiet card */}
-          <ScoreQuiet score={score.data} />
-        </ScrollView>
-      )}
+            <WeeklyWhisper dashboard={dashboard.data} unit={unit} />
+
+            <ScoreQuiet score={score.data} />
+          </>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -208,12 +253,16 @@ function LastRunHero({
   distUnit,
   paceUnit,
   recap,
+  onSync,
+  syncing,
 }: {
   activity: Activity | null;
   unit: "km" | "miles";
   distUnit: string;
   paceUnit: string;
   recap?: CoachRecap;
+  onSync: () => void;
+  syncing: boolean;
 }) {
   const router = useRouter();
 
@@ -225,17 +274,52 @@ function LastRunHero({
           borderRadius: 20,
           borderWidth: 0.5,
           borderColor: colors.line,
-          padding: 24,
+          paddingVertical: 32,
+          paddingHorizontal: 24,
           marginTop: 8,
+          alignItems: "center",
           ...shadow.card,
         }}
       >
-        <Text style={{ fontSize: 12, fontWeight: "700", letterSpacing: 0.7, color: colors.ink3, textTransform: "uppercase" }}>
+        <View
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            backgroundColor: colors.brandLight,
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 14,
+          }}
+        >
+          <Ionicons name="footsteps-outline" size={26} color={colors.brand} />
+        </View>
+        <Text style={{ fontSize: 16, fontWeight: "600", color: colors.ink, letterSpacing: -0.2 }}>
           No runs yet
         </Text>
-        <Text style={{ fontSize: 15, color: colors.ink2, marginTop: 8, lineHeight: 22 }}>
-          Pull down to sync from Strava and your latest run will land here.
+        <Text style={{ fontSize: 13, color: colors.ink2, marginTop: 6, textAlign: "center", lineHeight: 19, maxWidth: 280 }}>
+          Sync from Strava and your latest run lands here with an AI summary.
         </Text>
+        <Pressable
+          onPress={onSync}
+          disabled={syncing}
+          style={({ pressed }) => ({
+            marginTop: 16,
+            paddingHorizontal: 18,
+            paddingVertical: 10,
+            borderRadius: 12,
+            backgroundColor: syncing ? colors.faint : colors.brand,
+            opacity: pressed ? 0.85 : 1,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 6,
+          })}
+        >
+          <Ionicons name="sync" size={14} color="#fff" />
+          <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>
+            {syncing ? "Syncing…" : "Sync from Strava"}
+          </Text>
+        </Pressable>
       </View>
     );
   }
@@ -337,7 +421,7 @@ function ReadinessCard({ r, loading }: { r: RecoveryState | undefined; loading: 
   let tagBg = colors.surfaceAlt;
   let tagText = colors.ink2;
   let tagDot = colors.ink3;
-  let tagLabel = "—";
+  let tagLabel = loading ? "Loading" : "Sync to see";
 
   if (r) {
     const score = Math.round(r.freshnessScore);
@@ -381,19 +465,13 @@ function ReadinessCard({ r, loading }: { r: RecoveryState | undefined; loading: 
       <Text style={{ fontSize: 11, fontWeight: "700", color: colors.ink3, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 10 }}>
         Readiness
       </Text>
-      {loading && !r ? (
-        <ActivityIndicator color={colors.brand} />
-      ) : (
-        <>
-          <Text style={{ fontSize: 28, fontWeight: "700", color, letterSpacing: -0.8, lineHeight: 30, marginBottom: 6 }}>
-            {value}
-          </Text>
-          <View style={{ alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999, backgroundColor: tagBg }}>
-            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: tagDot }} />
-            <Text style={{ fontSize: 12, fontWeight: "600", color: tagText }}>{tagLabel}</Text>
-          </View>
-        </>
-      )}
+      <Text style={{ fontSize: 28, fontWeight: "700", color, letterSpacing: -0.8, lineHeight: 30, marginBottom: 6 }}>
+        {value}
+      </Text>
+      <View style={{ alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999, backgroundColor: tagBg }}>
+        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: tagDot }} />
+        <Text style={{ fontSize: 12, fontWeight: "600", color: tagText }}>{tagLabel}</Text>
+      </View>
     </Pressable>
   );
 }
@@ -415,7 +493,7 @@ function InjuryCard({
   let tagBg = colors.surfaceAlt;
   let tagText = colors.ink2;
   let tagDot = colors.ink3;
-  let tagLabel = "—";
+  let tagLabel = loading ? "Loading" : "Sync to see";
 
   if (isPremiumGate) {
     value = "Pro";
@@ -468,19 +546,13 @@ function InjuryCard({
       <Text style={{ fontSize: 11, fontWeight: "700", color: colors.ink3, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 10 }}>
         Injury Risk
       </Text>
-      {loading && !data && !isPremiumGate ? (
-        <ActivityIndicator color={colors.brand} />
-      ) : (
-        <>
-          <Text style={{ fontSize: 28, fontWeight: "700", color, letterSpacing: -0.8, lineHeight: 30, marginBottom: 6 }}>
-            {value}
-          </Text>
-          <View style={{ alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999, backgroundColor: tagBg }}>
-            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: tagDot }} />
-            <Text style={{ fontSize: 12, fontWeight: "600", color: tagText }}>{tagLabel}</Text>
-          </View>
-        </>
-      )}
+      <Text style={{ fontSize: 28, fontWeight: "700", color, letterSpacing: -0.8, lineHeight: 30, marginBottom: 6 }}>
+        {value}
+      </Text>
+      <View style={{ alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999, backgroundColor: tagBg }}>
+        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: tagDot }} />
+        <Text style={{ fontSize: 12, fontWeight: "600", color: tagText }}>{tagLabel}</Text>
+      </View>
     </Pressable>
   );
 }

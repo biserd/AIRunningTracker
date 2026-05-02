@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  ActivityIndicator,
   Pressable,
   RefreshControl,
 } from "react-native";
@@ -11,10 +10,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { api } from "../../lib/api";
+import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
+import { useToast } from "../../lib/toast";
 import { colors, shadow } from "../../lib/theme";
 import { formatDistance, formatPace } from "../../lib/format";
+import { RowSkeleton } from "../../components/Skeleton";
+import { EmptyState } from "../../components/ios";
 import type { Activity, CoachRecap } from "../../types";
 
 const MONTH_LABELS = [
@@ -37,6 +39,7 @@ function dayLabel(iso: string) {
 
 export default function HistoryScreen() {
   const { user } = useAuth();
+  const toast = useToast();
   const unit = (user?.unitPreference || "km") as "km" | "miles";
   const distUnit = unit === "miles" ? "mi" : "km";
   const paceUnit = unit === "miles" ? "/ mi" : "/ km";
@@ -81,18 +84,37 @@ export default function HistoryScreen() {
   const onRefresh = useCallback(async () => {
     if (!user?.id) return;
     setSyncing(true);
+    let prevCount = activities.data?.length ?? 0;
+    let synced = false;
     try {
       await api(`/api/strava/sync/${user.id}`, {
         method: "POST",
         body: JSON.stringify({ maxActivities: 30 }),
       });
-    } catch {
-      /* swallow */
+      synced = true;
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        toast.show("Connect Strava on aitracker.run to sync runs.", "info");
+      } else if (err instanceof ApiError && err.status === 429) {
+        toast.show("Strava is rate-limited. Try again in a minute.", "info");
+      } else {
+        toast.show(
+          err instanceof Error ? `Sync failed: ${err.message}` : "Sync failed",
+          "error",
+        );
+      }
     } finally {
       setSyncing(false);
-      await Promise.all([activities.refetch(), recaps.refetch()]);
+      const [acts] = await Promise.all([activities.refetch(), recaps.refetch()]);
+      if (synced) {
+        const newCount = acts.data?.length ?? 0;
+        const added = newCount - prevCount;
+        if (added > 0) {
+          toast.show(`${added} new ${added === 1 ? "run" : "runs"} synced.`, "success");
+        }
+      }
     }
-  }, [user?.id, activities, recaps]);
+  }, [user?.id, activities, recaps, toast]);
 
   const isInitial = activities.isLoading && !activities.data;
   const total = activities.data?.length ?? 0;
@@ -120,14 +142,23 @@ export default function HistoryScreen() {
         </View>
 
         {isInitial ? (
-          <View style={{ alignItems: "center", paddingTop: 60 }}>
-            <ActivityIndicator color={colors.brand} />
+          <View style={{ gap: 10 }}>
+            <RowSkeleton />
+            <RowSkeleton />
+            <RowSkeleton />
+            <RowSkeleton />
+            <RowSkeleton />
           </View>
         ) : grouped.length === 0 ? (
-          <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 24, ...shadow.card }}>
-            <Text style={{ fontSize: 15, color: colors.ink2 }}>
-              No runs yet. Pull down to sync from Strava.
-            </Text>
+          <View style={{ backgroundColor: colors.surface, borderRadius: 16, paddingVertical: 8, ...shadow.card }}>
+            <EmptyState
+              icon="footsteps-outline"
+              title="No runs yet"
+              body="Sync from Strava to see your run history with AI briefs and per-activity grades."
+              actionLabel="Sync from Strava"
+              onAction={onRefresh}
+              busy={syncing}
+            />
           </View>
         ) : (
           grouped.map(([k, items], gi) => (

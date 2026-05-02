@@ -3,11 +3,13 @@ import {
   View,
   Text,
   Pressable,
+  ActivityIndicator,
   ViewStyle,
   TextStyle,
   StyleProp,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, shadow } from "../lib/theme";
 
 /* ─── Top nav bar (iOS-style with back chevron) ──────────── */
@@ -361,15 +363,20 @@ export function PrimaryButton({
       disabled={disabled || loading}
       style={({ pressed }) => ({
         width: "100%",
-        backgroundColor: disabled || loading ? colors.faint : colors.brand,
+        backgroundColor: disabled ? colors.faint : colors.brand,
         paddingVertical: 15,
         borderRadius: 14,
         alignItems: "center",
-        opacity: pressed ? 0.85 : 1,
+        justifyContent: "center",
+        flexDirection: "row",
+        gap: 8,
+        opacity: pressed && !loading ? 0.85 : 1,
+        minHeight: 50,
       })}
     >
+      {loading ? <ActivityIndicator color="#fff" /> : null}
       <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16, letterSpacing: -0.1 }}>
-        {loading ? "Loading…" : label}
+        {loading ? "Signing in…" : label}
       </Text>
     </Pressable>
   );
@@ -561,19 +568,81 @@ export function PremiumGate({
 export function EmptyState({
   title,
   body,
+  icon,
+  actionLabel,
+  onAction,
+  busy,
 }: {
   title: string;
   body?: string;
+  icon?: React.ComponentProps<typeof Ionicons>["name"];
+  actionLabel?: string;
+  onAction?: () => void;
+  busy?: boolean;
 }) {
   return (
-    <View style={{ alignItems: "center", paddingVertical: 48, paddingHorizontal: 32 }}>
-      <Text style={{ fontSize: 15, color: colors.muted, textAlign: "center", fontWeight: "500" }}>
+    <View style={{ alignItems: "center", paddingVertical: 40, paddingHorizontal: 28 }}>
+      {icon ? (
+        <View
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            backgroundColor: colors.brandLight,
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 14,
+          }}
+        >
+          <Ionicons name={icon} size={26} color={colors.brand} />
+        </View>
+      ) : null}
+      <Text
+        style={{
+          fontSize: 15,
+          color: colors.ink,
+          textAlign: "center",
+          fontWeight: "600",
+          letterSpacing: -0.1,
+        }}
+      >
         {title}
       </Text>
       {body ? (
-        <Text style={{ fontSize: 13, color: colors.faint, textAlign: "center", marginTop: 6, lineHeight: 18 }}>
+        <Text
+          style={{
+            fontSize: 13,
+            color: colors.muted,
+            textAlign: "center",
+            marginTop: 6,
+            lineHeight: 19,
+            maxWidth: 320,
+          }}
+        >
           {body}
         </Text>
+      ) : null}
+      {actionLabel && onAction ? (
+        <Pressable
+          onPress={onAction}
+          disabled={busy}
+          style={({ pressed }) => ({
+            marginTop: 16,
+            paddingHorizontal: 18,
+            paddingVertical: 10,
+            borderRadius: 12,
+            backgroundColor: busy ? colors.faint : colors.brand,
+            opacity: pressed ? 0.85 : 1,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+          })}
+        >
+          {busy ? <ActivityIndicator color="#fff" size="small" /> : null}
+          <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>
+            {busy ? "Syncing…" : actionLabel}
+          </Text>
+        </Pressable>
       ) : null}
     </View>
   );

@@ -1,10 +1,11 @@
+import { useCallback } from "react";
 import { useLocalSearchParams, Stack } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   ScrollView,
   View,
   Text,
-  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api, ApiError } from "../../lib/api";
@@ -17,6 +18,7 @@ import {
   EmptyState,
   PremiumGate,
 } from "../../components/ios";
+import { Skeleton, CardSkeleton } from "../../components/Skeleton";
 import {
   formatDistance,
   formatDuration,
@@ -140,23 +142,55 @@ export default function ActivityDetailScreen() {
   const verdictPremiumGate =
     verdict.error instanceof ApiError && verdict.error.status === 403;
 
+  const onRefresh = useCallback(async () => {
+    await Promise.all([
+      detail.refetch(),
+      perf.refetch(),
+      verdict.refetch(),
+      quality.refetch(),
+      efficiency.refetch(),
+      recap.refetch(),
+    ]);
+  }, [detail, perf, verdict, quality, efficiency, recap]);
+
+  const isRefreshing =
+    detail.isRefetching ||
+    perf.isRefetching ||
+    verdict.isRefetching ||
+    quality.isRefetching ||
+    efficiency.isRefetching ||
+    recap.isRefetching;
+
   return (
     <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.bg }}>
       <Stack.Screen options={{ headerShown: false }} />
       <NavBar title="Activity" back="Back" />
 
       {detail.isLoading ? (
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator size="large" color={colors.brand} />
-        </View>
+        <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
+          <View style={{ gap: 8 }}>
+            <Skeleton width="70%" height={26} />
+            <Skeleton width="50%" height={14} />
+          </View>
+          <CardSkeleton height={160} />
+          <CardSkeleton height={140} />
+          <CardSkeleton height={120} />
+        </ScrollView>
       ) : detail.error || !activity ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 }}>
-          <Text style={{ fontSize: 15, color: colors.muted, textAlign: "center" }}>
-            {(detail.error as Error)?.message || "Activity not found"}
-          </Text>
+          <EmptyState
+            icon="alert-circle-outline"
+            title="Activity not found"
+            body={(detail.error as Error)?.message || "We couldn't load this run. Pull to retry."}
+          />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 16 }}>
+        <ScrollView
+          contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 16 }}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={colors.brand} />
+          }
+        >
           {/* TITLE */}
           <View>
             <Text style={{ fontSize: 26, fontWeight: "700", color: colors.text, letterSpacing: -0.6 }}>
@@ -170,7 +204,18 @@ export default function ActivityDetailScreen() {
           {/* COACH VERDICT */}
           {verdict.isLoading ? (
             <Card>
-              <ActivityIndicator color={colors.brand} />
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+                <Skeleton width={64} height={64} radius={16} />
+                <View style={{ flex: 1, gap: 6 }}>
+                  <Skeleton width={100} height={11} />
+                  <Skeleton width={140} height={18} />
+                  <Skeleton width={180} height={12} />
+                </View>
+              </View>
+              <View style={{ marginTop: 12, gap: 6 }}>
+                <Skeleton width="92%" height={14} />
+                <Skeleton width="78%" height={14} />
+              </View>
             </Card>
           ) : verdict.data ? (
             <Card>
@@ -479,7 +524,12 @@ export default function ActivityDetailScreen() {
           <Card>
             <SectionLabel style={{ marginLeft: 0 }}>Splits</SectionLabel>
             {perf.isLoading ? (
-              <ActivityIndicator color={colors.brand} />
+              <View style={{ gap: 8, paddingTop: 4 }}>
+                <Skeleton width="100%" height={28} />
+                <Skeleton width="100%" height={28} />
+                <Skeleton width="100%" height={28} />
+                <Skeleton width="100%" height={28} />
+              </View>
             ) : laps && laps.length > 0 ? (
               <View>
                 <View

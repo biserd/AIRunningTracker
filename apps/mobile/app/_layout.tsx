@@ -7,6 +7,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { queryClient } from "../lib/queryClient";
 import { AuthProvider } from "../lib/auth";
+import { ToastProvider } from "../lib/toast";
 import { api } from "../lib/api";
 import type { User } from "../types";
 
@@ -18,6 +19,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider loadUser={loadUser}>
+            <ToastProvider>
             <StatusBar style="auto" />
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="index" />
@@ -34,6 +36,7 @@ export default function RootLayout() {
               <Stack.Screen name="tools/fitness" />
               <Stack.Screen name="tools/injury-risk" />
             </Stack>
+            </ToastProvider>
           </AuthProvider>
         </QueryClientProvider>
       </SafeAreaProvider>

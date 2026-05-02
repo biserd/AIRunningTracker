@@ -1,9 +1,12 @@
-import { View, Text, ScrollView, ActivityIndicator, Linking, Pressable } from "react-native";
+import { useCallback } from "react";
+import { View, Text, ScrollView, Linking, Pressable, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { api, ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { colors, shadow } from "../../lib/theme";
+import { Skeleton } from "../../components/Skeleton";
+import { EmptyState } from "../../components/ios";
 import type { RunnerScore, VO2MaxData, FitnessResponse } from "../../types";
 
 export default function ScoreScreen() {
@@ -31,9 +34,20 @@ export default function ScoreScreen() {
 
   const isLoading = score.isLoading && !score.data;
 
+  const onRefresh = useCallback(async () => {
+    await Promise.all([score.refetch(), vo2.refetch(), fitness.refetch()]);
+  }, [score, vo2, fitness]);
+
+  const isRefreshing = score.isRefetching || vo2.isRefetching || fitness.isRefetching;
+
   return (
     <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 }}>
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 }}
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={colors.brand} />
+        }
+      >
         {/* Header */}
         <View style={{ marginBottom: 20 }}>
           <Text style={{ fontSize: 12, fontWeight: "700", color: colors.ink3, letterSpacing: 0.7, textTransform: "uppercase", marginBottom: 4 }}>
@@ -44,13 +58,17 @@ export default function ScoreScreen() {
 
         {/* Score hero */}
         {isLoading ? (
-          <View style={{ height: 280, alignItems: "center", justifyContent: "center" }}>
-            <ActivityIndicator color={colors.brand} />
-          </View>
+          <ScoreHeroSkeleton />
         ) : score.data ? (
           <ScoreHero score={score.data} />
         ) : (
-          <EmptyCard label="Score not available yet — sync from Strava." />
+          <View style={{ backgroundColor: colors.surface, borderRadius: 20, paddingVertical: 8, ...shadow.card }}>
+            <EmptyState
+              icon="trophy-outline"
+              title="Score isn't ready yet"
+              body="Sync your runs from Strava to see your Runner Score and percentile."
+            />
+          </View>
         )}
 
         {/* VO2 Max */}
@@ -136,7 +154,10 @@ function VO2Card({ data, loading, gated }: { data: VO2MaxData | null | undefined
         VO2 Max
       </Text>
       {loading && !data ? (
-        <ActivityIndicator color={colors.brand} />
+        <View style={{ gap: 10 }}>
+          <Skeleton width={140} height={36} />
+          <Skeleton width={180} height={20} radius={999} />
+        </View>
       ) : gated ? (
         <Tag bg={colors.purpleBg} fg={colors.purple} dot={colors.purple} label="Premium · Unlock on aitracker.run" />
       ) : data ? (
@@ -157,6 +178,27 @@ function VO2Card({ data, loading, gated }: { data: VO2MaxData | null | undefined
       ) : (
         <Text style={{ fontSize: 14, color: colors.ink2 }}>Need a few more runs to estimate.</Text>
       )}
+    </View>
+  );
+}
+
+function ScoreHeroSkeleton() {
+  return (
+    <View style={{ backgroundColor: colors.surface, borderRadius: 20, padding: 24, gap: 16, ...shadow.card }}>
+      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 12 }}>
+        <Skeleton width={140} height={70} />
+        <Skeleton width={48} height={32} />
+      </View>
+      <Skeleton width="70%" height={14} />
+      {[0, 1, 2, 3].map((i) => (
+        <View key={i} style={{ gap: 6 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+            <Skeleton width={90} height={12} />
+            <Skeleton width={48} height={12} />
+          </View>
+          <Skeleton width="100%" height={5} radius={4} />
+        </View>
+      ))}
     </View>
   );
 }
@@ -186,7 +228,23 @@ function TrainingLoadCard({
         Training Load
       </Text>
       {loading && !data ? (
-        <ActivityIndicator color={colors.brand} />
+        <View style={{ flexDirection: "row", gap: 1, backgroundColor: colors.line, borderRadius: 12, overflow: "hidden" }}>
+          <View style={{ flex: 1, backgroundColor: colors.surface, padding: 14, gap: 6 }}>
+            <Skeleton width={50} height={10} />
+            <Skeleton width={64} height={20} />
+            <Skeleton width={32} height={10} />
+          </View>
+          <View style={{ flex: 1, backgroundColor: colors.surface, padding: 14, gap: 6 }}>
+            <Skeleton width={50} height={10} />
+            <Skeleton width={64} height={20} />
+            <Skeleton width={32} height={10} />
+          </View>
+          <View style={{ flex: 1, backgroundColor: colors.surface, padding: 14, gap: 6 }}>
+            <Skeleton width={50} height={10} />
+            <Skeleton width={64} height={20} />
+            <Skeleton width={32} height={10} />
+          </View>
+        </View>
       ) : gated ? (
         <Tag bg={colors.purpleBg} fg={colors.purple} dot={colors.purple} label="Premium · Unlock on aitracker.run" />
       ) : cur ? (
@@ -241,10 +299,3 @@ function Tag({ bg, fg, dot, label }: { bg: string; fg: string; dot: string; labe
   );
 }
 
-function EmptyCard({ label }: { label: string }) {
-  return (
-    <View style={{ backgroundColor: colors.surface, borderRadius: 20, padding: 24, ...shadow.card }}>
-      <Text style={{ fontSize: 14, color: colors.ink2 }}>{label}</Text>
-    </View>
-  );
-}

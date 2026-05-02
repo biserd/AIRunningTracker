@@ -8,17 +8,19 @@ import {
   Platform,
   ActivityIndicator,
   ScrollView,
-  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, apiStreamChat } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
+import { useToast } from "../../lib/toast";
 import { colors } from "../../lib/theme";
+import { Skeleton } from "../../components/Skeleton";
 import type { ChatMessage, Conversation } from "../../types";
 
 export default function CoachScreen() {
   const { user } = useAuth();
+  const toast = useToast();
   const qc = useQueryClient();
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [input, setInput] = useState("");
@@ -48,9 +50,9 @@ export default function CoachScreen() {
         body: JSON.stringify({ title: "Coach chat" }),
       })
         .then((c) => setConversationId(c.id))
-        .catch((e) => Alert.alert("Couldn't start chat", (e as Error).message));
+        .catch((e) => toast.show((e as Error).message || "Couldn't start chat", "error"));
     }
-  }, [conversations.data, user?.id, conversationId]);
+  }, [conversations.data, user?.id, conversationId, toast]);
 
   const messagesQ = useQuery({
     queryKey: ["chat-messages", conversationId],
@@ -75,7 +77,7 @@ export default function CoachScreen() {
         (chunk) => setStreamingText((s) => s + chunk),
       );
     } catch (e) {
-      Alert.alert("Coach unavailable", (e as Error).message);
+      toast.show((e as Error).message || "Coach unavailable", "error");
     } finally {
       setSending(false);
       setStreamingText("");
@@ -92,7 +94,7 @@ export default function CoachScreen() {
       setConversationId(c.id);
       qc.invalidateQueries({ queryKey: ["conversations", user?.id] });
     } catch (e) {
-      Alert.alert("Couldn't start chat", (e as Error).message);
+      toast.show((e as Error).message || "Couldn't start chat", "error");
     }
   };
 
@@ -146,8 +148,27 @@ export default function CoachScreen() {
           contentContainerStyle={{ padding: 16, paddingBottom: 16, gap: 12 }}
         >
           {messagesQ.isLoading || !conversationId ? (
-            <View style={{ alignItems: "center", marginTop: 48 }}>
-              <ActivityIndicator color={colors.brand} />
+            <View style={{ gap: 14, marginTop: 8 }}>
+              {/* Inbound bubble skeletons */}
+              <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
+                <Skeleton width={32} height={32} radius={16} />
+                <View style={{ flex: 1, gap: 6, padding: 12, backgroundColor: colors.surface, borderRadius: 18, borderTopLeftRadius: 4, borderWidth: 0.5, borderColor: colors.border }}>
+                  <Skeleton width="40%" height={11} />
+                  <Skeleton width="92%" height={14} />
+                  <Skeleton width="78%" height={14} />
+                </View>
+              </View>
+              <View style={{ alignSelf: "flex-end", maxWidth: "75%", gap: 8, padding: 12, backgroundColor: "#F2D6CA", borderRadius: 18, borderBottomRightRadius: 4 }}>
+                <Skeleton width={120} height={14} style={{ backgroundColor: "#E0B5A4" }} />
+                <Skeleton width={80} height={14} style={{ backgroundColor: "#E0B5A4" }} />
+              </View>
+              <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
+                <Skeleton width={32} height={32} radius={16} />
+                <View style={{ flex: 1, gap: 6, padding: 12, backgroundColor: colors.surface, borderRadius: 18, borderTopLeftRadius: 4, borderWidth: 0.5, borderColor: colors.border }}>
+                  <Skeleton width="40%" height={11} />
+                  <Skeleton width="88%" height={14} />
+                </View>
+              </View>
             </View>
           ) : (messagesQ.data?.length ?? 0) === 0 && !streamingText ? (
             <EmptyState onPick={(p) => setInput(p)} />
