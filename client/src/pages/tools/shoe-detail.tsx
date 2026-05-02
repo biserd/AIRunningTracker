@@ -490,6 +490,17 @@ export default function ShoeDetailPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Hero Card */}
             <Card className="overflow-hidden">
+              {shoe.imageUrl ? (
+                <div className="aspect-[16/9] w-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+                  <img
+                    src={shoe.imageUrl}
+                    alt={`${shoe.brand} ${shoe.model}`}
+                    className="w-full h-full object-contain"
+                    onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
+                    data-testid="img-shoe-hero"
+                  />
+                </div>
+              ) : null}
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                   <div>

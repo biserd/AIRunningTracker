@@ -70,7 +70,19 @@ function ShoeCard({ shoe, isInCompare, onToggleCompare, canAddMore }: ShoeCardPr
   return (
     <div className="relative h-full">
       <Link href={`/tools/shoes/${shoe.slug}`} className="block h-full">
-        <Card className={`hover:shadow-lg transition-shadow duration-200 h-full flex flex-col cursor-pointer ${isInCompare ? 'border-strava-orange ring-2 ring-strava-orange/20' : 'hover:border-strava-orange/50'}`} data-testid={`card-shoe-${shoe.id}`}>
+        <Card className={`hover:shadow-lg transition-shadow duration-200 h-full flex flex-col cursor-pointer overflow-hidden ${isInCompare ? 'border-strava-orange ring-2 ring-strava-orange/20' : 'hover:border-strava-orange/50'}`} data-testid={`card-shoe-${shoe.id}`}>
+          {shoe.imageUrl ? (
+            <div className="aspect-[4/3] w-full bg-gray-50 flex items-center justify-center overflow-hidden">
+              <img
+                src={shoe.imageUrl}
+                alt={`${shoe.brand} ${shoe.model}`}
+                loading="lazy"
+                className="w-full h-full object-contain"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                data-testid={`img-shoe-${shoe.id}`}
+              />
+            </div>
+          ) : null}
           <CardHeader className="pb-3">
             <div className="flex justify-between items-start">
               <div>

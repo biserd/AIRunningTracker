@@ -1,120 +1,205 @@
 /**
- * Backfill running_shoes.image_url from a JSON map.
+ * Backfill `running_shoes.image_url` for shoes that are missing a product photo.
  *
- * The agent-driven workflow (see replit.md "Image backfill workflow")
- * uses the `imageSearch` callback in the code-execution sandbox to
- * find product photos and writes them straight to the DB. THIS script
- * is the offline / re-runnable companion: feed it a JSON file mapping
- * "<Brand> <Model>" → "<imageUrl>" and it will fill any matching rows
- * whose image_url is currently NULL (or, with --overwrite, any row).
+ * --------------------------------------------------------------------------
+ * Workflow when a new batch of shoes is imported (e.g. the 2026 lineup):
  *
- * The JSON shape is intentionally simple so non-technical contributors
- * can maintain it without touching the curated dataset:
+ *   1. Run this script with `--report` to list every shoe that still has a
+ *      NULL imageUrl. The output is a starter JSON object keyed by slug.
  *
- *   {
- *     "Nike Vaporfly 5": "https://cdn.fleetfeet.com/.../vaporfly-5.png",
- *     "HOKA Clifton 11": "https://images.hoka.com/.../clifton-11.jpg"
- *   }
+ *        npx tsx scripts/backfill-shoe-images.ts --report
  *
- * Usage:
- *   npx tsx scripts/backfill-shoe-images.ts                       # uses attached_assets/shoe-image-urls.json
- *   npx tsx scripts/backfill-shoe-images.ts path/to/other.json    # custom file
- *   npx tsx scripts/backfill-shoe-images.ts --overwrite           # also overwrite existing image_url values
+ *   2. For each slug, source an official press image from the brand's media
+ *      site (Brooks, Saucony, HOKA, ASICS, NB, On, Adidas, Mizuno, Puma,
+ *      Topo Athletic, Altra, Salomon, …). Retailer / review CDNs (Fleet
+ *      Feet, RoadRunnerSports, Holabird, Believe in the Run, Doctors of
+ *      Running, Solereview, Run Repeat) are also acceptable.
+ *
+ *      Inside the Replit Agent the `imageSearch({ query, count })` callback
+ *      in the JS code-execution sandbox can be used to find candidates
+ *      quickly; pick a high-resolution still (>=600px on the long side) on
+ *      a white / neutral background where possible.
+ *
+ *   3. Save the curated mapping to
+ *      `attached_assets/shoe-image-backfill.json`:
+ *
+ *        {
+ *          "brooks-glycerin-gts-23": "https://…/glycerin-gts-23.jpg",
+ *          "hoka-mach-7":           "https://…/mach-7.jpg"
+ *        }
+ *
+ *   4. Run the script again without flags. Each URL is HEAD-fetched to make
+ *      sure it actually serves an image, and only validated URLs are
+ *      written to the DB.
+ *
+ *        npx tsx scripts/backfill-shoe-images.ts
+ *
+ *   5. (Optional but encouraged for long-term durability) Also add the
+ *      `imageUrl` field to the matching entry in
+ *      `attached_assets/shoes-2026-curated.json` so the next run of
+ *      `scripts/import-latest-shoes.ts` keeps the value if the DB is ever
+ *      rebuilt from the curated dataset.
+ * --------------------------------------------------------------------------
  */
+
 import fs from 'fs';
 import path from 'path';
 import { db } from '../server/db';
 import { runningShoes } from '../shared/schema';
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, isNull, or } from 'drizzle-orm';
 
-interface BackfillResult {
-  updated: number;
-  skipped: number;
-  notFound: string[];
-}
-
-const DEFAULT_PATH = path.resolve(
+const OVERRIDES_FILE = path.join(
   process.cwd(),
-  'attached_assets',
-  'shoe-image-urls.json',
+  'attached_assets/shoe-image-backfill.json',
 );
 
-async function backfillImages(jsonPath: string, overwrite: boolean): Promise<BackfillResult> {
-  if (!fs.existsSync(jsonPath)) {
-    throw new Error(`Image map not found at ${jsonPath}. Create it first or pass a path as the first CLI arg.`);
+interface MissingShoe {
+  id: number;
+  slug: string | null;
+  brand: string;
+  model: string;
+  releaseYear: number;
+}
+
+async function loadMissingShoes(): Promise<MissingShoe[]> {
+  const rows = await db
+    .select({
+      id: runningShoes.id,
+      slug: runningShoes.slug,
+      brand: runningShoes.brand,
+      model: runningShoes.model,
+      releaseYear: runningShoes.releaseYear,
+    })
+    .from(runningShoes)
+    .where(or(isNull(runningShoes.imageUrl), eq(runningShoes.imageUrl, '')));
+
+  return rows.sort((a, b) => {
+    if (a.releaseYear !== b.releaseYear) return b.releaseYear - a.releaseYear;
+    if (a.brand !== b.brand) return a.brand.localeCompare(b.brand);
+    return a.model.localeCompare(b.model);
+  });
+}
+
+function loadOverrides(): Record<string, string> {
+  if (!fs.existsSync(OVERRIDES_FILE)) return {};
+  const raw = fs.readFileSync(OVERRIDES_FILE, 'utf-8').trim();
+  if (!raw) return {};
+  return JSON.parse(raw) as Record<string, string>;
+}
+
+async function validateUrl(url: string): Promise<{ ok: boolean; reason: string }> {
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; RunAnalytics/1.0)' },
+      redirect: 'follow',
+    });
+    const ct = res.headers.get('content-type') ?? '';
+    if (!res.ok) return { ok: false, reason: `HTTP ${res.status}` };
+    if (!ct.startsWith('image/')) {
+      return { ok: false, reason: `Not an image (content-type: ${ct || 'unknown'})` };
+    }
+    return { ok: true, reason: `${res.status} ${ct}` };
+  } catch (err) {
+    return { ok: false, reason: `Fetch failed: ${(err as Error).message}` };
+  }
+}
+
+async function reportMissing(missing: MissingShoe[]): Promise<void> {
+  console.log(`\nShoes missing imageUrl: ${missing.length}\n`);
+
+  const byYear = new Map<number, MissingShoe[]>();
+  for (const m of missing) {
+    if (!byYear.has(m.releaseYear)) byYear.set(m.releaseYear, []);
+    byYear.get(m.releaseYear)!.push(m);
   }
 
-  const raw = fs.readFileSync(jsonPath, 'utf8');
-  const parsed = JSON.parse(raw) as unknown;
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error(`Image map at ${jsonPath} must be a JSON object of "Brand Model" → "imageUrl".`);
+  for (const [year, list] of [...byYear.entries()].sort((a, b) => b[0] - a[0])) {
+    console.log(`-- ${year} (${list.length}) --`);
+    for (const s of list) {
+      console.log(`  ${s.slug?.padEnd(45) ?? '(no slug)'.padEnd(45)} ${s.brand} ${s.model}`);
+    }
+    console.log('');
   }
 
-  const map = parsed as Record<string, string>;
-  const entries = Object.entries(map).filter(([, v]) => typeof v === 'string' && v.trim().length > 0);
-  console.log(`Loaded ${entries.length} image entries from ${path.relative(process.cwd(), jsonPath)}`);
+  const starter: Record<string, string> = {};
+  for (const m of missing) {
+    if (m.slug) starter[m.slug] = '';
+  }
+  console.log('Starter JSON for attached_assets/shoe-image-backfill.json:\n');
+  console.log(JSON.stringify(starter, null, 2));
+}
+
+async function applyOverrides(
+  missing: MissingShoe[],
+  overrides: Record<string, string>,
+): Promise<void> {
+  const slugLookup = new Map(missing.map((m) => [m.slug, m]));
+  const now = new Date();
 
   let updated = 0;
   let skipped = 0;
-  const notFound: string[] = [];
+  let invalid = 0;
+  let unknown = 0;
 
-  for (const [name, imageUrl] of entries) {
-    const trimmed = name.trim();
-    const firstSpace = trimmed.indexOf(' ');
-    if (firstSpace < 1) {
-      console.warn(`Skipping malformed key (need "Brand Model"): ${trimmed}`);
+  for (const [slug, url] of Object.entries(overrides)) {
+    if (!url) {
+      skipped++;
       continue;
     }
-    const brand = trimmed.slice(0, firstSpace);
-    const model = trimmed.slice(firstSpace + 1);
-
-    const where = overwrite
-      ? and(eq(runningShoes.brand, brand), eq(runningShoes.model, model))
-      : and(eq(runningShoes.brand, brand), eq(runningShoes.model, model), isNull(runningShoes.imageUrl));
-
-    const result = await db
-      .update(runningShoes)
-      .set({ imageUrl: sql`${imageUrl}` })
-      .where(where)
-      .returning({ id: runningShoes.id });
-
-    if (result.length > 0) {
-      updated += result.length;
-      console.log(`✓ ${brand} ${model} → ${imageUrl.slice(0, 80)}`);
-    } else {
-      const exists = await db
-        .select({ id: runningShoes.id, imageUrl: runningShoes.imageUrl })
-        .from(runningShoes)
-        .where(and(eq(runningShoes.brand, brand), eq(runningShoes.model, model)))
-        .limit(1);
-      if (exists.length === 0) {
-        notFound.push(trimmed);
-        console.log(`✗ ${trimmed} — no row with that brand+model`);
-      } else {
-        skipped++;
-        console.log(`· ${trimmed} — already has image_url (use --overwrite to replace)`);
-      }
+    const target = slugLookup.get(slug);
+    if (!target) {
+      console.log(`  ? unknown / already-populated slug: ${slug}`);
+      unknown++;
+      continue;
     }
+
+    const v = await validateUrl(url);
+    if (!v.ok) {
+      console.log(`  ✗ ${slug} -> ${v.reason}`);
+      invalid++;
+      continue;
+    }
+
+    await db
+      .update(runningShoes)
+      .set({ imageUrl: url, lastVerified: now })
+      .where(and(eq(runningShoes.id, target.id), or(isNull(runningShoes.imageUrl), eq(runningShoes.imageUrl, ''))));
+
+    console.log(`  ✓ ${slug}`);
+    updated++;
   }
 
-  return { updated, skipped, notFound };
+  console.log(`\nSummary:`);
+  console.log(`  updated  : ${updated}`);
+  console.log(`  skipped  : ${skipped} (empty url in overrides)`);
+  console.log(`  invalid  : ${invalid}`);
+  console.log(`  unknown  : ${unknown}`);
 }
 
-const args = process.argv.slice(2);
-const overwrite = args.includes('--overwrite');
-const jsonArg = args.find((a) => !a.startsWith('--')) ?? DEFAULT_PATH;
+async function main(): Promise<void> {
+  const missing = await loadMissingShoes();
+  const wantsReport = process.argv.includes('--report');
 
-backfillImages(jsonArg, overwrite)
-  .then((res) => {
-    console.log('\nBackfill complete.');
-    console.log(`- Updated: ${res.updated}`);
-    console.log(`- Skipped (already had image): ${res.skipped}`);
-    console.log(`- Not found in DB: ${res.notFound.length}`);
-    if (res.notFound.length > 0) {
-      console.log('  ' + res.notFound.join(', '));
-    }
-    process.exit(0);
-  })
+  if (wantsReport) {
+    await reportMissing(missing);
+    return;
+  }
+
+  const overrides = loadOverrides();
+  if (Object.keys(overrides).length === 0) {
+    console.log(
+      `No overrides found at ${OVERRIDES_FILE}. ` +
+        `Run with --report to generate a starter file, then re-run.`,
+    );
+    return;
+  }
+
+  await applyOverrides(missing, overrides);
+}
+
+main()
+  .then(() => process.exit(0))
   .catch((err) => {
     console.error('Backfill failed:', err);
     process.exit(1);

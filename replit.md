@@ -20,21 +20,30 @@ Preferred communication style: Simple, everyday language.
 ### Technical Implementations
 - **Backend**: Node.js with Express, PostgreSQL via Drizzle ORM.
 - **Authentication**: JWT-based with bcrypt hashing.
-- **Strava Integration**: Efficient two-phase sync (List & Hydrate) with rate limiting and in-memory job queue, tracking per-user sync state.
+- **Strava Integration**: Efficient two-phase sync (List & Hydrate) with rate limiting and in-memory job queue, tracking per-user sync state for progress and error recovery.
 - **AI Engine**: OpenAI GPT-5.1 for personalized insights, training plan generation, and conversational AI, with JSON schema enforcement and streaming responses.
-- **Training Plans**: AI-generated, personalized plans with athlete profile computation, guardrail validation, plan adaptation, and a deterministic skeleton generator.
-- **AI Running Coach Chat**: Real-time conversational interface using GPT-5.1 with SSE for contextual data analysis.
-- **Activity Analysis**: "Activity Story Mode" for compact summaries and "Deep Dive Mode" for detailed metrics, route maps, splits, and benchmarks, including Effort Score and Training Consistency.
-- **Proactive Coaching**: AI Agent Coach (Premium) provides post-activity recaps and feedback.
-- **Recovery System**: Time-aware analysis with dynamic recommendations based on training load.
-- **Running Shoe Hub**: Database of running shoes with personalized finder, rotation planning, comparison pages, and AI-generated insights (`aiNarrative`, `aiFaq`, `aiResilienceScore`, `aiMileageEstimate`, `aiTargetUsage`). Includes an image backfill workflow for product photos and a monthly auto-refresh script.
-- **Year End Recap**: Personalized yearly running summaries with AI-generated infographics.
-- **Coach Insights Page**: Unified dashboard categorizing performance metrics into "The Engine" and "The Mechanics".
+- **Training Plans**: AI-generated, personalized plans with athlete profile computation, guardrail validation, plan adaptation based on adherence, and a deterministic skeleton generator.
+- **AI Running Coach Chat**: Real-time conversational interface using GPT-5.1 with SSE for contextual data analysis and training plan awareness.
+- **Activity Analysis**: "Activity Story Mode" for compact summaries (with Coach Verdict and Run Timeline) and "Deep Dive Mode" for detailed metrics, route maps with key moments, splits analysis, and benchmarks, including Effort Score, Training Consistency badges, and AI-detected event pins.
+- **Proactive Coaching**: AI Agent Coach (Premium) provides post-activity recaps and feedback, integrating with user-defined goals and preferences.
+- **Recovery System**: Time-aware analysis with dynamic recommendations based on training load (acute/chronic load, freshness score).
+- **Running Shoe Hub**: Database (282 shoes incl. 60+ confirmed 2026 releases across 13 major brands) with personalized finder, rotation planning, comparison pages, and AI-generated insights (`aiNarrative`, `aiFaq`, `aiResilienceScore`, `aiMileageEstimate`, `aiTargetUsage`). Includes a reusable importer at `scripts/import-latest-shoes.ts` (with `onConflictDoUpdate` and `COALESCE` to preserve photos), a brand-cleanup migration `scripts/normalize-shoe-brands.ts`, and an image backfill workflow (`scripts/backfill-shoe-images.ts`) for product photos. Maintains a monthly auto-refresh script.
+- **Year End Recap**: Personalized yearly running summaries with AI-generated infographics for social sharing.
+- **Coach Insights Page**: Unified dashboard categorizing performance metrics into "The Engine" (cardiovascular power) and "The Mechanics" (form stability).
 - **Marketing & Engagement**: Drip campaign system, SEO optimization, and a reverse trial system.
-- **SEO & Hybrid SSR/SSG**: Static-generated marketing homepage, blog, and shoe pages for crawlers, with SSR fallback for specific pages (e.g., comparison pages), and client-side SPA for regular users. Uses a pre-render script for static file generation.
+- **SEO & Hybrid SSR/SSG**: 
+  - **Homepage SSG**: Static-generated marketing homepage for crawlers (Googlebot, etc.) for optimal SEO. WebApplication + Organization structured data. (1h cache)
+  - **Blog SSG**: True static site generation - pre-rendered HTML files with SSR fallback. BlogPosting schema. (24h cache).
+  - **Shoe Pages SSG**: True static site generation - pre-rendered HTML files with SSR fallback. Complete specifications with Product schema. (1h cache).
+  - **Comparison Pages SSR**: Side-by-side comparison tables with WebPage schema. (1h cache)
+  - **Tooling**: Includes `scripts/prerender.ts` for build-time generation and regex-based crawler detection. Regular users always receive the rich React SPA.
 - **Strava Activity Branding**: User-opt-in feature for customizable branding text in Strava activity descriptions.
-- **PWA + Web Push**: Installable PWA with manifest, service worker, and web push notifications via VAPID, managed through a `push_subscriptions` table.
-- **Native Mobile App**: An Expo-based companion app (`apps/mobile/`) mirroring core web features like Home, Coach Chat, Runner Score, History, and Profile, designed for a minimalist glanceable experience.
+- **PWA + Web Push**:
+  - Installable PWA with manifest, service worker (cache + push handlers), and 192/512 icons.
+  - Web push notifications via VAPID (persisted in `system_settings`), managed through a `push_subscriptions` table.
+  - Integrated with Coach Recap flow to queue both email and push notifications.
+  - Settings → Notifications includes a per-device push toggle.
+- **Native Mobile App**: Expo-based companion app (`apps/mobile/`) mirroring core web features like Home (Last Run hero, Readiness status), Coach Chat (SSE streaming), Runner Score, History, and Profile. Uses a custom iOS 17+ light theme (tokens in `lib/theme.ts`) with brand orange accents and a minimalist 5-tab structure. Built with Expo SDK 54, Expo Router, and NativeWind.
 
 ### System Design Choices
 - **Database Schema**: Comprehensive schema for users, activities, AI insights, training plans, shoes, etc.
