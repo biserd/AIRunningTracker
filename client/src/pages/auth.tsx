@@ -7,26 +7,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Activity, Eye, EyeOff, Mail, ArrowLeft, CheckCircle2, ChevronDown, ChevronUp, KeyRound } from "lucide-react";
+import { Activity, Eye, EyeOff, Mail, CheckCircle2 } from "lucide-react";
 import { SiStrava } from "react-icons/si";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { loginSchema, registerSchema, type LoginData, type RegisterData } from "@shared/schema";
+import { registerSchema, type RegisterData } from "@shared/schema";
 
-type AuthMode = "signin" | "signup" | "magic";
+type AuthMode = "signin" | "signup";
 
 export default function AuthPage() {
   const [, setLocation] = useLocation();
   const [mode, setMode] = useState<AuthMode>("signin");
   const [showPassword, setShowPassword] = useState(false);
-  // When set, the entered email belongs to a Strava-only account — we
-  // replace the password form with a clear "Sign in with Strava" CTA.
-  const [stravaOnlyEmail, setStravaOnlyEmail] = useState<string | null>(null);
+  const [magicLinkEmail, setMagicLinkEmail] = useState("");
   const [magicLinkSentTo, setMagicLinkSentTo] = useState<string | null>(null);
   const [magicLinkSubmitting, setMagicLinkSubmitting] = useState(false);
-  // Single consolidated "Trouble signing in?" disclosure — replaces the
-  // 3 stacked recovery links (forgot password / magic link / strava reminder).
-  const [helpOpen, setHelpOpen] = useState(false);
   const { toast } = useToast();
 
   // Handle Strava OAuth error redirects — e.g., user denied Strava access
@@ -44,57 +39,9 @@ export default function AuthPage() {
     }
   }, []);
 
-  const loginForm = useForm<LoginData>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
-  });
-
   const registerForm = useForm<RegisterData>({
     resolver: zodResolver(registerSchema),
     defaultValues: { email: "", password: "", firstName: "", lastName: "" },
-  });
-
-  // Use raw fetch instead of apiRequest so we can read the structured
-  // error body ({ message, code }) directly — apiRequest swallows it
-  // into a single Error.message string.
-  const loginMutation = useMutation({
-    mutationFn: async (data: LoginData) => {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        const err: Error & { code?: string } = new Error(body?.message || "Login failed");
-        err.code = body?.code;
-        throw err;
-      }
-      return body;
-    },
-    onSuccess: (response: any) => {
-      localStorage.setItem("auth_token", response.token);
-      toast({ title: "Welcome back!", description: "Successfully logged in" });
-      const isPaid =
-        response.user?.subscriptionPlan &&
-        response.user.subscriptionPlan !== "free" &&
-        (response.user.subscriptionStatus === "active" ||
-          response.user.subscriptionStatus === "trialing");
-      setLocation(isPaid ? "/dashboard" : "/audit-report");
-    },
-    onError: (error: Error & { code?: string }) => {
-      // Strava-only account → swap the password form for a Strava CTA card.
-      if (error.code === "STRAVA_ONLY") {
-        setStravaOnlyEmail(loginForm.getValues("email"));
-        return;
-      }
-      toast({
-        title: "Login failed",
-        description: error.message || "Invalid credentials",
-        variant: "destructive",
-      });
-    },
   });
 
   const registerMutation = useMutation({
@@ -113,10 +60,6 @@ export default function AuthPage() {
     },
   });
 
-  const onLoginSubmit = (data: LoginData) => {
-    setStravaOnlyEmail(null);
-    loginMutation.mutate(data);
-  };
   const onRegisterSubmit = (data: RegisterData) => registerMutation.mutate(data);
 
   const handleStravaLogin = () => {
@@ -125,8 +68,7 @@ export default function AuthPage() {
 
   const handleMagicLinkSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const email = String(formData.get("magic-email") || "").trim();
+    const email = magicLinkEmail.trim();
     if (!email) {
       toast({ title: "Email required", description: "Enter your email address", variant: "destructive" });
       return;
@@ -154,18 +96,6 @@ export default function AuthPage() {
     }
   };
 
-  const switchToMagic = () => {
-    setMode("magic");
-    setStravaOnlyEmail(null);
-    setMagicLinkSentTo(null);
-  };
-
-  const switchToSignin = () => {
-    setMode("signin");
-    setStravaOnlyEmail(null);
-    setMagicLinkSentTo(null);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -184,20 +114,19 @@ export default function AuthPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-center text-xl">
-              {mode === "signin" && "Sign in"}
-              {mode === "signup" && "Create your account"}
-              {mode === "magic" && "Email me a sign-in link"}
+              {mode === "signin" ? "Sign in" : "Create your account"}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
 
-            {/* Strava OAuth button — always visible at top of sign-in/up */}
-            {mode !== "magic" && (
+            {/* SIGN IN — two paths only: Strava OAuth or magic-link email */}
+            {mode === "signin" && !magicLinkSentTo && (
               <>
                 <Button
                   type="button"
                   onClick={handleStravaLogin}
                   className="w-full bg-[#FC4C02] hover:bg-[#e04400] text-white font-semibold flex items-center justify-center gap-2 h-11"
+                  data-testid="button-strava-login"
                 >
                   <SiStrava className="h-5 w-5" />
                   Continue with Strava
@@ -211,251 +140,40 @@ export default function AuthPage() {
                     <span className="bg-white px-2 text-gray-500">or</span>
                   </div>
                 </div>
+
+                <form onSubmit={handleMagicLinkSubmit} className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="magic-email">Email</Label>
+                    <Input
+                      id="magic-email"
+                      name="magic-email"
+                      type="email"
+                      placeholder="your@email.com"
+                      value={magicLinkEmail}
+                      onChange={(e) => setMagicLinkEmail(e.target.value)}
+                      required
+                      autoComplete="email"
+                      data-testid="input-magic-email"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full bg-charcoal hover:bg-charcoal/90 text-white flex items-center justify-center gap-2"
+                    disabled={magicLinkSubmitting}
+                    data-testid="button-send-magic-link"
+                  >
+                    <Mail className="h-4 w-4" />
+                    {magicLinkSubmitting ? "Sending…" : "Email me a sign-in link"}
+                  </Button>
+                  <p className="text-xs text-center text-gray-500">
+                    We'll send a one-tap link. No password needed.
+                  </p>
+                </form>
               </>
             )}
 
-            {/* Strava-only callout — shown after a failed password login on a
-                Strava-created account. Replaces the password form so the user
-                doesn't keep banging on a door that won't open. */}
-            {stravaOnlyEmail && mode === "signin" && (
-              <div
-                className="rounded-lg border border-orange-200 bg-orange-50 p-4 space-y-3"
-                data-testid="strava-only-callout"
-              >
-                <div className="flex items-start gap-3">
-                  <SiStrava className="h-5 w-5 text-[#FC4C02] mt-0.5 flex-shrink-0" />
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold text-orange-900">
-                      Looks like you signed up with Strava
-                    </p>
-                    <p className="text-xs text-orange-800">
-                      <span className="font-medium">{stravaOnlyEmail}</span> doesn't have a password
-                      — it's linked to your Strava account. Tap below to sign in.
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  onClick={handleStravaLogin}
-                  className="w-full bg-[#FC4C02] hover:bg-[#e04400] text-white font-semibold flex items-center justify-center gap-2"
-                >
-                  <SiStrava className="h-4 w-4" />
-                  Sign in with Strava
-                </Button>
-                <button
-                  type="button"
-                  onClick={() => setStravaOnlyEmail(null)}
-                  className="text-xs text-orange-700 hover:underline w-full text-center"
-                >
-                  Wrong account? Try a different email
-                </button>
-              </div>
-            )}
-
-            {mode === "signin" && !stravaOnlyEmail && (
-              <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    {...loginForm.register("email")}
-                    placeholder="your@email.com"
-                  />
-                  {loginForm.formState.errors.email && (
-                    <p className="text-sm text-red-500">{loginForm.formState.errors.email.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      {...loginForm.register("password")}
-                      placeholder="••••••••"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                  {loginForm.formState.errors.password && (
-                    <p className="text-sm text-red-500">{loginForm.formState.errors.password.message}</p>
-                  )}
-                </div>
-
-                {/* Quiet dark Sign In button — no longer competes with the
-                    orange Strava button above. Strava is the recommended path. */}
-                <Button
-                  type="submit"
-                  className="w-full bg-charcoal hover:bg-charcoal/90 text-white"
-                  disabled={loginMutation.isPending}
-                >
-                  {loginMutation.isPending ? "Signing in..." : "Sign In with Email"}
-                </Button>
-
-                {/* ONE consolidated recovery disclosure — replaces the 3 stacked
-                    links (forgot password / magic link / strava reminder). */}
-                <div className="pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setHelpOpen(!helpOpen)}
-                    className="w-full flex items-center justify-center gap-1.5 text-sm text-gray-600 hover:text-strava-orange"
-                    data-testid="button-help-disclosure"
-                  >
-                    Trouble signing in?
-                    {helpOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                  </button>
-                  {helpOpen && (
-                    <div className="mt-3 space-y-1 border-t border-gray-100 pt-3">
-                      <button
-                        type="button"
-                        onClick={switchToMagic}
-                        className="flex items-start gap-3 w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 transition-colors"
-                        data-testid="link-magic-link"
-                      >
-                        <Mail className="h-4 w-4 text-strava-orange mt-0.5 flex-shrink-0" />
-                        <span className="flex-1">
-                          <span className="block text-sm font-medium text-charcoal">Email me a one-tap sign-in link</span>
-                          <span className="block text-xs text-gray-500">Works for any account — no password needed</span>
-                        </span>
-                      </button>
-                      <Link
-                        href="/forgot-password"
-                        className="flex items-start gap-3 w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 transition-colors"
-                        data-testid="link-forgot-password"
-                      >
-                        <KeyRound className="h-4 w-4 text-strava-orange mt-0.5 flex-shrink-0" />
-                        <span className="flex-1">
-                          <span className="block text-sm font-medium text-charcoal">Reset my password</span>
-                          <span className="block text-xs text-gray-500">If you set one up</span>
-                        </span>
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </form>
-            )}
-
-            {mode === "signup" && (
-              <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input
-                      id="firstName"
-                      {...registerForm.register("firstName")}
-                      placeholder="John"
-                    />
-                    {registerForm.formState.errors.firstName && (
-                      <p className="text-sm text-red-500">{registerForm.formState.errors.firstName.message}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      {...registerForm.register("lastName")}
-                      placeholder="Doe"
-                    />
-                    {registerForm.formState.errors.lastName && (
-                      <p className="text-sm text-red-500">{registerForm.formState.errors.lastName.message}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    {...registerForm.register("email")}
-                    placeholder="your@email.com"
-                  />
-                  {registerForm.formState.errors.email && (
-                    <p className="text-sm text-red-500">{registerForm.formState.errors.email.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      {...registerForm.register("password")}
-                      placeholder="••••••••"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                  {registerForm.formState.errors.password && (
-                    <p className="text-sm text-red-500">{registerForm.formState.errors.password.message}</p>
-                  )}
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full bg-strava-orange hover:bg-strava-orange/90"
-                  disabled={registerMutation.isPending}
-                >
-                  {registerMutation.isPending ? "Creating account..." : "Create Account"}
-                </Button>
-              </form>
-            )}
-
-            {mode === "magic" && !magicLinkSentTo && (
-              <form onSubmit={handleMagicLinkSubmit} className="space-y-4">
-                <p className="text-sm text-gray-600">
-                  Forgot how you signed up? Enter your email and we'll send you a one-tap
-                  link that signs you in — works whether your account uses a password or
-                  Strava.
-                </p>
-                <div className="space-y-2">
-                  <Label htmlFor="magic-email">Email</Label>
-                  <Input
-                    id="magic-email"
-                    name="magic-email"
-                    type="email"
-                    placeholder="your@email.com"
-                    required
-                    data-testid="input-magic-email"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-strava-orange hover:bg-strava-orange/90"
-                  disabled={magicLinkSubmitting}
-                  data-testid="button-send-magic-link"
-                >
-                  {magicLinkSubmitting ? "Sending..." : "Email me a sign-in link"}
-                </Button>
-                <button
-                  type="button"
-                  onClick={switchToSignin}
-                  className="w-full text-center text-sm text-gray-600 hover:text-strava-orange flex items-center justify-center gap-1.5"
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" />
-                  Back to sign in
-                </button>
-              </form>
-            )}
-
-            {mode === "magic" && magicLinkSentTo && (
+            {/* Magic-link sent confirmation — replaces the form once submitted */}
+            {mode === "signin" && magicLinkSentTo && (
               <div className="space-y-4 text-center" data-testid="magic-link-sent">
                 <div className="mx-auto w-14 h-14 rounded-full bg-green-50 flex items-center justify-center">
                   <CheckCircle2 className="w-7 h-7 text-green-600" />
@@ -470,33 +188,133 @@ export default function AuthPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={switchToSignin}
+                  onClick={() => {
+                    setMagicLinkSentTo(null);
+                    setMagicLinkEmail("");
+                  }}
                   className="w-full"
                 >
-                  Back to sign in
+                  Use a different email
                 </Button>
               </div>
             )}
 
-            {mode !== "magic" && (
-              <div className="text-center border-t border-gray-100 pt-4">
-                <button
+            {/* SIGN UP — keep the existing email/password registration form.
+                Passwordless signup is a future backend change. */}
+            {mode === "signup" && (
+              <>
+                <Button
                   type="button"
-                  onClick={() => {
-                    setMode(mode === "signin" ? "signup" : "signin");
-                    setStravaOnlyEmail(null);
-                    setHelpOpen(false);
-                  }}
-                  className="text-sm text-gray-600 hover:text-strava-orange"
+                  onClick={handleStravaLogin}
+                  className="w-full bg-[#FC4C02] hover:bg-[#e04400] text-white font-semibold flex items-center justify-center gap-2 h-11"
                 >
-                  {mode === "signin" ? (
-                    <>New here? <span className="text-strava-orange font-medium">Create an account</span></>
-                  ) : (
-                    <>Already have an account? <span className="text-strava-orange font-medium">Sign in</span></>
-                  )}
-                </button>
-              </div>
+                  <SiStrava className="h-5 w-5" />
+                  Sign up with Strava
+                </Button>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-gray-200" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-2 text-gray-500">or</span>
+                  </div>
+                </div>
+
+                <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">First Name</Label>
+                      <Input
+                        id="firstName"
+                        {...registerForm.register("firstName")}
+                        placeholder="John"
+                      />
+                      {registerForm.formState.errors.firstName && (
+                        <p className="text-sm text-red-500">{registerForm.formState.errors.firstName.message}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Last Name</Label>
+                      <Input
+                        id="lastName"
+                        {...registerForm.register("lastName")}
+                        placeholder="Doe"
+                      />
+                      {registerForm.formState.errors.lastName && (
+                        <p className="text-sm text-red-500">{registerForm.formState.errors.lastName.message}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      autoComplete="email"
+                      {...registerForm.register("email")}
+                      placeholder="your@email.com"
+                    />
+                    {registerForm.formState.errors.email && (
+                      <p className="text-sm text-red-500">{registerForm.formState.errors.email.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        {...registerForm.register("password")}
+                        placeholder="••••••••"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    {registerForm.formState.errors.password && (
+                      <p className="text-sm text-red-500">{registerForm.formState.errors.password.message}</p>
+                    )}
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full bg-strava-orange hover:bg-strava-orange/90"
+                    disabled={registerMutation.isPending}
+                  >
+                    {registerMutation.isPending ? "Creating account..." : "Create Account"}
+                  </Button>
+                </form>
+              </>
             )}
+
+            {/* Mode toggle */}
+            <div className="text-center border-t border-gray-100 pt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode(mode === "signin" ? "signup" : "signin");
+                  setMagicLinkSentTo(null);
+                  setMagicLinkEmail("");
+                }}
+                className="text-sm text-gray-600 hover:text-strava-orange"
+              >
+                {mode === "signin" ? (
+                  <>New here? <span className="text-strava-orange font-medium">Create an account</span></>
+                ) : (
+                  <>Already have an account? <span className="text-strava-orange font-medium">Sign in</span></>
+                )}
+              </button>
+            </div>
           </CardContent>
         </Card>
       </div>
