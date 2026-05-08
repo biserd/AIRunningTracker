@@ -22,6 +22,7 @@ const LandingPage = lazy(() => import("@/pages/landing"));
 const AuthPage = lazy(() => import("@/pages/auth"));
 const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password"));
 const ResetPasswordPage = lazy(() => import("@/pages/reset-password"));
+const MagicLinkPage = lazy(() => import("@/pages/magic-link"));
 const PrivacyPage = lazy(() => import("@/pages/privacy"));
 const ContactPage = lazy(() => import("@/pages/contact"));
 const FAQPage = lazy(() => import("@/pages/faq"));
@@ -145,6 +146,7 @@ function Router() {
         <Route path="/auth" component={AuthPage} />
         <Route path="/forgot-password" component={ForgotPasswordPage} />
         <Route path="/reset-password" component={ResetPasswordPage} />
+        <Route path="/auth/magic-link" component={MagicLinkPage} />
         <Route path="/about" component={AboutPage} />
         <Route path="/terms" component={TermsPage} />
         <Route path="/features" component={FeaturesPage} />

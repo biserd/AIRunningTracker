@@ -7,16 +7,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Activity, Eye, EyeOff } from "lucide-react";
+import { Activity, Eye, EyeOff, Mail, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { SiStrava } from "react-icons/si";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { loginSchema, registerSchema, type LoginData, type RegisterData } from "@shared/schema";
 
+type AuthMode = "signin" | "signup" | "magic";
+
 export default function AuthPage() {
   const [, setLocation] = useLocation();
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<AuthMode>("signin");
   const [showPassword, setShowPassword] = useState(false);
+  // When set, the entered email belongs to a Strava-only account — we
+  // replace the password form with a clear "Sign in with Strava" CTA.
+  const [stravaOnlyEmail, setStravaOnlyEmail] = useState<string | null>(null);
+  const [magicLinkSentTo, setMagicLinkSentTo] = useState<string | null>(null);
+  const [magicLinkSubmitting, setMagicLinkSubmitting] = useState(false);
   const { toast } = useToast();
 
   // Handle Strava OAuth error redirects — e.g., user denied Strava access
@@ -44,8 +51,25 @@ export default function AuthPage() {
     defaultValues: { email: "", password: "", firstName: "", lastName: "" },
   });
 
+  // Use raw fetch instead of apiRequest so we can read the structured
+  // error body ({ message, code }) directly — apiRequest swallows it
+  // into a single Error.message string.
   const loginMutation = useMutation({
-    mutationFn: (data: LoginData) => apiRequest("/api/auth/login", "POST", data),
+    mutationFn: async (data: LoginData) => {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const err: Error & { code?: string } = new Error(body?.message || "Login failed");
+        err.code = body?.code;
+        throw err;
+      }
+      return body;
+    },
     onSuccess: (response: any) => {
       localStorage.setItem("auth_token", response.token);
       toast({ title: "Welcome back!", description: "Successfully logged in" });
@@ -56,7 +80,12 @@ export default function AuthPage() {
           response.user.subscriptionStatus === "trialing");
       setLocation(isPaid ? "/dashboard" : "/audit-report");
     },
-    onError: (error: any) => {
+    onError: (error: Error & { code?: string }) => {
+      // Strava-only account → swap the password form for a Strava CTA card.
+      if (error.code === "STRAVA_ONLY") {
+        setStravaOnlyEmail(loginForm.getValues("email"));
+        return;
+      }
       toast({
         title: "Login failed",
         description: error.message || "Invalid credentials",
@@ -81,11 +110,57 @@ export default function AuthPage() {
     },
   });
 
-  const onLoginSubmit = (data: LoginData) => loginMutation.mutate(data);
+  const onLoginSubmit = (data: LoginData) => {
+    setStravaOnlyEmail(null);
+    loginMutation.mutate(data);
+  };
   const onRegisterSubmit = (data: RegisterData) => registerMutation.mutate(data);
 
   const handleStravaLogin = () => {
     window.location.href = "/api/auth/strava-login";
+  };
+
+  const handleMagicLinkSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const email = String(formData.get("magic-email") || "").trim();
+    if (!email) {
+      toast({ title: "Email required", description: "Enter your email address", variant: "destructive" });
+      return;
+    }
+    setMagicLinkSubmitting(true);
+    try {
+      const res = await fetch("/api/auth/magic-link/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.message || "Couldn't send sign-in link");
+      }
+      setMagicLinkSentTo(email);
+    } catch (err: any) {
+      toast({
+        title: "Couldn't send link",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setMagicLinkSubmitting(false);
+    }
+  };
+
+  const switchToMagic = () => {
+    setMode("magic");
+    setStravaOnlyEmail(null);
+    setMagicLinkSentTo(null);
+  };
+
+  const switchToSignin = () => {
+    setMode("signin");
+    setStravaOnlyEmail(null);
+    setMagicLinkSentTo(null);
   };
 
   return (
@@ -102,38 +177,84 @@ export default function AuthPage() {
             </div>
           </Link>
           <p className="text-gray-600">
-            {isLogin ? "Welcome back!" : "Start your analytics journey"}
+            {mode === "signin" && "Welcome back!"}
+            {mode === "signup" && "Start your analytics journey"}
+            {mode === "magic" && "We'll email you a one-tap link"}
           </p>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle className="text-center">
-              {isLogin ? "Sign In" : "Create Account"}
+              {mode === "signin" && "Sign In"}
+              {mode === "signup" && "Create Account"}
+              {mode === "magic" && "Email me a sign-in link"}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
 
-            {/* Strava OAuth button */}
-            <Button
-              type="button"
-              onClick={handleStravaLogin}
-              className="w-full bg-[#FC4C02] hover:bg-[#e04400] text-white font-semibold flex items-center justify-center gap-2 h-11"
-            >
-              <SiStrava className="h-5 w-5" />
-              Continue with Strava
-            </Button>
+            {/* Strava OAuth button — always visible at top of sign-in/up */}
+            {mode !== "magic" && (
+              <>
+                <Button
+                  type="button"
+                  onClick={handleStravaLogin}
+                  className="w-full bg-[#FC4C02] hover:bg-[#e04400] text-white font-semibold flex items-center justify-center gap-2 h-11"
+                >
+                  <SiStrava className="h-5 w-5" />
+                  Continue with Strava
+                </Button>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-200" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-500">or</span>
-              </div>
-            </div>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-gray-200" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-2 text-gray-500">or</span>
+                  </div>
+                </div>
+              </>
+            )}
 
-            {isLogin ? (
+            {/* Strava-only callout — shown after a failed password login on a
+                Strava-created account. Replaces the password form so the user
+                doesn't keep banging on a door that won't open. */}
+            {stravaOnlyEmail && mode === "signin" && (
+              <div
+                className="rounded-lg border border-orange-200 bg-orange-50 p-4 space-y-3"
+                data-testid="strava-only-callout"
+              >
+                <div className="flex items-start gap-3">
+                  <SiStrava className="h-5 w-5 text-[#FC4C02] mt-0.5 flex-shrink-0" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-orange-900">
+                      Looks like you signed up with Strava
+                    </p>
+                    <p className="text-xs text-orange-800">
+                      <span className="font-medium">{stravaOnlyEmail}</span> doesn't have a password
+                      — it's linked to your Strava account. Tap below to sign in.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  onClick={handleStravaLogin}
+                  className="w-full bg-[#FC4C02] hover:bg-[#e04400] text-white font-semibold flex items-center justify-center gap-2"
+                >
+                  <SiStrava className="h-4 w-4" />
+                  Sign in with Strava
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setStravaOnlyEmail(null)}
+                  className="text-xs text-orange-700 hover:underline w-full text-center"
+                >
+                  Wrong account? Try a different email
+                </button>
+              </div>
+            )}
+
+            {mode === "signin" && !stravaOnlyEmail && (
               <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -184,8 +305,20 @@ export default function AuthPage() {
                 >
                   {loginMutation.isPending ? "Signing in..." : "Sign In"}
                 </Button>
+
+                <button
+                  type="button"
+                  onClick={switchToMagic}
+                  className="w-full text-center text-sm text-gray-600 hover:text-strava-orange flex items-center justify-center gap-1.5 pt-1"
+                  data-testid="link-magic-link"
+                >
+                  <Mail className="h-3.5 w-3.5" />
+                  Email me a one-tap sign-in link instead
+                </button>
               </form>
-            ) : (
+            )}
+
+            {mode === "signup" && (
               <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -259,17 +392,82 @@ export default function AuthPage() {
               </form>
             )}
 
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-sm text-strava-orange hover:underline"
-              >
-                {isLogin
-                  ? "Don't have an account? Sign up"
-                  : "Already have an account? Sign in"}
-              </button>
-            </div>
+            {mode === "magic" && !magicLinkSentTo && (
+              <form onSubmit={handleMagicLinkSubmit} className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  Forgot how you signed up? Enter your email and we'll send you a one-tap
+                  link that signs you in — works whether your account uses a password or
+                  Strava.
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="magic-email">Email</Label>
+                  <Input
+                    id="magic-email"
+                    name="magic-email"
+                    type="email"
+                    placeholder="your@email.com"
+                    required
+                    data-testid="input-magic-email"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-strava-orange hover:bg-strava-orange/90"
+                  disabled={magicLinkSubmitting}
+                  data-testid="button-send-magic-link"
+                >
+                  {magicLinkSubmitting ? "Sending..." : "Email me a sign-in link"}
+                </Button>
+                <button
+                  type="button"
+                  onClick={switchToSignin}
+                  className="w-full text-center text-sm text-gray-600 hover:text-strava-orange flex items-center justify-center gap-1.5"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Back to sign in
+                </button>
+              </form>
+            )}
+
+            {mode === "magic" && magicLinkSentTo && (
+              <div className="space-y-4 text-center" data-testid="magic-link-sent">
+                <div className="mx-auto w-14 h-14 rounded-full bg-green-50 flex items-center justify-center">
+                  <CheckCircle2 className="w-7 h-7 text-green-600" />
+                </div>
+                <div className="space-y-1">
+                  <p className="font-semibold text-charcoal">Check your inbox</p>
+                  <p className="text-sm text-gray-600">
+                    If an account exists for <span className="font-medium">{magicLinkSentTo}</span>,
+                    we've sent a one-tap sign-in link. It expires in 15 minutes.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={switchToSignin}
+                  className="w-full"
+                >
+                  Back to sign in
+                </Button>
+              </div>
+            )}
+
+            {mode !== "magic" && (
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode(mode === "signin" ? "signup" : "signin");
+                    setStravaOnlyEmail(null);
+                  }}
+                  className="text-sm text-strava-orange hover:underline"
+                >
+                  {mode === "signin"
+                    ? "Don't have an account? Sign up"
+                    : "Already have an account? Sign in"}
+                </button>
+              </div>
+            )}
 
             <div className="text-center">
               <Link href="/" className="inline-block">

@@ -218,6 +218,100 @@ The RunAnalytics Team
     });
   }
 
+  /**
+   * Sent when someone hits Forgot Password but their account has no
+   * password (it was created via Strava OAuth). Instead of a broken
+   * reset link, they get a one-tap "sign in with Strava" link.
+   */
+  async sendStravaLoginReminderEmail(email: string): Promise<void> {
+    const stravaUrl = 'https://aitracker.run/api/auth/strava-login';
+    const subject = 'Sign in to RunAnalytics with Strava';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #FC4C02; margin: 0;">🏃‍♂️ RunAnalytics</h1>
+          <p style="color: #666; margin: 5px 0;">Sign-in reminder</p>
+        </div>
+
+        <h2 style="color: #2c3e50;">Your account uses Strava sign-in</h2>
+
+        <p>You asked to reset your password, but this account was created with <strong>"Continue with Strava"</strong> — there's no password to reset. Click below to sign back in with Strava:</p>
+
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${stravaUrl}" style="background: #FC4C02; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Sign in with Strava</a>
+        </div>
+
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 0; color: #666; font-size: 14px;"><strong>Tip:</strong> bookmark <a href="https://aitracker.run/auth" style="color: #FC4C02;">aitracker.run/auth</a> so you can get back in with one click next time.</p>
+        </div>
+
+        <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; color: #666; font-size: 14px;">
+          <p>Didn't request this? You can safely ignore this email.</p>
+          <p>Happy running!<br>The RunAnalytics Team</p>
+        </div>
+      </div>
+    `;
+    const text = `Your RunAnalytics account uses Strava sign-in — there's no password to reset.
+
+Sign back in here: ${stravaUrl}
+
+Didn't request this? You can safely ignore this email.
+
+Happy running!
+The RunAnalytics Team`;
+
+    await this.sendEmail({ to: email, subject, html, text });
+  }
+
+  /**
+   * One-tap sign-in link sent on /api/auth/magic-link/request.
+   * Works for both password and Strava-only accounts. Token expires in 15 min.
+   */
+  async sendMagicLinkEmail(email: string, magicToken: string): Promise<void> {
+    const url = `https://aitracker.run/auth/magic-link?token=${encodeURIComponent(magicToken)}`;
+    const subject = 'Your one-tap sign-in link';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #FC4C02; margin: 0;">🏃‍♂️ RunAnalytics</h1>
+          <p style="color: #666; margin: 5px 0;">One-tap sign-in</p>
+        </div>
+
+        <h2 style="color: #2c3e50;">Sign in with one click</h2>
+
+        <p>Tap the button below to sign in to RunAnalytics. No password required.</p>
+
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${url}" style="background: #FC4C02; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Sign me in</a>
+        </div>
+
+        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+          <p style="margin: 0; color: #856404;"><strong>⏱️ This link expires in 15 minutes</strong> and can only be used once.</p>
+        </div>
+
+        <p style="color: #666; font-size: 14px;">If the button doesn't work, copy this link into your browser:</p>
+        <p style="color: #3498db; word-break: break-all; font-size: 14px;">${url}</p>
+
+        <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; color: #666; font-size: 14px;">
+          <p>Didn't request this? Ignore this email — your account stays safe.</p>
+          <p>Happy running!<br>The RunAnalytics Team</p>
+        </div>
+      </div>
+    `;
+    const text = `Sign in to RunAnalytics with one tap:
+
+${url}
+
+This link expires in 15 minutes.
+
+Didn't request this? You can safely ignore this email.
+
+Happy running!
+The RunAnalytics Team`;
+
+    await this.sendEmail({ to: email, subject, html, text });
+  }
+
   async sendAccountDeletionConfirmation(email: string): Promise<void> {
     const subject = 'Your RunAnalytics Account Has Been Deleted';
     const html = `

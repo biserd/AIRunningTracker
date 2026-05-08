@@ -7,18 +7,22 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { api, ApiError } from "../lib/api";
-import { useAuth } from "../lib/auth";
+import * as WebBrowser from "expo-web-browser";
+import { api, ApiError, apiBaseUrl } from "../lib/api";
+import { useAuth, setToken } from "../lib/auth";
 import { useToast } from "../lib/toast";
 import { colors, shadow } from "../lib/theme";
 import { PrimaryButton } from "../components/ios";
-import type { LoginResponse } from "../types";
+import type { LoginResponse, User } from "../types";
 
 type Mode = "signin" | "signup";
+
+const STRAVA_REDIRECT = "aitracker://auth-callback";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -31,6 +35,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [stravaSubmitting, setStravaSubmitting] = useState(false);
 
   const onSubmit = async () => {
     const trimmedEmail = email.trim();
@@ -69,7 +74,6 @@ export default function LoginScreen() {
         });
         await signIn(res.token, res.user);
         router.replace("/(tabs)");
-        // Show welcome after navigation so it lands on the Home screen.
         setTimeout(
           () =>
             toast.show(
@@ -93,6 +97,94 @@ export default function LoginScreen() {
       toast.show(msg || fallback, "error");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  /**
+   * Strava OAuth from the native app.
+   *
+   * 1. Open the web Strava OAuth flow in a system-managed browser session
+   *    (`openAuthSessionAsync`), passing `?mobile=1` so the server knows
+   *    to hand the JWT back via our custom scheme instead of redirecting
+   *    to /dashboard.
+   * 2. The server's callback finishes Strava token exchange and redirects
+   *    to `aitracker://auth-callback?token=<jwt>` (or `?error=...`).
+   * 3. The system browser closes itself and resolves with that URL.
+   * 4. We pull the JWT, hydrate the full user via /api/auth/user, and call
+   *    signIn() so the existing flow takes over.
+   */
+  const onStravaSignIn = async () => {
+    if (stravaSubmitting) return;
+    setStravaSubmitting(true);
+    try {
+      const result = await WebBrowser.openAuthSessionAsync(
+        `${apiBaseUrl}/api/auth/strava-login?mobile=1`,
+        STRAVA_REDIRECT,
+      );
+
+      if (result.type !== "success" || !result.url) {
+        // dismiss / cancel — silent (user knows they hit cancel)
+        return;
+      }
+
+      const url = result.url;
+      const queryStart = url.indexOf("?");
+      const params = new URLSearchParams(queryStart >= 0 ? url.slice(queryStart + 1) : "");
+      const error = params.get("error");
+      if (error) {
+        toast.show(
+          error === "strava_denied"
+            ? "Strava sign-in was cancelled."
+            : "Strava sign-in failed. Try again.",
+          "error",
+        );
+        return;
+      }
+      const token = params.get("token");
+      if (!token) {
+        toast.show("Strava sign-in didn't return a token. Try again.", "error");
+        return;
+      }
+      const isNew = params.get("new") === "1";
+
+      // Persist the token first so the next /api/auth/user request includes
+      // the Authorization header that lib/api builds from storage.
+      await setToken(token);
+
+      // Pull the full user profile so the home screen has everything it needs.
+      let user: User;
+      try {
+        user = await api<User>("/api/auth/user");
+      } catch {
+        // Minimal fallback — AuthProvider's loadUser will fill in the rest.
+        user = {
+          id: 0,
+          email: null,
+          username: null,
+          firstName: null,
+          lastName: null,
+          profileImageUrl: null,
+          stravaConnected: true,
+        };
+      }
+
+      await signIn(token, user);
+      router.replace("/(tabs)");
+      setTimeout(
+        () =>
+          toast.show(
+            isNew
+              ? "Welcome to RunAnalytics! Syncing your Strava runs…"
+              : "Signed in with Strava.",
+            "success",
+          ),
+        250,
+      );
+    } catch (err) {
+      console.warn("[StravaLogin] error:", err);
+      toast.show("Couldn't open Strava sign-in. Try again.", "error");
+    } finally {
+      setStravaSubmitting(false);
     }
   };
 
@@ -134,6 +226,47 @@ export default function LoginScreen() {
                   ? "Start your 7-day free trial. No card required."
                   : "Sign in to your account"}
               </Text>
+            </View>
+
+            {/* Strava OAuth button — works for sign in AND sign up */}
+            <Pressable
+              onPress={onStravaSignIn}
+              disabled={stravaSubmitting || submitting}
+              style={({ pressed }) => ({
+                backgroundColor: "#FC4C02",
+                borderRadius: 12,
+                paddingVertical: 14,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+                opacity: pressed || stravaSubmitting ? 0.85 : 1,
+                marginBottom: 18,
+                ...shadow.card,
+              })}
+            >
+              {stravaSubmitting ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Ionicons name="logo-strava" size={18} color="#fff" />
+              )}
+              <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700", letterSpacing: -0.2 }}>
+                {stravaSubmitting ? "Opening Strava…" : "Continue with Strava"}
+              </Text>
+            </Pressable>
+
+            {/* OR divider */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 18,
+              }}
+            >
+              <View style={{ flex: 1, height: 0.5, backgroundColor: colors.border }} />
+              <Text style={{ fontSize: 11, color: colors.faint, letterSpacing: 0.6 }}>OR</Text>
+              <View style={{ flex: 1, height: 0.5, backgroundColor: colors.border }} />
             </View>
 
             {/* Segmented control */}

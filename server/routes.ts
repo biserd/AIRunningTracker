@@ -9,7 +9,7 @@ import { jobQueue, createListActivitiesJob, createHydrateActivityJob, metrics } 
 import { aiService } from "./services/ai";
 import { mlService } from "./services/ml";
 import { performanceService } from "./services/performance";
-import { authService } from "./services/auth";
+import { authService, AuthError } from "./services/auth";
 import { emailService } from "./services/email";
 import { runnerScoreService } from "./services/runnerScore";
 import goalsService from "./services/goals";
@@ -1326,6 +1326,13 @@ ${allPages.map(page => `  <url>
       const result = await authService.login(loginData);
       res.json(result);
     } catch (error: any) {
+      // Surface a machine-readable code so the web client can switch the UI
+      // (e.g. show a "Sign in with Strava" CTA on STRAVA_ONLY accounts
+      // instead of a generic "invalid credentials" toast).
+      if (error instanceof AuthError) {
+        const status = error.code === 'STRAVA_ONLY' ? 409 : 401;
+        return res.status(status).json({ message: error.message, code: error.code });
+      }
       console.error('Login error:', error);
       res.status(400).json({ message: error.message || "Failed to login" });
     }
@@ -1523,20 +1530,57 @@ ${allPages.map(page => `  <url>
   app.post("/api/auth/forgot-password", async (req, res) => {
     try {
       const { email } = z.object({ email: z.string().email() }).parse(req.body);
-      
-      // Generate reset token and send email
-      const resetToken = await authService.generatePasswordResetToken(email);
-      
-      if (resetToken) {
-        // Send password reset email
-        await emailService.sendPasswordResetEmail(email, resetToken);
+
+      // If the account was created via Strava OAuth there is no password to
+      // reset — send a "sign in with Strava" reminder instead of a useless
+      // password reset link. Otherwise fall through to the regular flow.
+      const stravaOnly = await authService.isStravaOnlyAccount(email);
+      if (stravaOnly) {
+        await emailService.sendStravaLoginReminderEmail(email);
+      } else {
+        const resetToken = await authService.generatePasswordResetToken(email);
+        if (resetToken) {
+          await emailService.sendPasswordResetEmail(email, resetToken);
+        }
       }
-      
+
       // Always return success to prevent email enumeration
-      res.json({ message: "If an account exists with that email, a password reset link has been sent." });
+      res.json({ message: "If an account exists with that email, a sign-in link has been sent." });
     } catch (error: any) {
       console.error('Forgot password error:', error);
       res.status(400).json({ message: "Invalid email address" });
+    }
+  });
+
+  // ─── Magic-link sign-in (one-tap, no password) ─────────────────────────
+  // Works for both password-based and Strava-only accounts. Tokens expire
+  // in 15 minutes and are signed JWTs (no DB writes needed).
+  app.post("/api/auth/magic-link/request", async (req, res) => {
+    try {
+      const { email } = z.object({ email: z.string().email() }).parse(req.body);
+      const token = await authService.generateMagicLinkToken(email);
+      if (token) {
+        await emailService.sendMagicLinkEmail(email, token);
+      }
+      // Always return 200 to prevent email enumeration.
+      res.json({ message: "If an account exists with that email, a sign-in link has been sent." });
+    } catch (error: any) {
+      console.error('Magic link request error:', error);
+      res.status(400).json({ message: "Invalid email address" });
+    }
+  });
+
+  app.post("/api/auth/magic-link/verify", async (req, res) => {
+    try {
+      const { token } = z.object({ token: z.string().min(1) }).parse(req.body);
+      const result = await authService.verifyMagicLinkToken(token);
+      res.json(result);
+    } catch (error: any) {
+      if (error instanceof AuthError) {
+        return res.status(401).json({ message: error.message, code: error.code });
+      }
+      console.error('Magic link verify error:', error);
+      res.status(400).json({ message: error.message || "Invalid sign-in link" });
     }
   });
 
@@ -1566,6 +1610,10 @@ ${allPages.map(page => `  <url>
   // =============================================
 
   // Step 1: redirect browser to Strava consent page
+  // ?mobile=1 → after OAuth callback, redirect into the native app via the
+  // `aitracker://auth-callback?token=…` deep link (used by the Expo app's
+  // "Continue with Strava" flow). Without it, falls back to the normal
+  // web cookie + redirect to /dashboard.
   app.get("/api/auth/strava-login", async (req, res) => {
     const clientId = process.env.STRAVA_CLIENT_ID || process.env.VITE_STRAVA_CLIENT_ID;
     if (!clientId) {
@@ -1573,9 +1621,14 @@ ${allPages.map(page => `  <url>
     }
     const origin = `${req.protocol}://${req.get('host')}`;
     const redirectUri = `${origin}/auth/strava/login/callback`;
-    // Generate a cryptographically secure random state to prevent CSRF
+    // Generate a cryptographically secure random state to prevent CSRF.
+    // Encode the mobile flag into the state itself so the callback can
+    // recognise it without trusting a separate cookie (mobile browsers
+    // launched from the app may not share cookies cleanly).
     const { randomBytes } = await import('crypto');
-    const state = `strava_login_${randomBytes(16).toString('hex')}`;
+    const isMobile = req.query.mobile === '1';
+    const prefix = isMobile ? 'strava_login_m_' : 'strava_login_';
+    const state = `${prefix}${randomBytes(16).toString('hex')}`;
     res.cookie('strava_oauth_state', state, { maxAge: 300000, httpOnly: true, sameSite: 'lax', path: '/' });
     const stravaUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&approval_prompt=auto&scope=read,activity:read_all&state=${encodeURIComponent(state)}`;
     res.redirect(stravaUrl);
@@ -1598,7 +1651,15 @@ ${allPages.map(page => `  <url>
       // Clear the state cookie
       res.cookie('strava_oauth_state', '', { maxAge: 0, path: '/', sameSite: 'lax' });
 
+      // Mobile flag was encoded into the state prefix in step 1 — extract it
+      // before the success/error branches so both can redirect appropriately.
+      const isMobile = typeof state === 'string' && state.startsWith('strava_login_m_');
+      const mobileScheme = 'aitracker://auth-callback';
+
       if (stravaError || !code) {
+        if (isMobile) {
+          return res.redirect(`${mobileScheme}?error=strava_denied`);
+        }
         return res.redirect("/auth?error=strava_denied");
       }
 
@@ -1626,6 +1687,12 @@ ${allPages.map(page => `  <url>
           stravaConnected: true,
         });
         const token = authService.generateToken(existingUser);
+        if (isMobile) {
+          // Hand the JWT back to the native app via custom-scheme deep link.
+          // Custom schemes can't share cookies, so the token rides the URL —
+          // it's a 7-day JWT that only the registered Expo app will receive.
+          return res.redirect(`${mobileScheme}?token=${encodeURIComponent(token)}`);
+        }
         // Pass JWT via short-lived cookie to avoid token in URL (security)
         res.cookie('_sta', token, { maxAge: 60000, path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
         return res.redirect('/dashboard?strava_login=success');
@@ -1673,11 +1740,20 @@ ${allPages.map(page => `  <url>
       }
 
       const token = authService.generateToken(newUser);
+      if (isMobile) {
+        // Native sign-up via Strava — same deep-link handoff as returning user.
+        return res.redirect(`${mobileScheme}?token=${encodeURIComponent(token)}&new=1`);
+      }
       // Pass JWT via short-lived cookie to avoid token in URL (security)
       res.cookie('_sta', token, { maxAge: 60000, path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
       return res.redirect('/audit-report');
     } catch (error: any) {
       console.error('[StravaLogin] Callback error:', error);
+      const isMobile =
+        typeof req.query.state === 'string' && req.query.state.startsWith('strava_login_m_');
+      if (isMobile) {
+        return res.redirect('aitracker://auth-callback?error=strava_failed');
+      }
       res.redirect("/auth?error=strava_failed");
     }
   });
