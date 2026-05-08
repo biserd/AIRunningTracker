@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Activity, Eye, EyeOff, Mail, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Activity, Eye, EyeOff, Mail, ArrowLeft, CheckCircle2, ChevronDown, ChevronUp, KeyRound } from "lucide-react";
 import { SiStrava } from "react-icons/si";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +24,9 @@ export default function AuthPage() {
   const [stravaOnlyEmail, setStravaOnlyEmail] = useState<string | null>(null);
   const [magicLinkSentTo, setMagicLinkSentTo] = useState<string | null>(null);
   const [magicLinkSubmitting, setMagicLinkSubmitting] = useState(false);
+  // Single consolidated "Trouble signing in?" disclosure — replaces the
+  // 3 stacked recovery links (forgot password / magic link / strava reminder).
+  const [helpOpen, setHelpOpen] = useState(false);
   const { toast } = useToast();
 
   // Handle Strava OAuth error redirects — e.g., user denied Strava access
@@ -166,28 +169,23 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
+        {/* Header — single line, no redundant subtitle */}
+        <div className="text-center mb-6">
           <Link href="/">
-            <div className="flex items-center justify-center space-x-3 mb-4">
+            <div className="flex items-center justify-center space-x-3">
               <div className="w-10 h-10 bg-strava-orange rounded-lg flex items-center justify-center">
                 <Activity className="text-white" size={24} />
               </div>
               <h1 className="text-3xl font-bold text-charcoal">RunAnalytics</h1>
             </div>
           </Link>
-          <p className="text-gray-600">
-            {mode === "signin" && "Welcome back!"}
-            {mode === "signup" && "Start your analytics journey"}
-            {mode === "magic" && "We'll email you a one-tap link"}
-          </p>
         </div>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="text-center">
-              {mode === "signin" && "Sign In"}
-              {mode === "signup" && "Create Account"}
+          <CardHeader className="pb-3">
+            <CardTitle className="text-center text-xl">
+              {mode === "signin" && "Sign in"}
+              {mode === "signup" && "Create your account"}
               {mode === "magic" && "Email me a sign-in link"}
             </CardTitle>
           </CardHeader>
@@ -291,30 +289,58 @@ export default function AuthPage() {
                   {loginForm.formState.errors.password && (
                     <p className="text-sm text-red-500">{loginForm.formState.errors.password.message}</p>
                   )}
-                  <div className="text-right">
-                    <Link href="/forgot-password" className="text-sm text-strava-orange hover:underline" data-testid="link-forgot-password">
-                      Forgot password?
-                    </Link>
-                  </div>
                 </div>
 
+                {/* Quiet dark Sign In button — no longer competes with the
+                    orange Strava button above. Strava is the recommended path. */}
                 <Button
                   type="submit"
-                  className="w-full bg-strava-orange hover:bg-strava-orange/90"
+                  className="w-full bg-charcoal hover:bg-charcoal/90 text-white"
                   disabled={loginMutation.isPending}
                 >
-                  {loginMutation.isPending ? "Signing in..." : "Sign In"}
+                  {loginMutation.isPending ? "Signing in..." : "Sign In with Email"}
                 </Button>
 
-                <button
-                  type="button"
-                  onClick={switchToMagic}
-                  className="w-full text-center text-sm text-gray-600 hover:text-strava-orange flex items-center justify-center gap-1.5 pt-1"
-                  data-testid="link-magic-link"
-                >
-                  <Mail className="h-3.5 w-3.5" />
-                  Email me a one-tap sign-in link instead
-                </button>
+                {/* ONE consolidated recovery disclosure — replaces the 3 stacked
+                    links (forgot password / magic link / strava reminder). */}
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setHelpOpen(!helpOpen)}
+                    className="w-full flex items-center justify-center gap-1.5 text-sm text-gray-600 hover:text-strava-orange"
+                    data-testid="button-help-disclosure"
+                  >
+                    Trouble signing in?
+                    {helpOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                  </button>
+                  {helpOpen && (
+                    <div className="mt-3 space-y-1 border-t border-gray-100 pt-3">
+                      <button
+                        type="button"
+                        onClick={switchToMagic}
+                        className="flex items-start gap-3 w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 transition-colors"
+                        data-testid="link-magic-link"
+                      >
+                        <Mail className="h-4 w-4 text-strava-orange mt-0.5 flex-shrink-0" />
+                        <span className="flex-1">
+                          <span className="block text-sm font-medium text-charcoal">Email me a one-tap sign-in link</span>
+                          <span className="block text-xs text-gray-500">Works for any account — no password needed</span>
+                        </span>
+                      </button>
+                      <Link
+                        href="/forgot-password"
+                        className="flex items-start gap-3 w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 transition-colors"
+                        data-testid="link-forgot-password"
+                      >
+                        <KeyRound className="h-4 w-4 text-strava-orange mt-0.5 flex-shrink-0" />
+                        <span className="flex-1">
+                          <span className="block text-sm font-medium text-charcoal">Reset my password</span>
+                          <span className="block text-xs text-gray-500">If you set one up</span>
+                        </span>
+                      </Link>
+                    </div>
+                  )}
+                </div>
               </form>
             )}
 
@@ -453,29 +479,24 @@ export default function AuthPage() {
             )}
 
             {mode !== "magic" && (
-              <div className="text-center">
+              <div className="text-center border-t border-gray-100 pt-4">
                 <button
                   type="button"
                   onClick={() => {
                     setMode(mode === "signin" ? "signup" : "signin");
                     setStravaOnlyEmail(null);
+                    setHelpOpen(false);
                   }}
-                  className="text-sm text-strava-orange hover:underline"
+                  className="text-sm text-gray-600 hover:text-strava-orange"
                 >
-                  {mode === "signin"
-                    ? "Don't have an account? Sign up"
-                    : "Already have an account? Sign in"}
+                  {mode === "signin" ? (
+                    <>New here? <span className="text-strava-orange font-medium">Create an account</span></>
+                  ) : (
+                    <>Already have an account? <span className="text-strava-orange font-medium">Sign in</span></>
+                  )}
                 </button>
               </div>
             )}
-
-            <div className="text-center">
-              <Link href="/" className="inline-block">
-                <span className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
-                  ← Back to Home
-                </span>
-              </Link>
-            </div>
           </CardContent>
         </Card>
       </div>
