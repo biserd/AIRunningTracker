@@ -1560,7 +1560,16 @@ ${allPages.map(page => `  <url>
       const { email } = z.object({ email: z.string().email() }).parse(req.body);
       const token = await authService.generateMagicLinkToken(email);
       if (token) {
-        await emailService.sendMagicLinkEmail(email, token);
+        // Use the actual request origin so the link works in dev / preview
+        // environments too. Falls back to https://aitracker.run inside the
+        // email service if the host header is somehow missing.
+        const host = req.get('host');
+        const proto = req.get('x-forwarded-proto') || req.protocol;
+        const baseUrl = host ? `${proto}://${host}` : 'https://aitracker.run';
+        console.log(`[MagicLink] Sending link to ${email} via ${baseUrl}`);
+        await emailService.sendMagicLinkEmail(email, token, baseUrl);
+      } else {
+        console.log(`[MagicLink] No account for ${email} (silently 200ing)`);
       }
       // Always return 200 to prevent email enumeration.
       res.json({ message: "If an account exists with that email, a sign-in link has been sent." });

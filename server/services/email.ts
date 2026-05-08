@@ -266,9 +266,12 @@ The RunAnalytics Team`;
   /**
    * One-tap sign-in link sent on /api/auth/magic-link/request.
    * Works for both password and Strava-only accounts. Token expires in 15 min.
+   * `baseUrl` lets the route handler pass the actual request origin so dev /
+   * preview environments link back to themselves instead of always landing on
+   * the production deploy (which may not yet ship this feature).
    */
-  async sendMagicLinkEmail(email: string, magicToken: string): Promise<void> {
-    const url = `https://aitracker.run/auth/magic-link?token=${encodeURIComponent(magicToken)}`;
+  async sendMagicLinkEmail(email: string, magicToken: string, baseUrl: string = 'https://aitracker.run'): Promise<void> {
+    const url = `${baseUrl.replace(/\/$/, '')}/auth/magic-link?token=${encodeURIComponent(magicToken)}`;
     const subject = 'Your one-tap sign-in link';
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
