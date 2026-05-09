@@ -418,6 +418,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.redirect(301, "/blog/best-strava-analytics-tools-2026");
   });
 
+  // SEO: emit `X-Robots-Tag: noindex` for utility/auth pages so Google drops
+  // them from the index even if discovered via internal links or backlinks.
+  // (These are also excluded from the sitemap above.)
+  const NOINDEX_PATHS = new Set<string>([
+    "/auth",
+    "/auth/magic-link",
+    "/forgot-password",
+    "/reset-password",
+    "/magic-link",
+  ]);
+  app.use((req, res, next) => {
+    if (NOINDEX_PATHS.has(req.path)) {
+      res.setHeader("X-Robots-Tag", "noindex, follow");
+    }
+    next();
+  });
+
   // SEO: robots.txt
   app.get("/robots.txt", (req, res) => {
     const baseUrl = "https://aitracker.run";
@@ -451,9 +468,8 @@ Sitemap: ${baseUrl}/sitemap.xml`;
       
       const staticPages = [
         { url: "/", changefreq: "daily", priority: "1.0", lastmod: today },
-        { url: "/auth", changefreq: "monthly", priority: "0.8", lastmod: "2026-01-01" },
-        { url: "/forgot-password", changefreq: "yearly", priority: "0.4", lastmod: "2025-12-01" },
-        { url: "/reset-password", changefreq: "yearly", priority: "0.3", lastmod: "2025-12-01" },
+        // Utility pages (auth/forgot-password/reset-password) are intentionally
+        // excluded — they have no indexable content and just dilute crawl budget.
         { url: "/about", changefreq: "monthly", priority: "0.7", lastmod: "2026-01-01" },
         { url: "/features", changefreq: "monthly", priority: "0.8", lastmod: today },
         { url: "/pricing", changefreq: "weekly", priority: "0.9", lastmod: today },
@@ -539,9 +555,14 @@ ${allPages.map(page => `  <url>
   const fs = await import('fs');
   const path = await import('path');
   
-  // Helper to generate pre-rendered HTML with SEO meta tags
+  // Helper to generate pre-rendered HTML with SEO meta tags.
+  // Served only to crawlers — real users get the SPA from Vite's catch-all.
+  // IMPORTANT: do NOT include a window.location redirect here. Googlebot
+  // renders JS and treats it as a redirect → "Page with redirect" / soft 404.
   const generateSEOHtml = (pageMeta: { title: string; description: string; keywords?: string }, url: string): string => {
     const baseUrl = "https://aitracker.run";
+    // Strip the leading title segment ("Foo | RunAnalytics" → "Foo") for the visible H1.
+    const h1 = pageMeta.title.split("|")[0].trim();
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -553,7 +574,7 @@ ${allPages.map(page => `  <url>
   <meta name="author" content="RunAnalytics" />
   <meta name="theme-color" content="#fc4c02" />
   <link rel="canonical" href="${baseUrl}${url}" />
-  
+
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="${baseUrl}${url}" />
@@ -561,14 +582,14 @@ ${allPages.map(page => `  <url>
   <meta property="og:description" content="${pageMeta.description}" />
   <meta property="og:image" content="${baseUrl}/og-image.jpg" />
   <meta property="og:site_name" content="RunAnalytics" />
-  
+
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:url" content="${baseUrl}${url}" />
   <meta name="twitter:title" content="${pageMeta.title}" />
   <meta name="twitter:description" content="${pageMeta.description}" />
   <meta name="twitter:image" content="${baseUrl}/og-image.jpg" />
-  
+
   <!-- Structured Data -->
   <script type="application/ld+json">
   {
@@ -580,29 +601,71 @@ ${allPages.map(page => `  <url>
     "publisher": {
       "@type": "Organization",
       "name": "RunAnalytics",
-      "url": "${baseUrl}"
+      "url": "${baseUrl}",
+      "logo": "${baseUrl}/favicon.svg"
     }
   }
   </script>
-  
+
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 <body>
-  <div id="root">
-    <main>
-      <h1>${pageMeta.title}</h1>
+  <header>
+    <nav aria-label="Primary">
+      <a href="${baseUrl}/"><strong>RunAnalytics</strong></a>
+      <ul>
+        <li><a href="${baseUrl}/features">Features</a></li>
+        <li><a href="${baseUrl}/pricing">Pricing</a></li>
+        <li><a href="${baseUrl}/tools">Free Tools</a></li>
+        <li><a href="${baseUrl}/tools/shoes">Running Shoes</a></li>
+        <li><a href="${baseUrl}/blog">Blog</a></li>
+        <li><a href="${baseUrl}/ai-running-coach">AI Coach</a></li>
+        <li><a href="${baseUrl}/faq">FAQ</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main>
+    <article>
+      <h1>${h1}</h1>
       <p>${pageMeta.description}</p>
-      <noscript>
-        <p>RunAnalytics requires JavaScript to run. Please enable JavaScript in your browser settings.</p>
-      </noscript>
-    </main>
-  </div>
-  <script>
-    // Redirect to SPA for client-side rendering
-    window.location.href = "${url}";
-  </script>
+      <section>
+        <h2>About RunAnalytics</h2>
+        <p>RunAnalytics is an AI-powered running analytics platform that integrates with
+        Strava to deliver personalized insights, race predictions, training plan generation,
+        recovery analysis, and a conversational AI running coach. We help runners of every
+        level train smarter and avoid injury.</p>
+      </section>
+      <section>
+        <h2>Explore the platform</h2>
+        <ul>
+          <li><a href="${baseUrl}/tools/race-predictor">Race Time Predictor</a> — predict 5K, 10K, half &amp; marathon finish times.</li>
+          <li><a href="${baseUrl}/tools/marathon-fueling">Marathon Fueling Planner</a> — build a personalized fueling strategy.</li>
+          <li><a href="${baseUrl}/tools/aerobic-decoupling-calculator">Aerobic Decoupling Calculator</a> — measure aerobic efficiency.</li>
+          <li><a href="${baseUrl}/tools/training-split-analyzer">Training Split Analyzer</a> — see your easy/hard balance.</li>
+          <li><a href="${baseUrl}/tools/cadence-analyzer">Cadence Analyzer</a> — analyze running form stability.</li>
+          <li><a href="${baseUrl}/tools/shoes">Running Shoe Database</a> — 280+ shoes with AI insights.</li>
+          <li><a href="${baseUrl}/tools/shoe-finder">Shoe Finder</a> — get matched to the right pair.</li>
+          <li><a href="${baseUrl}/tools/rotation-planner">Rotation Planner</a> — build a smart shoe rotation.</li>
+          <li><a href="${baseUrl}/runner-score">Runner Score</a> — your running performance index.</li>
+        </ul>
+      </section>
+    </article>
+  </main>
+  <footer>
+    <nav aria-label="Footer">
+      <a href="${baseUrl}/about">About</a> ·
+      <a href="${baseUrl}/contact">Contact</a> ·
+      <a href="${baseUrl}/privacy">Privacy</a> ·
+      <a href="${baseUrl}/terms">Terms</a> ·
+      <a href="${baseUrl}/sitemap.xml">Sitemap</a>
+    </nav>
+    <p>&copy; RunAnalytics — AI-powered running analytics for Strava athletes.</p>
+  </footer>
+  <noscript>
+    <p>RunAnalytics is best experienced with JavaScript enabled.</p>
+  </noscript>
 </body>
 </html>`;
   };
