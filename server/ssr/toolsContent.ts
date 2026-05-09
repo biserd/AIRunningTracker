@@ -12,9 +12,9 @@ export interface ToolContent {
 export const toolsContent: ToolContent[] = [
   {
     slug: "race-predictor",
-    title: "Race Time Predictor | Free 5K to Marathon Calculator",
-    description: "Predict your 5K, 10K, half marathon & marathon times using the Riegel formula. Import Strava data for personalized race predictions. Free calculator.",
-    keywords: "race time predictor, marathon time calculator, running pace calculator, Riegel formula, 5K prediction, half marathon time",
+    title: "Race Predictor: Free AI Tool for Marathon & 10K Finish Times",
+    description: "Predict your race finish time from your last run. Our free AI race predictor uses your Strava or Garmin data plus VDOT models. Try it in 30 seconds.",
+    keywords: "race predictor, ai race predictor, marathon time predictor, half marathon predictor, 10k race predictor, 5k race predictor, strava race predictor, vdot calculator",
     features: [
       "Predict times for 5K, 10K, Half Marathon, and Marathon",
       "Uses the scientifically-validated Riegel formula",

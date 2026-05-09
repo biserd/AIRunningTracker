@@ -226,18 +226,18 @@ export default function RacePredictor() {
   return (
     <>
       <SEO
-        title="Race Time Predictor | Free 5K to Marathon Calculator | RunAnalytics"
-        description="Predict your 5K, 10K, half marathon & marathon times using the Riegel formula. Import Strava data for personalized race predictions. Free calculator."
-        keywords="race time predictor, marathon time calculator, running pace calculator, Riegel formula, race prediction, 5K time predictor"
+        title="Race Predictor: Free AI Tool for Marathon & 10K Finish Times"
+        description="Predict your race finish time from your last run. Our free AI race predictor uses your Strava or Garmin data plus VDOT models. Try it in 30 seconds."
+        keywords="race predictor, ai race predictor, marathon time predictor, half marathon predictor, 10k race predictor, 5k race predictor, strava race predictor, vdot calculator"
         url="https://aitracker.run/tools/race-predictor"
         structuredData={{
           "@context": "https://schema.org",
           "@type": "SoftwareApplication",
-          "name": "Race Time Predictor",
+          "name": "AI Race Predictor",
           "applicationCategory": "HealthApplication",
           "operatingSystem": "Web",
           "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-          "description": "Predict your 5K, 10K, half marathon & marathon times using the Riegel formula. Import Strava data for personalized race predictions. Free calculator."
+          "description": "Free AI race predictor that estimates your marathon, half marathon, 10K and 5K finish times from your last run, using VDOT models and your Strava or Garmin data."
         }}
       />
       <FAQSchema faqs={RACE_PREDICTOR_FAQS} />
