@@ -657,11 +657,11 @@ export default function ShoeDetailPage() {
                           <AccordionItem key={index} value={`faq-${index}`} data-testid={`faq-item-${index}`}>
                             <AccordionTrigger className="text-left">
                               <span className="font-medium text-gray-900 dark:text-white">
-                                {faq.q}
+                                {faq.question || faq.q}
                               </span>
                             </AccordionTrigger>
                             <AccordionContent className="text-gray-600 dark:text-gray-400 pt-2">
-                              {faq.a}
+                              {faq.answer || faq.a}
                             </AccordionContent>
                           </AccordionItem>
                         ))}
