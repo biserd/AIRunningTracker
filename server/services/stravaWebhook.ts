@@ -159,9 +159,10 @@ class StravaWebhookService {
       // Duplicate-safe: the regular sync job may also store this later; we skip if it exists.
       const stravaId = String(event.object_id);
       const existing = await storage.getActivityByStravaIdAndUser(stravaId, user.id);
+      let activityDbId: number | null = existing?.id ?? null;
       if (!existing) {
         try {
-          await storage.createActivity({
+          const created = await storage.createActivity({
             userId: user.id,
             stravaId,
             name: activity.name,
@@ -199,6 +200,7 @@ class StravaWebhookService {
             prCount: activity.pr_count || 0,
             hydrationStatus: "pending",
           });
+          activityDbId = created?.id ?? null;
           console.log(`[Strava Webhook] Stored activity ${stravaId} for user ${user.id}`);
         } catch (storeErr) {
           console.error(`[Strava Webhook] Failed to store activity ${stravaId}:`, storeErr);
@@ -209,7 +211,7 @@ class StravaWebhookService {
       }
 
       console.log(`[Strava Webhook] Processing run activity ${event.object_id} for user ${user.id}`);
-      await this.sendPostRunEmail(user, activity, stravaId);
+      await this.sendPostRunEmail(user, activity, stravaId, activityDbId);
       await storage.updateUser(user.id, { lastPostRunEmailAt: new Date() });
       return "email_sent";
     } catch (error) {
@@ -285,7 +287,7 @@ class StravaWebhookService {
     }
   }
 
-  private async sendPostRunEmail(user: any, activity: any, stravaId: string): Promise<void> {
+  private async sendPostRunEmail(user: any, activity: any, stravaId: string, activityDbId: number | null): Promise<void> {
     try {
       const distanceKm = activity.distance / 1000;
       const distanceMiles = distanceKm * 0.621371;
@@ -314,7 +316,9 @@ class StravaWebhookService {
       const unsubscribeToken = this.generateUnsubscribeToken(user.id);
       const unsubscribeUrl = `https://${domain}/api/notifications/unsubscribe?token=${unsubscribeToken}`;
       const dashboardUrl = `https://${domain}/dashboard`;
-      const activityUrl = `https://${domain}`;
+      const activityUrl = activityDbId
+        ? `https://${domain}/activity/${activityDbId}`
+        : `https://${domain}/dashboard`;
 
       // Build training context from the last 30 days of activities
       const activityDate = new Date(activity.start_date || Date.now());
