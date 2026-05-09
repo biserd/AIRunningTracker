@@ -900,14 +900,21 @@ ${allPages.map(page => `  <url>
     }
   });
 
-  // SSR for shoe comparison pages - serves to ALL users for better SEO and Core Web Vitals
+  // SSR for shoe comparison pages - crawlers get bare HTML for SEO, humans get React SPA
   app.get("/tools/shoes/compare/:slug", async (req: any, res, next) => {
     try {
+      const userAgent = req.headers['user-agent'] || '';
+      const isCrawlerRequest = /googlebot|bingbot|yandex|baiduspider|duckduckbot|slurp|facebookexternalhit|twitterbot|linkedinbot|pinterest|semrush|ahrefsbot|mj12bot|dotbot|petalbot|rogerbot|dataforseo/i.test(userAgent);
+
+      if (!isCrawlerRequest) {
+        return next();
+      }
+
       const { slug } = req.params;
       const comparison = await storage.getShoeComparisonBySlug(slug);
       
       if (comparison) {
-        console.log(`[SSR] Serving server-rendered comparison page: ${slug}`);
+        console.log(`[SSR] Serving server-rendered comparison page to crawler: ${slug}`);
         res.setHeader('Content-Type', 'text/html');
         res.setHeader('X-Robots-Tag', 'index, follow');
         res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
