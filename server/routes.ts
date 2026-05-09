@@ -435,6 +435,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
+  // SEO: IndexNow key verification file. Bing/Yandex/Seznam fetch this to
+  // confirm we own the key when we submit URLs to api.indexnow.org.
+  // Key is set via INDEXNOW_KEY env var; falls back to a baked-in default
+  // so submissions still work even if the secret hasn't been provisioned.
+  app.get("/:key([a-f0-9]{8,128}).txt", (req, res, next) => {
+    const expected = process.env.INDEXNOW_KEY || "ae4e97b2aac152e8b1c19837d99227fd";
+    if (req.params.key === expected) {
+      res.type("text/plain").send(expected);
+    } else {
+      next();
+    }
+  });
+
   // SEO: robots.txt
   app.get("/robots.txt", (req, res) => {
     const baseUrl = "https://aitracker.run";
