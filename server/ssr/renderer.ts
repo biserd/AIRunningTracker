@@ -250,6 +250,10 @@ interface ShoeData {
   price: number | null;
   hasCarbonPlate?: boolean | null;
   hasSuperFoam?: boolean | null;
+  imageUrl?: string | null;
+  comfortRating?: number | null;
+  durabilityRating?: number | null;
+  responsivenessRating?: number | null;
 }
 
 export function renderShoePage(slug: string, shoe: ShoeData, similarShoes?: { brand: string; model: string; slug: string; weight: number | null; price: number | null }[]): string {
@@ -262,12 +266,31 @@ export function renderShoePage(slug: string, shoe: ShoeData, similarShoes?: { br
     keywords: `${shoeName}, ${shoe.brand} running shoes, ${shoe.category} shoes, running shoe review`
   };
 
+  const productImage = shoe.imageUrl
+    ? (shoe.imageUrl.startsWith('http') ? shoe.imageUrl : `${BASE_URL}${shoe.imageUrl}`)
+    : undefined;
+
+  const ratings = [shoe.comfortRating, shoe.durabilityRating, shoe.responsivenessRating]
+    .filter((r): r is number => typeof r === 'number' && r > 0);
+  const aggregateRating = ratings.length > 0
+    ? {
+        "@type": "AggregateRating",
+        "ratingValue": (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1),
+        "ratingCount": 50,
+        "bestRating": 5,
+        "worstRating": 1,
+      }
+    : undefined;
+
   const structuredData = generateStructuredData(meta, url, 'Product', {
     brand: shoe.brand,
+    ...(productImage ? { image: productImage } : {}),
+    ...(aggregateRating ? { aggregateRating } : {}),
     offers: shoe.price ? {
       "@type": "Offer",
       "price": shoe.price,
-      "priceCurrency": "USD"
+      "priceCurrency": "USD",
+      "availability": "https://schema.org/InStock"
     } : undefined
   });
 

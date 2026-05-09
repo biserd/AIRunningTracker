@@ -278,11 +278,16 @@ function Breadcrumbs({ brand, model, slug }: { brand: string; model: string; slu
 }
 
 function ProductJsonLd({ shoe }: { shoe: RunningShoe }) {
+  const productImage = shoe.imageUrl
+    ? (shoe.imageUrl.startsWith('http') ? shoe.imageUrl : `https://aitracker.run${shoe.imageUrl}`)
+    : `https://aitracker.run/og-image.jpg`;
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: `${shoe.brand} ${shoe.model}`,
     description: shoe.description,
+    image: productImage,
     brand: {
       "@type": "Brand",
       name: shoe.brand,
@@ -352,19 +357,19 @@ function BreadcrumbJsonLd({ brand, model, slug }: { brand: string; model: string
         "@type": "ListItem",
         position: 1,
         name: "Tools",
-        item: "https://runanalytics.com/tools",
+        item: "https://aitracker.run/tools",
       },
       {
         "@type": "ListItem",
         position: 2,
         name: "Running Shoes",
-        item: "https://runanalytics.com/tools/shoes",
+        item: "https://aitracker.run/tools/shoes",
       },
       {
         "@type": "ListItem",
         position: 3,
         name: `${brand} ${model}`,
-        item: `https://runanalytics.com/tools/shoes/${slug}`,
+        item: `https://aitracker.run/tools/shoes/${slug}`,
       },
     ],
   };
@@ -461,7 +466,7 @@ export default function ShoeDetailPage() {
           name="description"
           content={`${shoe.brand} ${shoe.model} - ${shoe.description} Weight: ${shoe.weight}oz, Drop: ${shoe.heelToToeDrop}mm, Price: $${shoe.price}. AI-powered insights and series comparison.`}
         />
-        <link rel="canonical" href={`https://runanalytics.com/tools/shoes/${shoe.slug}`} />
+        <link rel="canonical" href={`https://aitracker.run/tools/shoes/${shoe.slug}`} />
         <meta property="og:title" content={`${shoe.brand} ${shoe.model} | RunAnalytics`} />
         <meta
           property="og:description"
@@ -470,7 +475,7 @@ export default function ShoeDetailPage() {
         <meta property="og:type" content="product" />
         <meta
           property="og:url"
-          content={`https://runanalytics.com/tools/shoes/${shoe.slug}`}
+          content={`https://aitracker.run/tools/shoes/${shoe.slug}`}
         />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={`${shoe.brand} ${shoe.model}`} />

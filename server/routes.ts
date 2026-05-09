@@ -888,7 +888,11 @@ ${allPages.map(page => `  <url>
           bestFor: shoe.bestFor,
           price: shoe.price,
           hasCarbonPlate: shoe.hasCarbonPlate,
-          hasSuperFoam: shoe.hasSuperFoam
+          hasSuperFoam: shoe.hasSuperFoam,
+          imageUrl: shoe.imageUrl,
+          comfortRating: shoe.comfortRating,
+          durabilityRating: shoe.durabilityRating,
+          responsivenessRating: shoe.responsivenessRating
         }, similar.map(s => ({ brand: s.brand, model: s.model, slug: s.slug, weight: s.weight, price: s.price })));
         res.send(html);
       } else {
