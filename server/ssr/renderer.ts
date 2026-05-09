@@ -153,6 +153,10 @@ export function renderBlogPost(slug: string): string | null {
       </nav>`
     : '';
 
+  // Pick relevant tool/shoe links based on the post's category & title so each
+  // post sends a unique mix of authority signals to the right destinations.
+  const relatedHtml = generateRelatedToolsForBlog(post.title, post.category);
+
   return `${head}
 <body>
   <div id="root">
@@ -165,7 +169,9 @@ export function renderBlogPost(slug: string): string | null {
       <article class="ssr-content">
         ${tocHtml}
         ${post.content}
-        
+
+        ${relatedHtml}
+
         <div class="ssr-cta">
           <h3>Ready to improve your running?</h3>
           <p>Get AI-powered insights from your Strava data.</p>
@@ -177,6 +183,56 @@ export function renderBlogPost(slug: string): string | null {
   <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>`;
+}
+
+// Build a "Related tools & resources" block for blog posts. The set of links
+// is chosen by category + title keywords so Google sees topical relevance,
+// not boilerplate. Every post gets links to the shoe hub + a coaching tool.
+function generateRelatedToolsForBlog(title: string, category: string): string {
+  const haystack = `${title} ${category}`.toLowerCase();
+  const links: { href: string; label: string; blurb: string }[] = [];
+
+  const push = (href: string, label: string, blurb: string) => {
+    if (!links.some((l) => l.href === href)) links.push({ href, label, blurb });
+  };
+
+  // Topical matches first
+  if (/race|marathon|half|10k|5k|pace|predict/.test(haystack)) {
+    push("/tools/race-predictor", "Race Time Predictor", "predict your finish time from a recent effort");
+  }
+  if (/marathon|fuel|carb|nutrition|gel/.test(haystack)) {
+    push("/tools/marathon-fueling", "Marathon Fueling Planner", "build a personalized race-day fuel strategy");
+  }
+  if (/aerobic|decoupling|efficiency|easy|zone 2/.test(haystack)) {
+    push("/tools/aerobic-decoupling-calculator", "Aerobic Decoupling Calculator", "measure your aerobic efficiency on long runs");
+  }
+  if (/training plan|plan|workout|split|periodization/.test(haystack)) {
+    push("/tools/training-split-analyzer", "Training Split Analyzer", "see whether your easy/hard balance is sustainable");
+  }
+  if (/cadence|form|stride|stability/.test(haystack)) {
+    push("/tools/cadence-analyzer", "Cadence Analyzer", "analyze your stride and form stability");
+  }
+  if (/coach|ai|insight|chat|agent/.test(haystack)) {
+    push("/ai-running-coach", "AI Running Coach", "ask questions about your training and get instant analysis");
+    push("/ai-agent-coach", "AI Agent Coach", "proactive post-activity coaching for Premium members");
+  }
+  if (/shoe|footwear|carbon|drop|stack|cushion/.test(haystack)) {
+    push("/tools/shoes", "Running Shoe Database", "browse 280+ shoes with AI insights");
+    push("/tools/shoe-finder", "Shoe Finder", "get matched to the right shoe for your stride");
+    push("/tools/rotation-planner", "Rotation Planner", "build a smart multi-shoe rotation");
+  }
+
+  // Always-on baseline links so every blog post sends some authority to the hubs.
+  push("/tools/shoes", "Running Shoe Database", "browse 280+ shoes with AI insights");
+  push("/runner-score", "Runner Score", "get your personal running performance index");
+  push("/blog", "More from the RunAnalytics blog", "training tips, AI insights, and shoe reviews");
+
+  return `<section class="ssr-related">
+        <h2>Related tools &amp; resources</h2>
+        <ul>
+          ${links.slice(0, 6).map(l => `<li><a href="${l.href}"><strong>${l.label}</strong></a> — ${l.blurb}.</li>`).join('\n          ')}
+        </ul>
+      </section>`;
 }
 
 interface ShoeData {
@@ -277,26 +333,207 @@ export function renderShoePage(slug: string, shoe: ShoeData, similarShoes?: { br
 </html>`;
 }
 
+interface ComparisonShoe {
+  brand: string;
+  model: string;
+  weight: number | null;
+  heelToToeDrop: number | null;
+  category: string;
+  price: number | null;
+  // Optional richer fields used by the editorial generator. The route may
+  // pass these from the runningShoes table when available.
+  slug?: string | null;
+  heelStackHeight?: number | null;
+  forefootStackHeight?: number | null;
+  cushioningLevel?: string | null;
+  stability?: string | null;
+  hasCarbonPlate?: boolean | null;
+  hasSuperFoam?: boolean | null;
+  bestFor?: string[] | null;
+}
+
 interface ComparisonData {
   title: string;
   metaDescription: string | null;
   verdict: string | null;
-  shoe1: {
-    brand: string;
-    model: string;
-    weight: number | null;
-    heelToToeDrop: number | null;
-    category: string;
-    price: number | null;
-  } | null;
-  shoe2: {
-    brand: string;
-    model: string;
-    weight: number | null;
-    heelToToeDrop: number | null;
-    category: string;
-    price: number | null;
-  } | null;
+  shoe1: ComparisonShoe | null;
+  shoe2: ComparisonShoe | null;
+}
+
+// ---------------------------------------------------------------------------
+// Spec-driven editorial copy generator for shoe comparison pages.
+//
+// Each comparison page used to be a thin spec table — Google flagged ~17 of
+// them as "Crawled - currently not indexed" because they looked templated.
+// This generator builds unique 2-paragraph editorial copy + an FAQ from the
+// actual spec deltas of each pair. Because every pair has different weights,
+// drops, stacks, and pricing, every page gets unique prose.
+// ---------------------------------------------------------------------------
+function fmtCategory(cat: string): string {
+  return cat.replace(/_/g, " ").toLowerCase();
+}
+
+function fmtOz(n: number | null | undefined): string {
+  return n != null ? `${n} oz` : "—";
+}
+
+function describeStack(s: ComparisonShoe): string {
+  if (s.heelStackHeight && s.forefootStackHeight) {
+    return `${s.heelStackHeight}mm/${s.forefootStackHeight}mm`;
+  }
+  return "stack not listed";
+}
+
+function generateComparisonNarrative(s1: ComparisonShoe, s2: ComparisonShoe): string {
+  // Names interpolated into HTML — must be escaped because brand/model come
+  // from a user-editable database table.
+  const n1 = escapeHtml(`${s1.brand} ${s1.model}`);
+  const n2 = escapeHtml(`${s2.brand} ${s2.model}`);
+  const brand1 = escapeHtml(s1.brand);
+  const cat1 = escapeHtml(fmtCategory(s1.category));
+  const cat2 = escapeHtml(fmtCategory(s2.category));
+  const sameCategory = s1.category === s2.category;
+  const sameBrand = s1.brand.toLowerCase() === s2.brand.toLowerCase();
+
+  // --- Paragraph 1: framing ---
+  const framing: string[] = [];
+  if (sameBrand) {
+    framing.push(
+      `The ${n1} and the ${n2} are both ${cat1} shoes from ${brand1}, which makes this a classic same-line comparison: same design language, similar fit philosophy, but meaningful changes in feel and intended use.`
+    );
+  } else if (sameCategory) {
+    framing.push(
+      `The ${n1} and the ${n2} sit in the same ${cat1} bucket, so the question isn't <em>what</em> you'd use them for — it's which one matches your stride, your weekly mileage, and your budget.`
+    );
+  } else {
+    framing.push(
+      `The ${n1} (${cat1}) and the ${n2} (${cat2}) live in different parts of a runner's rotation. This comparison is most useful if you're deciding which slot to fill next — a versatile workhorse, a race-day weapon, or a recovery cruiser.`
+    );
+  }
+
+  // --- Paragraph 2: spec-by-spec deltas (only mention real differences) ---
+  const deltas: string[] = [];
+  if (s1.weight && s2.weight && s1.weight !== s2.weight) {
+    const lighter = s1.weight < s2.weight ? n1 : n2;
+    const diff = Math.abs(s1.weight - s2.weight).toFixed(1);
+    deltas.push(
+      `the <strong>${lighter}</strong> comes in roughly ${diff} oz lighter (${fmtOz(s1.weight)} vs ${fmtOz(s2.weight)}), which becomes noticeable on faster turnover and longer efforts`
+    );
+  }
+  if (s1.heelToToeDrop != null && s2.heelToToeDrop != null && s1.heelToToeDrop !== s2.heelToToeDrop) {
+    deltas.push(
+      `the drop differs (${s1.heelToToeDrop}mm on the ${n1}, ${s2.heelToToeDrop}mm on the ${n2}) — higher-drop shoes tend to feel friendlier to heel strikers and tight calves, while lower drops favor a midfoot landing`
+    );
+  }
+  const stack1 = s1.heelStackHeight ?? null;
+  const stack2 = s2.heelStackHeight ?? null;
+  if (stack1 && stack2 && Math.abs(stack1 - stack2) >= 2) {
+    const taller = stack1 > stack2 ? n1 : n2;
+    deltas.push(
+      `the <strong>${taller}</strong> rides on the taller stack (${describeStack(s1)} vs ${describeStack(s2)}), giving it more under-foot cushioning at the cost of a slightly less stable platform`
+    );
+  }
+  if (s1.hasCarbonPlate !== s2.hasCarbonPlate && (s1.hasCarbonPlate || s2.hasCarbonPlate)) {
+    const plated = s1.hasCarbonPlate ? n1 : n2;
+    deltas.push(
+      `only the <strong>${plated}</strong> uses a carbon plate, which adds noticeable propulsion at marathon pace and below but isn't really worth the premium for easy days`
+    );
+  }
+  if (s1.hasSuperFoam !== s2.hasSuperFoam && (s1.hasSuperFoam || s2.hasSuperFoam)) {
+    const foamed = s1.hasSuperFoam ? n1 : n2;
+    deltas.push(
+      `the <strong>${foamed}</strong> uses a modern super-foam (PEBA or similar), which gives a livelier, more responsive ride than traditional EVA`
+    );
+  }
+  if (s1.price && s2.price && s1.price !== s2.price) {
+    const cheaper = s1.price < s2.price ? n1 : n2;
+    const diff = Math.abs(s1.price - s2.price);
+    deltas.push(
+      `the <strong>${cheaper}</strong> is $${diff} cheaper at MSRP ($${s1.price} vs $${s2.price})`
+    );
+  }
+
+  let p2: string;
+  if (deltas.length === 0) {
+    p2 = `On paper the two shoes are remarkably close — same category, similar weight, similar drop. The buying decision comes down to fit, brand history, and which one feels better on a short test run.`;
+  } else if (deltas.length === 1) {
+    p2 = `The headline difference: ${deltas[0]}. Everything else (fit, outsole geometry, upper) is close enough that it comes down to personal preference.`;
+  } else {
+    const last = deltas.pop();
+    p2 = `Where they actually differ: ${deltas.join("; ")}; and ${last}.`;
+  }
+
+  return `<p>${framing.join(" ")}</p>\n<p>${p2}</p>`;
+}
+
+function generateComparisonFaq(s1: ComparisonShoe, s2: ComparisonShoe): { q: string; a: string }[] {
+  // q goes through escapeHtml in the renderer; a contains intentional <a>
+  // markup, so dynamic text inside it must be escaped here.
+  const n1 = escapeHtml(`${s1.brand} ${s1.model}`);
+  const n2 = escapeHtml(`${s2.brand} ${s2.model}`);
+  const faq: { q: string; a: string }[] = [];
+
+  if (s1.weight && s2.weight) {
+    const lighter = s1.weight <= s2.weight ? n1 : n2;
+    faq.push({
+      q: `Which is lighter, the ${n1} or the ${n2}?`,
+      a: `The ${lighter} is the lighter shoe at ${Math.min(s1.weight, s2.weight)} oz versus ${Math.max(s1.weight, s2.weight)} oz.`,
+    });
+  }
+  if (s1.price && s2.price) {
+    const cheaper = s1.price <= s2.price ? n1 : n2;
+    faq.push({
+      q: `Which costs less?`,
+      a: `The ${cheaper} is the more affordable option at $${Math.min(s1.price, s2.price)} compared to $${Math.max(s1.price, s2.price)}.`,
+    });
+  }
+  if (s1.heelToToeDrop != null && s2.heelToToeDrop != null && s1.heelToToeDrop !== s2.heelToToeDrop) {
+    faq.push({
+      q: `Do they have the same heel-to-toe drop?`,
+      a: `No. The ${n1} has a ${s1.heelToToeDrop}mm drop and the ${n2} has a ${s2.heelToToeDrop}mm drop, which can change how each shoe loads your calves and Achilles.`,
+    });
+  }
+  if (s1.hasCarbonPlate || s2.hasCarbonPlate) {
+    if (s1.hasCarbonPlate && s2.hasCarbonPlate) {
+      faq.push({
+        q: `Are these carbon-plated racing shoes?`,
+        a: `Yes — both the ${n1} and the ${n2} use a carbon plate, so they're built primarily for race day and key workouts rather than daily mileage.`,
+      });
+    } else {
+      const plated = s1.hasCarbonPlate ? n1 : n2;
+      const not = s1.hasCarbonPlate ? n2 : n1;
+      faq.push({
+        q: `Is either shoe carbon-plated?`,
+        a: `Only the ${plated} uses a carbon plate. The ${not} relies on foam geometry alone, which makes it more versatile for daily training.`,
+      });
+    }
+  }
+  faq.push({
+    q: `Can I rotate both shoes in the same training block?`,
+    a: `Yes — many runners pair complementary shoes like these to spread load across different muscles and tendons. Use our <a href="/tools/rotation-planner">rotation planner</a> to build a mileage split that fits your schedule.`,
+  });
+  return faq.slice(0, 5);
+}
+
+function generateFaqStructuredData(faq: { q: string; a: string }[]): string {
+  const json = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": faq.map((item) => ({
+      "@type": "Question",
+      "name": item.q,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        // Strip HTML for the schema text — keep prose only.
+        "text": item.a.replace(/<[^>]+>/g, ""),
+      },
+    })),
+  };
+  // Escape "</script" so the JSON payload can never close the surrounding
+  // <script> tag, and emit the full <script> wrapper so the caller can
+  // inject this as a sibling tag (NOT nested inside another JSON-LD block).
+  const safe = JSON.stringify(json, null, 2).replace(/<\/script/gi, "<\\/script");
+  return `<script type="application/ld+json">\n${safe}\n</script>`;
 }
 
 export function renderComparisonPage(slug: string, comparison: ComparisonData): string {
@@ -311,10 +548,30 @@ export function renderComparisonPage(slug: string, comparison: ComparisonData): 
   };
 
   const structuredData = generateStructuredData(meta, url, 'WebPage');
+  // Spec-driven editorial copy — unique per pair, helps Google index the page
+  // instead of treating it as boilerplate.
+  const narrativeHtml =
+    comparison.shoe1 && comparison.shoe2
+      ? generateComparisonNarrative(comparison.shoe1, comparison.shoe2)
+      : "";
+  const faq =
+    comparison.shoe1 && comparison.shoe2
+      ? generateComparisonFaq(comparison.shoe1, comparison.shoe2)
+      : [];
+  const faqJsonLd = faq.length > 0 ? generateFaqStructuredData(faq) : "";
   const head = generateHtmlHead(meta, url, structuredData);
+
+  // Per-shoe deep links back to the shoe detail pages — gives Google clear
+  // outbound internal links from each comparison.
+  const shoeLink = (s: ComparisonShoe | null): string => {
+    if (!s) return "";
+    const name = `${s.brand} ${s.model}`;
+    return s.slug ? `<a href="/tools/shoes/${s.slug}">${escapeHtml(name)}</a>` : escapeHtml(name);
+  };
 
   return `${head}
 <body>
+  ${faqJsonLd}
   <div id="root">
     <header class="ssr-header">
       <div class="ssr-meta">Shoe Comparison</div>
@@ -327,7 +584,12 @@ export function renderComparisonPage(slug: string, comparison: ComparisonData): 
           <h2>Comparison Overview</h2>
           <p>${escapeHtml(comparison.verdict || `A detailed comparison between ${shoe1Name} and ${shoe2Name} to help you choose the right shoe for your running needs.`)}</p>
         </section>
-        
+
+        ${narrativeHtml ? `<section>
+          <h2>How the ${escapeHtml(shoe1Name)} and ${escapeHtml(shoe2Name)} differ</h2>
+          ${narrativeHtml}
+        </section>` : ''}
+
         <section>
           <h2>Head-to-Head Comparison</h2>
           <table class="ssr-comparison-table">
@@ -375,10 +637,26 @@ export function renderComparisonPage(slug: string, comparison: ComparisonData): 
           </table>
         </section>
         
+        ${faq.length > 0 ? `<section>
+          <h2>Frequently Asked Questions</h2>
+          <dl class="ssr-faq">
+            ${faq.map(item => `<dt><strong>${escapeHtml(item.q)}</strong></dt><dd>${item.a}</dd>`).join('\n            ')}
+          </dl>
+        </section>` : ''}
+
+        <section>
+          <h2>Read the full reviews</h2>
+          <ul>
+            ${comparison.shoe1 ? `<li>${shoeLink(comparison.shoe1)} — full specs, AI insights, and verdict.</li>` : ''}
+            ${comparison.shoe2 ? `<li>${shoeLink(comparison.shoe2)} — full specs, AI insights, and verdict.</li>` : ''}
+            <li><a href="/tools/shoes">Browse the full running shoe database</a></li>
+            <li><a href="/tools/shoes/compare">See more shoe comparisons</a></li>
+          </ul>
+        </section>
+
         <div class="ssr-cta">
           <h3>Not sure which is right for you?</h3>
-          <p>Use our AI-powered shoe finder for personalized recommendations.</p>
-          <a href="/tools/shoe-finder">Try Shoe Finder &rarr;</a>
+          <p>Use our AI-powered <a href="/tools/shoe-finder">shoe finder</a> for personalized recommendations, or build a smart shoe rotation with the <a href="/tools/rotation-planner">rotation planner</a>.</p>
         </div>
       </article>
     </main>

@@ -913,7 +913,15 @@ ${allPages.map(page => `  <url>
             weight: shoe1.weight,
             heelToToeDrop: shoe1.heelToToeDrop,
             category: shoe1.category,
-            price: shoe1.price
+            price: shoe1.price,
+            slug: shoe1.slug,
+            heelStackHeight: shoe1.heelStackHeight,
+            forefootStackHeight: shoe1.forefootStackHeight,
+            cushioningLevel: shoe1.cushioningLevel,
+            stability: shoe1.stability,
+            hasCarbonPlate: shoe1.hasCarbonPlate,
+            hasSuperFoam: shoe1.hasSuperFoam,
+            bestFor: shoe1.bestFor,
           } : null,
           shoe2: shoe2 ? {
             brand: shoe2.brand,
@@ -921,7 +929,15 @@ ${allPages.map(page => `  <url>
             weight: shoe2.weight,
             heelToToeDrop: shoe2.heelToToeDrop,
             category: shoe2.category,
-            price: shoe2.price
+            price: shoe2.price,
+            slug: shoe2.slug,
+            heelStackHeight: shoe2.heelStackHeight,
+            forefootStackHeight: shoe2.forefootStackHeight,
+            cushioningLevel: shoe2.cushioningLevel,
+            stability: shoe2.stability,
+            hasCarbonPlate: shoe2.hasCarbonPlate,
+            hasSuperFoam: shoe2.hasSuperFoam,
+            bestFor: shoe2.bestFor,
           } : null
         });
         res.send(html);
