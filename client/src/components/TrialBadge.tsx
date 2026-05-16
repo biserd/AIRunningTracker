@@ -20,19 +20,19 @@ export default function TrialBadge() {
 
   return (
     <div
-      className="rounded-lg border border-purple-200 bg-purple-500/10 p-4 mb-6"
+      className="rounded-lg border border-orange-200 bg-orange-50 p-4 mb-6"
       data-testid="trial-badge"
     >
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white">
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-orange-600 text-white flex-shrink-0">
             <Sparkles size={20} />
           </div>
           <div>
-            <div className="font-semibold text-purple-900">
+            <div className="font-semibold text-gray-900">
               You're on the free plan
             </div>
-            <p className="text-sm text-purple-900/80">
+            <p className="text-sm text-gray-600">
               Showing your last 20 runs. Start a 14-day Premium trial to
               unlock unlimited history, AI insights, training plans, and the
               Coach Chat. Cancel anytime.
@@ -43,7 +43,7 @@ export default function TrialBadge() {
         <Link href="/pricing">
           <Button
             size="sm"
-            className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white border-0"
+            className="bg-orange-600 hover:bg-orange-700 text-white border-0"
             data-testid="trial-upgrade-button"
           >
             Start 14-day trial
