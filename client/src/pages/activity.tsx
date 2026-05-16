@@ -233,7 +233,7 @@ export default function ActivityPage() {
 
   const subscriptionReady = !subscriptionLoading;
 
-  const { data: verdictData } = useQuery({
+  const { data: verdictData, isLoading: verdictLoading, isError: verdictError } = useQuery({
     queryKey: ['/api/activities', activityId, 'verdict'],
     queryFn: async () => {
       const res = await fetch(`/api/activities/${activityId}/verdict`, {
@@ -676,15 +676,17 @@ export default function ActivityPage() {
         {viewMode === 'story' && (
           <>
             {/* 1. Unified Coach Card - Combines Verdict, Next 48 Hours, and Goal Alignment */}
-            <div className="mb-6">
-              <UnifiedCoachCard 
-                verdictData={verdictData}
-                isLoading={!verdictData && subscriptionReady}
-                onAskCoach={() => setIsChatOpen(true)}
-                mode={featureAccess.activity.coachVerdict as 'full' | 'basic'}
-                canAskCoach={featureAccess.activity.askCoach}
-              />
-            </div>
+            {(verdictData || verdictLoading) && !verdictError && (
+              <div className="mb-6">
+                <UnifiedCoachCard 
+                  verdictData={verdictData}
+                  isLoading={verdictLoading && !verdictData}
+                  onAskCoach={() => setIsChatOpen(true)}
+                  mode={featureAccess.activity.coachVerdict as 'full' | 'basic'}
+                  canAskCoach={featureAccess.activity.askCoach}
+                />
+              </div>
+            )}
 
             {/* AI Agent Coach Recap (Premium only) */}
             {isPremium && coachRecapData?.recap && (
