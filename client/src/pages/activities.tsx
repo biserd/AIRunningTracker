@@ -49,6 +49,7 @@ interface ActivitiesResponse {
   page: number;
   pageSize: number;
   totalPages: number;
+  freeTier?: { capped: true; limit: number };
 }
 
 export default function ActivitiesPage() {
@@ -117,6 +118,7 @@ export default function ActivitiesPage() {
   const unitPreference = dashboardData?.user?.unitPreference || 'km';
   const activities = response?.activities || [];
   const totalPages = response?.totalPages || 1;
+  const freeCap = response?.freeTier;
 
   const formatDistance = (meters: number) => {
     if (unitPreference === 'miles') {
@@ -193,6 +195,33 @@ export default function ActivitiesPage() {
             {response?.total ? `${response.total} total activities` : 'Complete history of your running activities'}
           </p>
         </div>
+
+        {freeCap?.capped && (
+          <Card
+            className="mb-6 border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50"
+            data-testid="free-tier-cap-banner"
+          >
+            <CardContent className="py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <p className="font-semibold text-gray-900">
+                  You're seeing your last {freeCap.limit} runs
+                </p>
+                <p className="text-sm text-gray-600">
+                  Start a 14-day Premium trial to unlock your full Strava history,
+                  AI insights, training plans, and the Coach Chat. No charge today.
+                </p>
+              </div>
+              <Link href="/pricing">
+                <Button
+                  className="bg-orange-600 hover:bg-orange-700 text-white whitespace-nowrap"
+                  data-testid="button-upgrade-from-cap"
+                >
+                  Start free trial
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Filters */}
         <Card className="mb-6">
