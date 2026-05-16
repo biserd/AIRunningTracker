@@ -4,7 +4,7 @@ import { useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, Thermometer, BarChart3, Timer, Trophy, Mountain, Pause, Flag, Users, BookOpen, BarChart2, ChevronDown, ChevronUp, Loader2, Lock, Sparkles, X, MessageCircle } from "lucide-react";
+import { ArrowLeft, Activity, Clock, MapPin, Heart, TrendingUp, Zap, Flame, Thermometer, BarChart3, Timer, Trophy, Mountain, Pause, Flag, Users, BookOpen, BarChart2, ChevronDown, ChevronUp, Loader2, Lock, Sparkles, X, MessageCircle, Award } from "lucide-react";
 import { Link } from "wouter";
 import AppHeader from "@/components/AppHeader";
 import RouteMap, { KeyMoment } from "@/components/RouteMap";
@@ -676,15 +676,41 @@ export default function ActivityPage() {
         {viewMode === 'story' && (
           <>
             {/* 1. Unified Coach Card - Combines Verdict, Next 48 Hours, and Goal Alignment */}
-            <div className="mb-6">
-              <UnifiedCoachCard 
-                verdictData={verdictData}
-                isLoading={!verdictData && subscriptionReady}
-                onAskCoach={() => setIsChatOpen(true)}
-                mode={featureAccess.activity.coachVerdict as 'full' | 'basic'}
-                canAskCoach={featureAccess.activity.askCoach}
-              />
-            </div>
+            {isFree ? (
+              /* Free users: show a locked teaser instead of an infinite skeleton */
+              <div className="mb-6">
+                <Card className="border shadow-sm overflow-hidden" data-testid="coach-verdict-locked">
+                  <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-slate-50 border-b border-gray-100 flex items-center gap-2">
+                    <Award className="w-5 h-5 text-gray-400" />
+                    <span className="font-bold text-gray-500">Coach Verdict</span>
+                  </div>
+                  <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-800 mb-1">Get your AI Coach Verdict</p>
+                      <p className="text-sm text-gray-500">
+                        See how this run stacks up against your 42-day averages, your effort score, and what to do in the next 48 hours.
+                      </p>
+                    </div>
+                    <Link href="/pricing">
+                      <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white whitespace-nowrap flex-shrink-0" data-testid="button-unlock-verdict">
+                        <Lock className="h-3.5 w-3.5 mr-1.5" />
+                        Start free trial
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <div className="mb-6">
+                <UnifiedCoachCard 
+                  verdictData={verdictData}
+                  isLoading={!verdictData && subscriptionReady}
+                  onAskCoach={() => setIsChatOpen(true)}
+                  mode={featureAccess.activity.coachVerdict as 'full' | 'basic'}
+                  canAskCoach={featureAccess.activity.askCoach}
+                />
+              </div>
+            )}
 
             {/* AI Agent Coach Recap (Premium only) */}
             {isPremium && coachRecapData?.recap && (
