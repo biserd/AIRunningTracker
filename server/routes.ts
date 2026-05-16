@@ -2417,9 +2417,13 @@ ${allPages.map(page => `  <url>
       const threeMonthsAgo = new Date();
       threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
       threeMonthsAgo.setHours(0, 0, 0, 0);
-      
-      // Reduced from 200 to 100 for faster queries - 3 months of data is sufficient for stats
-      const recentActivities = await storage.getActivitiesByUserId(userId, 100, threeMonthsAgo);
+
+      // Free-tier 20-run cap also applies to the stats fan-out: a free
+      // user's monthly/weekly numbers must be computed from the same set
+      // of runs they're allowed to see. Premium/trialing users get the
+      // full 3-month window (up to 100 runs) for accurate stats.
+      const dashStatsLimit = getFreeActivityLimit(user.subscriptionPlan, user.subscriptionStatus) ?? 100;
+      const recentActivities = await storage.getActivitiesByUserId(userId, dashStatsLimit, threeMonthsAgo);
       
       // FIX: Use the most recent activity date to determine "current month" instead of server time
       // This prevents timezone issues where server is in UTC Nov 1 but user activities are Oct 31
@@ -2528,7 +2532,7 @@ ${allPages.map(page => `  <url>
           lastSyncAt: user.lastSyncAt,
           subscriptionPlan: user.subscriptionPlan || 'free',
           subscriptionStatus: user.subscriptionStatus || 'free',
-          activityHistoryLimitDays: historyLimitDays,
+          activityHistoryLimitDays: null,
           coachOnboardingCompleted: user.coachOnboardingCompleted || false,
           coachGoal: user.coachGoal,
           coachRaceDate: user.coachRaceDate,
@@ -3406,18 +3410,13 @@ ${allPages.map(page => `  <url>
     }
   });
 
-  // Audit Report endpoint REMOVED with the free-tier pivot. Stub kept so
-  // the route file still parses cleanly; original handler deleted.
-  app.get("/api/audit-report/:userId", authenticateJWT, async (_req: any, res) => {
-    return res.status(410).json({ message: "Audit report has been retired." });
-  });
-  // Legacy audit-report handler kept inert behind `if (false)` so the large
-  // body below remains in version control history but never executes.
+  // Audit Report endpoint REMOVED with the free-tier pivot.
+  // (Legacy handler deleted; see git history if you need the old logic.)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _legacyAuditReport = async (req: any, res: any) => {
+  const _removedAuditReport = async (_req: any, _res: any) => {
     if (true) return;
     try {
-      const userId = parseInt(req.params.userId);
+      const userId = 0;
       
       if (isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
@@ -3610,7 +3609,7 @@ ${allPages.map(page => `  <url>
       res.status(500).json({ message: error.message || "Failed to generate audit report" });
     }
   };
-  void _legacyAuditReport;
+  void _removedAuditReport;
 
   // Update user settings
   app.patch("/api/users/:userId/settings", authenticateJWT, async (req: any, res) => {

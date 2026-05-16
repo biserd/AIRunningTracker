@@ -483,7 +483,7 @@ This feedback has been stored in the deletion_feedback table for analysis.`;
 
   async sendWelcomeEmail(email: string, firstName?: string): Promise<void> {
     const name = firstName || 'there';
-    const subject = 'Welcome to RunAnalytics! Your Training Audit is Ready';
+    const subject = 'Welcome to RunAnalytics — your dashboard is ready';
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
@@ -501,7 +501,7 @@ This feedback has been stored in the deletion_feedback table for analysis.`;
         <p>Thanks for signing up. We've already started analyzing your training data to find opportunities for improvement.</p>
         
         <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
-          <p style="margin: 0; color: #856404;"><strong>Your Training Audit is ready.</strong> Connect your Strava to see personalized insights about your running.</p>
+          <p style="margin: 0; color: #856404;"><strong>Your free dashboard is ready.</strong> Connect Strava to see your last 20 runs, then start a 14-day Premium trial anytime to unlock unlimited history, AI insights, training plans, and the Coach Chat.</p>
         </div>
         
         <div style="text-align: center; margin: 30px 0;">
@@ -530,13 +530,13 @@ This feedback has been stored in the deletion_feedback table for analysis.`;
     `;
     
     const text = `
-Welcome to RunAnalytics! Your Training Audit is Ready
+Welcome to RunAnalytics — your dashboard is ready
 
 Hey ${name}!
 
 Thanks for signing up. We've already started analyzing your training data to find opportunities for improvement.
 
-Your Training Audit is ready. Connect your Strava to see personalized insights about your running.
+Your free dashboard is ready. Connect Strava to see your last 20 runs, then start a 14-day Premium trial anytime to unlock unlimited history, AI insights, training plans, and the Coach Chat.
 
 Open your dashboard: https://aitracker.run/dashboard
 
@@ -581,7 +581,7 @@ The RunAnalytics Team
   }
 
   async sendLaunchAnnouncementEmail(email: string): Promise<boolean> {
-    const subject = "We're Live! Get Your Free Training Audit - RunAnalytics";
+    const subject = "We're live! Try RunAnalytics free — RunAnalytics";
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
@@ -598,7 +598,7 @@ The RunAnalytics Team
         
         <p style="font-size: 16px; line-height: 1.6;">You signed up for our waitlist, and we're thrilled to let you know that <strong>RunAnalytics is now live!</strong></p>
         
-        <p style="font-size: 16px; line-height: 1.6;">Sign up to get a <strong>free Training Audit</strong> that analyzes your running and finds opportunities for improvement.</p>
+        <p style="font-size: 16px; line-height: 1.6;">Sign up free to see your <strong>last 20 Strava runs</strong> on your dashboard, with a one-tap path into a 14-day Premium trial whenever you're ready.</p>
         
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 25px 0;">
           <h3 style="color: #27ae60; margin-top: 0;">What Premium Runners Get:</h3>
@@ -630,13 +630,13 @@ The RunAnalytics Team
     `;
     
     const text = `
-We're Live! Get Your Free Training Audit - RunAnalytics
+We're live! Try RunAnalytics free
 
 Hey there!
 
 You signed up for our waitlist, and we're thrilled to let you know that RunAnalytics is now live!
 
-Sign up to get a free Training Audit that analyzes your running and finds opportunities for improvement.
+Sign up free to see your last 20 Strava runs on your dashboard, with a one-tap path into a 14-day Premium trial whenever you're ready.
 
 What Premium Runners Get:
 - AI Running Coach Chat: Ask questions, get personalized advice

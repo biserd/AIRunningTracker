@@ -209,11 +209,13 @@ function Router() {
         <Route path="/billing">
           <ProtectedRoute component={BillingPage} />
         </Route>
+        {/* History pages are free-accessible; the server caps free users to
+            their last 20 runs and renders an upgrade CTA inline. */}
         <Route path="/activities">
-          <PremiumProtectedRoute component={ActivitiesPage} />
+          <ProtectedRoute component={ActivitiesPage} />
         </Route>
         <Route path="/activity/:id">
-          <PremiumProtectedRoute component={ActivityPage} />
+          <ProtectedRoute component={ActivityPage} />
         </Route>
         <Route path="/admin">
           <ProtectedRoute component={AdminPage} />
