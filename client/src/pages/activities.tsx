@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Activity, Calendar, Clock, TrendingUp, Zap, ChevronLeft, ChevronRight, Filter, Trash2 } from "lucide-react";
+import { Activity, Calendar, Clock, TrendingUp, Zap, ChevronLeft, ChevronRight, Filter, Trash2, X } from "lucide-react";
 import { Link } from "wouter";
 import { StravaPoweredBy } from "@/components/StravaConnect";
 import { useState } from "react";
@@ -63,6 +63,10 @@ export default function ActivitiesPage() {
   const [endDate, setEndDate] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [freeCapBannerDismissed, setFreeCapBannerDismissed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.sessionStorage.getItem('freeCapBannerDismissed') === '1';
+  });
 
   const deleteActivityMutation = useMutation({
     mutationFn: async (activityId: number) => {
@@ -196,19 +200,34 @@ export default function ActivitiesPage() {
           </p>
         </div>
 
-        {freeCap?.capped && (
+        {freeCap?.capped && !freeCapBannerDismissed && (
           <Card
-            className="mb-6 border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50"
+            className="mb-6 border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 relative"
             data-testid="free-tier-cap-banner"
           >
-            <CardContent className="py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setFreeCapBannerDismissed(true);
+                if (typeof window !== 'undefined') {
+                  window.sessionStorage.setItem('freeCapBannerDismissed', '1');
+                }
+              }}
+              className="absolute top-2 right-2 p-1.5 text-gray-500 hover:text-gray-800 hover:bg-orange-100 rounded-md transition-colors"
+              aria-label="Dismiss"
+              data-testid="button-dismiss-free-cap-banner"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <CardContent className="py-5 pr-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
                 <p className="font-semibold text-gray-900">
                   You're seeing your last {freeCap.limit} runs
                 </p>
                 <p className="text-sm text-gray-600">
-                  Start a 14-day Premium trial to unlock your full Strava history,
-                  AI insights, training plans, and the Coach Chat. No charge today.
+                  Upgrade to Premium to unlock your full Strava history, AI
+                  insights, training plans, and the Coach Chat. Start a 14-day
+                  free trial — no charge today.
                 </p>
               </div>
               <Link href="/pricing">
@@ -216,7 +235,7 @@ export default function ActivitiesPage() {
                   className="bg-orange-600 hover:bg-orange-700 text-white whitespace-nowrap"
                   data-testid="button-upgrade-from-cap"
                 >
-                  Start free trial
+                  Start 14-day Premium trial
                 </Button>
               </Link>
             </CardContent>
