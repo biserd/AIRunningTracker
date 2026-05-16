@@ -76,10 +76,12 @@ export default function ShoeFinderPage() {
   return (
     <>
       <SEO
-        title="Running Shoe Finder | Personalized Shoe Recommendations | RunAnalytics"
-        description="Find your perfect running shoe based on foot type, running style & goals. AI-powered recommendations from 100+ models."
-        keywords="running shoe finder, best running shoes, shoe recommendations, running shoe quiz"
+        title="Running Shoe Finder — Match Your Perfect Shoe by Pace, Surface & Brand (2026)"
+        description="Answer 5 questions and get matched to your ideal running shoe. Filter by pace, surface, brand, and foot type. Free tool used by 10,000+ runners."
+        keywords="running shoe finder, best running shoes 2026, shoe recommendations by pace, shoe finder by brand, running shoe quiz"
         url="https://aitracker.run/tools/shoe-finder"
+        ogTitle="Running Shoe Finder — Find Your Perfect Match (2026)"
+        ogDescription="Answer 5 questions and get matched to your ideal running shoe by pace, surface, and brand."
         structuredData={{
           "@context": "https://schema.org",
           "@type": "SoftwareApplication",
@@ -87,7 +89,7 @@ export default function ShoeFinderPage() {
           "applicationCategory": "HealthApplication",
           "operatingSystem": "Web",
           "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-          "description": "Find your perfect running shoe based on foot type, running style & goals. AI-powered recommendations from 100+ models."
+          "description": "Answer 5 questions and get matched to your ideal running shoe. Filter by pace, surface, brand, and foot type. Free tool used by 10,000+ runners."
         }}
       />
 

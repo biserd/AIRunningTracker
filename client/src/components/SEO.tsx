@@ -8,6 +8,8 @@ interface SEOProps {
   url?: string;
   type?: 'website' | 'article';
   structuredData?: object;
+  ogTitle?: string;
+  ogDescription?: string;
 }
 
 export function SEO({
@@ -17,7 +19,9 @@ export function SEO({
   ogImage = 'https://aitracker.run/og-image.jpg',
   url = 'https://aitracker.run/',
   type = 'website',
-  structuredData
+  structuredData,
+  ogTitle,
+  ogDescription
 }: SEOProps) {
   useEffect(() => {
     // Update title
@@ -43,16 +47,19 @@ export function SEO({
       updateMeta('keywords', keywords);
     }
 
-    // Open Graph
-    updateMeta('og:title', title, true);
-    updateMeta('og:description', description, true);
+    // Open Graph — allow overriding the OG title/description independently
+    // of the <title>/meta description so social cards can use punchier copy.
+    const ogTitleResolved = ogTitle ?? title;
+    const ogDescriptionResolved = ogDescription ?? description;
+    updateMeta('og:title', ogTitleResolved, true);
+    updateMeta('og:description', ogDescriptionResolved, true);
     updateMeta('og:image', ogImage, true);
     updateMeta('og:url', url, true);
     updateMeta('og:type', type, true);
 
     // Twitter Card
-    updateMeta('twitter:title', title);
-    updateMeta('twitter:description', description);
+    updateMeta('twitter:title', ogTitleResolved);
+    updateMeta('twitter:description', ogDescriptionResolved);
     updateMeta('twitter:image', ogImage);
     updateMeta('twitter:url', url);
 
