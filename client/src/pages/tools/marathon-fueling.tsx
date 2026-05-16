@@ -162,8 +162,8 @@ export default function MarathonFuelingPlanner() {
   return (
     <>
       <SEO
-        title="Marathon Fueling Calculator | Gel Timing & Nutrition Plan | RunAnalytics"
-        description="Calculate your marathon nutrition plan with exact gel timing, carb targets & sodium needs. Get a personalized race fueling strategy in minutes."
+        title="Marathon Fueling Calculator — Gel Timing by Finish Time (2026)"
+        description="Enter your projected marathon finish time and get a precise race-day nutrition plan with gel timing intervals. Built for any target pace."
         keywords="marathon fueling, gel timing calculator, marathon nutrition plan, race nutrition, running gel schedule"
         url="https://aitracker.run/tools/marathon-fueling"
         structuredData={{

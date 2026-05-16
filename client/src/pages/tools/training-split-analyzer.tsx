@@ -253,8 +253,8 @@ export default function TrainingSplitAnalyzer() {
   return (
     <>
       <SEO
-        title="Training Split Analyzer | Polarized vs Pyramidal Training | RunAnalytics"
-        description="Analyze your running intensity distribution. Discover if you're training polarized, pyramidal, or threshold-heavy. Free with Strava sync."
+        title="Training Split Analyzer — Polarized vs Pyramidal vs Threshold"
+        description="Analyze your training intensity distribution to see whether you run a polarized, pyramidal, or threshold model. Includes a breakdown of each zone's contribution."
         keywords="training split analyzer, polarized training, pyramidal training, running zones, training intensity distribution"
         url="https://aitracker.run/tools/training-split-analyzer"
         structuredData={{

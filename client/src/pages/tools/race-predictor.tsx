@@ -226,8 +226,8 @@ export default function RacePredictor() {
   return (
     <>
       <SEO
-        title="Race Predictor: Free AI Tool for Marathon & 10K Finish Times"
-        description="Predict your race finish time from your last run. Our free AI race predictor uses your Strava or Garmin data plus VDOT models. Try it in 30 seconds."
+        title="Race Time Predictor — Any Distance Using Riegel Formula (2026)"
+        description="Predict your finish time for any race distance from a recent result. Uses the Riegel formula plus training variables for accuracy across 5K to ultra."
         keywords="race predictor, ai race predictor, marathon time predictor, half marathon predictor, 10k race predictor, 5k race predictor, strava race predictor, vdot calculator"
         url="https://aitracker.run/tools/race-predictor"
         structuredData={{

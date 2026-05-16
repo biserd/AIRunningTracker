@@ -173,8 +173,8 @@ export default function RunningHeatmapPage() {
     return (
       <>
         <SEO
-          title="Running Heatmap | Visualize Your Training Routes | RunAnalytics"
-          description="See your most-run routes on an interactive heatmap. Discover training patterns and favorite paths from your Strava activities."
+          title="Running Heatmap — Visualize Your Last 30 Strava Activities (2026)"
+          description="See your last 30 Strava runs on an interactive map. Identify your most-used routes, explore new areas, and spot training patterns. Strava login required."
           keywords="running heatmap, training routes, Strava heatmap, route visualization, running patterns"
           url="https://aitracker.run/tools/heatmap"
           structuredData={{
@@ -215,8 +215,8 @@ export default function RunningHeatmapPage() {
   return (
     <>
       <SEO
-        title="Running Heatmap | Visualize Your Training Routes | RunAnalytics"
-        description="See your most-run routes on an interactive heatmap. Discover training patterns and favorite paths from your Strava activities."
+        title="Running Heatmap — Visualize Your Last 30 Strava Activities (2026)"
+        description="See your last 30 Strava runs on an interactive map. Identify your most-used routes, explore new areas, and spot training patterns. Strava login required."
         keywords="running heatmap, training routes, Strava heatmap, route visualization, running patterns"
         url="https://aitracker.run/tools/heatmap"
         structuredData={{

@@ -105,10 +105,10 @@ export default function ShoeComparisonList() {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>Running Shoe Comparisons | Side-by-Side Reviews | RunAnalytics</title>
-        <meta name="description" content="Compare running shoes side-by-side. Nike vs Adidas, AlphaFly vs Endorphin Pro, and more. Expert verdicts on weight, price, durability, and performance." />
-        <meta property="og:title" content="Running Shoe Comparisons | RunAnalytics" />
-        <meta property="og:description" content="Compare running shoes side-by-side with expert verdicts and detailed specs." />
+        <title>Running Shoe Comparison — 161 Side-by-Side Matchups (2026)</title>
+        <meta name="description" content="Compare running shoes side by side across 161 pairings. Stack specs, ratings, and category rivals to find which shoe wins for your training style." />
+        <meta property="og:title" content="Running Shoe Comparison — 161 Side-by-Side Matchups (2026)" />
+        <meta property="og:description" content="Compare running shoes side by side across 161 pairings. Stack specs, ratings, and category rivals to find which shoe wins for your training style." />
         <link rel="canonical" href="https://aitracker.run/tools/shoes/compare" />
       </Helmet>
 

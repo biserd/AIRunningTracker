@@ -77,8 +77,8 @@ export default function RotationPlannerPage() {
   return (
     <>
       <SEO
-        title="Running Shoe Rotation Planner | Build Your Shoe Lineup | RunAnalytics"
-        description="Plan the perfect running shoe rotation. Get AI recommendations for daily trainers, speed shoes & race day options."
+        title="Running Shoe Rotation Planner — Build Your 2026 Multi-Shoe Setup"
+        description="Get a personalized daily trainer, race shoe, and recovery shoe rotation based on your weekly mileage, weight, and goals. Extends shoe life and reduces injury risk."
         keywords="shoe rotation, running shoe lineup, multiple running shoes, shoe rotation planner"
         url="https://aitracker.run/tools/rotation-planner"
         structuredData={{

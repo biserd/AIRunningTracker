@@ -130,8 +130,8 @@ export default function CadenceAnalyzer() {
   return (
     <>
       <SEO
-        title="Running Cadence Analyzer | Form Stability Score | RunAnalytics"
-        description="Detect running form fade with cadence and stride analysis. Get your Form Stability Score and identify late-run form breakdown."
+        title="Running Cadence Analyzer — Detect Fatigue Across Your Strava Runs"
+        description="Connect Strava to analyze cadence drift across your runs and get form recommendations. See where fatigue sets in and how to fix it. Strava login required."
         keywords="running cadence analyzer, form stability, stride length, running form analysis, cadence tracking"
         url="https://aitracker.run/tools/cadence-analyzer"
         structuredData={{
