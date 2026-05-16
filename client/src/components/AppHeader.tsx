@@ -104,14 +104,12 @@ export default function AppHeader() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                {hasActiveSubscription && (
-                  <DropdownMenuItem asChild>
-                    <Link href="/settings" className="flex items-center space-x-2 cursor-pointer">
-                      <Settings size={16} />
-                      <span>Settings</span>
-                    </Link>
-                  </DropdownMenuItem>
-                )}
+                <DropdownMenuItem asChild>
+                  <Link href="/settings" className="flex items-center space-x-2 cursor-pointer">
+                    <Settings size={16} />
+                    <span>Settings</span>
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/chat-history" className="flex items-center space-x-2 cursor-pointer">
                     <MessageCircle size={16} />
