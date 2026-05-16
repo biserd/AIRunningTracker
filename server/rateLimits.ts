@@ -19,6 +19,36 @@ export function getFreeActivityLimit(subscriptionPlan: string | null, subscripti
   return isPaidPlan(subscriptionPlan, subscriptionStatus) ? null : RATE_LIMITS.FREE_ACTIVITY_LIMIT;
 }
 
+/**
+ * Returns the max number of activities to pull on the initial Strava sync.
+ * Free users get a one-time pull of the last 20 activities; paid users get
+ * the requested cap (clamped to 500 elsewhere).
+ */
+export function getInitialSyncCap(
+  subscriptionPlan: string | null,
+  subscriptionStatus: string | null,
+  requested: number = 50
+): number {
+  if (isPaidPlan(subscriptionPlan, subscriptionStatus)) return requested;
+  return RATE_LIMITS.FREE_ACTIVITY_LIMIT;
+}
+
+/**
+ * Free users get exactly one Strava sync. After their first sync (lastSyncAt
+ * is set), every subsequent sync attempt — manual, webhook, or scheduled —
+ * must be blocked until they upgrade to Premium or start a trial.
+ */
+export function canSyncFromStrava(user: {
+  subscriptionPlan?: string | null;
+  subscriptionStatus?: string | null;
+  lastSyncAt?: Date | null;
+}): boolean {
+  if (isPaidPlan(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null)) {
+    return true;
+  }
+  return !user.lastSyncAt;
+}
+
 export interface RateLimitResult {
   allowed: boolean;
   remaining: number;

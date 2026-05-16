@@ -100,6 +100,14 @@ class StravaWebhookService {
         return "skipped:strava_not_connected";
       }
 
+      // Free users get exactly one Strava sync (the initial 20-activity pull).
+      // After that, all webhook-driven syncs are no-ops until they upgrade.
+      const { canSyncFromStrava } = await import("../rateLimits");
+      if (!canSyncFromStrava(user)) {
+        console.log(`[Strava Webhook] User ${user.id} is on free plan and has already used initial sync — skipping`);
+        return "skipped:free_plan_sync_disabled";
+      }
+
       if (!user.notifyPostRun) {
         console.log(`[Strava Webhook] User ${user.id} has post-run notifications disabled`);
         return "skipped:notifications_disabled";

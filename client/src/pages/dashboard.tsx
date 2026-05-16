@@ -140,6 +140,22 @@ export default function Dashboard() {
       });
     },
     onError: (error: any) => {
+      const code = error?.data?.code || error?.code;
+      if (code === 'TRIAL_REQUIRED' || /TRIAL_REQUIRED/i.test(error?.message || '')) {
+        toast({
+          title: "Upgrade to keep syncing",
+          description: "Free accounts get one Strava sync. Start a free Premium trial to keep importing new activities.",
+          variant: "destructive",
+          action: (
+            <Link href="/pricing">
+              <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white">
+                Start trial
+              </Button>
+            </Link>
+          ),
+        });
+        return;
+      }
       toast({
         title: "Sync failed",
         description: error.message || "Failed to sync activities",
@@ -338,6 +354,23 @@ export default function Dashboard() {
       };
     } catch (error: any) {
       console.error('Sync error:', error);
+      const code = error?.data?.code || error?.code;
+      if (code === 'TRIAL_REQUIRED' || /TRIAL_REQUIRED/i.test(error?.message || '')) {
+        setSyncProgress(null);
+        toast({
+          title: "Upgrade to keep syncing",
+          description: "Free accounts get one Strava sync. Start a free Premium trial to keep importing new activities.",
+          variant: "destructive",
+          action: (
+            <Link href="/pricing">
+              <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white">
+                Start trial
+              </Button>
+            </Link>
+          ),
+        });
+        return;
+      }
       setSyncProgress({
         current: 0,
         total: 0,

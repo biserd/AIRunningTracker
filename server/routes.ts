@@ -33,7 +33,7 @@ import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClie
 import { resolvePlan } from "./webhookHandlers";
 import { db } from "./db";
 import { sql, eq, isNull } from "drizzle-orm";
-import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getActivityHistoryLimit, getFreeActivityLimit, RATE_LIMITS } from "./rateLimits";
+import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getActivityHistoryLimit, getFreeActivityLimit, RATE_LIMITS, canSyncFromStrava, getInitialSyncCap, isPaidPlan } from "./rateLimits";
 import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage, renderToolPage, getAllToolSlugs } from "./ssr/renderer";
 import { getAllBlogPosts } from "./ssr/blogContent";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
@@ -1725,10 +1725,16 @@ ${allPages.map(page => `  <url>
         subscriptionPlan: 'free',
       });
 
-      // Enqueue initial Strava sync
+      // Enqueue initial Strava sync. New accounts default to 'free', so cap
+      // the very first pull at 20 activities — they can upgrade to expand it.
       try {
-        jobQueue.addJob(createListActivitiesJob(newUser.id, 1, 200, 200));
-        console.log(`[StravaLogin] Queued initial sync for new user ${newUser.id}`);
+        const initialCap = getInitialSyncCap(
+          newUser.subscriptionPlan ?? null,
+          newUser.subscriptionStatus ?? null,
+          200
+        );
+        jobQueue.addJob(createListActivitiesJob(newUser.id, 1, 200, initialCap));
+        console.log(`[StravaLogin] Queued initial sync for new user ${newUser.id} (cap=${initialCap})`);
       } catch (syncError) {
         console.error('[StravaLogin] Failed to queue sync:', syncError);
       }
@@ -2076,9 +2082,16 @@ ${allPages.map(page => `  <url>
         console.error('Drip campaign trigger failed:', campaignError);
       }
 
-      // Auto-sync activities and generate insights after connecting
+      // Auto-sync activities and generate insights after connecting.
+      // Free users get a one-time pull of their last 20 activities; paid/trialing users get 50.
       try {
-        await stravaService.syncActivitiesForUser(userId, 50); // Initial connection: 50 activities
+        const connectedUser = await storage.getUser(userId);
+        const initialCap = getInitialSyncCap(
+          connectedUser?.subscriptionPlan ?? null,
+          connectedUser?.subscriptionStatus ?? null,
+          50
+        );
+        await stravaService.syncActivitiesForUser(userId, initialCap);
         console.log('Auto-sync completed after Strava connection');
         
         // Generate AI insights after sync
@@ -2211,9 +2224,20 @@ ${allPages.map(page => `  <url>
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    
-    // Extended sync (up to 500 activities) is now available to all users
-    
+
+    // Free users get exactly one Strava sync. After that, block until they upgrade.
+    if (!canSyncFromStrava(user)) {
+      return res.status(402).json({
+        code: 'TRIAL_REQUIRED',
+        message: "You've already used your one free Strava sync. Start a free Premium trial to keep syncing new activities.",
+      });
+    }
+
+    // Free users are capped to 20 activities on their initial (and only) sync.
+    if (!isPaidPlan(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null)) {
+      maxActivities = Math.min(maxActivities, RATE_LIMITS.FREE_ACTIVITY_LIMIT);
+    }
+
     // Clamp maxActivities to prevent abuse (500 max with queue-based rate limiting)
     maxActivities = Math.max(1, Math.min(500, maxActivities));
     
@@ -2324,10 +2348,33 @@ ${allPages.map(page => `  <url>
   app.post("/api/strava/sync/:userId", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
-      const maxActivities = req.body?.maxActivities || 50; // Default to 50 for dashboard
+      let maxActivities = req.body?.maxActivities || 50; // Default to 50 for dashboard
       
       if (isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      // Ownership check — prevent authenticated users from triggering syncs on other accounts.
+      if (req.user?.id !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const syncUser = await storage.getUser(userId);
+      if (!syncUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Free users get exactly one Strava sync. After that, block until they upgrade.
+      if (!canSyncFromStrava(syncUser)) {
+        return res.status(402).json({
+          code: 'TRIAL_REQUIRED',
+          message: "You've already used your one free Strava sync. Start a free Premium trial to keep syncing new activities.",
+        });
+      }
+
+      // Free users are capped to 20 activities on their initial (and only) sync.
+      if (!isPaidPlan(syncUser.subscriptionPlan ?? null, syncUser.subscriptionStatus ?? null)) {
+        maxActivities = Math.min(maxActivities, RATE_LIMITS.FREE_ACTIVITY_LIMIT);
       }
 
       const result = await stravaService.syncActivitiesForUser(userId, maxActivities);
@@ -3904,14 +3951,19 @@ ${allPages.map(page => `  <url>
         !syncState?.lastSyncAt;
       
       if (needsRelist) {
+        // Free users get exactly one Strava sync. After that, block re-list until they upgrade.
+        if (!canSyncFromStrava(user)) {
+          return res.status(402).json({
+            code: 'TRIAL_REQUIRED',
+            message: "You've already used your one free Strava sync. Start a free Premium trial to re-sync.",
+          });
+        }
+
         // Full re-list: queue LIST_ACTIVITIES job to fetch all activities
         const { createListActivitiesJob } = await import("./services/queue/jobTypes");
-        
-        const hasPaidPlan = user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'premium';
-        const hasActiveStatus = user.subscriptionStatus === 'active' || 
-                                user.subscriptionStatus === 'trialing' || 
-                                user.subscriptionStatus === 'past_due';
-        const maxActivities = hasPaidPlan && hasActiveStatus ? 500 : 50;
+        const maxActivities = isPaidPlan(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null)
+          ? 500
+          : RATE_LIMITS.FREE_ACTIVITY_LIMIT;
         
         const job = jobQueue.addJob(createListActivitiesJob(
           userId,
@@ -3987,13 +4039,15 @@ ${allPages.map(page => `  <url>
         return res.status(400).json({ message: "User not connected to Strava" });
       }
 
-      // Check subscription for activity limit
-      const hasPaidPlan = user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'premium';
-      const hasActiveStatus = user.subscriptionStatus === 'active' || 
-                              user.subscriptionStatus === 'trialing' || 
-                              user.subscriptionStatus === 'past_due';
-      if (!hasPaidPlan || !hasActiveStatus) {
-        maxActivities = Math.min(maxActivities, 50);
+      // Free users get exactly one Strava sync. After that, block until they upgrade.
+      if (!canSyncFromStrava(user)) {
+        return res.status(402).json({
+          code: 'TRIAL_REQUIRED',
+          message: "You've already used your one free Strava sync. Start a free Premium trial to keep syncing new activities.",
+        });
+      }
+      if (!isPaidPlan(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null)) {
+        maxActivities = Math.min(maxActivities, RATE_LIMITS.FREE_ACTIVITY_LIMIT);
       }
 
       // Get most recent activity for incremental sync
@@ -5134,15 +5188,22 @@ ${allPages.map(page => `  <url>
         stravaHasWriteScope: true,
       });
 
-      // Trigger initial activity sync after Strava connection
+      // Trigger initial activity sync after Strava connection.
+      // Free users get exactly one sync ever — if they've already had it (e.g.
+      // reconnecting Strava), skip; otherwise cap their initial pull at 20.
       try {
-        jobQueue.addJob(createListActivitiesJob(
-          userId,
-          1,      // page
-          200,    // perPage (Strava API max)
-          200     // maxActivities
-        ));
-        console.log(`[Strava] Queued initial activity sync for user ${userId}`);
+        const connectedUser = await storage.getUser(userId);
+        if (connectedUser && canSyncFromStrava(connectedUser)) {
+          const cap = getInitialSyncCap(
+            connectedUser.subscriptionPlan ?? null,
+            connectedUser.subscriptionStatus ?? null,
+            200
+          );
+          jobQueue.addJob(createListActivitiesJob(userId, 1, 200, cap));
+          console.log(`[Strava] Queued initial activity sync for user ${userId} (cap=${cap})`);
+        } else {
+          console.log(`[Strava] Skipped resync for free user ${userId} on reconnect (already used one-time sync)`);
+        }
       } catch (syncError) {
         console.error('Failed to queue initial sync:', syncError);
       }
@@ -5168,14 +5229,23 @@ ${allPages.map(page => `  <url>
   app.post("/api/strava/sync-activities", authenticateJWT, async (req: any, res) => {
     try {
       const userId = req.user!.id;
-      const { maxActivities = 500 } = req.body;
+      let { maxActivities = 500 } = req.body;
 
       const user = await storage.getUser(userId);
       if (!user || !user.stravaConnected) {
         return res.status(400).json({ message: "Strava not connected" });
       }
 
-      // Extended sync (up to 500 activities) is now available to all users
+      // Free users get exactly one Strava sync. After that, block until they upgrade.
+      if (!canSyncFromStrava(user)) {
+        return res.status(402).json({
+          code: 'TRIAL_REQUIRED',
+          message: "You've already used your one free Strava sync. Start a free Premium trial to keep syncing new activities.",
+        });
+      }
+      if (!isPaidPlan(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null)) {
+        maxActivities = Math.min(maxActivities, RATE_LIMITS.FREE_ACTIVITY_LIMIT);
+      }
 
       const result = await stravaService.syncActivitiesForUser(userId, maxActivities);
       
