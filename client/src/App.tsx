@@ -194,7 +194,7 @@ function Router() {
           <ProtectedRoute component={Dashboard} />
         </Route>
         <Route path="/coach-insights">
-          <PremiumProtectedRoute component={CoachInsightsPage} />
+          <ProtectedRoute component={CoachInsightsPage} />
         </Route>
         {/* Redirects for old routes */}
         <Route path="/ml-insights">
