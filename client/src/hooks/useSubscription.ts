@@ -127,19 +127,23 @@ export function useFeatureAccess() {
     insightsLimit: usage?.insightsLimit ?? 3,
     usageResetAt: usage?.resetAt ? new Date(usage.resetAt) : null,
 
+    // All per-activity data is available to every signed-in user.
+    // The only free-tier gate is HOW MANY activities they can reach
+    // (last 20 via the server-side cap). Once they open an activity
+    // they see everything — verdict, timeline, splits, HR, etc.
     activity: {
-      coachVerdict: hasPremiumAccess ? 'full' : 'basic',
-      nextSteps: hasPremiumAccess ? 'full' : 'basic',
+      coachVerdict: 'full',
+      nextSteps: 'full',
       routeMap: true,
-      baselineComparison: hasPremiumAccess,
-      
-      performanceMetrics: hasPremiumAccess,
-      timeline: hasPremiumAccess ? 'full' : 'readonly',
-      splits: hasPremiumAccess ? 'full' : 'preview',
-      hrCadencePower: hasPremiumAccess,
-      
+      baselineComparison: true,
+
+      performanceMetrics: true,
+      timeline: 'full',
+      splits: 'full',
+      hrCadencePower: true,
+
       askCoach: hasPremiumAccess,
-      activityComparison: hasPremiumAccess,
+      activityComparison: true,
       goalPlanActions: hasPremiumAccess,
     }
   };
