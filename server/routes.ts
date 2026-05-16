@@ -5726,17 +5726,9 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
 
-      const now = new Date();
-      const isInTrial = user.trialEndsAt && new Date(user.trialEndsAt) > now && !user.stripeSubscriptionId;
-      const hasPremiumAccess = user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'premium' || isInTrial;
-      
-      if (!hasPremiumAccess) {
-        return res.status(403).json({ 
-          message: "Coach Verdict requires Premium subscription",
-          requiresPremium: true
-        });
-      }
-
+      // Per-activity data (verdict, timeline, splits, etc.) is available to
+      // every signed-in user post free-tier pivot. The only free-tier gate is
+      // HOW MANY activities they can reach (last 20 via the server-side cap).
       const unitPreference = user.unitPreference || 'km';
       const cacheKey = `verdict:${activityId}:${userId}:${unitPreference}`;
       const cached = getCachedResponse(cacheKey);
