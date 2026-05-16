@@ -33,7 +33,7 @@ import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClie
 import { resolvePlan } from "./webhookHandlers";
 import { db } from "./db";
 import { sql, eq, isNull } from "drizzle-orm";
-import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getActivityHistoryLimit, RATE_LIMITS } from "./rateLimits";
+import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getActivityHistoryLimit, getFreeActivityLimit, RATE_LIMITS } from "./rateLimits";
 import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage, renderToolPage, getAllToolSlugs } from "./ssr/renderer";
 import { getAllBlogPosts } from "./ssr/blogContent";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
@@ -1117,6 +1117,26 @@ ${allPages.map(page => `  <url>
         customerId = customer.id;
       }
 
+      // Decide whether to grant a 14-day free trial. Only first-time
+      // subscribers get the trial — anyone who has ever held a Stripe
+      // subscription on this customer (even canceled) does NOT get
+      // another trial. We also re-check Stripe directly to catch users
+      // whose stripeSubscriptionId was cleared in our DB.
+      let trialEligible = !user.stripeSubscriptionId;
+      if (trialEligible) {
+        try {
+          const existing = await stripe.subscriptions.list({
+            customer: customerId,
+            status: 'all',
+            limit: 1,
+          });
+          if (existing.data.length > 0) trialEligible = false;
+        } catch (lookupErr) {
+          console.warn('[checkout] trial-eligibility lookup failed; defaulting to no trial', lookupErr);
+          trialEligible = false;
+        }
+      }
+
       // Create checkout session
       const appSlug = process.env.APP_SLUG || 'aitracker';
       const session = await stripe.checkout.sessions.create({
@@ -1129,6 +1149,7 @@ ${allPages.map(page => `  <url>
         cancel_url: `https://aitracker.run/pricing?canceled=true`,
         metadata: { userId: String(userId), app: appSlug },
         subscription_data: {
+          ...(trialEligible ? { trial_period_days: 14 } : {}),
           metadata: { app: appSlug, userId: String(userId) }
         }
       });
@@ -1152,70 +1173,8 @@ ${allPages.map(page => `  <url>
     }
   });
 
-  // Create audit checkout session (with 14-day trial for Premium plan)
-  app.post("/api/stripe/create-audit-checkout", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      const stripe = await getUncachableStripeClient();
-
-      // Create or get Stripe customer. Email is optional here:
-      // if the user hasn't provided one (e.g. silent Strava signup),
-      // Stripe Checkout will collect it during the trial signup and
-      // we'll save it back to the user via the webhook.
-      let customerId = user.stripeCustomerId;
-      if (!customerId) {
-        const customer = await stripe.customers.create({
-          ...(user.email ? { email: user.email } : {}),
-          metadata: { userId: String(userId) }
-        });
-        await storage.updateStripeCustomerId(userId, customer.id);
-        customerId = customer.id;
-      }
-
-      // Resolve the Premium monthly price ID for the current Stripe mode
-      // (test or live). Prefer env-var override, else look it up from the
-      // synced stripe.prices table by metadata.
-      const premiumPriceId = await resolvePremiumPriceId('monthly');
-      if (!premiumPriceId) {
-        console.error('Audit checkout: no Premium monthly price ID could be resolved (set STRIPE_PRICE_PREMIUM_MONTHLY or tag the live Premium product/price with metadata.plan=premium, metadata.billing=monthly)');
-        return res.status(500).json({
-          message: 'Premium plan is not configured for the current Stripe environment.'
-        });
-      }
-
-      const appSlug = process.env.APP_SLUG || 'aitracker';
-      const session = await stripe.checkout.sessions.create({
-        customer: customerId,
-        payment_method_types: ['card'],
-        line_items: [{ price: premiumPriceId, quantity: 1 }],
-        mode: 'subscription',
-        allow_promotion_codes: true,
-        subscription_data: {
-          trial_period_days: 14,
-          metadata: { app: appSlug, userId: String(userId) }
-        },
-        success_url: `https://aitracker.run/audit-report?upgraded=true`,
-        cancel_url: `https://aitracker.run/audit-report?canceled=true`,
-        metadata: { userId: String(userId), source: 'audit-report', app: appSlug }
-      });
-
-      res.json({ url: session.url });
-    } catch (error: any) {
-      console.error('Audit checkout session error:', error);
-      res.status(500).json({ 
-        message: error.message || "Failed to create checkout session"
-      });
-    }
-  });
-
   // Sync the current user's subscription from Stripe directly. Used by the
-  // /billing?success=true and /audit-report?upgraded=true landing pages so
+  // /billing?success=true landing page so
   // the UI shows Premium immediately, even if the webhook is delayed,
   // filtered, or replayed out of order.
   app.post("/api/stripe/sync-subscription", authenticateJWT, async (req: any, res) => {
@@ -1296,81 +1255,25 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Check if user is in active reverse trial (7-day Premium trial, no credit card)
-      const now = new Date();
-      const isInReverseTrial = user.trialEndsAt && new Date(user.trialEndsAt) > now && 
-                               !user.stripeSubscriptionId && user.subscriptionPlan === 'free';
-      
-      // Calculate days remaining in trial
-      let trialDaysRemaining = 0;
-      if (isInReverseTrial && user.trialEndsAt) {
-        const msRemaining = new Date(user.trialEndsAt).getTime() - now.getTime();
-        trialDaysRemaining = Math.ceil(msRemaining / (1000 * 60 * 60 * 24));
-      }
-
-      // Get usage stats for rate limit display
+      // Reverse-trial system has been removed. We always report the user's
+      // real subscription state so free users see free-tier surfaces and
+      // paid/trialing users see Premium surfaces.
       const usageStats = await getUserUsageStats(req.user.id);
 
-      const effectivePlan = isInReverseTrial ? 'premium' : (user.subscriptionPlan || 'free');
-      const effectiveStatus = isInReverseTrial ? 'trialing' : (user.subscriptionStatus || 'free');
-
       res.json({
-        subscriptionStatus: effectiveStatus,
-        subscriptionPlan: effectivePlan,
+        subscriptionStatus: user.subscriptionStatus || 'free',
+        subscriptionPlan: user.subscriptionPlan || 'free',
         stripeSubscriptionId: user.stripeSubscriptionId,
         trialEndsAt: user.trialEndsAt,
         subscriptionEndsAt: user.subscriptionEndsAt,
         usage: usageStats,
-        // Reverse trial specific fields
-        isReverseTrial: isInReverseTrial,
-        trialDaysRemaining: trialDaysRemaining
+        // Kept for response-shape compatibility with older clients.
+        isReverseTrial: false,
+        trialDaysRemaining: 0,
       });
     } catch (error: any) {
       console.error('Subscription status error:', error);
       res.status(500).json({ message: "Failed to get subscription status" });
-    }
-  });
-
-  // Create trial setup intent for Audit Report paywall
-  app.post("/api/stripe/create-trial-setup", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      const stripe = await getUncachableStripeClient();
-
-      // Create or get Stripe customer
-      let customerId = user.stripeCustomerId;
-      if (!customerId) {
-        const customer = await stripe.customers.create({
-          ...(user.email ? { email: user.email } : {}),
-          metadata: { userId: String(userId) }
-        });
-        await storage.updateStripeCustomerId(userId, customer.id);
-        customerId = customer.id;
-      }
-
-      // Create a SetupIntent for collecting payment method
-      const setupIntent = await stripe.setupIntents.create({
-        customer: customerId,
-        payment_method_types: ['card'],
-        metadata: {
-          userId: String(userId),
-          flow: 'audit_report_trial'
-        }
-      });
-
-      // After setup intent is confirmed, create subscription with trial
-      // This will be handled by the webhook or by a follow-up call
-
-      res.json({ clientSecret: setupIntent.client_secret });
-    } catch (error: any) {
-      console.error('Trial setup intent error:', error);
-      res.status(500).json({ message: "Failed to create trial setup" });
     }
   });
 
@@ -1858,7 +1761,7 @@ ${allPages.map(page => `  <url>
       }
       // Pass JWT via short-lived cookie to avoid token in URL (security)
       res.cookie('_sta', token, { maxAge: 60000, path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
-      return res.redirect('/audit-report');
+      return res.redirect('/dashboard?welcome=1');
     } catch (error: any) {
       console.error('[StravaLogin] Callback error:', error);
       const isMobile =
@@ -2485,20 +2388,10 @@ ${allPages.map(page => `  <url>
       // Get sync state to determine insights status
       const syncState = await storage.getSyncState(userId);
 
-      // Get activity history limit based on subscription
-      const historyLimitDays = getActivityHistoryLimit(user.subscriptionPlan, user.subscriptionStatus);
-      let historyLimitDate: Date | undefined;
-      if (historyLimitDays !== null) {
-        historyLimitDate = new Date();
-        historyLimitDate.setDate(historyLimitDate.getDate() - historyLimitDays);
-        historyLimitDate.setHours(0, 0, 0, 0);
-      }
-
-      // Get activities (filtered by date for free users)
-      let activities = await storage.getActivitiesByUserId(userId, 10);
-      if (historyLimitDate) {
-        activities = activities.filter(a => new Date(a.startDate) >= historyLimitDate!);
-      }
+      // Dashboard widget always shows the most-recent 10 runs. The
+      // free-tier 20-run cap is enforced on /api/activities (the full
+      // history view); since 10 < 20 it never bites here.
+      const activities = await storage.getActivitiesByUserId(userId, 10);
       
       const insights = await storage.getAIInsightsByUserId(userId);
       
@@ -3513,8 +3406,16 @@ ${allPages.map(page => `  <url>
     }
   });
 
-  // Audit Report endpoint - provides user-specific audit data for the paywall page
-  app.get("/api/audit-report/:userId", authenticateJWT, async (req: any, res) => {
+  // Audit Report endpoint REMOVED with the free-tier pivot. Stub kept so
+  // the route file still parses cleanly; original handler deleted.
+  app.get("/api/audit-report/:userId", authenticateJWT, async (_req: any, res) => {
+    return res.status(410).json({ message: "Audit report has been retired." });
+  });
+  // Legacy audit-report handler kept inert behind `if (false)` so the large
+  // body below remains in version control history but never executes.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _legacyAuditReport = async (req: any, res: any) => {
+    if (true) return;
     try {
       const userId = parseInt(req.params.userId);
       
@@ -3708,7 +3609,8 @@ ${allPages.map(page => `  <url>
       console.error('Audit report error:', error);
       res.status(500).json({ message: error.message || "Failed to generate audit report" });
     }
-  });
+  };
+  void _legacyAuditReport;
 
   // Update user settings
   app.patch("/api/users/:userId/settings", authenticateJWT, async (req: any, res) => {
@@ -4916,14 +4818,52 @@ ${allPages.map(page => `  <url>
         maxDistanceMeters = unitPreference === 'miles' ? maxDistance * 1609.34 : maxDistance * 1000;
       }
 
+      // Free users only see their most-recent N activities (the count cap
+      // for the free-tier funnel). We enforce by computing the cutoff date
+      // of the user's Nth-most-recent activity FIRST (independent of any
+      // filters the client supplied) and using it as a floor on startDate.
+      // This prevents free users from bypassing the cap by paging or
+      // distance/date-filtering into older activities.
+      const freeLimit = getFreeActivityLimit(user?.subscriptionPlan ?? null, user?.subscriptionStatus ?? null);
+      let effectiveStartDate = startDate;
+      let freeCapInfo: { capped: true; limit: number } | undefined;
+
+      if (freeLimit !== null) {
+        const newestN = await storage.getActivitiesByUserId(userId, freeLimit);
+        if (newestN.length === 0) {
+          return res.json({
+            activities: [],
+            total: 0,
+            page,
+            pageSize,
+            totalPages: 0,
+            freeTier: { capped: true, limit: freeLimit },
+          });
+        }
+        // Activities are returned newest-first; the last entry is the oldest
+        // one inside the allowed window.
+        const cutoff = new Date(newestN[newestN.length - 1].startDate);
+        const cutoffIso = cutoff.toISOString();
+        if (!effectiveStartDate || new Date(effectiveStartDate) < cutoff) {
+          effectiveStartDate = cutoffIso;
+        }
+        freeCapInfo = { capped: true, limit: freeLimit };
+      }
+
       const result = await storage.getActivitiesByUserIdPaginated(userId, {
         page,
         pageSize,
         minDistance: minDistanceMeters,
         maxDistance: maxDistanceMeters,
-        startDate,
+        startDate: effectiveStartDate,
         endDate,
       });
+
+      if (freeCapInfo) {
+        // Belt-and-suspenders: never report more than the cap to the client.
+        result.total = Math.min(result.total, freeCapInfo.limit);
+        result.totalPages = Math.ceil(result.total / pageSize);
+      }
 
       // Use cached grades from verdicts, calculate fallback if not available
       const activitiesWithGrades = (() => {
@@ -5418,9 +5358,9 @@ ${allPages.map(page => `  <url>
         console.error('Drip campaign trigger failed in Strava callback:', campaignError);
       }
 
-      // Redirect based on where they came from
-      const redirectUrl = isFromAudit ? "/audit-report?connected=true" : "/dashboard?connected=true";
-      res.redirect(redirectUrl);
+      // Always land on the dashboard after Strava connect — the audit-report
+      // funnel was retired with the free-tier pivot.
+      res.redirect("/dashboard?connected=true");
     } catch (error: any) {
       console.error('Strava callback error:', error);
       res.redirect("/dashboard?error=connection_failed");

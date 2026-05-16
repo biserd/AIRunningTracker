@@ -505,7 +505,7 @@ This feedback has been stored in the deletion_feedback table for analysis.`;
         </div>
         
         <div style="text-align: center; margin: 30px 0;">
-          <a href="https://aitracker.run/audit-report" style="background: #e74c3c; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">View Your Training Audit</a>
+          <a href="https://aitracker.run/dashboard" style="background: #e74c3c; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Open Your Dashboard</a>
         </div>
         
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -538,7 +538,7 @@ Thanks for signing up. We've already started analyzing your training data to fin
 
 Your Training Audit is ready. Connect your Strava to see personalized insights about your running.
 
-View your audit: https://aitracker.run/audit-report
+Open your dashboard: https://aitracker.run/dashboard
 
 What Premium Runners Get:
 - AI Running Coach Chat: Ask questions, get personalized advice anytime

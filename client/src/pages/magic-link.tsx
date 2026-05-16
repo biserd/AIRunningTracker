@@ -43,13 +43,10 @@ export default function MagicLinkPage() {
         localStorage.setItem("auth_token", body.token);
         setStatus("ok");
 
-        const isPaid =
-          body.user?.subscriptionPlan &&
-          body.user.subscriptionPlan !== "free" &&
-          (body.user.subscriptionStatus === "active" ||
-            body.user.subscriptionStatus === "trialing");
-        // Slight delay so the user sees the success state, then redirect.
-        setTimeout(() => setLocation(isPaid ? "/dashboard" : "/audit-report"), 600);
+        // All signed-in users land on the dashboard. Free-tier surfaces
+        // (20-run cap, upgrade nudge) are rendered inline there; the
+        // dedicated audit-report funnel was retired.
+        setTimeout(() => setLocation("/dashboard"), 600);
       } catch {
         if (!cancelled) {
           setStatus("error");

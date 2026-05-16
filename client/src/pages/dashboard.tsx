@@ -85,24 +85,27 @@ export default function Dashboard() {
     }
   }, [user?.id]);
 
-  // Show welcome toast for reverse trial users on first visit
+  // Show one-time "welcome" toast for users arriving fresh from signup.
+  // The reverse-trial system was removed; new users land here on the
+  // free plan with a 20-run cap and a card-on-file upgrade nudge.
   useEffect(() => {
-    if (isReverseTrial && user?.id) {
-      const seenKey = `trial_welcome_shown_${user.id}`;
-      const hasSeenWelcome = localStorage.getItem(seenKey);
-      
-      if (!hasSeenWelcome) {
-        setTimeout(() => {
-          toast({
-            title: "Welcome to your 7-day Premium trial!",
-            description: `You have ${trialDaysRemaining} days to explore unlimited AI insights, training plans, race predictions, and more. Cancel anytime.`,
-            duration: 8000,
-          });
-          localStorage.setItem(seenKey, 'true');
-        }, 1500);
-      }
-    }
-  }, [isReverseTrial, user?.id, trialDaysRemaining, toast]);
+    if (!user?.id) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('welcome') !== '1') return;
+    const seenKey = `welcome_shown_${user.id}`;
+    if (localStorage.getItem(seenKey)) return;
+    setTimeout(() => {
+      toast({
+        title: "Welcome to RunAnalytics!",
+        description: "You're on the free plan — your last 20 runs are ready to explore. Start a 14-day Premium trial anytime to unlock everything.",
+        duration: 8000,
+      });
+      localStorage.setItem(seenKey, 'true');
+      const url = new URL(window.location.href);
+      url.searchParams.delete('welcome');
+      window.history.replaceState({}, '', url.pathname + url.search);
+    }, 800);
+  }, [user?.id, toast]);
 
   // Check if user has chatted (for checklist)
   const { data: conversationSummaries } = useQuery<Array<{ id: number }>>({

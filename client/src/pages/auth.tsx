@@ -49,7 +49,7 @@ export default function AuthPage() {
     onSuccess: (response: any) => {
       localStorage.setItem("auth_token", response.token);
       toast({ title: "Welcome to RunAnalytics!", description: "Account created successfully" });
-      setLocation("/audit-report");
+      setLocation("/dashboard?welcome=1");
     },
     onError: (error: any) => {
       toast({

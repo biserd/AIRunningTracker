@@ -5,7 +5,19 @@ import { eq } from "drizzle-orm";
 export const RATE_LIMITS = {
   FREE_MONTHLY_INSIGHTS: 3,
   FREE_ACTIVITY_HISTORY_DAYS: 30,
+  FREE_ACTIVITY_LIMIT: 20,
 };
+
+export function isPaidPlan(subscriptionPlan: string | null, subscriptionStatus: string | null): boolean {
+  return (
+    (subscriptionPlan === 'pro' || subscriptionPlan === 'premium') &&
+    (subscriptionStatus === 'active' || subscriptionStatus === 'trialing')
+  );
+}
+
+export function getFreeActivityLimit(subscriptionPlan: string | null, subscriptionStatus: string | null): number | null {
+  return isPaidPlan(subscriptionPlan, subscriptionStatus) ? null : RATE_LIMITS.FREE_ACTIVITY_LIMIT;
+}
 
 export interface RateLimitResult {
   allowed: boolean;

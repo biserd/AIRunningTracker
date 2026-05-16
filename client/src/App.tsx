@@ -67,7 +67,6 @@ const TrainingPlansPage = lazy(() => import("@/pages/training-plans"));
 const TrainingPlanDetailPage = lazy(() => import("@/pages/training-plan-detail"));
 const CoachOnboardingPage = lazy(() => import("@/pages/coach-onboarding"));
 const CoachSettingsPage = lazy(() => import("@/pages/coach-settings"));
-const AuditReportPage = lazy(() => import("@/pages/audit-report"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 // Pick up Strava OAuth JWT from short-lived cookie (_sta) set by the server callback.
@@ -111,7 +110,7 @@ function ProtectedRoute({ component: Component, requiresSubscription = false }: 
 
 function PremiumProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAuthenticated, isLoading } = useAuth();
-  const { hasActiveSubscription, isLoading: subLoading, isReverseTrial } = useSubscription();
+  const { hasActiveSubscription, isLoading: subLoading } = useSubscription();
 
   if (isLoading || subLoading) {
     return (
@@ -129,9 +128,9 @@ function PremiumProtectedRoute({ component: Component }: { component: React.Comp
     return null;
   }
 
-  // Allow access if user has active subscription OR is on reverse trial
-  if (!hasActiveSubscription && !isReverseTrial) {
-    window.location.href = "/audit-report";
+  // Premium-only routes redirect free users to pricing — reverse trial removed.
+  if (!hasActiveSubscription) {
+    window.location.href = "/pricing";
     return null;
   }
 
@@ -192,7 +191,7 @@ function Router() {
           <PremiumProtectedRoute component={ChatHistory} />
         </Route>
         <Route path="/dashboard">
-          <PremiumProtectedRoute component={Dashboard} />
+          <ProtectedRoute component={Dashboard} />
         </Route>
         <Route path="/coach-insights">
           <PremiumProtectedRoute component={CoachInsightsPage} />
@@ -243,8 +242,11 @@ function Router() {
         <Route path="/coach/settings">
           <PremiumProtectedRoute component={CoachSettingsPage} />
         </Route>
+        {/* Legacy /audit-report → dashboard. The audit funnel was retired
+            with the free-tier pivot; new users land on /dashboard with the
+            20-run cap and an inline Premium upgrade nudge. */}
         <Route path="/audit-report">
-          <ProtectedRoute component={AuditReportPage} />
+          {() => { window.location.href = "/dashboard"; return null; }}
         </Route>
         
         <Route component={NotFound} />
