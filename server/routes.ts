@@ -1122,6 +1122,11 @@ ${allPages.map(page => `  <url>
       // subscription on this customer (even canceled) does NOT get
       // another trial. We also re-check Stripe directly to catch users
       // whose stripeSubscriptionId was cleared in our DB.
+      // Returning subscribers (anyone we've already linked to a Stripe sub)
+      // never get another trial. For users with no Stripe sub on file, we
+      // double-check Stripe directly to catch DB drift; if that lookup
+      // fails transiently, fail OPEN — grant the trial — so a Stripe
+      // hiccup never silently denies a real new user their 14-day trial.
       let trialEligible = !user.stripeSubscriptionId;
       if (trialEligible) {
         try {
@@ -1132,8 +1137,8 @@ ${allPages.map(page => `  <url>
           });
           if (existing.data.length > 0) trialEligible = false;
         } catch (lookupErr) {
-          console.warn('[checkout] trial-eligibility lookup failed; defaulting to no trial', lookupErr);
-          trialEligible = false;
+          console.warn('[checkout] trial-eligibility lookup failed; defaulting to GRANT trial for new user', lookupErr);
+          // trialEligible stays true — user has no sub in our DB.
         }
       }
 
