@@ -17,8 +17,6 @@ export interface SubscriptionStatus {
   trialEndsAt?: string;
   subscriptionEndsAt?: string;
   usage?: UsageStats;
-  isReverseTrial?: boolean;
-  trialDaysRemaining?: number;
 }
 
 export function useSubscription() {
@@ -38,9 +36,7 @@ export function useSubscription() {
   const isFree = plan === 'free' || status === 'canceled' || status === 'past_due';
 
   const usage = subscription?.usage;
-  
-  const isReverseTrial = subscription?.isReverseTrial || false;
-  const trialDaysRemaining = subscription?.trialDaysRemaining || 0;
+
   const trialEndsAt = subscription?.trialEndsAt ? new Date(subscription.trialEndsAt) : null;
 
   return {
@@ -54,8 +50,6 @@ export function useSubscription() {
     isFree,
     hasActiveSubscription: isPremium,
     usage,
-    isReverseTrial,
-    trialDaysRemaining,
     trialEndsAt,
   };
 }
@@ -104,11 +98,11 @@ export function useManageSubscription() {
 }
 
 export function useFeatureAccess() {
-  const { isPremium, isFree, usage, isReverseTrial } = useSubscription();
-  
-  const hasPremiumAccess = isPremium || isReverseTrial;
-  const hasFreeAccess = isFree && !isReverseTrial;
-  
+  const { isPremium, isFree, usage } = useSubscription();
+
+  const hasPremiumAccess = isPremium;
+  const hasFreeAccess = isFree;
+
   return {
     canAccessBasicAnalytics: true,
     canAccessStravaIntegration: true,
@@ -132,9 +126,7 @@ export function useFeatureAccess() {
     insightsRemaining: usage?.insightsRemaining ?? 3,
     insightsLimit: usage?.insightsLimit ?? 3,
     usageResetAt: usage?.resetAt ? new Date(usage.resetAt) : null,
-    
-    isOnReverseTrial: isReverseTrial,
-    
+
     activity: {
       coachVerdict: hasPremiumAccess ? 'full' : 'basic',
       nextSteps: hasPremiumAccess ? 'full' : 'basic',

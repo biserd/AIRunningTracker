@@ -34,7 +34,6 @@ import { useFeatureAccess, useSubscription } from "@/hooks/useSubscription";
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const { canAccessAICoachChat, insightsUsed, insightsLimit, maxInsightsPerMonth } = useFeatureAccess();
-  const { isReverseTrial, trialDaysRemaining } = useSubscription();
   const [chartTimeRange, setChartTimeRange] = useState<string>("30days");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [emailBannerDismissed, setEmailBannerDismissed] = useState<boolean>(() => {
@@ -86,8 +85,8 @@ export default function Dashboard() {
   }, [user?.id]);
 
   // Show one-time "welcome" toast for users arriving fresh from signup.
-  // The reverse-trial system was removed; new users land here on the
-  // free plan with a 20-run cap and a card-on-file upgrade nudge.
+  // New users land here on the free plan with a 20-run cap and a
+  // card-on-file upgrade nudge.
   useEffect(() => {
     if (!user?.id) return;
     const params = new URLSearchParams(window.location.search);
@@ -448,7 +447,7 @@ export default function Dashboard() {
           <AnnouncementBanner onOpenChat={() => setIsChatOpen(true)} />
         )}
 
-        {/* Trial Badge for reverse trial users */}
+        {/* Free-tier upgrade nudge */}
         <TrialBadge />
 
         {/* Strava Sync Actions */}

@@ -564,22 +564,6 @@ The RunAnalytics Team
     });
   }
 
-  // Legacy method - redirects to new welcome email
-  async sendTrialWelcomeEmail(email: string, firstName?: string): Promise<void> {
-    return this.sendWelcomeEmail(email, firstName);
-  }
-
-  // Legacy methods - no longer used but kept for compatibility
-  async sendTrialReminderEmail(email: string, firstName?: string, daysRemaining: number = 2): Promise<void> {
-    // No longer sending trial reminders since we removed the reverse trial system
-    console.log(`[Email] Skipping trial reminder for ${email} - reverse trial system removed`);
-  }
-
-  async sendTrialExpiredEmail(email: string, firstName?: string): Promise<void> {
-    // No longer sending trial expired emails since we removed the reverse trial system
-    console.log(`[Email] Skipping trial expired email for ${email} - reverse trial system removed`);
-  }
-
   async sendLaunchAnnouncementEmail(email: string): Promise<boolean> {
     const subject = "We're live! Try RunAnalytics free — RunAnalytics";
     const html = `

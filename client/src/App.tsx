@@ -128,7 +128,7 @@ function PremiumProtectedRoute({ component: Component }: { component: React.Comp
     return null;
   }
 
-  // Premium-only routes redirect free users to pricing — reverse trial removed.
+  // Premium-only routes redirect free users to pricing.
   if (!hasActiveSubscription) {
     window.location.href = "/pricing";
     return null;

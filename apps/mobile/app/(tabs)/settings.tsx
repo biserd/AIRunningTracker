@@ -87,9 +87,7 @@ export default function ProfileScreen() {
     sub.data?.subscriptionStatus === "active" || sub.data?.subscriptionStatus === "trialing";
   const renewalText = sub.data?.subscriptionEndsAt
     ? `Renews ${new Date(sub.data.subscriptionEndsAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} · $7.99/mo`
-    : sub.data?.isReverseTrial && sub.data?.trialDaysRemaining
-      ? `${sub.data.trialDaysRemaining}-day trial · Manage at aitracker.run`
-      : "Manage billing at aitracker.run";
+    : "Manage billing at aitracker.run";
 
   return (
     <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.bg }}>

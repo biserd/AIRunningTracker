@@ -172,8 +172,6 @@ export interface SubscriptionStatus {
   stripeSubscriptionId: string | null;
   trialEndsAt: string | null;
   subscriptionEndsAt: string | null;
-  isReverseTrial: boolean;
-  trialDaysRemaining: number;
   usage?: {
     insightsUsedToday?: number;
     insightsLimitPerDay?: number;

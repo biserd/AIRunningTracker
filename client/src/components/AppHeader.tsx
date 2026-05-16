@@ -23,7 +23,7 @@ const navigationItems = [
 
 export default function AppHeader() {
   const { user, logout } = useAuth();
-  const { isPro, hasActiveSubscription, isReverseTrial } = useSubscription();
+  const { isPro, hasActiveSubscription } = useSubscription();
   const [location] = useLocation();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
@@ -104,7 +104,7 @@ export default function AppHeader() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                {(hasActiveSubscription || isReverseTrial) && (
+                {hasActiveSubscription && (
                   <DropdownMenuItem asChild>
                     <Link href="/settings" className="flex items-center space-x-2 cursor-pointer">
                       <Settings size={16} />

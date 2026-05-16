@@ -1260,9 +1260,6 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Reverse-trial system has been removed. We always report the user's
-      // real subscription state so free users see free-tier surfaces and
-      // paid/trialing users see Premium surfaces.
       const usageStats = await getUserUsageStats(req.user.id);
 
       res.json({
@@ -1272,9 +1269,6 @@ ${allPages.map(page => `  <url>
         trialEndsAt: user.trialEndsAt,
         subscriptionEndsAt: user.subscriptionEndsAt,
         usage: usageStats,
-        // Kept for response-shape compatibility with older clients.
-        isReverseTrial: false,
-        trialDaysRemaining: 0,
       });
     } catch (error: any) {
       console.error('Subscription status error:', error);
@@ -1310,8 +1304,8 @@ ${allPages.map(page => `  <url>
       const userData = registerSchema.parse(req.body);
       const result = await authService.register(userData);
       
-      // Send trial welcome email to new user (7-day Premium trial)
-      await emailService.sendTrialWelcomeEmail(userData.email, userData.firstName);
+      // Send welcome email to new user
+      await emailService.sendWelcomeEmail(userData.email, userData.firstName);
       
       // Send notification to admin
       await emailService.sendRegistrationNotification(userData.email);
@@ -1719,9 +1713,8 @@ ${allPages.map(page => `  <url>
       }
 
       // New user — create account silently, no email or password required.
-      // Do NOT grant a free reverse trial here: new Strava signups must go through
-      // the onboarding wizard + audit report and start the 14-day PAID trial
-      // (credit card required) via Stripe checkout.
+      // New Strava signups go through the onboarding wizard and start the
+      // 14-day PAID trial (credit card required) via Stripe checkout.
       const newUser = await storage.createUser({
         firstName,
         lastName,
@@ -6625,85 +6618,6 @@ ${allPages.map(page => `  <url>
     } catch (error: any) {
       console.error('Pipeline validation error:', error);
       res.status(500).json({ message: error.message || "Failed to validate shoes" });
-    }
-  });
-
-  // ============== REVERSE TRIAL EMAIL PROCESSING ==============
-  // This endpoint can be called by a cron job or on app startup to send trial emails
-  app.post("/api/admin/process-trial-emails", authenticateAdmin, async (req: any, res) => {
-    try {
-      const results = {
-        remindersSent: 0,
-        expiredSent: 0,
-        errors: [] as string[]
-      };
-
-      // 1. Send reminder emails (2 days before expiry)
-      const usersNearingExpiry = await storage.getUsersWithTrialEndingSoon(2);
-      for (const user of usersNearingExpiry) {
-        if (!user.email) continue; // Skip Strava-only users with no email
-        try {
-          await emailService.sendTrialReminderEmail(user.email, user.firstName || undefined, 2);
-          results.remindersSent++;
-          console.log(`📧 Sent trial reminder to ${user.email}`);
-        } catch (err: any) {
-          results.errors.push(`Reminder to ${user.email}: ${err.message}`);
-        }
-      }
-
-      // 2. Send expiry emails (trial just ended)
-      const usersWithExpiredTrials = await storage.getUsersWithExpiredTrials();
-      for (const user of usersWithExpiredTrials) {
-        if (!user.email) continue; // Skip Strava-only users with no email
-        try {
-          await emailService.sendTrialExpiredEmail(user.email, user.firstName || undefined);
-          results.expiredSent++;
-          console.log(`📧 Sent trial expired email to ${user.email}`);
-        } catch (err: any) {
-          results.errors.push(`Expiry to ${user.email}: ${err.message}`);
-        }
-      }
-
-      console.log(`[Trial Emails] Reminders: ${results.remindersSent}, Expired: ${results.expiredSent}`);
-      res.json({
-        success: true,
-        ...results,
-        usersNearingExpiry: usersNearingExpiry.length,
-        usersWithExpiredTrials: usersWithExpiredTrials.length
-      });
-    } catch (error: any) {
-      console.error('Trial email processing error:', error);
-      res.status(500).json({ message: error.message || "Failed to process trial emails" });
-    }
-  });
-
-  // Get users in trial for admin dashboard
-  app.get("/api/admin/trial-users", authenticateAdmin, async (req: any, res) => {
-    try {
-      const now = new Date();
-      
-      // Get all users with active trials
-      const allUsers = await storage.getAllUsers();
-      const trialUsers = allUsers.filter(u => 
-        u.trialEndsAt && 
-        new Date(u.trialEndsAt) > now && 
-        !u.stripeSubscriptionId &&
-        u.subscriptionPlan === 'free'
-      );
-      
-      res.json({
-        count: trialUsers.length,
-        users: trialUsers.map(u => ({
-          id: u.id,
-          email: u.email,
-          firstName: u.firstName,
-          trialEndsAt: u.trialEndsAt,
-          daysRemaining: Math.ceil((new Date(u.trialEndsAt!).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-        }))
-      });
-    } catch (error: any) {
-      console.error('Trial users error:', error);
-      res.status(500).json({ message: error.message || "Failed to get trial users" });
     }
   });
 

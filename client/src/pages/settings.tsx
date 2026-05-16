@@ -22,7 +22,7 @@ function SettingsPageContent() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { subscription, plan, status, isPremium, isLoading: subscriptionLoading, isReverseTrial } = useSubscription();
+  const { subscription, plan, status, isPremium, isLoading: subscriptionLoading } = useSubscription();
   const manageSubscription = useManageSubscription();
 
   const { data: dashboardData } = useQuery<DashboardData>({

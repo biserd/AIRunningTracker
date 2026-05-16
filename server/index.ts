@@ -5,8 +5,6 @@ import { performanceLogger } from "./middleware/performance-logger";
 import { runMigrations } from 'stripe-replit-sync';
 import { getStripeSync } from './stripeClient';
 import { WebhookHandlers } from './webhookHandlers';
-import { storage } from './storage';
-import { emailService } from './services/email';
 
 const app = express();
 
@@ -97,117 +95,6 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   // Don't exit the process, just log the error
 });
-
-// Trial email scheduler - runs daily to send reminder and expiry emails
-async function processTrialEmails() {
-  console.log('[Trial Scheduler] Processing trial emails...');
-  try {
-    let remindersSent = 0;
-    let remindersSkipped = 0;
-    let expiredSent = 0;
-    let expiredSkipped = 0;
-
-    // 1. Send reminder emails (2 days before expiry) - with dedupe check
-    const usersNearingExpiry = await storage.getUsersWithTrialEndingSoon(2);
-    for (const user of usersNearingExpiry) {
-      try {
-        // Check if we already sent a trial reminder to this user
-        const dedupeKey = `trial_reminder_${user.id}`;
-        const existingNotification = await storage.getNotificationByDedupeKey(dedupeKey);
-        
-        if (existingNotification) {
-          remindersSkipped++;
-          console.log(`[Trial Scheduler] Skipping reminder for ${user.email} - already sent`);
-          continue;
-        }
-
-        if (!user.email) {
-          remindersSkipped++;
-          continue; // Skip Strava-only users with no email
-        }
-        
-        // Send the email
-        await emailService.sendTrialReminderEmail(user.email, user.firstName || undefined, 2);
-        
-        // Track in notification_outbox to prevent future duplicates
-        const notification = await storage.createNotification({
-          userId: user.id,
-          type: 'trial_reminder',
-          channel: 'email',
-          title: 'Trial Reminder',
-          body: `Sent trial reminder email to ${user.email}`,
-          dedupeKey,
-        });
-        await storage.markNotificationSent(notification.id);
-        
-        remindersSent++;
-        console.log(`[Trial Scheduler] Sent reminder to ${user.email}`);
-      } catch (err: any) {
-        console.error(`[Trial Scheduler] Failed to send reminder to ${user.email}:`, err.message);
-      }
-    }
-
-    // 2. Send expiry emails (trial just ended) - with dedupe check
-    const usersWithExpiredTrials = await storage.getUsersWithExpiredTrials();
-    for (const user of usersWithExpiredTrials) {
-      try {
-        // Check if we already sent a trial expired email to this user
-        const dedupeKey = `trial_expired_${user.id}`;
-        const existingNotification = await storage.getNotificationByDedupeKey(dedupeKey);
-        
-        if (existingNotification) {
-          expiredSkipped++;
-          console.log(`[Trial Scheduler] Skipping expiry email for ${user.email} - already sent`);
-          continue;
-        }
-
-        if (!user.email) {
-          expiredSkipped++;
-          continue; // Skip Strava-only users with no email
-        }
-        
-        // Send the email
-        await emailService.sendTrialExpiredEmail(user.email, user.firstName || undefined);
-        
-        // Track in notification_outbox to prevent future duplicates
-        const notification = await storage.createNotification({
-          userId: user.id,
-          type: 'trial_expired',
-          channel: 'email',
-          title: 'Trial Expired',
-          body: `Sent trial expired email to ${user.email}`,
-          dedupeKey,
-        });
-        await storage.markNotificationSent(notification.id);
-        
-        expiredSent++;
-        console.log(`[Trial Scheduler] Sent expiry email to ${user.email}`);
-      } catch (err: any) {
-        console.error(`[Trial Scheduler] Failed to send expiry to ${user.email}:`, err.message);
-      }
-    }
-
-    console.log(`[Trial Scheduler] Complete - Reminders: ${remindersSent} sent, ${remindersSkipped} skipped | Expiry: ${expiredSent} sent, ${expiredSkipped} skipped`);
-  } catch (error) {
-    console.error('[Trial Scheduler] Error processing trial emails:', error);
-  }
-}
-
-function startTrialEmailScheduler() {
-  const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-  
-  // Run once shortly after startup (5 minutes delay to let server stabilize)
-  setTimeout(() => {
-    processTrialEmails();
-  }, 5 * 60 * 1000);
-  
-  // Then run every 24 hours
-  setInterval(() => {
-    processTrialEmails();
-  }, ONE_DAY_MS);
-  
-  console.log('[Trial Scheduler] Started - will process emails daily');
-}
 
 // Initialize Stripe schema and sync
 async function initStripe() {
@@ -328,9 +215,6 @@ async function verifyPremiumPriceConfig(): Promise<void> {
     }, () => {
       log(`serving on port ${port}`);
       console.log(`🚀 RunAnalytics app is ready at http://localhost:${port}`);
-      
-      // Start the trial email scheduler
-      startTrialEmailScheduler();
     });
   } catch (error) {
     console.error('Failed to start server:', error);

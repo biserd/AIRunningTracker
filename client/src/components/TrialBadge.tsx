@@ -6,10 +6,10 @@ import { Link } from "wouter";
 /**
  * Free-tier upgrade nudge shown on the dashboard.
  *
- * The reverse-trial system has been removed. We now show a card-on-file
- * Premium trial CTA to anyone who is NOT already on an active paid plan
- * (free users, canceled users, etc.). Hides itself for users with an
- * active or trialing subscription so we never nag paying customers.
+ * Shows a card-on-file Premium trial CTA to anyone who is NOT already on
+ * an active paid plan (free users, canceled users, etc.). Hides itself
+ * for users with an active or trialing subscription so we never nag
+ * paying customers.
  */
 export default function TrialBadge() {
   const { hasActiveSubscription, isLoading } = useSubscription();
