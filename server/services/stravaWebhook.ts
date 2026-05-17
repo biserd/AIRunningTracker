@@ -163,14 +163,6 @@ class StravaWebhookService {
         return `skipped:not_a_run(${activity.type})`;
       }
 
-      // Skip tiny activities (warmups, accidental starts, treadmill blips, etc.).
-      // Threshold = 1 km for km users, 1 mile for mile users.
-      const minDistanceMeters = (user.unitPreference ?? "miles") === "km" ? 1000 : 1609.34;
-      if ((activity.distance ?? 0) < minDistanceMeters) {
-        console.log(`[Strava Webhook] Activity ${event.object_id} too short (${activity.distance}m < ${minDistanceMeters}m) — skipping email`);
-        return `skipped:below_min_distance(${Math.round(activity.distance ?? 0)}m)`;
-      }
-
       // Store the activity in the DB so training context queries have accurate history.
       // Duplicate-safe: the regular sync job may also store this later; we skip if it exists.
       const stravaId = String(event.object_id);
@@ -224,6 +216,15 @@ class StravaWebhookService {
         }
       } else {
         console.log(`[Strava Webhook] Activity ${stravaId} already in DB for user ${user.id}, skipping insert`);
+      }
+
+      // Skip the email for tiny activities (warmups, accidental starts, treadmill
+      // blips, etc.) — but we already stored the activity above so history stays
+      // accurate. Threshold = 1 km for km users, 1 mile for mile users.
+      const minDistanceMeters = (user.unitPreference ?? "miles") === "km" ? 1000 : 1609.34;
+      if ((activity.distance ?? 0) < minDistanceMeters) {
+        console.log(`[Strava Webhook] Activity ${event.object_id} too short (${activity.distance}m < ${minDistanceMeters}m) — stored but skipping email`);
+        return `stored_no_email:below_min_distance(${Math.round(activity.distance ?? 0)}m)`;
       }
 
       console.log(`[Strava Webhook] Processing run activity ${event.object_id} for user ${user.id}`);
