@@ -16,7 +16,6 @@ import RunnerScoreRadar from "@/components/dashboard/RunnerScoreRadar";
 import HistoricalRunnerScore from "@/components/dashboard/HistoricalRunnerScore";
 import ProgressChecklist from "@/components/dashboard/ProgressChecklist";
 import ShoeHub from "@/components/dashboard/ShoeHub";
-import Onboarding from "@/components/Onboarding";
 import { SyncProgress } from "@/components/SyncProgress";
 import { FitnessChart } from "@/components/FitnessChart";
 import { Button } from "@/components/ui/button";
@@ -35,7 +34,6 @@ export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const { canAccessAICoachChat, insightsUsed, insightsLimit, maxInsightsPerMonth } = useFeatureAccess();
   const [chartTimeRange, setChartTimeRange] = useState<string>("30days");
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const [emailBannerDismissed, setEmailBannerDismissed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return sessionStorage.getItem("addEmailBannerDismissed") === "1";
@@ -209,17 +207,6 @@ export default function Dashboard() {
   };
 
 
-
-  useEffect(() => {
-    // Check if user should see onboarding
-    const onboardingCompleted = localStorage.getItem('onboardingCompleted');
-    if (!onboardingCompleted && user) {
-      // Small delay to ensure dashboard data is loaded
-      setTimeout(() => {
-        setShowOnboarding(true);
-      }, 500);
-    }
-  }, [user]);
 
   useEffect(() => {
     // Handle URL parameters for Strava connection feedback
@@ -465,15 +452,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Onboarding Modal */}
-      <Onboarding 
-        isOpen={showOnboarding}
-        onClose={() => setShowOnboarding(false)}
-        onStravaConnect={handleStravaConnect}
-        isStravaConnected={dashboardData?.user?.stravaConnected || false}
-      />
-
-      
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* AI Chat Announcement Banner - Only for Premium Users */}
         {canAccessAICoachChat && (
