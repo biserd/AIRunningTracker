@@ -1117,28 +1117,29 @@ ${allPages.map(page => `  <url>
         customerId = customer.id;
       }
 
-      // Grant the 14-day free trial unless the user already (a) has a
-      // live paid sub right now, or (b) has previously consumed a Stripe
-      // trial on this customer (detected via `trial_start` on any past
-      // subscription, including canceled ones). Past canceled subs that
-      // were NEVER trialed (e.g. a churned full-price customer) still
-      // qualify for a first-time trial. If the Stripe lookup fails, we
-      // fail OPEN and grant the trial so a transient Stripe hiccup never
-      // silently denies a real new user their advertised 14-day trial.
-      let trialEligible = true;
-      try {
-        const existing = await stripe.subscriptions.list({
-          customer: customerId,
-          status: 'all',
-          limit: 100,
-        });
-        const hasLiveSub = existing.data.some(
-          (s) => s.status === 'trialing' || s.status === 'active',
-        );
-        const hasUsedTrial = existing.data.some((s) => s.trial_start != null);
-        if (hasLiveSub || hasUsedTrial) trialEligible = false;
-      } catch (lookupErr) {
-        console.warn('[checkout] trial-eligibility lookup failed; defaulting to GRANT trial', lookupErr);
+      // Decide whether to grant a 14-day free trial. Only first-time
+      // subscribers get the trial — anyone who has ever held a Stripe
+      // subscription on this customer (even canceled) does NOT get
+      // another trial. We also re-check Stripe directly to catch users
+      // whose stripeSubscriptionId was cleared in our DB.
+      // Returning subscribers (anyone we've already linked to a Stripe sub)
+      // never get another trial. For users with no Stripe sub on file, we
+      // double-check Stripe directly to catch DB drift; if that lookup
+      // fails transiently, fail OPEN — grant the trial — so a Stripe
+      // hiccup never silently denies a real new user their 14-day trial.
+      let trialEligible = !user.stripeSubscriptionId;
+      if (trialEligible) {
+        try {
+          const existing = await stripe.subscriptions.list({
+            customer: customerId,
+            status: 'all',
+            limit: 1,
+          });
+          if (existing.data.length > 0) trialEligible = false;
+        } catch (lookupErr) {
+          console.warn('[checkout] trial-eligibility lookup failed; defaulting to GRANT trial for new user', lookupErr);
+          // trialEligible stays true — user has no sub in our DB.
+        }
       }
 
       // Create checkout session
