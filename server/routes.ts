@@ -1117,25 +1117,26 @@ ${allPages.map(page => `  <url>
         customerId = customer.id;
       }
 
-      // Grant the 14-day free trial unless the user is *currently* on a
-      // live paid subscription. We only block users whose existing
-      // subscription is in 'trialing' or 'active' status — any past
-      // canceled / past_due / unpaid sub does NOT disqualify them, so
-      // returning visitors who churned (or who only ever had a free
-      // reverse-trial flagged on file) still see "Start Free Trial"
-      // instead of being charged immediately. If the Stripe lookup
-      // fails, we fail OPEN and grant the trial.
+      // Grant the 14-day free trial unless the user already (a) has a
+      // live paid sub right now, or (b) has previously consumed a Stripe
+      // trial on this customer (detected via `trial_start` on any past
+      // subscription, including canceled ones). Past canceled subs that
+      // were NEVER trialed (e.g. a churned full-price customer) still
+      // qualify for a first-time trial. If the Stripe lookup fails, we
+      // fail OPEN and grant the trial so a transient Stripe hiccup never
+      // silently denies a real new user their advertised 14-day trial.
       let trialEligible = true;
       try {
         const existing = await stripe.subscriptions.list({
           customer: customerId,
           status: 'all',
-          limit: 10,
+          limit: 100,
         });
         const hasLiveSub = existing.data.some(
           (s) => s.status === 'trialing' || s.status === 'active',
         );
-        if (hasLiveSub) trialEligible = false;
+        const hasUsedTrial = existing.data.some((s) => s.trial_start != null);
+        if (hasLiveSub || hasUsedTrial) trialEligible = false;
       } catch (lookupErr) {
         console.warn('[checkout] trial-eligibility lookup failed; defaulting to GRANT trial', lookupErr);
       }
