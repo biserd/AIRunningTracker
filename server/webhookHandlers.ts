@@ -309,6 +309,22 @@ export class WebhookHandlers {
         await storage.updateStripeSubscriptionId(user.id, subscription.id);
         await storage.updateSubscriptionStatus(user.id, status, planToWrite);
 
+        // Free → paid (trial or active) transition: flag the user for a one-time
+        // historical Strava backfill. The dashboard endpoint will pick this up
+        // on their next visit and auto-enqueue a full sync (the existing
+        // strava-id dedupe in the LIST_ACTIVITIES job makes this safe).
+        const becamePaid =
+          (planToWrite === 'premium' || planToWrite === 'pro') &&
+          (status === 'trialing' || status === 'active');
+        if (becamePaid && previousPlan === 'free' && user.stravaConnected) {
+          try {
+            await storage.updateUser(user.id, { needsHistoricalBackfill: true });
+            console.log(`[Webhook] Flagged user ${user.id} for historical Strava backfill (free→${planToWrite}/${status})`);
+          } catch (flagErr) {
+            console.error(`[Webhook] Failed to flag user ${user.id} for backfill:`, flagErr);
+          }
+        }
+
         // Backfill the user's email from Stripe if we don't have one yet
         // (e.g. silent Strava signups where Stripe Checkout collected the email).
         if (!user.email) {

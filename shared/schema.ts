@@ -35,6 +35,10 @@ export const users = pgTable("users", {
   syncTotal: integer("sync_total").default(0),
   syncError: text("sync_error"),
   lastIncrementalSince: timestamp("last_incremental_since"),
+  // Set true when a free user upgrades to a paid plan (trial or active) so the
+  // next time they load the app we automatically backfill their full Strava
+  // history beyond the original 20-activity free-tier cap.
+  needsHistoricalBackfill: boolean("needs_historical_backfill").default(false),
   // Password reset fields
   resetToken: text("reset_token"),
   resetTokenExpiry: timestamp("reset_token_expiry"),

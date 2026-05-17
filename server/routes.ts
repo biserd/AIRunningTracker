@@ -2430,6 +2430,24 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
 
+      // Auto-trigger historical Strava backfill for users who just upgraded
+      // from free → paid. Flag is set in the Stripe webhook; cleared here so
+      // it only runs once per upgrade. Safe to enqueue on the dashboard hit
+      // because the LIST_ACTIVITIES job dedupes existing strava IDs.
+      if (
+        user.needsHistoricalBackfill &&
+        user.stravaConnected &&
+        isPaidPlan(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null)
+      ) {
+        try {
+          await storage.updateUser(user.id, { needsHistoricalBackfill: false });
+          jobQueue.addJob(createListActivitiesJob(user.id, 1, 200, 500));
+          console.log(`[Dashboard] Auto-enqueued historical Strava backfill for user ${user.id}`);
+        } catch (backfillErr) {
+          console.error(`[Dashboard] Failed to enqueue backfill for user ${user.id}:`, backfillErr);
+        }
+      }
+
       // Get sync state to determine insights status
       const syncState = await storage.getSyncState(userId);
 
