@@ -163,6 +163,14 @@ class StravaWebhookService {
         return `skipped:not_a_run(${activity.type})`;
       }
 
+      // Skip tiny activities (warmups, accidental starts, treadmill blips, etc.).
+      // Threshold = 1 km for km users, 1 mile for mile users.
+      const minDistanceMeters = (user.unitPreference ?? "miles") === "km" ? 1000 : 1609.34;
+      if ((activity.distance ?? 0) < minDistanceMeters) {
+        console.log(`[Strava Webhook] Activity ${event.object_id} too short (${activity.distance}m < ${minDistanceMeters}m) — skipping email`);
+        return `skipped:below_min_distance(${Math.round(activity.distance ?? 0)}m)`;
+      }
+
       // Store the activity in the DB so training context queries have accurate history.
       // Duplicate-safe: the regular sync job may also store this later; we skip if it exists.
       const stravaId = String(event.object_id);
