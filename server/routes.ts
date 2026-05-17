@@ -1117,29 +1117,27 @@ ${allPages.map(page => `  <url>
         customerId = customer.id;
       }
 
-      // Decide whether to grant a 14-day free trial. Only first-time
-      // subscribers get the trial — anyone who has ever held a Stripe
-      // subscription on this customer (even canceled) does NOT get
-      // another trial. We also re-check Stripe directly to catch users
-      // whose stripeSubscriptionId was cleared in our DB.
-      // Returning subscribers (anyone we've already linked to a Stripe sub)
-      // never get another trial. For users with no Stripe sub on file, we
-      // double-check Stripe directly to catch DB drift; if that lookup
-      // fails transiently, fail OPEN — grant the trial — so a Stripe
-      // hiccup never silently denies a real new user their 14-day trial.
-      let trialEligible = !user.stripeSubscriptionId;
-      if (trialEligible) {
-        try {
-          const existing = await stripe.subscriptions.list({
-            customer: customerId,
-            status: 'all',
-            limit: 1,
-          });
-          if (existing.data.length > 0) trialEligible = false;
-        } catch (lookupErr) {
-          console.warn('[checkout] trial-eligibility lookup failed; defaulting to GRANT trial for new user', lookupErr);
-          // trialEligible stays true — user has no sub in our DB.
-        }
+      // Grant the 14-day free trial unless the user is *currently* on a
+      // live paid subscription. We only block users whose existing
+      // subscription is in 'trialing' or 'active' status — any past
+      // canceled / past_due / unpaid sub does NOT disqualify them, so
+      // returning visitors who churned (or who only ever had a free
+      // reverse-trial flagged on file) still see "Start Free Trial"
+      // instead of being charged immediately. If the Stripe lookup
+      // fails, we fail OPEN and grant the trial.
+      let trialEligible = true;
+      try {
+        const existing = await stripe.subscriptions.list({
+          customer: customerId,
+          status: 'all',
+          limit: 10,
+        });
+        const hasLiveSub = existing.data.some(
+          (s) => s.status === 'trialing' || s.status === 'active',
+        );
+        if (hasLiveSub) trialEligible = false;
+      } catch (lookupErr) {
+        console.warn('[checkout] trial-eligibility lookup failed; defaulting to GRANT trial', lookupErr);
       }
 
       // Create checkout session
