@@ -501,7 +501,7 @@ This feedback has been stored in the deletion_feedback table for analysis.`;
         <p>Thanks for signing up. We've already started analyzing your training data to find opportunities for improvement.</p>
         
         <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
-          <p style="margin: 0; color: #856404;"><strong>Your free dashboard is ready.</strong> Connect Strava to see your last 20 runs, then start a 14-day Premium trial anytime to unlock unlimited history, AI insights, training plans, and the Coach Chat.</p>
+          <p style="margin: 0; color: #856404;"><strong>Your free dashboard is ready.</strong> Connect Strava to see your last 10 runs, then start a 14-day Premium trial anytime to unlock unlimited history, AI insights, training plans, and the Coach Chat.</p>
         </div>
         
         <div style="text-align: center; margin: 30px 0;">
@@ -536,7 +536,7 @@ Hey ${name}!
 
 Thanks for signing up. We've already started analyzing your training data to find opportunities for improvement.
 
-Your free dashboard is ready. Connect Strava to see your last 20 runs, then start a 14-day Premium trial anytime to unlock unlimited history, AI insights, training plans, and the Coach Chat.
+Your free dashboard is ready. Connect Strava to see your last 10 runs, then start a 14-day Premium trial anytime to unlock unlimited history, AI insights, training plans, and the Coach Chat.
 
 Open your dashboard: https://aitracker.run/dashboard
 
@@ -582,7 +582,7 @@ The RunAnalytics Team
         
         <p style="font-size: 16px; line-height: 1.6;">You signed up for our waitlist, and we're thrilled to let you know that <strong>RunAnalytics is now live!</strong></p>
         
-        <p style="font-size: 16px; line-height: 1.6;">Sign up free to see your <strong>last 20 Strava runs</strong> on your dashboard, with a one-tap path into a 14-day Premium trial whenever you're ready.</p>
+        <p style="font-size: 16px; line-height: 1.6;">Sign up free to see your <strong>last 10 Strava runs</strong> on your dashboard, with a one-tap path into a 14-day Premium trial whenever you're ready.</p>
         
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 25px 0;">
           <h3 style="color: #27ae60; margin-top: 0;">What Premium Runners Get:</h3>
@@ -620,7 +620,7 @@ Hey there!
 
 You signed up for our waitlist, and we're thrilled to let you know that RunAnalytics is now live!
 
-Sign up free to see your last 20 Strava runs on your dashboard, with a one-tap path into a 14-day Premium trial whenever you're ready.
+Sign up free to see your last 10 Strava runs on your dashboard, with a one-tap path into a 14-day Premium trial whenever you're ready.
 
 What Premium Runners Get:
 - AI Running Coach Chat: Ask questions, get personalized advice

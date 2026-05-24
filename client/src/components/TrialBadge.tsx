@@ -33,7 +33,7 @@ export default function TrialBadge() {
               You're on the free plan
             </div>
             <p className="text-sm text-gray-600">
-              Showing your last 20 runs. Start a 14-day Premium trial to
+              Showing your last 10 runs. Start a 14-day Premium trial to
               unlock unlimited history, AI insights, training plans, and the
               Coach Chat. Cancel anytime.
             </p>

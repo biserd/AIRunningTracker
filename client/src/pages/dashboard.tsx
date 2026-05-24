@@ -93,7 +93,7 @@ export default function Dashboard() {
     setTimeout(() => {
       toast({
         title: "Welcome to RunAnalytics!",
-        description: "You're on the free plan — your last 20 runs are ready to explore. Start a 14-day Premium trial anytime to unlock everything.",
+        description: "You're on the free plan — your last 10 runs are ready to explore. Start a 14-day Premium trial anytime to unlock everything.",
         duration: 8000,
       });
       localStorage.setItem(seenKey, 'true');
