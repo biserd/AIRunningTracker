@@ -51,15 +51,15 @@ export default function PublicHeader() {
 
           {/* Desktop right side */}
           <div className="hidden md:flex items-center gap-4">
-            <a href="/api/auth/strava-login">
+            <Link href="/auth">
               <Button
                 className="bg-strava-orange text-white hover:bg-strava-orange/90 flex items-center gap-2"
                 data-testid="header-continue-strava"
               >
                 <SiStrava className="h-4 w-4" />
-                Continue with Strava
+                Continue with Strava or Login
               </Button>
-            </a>
+            </Link>
           </div>
 
           {/* Mobile hamburger */}
@@ -92,15 +92,15 @@ export default function PublicHeader() {
               </Link>
             ))}
             <div className="px-6 py-4">
-              <a href="/api/auth/strava-login">
+              <Link href="/auth">
                 <Button
                   className="w-full bg-strava-orange text-white hover:bg-strava-orange/90 flex items-center justify-center gap-2"
                   onClick={() => setMobileOpen(false)}
                 >
                   <SiStrava className="h-4 w-4" />
-                  Continue with Strava
+                  Continue with Strava or Login
                 </Button>
-              </a>
+              </Link>
             </div>
           </nav>
         </div>

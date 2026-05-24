@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Activity, Calendar, Clock, TrendingUp, Zap, ChevronLeft, ChevronRight, Filter, Trash2, X } from "lucide-react";
 import { Link } from "wouter";
 import { StravaPoweredBy } from "@/components/StravaConnect";
+import DashboardHeatmap from "@/components/dashboard/DashboardHeatmap";
 import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -198,6 +199,10 @@ export default function ActivitiesPage() {
           <p className="text-gray-600">
             {response?.total ? `${response.total} total activities` : 'Complete history of your running activities'}
           </p>
+        </div>
+
+        <div className="mb-8">
+          <DashboardHeatmap />
         </div>
 
         {freeCap?.capped && !freeCapBannerDismissed && (
