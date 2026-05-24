@@ -90,6 +90,31 @@ export class StravaService {
     return response.json();
   }
 
+  /**
+   * Revoke a user's Strava OAuth grant so they no longer count against our
+   * per-app athlete quota and we stop receiving webhook events for them.
+   * Best-effort: never throw — account deletion must still proceed.
+   */
+  async deauthorize(accessToken: string): Promise<boolean> {
+    try {
+      const response = await fetch('https://www.strava.com/oauth/deauthorize', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error(`[Strava] Deauthorize failed (${response.status}): ${errorText}`);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error('[Strava] Deauthorize threw:', err);
+      return false;
+    }
+  }
+
   async refreshAccessToken(refreshToken: string): Promise<StravaTokenResponse> {
     const response = await fetch('https://www.strava.com/oauth/token', {
       method: 'POST',

@@ -1441,6 +1441,23 @@ ${allPages.map(page => `  <url>
       const userEmail = user.email;
       const userId = req.user.id;
 
+      // Revoke Strava OAuth before deleting so the user stops counting against
+      // our app's athlete quota and we stop getting webhook events for them.
+      if (user.stravaConnected && user.stravaAccessToken) {
+        let token = user.stravaAccessToken;
+        let ok = await stravaService.deauthorize(token);
+        if (!ok && user.stravaRefreshToken) {
+          try {
+            const refreshed = await stravaService.refreshAccessToken(user.stravaRefreshToken);
+            token = refreshed.access_token;
+            ok = await stravaService.deauthorize(token);
+          } catch (refreshErr) {
+            console.error(`[API DELETE /api/user] Strava token refresh before deauth failed for user ${userId}:`, refreshErr);
+          }
+        }
+        console.log(`[API DELETE /api/user] Strava deauthorize for user ${userId}: ${ok ? 'success' : 'failed (proceeding with deletion)'}`);
+      }
+
       // Delete all user data
       await storage.deleteAccount(userId);
 
@@ -1504,6 +1521,23 @@ ${allPages.map(page => `  <url>
         subscriptionPlan,
         accountAgeInDays,
       });
+
+      // Revoke Strava OAuth before deleting so the user stops counting against
+      // our app's athlete quota and we stop getting webhook events for them.
+      if (user.stravaConnected && user.stravaAccessToken) {
+        let token = user.stravaAccessToken;
+        let ok = await stravaService.deauthorize(token);
+        if (!ok && user.stravaRefreshToken) {
+          try {
+            const refreshed = await stravaService.refreshAccessToken(user.stravaRefreshToken);
+            token = refreshed.access_token;
+            ok = await stravaService.deauthorize(token);
+          } catch (refreshErr) {
+            console.error(`[API POST /api/user/delete-with-feedback] Strava token refresh before deauth failed for user ${userId}:`, refreshErr);
+          }
+        }
+        console.log(`[API POST /api/user/delete-with-feedback] Strava deauthorize for user ${userId}: ${ok ? 'success' : 'failed (proceeding with deletion)'}`);
+      }
 
       // Delete all user data
       await storage.deleteAccount(userId);
