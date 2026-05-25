@@ -100,13 +100,13 @@ class StravaWebhookService {
         return "skipped:strava_not_connected";
       }
 
-      // Free users get exactly one Strava sync (the initial 20-activity pull).
-      // After that, all webhook-driven syncs are no-ops until they upgrade.
-      const { canSyncFromStrava } = await import("../rateLimits");
-      if (!canSyncFromStrava(user)) {
-        console.log(`[Strava Webhook] User ${user.id} is on free plan and has already used initial sync — skipping`);
-        return "skipped:free_plan_sync_disabled";
-      }
+      // Free users still get the AI coach email — it's a retention magnet to
+      // pull them back into the funnel. We just mark the activity as
+      // `lockedForFree=true` so it doesn't appear in their visible 10-run
+      // list; the email link routes to the activity page where the data is
+      // rendered behind a blur + upgrade CTA.
+      const { isPaidPlan } = await import("../rateLimits");
+      const userIsPaid = isPaidPlan(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null);
 
       if (!user.notifyPostRun) {
         console.log(`[Strava Webhook] User ${user.id} has post-run notifications disabled`);
@@ -207,6 +207,7 @@ class StravaWebhookService {
             workoutType: activity.workout_type ?? null,
             prCount: activity.pr_count || 0,
             hydrationStatus: "pending",
+            lockedForFree: !userIsPaid,
           });
           activityDbId = created?.id ?? null;
           console.log(`[Strava Webhook] Stored activity ${stravaId} for user ${user.id}`);
@@ -332,10 +333,28 @@ class StravaWebhookService {
 
       const unsubscribeToken = this.generateUnsubscribeToken(user.id);
       const unsubscribeUrl = `https://${domain}/api/notifications/unsubscribe?token=${unsubscribeToken}`;
-      const dashboardUrl = `https://${domain}/dashboard`;
-      const activityUrl = activityDbId
-        ? `https://${domain}/activity/${activityDbId}`
-        : `https://${domain}/dashboard`;
+
+      // Wrap the activity / dashboard link in a one-tap magic-link sign-in so
+      // free users (who get these emails as a retention magnet) don't have to
+      // remember a password — they go straight from inbox to the activity
+      // (or dashboard) already logged in. Token is short-lived (15 min) and
+      // purpose-scoped; falls back to a plain link if generation fails.
+      const redirectPath = activityDbId ? `/activity/${activityDbId}` : `/dashboard`;
+      const dashboardRedirect = `/dashboard`;
+      let activityUrl = `https://${domain}${redirectPath}`;
+      let dashboardUrl = `https://${domain}${dashboardRedirect}`;
+      try {
+        const { authService } = await import("./auth");
+        const magicToken = await authService.generateMagicLinkToken(user.email);
+        if (magicToken) {
+          const wrap = (path: string) =>
+            `https://${domain}/auth/magic-link?token=${encodeURIComponent(magicToken)}&redirect=${encodeURIComponent(path)}`;
+          activityUrl = wrap(redirectPath);
+          dashboardUrl = wrap(dashboardRedirect);
+        }
+      } catch (err) {
+        console.warn(`[Strava Webhook] Magic-link generation failed for user ${user.id}:`, err);
+      }
 
       // Build training context from the last 30 days of activities
       const activityDate = new Date(activity.start_date || Date.now());

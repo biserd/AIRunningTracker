@@ -219,15 +219,21 @@ export default function ActivityPage() {
 
   const { data: activityData, isLoading } = useQuery({
     queryKey: ['/api/activities', activityId],
-    queryFn: () => fetch(`/api/activities/${activityId}`).then(res => res.json()),
+    queryFn: () => fetch(`/api/activities/${activityId}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+    }).then(res => res.json()),
     enabled: !!activityId
   });
 
-  const needsPerformanceData = viewMode === 'story' || viewMode === 'deep_dive';
+  const isLocked = !!(activityData as any)?.locked || !!(activityData?.activity as any)?.locked;
+
+  const needsPerformanceData = (viewMode === 'story' || viewMode === 'deep_dive') && !isLocked;
   
   const { data: performanceData, isLoading: performanceLoading } = useQuery({
     queryKey: ['/api/activities', activityId, 'performance'],
-    queryFn: () => fetch(`/api/activities/${activityId}/performance`).then(res => res.json()),
+    queryFn: () => fetch(`/api/activities/${activityId}/performance`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+    }).then(res => res.json()),
     enabled: !!activityId && needsPerformanceData
   });
 
@@ -242,7 +248,7 @@ export default function ActivityPage() {
       if (!res.ok) throw new Error('Failed to fetch verdict');
       return res.json();
     },
-    enabled: !!activityId && subscriptionReady,
+    enabled: !!activityId && subscriptionReady && !isLocked,
     retry: false
   });
 
@@ -255,7 +261,7 @@ export default function ActivityPage() {
       if (!res.ok) return null;
       return res.json();
     },
-    enabled: !!activityId && subscriptionReady,
+    enabled: !!activityId && subscriptionReady && !isLocked,
     retry: false
   });
 
@@ -268,7 +274,7 @@ export default function ActivityPage() {
       if (!res.ok) return null;
       return res.json();
     },
-    enabled: !!activityId && subscriptionReady,
+    enabled: !!activityId && subscriptionReady && !isLocked,
     retry: false
   });
 
@@ -281,7 +287,7 @@ export default function ActivityPage() {
       if (!res.ok) return { recap: null };
       return res.json();
     },
-    enabled: !!activityId && subscriptionReady && isPremium,
+    enabled: !!activityId && subscriptionReady && isPremium && !isLocked,
     retry: false
   });
 
@@ -495,6 +501,87 @@ export default function ActivityPage() {
           <Link href="/dashboard">
             <Button>Back to Dashboard</Button>
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Free-tier lock: webhook-ingested activities are stored for training-context
+  // accuracy but rendered behind a blur + upgrade CTA. The user landed here
+  // via a one-tap magic-link in the post-run email — show them what they're
+  // missing and route to /pricing.
+  const isLockedActivity = !!(activityData as any)?.locked || !!(activityData?.activity as any)?.locked;
+  if (isLockedActivity) {
+    const a = activityData.activity;
+    const distanceDisplay = a.formattedDistance ? `${a.formattedDistance} ${a.distanceUnit || ""}`.trim() : "";
+    const paceDisplay = a.formattedPace ? `${a.formattedPace} ${a.paceUnit || ""}`.trim() : "";
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <AppHeader />
+        <div className="container mx-auto px-4 py-6 max-w-4xl">
+          <Link href="/dashboard">
+            <Button variant="ghost" size="sm" className="mb-4">
+              <ArrowLeft className="h-4 w-4 mr-1" /> Back
+            </Button>
+          </Link>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1" data-testid="locked-activity-title">{a.name}</h1>
+          <p className="text-sm text-gray-500 mb-6">
+            {a.startDate ? new Date(a.startDate).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }) : ""}
+          </p>
+
+          <div className="relative">
+            {/* Blurred preview of the actual run stats */}
+            <div className="select-none pointer-events-none filter blur-md grayscale opacity-80">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                {[
+                  { label: distanceDisplay || "—", sub: a.distanceUnit || "Distance", icon: MapPin },
+                  { label: a.formattedDuration || "—", sub: "Time", icon: Clock },
+                  { label: paceDisplay || "—", sub: a.paceUnit || "Pace", icon: TrendingUp },
+                  { label: a.averageHeartrate ? `${Math.round(a.averageHeartrate)}` : "—", sub: "bpm", icon: Heart },
+                ].map((s, i) => {
+                  const Icon = s.icon;
+                  return (
+                    <div key={i} className="bg-white rounded-xl shadow-sm p-4">
+                      <Icon className="h-4 w-4 text-gray-400 mb-2" />
+                      <div className="text-2xl font-bold text-gray-900">{s.label}</div>
+                      <div className="text-xs text-gray-500">{s.sub}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="bg-white rounded-xl shadow-sm p-6 mb-4 h-48" />
+              <div className="bg-white rounded-xl shadow-sm p-6 h-64" />
+            </div>
+
+            {/* Upgrade CTA overlay */}
+            <div className="absolute inset-0 flex items-center justify-center p-4">
+              <Card className="w-full max-w-md border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 to-amber-50 shadow-2xl">
+                <CardContent className="flex flex-col items-center text-center py-8 px-6">
+                  <div className="w-16 h-16 rounded-full bg-white shadow-md flex items-center justify-center mb-4">
+                    <Lock className="h-8 w-8 text-yellow-600" />
+                  </div>
+                  <span className="text-xs font-bold px-2 py-1 rounded bg-yellow-100 text-yellow-700 mb-3">
+                    PREMIUM ACTIVITY
+                  </span>
+                  <h2 className="text-xl font-bold text-gray-900 mb-2">
+                    Unlock your full AI run analysis
+                  </h2>
+                  <p className="text-sm text-gray-700 mb-5">
+                    Your free plan includes your 10 most-recent runs. Upgrade to Premium
+                    to see the full breakdown of this run — splits, route map, coach
+                    verdict, efficiency score, and personalized next-run tips.
+                  </p>
+                  <Link href="/pricing">
+                    <Button className="bg-yellow-500 hover:bg-yellow-600 text-white w-full" data-testid="button-upgrade-locked-activity">
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Start 7-day Premium trial
+                    </Button>
+                  </Link>
+                  <p className="text-xs text-gray-500 mt-3">Cancel anytime. No charge during trial.</p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </div>
     );

@@ -1,7 +1,7 @@
 import { users, activities, aiInsights, trainingPlans, trainingPlansLegacy, athleteProfiles, planWeeks, planDays, planGoals, feedback, goals, performanceLogs, aiConversations, aiMessages, runningShoes, shoeComparisons, apiKeys, refreshTokens, workoutCache, coachRecaps, agentRuns, notificationOutbox, deletionFeedback, userCampaigns, emailJobs, emailClicks, systemSettings, pushSubscriptions, type User, type InsertUser, type Activity, type InsertActivity, type AIInsight, type InsertAIInsight, type TrainingPlan, type InsertTrainingPlan, type Feedback, type InsertFeedback, type Goal, type InsertGoal, type PerformanceLog, type InsertPerformanceLog, type AIConversation, type InsertAIConversation, type AIMessage, type InsertAIMessage, type RunningShoe, type InsertRunningShoe, type ShoeComparison, type InsertShoeComparison, type ApiKey, type InsertApiKey, type RefreshToken, type InsertRefreshToken, type AthleteProfile, type InsertAthleteProfile, type PlanWeek, type InsertPlanWeek, type PlanDay, type InsertPlanDay, type PlanGoal, type InsertPlanGoal, type WorkoutCache, type InsertWorkoutCache, type CoachRecap, type InsertCoachRecap, type AgentRun, type InsertAgentRun, type NotificationOutbox, type InsertNotificationOutbox, type DeletionFeedback, type InsertDeletionFeedback, type UserCampaign, type InsertUserCampaign, type EmailJob, type InsertEmailJob, type EmailClick, type InsertEmailClick, type PushSubscription, type InsertPushSubscription } from "@shared/schema";
 import crypto from "crypto";
 import { db } from "./db";
-import { eq, desc, and, or, sql, inArray, gte, gt, lt, ne } from "drizzle-orm";
+import { eq, desc, and, or, sql, inArray, gte, gt, lt, ne, isNull } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 export const RUNNING_ACTIVITY_TYPES = ['Run', 'TrailRun', 'VirtualRun'];
@@ -31,7 +31,7 @@ export interface IStorage {
   createActivity(activity: InsertActivity): Promise<Activity>;
   getMostRecentActivityByUserId(userId: number): Promise<Activity | undefined>;
   getActivitiesNeedingHydration(userId: number, limit?: number): Promise<Activity[]>;
-  getActivitiesByUserId(userId: number, limit?: number, startDate?: Date): Promise<Activity[]>;
+  getActivitiesByUserId(userId: number, limit?: number, startDate?: Date, opts?: { excludeLockedForFree?: boolean }): Promise<Activity[]>;
   getActivitiesByUserIdPaginated(userId: number, options: {
     page: number;
     pageSize: number;
@@ -539,13 +539,18 @@ export class DatabaseStorage implements IStorage {
     return results;
   }
 
-  async getActivitiesByUserId(userId: number, limit = 50, startDate?: Date): Promise<Activity[]> {
+  async getActivitiesByUserId(userId: number, limit = 50, startDate?: Date, opts?: { excludeLockedForFree?: boolean }): Promise<Activity[]> {
     // Build WHERE conditions
     const conditions = [eq(activities.userId, userId)];
     
     // Add date filter if provided (OPTIMIZATION: filters at database level)
     if (startDate) {
       conditions.push(gte(activities.startDate, startDate));
+    }
+
+    if (opts?.excludeLockedForFree) {
+      // null and false both count as "not locked"; only true is hidden
+      conditions.push(or(eq(activities.lockedForFree, false), isNull(activities.lockedForFree))!);
     }
     
     const userActivities = await db
@@ -564,6 +569,7 @@ export class DatabaseStorage implements IStorage {
     maxDistance?: number;
     startDate?: string;
     endDate?: string;
+    excludeLockedForFree?: boolean;
   }): Promise<{
     activities: Activity[];
     total: number;
@@ -571,10 +577,14 @@ export class DatabaseStorage implements IStorage {
     pageSize: number;
     totalPages: number;
   }> {
-    const { page, pageSize, minDistance, maxDistance, startDate, endDate } = options;
+    const { page, pageSize, minDistance, maxDistance, startDate, endDate, excludeLockedForFree } = options;
     
     // Build where conditions - filter to running activities only
     const conditions = [eq(activities.userId, userId), inArray(activities.type, RUNNING_ACTIVITY_TYPES)];
+
+    if (excludeLockedForFree) {
+      conditions.push(or(eq(activities.lockedForFree, false), isNull(activities.lockedForFree))!);
+    }
     
     if (minDistance !== undefined) {
       conditions.push(gte(activities.distance, minDistance));

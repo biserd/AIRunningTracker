@@ -15,6 +15,14 @@ export default function MagicLinkPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
+    // Optional deep-link destination (e.g. /activity/123) — only same-origin
+    // paths are accepted to prevent open-redirect abuse. Anything that isn't
+    // a single-leading-slash path falls back to /dashboard.
+    const rawRedirect = params.get("redirect") || "";
+    const safeRedirect =
+      rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
+        ? rawRedirect
+        : "/dashboard";
 
     if (!token) {
       setStatus("error");
@@ -43,10 +51,7 @@ export default function MagicLinkPage() {
         localStorage.setItem("auth_token", body.token);
         setStatus("ok");
 
-        // All signed-in users land on the dashboard. Free-tier surfaces
-        // (20-run cap, upgrade nudge) are rendered inline there; the
-        // dedicated audit-report funnel was retired.
-        setTimeout(() => setLocation("/dashboard"), 600);
+        setTimeout(() => setLocation(safeRedirect), 600);
       } catch {
         if (!cancelled) {
           setStatus("error");

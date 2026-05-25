@@ -162,6 +162,11 @@ export const activities = pgTable("activities", {
   lastHydrateError: text("last_hydrate_error"),
   cachedGrade: text("cached_grade", { enum: ["A", "B", "C", "D", "F"] }),
   cachedGradeUpdatedAt: timestamp("cached_grade_updated_at"),
+  // True when the activity was ingested via webhook for a free-tier user.
+  // The activity is stored for training-context accuracy, but hidden from
+  // the activities list / dashboard and rendered behind a blur + upgrade
+  // CTA on the detail page. Cleared (logically ignored) once the user upgrades.
+  lockedForFree: boolean("locked_for_free").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
   userIdIdx: index("activities_user_id_idx").on(table.userId),

@@ -2485,10 +2485,14 @@ ${allPages.map(page => `  <url>
       // Get sync state to determine insights status
       const syncState = await storage.getSyncState(userId);
 
-      // Dashboard widget always shows the most-recent 10 runs. The
-      // free-tier 20-run cap is enforced on /api/activities (the full
-      // history view); since 10 < 20 it never bites here.
-      const activities = await storage.getActivitiesByUserId(userId, 10);
+      // Dashboard widget always shows the most-recent 10 runs. For free
+      // users, webhook-ingested activities are hidden (lockedForFree) —
+      // they're surfaced only via the post-run email link → blurred
+      // detail page with upgrade CTA.
+      const dashUserForCap = await storage.getUser(userId);
+      const { isPaidPlan: dashIsPaidPlanFn } = await import("./rateLimits");
+      const dashIsPaidUser = dashIsPaidPlanFn(dashUserForCap?.subscriptionPlan ?? null, dashUserForCap?.subscriptionStatus ?? null);
+      const activities = await storage.getActivitiesByUserId(userId, 10, undefined, { excludeLockedForFree: !dashIsPaidUser });
       
       const insights = await storage.getAIInsightsByUserId(userId);
       
@@ -2520,7 +2524,9 @@ ${allPages.map(page => `  <url>
       // of runs they're allowed to see. Premium/trialing users get the
       // full 3-month window (up to 100 runs) for accurate stats.
       const dashStatsLimit = getFreeActivityLimit(user.subscriptionPlan, user.subscriptionStatus) ?? 100;
-      const recentActivities = await storage.getActivitiesByUserId(userId, dashStatsLimit, threeMonthsAgo);
+      // Free users: exclude locked webhook activities from stats fan-out so
+      // the visible totals match the visible activity list.
+      const recentActivities = await storage.getActivitiesByUserId(userId, dashStatsLimit, threeMonthsAgo, { excludeLockedForFree: !dashIsPaidUser });
       
       // FIX: Use the most recent activity date to determine "current month" instead of server time
       // This prevents timezone issues where server is in UTC Nov 1 but user activities are Oct 31
@@ -3802,6 +3808,10 @@ ${allPages.map(page => `  <url>
         return res.status(403).json({ message: "Premium subscription required for coach recaps" });
       }
 
+      if (activity.lockedForFree) {
+        return res.status(402).json({ locked: true, message: "Upgrade required." });
+      }
+
       const recap = await storage.getCoachRecapByActivityId(activityId);
       res.json({ recap: recap || null });
     } catch (error: any) {
@@ -4633,8 +4643,11 @@ ${allPages.map(page => `  <url>
         startDate.setMonth(startDate.getMonth() - 3);
       }
       
-      // Fetch activities within the date range
-      const activities = await storage.getActivitiesByUserId(userId, 1000, startDate);
+      // Fetch activities within the date range. Free users must NOT see
+      // webhook-ingested locked runs in the heatmap — those are paid-only.
+      const { isPaidPlan: heatmapIsPaid } = await import("./rateLimits");
+      const heatmapIsPaidUser = heatmapIsPaid(user?.subscriptionPlan ?? null, user?.subscriptionStatus ?? null);
+      const activities = await storage.getActivitiesByUserId(userId, 1000, startDate, { excludeLockedForFree: !heatmapIsPaidUser });
       
       // Aggregate activities by day
       const dailyData: Map<string, { totalDistanceKm: number; activities: Array<{ id: number; name: string; distanceKm: number; grade?: string }> }> = new Map();
@@ -4732,7 +4745,11 @@ ${allPages.map(page => `  <url>
       let freeCapInfo: { capped: true; limit: number } | undefined;
 
       if (freeLimit !== null) {
-        const newestN = await storage.getActivitiesByUserId(userId, freeLimit);
+        // Webhook-ingested activities (marked lockedForFree) are excluded
+        // from the visible cap: free users see only their original 10-run
+        // window, and new post-run activities are unlocked behind the
+        // upgrade CTA on the detail page.
+        const newestN = await storage.getActivitiesByUserId(userId, freeLimit, undefined, { excludeLockedForFree: true });
         if (newestN.length === 0) {
           return res.json({
             activities: [],
@@ -4760,6 +4777,7 @@ ${allPages.map(page => `  <url>
         maxDistance: maxDistanceMeters,
         startDate: effectiveStartDate,
         endDate,
+        excludeLockedForFree: freeLimit !== null,
       });
 
       if (freeCapInfo) {
@@ -4827,7 +4845,16 @@ ${allPages.map(page => `  <url>
       const userId = req.user!.id;
       const limit = parseInt(req.query.limit as string) || 30;
       
-      const routes = await storage.getActivitiesWithPolylines(userId, limit);
+      // Free users: webhook-ingested activities (lockedForFree) must not
+      // leak into the heatmap. Filter them out post-fetch since the helper
+      // doesn't support a lock filter yet.
+      const routesUser = await storage.getUser(userId);
+      const { isPaidPlan: routesIsPaid } = await import("./rateLimits");
+      const routesIsPaidUser = routesIsPaid(routesUser?.subscriptionPlan ?? null, routesUser?.subscriptionStatus ?? null);
+      let routes = await storage.getActivitiesWithPolylines(userId, limit);
+      if (!routesIsPaidUser) {
+        routes = routes.filter((r: any) => !r.lockedForFree);
+      }
       
       // Filter out activities without polylines and format for frontend
       // Use detailed polyline if summary polyline is not available
@@ -5026,7 +5053,7 @@ ${allPages.map(page => `  <url>
     }
   });
 
-  app.get("/api/activities/:activityId", async (req, res) => {
+  app.get("/api/activities/:activityId", authenticateJWT, async (req: any, res) => {
     try {
       const activityId = parseInt(req.params.activityId);
       
@@ -5034,17 +5061,53 @@ ${allPages.map(page => `  <url>
         return res.status(400).json({ message: "Invalid activity ID" });
       }
 
-      // Find activity across all users by searching through database
       const activity = await storage.getActivityById(activityId);
       
       if (!activity) {
         return res.status(404).json({ message: "Activity not found" });
       }
 
-      // Get user for unit preferences
+      // Ownership check — activity detail is private per-user.
+      if (activity.userId !== req.user.id) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
+
       const user = await storage.getUser(activity.userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
+      }
+
+      // Locked-for-free gate: webhook-ingested activities stay invisible in
+      // the list views and render behind a blur + upgrade CTA on the detail
+      // page. Owner's *current* plan wins — if they've upgraded since the
+      // email was sent, the stale lockedForFree flag is ignored.
+      const { isPaidPlan: detailIsPaid } = await import("./rateLimits");
+      const ownerIsPaid = detailIsPaid(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null);
+      const isLocked = !!activity.lockedForFree && !ownerIsPaid;
+
+      // When locked, return ONLY preview-safe fields (name, date, totals).
+      // No streams, laps, HR, splits, GPS — those are paid-only.
+      if (isLocked) {
+        const distanceInKm = activity.distance / 1000;
+        const distanceConverted = user.unitPreference === "miles" ? distanceInKm * 0.621371 : distanceInKm;
+        const pacePerKm = activity.distance > 0 ? (activity.movingTime / 60) / distanceInKm : 0;
+        const paceConverted = user.unitPreference === "miles" ? pacePerKm / 0.621371 : pacePerKm;
+        return res.json({
+          locked: true,
+          activity: {
+            id: activity.id,
+            name: activity.name,
+            startDate: activity.startDate,
+            type: activity.type,
+            formattedDistance: distanceConverted.toFixed(2),
+            formattedDuration: `${Math.floor(activity.movingTime / 60)}:${String(activity.movingTime % 60).padStart(2, '0')}`,
+            formattedPace: paceConverted > 0 ? `${Math.floor(paceConverted)}:${String(Math.round((paceConverted % 1) * 60)).padStart(2, '0')}` : "0:00",
+            distanceUnit: user.unitPreference === "miles" ? "mi" : "km",
+            paceUnit: user.unitPreference === "miles" ? "/mi" : "/km",
+            unitPreference: user.unitPreference,
+            locked: true,
+          },
+        });
       }
 
       // Format activity data with unit conversions
@@ -5073,9 +5136,10 @@ ${allPages.map(page => `  <url>
         startLongitude: activity.startLongitude,
         endLatitude: activity.endLatitude,
         endLongitude: activity.endLongitude,
+        locked: isLocked,
       };
 
-      res.json({ activity: formattedActivity });
+      res.json({ activity: formattedActivity, locked: isLocked });
     } catch (error: any) {
       console.error('Activity fetch error:', error);
       res.status(500).json({ message: error.message || "Failed to fetch activity" });
@@ -5099,6 +5163,13 @@ ${allPages.map(page => `  <url>
       // Verify ownership
       if (activity.userId !== req.user.id) {
         return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Lock-gate: never hydrate streams/laps for locked free activities.
+      const hydrateOwner = await storage.getUser(activity.userId);
+      const { isPaidPlan: hydrateIsPaid } = await import("./rateLimits");
+      if (activity.lockedForFree && !hydrateIsPaid(hydrateOwner?.subscriptionPlan ?? null, hydrateOwner?.subscriptionStatus ?? null)) {
+        return res.status(402).json({ locked: true, message: "Upgrade required." });
       }
 
       // Check if already hydrated
@@ -5642,7 +5713,7 @@ ${allPages.map(page => `  <url>
 
 
   // Get activity with performance data
-  app.get("/api/activities/:activityId/performance", async (req, res) => {
+  app.get("/api/activities/:activityId/performance", authenticateJWT, async (req: any, res) => {
     try {
       const activityId = parseInt(req.params.activityId);
       
@@ -5653,6 +5724,18 @@ ${allPages.map(page => `  <url>
       const activity = await storage.getActivityById(activityId);
       if (!activity) {
         return res.status(404).json({ message: "Activity not found" });
+      }
+
+      if (activity.userId !== req.user.id) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
+
+      // Lock-gate: free users can't pull streams/laps for webhook-ingested
+      // activities — the detail page renders a blur + upgrade CTA instead.
+      const ownerForLock = await storage.getUser(activity.userId);
+      const { isPaidPlan: perfIsPaid } = await import("./rateLimits");
+      if (activity.lockedForFree && !perfIsPaid(ownerForLock?.subscriptionPlan ?? null, ownerForLock?.subscriptionStatus ?? null)) {
+        return res.status(402).json({ locked: true, message: "Upgrade required to view full activity analysis." });
       }
 
       // Parse stored streams and laps data
@@ -5778,6 +5861,15 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
 
+      // Lock-gate before any compute: locked free activities show no verdict.
+      const verdictActivity = await storage.getActivityById(activityId);
+      if (!verdictActivity || verdictActivity.userId !== userId) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
+      if (verdictActivity.lockedForFree) {
+        return res.status(402).json({ locked: true, message: "Upgrade required." });
+      }
+
       // Per-activity data (verdict, timeline, splits, etc.) is available to
       // every signed-in user post free-tier pivot. The only free-tier gate is
       // HOW MANY activities they can reach (last 20 via the server-side cap).
@@ -5818,6 +5910,10 @@ ${allPages.map(page => `  <url>
       const activity = await storage.getActivityById(activityId);
       if (!activity || activity.userId !== userId) {
         return res.status(404).json({ message: "Activity not found" });
+      }
+
+      if (activity.lockedForFree) {
+        return res.status(402).json({ locked: true, message: "Upgrade required." });
       }
 
       const cacheKey = `quality:${activityId}`;
@@ -5862,6 +5958,10 @@ ${allPages.map(page => `  <url>
       const activity = await storage.getActivityById(activityId);
       if (!activity || activity.userId !== userId) {
         return res.status(404).json({ message: "Activity not found" });
+      }
+
+      if (activity.lockedForFree) {
+        return res.status(402).json({ locked: true, message: "Upgrade required." });
       }
 
       const cacheKey = `efficiency:${activityId}`;
@@ -7693,7 +7793,21 @@ ${allPages.map(page => `  <url>
   app.get("/api/activities/:activityId/route-history", authenticateJWT, async (req: any, res) => {
     try {
       const activityId = parseInt(req.params.activityId);
-      
+
+      // Ownership + lock gate: route-history exposes per-activity metadata
+      // (distance/duration/HR), so it must enforce the same rules as the
+      // detail endpoint — otherwise free users could enumerate locked rows
+      // or other users' data via this endpoint.
+      const rhActivity = await storage.getActivityById(activityId);
+      if (!rhActivity || rhActivity.userId !== req.user.id) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
+      const rhOwner = await storage.getUser(rhActivity.userId);
+      const { isPaidPlan: rhIsPaid } = await import("./rateLimits");
+      if (rhActivity.lockedForFree && !rhIsPaid(rhOwner?.subscriptionPlan ?? null, rhOwner?.subscriptionStatus ?? null)) {
+        return res.status(402).json({ locked: true, message: "Upgrade required." });
+      }
+
       const { getActivityRoute } = await import('./services/routeClusteringService');
       const routeInfo = await getActivityRoute(activityId);
       
