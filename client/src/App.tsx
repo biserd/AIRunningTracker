@@ -83,6 +83,17 @@ const NotFound = lazy(() => import("@/pages/not-found"));
       .then(({ notifyExtensionAuth }) => notifyExtensionAuth(token, {}))
       .catch(() => {});
   }
+
+  // Auto-sync an already-stored auth token to the Chrome extension on every
+  // page load. Lets a user who's already signed in (and just installed the
+  // extension) get the token forwarded without having to log out and back in.
+  // Safe no-op when the extension or VITE_EXTENSION_ID isn't present.
+  const existing = localStorage.getItem("auth_token");
+  if (existing) {
+    import("@/lib/extensionBridge")
+      .then(({ notifyExtensionAuth }) => notifyExtensionAuth(existing, {}))
+      .catch(() => {});
+  }
 })();
 
 // Minimal, neutral fallback shown while a route chunk is loading. Kept
