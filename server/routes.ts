@@ -3413,11 +3413,8 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "Activity not synced to RunAnalytics yet." });
       }
 
-      const isPaid = isPaidPlan(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null);
-      if (activity.lockedForFree && !isPaid) {
-        return res.status(402).json({ locked: true, message: "Upgrade required." });
-      }
-
+      // Extension brief is intentionally free for all signed-in users during the
+      // open-beta period so we can collect feedback. No paid-plan gate here.
       const unitPreference = user.unitPreference || "miles";
 
       // Compose the payload from existing services. Each is wrapped in
@@ -3488,11 +3485,11 @@ ${allPages.map(page => `  <url>
       const user = await storage.getUser(userId);
       if (!user) return res.status(401).json({ message: "Invalid token" });
 
-      const isPaid = isPaidPlan(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null);
+      // Extension athlete summary is free for all signed-in users (open beta).
       const unitPreference = user.unitPreference || "miles";
 
       const [activities, recovery, injuryRisk] = await Promise.all([
-        storage.getActivitiesByUserId(userId, 10, undefined, { excludeLockedForFree: !isPaid }),
+        storage.getActivitiesByUserId(userId, 10, undefined, { excludeLockedForFree: false }),
         getRecoveryState(userId).catch(() => null),
         mlService.analyzeInjuryRisk(userId).catch(() => null),
       ]);
