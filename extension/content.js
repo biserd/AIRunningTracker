@@ -127,6 +127,23 @@ function buildTrialExpiredPanel() {
   `;
 }
 
+function buildNotSyncedPanel() {
+  const syncUrl = 'https://aitracker.run/dashboard?sync=1&utm_source=extension&utm_campaign=not_synced';
+  return `
+    <div id="${PANEL_ID}" class="ra-panel ra-locked">
+      <div class="ra-header">
+        <span class="ra-logo">⚡ RunAnalytics</span>
+      </div>
+      <div class="ra-divider"></div>
+      <p class="ra-locked-title">Run not synced yet</p>
+      <p class="ra-locked-sub">Open RunAnalytics and sync your activities to get an AI brief for this run.</p>
+      <a href="${syncUrl}" target="_blank" rel="noopener" class="ra-cta">
+        Sync activities →
+      </a>
+    </div>
+  `;
+}
+
 function buildErrorPanel() {
   return `
     <div id="${PANEL_ID}" class="ra-panel ra-locked">
@@ -239,6 +256,11 @@ async function initPanel() {
     if (response.status === 401) {
       chrome.storage.local.remove(['raToken', 'raUser']);
       injectPanel(buildLockedPanel());
+      return;
+    }
+
+    if (response.status === 404) {
+      injectPanel(buildNotSyncedPanel());
       return;
     }
 
