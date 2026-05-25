@@ -205,6 +205,33 @@ export class AuthService {
   }
 
   /**
+   * Wrap an internal app path with a magic-link auto-sign-in URL for the
+   * given user. Use this anywhere we email a logged-in destination so the
+   * recipient (free OR paid) lands already signed in. Falls back to the
+   * plain absolute URL if token generation fails.
+   */
+  async wrapWithMagicLink(
+    email: string | null | undefined,
+    path: string,
+    baseUrl: string = 'https://aitracker.run',
+  ): Promise<string> {
+    const base = baseUrl.replace(/\/$/, '');
+    // Only wrap same-origin app paths. Absolute external URLs or non-leading
+    // slashes are returned untouched.
+    if (!path.startsWith('/') || path.startsWith('//')) {
+      return path.startsWith('http') ? path : `${base}${path}`;
+    }
+    if (!email) return `${base}${path}`;
+    try {
+      const token = await this.generateMagicLinkToken(email);
+      if (!token) return `${base}${path}`;
+      return `${base}/auth/magic-link?token=${encodeURIComponent(token)}&redirect=${encodeURIComponent(path)}`;
+    } catch {
+      return `${base}${path}`;
+    }
+  }
+
+  /**
    * Verify a magic-link token and, on success, mint a normal session JWT
    * (same shape as login()). Throws AuthError on any validation issue.
    */

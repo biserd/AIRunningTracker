@@ -671,9 +671,11 @@ The RunAnalytics Team
 
     const nextStepLabel = nextStepLabels[data.nextStep] || "Easy Run";
     const bullets = data.recapBullets || [];
-    const activityLink = data.activityId 
-      ? `https://aitracker.run/activity/${data.activityId}`
-      : "https://aitracker.run/dashboard";
+    // Wrap with one-tap magic-link sign-in so recipients (free or paid)
+    // land in the app already authenticated.
+    const { authService } = await import("./auth");
+    const recapPath = data.activityId ? `/activity/${data.activityId}` : "/dashboard";
+    const activityLink = await authService.wrapWithMagicLink(email, recapPath);
 
     const subject = `🏃 Coach Recap: ${data.activityName}`;
     
@@ -831,7 +833,12 @@ Unsubscribe: https://aitracker.run/settings?unsubscribe=marketing
     activityId: number;
   }): Promise<boolean> {
     const { to, userName, activityName, activityId } = options;
-    const activityUrl = `https://aitracker.run/activities/${activityId}?source=activity_ready`;
+    // Wrap with magic-link so recipients land already signed in.
+    const { authService } = await import("./auth");
+    const activityUrl = await authService.wrapWithMagicLink(
+      to,
+      `/activities/${activityId}?source=activity_ready`,
+    );
     
     const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">

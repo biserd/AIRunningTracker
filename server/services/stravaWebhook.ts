@@ -340,21 +340,10 @@ class StravaWebhookService {
       // (or dashboard) already logged in. Token is short-lived (15 min) and
       // purpose-scoped; falls back to a plain link if generation fails.
       const redirectPath = activityDbId ? `/activity/${activityDbId}` : `/dashboard`;
-      const dashboardRedirect = `/dashboard`;
-      let activityUrl = `https://${domain}${redirectPath}`;
-      let dashboardUrl = `https://${domain}${dashboardRedirect}`;
-      try {
-        const { authService } = await import("./auth");
-        const magicToken = await authService.generateMagicLinkToken(user.email);
-        if (magicToken) {
-          const wrap = (path: string) =>
-            `https://${domain}/auth/magic-link?token=${encodeURIComponent(magicToken)}&redirect=${encodeURIComponent(path)}`;
-          activityUrl = wrap(redirectPath);
-          dashboardUrl = wrap(dashboardRedirect);
-        }
-      } catch (err) {
-        console.warn(`[Strava Webhook] Magic-link generation failed for user ${user.id}:`, err);
-      }
+      const { authService } = await import("./auth");
+      const baseUrl = `https://${domain}`;
+      const activityUrl = await authService.wrapWithMagicLink(user.email, redirectPath, baseUrl);
+      const dashboardUrl = await authService.wrapWithMagicLink(user.email, `/dashboard`, baseUrl);
 
       // Build training context from the last 30 days of activities
       const activityDate = new Date(activity.start_date || Date.now());
