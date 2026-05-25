@@ -1,0 +1,417 @@
+/* ═══════════════════════════════════════════════════════════════
+   RunAnalytics Extension Styles
+   Scoped to #runanalytics-panel and .popup-body only
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes ra-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+/* ── Panel card (injected into Strava) ── */
+#runanalytics-panel {
+  all: initial;
+  display: block;
+  font-family: -apple-system, "SF Pro Display", sans-serif;
+  box-sizing: border-box;
+  background: #FFFFFF;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  padding: 16px;
+  margin-bottom: 16px;
+  width: 100%;
+  border: 1px solid #E8E6E1;
+}
+
+#runanalytics-panel *,
+#runanalytics-panel *::before,
+#runanalytics-panel *::after {
+  box-sizing: border-box;
+  font-family: -apple-system, "SF Pro Display", sans-serif;
+}
+
+#runanalytics-panel .ra-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+#runanalytics-panel .ra-logo {
+  color: #FC4C02;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  line-height: 1;
+}
+
+#runanalytics-panel .ra-score {
+  color: #FC4C02;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+#runanalytics-panel .ra-divider {
+  height: 1px;
+  background: #E8E6E1;
+  margin: 12px 0;
+  border: none;
+}
+
+#runanalytics-panel .ra-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #FC4C02;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  line-height: 1;
+}
+
+#runanalytics-panel .ra-summary {
+  font-size: 14px;
+  color: #181715;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+}
+
+#runanalytics-panel .ra-pills {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+#runanalytics-panel .ra-pill {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+#runanalytics-panel .ra-pill-divider {
+  width: 1px;
+  background: #E8E6E1;
+  margin: 0 16px;
+  flex-shrink: 0;
+}
+
+#runanalytics-panel .ra-pill-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #A09F9C;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+#runanalytics-panel .ra-pill-value {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+#runanalytics-panel .ra-pill-tag {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+#runanalytics-panel .ra-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+#runanalytics-panel .ra-cta {
+  display: block;
+  background: #FC4C02;
+  color: #FFFFFF !important;
+  text-decoration: none !important;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 12px 20px;
+  width: 100%;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  line-height: 1.2;
+  border: none;
+  outline: none;
+  margin-top: 4px;
+}
+
+#runanalytics-panel .ra-cta:hover {
+  background: #E04300;
+}
+
+#runanalytics-panel.ra-locked {
+  text-align: center;
+}
+
+#runanalytics-panel .ra-locked-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #181715;
+  margin: 0 0 8px 0;
+  padding: 0;
+}
+
+#runanalytics-panel .ra-locked-sub {
+  font-size: 13px;
+  color: #5C5B58;
+  margin: 0 0 16px 0;
+  padding: 0;
+  line-height: 1.5;
+}
+
+#runanalytics-panel .ra-footer-link {
+  margin-top: 12px;
+  text-align: center;
+}
+
+#runanalytics-panel .ra-footer-link a {
+  font-size: 11px;
+  color: #A09F9C;
+  text-decoration: none;
+}
+
+#runanalytics-panel .ra-footer-link a:hover {
+  color: #FC4C02;
+}
+
+#runanalytics-panel .ra-blurred-block {
+  font-size: 13px;
+  color: transparent;
+  background: linear-gradient(90deg, #E8E6E1 25%, #F5F3EF 50%, #E8E6E1 75%);
+  background-size: 400px 100%;
+  animation: ra-shimmer 1.4s infinite linear;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 16px;
+  user-select: none;
+}
+
+#runanalytics-panel .ra-skeleton-line {
+  background: linear-gradient(90deg, #E8E6E1 25%, #F5F3EF 50%, #E8E6E1 75%);
+  background-size: 400px 100%;
+  border-radius: 4px;
+  display: block;
+}
+
+#runanalytics-panel .ra-skeleton-pill {
+  height: 64px;
+  flex: 1;
+  background: linear-gradient(90deg, #E8E6E1 25%, #F5F3EF 50%, #E8E6E1 75%);
+  background-size: 400px 100%;
+  border-radius: 8px;
+}
+
+#runanalytics-panel .ra-shimmer {
+  animation: ra-shimmer 1.4s infinite linear;
+}
+
+#runanalytics-panel .ra-section {
+  margin: 0;
+  padding: 0;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Popup styles (.popup-body)
+   ════════════════════════════════════════════════════════════════ */
+
+.popup-body {
+  width: 320px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding: 16px;
+  background: #F0EEE9;
+  font-family: -apple-system, "SF Pro Display", sans-serif;
+  box-sizing: border-box;
+}
+
+.popup-body * {
+  box-sizing: border-box;
+  font-family: -apple-system, "SF Pro Display", sans-serif;
+}
+
+.popup-body .popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.popup-body .popup-logo {
+  color: #FC4C02;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.popup-body .popup-tagline {
+  font-size: 12px;
+  color: #5C5B58;
+  margin: 0 0 20px 0;
+}
+
+.popup-body .popup-greeting {
+  font-size: 20px;
+  font-weight: 700;
+  color: #181715;
+  margin: 0 0 16px 0;
+}
+
+.popup-body .popup-card {
+  background: #FFFFFF;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  padding: 14px;
+  margin-bottom: 12px;
+  border: 1px solid #E8E6E1;
+}
+
+.popup-body .popup-card-meta {
+  font-size: 11px;
+  color: #A09F9C;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-weight: 600;
+}
+
+.popup-body .popup-card-stats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+  align-items: baseline;
+}
+
+.popup-body .popup-card-distance {
+  font-size: 20px;
+  font-weight: 700;
+  color: #181715;
+}
+
+.popup-body .popup-card-pace {
+  font-size: 14px;
+  color: #5C5B58;
+  font-weight: 500;
+}
+
+.popup-body .popup-card-summary {
+  font-size: 13px;
+  color: #5C5B58;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.popup-body .popup-pills {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.popup-body .popup-pill {
+  flex: 1;
+  background: #FFFFFF;
+  border-radius: 10px;
+  border: 1px solid #E8E6E1;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.popup-body .popup-pill-label {
+  font-size: 9px;
+  color: #A09F9C;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-weight: 600;
+}
+
+.popup-body .popup-pill-value {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.popup-body .popup-pill-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.popup-body .popup-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.popup-body .popup-cta {
+  display: block;
+  background: #FC4C02;
+  color: #FFFFFF;
+  text-decoration: none;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 12px 20px;
+  width: 100%;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  margin-bottom: 12px;
+  border: none;
+  outline: none;
+}
+
+.popup-body .popup-cta:hover {
+  background: #E04300;
+}
+
+.popup-body .popup-disconnect {
+  display: block;
+  text-align: center;
+  font-size: 12px;
+  color: #A09F9C;
+  text-decoration: none;
+  cursor: pointer;
+  background: none;
+  border: none;
+  width: 100%;
+  padding: 4px 0;
+}
+
+.popup-body .popup-disconnect:hover {
+  color: #C0272D;
+}
+
+.popup-body .popup-skeleton-line {
+  background: linear-gradient(90deg, #E8E6E1 25%, #F0EEE9 50%, #E8E6E1 75%);
+  background-size: 400px 100%;
+  border-radius: 4px;
+  animation: ra-shimmer 1.4s infinite linear;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.popup-body .popup-skeleton-card {
+  background: linear-gradient(90deg, #E8E6E1 25%, #F0EEE9 50%, #E8E6E1 75%);
+  background-size: 400px 100%;
+  border-radius: 12px;
+  animation: ra-shimmer 1.4s infinite linear;
+  height: 100px;
+  margin-bottom: 12px;
+}

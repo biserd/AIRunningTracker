@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { notifyExtensionLogout } from "@/lib/extensionBridge";
 
 export function useAuth() {
   const token = localStorage.getItem("auth_token");
@@ -14,6 +15,7 @@ export function useAuth() {
 
   const logout = () => {
     localStorage.removeItem("auth_token");
+    notifyExtensionLogout();
     // Clear all cached data
     queryClient.clear();
     window.location.href = "/";

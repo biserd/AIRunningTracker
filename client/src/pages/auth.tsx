@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Activity, Eye, EyeOff, Mail, CheckCircle2 } from "lucide-react";
 import { SiStrava } from "react-icons/si";
 import { apiRequest } from "@/lib/queryClient";
+import { notifyExtensionAuth } from "@/lib/extensionBridge";
 import { useToast } from "@/hooks/use-toast";
 import { registerSchema, type RegisterData } from "@shared/schema";
 
@@ -48,6 +49,7 @@ export default function AuthPage() {
     mutationFn: (data: RegisterData) => apiRequest("/api/auth/register", "POST", data),
     onSuccess: (response: any) => {
       localStorage.setItem("auth_token", response.token);
+      notifyExtensionAuth(response.token, response.user || {});
       toast({ title: "Welcome to RunAnalytics!", description: "Account created successfully" });
       setLocation("/dashboard?welcome=1");
     },

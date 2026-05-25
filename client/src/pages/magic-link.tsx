@@ -4,6 +4,7 @@ import { Helmet } from "react-helmet";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Activity, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { notifyExtensionAuth } from "@/lib/extensionBridge";
 
 type Status = "verifying" | "ok" | "error";
 
@@ -49,6 +50,7 @@ export default function MagicLinkPage() {
 
         // Same shape as /api/auth/login: { user, token }
         localStorage.setItem("auth_token", body.token);
+        notifyExtensionAuth(body.token, body.user || {});
         setStatus("ok");
 
         setTimeout(() => setLocation(safeRedirect), 600);

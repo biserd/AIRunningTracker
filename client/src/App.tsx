@@ -74,8 +74,14 @@ const NotFound = lazy(() => import("@/pages/not-found"));
 (function () {
   const match = document.cookie.match(/(?:^|;\s*)_sta=([^;]+)/);
   if (match) {
-    localStorage.setItem("auth_token", decodeURIComponent(match[1]));
+    const token = decodeURIComponent(match[1]);
+    localStorage.setItem("auth_token", token);
     document.cookie = "_sta=; Max-Age=0; path=/; SameSite=Lax";
+    // Forward the freshly-minted Strava OAuth token to the Chrome extension.
+    // Dynamic import keeps the bridge out of the critical bootstrap path.
+    import("@/lib/extensionBridge")
+      .then(({ notifyExtensionAuth }) => notifyExtensionAuth(token, {}))
+      .catch(() => {});
   }
 })();
 

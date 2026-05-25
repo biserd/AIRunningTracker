@@ -3389,6 +3389,199 @@ ${allPages.map(page => `  <url>
     res.redirect("/");
   });
 
+  // ============================================================
+  // Chrome extension endpoints
+  // ============================================================
+  // GET /api/brief?stravaActivityId={id}
+  //   Returns the panel payload the extension injects into a Strava
+  //   activity page. 401 → logged out, 402 → upgrade required, 404 →
+  //   activity not synced yet.
+  app.get("/api/brief", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const stravaActivityId = String(req.query.stravaActivityId || "").trim();
+      if (!stravaActivityId) {
+        return res.status(400).json({ message: "stravaActivityId is required" });
+      }
+
+      const [user, activity] = await Promise.all([
+        storage.getUser(userId),
+        storage.getActivityByStravaIdAndUser(stravaActivityId, userId),
+      ]);
+      if (!user) return res.status(401).json({ message: "Invalid token" });
+      if (!activity) {
+        return res.status(404).json({ message: "Activity not synced to RunAnalytics yet." });
+      }
+
+      const isPaid = isPaidPlan(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null);
+      if (activity.lockedForFree && !isPaid) {
+        return res.status(402).json({ locked: true, message: "Upgrade required." });
+      }
+
+      const unitPreference = user.unitPreference || "miles";
+
+      // Compose the payload from existing services. Each is wrapped in
+      // catch() so a single failure (e.g. not enough history for runner
+      // score) still returns a usable brief.
+      const [runnerScoreData, recovery, injuryRisk, verdict] = await Promise.all([
+        runnerScoreService.calculateRunnerScore(userId).catch(() => null),
+        getRecoveryState(userId).catch(() => null),
+        mlService.analyzeInjuryRisk(userId).catch(() => null),
+        coachVerdictService.generateVerdict(activity.id, userId, unitPreference).catch(() => null),
+      ]);
+
+      const readinessLabelFromRisk: Record<string, string> = {
+        low: "Go run",
+        moderate: "Easy",
+        high: "Recover",
+        critical: "Rest",
+      };
+      const injuryRiskShortMap: Record<string, string> = {
+        Low: "Low",
+        Medium: "Med",
+        High: "High",
+      };
+      const injuryRiskTagMap: Record<string, string> = {
+        Low: "Clear",
+        Medium: "Monitor",
+        High: "Caution",
+      };
+
+      const readiness = recovery ? Math.round(recovery.freshnessScore) : 70;
+      const readinessLabel = recovery
+        ? readinessLabelFromRisk[recovery.riskLevel] || "Ready"
+        : "Ready";
+
+      const riskLabel = injuryRisk?.riskLevel || "Low";
+      const injuryRiskShort = injuryRiskShortMap[riskLabel] || "Low";
+      const injuryRiskLabel = injuryRiskTagMap[riskLabel] || "Clear";
+
+      // Summary preference: verdict summary > activity name fallback.
+      const summary =
+        verdict?.summary?.trim() ||
+        `${activity.name} — ${(activity.distance / 1000).toFixed(1)} km run.`;
+
+      const runnerScore = runnerScoreData ? Math.round(runnerScoreData.totalScore) : null;
+      const grade = verdict?.grade || runnerScoreData?.grade || "";
+
+      res.json({
+        summary,
+        runnerScore: runnerScore ?? 0,
+        grade,
+        readiness,
+        readinessLabel,
+        injuryRisk: injuryRiskShort,
+        injuryRiskLabel,
+        activityId: stravaActivityId,
+      });
+    } catch (error: any) {
+      console.error("[GET /api/brief] error:", error);
+      res.status(500).json({ message: error.message || "Failed to build brief" });
+    }
+  });
+
+  // GET /api/athlete/summary
+  //   Popup payload — name, most-recent unlocked run, readiness, injury risk.
+  app.get("/api/athlete/summary", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(401).json({ message: "Invalid token" });
+
+      const isPaid = isPaidPlan(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null);
+      const unitPreference = user.unitPreference || "miles";
+
+      const [activities, recovery, injuryRisk] = await Promise.all([
+        storage.getActivitiesByUserId(userId, 10, undefined, { excludeLockedForFree: !isPaid }),
+        getRecoveryState(userId).catch(() => null),
+        mlService.analyzeInjuryRisk(userId).catch(() => null),
+      ]);
+
+      const lastRun = (activities || [])
+        .filter((a) => a.type === "Run" || a.type === "TrailRun")
+        .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())[0]
+        || activities?.[0]
+        || null;
+
+      let lastRunPayload: {
+        date: string;
+        distance: string;
+        pace: string;
+        summary: string;
+      } | null = null;
+
+      if (lastRun) {
+        const distanceKm = lastRun.distance / 1000;
+        const distanceMiles = distanceKm * 0.621371;
+        const useMiles = unitPreference === "miles";
+        const distanceDisplay = useMiles
+          ? `${distanceMiles.toFixed(1)} mi`
+          : `${distanceKm.toFixed(1)} km`;
+
+        // Pace = minutes per mile/km, formatted M:SS.
+        const minutesTotal = lastRun.movingTime / 60;
+        const paceMinPerUnit = useMiles
+          ? minutesTotal / distanceMiles
+          : minutesTotal / distanceKm;
+        // Convert to total seconds then split so 59.6s rounds up to the next minute
+        // instead of emitting "M:60".
+        let paceDisplay = "";
+        if (Number.isFinite(paceMinPerUnit) && paceMinPerUnit > 0) {
+          const totalSeconds = Math.round(paceMinPerUnit * 60);
+          const paceWhole = Math.floor(totalSeconds / 60);
+          const paceSeconds = totalSeconds % 60;
+          paceDisplay = `${paceWhole}:${String(paceSeconds).padStart(2, "0")} /${useMiles ? "mi" : "km"}`;
+        }
+
+        const verdict = await coachVerdictService
+          .generateVerdict(lastRun.id, userId, unitPreference)
+          .catch(() => null);
+
+        lastRunPayload = {
+          date: new Date(lastRun.startDate).toISOString(),
+          distance: distanceDisplay,
+          pace: paceDisplay,
+          summary: verdict?.summary?.trim() || lastRun.name || "No summary available.",
+        };
+      }
+
+      const readinessLabelFromRisk: Record<string, string> = {
+        low: "Ready",
+        moderate: "Easy",
+        high: "Recover",
+        critical: "Rest",
+      };
+      const injuryRiskShortMap: Record<string, string> = {
+        Low: "Low",
+        Medium: "Med",
+        High: "High",
+      };
+      const injuryRiskTagMap: Record<string, string> = {
+        Low: "Clear",
+        Medium: "Monitor",
+        High: "Caution",
+      };
+
+      const readiness = recovery ? Math.round(recovery.freshnessScore) : 70;
+      const readinessLabel = recovery
+        ? readinessLabelFromRisk[recovery.riskLevel] || "Ready"
+        : "Ready";
+      const riskLabel = injuryRisk?.riskLevel || "Low";
+
+      res.json({
+        firstName: user.firstName || "",
+        lastRun: lastRunPayload,
+        readiness,
+        readinessLabel,
+        injuryRisk: injuryRiskShortMap[riskLabel] || "Low",
+        injuryRiskLabel: injuryRiskTagMap[riskLabel] || "Clear",
+      });
+    } catch (error: any) {
+      console.error("[GET /api/athlete/summary] error:", error);
+      res.status(500).json({ message: error.message || "Failed to build athlete summary" });
+    }
+  });
+
   // Runner Score endpoint (authenticated)
   app.get("/api/runner-score/:userId", authenticateJWT, async (req: any, res) => {
     try {
