@@ -3392,11 +3392,40 @@ ${allPages.map(page => `  <url>
   // ============================================================
   // Chrome extension endpoints
   // ============================================================
+  // The content script runs on www.strava.com and calls aitracker.run —
+  // that's cross-origin, so both routes need explicit CORS headers.
+  // We allow only the Strava origin (where the extension injects) and
+  // the RunAnalytics origin itself (for the popup's direct fetch).
+  const EXTENSION_ALLOWED_ORIGINS = new Set([
+    'https://www.strava.com',
+    'https://aitracker.run',
+  ]);
+
+  function extensionCors(req: any, res: any, next: any) {
+    const origin = req.headers['origin'] || '';
+    if (EXTENSION_ALLOWED_ORIGINS.has(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    } else {
+      // Non-browser calls (e.g. curl) still work — just no CORS header.
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+    res.setHeader('Access-Control-Max-Age', '86400');
+    if (req.method === 'OPTIONS') {
+      res.status(204).end();
+      return;
+    }
+    next();
+  }
+
+  // Preflight for both extension routes
+  app.options('/api/brief', extensionCors);
+  app.options('/api/athlete/summary', extensionCors);
+
   // GET /api/brief?stravaActivityId={id}
   //   Returns the panel payload the extension injects into a Strava
-  //   activity page. 401 → logged out, 402 → upgrade required, 404 →
-  //   activity not synced yet.
-  app.get("/api/brief", authenticateJWT, async (req: any, res) => {
+  //   activity page. 401 → logged out, 404 → activity not synced yet.
+  app.get("/api/brief", extensionCors, authenticateJWT, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const stravaActivityId = String(req.query.stravaActivityId || "").trim();
@@ -3479,7 +3508,7 @@ ${allPages.map(page => `  <url>
 
   // GET /api/athlete/summary
   //   Popup payload — name, most-recent unlocked run, readiness, injury risk.
-  app.get("/api/athlete/summary", authenticateJWT, async (req: any, res) => {
+  app.get("/api/athlete/summary", extensionCors, authenticateJWT, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
