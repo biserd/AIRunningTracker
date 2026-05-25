@@ -3482,18 +3482,76 @@ ${allPages.map(page => `  <url>
       const injuryRiskShort = injuryRiskShortMap[riskLabel] || "Low";
       const injuryRiskLabel = injuryRiskTagMap[riskLabel] || "Clear";
 
-      // Summary preference: verdict summary > activity name fallback.
+      // ── Format run-specific stats ──────────────────────────────────
+      const useMiles = unitPreference === "miles";
+      const distanceKm = activity.distance / 1000;
+      const distanceMiles = distanceKm * 0.621371;
+      const displayDist = useMiles
+        ? `${distanceMiles.toFixed(2)} mi`
+        : `${distanceKm.toFixed(2)} km`;
+
+      // Time: H:MM:SS or M:SS
+      const totalSec = activity.movingTime;
+      const hrs = Math.floor(totalSec / 3600);
+      const mins = Math.floor((totalSec % 3600) / 60);
+      const secs = totalSec % 60;
+      const timeDisplay = hrs > 0
+        ? `${hrs}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
+        : `${mins}:${String(secs).padStart(2, "0")}`;
+
+      // Pace M:SS /mi or /km
+      const distUnit = useMiles ? distanceMiles : distanceKm;
+      const paceMin = distUnit > 0 ? (totalSec / 60) / distUnit : 0;
+      const paceTotalSec = Math.round(paceMin * 60);
+      const paceWhole = Math.floor(paceTotalSec / 60);
+      const paceSec = paceTotalSec % 60;
+      const paceDisplay = distUnit > 0
+        ? `${paceWhole}:${String(paceSec).padStart(2, "0")} /${useMiles ? "mi" : "km"}`
+        : "";
+
+      // Elevation ft or m
+      const elevM = activity.totalElevationGain;
+      const elevDisplay = useMiles
+        ? `${Math.round(elevM * 3.28084)} ft`
+        : `${Math.round(elevM)} m`;
+
+      // Heart rate
+      const hrDisplay = activity.averageHeartrate
+        ? `${Math.round(activity.averageHeartrate)} bpm`
+        : null;
+
+      // Run type label
+      const workoutTypeMap: Record<number, string> = { 1: "Race", 2: "Long Run", 3: "Workout" };
+      const runType = (workoutTypeMap as any)[activity.workoutType ?? -1] || activity.type || "Run";
+
+      // Summary: prefer verdict, then grade-based fallback
       const summary =
         verdict?.summary?.trim() ||
-        `${activity.name} — ${(activity.distance / 1000).toFixed(1)} km run.`;
+        `${activity.name} — ${displayDist} at ${paceDisplay} pace.`;
 
-      const runnerScore = runnerScoreData ? Math.round(runnerScoreData.totalScore) : null;
+      const gradeLabel = verdict?.gradeLabel || "";
       const grade = verdict?.grade || runnerScoreData?.grade || "";
+      const nextSteps: string[] = (verdict as any)?.nextSteps || [];
+      const runnerScore = runnerScoreData ? Math.round(runnerScoreData.totalScore) : null;
 
       res.json({
+        // Run identity
+        runName: activity.name,
+        runType,
+        runDate: activity.startDate,
+        // Run stats
+        distance: displayDist,
+        time: timeDisplay,
+        pace: paceDisplay,
+        elevation: elevDisplay,
+        heartrate: hrDisplay,
+        // AI analysis
         summary,
-        runnerScore: runnerScore ?? 0,
         grade,
+        gradeLabel,
+        nextSteps,
+        runnerScore: runnerScore ?? 0,
+        // Recovery signals
         readiness,
         readinessLabel,
         injuryRisk: injuryRiskShort,

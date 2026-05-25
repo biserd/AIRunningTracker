@@ -224,6 +224,196 @@
   padding: 0;
 }
 
+/* ── Run identity ── */
+#runanalytics-panel .ra-run-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+#runanalytics-panel .ra-run-type {
+  font-size: 10px;
+  font-weight: 700;
+  color: #FC4C02;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: #FFF0EA;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+#runanalytics-panel .ra-run-date {
+  font-size: 11px;
+  color: #A09F9C;
+}
+
+#runanalytics-panel .ra-run-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #181715;
+  margin: 0 0 0 0;
+  padding: 0;
+  line-height: 1.3;
+}
+
+#runanalytics-panel .ra-score-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #5C5B58;
+  background: #F5F3EF;
+  padding: 3px 8px;
+  border-radius: 5px;
+}
+
+/* ── Stats row ── */
+#runanalytics-panel .ra-stats-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin: 0;
+}
+
+#runanalytics-panel .ra-stats-row--sm {
+  margin-top: 10px;
+}
+
+#runanalytics-panel .ra-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px 0;
+}
+
+#runanalytics-panel .ra-stat-divider {
+  width: 1px;
+  background: #E8E6E1;
+  margin: 0 14px;
+  flex-shrink: 0;
+}
+
+#runanalytics-panel .ra-stat-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: #A09F9C;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+#runanalytics-panel .ra-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #181715;
+  line-height: 1.1;
+}
+
+#runanalytics-panel .ra-stat-value--sm {
+  font-size: 15px;
+}
+
+/* ── AI Coach section ── */
+#runanalytics-panel .ra-coach-section {
+  margin: 0;
+}
+
+#runanalytics-panel .ra-coach-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+#runanalytics-panel .ra-coach-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #FC4C02;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+#runanalytics-panel .ra-grade-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1.5px solid currentColor;
+  line-height: 1.4;
+}
+
+#runanalytics-panel .ra-coach-summary {
+  font-size: 14px;
+  color: #181715;
+  line-height: 1.55;
+  margin: 0 0 10px 0;
+  padding: 0;
+}
+
+#runanalytics-panel .ra-steps {
+  margin: 0;
+  padding: 0 0 0 16px;
+  list-style: disc;
+}
+
+#runanalytics-panel .ra-steps li {
+  font-size: 12px;
+  color: #5C5B58;
+  line-height: 1.5;
+  margin-bottom: 4px;
+  padding: 0;
+}
+
+/* ── Recovery signals ── */
+#runanalytics-panel .ra-signals {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+#runanalytics-panel .ra-signal {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+#runanalytics-panel .ra-signal-sep {
+  width: 1px;
+  background: #E8E6E1;
+  margin: 0 16px;
+  flex-shrink: 0;
+}
+
+#runanalytics-panel .ra-signal-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #A09F9C;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+#runanalytics-panel .ra-signal-value {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+#runanalytics-panel .ra-signal-tag {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* ── Centered layout (locked/error/not-synced states) ── */
+#runanalytics-panel.ra-center {
+  text-align: center;
+}
+
 /* ════════════════════════════════════════════════════════════════
    Popup styles (.popup-body)
    ════════════════════════════════════════════════════════════════ */
