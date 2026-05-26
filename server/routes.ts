@@ -3534,6 +3534,9 @@ ${allPages.map(page => `  <url>
       const nextSteps: string[] = (verdict as any)?.nextSteps || [];
       const runnerScore = runnerScoreData ? Math.round(runnerScoreData.totalScore) : null;
 
+      // Never cache — each brief contains a fresh short-lived magic-link token.
+      res.setHeader('Cache-Control', 'no-store');
+
       // Mint a short-lived magic-link so the CTA opens the activity page
       // with the user already signed in, even if their browser session expired.
       const activityPath = `/activity/${activity.id}`;
