@@ -3534,9 +3534,16 @@ ${allPages.map(page => `  <url>
       const nextSteps: string[] = (verdict as any)?.nextSteps || [];
       const runnerScore = runnerScoreData ? Math.round(runnerScoreData.totalScore) : null;
 
+      // Mint a short-lived magic-link so the CTA opens the activity page
+      // with the user already signed in, even if their browser session expired.
+      const activityPath = `/activity/${activity.id}`;
+      const activityUrl = await authService
+        .wrapWithMagicLink(user.email, activityPath, "extension")
+        .catch(() => `https://aitracker.run${activityPath}?utm_source=extension`);
+
       res.json({
-        // Internal activity id — used to deep-link to /activity/:id
-        internalActivityId: activity.id,
+        // Deep-link with auto sign-in
+        activityUrl,
         // AI analysis
         summary,
         grade,

@@ -154,11 +154,7 @@ function buildErrorPanel() {
 }
 
 function buildFullPanel(data) {
-  // Deep-link directly to the activity page; user is already signed in on aitracker.run
-  const activityUrl = data.internalActivityId
-    ? `https://aitracker.run/activity/${data.internalActivityId}?utm_source=extension`
-    : `https://aitracker.run/dashboard?utm_source=extension`;
-
+  const activityUrl = data.activityUrl || 'https://aitracker.run/dashboard?utm_source=extension';
   const readColor = readinessColor(data.readiness);
   const riskColor = injuryRiskColor(data.injuryRisk);
   const gColor = gradeColor(data.grade);
@@ -183,10 +179,7 @@ function buildFullPanel(data) {
       <div class="ra-divider"></div>
 
       <div class="ra-coach-section">
-        <div class="ra-coach-row">
-          <span class="ra-coach-label">AI Coach</span>
-          ${gradeHtml}
-        </div>
+        ${gradeHtml}
         <p class="ra-coach-summary">${escapeHtml(data.summary || '')}</p>
         ${nextStepsHtml}
       </div>
