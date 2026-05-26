@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "RunAnalytics for Strava",
+  "name": "RunAnalytics",
   "version": "1.0.0",
-  "description": "AI-powered run briefs, Runner Score, Readiness, and Injury Risk — injected directly into your Strava activity pages.",
+  "description": "Analyze your runs, receive a Runner Score, Readiness, and Injury Risk — injected directly into your Strava activity pages.",
   "permissions": ["storage"],
   "host_permissions": [
     "https://www.strava.com/*",
