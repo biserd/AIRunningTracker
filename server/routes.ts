@@ -3449,10 +3449,12 @@ ${allPages.map(page => `  <url>
       // Compose the payload from existing services. Each is wrapped in
       // catch() so a single failure (e.g. not enough history for runner
       // score) still returns a usable brief.
-      const [runnerScoreData, recovery, injuryRisk, verdict] = await Promise.all([
+      const [runnerScoreData, recovery, injuryRisk, recap, verdict] = await Promise.all([
         runnerScoreService.calculateRunnerScore(userId).catch(() => null),
         getRecoveryState(userId).catch(() => null),
         mlService.analyzeInjuryRisk(userId).catch(() => null),
+        // Prefer the GPT-generated coach recap (webhook-fired, full context)
+        storage.getCoachRecapByActivityId(activity.id).catch(() => null),
         coachVerdictService.generateVerdict(activity.id, userId, unitPreference).catch(() => null),
       ]);
 
@@ -3524,14 +3526,19 @@ ${allPages.map(page => `  <url>
       const workoutTypeMap: Record<number, string> = { 1: "Race", 2: "Long Run", 3: "Workout" };
       const runType = (workoutTypeMap as any)[activity.workoutType ?? -1] || activity.type || "Run";
 
-      // Summary: prefer verdict, then grade-based fallback
+      // Summary: prefer GPT coach recap (full context), then computed verdict, then fallback
       const summary =
+        recap?.coachingCue?.trim() ||
         verdict?.summary?.trim() ||
         `${activity.name} — ${displayDist} at ${paceDisplay} pace.`;
 
+      // Next steps: prefer recap bullets (AI-written), then verdict next steps
+      const nextSteps: string[] = recap?.recapBullets?.slice(0, 2) ||
+        (verdict as any)?.nextSteps ||
+        [];
+
       const gradeLabel = verdict?.gradeLabel || "";
       const grade = verdict?.grade || runnerScoreData?.grade || "";
-      const nextSteps: string[] = (verdict as any)?.nextSteps || [];
       const runnerScore = runnerScoreData ? Math.round(runnerScoreData.totalScore) : null;
 
       // Never cache — each brief contains a fresh short-lived magic-link token.
