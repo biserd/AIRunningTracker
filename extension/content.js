@@ -153,37 +153,23 @@ function buildErrorPanel() {
     </div>`;
 }
 
-function buildFullPanel(data, activityId) {
-  const dashUrl = `https://aitracker.run/dashboard?utm_source=extension&activityId=${encodeURIComponent(activityId)}`;
+function buildFullPanel(data) {
+  // Deep-link directly to the activity page; user is already signed in on aitracker.run
+  const activityUrl = data.internalActivityId
+    ? `https://aitracker.run/activity/${data.internalActivityId}?utm_source=extension`
+    : `https://aitracker.run/dashboard?utm_source=extension`;
+
   const readColor = readinessColor(data.readiness);
   const riskColor = injuryRiskColor(data.injuryRisk);
   const gColor = gradeColor(data.grade);
-  const dateStr = formatDate(data.runDate);
 
-  // Optional metrics (only show if available)
-  const extraStats = [];
-  if (data.elevation) extraStats.push({ label: 'Elevation', value: data.elevation });
-  if (data.heartrate) extraStats.push({ label: 'Avg HR', value: data.heartrate });
-
-  const extraRow = extraStats.length > 0
-    ? `<div class="ra-stats-row ra-stats-row--sm">
-        ${extraStats.map(s => `
-          <div class="ra-stat">
-            <div class="ra-stat-label">${escapeHtml(s.label)}</div>
-            <div class="ra-stat-value ra-stat-value--sm">${escapeHtml(s.value)}</div>
-          </div>`).join('<div class="ra-stat-divider"></div>')}
-       </div>`
+  const gradeHtml = data.grade
+    ? `<span class="ra-grade-pill" style="color:${gColor};border-color:${gColor};">${escapeHtml(data.grade)}${data.gradeLabel ? ` · ${escapeHtml(data.gradeLabel)}` : ''}</span>`
     : '';
 
-  // Next steps bullets (up to 2)
   const steps = Array.isArray(data.nextSteps) ? data.nextSteps.slice(0, 2) : [];
   const nextStepsHtml = steps.length > 0
     ? `<ul class="ra-steps">${steps.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>`
-    : '';
-
-  // Grade pill
-  const gradeHtml = data.grade
-    ? `<span class="ra-grade-pill" style="color:${gColor};border-color:${gColor};">${escapeHtml(data.grade)}${data.gradeLabel ? ` · ${escapeHtml(data.gradeLabel)}` : ''}</span>`
     : '';
 
   return `
@@ -191,41 +177,14 @@ function buildFullPanel(data, activityId) {
 
       <div class="ra-header">
         <span class="ra-logo">⚡ RunAnalytics</span>
-        ${data.runnerScore ? `<span class="ra-score-badge">Runner Score: ${escapeHtml(data.runnerScore)}</span>` : ''}
+        ${data.runnerScore ? `<span class="ra-score-badge">Score: ${escapeHtml(data.runnerScore)}</span>` : ''}
       </div>
-
-      <div class="ra-run-meta">
-        <span class="ra-run-type">${escapeHtml(data.runType || 'Run')}</span>
-        ${dateStr ? `<span class="ra-run-date">${escapeHtml(dateStr)}</span>` : ''}
-      </div>
-      <p class="ra-run-name">${escapeHtml(data.runName || '')}</p>
-
-      <div class="ra-divider"></div>
-
-      <div class="ra-stats-row">
-        <div class="ra-stat">
-          <div class="ra-stat-label">Distance</div>
-          <div class="ra-stat-value">${escapeHtml(data.distance || '—')}</div>
-        </div>
-        <div class="ra-stat-divider"></div>
-        <div class="ra-stat">
-          <div class="ra-stat-label">Time</div>
-          <div class="ra-stat-value">${escapeHtml(data.time || '—')}</div>
-        </div>
-        <div class="ra-stat-divider"></div>
-        <div class="ra-stat">
-          <div class="ra-stat-label">Pace</div>
-          <div class="ra-stat-value">${escapeHtml(data.pace || '—')}</div>
-        </div>
-      </div>
-
-      ${extraRow}
 
       <div class="ra-divider"></div>
 
       <div class="ra-coach-section">
         <div class="ra-coach-row">
-          <span class="ra-coach-label">AI COACH</span>
+          <span class="ra-coach-label">AI Coach</span>
           ${gradeHtml}
         </div>
         <p class="ra-coach-summary">${escapeHtml(data.summary || '')}</p>
@@ -254,7 +213,7 @@ function buildFullPanel(data, activityId) {
 
       <div class="ra-divider"></div>
 
-      <a href="${dashUrl}" target="_blank" rel="noopener" class="ra-cta">Full analysis on RunAnalytics →</a>
+      <a href="${activityUrl}" target="_blank" rel="noopener" class="ra-cta">Open full analysis →</a>
 
     </div>`;
 }
@@ -299,7 +258,7 @@ async function initPanel() {
     if (!response.ok)            { injectPanel(buildErrorPanel()); return; }
 
     const data = await response.json();
-    injectPanel(buildFullPanel(data, activityId));
+    injectPanel(buildFullPanel(data));
 
   } catch {
     injectPanel(buildErrorPanel());

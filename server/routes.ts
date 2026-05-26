@@ -3535,16 +3535,8 @@ ${allPages.map(page => `  <url>
       const runnerScore = runnerScoreData ? Math.round(runnerScoreData.totalScore) : null;
 
       res.json({
-        // Run identity
-        runName: activity.name,
-        runType,
-        runDate: activity.startDate,
-        // Run stats
-        distance: displayDist,
-        time: timeDisplay,
-        pace: paceDisplay,
-        elevation: elevDisplay,
-        heartrate: hrDisplay,
+        // Internal activity id — used to deep-link to /activity/:id
+        internalActivityId: activity.id,
         // AI analysis
         summary,
         grade,
@@ -3556,7 +3548,6 @@ ${allPages.map(page => `  <url>
         readinessLabel,
         injuryRisk: injuryRiskShort,
         injuryRiskLabel,
-        activityId: stravaActivityId,
       });
     } catch (error: any) {
       console.error("[GET /api/brief] error:", error);
