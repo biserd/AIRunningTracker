@@ -140,13 +140,33 @@ export class CoachVerdictService {
     const estimatedMaxHR = 190;
     const effortResult = effortScoreService.calculateEffortScore(activity, estimatedMaxHR);
     
+    const hasHR = !!activity.averageHeartrate;
+    const hasPR = activity.prCount && activity.prCount > 0;
+
+    // Build a specific summary from what we actually know about this run
+    const summaryParts: string[] = [];
+    if (hasPR) {
+      summaryParts.push(`You hit a personal record on this run — a great milestone.`);
+    } else if (effortResult.score >= 80) {
+      summaryParts.push(`This was a hard effort — your effort score of ${effortResult.score} puts it in the upper range of your recent sessions.`);
+    } else if (effortResult.score <= 40) {
+      summaryParts.push(`A low-intensity session — ideal for active recovery and letting your aerobic base consolidate.`);
+    } else {
+      summaryParts.push(`A solid ${displayDistance.toFixed(1)}${distanceUnit} run at a moderate effort level.`);
+    }
+    if (hasHR) {
+      summaryParts.push(`Run more sessions to unlock pace and HR comparisons against your personal baseline.`);
+    } else {
+      summaryParts.push(`Connect a heart rate monitor for richer training insights.`);
+    }
+
     return {
       grade: "B",
       gradeLabel: "Good Run",
-      summary: `You completed ${displayDistance.toFixed(1)}${distanceUnit} at ${this.formatPace(pacePerKm, unitPreference)} pace. Keep it up!`,
+      summary: summaryParts.join(' '),
       evidenceBullets: [
-        { type: "neutral", text: `Distance: ${displayDistance.toFixed(1)}${distanceUnit} in ${this.formatDuration(durationMinutes)}` },
-        { type: "neutral", text: `Need more runs to compare against your baseline` }
+        { type: "neutral", text: `Effort score: ${effortResult.score}/100` },
+        { type: "neutral", text: `Need more runs to build your comparison baseline` }
       ],
       effortScore: effortResult.score,
       consistencyLabel: "consistent",
@@ -157,7 +177,7 @@ export class CoachVerdictService {
         effortVsAvg: 0,
         distanceVsAvg: 0
       },
-      nextSteps: ["Keep training consistently to build your baseline data"]
+      nextSteps: ["Log a few more runs to unlock pace and effort comparisons"]
     };
   }
 
@@ -186,25 +206,48 @@ export class CoachVerdictService {
   }
 
   private generateSummary(grade: string, comparison: any, activity: Activity, unitPreference: string = 'km'): string {
-    const distanceKm = activity.distance / 1000;
-    const distanceMiles = distanceKm * 0.621371;
-    const displayDistance = unitPreference === 'miles' ? distanceMiles : distanceKm;
-    const distanceUnit = unitPreference === 'miles' ? 'mi' : 'km';
-    
-    if (grade === "A") {
-      return `Outstanding performance! You crushed this ${displayDistance.toFixed(1)}${distanceUnit} run.`;
-    } else if (grade === "B") {
-      return `Solid run today. You're training at a good level.`;
-    } else if (grade === "C") {
-      return `A consistent effort that supports your training goals.`;
-    } else if (grade === "D") {
-      if (comparison.consistencyLabel === "recovery") {
-        return `Good recovery run - easy days are important for adaptation.`;
-      }
-      return `Today was tougher. Consider what factors may have affected performance.`;
+    const parts: string[] = [];
+    const paceVsAvg   = Math.round(comparison.paceVsAverage ?? 0);
+    const hrVsAvg     = Math.round(comparison.hrVsAverage ?? 0);
+    const distVsAvg   = Math.round(comparison.distanceVsAverage ?? 0);
+    const consistency = comparison.consistencyLabel as string;
+    const hasPR       = activity.prCount && activity.prCount > 0;
+    const hasHR       = !!activity.averageHeartrate;
+
+    // ── Lead sentence: what made this run notable ──────────────────
+    if (hasPR) {
+      parts.push(`You set a personal record on this run — a standout effort.`);
+    } else if (consistency === 'much_harder') {
+      parts.push(`This was a high-intensity effort — significantly above your usual training load.`);
+    } else if (consistency === 'recovery' || consistency === 'easier') {
+      parts.push(`A well-judged easy run — exactly the kind of session that lets your body absorb training.`);
+    } else if (paceVsAvg >= 8 && hasHR && hrVsAvg <= 0) {
+      parts.push(`Strong aerobic performance: you ran ${paceVsAvg}% faster than your recent average with a lower heart rate — a sign of real fitness gains.`);
+    } else if (paceVsAvg >= 5) {
+      parts.push(`Your pace was ${paceVsAvg}% faster than your recent average — a noticeably sharper effort.`);
+    } else if (paceVsAvg <= -8) {
+      parts.push(`You ran ${Math.abs(paceVsAvg)}% slower than your recent average — either a deliberate easy day or an off day.`);
+    } else if (distVsAvg >= 25) {
+      parts.push(`You pushed your distance ${distVsAvg}% beyond your typical run — good work extending your range.`);
     } else {
-      return `Every runner has off days. Rest up and come back stronger.`;
+      // Neutral — at least say something specific
+      parts.push(`A consistent effort that sits right in line with your recent training.`);
     }
+
+    // ── Second sentence: HR efficiency or load insight ─────────────
+    if (hasHR) {
+      if (hrVsAvg <= -8 && paceVsAvg >= 0) {
+        parts.push(`Your heart rate was ${Math.abs(hrVsAvg)}% lower than usual for this pace — a clear aerobic efficiency win.`);
+      } else if (hrVsAvg >= 12 && consistency !== 'much_harder') {
+        parts.push(`Heart rate ran ${hrVsAvg}% higher than normal — watch for signs of fatigue or dehydration.`);
+      } else if (consistency === 'much_harder') {
+        parts.push(`With this kind of effort, prioritise 48 hours of easy running before your next hard session.`);
+      }
+    } else if (consistency === 'harder' || consistency === 'much_harder') {
+      parts.push(`Give yourself adequate recovery before your next quality session.`);
+    }
+
+    return parts.join(' ');
   }
 
   private generateNextSteps(comparison: any, activity: Activity): string[] {
