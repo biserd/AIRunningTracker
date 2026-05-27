@@ -173,7 +173,7 @@ function buildFullPanel(data) {
 
       <div class="ra-header">
         <span class="ra-logo">⚡ RunAnalytics</span>
-        ${data.runnerScore ? `<span class="ra-score-badge">Score: ${escapeHtml(data.runnerScore)}</span>` : ''}
+        ${data.runnerScore ? `<span class="ra-score-badge">Runner Score: ${escapeHtml(data.runnerScore)}</span>` : ''}
       </div>
 
       <div class="ra-divider"></div>
@@ -189,7 +189,7 @@ function buildFullPanel(data) {
       <div class="ra-signals">
         <div class="ra-signal">
           <div class="ra-signal-label">Readiness</div>
-          <div class="ra-signal-value" style="color:${readColor};">${escapeHtml(data.readiness)}</div>
+          <div class="ra-signal-value" style="color:${readColor};">${escapeHtml(data.readiness)}<span style="font-size:10px;opacity:0.6;">/100</span></div>
           <div class="ra-signal-tag" style="color:${readColor};">
             <span class="ra-dot" style="background:${readColor};"></span>${escapeHtml(data.readinessLabel || '')}
           </div>
