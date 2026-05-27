@@ -142,23 +142,20 @@ export class CoachVerdictService {
     
     const hasHR = !!activity.averageHeartrate;
     const hasPR = activity.prCount && activity.prCount > 0;
+    const intensity = effortResult.intensity; // recovery | easy | moderate | hard | very_hard
 
     // Build a specific summary from what we actually know about this run
     const summaryParts: string[] = [];
     if (hasPR) {
-      summaryParts.push(`You hit a personal record on this run — a great milestone.`);
-    } else if (effortResult.score >= 80) {
-      summaryParts.push(`This was a hard effort — your effort score of ${effortResult.score} puts it in the upper range of your recent sessions.`);
-    } else if (effortResult.score <= 40) {
-      summaryParts.push(`A low-intensity session — ideal for active recovery and letting your aerobic base consolidate.`);
+      summaryParts.push(`You set a personal record on this run — a standout effort.`);
+    } else if (intensity === 'very_hard' || intensity === 'hard') {
+      summaryParts.push(`A high-intensity ${displayDistance.toFixed(1)}${distanceUnit} effort — make sure to recover well before your next hard session.`);
+    } else if (intensity === 'recovery' || intensity === 'easy') {
+      summaryParts.push(`A well-paced easy run — exactly the kind of session that lets your body absorb training.`);
     } else {
       summaryParts.push(`A solid ${displayDistance.toFixed(1)}${distanceUnit} run at a moderate effort level.`);
     }
-    if (hasHR) {
-      summaryParts.push(`Run more sessions to unlock pace and HR comparisons against your personal baseline.`);
-    } else {
-      summaryParts.push(`Connect a heart rate monitor for richer training insights.`);
-    }
+    summaryParts.push(`Sync a few more runs to unlock pace and HR comparisons against your personal baseline.`);
 
     return {
       grade: "B",
