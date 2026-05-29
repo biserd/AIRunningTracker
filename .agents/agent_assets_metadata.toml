@@ -18,6 +18,12 @@ uri = "file://attached_assets/extension-small-tile-440x280.png"
 type = "image"
 title = "RunAnalytics extension small promo tile"
 
+[[generated]]
+id = "5LGGDbUgduJByVPZEyqsW"
+uri = "file://attached_assets/youtube-banner-2560x1440.png"
+type = "image"
+title = "RunAnalytics YouTube banner"
+
 [[outputs]]
 id = "TOqlNOTrRLaJnzTwc_3kV"
 uri = "file://artifacts/mockup-sandbox/public/images/runner-training.jpg"
@@ -47,3 +53,9 @@ id = "dCN6jh0GuIYTAcE0vDvDz"
 uri = "file://attached_assets/generated_videos/runanalytics_promo_teaser.mp4"
 type = "video"
 title = "RunAnalytics promo teaser (8s, 1080p)"
+
+[[outputs]]
+id = "Xcy01mVCM7hOnwv0EfSOZ"
+uri = "file://attached_assets/youtube-banner-2560x1440.png"
+type = "image"
+title = "YouTube channel banner — 2560×1440px, 1.5MB"
