@@ -34,10 +34,10 @@ title = "runner looking at smart watch data"
 id = "i25pehkaSHorpZ-3Zz1d4"
 uri = "file://attached_assets/extension-marquee-1400x560.png"
 type = "image"
-title = "Marquee promo tile (1400×560) — upload as-is, or crop to exact size"
+title = "Marquee promo tile — exactly 1400×560px"
 
 [[outputs]]
 id = "xqy1vLUnCt3O3kLioMbla"
 uri = "file://attached_assets/extension-small-tile-440x280.png"
 type = "image"
-title = "Small promo tile (440×280) — upload as-is, or crop to exact size"
+title = "Small promo tile — exactly 440×280px"
