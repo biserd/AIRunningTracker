@@ -41,3 +41,9 @@ id = "xqy1vLUnCt3O3kLioMbla"
 uri = "file://attached_assets/extension-small-tile-440x280.png"
 type = "image"
 title = "Small promo tile — exactly 440×280px"
+
+[[outputs]]
+id = "dCN6jh0GuIYTAcE0vDvDz"
+uri = "file://attached_assets/generated_videos/runanalytics_promo_teaser.mp4"
+type = "video"
+title = "RunAnalytics promo teaser (8s, 1080p)"
