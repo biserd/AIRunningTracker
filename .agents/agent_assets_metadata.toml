@@ -6,6 +6,18 @@ uri = "file://artifacts/mockup-sandbox/public/images/anti-summit-hero-bg.png"
 type = "image"
 title = "dark abstract data visualization"
 
+[[generated]]
+id = "2IGzCUtsk4esKM1HbMHxM"
+uri = "file://attached_assets/extension-marquee-1400x560.png"
+type = "image"
+title = "RunAnalytics extension marquee tile"
+
+[[generated]]
+id = "b5_YOO1eAu8Sp61_wNeBW"
+uri = "file://attached_assets/extension-small-tile-440x280.png"
+type = "image"
+title = "RunAnalytics extension small promo tile"
+
 [[outputs]]
 id = "TOqlNOTrRLaJnzTwc_3kV"
 uri = "file://artifacts/mockup-sandbox/public/images/runner-training.jpg"
@@ -17,3 +29,15 @@ id = "dwtWI76MqrYuJ68S8D7kl"
 uri = "file://artifacts/mockup-sandbox/public/images/runner-watch.jpg"
 type = "image"
 title = "runner looking at smart watch data"
+
+[[outputs]]
+id = "i25pehkaSHorpZ-3Zz1d4"
+uri = "file://attached_assets/extension-marquee-1400x560.png"
+type = "image"
+title = "Marquee promo tile (1400×560) — upload as-is, or crop to exact size"
+
+[[outputs]]
+id = "xqy1vLUnCt3O3kLioMbla"
+uri = "file://attached_assets/extension-small-tile-440x280.png"
+type = "image"
+title = "Small promo tile (440×280) — upload as-is, or crop to exact size"
