@@ -25,6 +25,7 @@ interface PageMeta {
   title: string;
   description: string;
   keywords?: string;
+  ogImage?: string;
 }
 
 const STATIC_PAGES: Record<string, PageMeta> = {
@@ -61,7 +62,8 @@ const STATIC_PAGES: Record<string, PageMeta> = {
   "/chrome-extension": {
     title: "RunAnalytics Chrome Extension for Strava | AI Insights on Every Run",
     description: "Add AI-powered running insights to every Strava activity with the free RunAnalytics Chrome extension. Get run grades, your Runner Score, readiness, and injury-risk signals without leaving Strava.",
-    keywords: "Strava Chrome extension, RunAnalytics extension, Strava AI insights, running analytics chrome extension, Strava run grade, Runner Score extension"
+    keywords: "Strava Chrome extension, RunAnalytics extension, Strava AI insights, running analytics chrome extension, Strava run grade, Runner Score extension",
+    ogImage: "https://aitracker.run/public-objects/og/chrome-extension.jpg"
   },
   "/about": {
     title: "About RunAnalytics | AI-Powered Running Analytics",
@@ -96,6 +98,7 @@ const STATIC_PAGES: Record<string, PageMeta> = {
 };
 
 function generateSimpleSeoHtml(pageMeta: PageMeta, url: string): string {
+  const ogImage = pageMeta.ogImage ?? `${BASE_URL}/og-image.jpg`;
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -112,14 +115,14 @@ function generateSimpleSeoHtml(pageMeta: PageMeta, url: string): string {
   <meta property="og:url" content="${BASE_URL}${url}" />
   <meta property="og:title" content="${pageMeta.title}" />
   <meta property="og:description" content="${pageMeta.description}" />
-  <meta property="og:image" content="${BASE_URL}/og-image.jpg" />
+  <meta property="og:image" content="${ogImage}" />
   <meta property="og:site_name" content="RunAnalytics" />
   
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:url" content="${BASE_URL}${url}" />
   <meta name="twitter:title" content="${pageMeta.title}" />
   <meta name="twitter:description" content="${pageMeta.description}" />
-  <meta name="twitter:image" content="${BASE_URL}/og-image.jpg" />
+  <meta name="twitter:image" content="${ogImage}" />
   
   <script type="application/ld+json">
   {

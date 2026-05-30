@@ -113,6 +113,7 @@ export default function ChromeExtensionLanding() {
         description="Add AI-powered running insights to every Strava activity with the free RunAnalytics Chrome extension. Get run grades, your Runner Score, readiness, and injury-risk signals without leaving Strava."
         keywords="Strava Chrome extension, RunAnalytics extension, Strava AI insights, running analytics chrome extension, Strava run grade, Runner Score extension, Strava browser extension"
         url="https://aitracker.run/chrome-extension"
+        ogImage="https://aitracker.run/public-objects/og/chrome-extension.jpg"
         type="website"
         structuredData={structuredData}
       />

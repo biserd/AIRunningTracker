@@ -243,7 +243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // SEO: Page-specific meta data for dynamic rendering
   // Maps routes to SEO metadata for crawler-optimized responses
-  const SEO_PAGES: Record<string, { title: string; description: string; keywords?: string }> = {
+  const SEO_PAGES: Record<string, { title: string; description: string; keywords?: string; ogImage?: string }> = {
     "/": {
       title: "RunAnalytics - AI-Powered Running Insights & Analytics",
       description: "Get personalized running analytics with AI coaching, race predictions, and training insights. Connect Strava for free and unlock your running potential.",
@@ -347,7 +347,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/chrome-extension": {
       title: "RunAnalytics Chrome Extension for Strava | AI Insights on Every Run",
       description: "Add AI-powered running insights to every Strava activity with the free RunAnalytics Chrome extension. Get run grades, your Runner Score, readiness, and injury-risk signals without leaving Strava.",
-      keywords: "Strava Chrome extension, RunAnalytics extension, Strava AI insights, running analytics chrome extension, Strava run grade, Runner Score extension"
+      keywords: "Strava Chrome extension, RunAnalytics extension, Strava AI insights, running analytics chrome extension, Strava run grade, Runner Score extension",
+      ogImage: "https://aitracker.run/public-objects/og/chrome-extension.jpg"
     },
     "/ai-agent-coach": {
       title: "AI Agent Coach | Proactive Training Intelligence | RunAnalytics",
@@ -578,10 +579,11 @@ ${allPages.map(page => `  <url>
   // Served only to crawlers — real users get the SPA from Vite's catch-all.
   // IMPORTANT: do NOT include a window.location redirect here. Googlebot
   // renders JS and treats it as a redirect → "Page with redirect" / soft 404.
-  const generateSEOHtml = (pageMeta: { title: string; description: string; keywords?: string }, url: string): string => {
+  const generateSEOHtml = (pageMeta: { title: string; description: string; keywords?: string; ogImage?: string }, url: string): string => {
     const baseUrl = "https://aitracker.run";
     // Strip the leading title segment ("Foo | RunAnalytics" → "Foo") for the visible H1.
     const h1 = pageMeta.title.split("|")[0].trim();
+    const ogImage = pageMeta.ogImage ?? `${baseUrl}/og-image.jpg`;
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -599,7 +601,7 @@ ${allPages.map(page => `  <url>
   <meta property="og:url" content="${baseUrl}${url}" />
   <meta property="og:title" content="${pageMeta.title}" />
   <meta property="og:description" content="${pageMeta.description}" />
-  <meta property="og:image" content="${baseUrl}/og-image.jpg" />
+  <meta property="og:image" content="${ogImage}" />
   <meta property="og:site_name" content="RunAnalytics" />
 
   <!-- Twitter Card -->
@@ -607,7 +609,7 @@ ${allPages.map(page => `  <url>
   <meta name="twitter:url" content="${baseUrl}${url}" />
   <meta name="twitter:title" content="${pageMeta.title}" />
   <meta name="twitter:description" content="${pageMeta.description}" />
-  <meta name="twitter:image" content="${baseUrl}/og-image.jpg" />
+  <meta name="twitter:image" content="${ogImage}" />
 
   <!-- Structured Data -->
   <script type="application/ld+json">
