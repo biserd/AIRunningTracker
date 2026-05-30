@@ -688,7 +688,9 @@ Grab the Chrome extension (free): ${chromeUrl}
 
 Catch you out there,
 Biser
-RunAnalytics`;
+RunAnalytics
+
+P.S. I'm building a native iOS app too — proper push notifications and all the good stuff. The designs are done and it's coming along nicely. Want to kick the tires early via TestFlight? Just reply and I'll get you on the list.`;
 
     const html = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #333; line-height: 1.6;">
 <p>Hey there,</p>
@@ -704,6 +706,7 @@ Added 60+ of 2026's new shoes across 13 brands, plus side-by-side comparisons, a
 <p>That's the big stuff. As always, just hit reply if something's broken or you've got an idea — I read every message.</p>
 <p style="margin: 28px 0;"><a href="${chromeUrl}" style="display:inline-block; background:#FC5200; color:#fff; padding:13px 24px; border-radius:8px; text-decoration:none; font-weight:bold;">Grab the Chrome extension (free)</a></p>
 <p>Catch you out there,<br/>Biser<br/><span style="color:#888;">RunAnalytics</span></p>
+<p style="color:#555; font-size:14px; border-top:1px solid #eee; padding-top:16px; margin-top:24px;"><strong>P.S.</strong> I'm building a native iOS app too — proper push notifications and all the good stuff. The designs are done and it's coming along nicely. Want to kick the tires early via TestFlight? Just reply and I'll get you on the list.</p>
 </div>`;
 
     return { subject, html, text };
