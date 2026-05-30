@@ -534,12 +534,12 @@ Generate a JSON response with exactly these 3 fields:
 Respond with ONLY valid JSON, no markdown, no commentary.`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5.4-mini",
         messages: [
           { role: "system", content: "You are an expert running coach who reads the data carefully and surfaces specific, non-obvious insights. Respond with valid JSON only. Never restate raw stats the athlete can already see in their table. Never use em dashes, 'Grey Zone', or 'Junk Mileage'." },
           { role: "user", content: prompt }
         ],
-        max_tokens: 500,
+        max_completion_tokens: 1200,
         temperature: 0.7
       });
 
