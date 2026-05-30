@@ -658,6 +658,57 @@ The RunAnalytics Team
     });
   }
 
+  // Casual "what's new" product-update newsletter. Tight, low-HTML, four
+  // features, single CTA at the end. Returned as content so both the admin
+  // broadcast route and one-off test sends share the exact same copy.
+  productUpdateNewsletter(): { subject: string; html: string; text: string } {
+    const chromeUrl = "https://chromewebstore.google.com/detail/ginbekolfhooancaldnodcdhabjffbem/";
+    const shoesUrl = "https://aitracker.run/tools/shoes";
+    const subject = "We stuck RunAnalytics right inside Strava (+ instant insights in your inbox, free)";
+
+    const text = `Hey there,
+
+It's Biser. Been heads-down for a few months and shipped some stuff I'm actually pumped about. Quick rundown, no fluff:
+
+1. RunAnalytics now lives inside Strava
+We built a Chrome extension that drops your run grade, Runner Score, readiness, and injury-risk read right onto the Strava activity page. No new tab, no copy-pasting — finish a run, open it on Strava, and the analysis is just there. It's free. Add it here: ${chromeUrl}
+
+2. Finish a run, insights hit your inbox instantly (free, forever)
+We hooked straight into Strava, so the second you upload a run we email you the breakdown — effort score, how your pace stacked up against your recent runs, your weekly load, the works. Every single run. No trial, no paid account, no catch. Free forever.
+
+3. Story Mode: your runs explained like a human would (Premium)
+For Premium, every run gets a full "Story Mode" writeup — a Coach Verdict, an Effort Score, and a plain-English take on how hard it actually was. It's the difference between "here's your data" and "here's what your data means."
+
+4. The Shoe Hub got way bigger
+Added 60+ of 2026's new shoes across 13 brands, plus side-by-side comparisons, a shoe finder, and a rotation planner. Go nerd out on foam: ${shoesUrl}
+
+That's the big stuff. As always, just hit reply if something's broken or you've got an idea — I read every message.
+
+Grab the Chrome extension (free): ${chromeUrl}
+
+Catch you out there,
+Biser
+RunAnalytics`;
+
+    const html = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #333; line-height: 1.6;">
+<p>Hey there,</p>
+<p>It's Biser. Been heads-down for a few months and shipped some stuff I'm actually pumped about. Quick rundown, no fluff:</p>
+<p><strong>1. RunAnalytics now lives inside Strava</strong><br/>
+We built a Chrome extension that drops your run grade, Runner Score, readiness, and injury-risk read right onto the Strava activity page. No new tab, no copy-pasting — finish a run, open it on Strava, and the analysis is just there. It's free. <a href="${chromeUrl}" style="color:#FC5200;">Add it to Chrome</a>.</p>
+<p><strong>2. Finish a run, insights hit your inbox instantly (free, forever)</strong><br/>
+We hooked straight into Strava, so the second you upload a run we email you the breakdown — effort score, how your pace stacked up against your recent runs, your weekly load, the works. Every single run. No trial, no paid account, no catch. Free forever.</p>
+<p><strong>3. Story Mode: your runs explained like a human would (Premium)</strong><br/>
+For Premium, every run gets a full "Story Mode" writeup — a Coach Verdict, an Effort Score, and a plain-English take on how hard it actually was. It's the difference between "here's your data" and "here's what your data means."</p>
+<p><strong>4. The Shoe Hub got way bigger</strong><br/>
+Added 60+ of 2026's new shoes across 13 brands, plus side-by-side comparisons, a shoe finder, and a rotation planner. <a href="${shoesUrl}" style="color:#FC5200;">Go nerd out on foam</a>.</p>
+<p>That's the big stuff. As always, just hit reply if something's broken or you've got an idea — I read every message.</p>
+<p style="margin: 28px 0;"><a href="${chromeUrl}" style="display:inline-block; background:#FC5200; color:#fff; padding:13px 24px; border-radius:8px; text-decoration:none; font-weight:bold;">Grab the Chrome extension (free)</a></p>
+<p>Catch you out there,<br/>Biser<br/><span style="color:#888;">RunAnalytics</span></p>
+</div>`;
+
+    return { subject, html, text };
+  }
+
   async sendCoachRecapEmail(
     email: string,
     name: string,
