@@ -8543,8 +8543,11 @@ ${allPages.map(page => `  <url>
 
       let sent = 0;
       let failed = 0;
-      const batchSize = 5;
-      const delayMs = 1500;
+      // Resend's default limit is 2 requests/second. Send 2 per batch with a
+      // ~1.1s gap (~1.8 req/s) to stay safely under it; sendEmail also retries
+      // with backoff on any 429 so transient spikes don't drop messages.
+      const batchSize = 2;
+      const delayMs = 1100;
 
       for (let i = 0; i < recipients.length; i += batchSize) {
         const batch = recipients.slice(i, i + batchSize);

@@ -29,27 +29,57 @@ class EmailService {
     return this.resend !== null;
   }
 
-  async sendEmail(options: EmailOptions): Promise<boolean> {
-    try {
-      if (!this.resend) {
-        console.log('📧 Resend not configured - would send:', options.subject, 'to:', options.to);
-        return false;
-      }
-
-      await this.resend.emails.send({
-        from: this.fromEmail,
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
-        text: options.text
-      });
-      
-      console.log(`📧 Email sent successfully: ${options.subject} to ${options.to}`);
-      return true;
-    } catch (error) {
-      console.error('📧 Email sending failed:', error);
+  async sendEmail(options: EmailOptions, retries: number = 3): Promise<boolean> {
+    if (!this.resend) {
+      console.log('📧 Resend not configured - would send:', options.subject, 'to:', options.to);
       return false;
     }
+
+    const isRateLimit = (err: any): boolean =>
+      err?.statusCode === 429 ||
+      err?.name === 'rate_limit_exceeded' ||
+      /rate.?limit|too many requests/i.test(err?.message || '');
+
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        // Resend returns { data, error } and does NOT throw on most API
+        // errors (incl. 429 rate limits), so we must inspect `error`
+        // explicitly — otherwise a dropped email looks like a success.
+        const { data, error } = await this.resend.emails.send({
+          from: this.fromEmail,
+          to: options.to,
+          subject: options.subject,
+          html: options.html,
+          text: options.text
+        });
+
+        if (error) {
+          if (isRateLimit(error) && attempt < retries) {
+            const backoff = 1000 * attempt;
+            console.warn(`📧 Rate limited sending to ${options.to} (attempt ${attempt}/${retries}); retrying in ${backoff}ms`);
+            await new Promise(resolve => setTimeout(resolve, backoff));
+            continue;
+          }
+          console.error('📧 Email send returned error:', error);
+          return false;
+        }
+
+        console.log(`📧 Email sent successfully: ${options.subject} to ${options.to} (id: ${data?.id ?? 'n/a'})`);
+        return true;
+      } catch (error: any) {
+        if (isRateLimit(error) && attempt < retries) {
+          const backoff = 1000 * attempt;
+          console.warn(`📧 Rate limited (threw) sending to ${options.to} (attempt ${attempt}/${retries}); retrying in ${backoff}ms`);
+          await new Promise(resolve => setTimeout(resolve, backoff));
+          continue;
+        }
+        console.error('📧 Email sending failed:', error);
+        return false;
+      }
+    }
+
+    console.error(`📧 Email to ${options.to} failed after ${retries} attempts (rate limited)`);
+    return false;
   }
 
   async sendWaitlistNotification(email: string): Promise<void> {
