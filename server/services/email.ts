@@ -507,6 +507,11 @@ This feedback has been stored in the deletion_feedback table for analysis.`;
         <div style="text-align: center; margin: 30px 0;">
           <a href="https://aitracker.run/dashboard" style="background: #e74c3c; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Open Your Dashboard</a>
         </div>
+
+        <div style="background: #eef6ff; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2563eb;">
+          <p style="margin: 0 0 10px 0; color: #1e3a8a;"><strong>New: get your insights right inside Strava.</strong> Install our free Chrome extension to see your run grade, Runner Score, readiness, and injury-risk signals on every Strava activity page — no extra clicks.</p>
+          <a href="https://chromewebstore.google.com/detail/ginbekolfhooancaldnodcdhabjffbem/" style="color: #2563eb; font-weight: bold; text-decoration: none;">Add the RunAnalytics Chrome extension →</a>
+        </div>
         
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="color: #27ae60; margin-top: 0;">What Premium Runners Get:</h3>
@@ -539,6 +544,9 @@ Thanks for signing up. We've already started analyzing your training data to fin
 Your free dashboard is ready. Connect Strava to see your last 10 runs, then start a 14-day Premium trial anytime to unlock unlimited history, AI insights, training plans, and the Coach Chat.
 
 Open your dashboard: https://aitracker.run/dashboard
+
+New: get your insights right inside Strava. Install our free Chrome extension to see your run grade, Runner Score, readiness, and injury-risk signals on every Strava activity page.
+Add the RunAnalytics Chrome extension: https://chromewebstore.google.com/detail/ginbekolfhooancaldnodcdhabjffbem/
 
 What Premium Runners Get:
 - AI Running Coach Chat: Ask questions, get personalized advice anytime

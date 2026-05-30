@@ -344,6 +344,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       description: "Get personalized running advice from an AI coach that knows your training. Ask questions, get insights, and improve your running.",
       keywords: "AI running coach, running advice, AI training, personalized coaching"
     },
+    "/chrome-extension": {
+      title: "RunAnalytics Chrome Extension for Strava | AI Insights on Every Run",
+      description: "Add AI-powered running insights to every Strava activity with the free RunAnalytics Chrome extension. Get run grades, your Runner Score, readiness, and injury-risk signals without leaving Strava.",
+      keywords: "Strava Chrome extension, RunAnalytics extension, Strava AI insights, running analytics chrome extension, Strava run grade, Runner Score extension"
+    },
     "/ai-agent-coach": {
       title: "AI Agent Coach | Proactive Training Intelligence | RunAnalytics",
       description: "Premium AI coaching that proactively analyzes your runs and provides personalized recommendations before you ask. The future of running coaching.",
@@ -496,6 +501,7 @@ Sitemap: ${baseUrl}/sitemap.xml`;
         { url: "/blog/how-to-pick-a-training-plan", changefreq: "monthly", priority: "0.9", lastmod: "2026-01-04" },
         { url: "/ai-running-coach", changefreq: "weekly", priority: "0.9", lastmod: today },
         { url: "/ai-agent-coach", changefreq: "weekly", priority: "0.9", lastmod: today },
+        { url: "/chrome-extension", changefreq: "weekly", priority: "0.8", lastmod: today },
         
         // Free Tools
         { url: "/tools", changefreq: "weekly", priority: "0.9", lastmod: today },

@@ -58,6 +58,11 @@ const STATIC_PAGES: Record<string, PageMeta> = {
     description: "Get personalized running advice from an AI coach that knows your training. Ask questions, get insights, and improve your running.",
     keywords: "AI running coach, running advice, AI training, personalized coaching"
   },
+  "/chrome-extension": {
+    title: "RunAnalytics Chrome Extension for Strava | AI Insights on Every Run",
+    description: "Add AI-powered running insights to every Strava activity with the free RunAnalytics Chrome extension. Get run grades, your Runner Score, readiness, and injury-risk signals without leaving Strava.",
+    keywords: "Strava Chrome extension, RunAnalytics extension, Strava AI insights, running analytics chrome extension, Strava run grade, Runner Score extension"
+  },
   "/about": {
     title: "About RunAnalytics | AI-Powered Running Analytics",
     description: "Learn about RunAnalytics - the AI-powered platform helping runners improve with personalized insights, training analytics, and smart coaching.",

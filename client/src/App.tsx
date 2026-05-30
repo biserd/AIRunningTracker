@@ -57,6 +57,7 @@ const BestStravaTools = lazy(() => import("@/pages/blog/best-strava-analytics-to
 const ImproveRunningPace = lazy(() => import("@/pages/blog/how-to-improve-running-pace"));
 const HowToPickTrainingPlan = lazy(() => import("@/pages/blog/how-to-pick-a-training-plan"));
 const AICoachLanding = lazy(() => import("@/pages/ai-running-coach"));
+const ChromeExtensionLanding = lazy(() => import("@/pages/chrome-extension"));
 const AIAgentCoachLanding = lazy(() => import("@/pages/ai-agent-coach"));
 const AIAgentCoachBlogPost = lazy(() => import("@/pages/blog/ai-agent-coach-proactive-coaching"));
 const UltraMarathonTrainingPlanBlogPost = lazy(() => import("@/pages/blog/ultra-marathon-training-plan-100-miler-guide"));
@@ -166,6 +167,7 @@ function Router() {
         <Route path="/about" component={AboutPage} />
         <Route path="/terms" component={TermsPage} />
         <Route path="/features" component={FeaturesPage} />
+        <Route path="/chrome-extension" component={ChromeExtensionLanding} />
         <Route path="/pricing" component={PricingPage} />
         <Route path="/privacy" component={PrivacyPage} />
         <Route path="/contact" component={ContactPage} />
