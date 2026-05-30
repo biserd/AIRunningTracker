@@ -287,7 +287,7 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
     try {
       // Use Responses API with streaming and explicit reasoning: none for maximum speed (fast path)
       const stream = await openai.responses.create({
-        model: "gpt-5.1",
+        model: "gpt-5.5",
         input: [
           {
             role: "system",

@@ -256,7 +256,7 @@ When the user asks about "this run", "this activity", "my run", or similar, answ
     try {
       // Use Responses API with streaming and low reasoning effort for chat
       const stream = await openai.responses.create({
-        model: "gpt-5.1",
+        model: "gpt-5.5",
         input: [
           {
             role: "system",
@@ -311,7 +311,7 @@ Place the block AFTER your conversational summary of the plan. Only include fiel
         }
       }
 
-      console.log('[Chat Service] Successfully generated chat response from GPT-5.1');
+      console.log('[Chat Service] Successfully generated chat response from GPT-5.5');
       
       return fullResponse;
     } catch (error: any) {

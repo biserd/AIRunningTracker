@@ -693,7 +693,7 @@ export function renderHomepage(): string {
   const content = homepageContent;
   const meta: PageMeta = {
     title: "RunAnalytics - AI Running Coach & Performance Analytics",
-    description: "Chat with your personal AI Running Coach powered by GPT-5.1. Get instant training advice, race predictions, Runner Score (0-100), and comprehensive performance analytics. Free with Strava integration.",
+    description: "Chat with your personal AI Running Coach powered by GPT-5.5. Get instant training advice, race predictions, Runner Score (0-100), and comprehensive performance analytics. Free with Strava integration.",
     keywords: "AI running coach, running analytics, Strava analytics, runner score, race predictions, VO2 max, running performance, training insights, running app, marathon training, AI coach chat",
     type: 'website'
   };

@@ -164,7 +164,7 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       },
       {
         type: "feature",
-        description: "Streaming responses powered by GPT-5.1 with low reasoning effort for fast, contextual answers (typically 10-20 seconds)"
+        description: "Streaming responses powered by GPT-5.5 with low reasoning effort for fast, contextual answers (typically 10-20 seconds)"
       },
       {
         type: "feature",

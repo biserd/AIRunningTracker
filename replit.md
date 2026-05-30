@@ -21,9 +21,9 @@ Preferred communication style: Simple, everyday language.
 - **Backend**: Node.js with Express, PostgreSQL via Drizzle ORM.
 - **Authentication**: JWT-based with bcrypt hashing.
 - **Strava Integration**: Efficient two-phase sync (List & Hydrate) with rate limiting and in-memory job queue, tracking per-user sync state for progress and error recovery.
-- **AI Engine**: OpenAI GPT-5.1 for personalized insights, training plan generation, and conversational AI, with JSON schema enforcement and streaming responses.
+- **AI Engine**: OpenAI GPT-5.5 for personalized insights, training plan generation, and conversational AI, with JSON schema enforcement and streaming responses. (Post-run webhook emails use the lighter-weight GPT-5.4-mini.)
 - **Training Plans**: AI-generated, personalized plans with athlete profile computation, guardrail validation, plan adaptation based on adherence, and a deterministic skeleton generator.
-- **AI Running Coach Chat**: Real-time conversational interface using GPT-5.1 with SSE for contextual data analysis and training plan awareness.
+- **AI Running Coach Chat**: Real-time conversational interface using GPT-5.5 with SSE for contextual data analysis and training plan awareness.
 - **Activity Analysis**: "Activity Story Mode" for compact summaries (with Coach Verdict and Run Timeline) and "Deep Dive Mode" for detailed metrics, route maps with key moments, splits analysis, and benchmarks, including Effort Score, Training Consistency badges, and AI-detected event pins.
 - **Proactive Coaching**: AI Agent Coach (Premium) provides post-activity recaps and feedback, integrating with user-defined goals and preferences.
 - **Recovery System**: Time-aware analysis with dynamic recommendations based on training load (acute/chronic load, freshness score).
@@ -65,7 +65,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Core Services
 - **Neon Database**: PostgreSQL hosting.
-- **OpenAI API**: GPT-5.1 for AI capabilities.
+- **OpenAI API**: GPT-5.5 for AI capabilities.
 - **Strava API**: Activity data synchronization.
 - **Stripe**: Payment processing for subscriptions.
 - **SMTP**: For email services (e.g., via Resend service).
