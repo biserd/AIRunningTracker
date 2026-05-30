@@ -59,3 +59,9 @@ id = "Xcy01mVCM7hOnwv0EfSOZ"
 uri = "file://attached_assets/youtube-banner-2560x1440.png"
 type = "image"
 title = "YouTube channel banner — 2560×1440px, 1.5MB"
+
+[[outputs]]
+id = "wtFBPFFkW5SLeJcr7XfNY"
+uri = "file://runanalytics-extension.zip"
+type = "unspecified"
+title = "RunAnalytics extension — upload this ZIP to the Chrome Web Store"
