@@ -22,6 +22,19 @@ interface TrainingContext {
   runStreak: number;
   totalRunsLast30Days: number;
   weeklyContextLine: string;            // e.g. "3 runs · 28.4 km this week"
+  loadComparison: string | null;        // this week's volume vs the prior 3-week average
+}
+
+// Derived analysis from the detailed Strava streams (GPS/HR/cadence). These are
+// things the runner CANNOT see in the summary stats table, so they give the AI
+// something substantive to say instead of restating pace/distance/HR.
+interface StreamAnalysis {
+  splitLabel: string;            // "Negative split", "Positive split (faded)", "Even pacing"
+  splitDeltaSec: number;         // sec/unit, second half minus first half (positive = slower late)
+  decouplingPct: number | null;  // aerobic decoupling (Pa:HR drift) %, null if no HR
+  fastestSplitPace: string | null;
+  avgCadence: number | null;     // steps per minute
+  summaryLines: string[];        // pre-formatted, human-readable lines for the prompt
 }
 
 const VERIFY_TOKEN = process.env.STRAVA_VERIFY_TOKEN || "runanalytics_webhook_verify_2024";
@@ -163,6 +176,24 @@ class StravaWebhookService {
         return `skipped:not_a_run(${activity.type})`;
       }
 
+      // Tiny activities (warmups, accidental starts, treadmill blips) get stored
+      // for history but never trigger an email — so there's no point spending a
+      // Strava streams call or AI analysis on a run that won't be emailed.
+      const minDistanceMeters = (user.unitPreference ?? "miles") === "km" ? 1000 : 1609.34;
+      const willEmail = (activity.distance ?? 0) >= minDistanceMeters;
+
+      // Best-effort: pull the detailed streams (GPS/HR/cadence) so the AI email
+      // can talk about pacing, fade, and aerobic decoupling instead of just
+      // restating the summary stats. A streams failure must never block the email.
+      let streams: any = null;
+      if (willEmail) {
+        try {
+          streams = await stravaService.getActivityStreams(accessToken, event.object_id);
+        } catch (streamErr) {
+          console.warn(`[Strava Webhook] Could not fetch streams for ${event.object_id}:`, streamErr);
+        }
+      }
+
       // Store the activity in the DB so training context queries have accurate history.
       // Duplicate-safe: the regular sync job may also store this later; we skip if it exists.
       const stravaId = String(event.object_id);
@@ -198,7 +229,7 @@ class StravaWebhookService {
             endLongitude: activity.end_latlng?.[1] || null,
             polyline: activity.map?.summary_polyline || null,
             detailedPolyline: null,
-            streamsData: null,
+            streamsData: streams ? JSON.stringify(streams) : null,
             lapsData: null,
             averageTemp: activity.average_temp || null,
             hasHeartrate: activity.has_heartrate || false,
@@ -219,17 +250,15 @@ class StravaWebhookService {
         console.log(`[Strava Webhook] Activity ${stravaId} already in DB for user ${user.id}, skipping insert`);
       }
 
-      // Skip the email for tiny activities (warmups, accidental starts, treadmill
-      // blips, etc.) — but we already stored the activity above so history stays
-      // accurate. Threshold = 1 km for km users, 1 mile for mile users.
-      const minDistanceMeters = (user.unitPreference ?? "miles") === "km" ? 1000 : 1609.34;
-      if ((activity.distance ?? 0) < minDistanceMeters) {
+      // Threshold gate computed above (willEmail). We already stored the activity
+      // so history stays accurate even when we skip the email.
+      if (!willEmail) {
         console.log(`[Strava Webhook] Activity ${event.object_id} too short (${activity.distance}m < ${minDistanceMeters}m) — stored but skipping email`);
         return `stored_no_email:below_min_distance(${Math.round(activity.distance ?? 0)}m)`;
       }
 
       console.log(`[Strava Webhook] Processing run activity ${event.object_id} for user ${user.id}`);
-      await this.sendPostRunEmail(user, activity, stravaId, activityDbId);
+      await this.sendPostRunEmail(user, activity, stravaId, activityDbId, streams);
       await storage.updateUser(user.id, { lastPostRunEmailAt: new Date() });
       return "email_sent";
     } catch (error) {
@@ -238,7 +267,7 @@ class StravaWebhookService {
     }
   }
 
-  private async buildTrainingContext(userId: number, currentActivityDistanceKm: number, currentActivityDate: Date, currentStravaId: string): Promise<TrainingContext> {
+  private async buildTrainingContext(userId: number, currentActivityDistanceKm: number, currentActivityDate: Date, currentStravaId: string, isKm: boolean = true): Promise<TrainingContext> {
     try {
       const thirtyDaysAgo = new Date(currentActivityDate.getTime() - 30 * 24 * 60 * 60 * 1000);
       const recentActivities = await storage.getActivitiesByUserId(userId, 60, thirtyDaysAgo);
@@ -280,16 +309,38 @@ class StravaWebhookService {
         }
       }
 
-      const weeklyContextLine = `${runsThisWeekCount + 1} run${runsThisWeekCount + 1 !== 1 ? "s" : ""} · ${(kmThisWeek + currentActivityDistanceKm).toFixed(1)} km this week`;
+      // Weekly load ramp: compare this week's volume to the prior 3-week average.
+      // A sharp ramp is an injury-risk signal; a big drop is a recovery/detraining cue.
+      const thisWeekTotalKm = kmThisWeek + currentActivityDistanceKm;
+      const fourWeeksAgo = new Date(currentActivityDate.getTime() - 28 * 24 * 60 * 60 * 1000);
+      const priorRuns = runs.filter(r => {
+        const d = new Date(r.startDate);
+        return d < sevenDaysAgo && d >= fourWeeksAgo;
+      });
+      const priorWeeklyAvgKm = priorRuns.reduce((sum, r) => sum + (r.distance || 0) / 1000, 0) / 3;
+      let loadComparison: string | null = null;
+      if (priorWeeklyAvgKm >= 1) {
+        const ratio = thisWeekTotalKm / priorWeeklyAvgKm;
+        const pct = Math.round((ratio - 1) * 100);
+        if (ratio >= 1.3) loadComparison = `This week's volume is about ${pct}% above the prior 3-week average — ramping quickly, so recovery matters.`;
+        else if (ratio <= 0.6) loadComparison = `This week's volume is well below the recent norm (a lighter or recovery week).`;
+        else loadComparison = `This week's volume is roughly in line with the recent 3-week average.`;
+      }
+
+      const weeklyDistDisplay = isKm
+        ? `${thisWeekTotalKm.toFixed(1)} km`
+        : `${(thisWeekTotalKm * 0.621371).toFixed(1)} mi`;
+      const weeklyContextLine = `${runsThisWeekCount + 1} run${runsThisWeekCount + 1 !== 1 ? "s" : ""} · ${weeklyDistDisplay} this week`;
 
       return {
         runsThisWeek: runsThisWeekCount + 1,
-        kmThisWeek: kmThisWeek + currentActivityDistanceKm,
+        kmThisWeek: thisWeekTotalKm,
         recentAvgPaceSecPerKm,
         paceVsRecentSec: null, // filled in sendPostRunEmail after pace is computed
         runStreak,
         totalRunsLast30Days: runs.length + 1,
         weeklyContextLine,
+        loadComparison,
       };
     } catch (err) {
       console.error("[Strava Webhook] Failed to build training context:", err);
@@ -301,11 +352,12 @@ class StravaWebhookService {
         runStreak: 1,
         totalRunsLast30Days: 1,
         weeklyContextLine: "",
+        loadComparison: null,
       };
     }
   }
 
-  private async sendPostRunEmail(user: any, activity: any, stravaId: string, activityDbId: number | null): Promise<void> {
+  private async sendPostRunEmail(user: any, activity: any, stravaId: string, activityDbId: number | null, streams: any = null): Promise<void> {
     try {
       const distanceKm = activity.distance / 1000;
       const distanceMiles = distanceKm * 0.621371;
@@ -347,16 +399,20 @@ class StravaWebhookService {
 
       // Build training context from the last 30 days of activities
       const activityDate = new Date(activity.start_date || Date.now());
-      const trainingContext = await this.buildTrainingContext(user.id, distanceKm, activityDate, stravaId);
+      const trainingContext = await this.buildTrainingContext(user.id, distanceKm, activityDate, stravaId, isKm);
 
       // Compute pace vs recent average (now that we have today's pace)
       if (trainingContext.recentAvgPaceSecPerKm !== null) {
         trainingContext.paceVsRecentSec = paceSecPerKm - trainingContext.recentAvgPaceSecPerKm;
       }
 
+      // Derive substantive insights from the detailed streams (splits, decoupling,
+      // fastest segment, cadence) — the things the runner can't read off the table.
+      const streamAnalysis = this.analyzeRunStreams(streams, isKm);
+
       const aiResult = await this.generatePersonalizedEmail(
         user, activity, distanceKm, distanceLabel, runType, effortScore,
-        efficiencyRating, paceDisplay, distanceDisplay, trainingContext
+        efficiencyRating, paceDisplay, distanceDisplay, trainingContext, streamAnalysis
       );
 
       await emailService.sendPostRunAnalysis({
@@ -411,77 +467,80 @@ class StravaWebhookService {
     user: any, activity: any, distanceKm: number, distanceLabel: string,
     runType: string, effortScore: number, efficiencyRating: { label: string; icon: string },
     paceDisplay: string, distanceDisplay: string,
-    ctx: TrainingContext
+    ctx: TrainingContext, streamAnalysis: StreamAnalysis | null = null
   ): Promise<{ subject: string; coachVerdictBody: string; nextRunTip: string }> {
     try {
       const isKm = user.unitPreference === "km";
+      const unit = isKm ? "km" : "mi";
       const firstName = user.firstName || user.email.split("@")[0];
       const goalLabel = GOAL_LABELS[user.onboardingGoal || ""] || null;
       const struggleLabel = STRUGGLE_LABELS[user.onboardingStruggle || ""] || null;
+      const weeklyDistDisplay = isKm
+        ? `${ctx.kmThisWeek.toFixed(1)} km`
+        : `${(ctx.kmThisWeek * 0.621371).toFixed(1)} mi`;
 
-      // Format pace trend
+      // Format pace trend (convert to the runner's unit so we never mix km and mi)
       let paceTrend = "No recent data for comparison";
       if (ctx.paceVsRecentSec !== null) {
-        const absSec = Math.abs(Math.round(ctx.paceVsRecentSec));
+        const perUnit = isKm ? ctx.paceVsRecentSec : ctx.paceVsRecentSec / 0.621371;
+        const absSec = Math.abs(Math.round(perUnit));
         if (absSec < 5) {
           paceTrend = "Right on their recent average pace for this distance";
-        } else if (ctx.paceVsRecentSec < 0) {
-          paceTrend = `${absSec} sec/km faster than their recent average for this distance`;
+        } else if (perUnit < 0) {
+          paceTrend = `${absSec} sec/${unit} faster than their recent average for this distance`;
         } else {
-          paceTrend = `${absSec} sec/km slower than their recent average for this distance`;
+          paceTrend = `${absSec} sec/${unit} slower than their recent average for this distance`;
         }
       }
 
       // Format streak
       const streakNote = ctx.runStreak >= 3 ? `${ctx.runStreak}-day running streak` : null;
 
-      const prompt = `You are the Running Coach for AITracker.run. Generate a highly personalized post-run email for this runner based on ALL the data below — not just today's run.
+      // Stream-derived analysis block — the substance the runner can't see in the table
+      const streamBlock = streamAnalysis && streamAnalysis.summaryLines.length
+        ? `\nRun analysis (computed from GPS + HR streams — the runner CANNOT see these in the stats table, so this is your richest material):\n${streamAnalysis.summaryLines.map(l => `- ${l}`).join("\n")}\n`
+        : "";
+      const loadLine = ctx.loadComparison ? `\n- Weekly load: ${ctx.loadComparison}` : "";
 
-Runner: ${firstName}
+      const prompt = `You are the Running Coach for AITracker.run. Write a sharp, personalized post-run email for ${firstName}.
+
+CRITICAL: The runner is already looking at a stats table showing pace, distance, duration, average HR, elevation, efficiency, and effort score. Restating any of those numbers is worthless. Your entire job is to tell them something they CANNOT see by reading that table — a pattern, a comparison, or what the numbers mean for their training.
+
 Today's run type: ${runType}
 Distance: ${distanceDisplay} (${distanceLabel})
 Pace: ${paceDisplay}
 Duration: ${Math.floor(activity.moving_time / 60)} minutes
-Heart Rate: ${activity.average_heartrate ? Math.round(activity.average_heartrate) + " bpm avg, " + (activity.max_heartrate ? activity.max_heartrate + " bpm max" : "no max recorded") : "not recorded"}
+Heart Rate: ${activity.average_heartrate ? Math.round(activity.average_heartrate) + " bpm avg" + (activity.max_heartrate ? ", " + activity.max_heartrate + " bpm max" : "") : "not recorded"}
 Elevation: ${activity.total_elevation_gain ? Math.round(activity.total_elevation_gain) + "m gain" : "flat"}
 Effort Score: ${effortScore}/100
 Running Efficiency: ${efficiencyRating.label}
 PRs set: ${activity.pr_count || 0}
-
+${streamBlock}
 Training context (last 30 days):
 - Pace vs recent: ${paceTrend}
-- This week: ${ctx.runsThisWeek} run${ctx.runsThisWeek !== 1 ? "s" : ""}, ${ctx.kmThisWeek.toFixed(1)} km total
-- Runs in last 30 days: ${ctx.totalRunsLast30Days}
-${streakNote ? `- Current streak: ${streakNote}` : ""}
+- This week: ${ctx.runsThisWeek} run${ctx.runsThisWeek !== 1 ? "s" : ""}, ${weeklyDistDisplay} total
+- Runs in last 30 days: ${ctx.totalRunsLast30Days}${streakNote ? `\n- Current streak: ${streakNote}` : ""}${loadLine}
 
-Runner profile:
-${goalLabel ? `- Primary goal: ${goalLabel}` : ""}
-${struggleLabel ? `- Main struggle: ${struggleLabel}` : ""}
+Runner profile:${goalLabel ? `\n- Primary goal: ${goalLabel}` : ""}${struggleLabel ? `\n- Main struggle: ${struggleLabel}` : ""}
 
 Generate a JSON response with exactly these 3 fields:
 
-1. "subject": Email subject line under 65 chars. Reference something specific from today's run. Use distance label "${distanceLabel}". Create curiosity. Example formats:
-   - "Your ${distanceLabel} today: pace trend is moving in the right direction"
-   - "${distanceLabel} done — your HR tells a different story"
-   - "Strong ${distanceLabel}, but your effort score says recovery time"
+1. "subject": Under 65 chars. Hook them with the single most interesting finding (a split pattern, HR drift, fastest segment, pace-vs-norm, or load trend), not a generic "Great run!". Use the label "${distanceLabel}" where it reads naturally.
 
-2. "coachVerdictBody": 2-3 sentences. Be specific to this runner's data. Mention at least one thing from their training context (pace trend, weekly load, streak, or goal alignment) — not just today's run in isolation. One observation about today. One about the bigger picture. Be warm but direct. No generic praise. No em dashes. No "Grey Zone" or "Junk Mileage" terminology.
+2. "coachVerdictBody": 2-3 sentences, max ~55 words. LEAD with the most insightful, non-obvious thing in the data above — strongly prefer the run analysis (split behaviour, aerobic decoupling, fastest split) or how today compares to their recent norm / weekly load. State the actual numbers from that analysis and explain what they mean, then connect it to their goal if relevant. Coach-to-athlete: warm but direct. Do NOT restate the stats table. No generic praise. No em dashes. No "Grey Zone" or "Junk Mileage".
 
-3. "nextRunTip": One short, concrete sentence telling them what to do on their next run. Base it on today's effort score, their goal, and their weekly load. Examples:
-   - "Keep your next run easy — 3 days in a row at this effort needs a recovery day."
-   - "You have room for a quality session tomorrow — your effort today was controlled."
-   - "Aim for a longer easy run this weekend to build on your weekly mileage."
+3. "nextRunTip": One concrete, specific sentence on what to do next, justified by today's analysis (decoupling / effort / split behaviour) and their weekly load. Not a vague "take it easy".
 
 Respond with ONLY valid JSON, no markdown, no commentary.`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-4o",
         messages: [
-          { role: "system", content: "You are an expert running coach. Respond with valid JSON only. Never use em dashes, 'Grey Zone', or 'Junk Mileage' in your writing." },
+          { role: "system", content: "You are an expert running coach who reads the data carefully and surfaces specific, non-obvious insights. Respond with valid JSON only. Never restate raw stats the athlete can already see in their table. Never use em dashes, 'Grey Zone', or 'Junk Mileage'." },
           { role: "user", content: prompt }
         ],
-        max_tokens: 450,
-        temperature: 0.75
+        max_tokens: 500,
+        temperature: 0.7
       });
 
       const content = response.choices[0]?.message?.content?.trim();
@@ -535,8 +594,11 @@ Respond with ONLY valid JSON, no markdown, no commentary.`;
       verdict = `You set ${activity.pr_count} PR${activity.pr_count > 1 ? "s" : ""} today. That is real progress showing up in the data. The question now is whether you recover well enough to keep that trajectory going.`;
       nextRunTip = "Give yourself a proper easy day before your next hard session.";
     } else if (ctx.runsThisWeek >= 3) {
+      const wkDisplay = user.unitPreference === "km"
+        ? `${ctx.kmThisWeek.toFixed(1)} km`
+        : `${(ctx.kmThisWeek * 0.621371).toFixed(1)} mi`;
       hook = `run ${ctx.runsThisWeek} of the week is in the books`;
-      verdict = `You have been consistent this week — ${ctx.runsThisWeek} runs and ${ctx.kmThisWeek.toFixed(1)} km logged. Consistency is the most underrated part of training. Keep it up.`;
+      verdict = `You have been consistent this week — ${ctx.runsThisWeek} runs and ${wkDisplay} logged. Consistency is the most underrated part of training. Keep it up.`;
       nextRunTip = "You are building a solid week. Make sure at least one more run this week is fully easy.";
     }
 
@@ -551,6 +613,124 @@ Respond with ONLY valid JSON, no markdown, no commentary.`;
       coachVerdictBody: verdict,
       nextRunTip,
     };
+  }
+
+  // Compute substantive, non-obvious insights from the detailed Strava streams.
+  // key_by_type=true means streams arrive as { distance: { data: [...] }, ... }.
+  // Everything here is best-effort and must never throw into the email path.
+  private analyzeRunStreams(streams: any, isKm: boolean): StreamAnalysis | null {
+    try {
+      if (!streams) return null;
+      const dist: number[] = streams.distance?.data || [];      // cumulative meters
+      const time: number[] = streams.time?.data || [];           // seconds (elapsed)
+      const hr: number[] = streams.heartrate?.data || [];
+      const cad: number[] = streams.cadence?.data || [];
+      const n = dist.length;
+      if (n < 20 || time.length !== n) return null;
+
+      const unit = isKm ? "km" : "mi";
+      const unitMeters = isKm ? 1000 : 1609.34;
+      const summaryLines: string[] = [];
+
+      // First half vs second half pacing (split by distance)
+      const totalDist = dist[n - 1] - dist[0];
+      const half = dist[0] + totalDist / 2;
+      let splitIdx = dist.findIndex(d => d >= half);
+      if (splitIdx <= 0 || splitIdx >= n - 1) splitIdx = Math.floor(n / 2);
+      const t1 = time[splitIdx] - time[0];
+      const d1 = dist[splitIdx] - dist[0];
+      const t2 = time[n - 1] - time[splitIdx];
+      const d2 = dist[n - 1] - dist[splitIdx];
+
+      let splitLabel = "Even pacing";
+      let splitDeltaSec = 0;
+      if (d1 > 0 && d2 > 0 && t1 > 0 && t2 > 0) {
+        const pace1 = (t1 / d1) * unitMeters; // sec per unit
+        const pace2 = (t2 / d2) * unitMeters;
+        splitDeltaSec = Math.round(pace2 - pace1);
+        const absS = Math.abs(splitDeltaSec);
+        if (splitDeltaSec <= -8) {
+          splitLabel = "Negative split (finished faster)";
+          summaryLines.push(`Pacing: negative split — the second half was about ${absS}s/${unit} faster than the first. Strong, controlled effort.`);
+        } else if (splitDeltaSec >= 8) {
+          splitLabel = "Positive split (faded late)";
+          summaryLines.push(`Pacing: faded about ${absS}s/${unit} in the second half. Likely went out too hot, or fatigue/fueling caught up.`);
+        } else {
+          splitLabel = "Even pacing";
+          summaryLines.push(`Pacing: very even — within ${absS}s/${unit} between the first and second half.`);
+        }
+      }
+
+      // Aerobic decoupling (Pa:HR drift): how much pace-per-heartbeat degraded in the back half
+      let decouplingPct: number | null = null;
+      if (hr.length === n && d1 > 0 && d2 > 0 && t1 > 0 && t2 > 0) {
+        const avg = (arr: number[], a: number, b: number) => {
+          let s = 0, c = 0;
+          for (let i = a; i < b; i++) { if (Number.isFinite(arr[i]) && arr[i] > 0) { s += arr[i]; c++; } }
+          return c ? s / c : 0;
+        };
+        const hr1 = avg(hr, 0, splitIdx);
+        const hr2 = avg(hr, splitIdx, n);
+        const sp1 = d1 / t1; // m/s
+        const sp2 = d2 / t2;
+        if (hr1 > 0 && hr2 > 0) {
+          const ratio1 = sp1 / hr1;
+          const ratio2 = sp2 / hr2;
+          decouplingPct = Math.round(((ratio1 - ratio2) / ratio1) * 1000) / 10;
+          if (decouplingPct > 5) {
+            summaryLines.push(`Aerobic decoupling: ${decouplingPct}% — heart rate drifted up relative to pace (above the ~5% durability threshold). The effort was beyond a comfortable aerobic zone, or aerobic durability is the current limiter.`);
+          } else if (decouplingPct >= 0) {
+            summaryLines.push(`Aerobic decoupling: ${decouplingPct}% — well coupled (under 5%). Good aerobic durability; HR held steady against pace.`);
+          } else {
+            summaryLines.push(`Aerobic decoupling: ${decouplingPct}% — pace-per-heartbeat actually improved late (warmed into it nicely).`);
+          }
+        }
+      }
+
+      // Fastest single km / mile. Two-pointer window over cumulative distance,
+      // interpolating the time at the exact unit boundary so the split reflects a
+      // true single-unit pace rather than an over-long (and thus too-slow) window.
+      let fastestSplitPace: string | null = null;
+      if (totalDist >= unitMeters) {
+        let best = Infinity;
+        let j = 1;
+        for (let i = 0; i < n; i++) {
+          if (j <= i) j = i + 1;
+          const target = dist[i] + unitMeters;
+          while (j < n && dist[j] < target) j++;
+          if (j >= n) break;
+          const dPrev = dist[j - 1];
+          const denom = dist[j] - dPrev;
+          const frac = denom > 0 ? (target - dPrev) / denom : 0;
+          const tAtTarget = time[j - 1] + frac * (time[j] - time[j - 1]);
+          const dt = tAtTarget - time[i];
+          if (dt > 0 && dt < best) best = dt;
+        }
+        if (best !== Infinity) {
+          const totalSec = Math.round(best);
+          const m = Math.floor(totalSec / 60);
+          const s = totalSec % 60;
+          fastestSplitPace = `${m}:${String(s).padStart(2, "0")} /${unit}`;
+          summaryLines.push(`Fastest ${unit}: ${fastestSplitPace}.`);
+        }
+      }
+
+      // Average cadence (Strava reports per-leg RPM; double for steps/min)
+      let avgCadence: number | null = null;
+      if (cad.length) {
+        const valid = cad.filter(c => Number.isFinite(c) && c > 0);
+        if (valid.length) {
+          avgCadence = Math.round((valid.reduce((a, b) => a + b, 0) / valid.length) * 2);
+          summaryLines.push(`Average cadence: ${avgCadence} spm.`);
+        }
+      }
+
+      if (!summaryLines.length) return null;
+      return { splitLabel, splitDeltaSec, decouplingPct, fastestSplitPace, avgCadence, summaryLines };
+    } catch (err) {
+      console.warn("[Strava Webhook] Stream analysis failed:", err);
+      return null;
+    }
   }
 
   private calculateEffortScore(activity: any): number {
