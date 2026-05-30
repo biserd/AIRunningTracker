@@ -25,7 +25,7 @@ import { FloatingAICoach } from "@/components/FloatingAICoach";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import RecentConversations from "@/components/RecentConversations";
 import TrialBadge from "@/components/TrialBadge";
-import { Gift, ChevronRight, Crown, Mail, X } from "lucide-react";
+import { Gift, ChevronRight, Crown, Mail, X, Chrome } from "lucide-react";
 import { Link } from "wouter";
 import { useFeatureAccess, useSubscription } from "@/hooks/useSubscription";
 
@@ -37,6 +37,7 @@ export default function Dashboard() {
     if (typeof window === "undefined") return false;
     return sessionStorage.getItem("addEmailBannerDismissed") === "1";
   });
+  const [chromeExtBannerDismissed, setChromeExtBannerDismissed] = useState<boolean>(true);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<number | undefined>();
   const [syncProgress, setSyncProgress] = useState<{
@@ -64,6 +65,15 @@ export default function Dashboard() {
       window.history.replaceState({}, '', '/dashboard');
     }
   }, []);
+
+  // Initialize per-user Chrome extension banner dismissal state
+  useEffect(() => {
+    if (user?.id && typeof window !== "undefined") {
+      setChromeExtBannerDismissed(
+        localStorage.getItem(`chromeExtBannerDismissed_${user.id}`) === "1"
+      );
+    }
+  }, [user?.id]);
 
   // Send heartbeat to track user activity and record activation
   useEffect(() => {
@@ -413,6 +423,15 @@ export default function Dashboard() {
     setEmailBannerDismissed(true);
   };
 
+  const showChromeExtBanner = !!user?.id && !showAddEmailBanner && !chromeExtBannerDismissed;
+
+  const dismissChromeExtBanner = () => {
+    if (user?.id && typeof window !== "undefined") {
+      localStorage.setItem(`chromeExtBannerDismissed_${user.id}`, "1");
+    }
+    setChromeExtBannerDismissed(true);
+  };
+
   return (
     <div className="min-h-screen bg-light-grey">
       <AppHeader />
@@ -444,6 +463,40 @@ export default function Dashboard() {
               className="shrink-0 p-1 rounded hover:bg-amber-100 text-amber-700"
               aria-label="Dismiss"
               data-testid="button-banner-dismiss"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Promote the Chrome extension to logged-in users */}
+      {showChromeExtBanner && (
+        <div className="bg-orange-50 border-b border-orange-200" data-testid="banner-chrome-extension">
+          <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-4">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="shrink-0 w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
+                <Chrome className="h-4 w-4 text-orange-700" />
+              </div>
+              <p className="text-sm text-orange-900 truncate">
+                <span className="font-medium">New: RunAnalytics Chrome extension</span> — get your AI run insights right inside Strava.
+              </p>
+            </div>
+            <Link href="/chrome-extension">
+              <Button
+                size="sm"
+                className="bg-orange-600 hover:bg-orange-700 text-white shrink-0"
+                data-testid="button-banner-chrome-extension"
+              >
+                Get the extension
+              </Button>
+            </Link>
+            <button
+              type="button"
+              onClick={dismissChromeExtBanner}
+              className="shrink-0 p-1 rounded hover:bg-orange-100 text-orange-700"
+              aria-label="Dismiss"
+              data-testid="button-banner-chrome-dismiss"
             >
               <X className="h-4 w-4" />
             </button>
