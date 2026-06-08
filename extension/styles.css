@@ -411,6 +411,43 @@
   line-height: 1;
 }
 
+/* ── Upgrade strip (free users only) ── */
+#runanalytics-panel .ra-upgrade-strip {
+  margin-top: 12px;
+  background: #FFF7F4;
+  border: 1px solid #FDDDD3;
+  border-radius: 8px;
+  padding: 10px 12px;
+  text-align: center;
+}
+
+#runanalytics-panel .ra-upgrade-text {
+  font-size: 11px;
+  color: #5C5B58;
+  margin: 0 0 8px 0;
+  padding: 0;
+  line-height: 1.4;
+}
+
+#runanalytics-panel .ra-upgrade-btn {
+  display: inline-block;
+  background: transparent;
+  color: #FC4C02 !important;
+  text-decoration: none !important;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1.5px solid #FC4C02;
+  border-radius: 6px;
+  padding: 6px 14px;
+  transition: background 0.15s ease, color 0.15s ease;
+  line-height: 1.2;
+}
+
+#runanalytics-panel .ra-upgrade-btn:hover {
+  background: #FC4C02;
+  color: #FFFFFF !important;
+}
+
 /* ── Centered layout (locked/error/not-synced states) ── */
 #runanalytics-panel.ra-center {
   text-align: center;

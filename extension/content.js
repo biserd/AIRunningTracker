@@ -208,6 +208,12 @@ function buildFullPanel(data) {
 
       <a href="${activityUrl}" target="_blank" rel="noopener" class="ra-cta">Open full analysis →</a>
 
+      ${!data.isPremium ? `
+      <div class="ra-upgrade-strip">
+        <p class="ra-upgrade-text">🔓 Unlock splits, training plans &amp; Deep Dive</p>
+        <a href="https://aitracker.run/pricing?utm_source=extension&utm_medium=panel&utm_campaign=upgrade_cta" target="_blank" rel="noopener" class="ra-upgrade-btn">Upgrade to Premium →</a>
+      </div>` : ''}
+
     </div>`;
 }
 

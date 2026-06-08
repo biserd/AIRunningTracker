@@ -3559,6 +3559,10 @@ ${allPages.map(page => `  <url>
         .wrapWithMagicLink(user.email, activityPath, "https://aitracker.run")
         .catch(() => `https://aitracker.run${activityPath}?utm_source=extension`);
 
+      const isPremium =
+        user.subscriptionPlan === "premium" &&
+        ["active", "trialing"].includes(user.subscriptionStatus || "");
+
       res.json({
         // Deep-link with auto sign-in
         activityUrl,
@@ -3573,6 +3577,8 @@ ${allPages.map(page => `  <url>
         readinessLabel,
         injuryRisk: injuryRiskShort,
         injuryRiskLabel,
+        // Plan info — used by extension to show upgrade CTA
+        isPremium,
       });
     } catch (error: any) {
       console.error("[GET /api/brief] error:", error);
