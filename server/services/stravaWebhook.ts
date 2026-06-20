@@ -480,6 +480,14 @@ class StravaWebhookService {
         : `${(ctx.kmThisWeek * 0.621371).toFixed(1)} mi`;
 
       // Format pace trend (convert to the runner's unit so we never mix km and mi)
+      // Use M:SS format — how runners actually talk about pace differences
+      const fmtPaceDiff = (totalSec: number): string => {
+        const m = Math.floor(totalSec / 60);
+        const s = totalSec % 60;
+        return m > 0
+          ? `${m}:${s.toString().padStart(2, '0')}/${unit}`
+          : `0:${s.toString().padStart(2, '0')}/${unit}`;
+      };
       let paceTrend = "No recent data for comparison";
       if (ctx.paceVsRecentSec !== null) {
         const perUnit = isKm ? ctx.paceVsRecentSec : ctx.paceVsRecentSec / 0.621371;
@@ -487,9 +495,9 @@ class StravaWebhookService {
         if (absSec < 5) {
           paceTrend = "Right on their recent average pace for this distance";
         } else if (perUnit < 0) {
-          paceTrend = `${absSec} sec/${unit} faster than their recent average for this distance`;
+          paceTrend = `${fmtPaceDiff(absSec)} faster than their recent average for this distance`;
         } else {
-          paceTrend = `${absSec} sec/${unit} slower than their recent average for this distance`;
+          paceTrend = `${fmtPaceDiff(absSec)} slower than their recent average for this distance`;
         }
       }
 
@@ -574,8 +582,11 @@ Respond with ONLY valid JSON, no markdown, no commentary.`;
     // Pace-based hook
     if (ctx.paceVsRecentSec !== null && ctx.paceVsRecentSec < -10) {
       const absSec = Math.abs(Math.round(ctx.paceVsRecentSec));
-      hook = `${absSec} seconds faster than your recent average`;
-      verdict = `You ran ${absSec} sec/km faster than your recent average for this distance. Your fitness is building. Make sure your next run is easy enough to absorb this effort.`;
+      const absM = Math.floor(absSec / 60);
+      const absS = absSec % 60;
+      const paceDiffFmt = absM > 0 ? `${absM}:${absS.toString().padStart(2, '0')}/km` : `0:${absS.toString().padStart(2, '0')}/km`;
+      hook = `${paceDiffFmt} faster than your recent average`;
+      verdict = `You ran ${paceDiffFmt} faster than your recent average for this distance. Your fitness is building. Make sure your next run is easy enough to absorb this effort.`;
       nextRunTip = "Follow this up with an easy run — your body needs the recovery to lock in these gains.";
     } else if (ctx.paceVsRecentSec !== null && ctx.paceVsRecentSec > 15) {
       hook = "slower than usual, which is not always a bad thing";
