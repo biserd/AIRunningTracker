@@ -65,3 +65,27 @@ id = "wtFBPFFkW5SLeJcr7XfNY"
 uri = "file://runanalytics-extension.zip"
 type = "unspecified"
 title = "RunAnalytics extension — upload this ZIP to the Chrome Web Store"
+
+[[outputs]]
+id = "kF_X3n_Ys97FQEyTk0wWf"
+uri = "file://attached_assets/generated_videos/runanalytics_logo_reveal.mp4"
+type = "video"
+title = "Clip 1 — Logo Reveal (6s)"
+
+[[outputs]]
+id = "NI2WDUr2CoAZY2hYgz9tN"
+uri = "file://attached_assets/generated_videos/runanalytics_dashboard_showcase.mp4"
+type = "video"
+title = "Clip 2 — Dashboard & Metrics (8s)"
+
+[[outputs]]
+id = "UFh7LL6vqknHVuWo1O7o7"
+uri = "file://attached_assets/generated_videos/runanalytics_ai_coach_chat.mp4"
+type = "video"
+title = "Clip 3 — AI Coach Chat (8s)"
+
+[[outputs]]
+id = "vm9fH2TTXzWIvPIqC0av5"
+uri = "file://attached_assets/generated_videos/runanalytics_cta_close.mp4"
+type = "video"
+title = "Clip 4 — CTA Close (6s)"
