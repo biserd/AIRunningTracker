@@ -386,11 +386,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       description: "Read the RunAnalytics terms of service. Understand your rights and responsibilities when using our running analytics platform.",
       keywords: "terms of service, terms and conditions, user agreement"
     },
-    "/runner-score": {
-      title: "Runner Score | Your Running Performance Index | RunAnalytics",
-      description: "Discover your Runner Score - a comprehensive metric combining fitness, consistency, and progression. Share your score and track improvement.",
-      keywords: "runner score, running performance, fitness score, running index"
-    },
     "/developers": {
       title: "Developer Portal | RunAnalytics API",
       description: "Build with RunAnalytics. Access our API documentation, integration guides, and developer resources for running analytics.",
@@ -493,13 +488,8 @@ Sitemap: ${baseUrl}/sitemap.xml`;
         { url: "/features", changefreq: "monthly", priority: "0.8", lastmod: today },
         { url: "/pricing", changefreq: "weekly", priority: "0.9", lastmod: today },
         
-        // Blog & Content Marketing
+        // Blog & Content Marketing — derived from blogContent.ts so no post is ever missed
         { url: "/blog", changefreq: "weekly", priority: "0.9", lastmod: today },
-        { url: "/blog/ai-running-coach-complete-guide-2026", changefreq: "monthly", priority: "0.9", lastmod: "2026-01-05" },
-        { url: "/blog/best-strava-analytics-tools-2026", changefreq: "monthly", priority: "0.9", lastmod: "2026-01-05" },
-        { url: "/blog/how-to-improve-running-pace", changefreq: "monthly", priority: "0.9", lastmod: "2026-01-03" },
-        { url: "/blog/ai-agent-coach-proactive-coaching", changefreq: "monthly", priority: "0.9", lastmod: "2026-01-06" },
-        { url: "/blog/how-to-pick-a-training-plan", changefreq: "monthly", priority: "0.9", lastmod: "2026-01-04" },
         { url: "/ai-running-coach", changefreq: "weekly", priority: "0.9", lastmod: today },
         { url: "/ai-agent-coach", changefreq: "weekly", priority: "0.9", lastmod: today },
         { url: "/chrome-extension", changefreq: "weekly", priority: "0.8", lastmod: today },
@@ -524,7 +514,6 @@ Sitemap: ${baseUrl}/sitemap.xml`;
         { url: "/developers/api", changefreq: "weekly", priority: "0.8", lastmod: "2026-01-01" },
         
         // Other Pages
-        { url: "/runner-score", changefreq: "weekly", priority: "0.7", lastmod: today },
         { url: "/faq", changefreq: "monthly", priority: "0.6", lastmod: "2026-01-01" },
         { url: "/contact", changefreq: "monthly", priority: "0.5", lastmod: "2025-12-01" },
         { url: "/privacy", changefreq: "yearly", priority: "0.3", lastmod: "2025-11-01" },
@@ -549,7 +538,16 @@ Sitemap: ${baseUrl}/sitemap.xml`;
         lastmod: comparison.createdAt ? new Date(comparison.createdAt).toISOString().split('T')[0] : today
       }));
 
-      const allPages = [...staticPages, ...shoePages, ...comparisonPages];
+      // Blog pages — derived from blogContent.ts so the sitemap stays in sync
+      // automatically whenever a new post is added to the content source.
+      const blogPages = getAllBlogPosts().map(post => ({
+        url: `/blog/${post.slug}`,
+        changefreq: "monthly",
+        priority: "0.9",
+        lastmod: today
+      }));
+
+      const allPages = [...staticPages, ...blogPages, ...shoePages, ...comparisonPages];
 
       const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

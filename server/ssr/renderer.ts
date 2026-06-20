@@ -252,7 +252,6 @@ function generateRelatedToolsForBlog(title: string, category: string): string {
 
   // Always-on baseline links so every blog post sends some authority to the hubs.
   push("/tools/shoes", "Running Shoe Database", "browse 280+ shoes with AI insights");
-  push("/runner-score", "Runner Score", "get your personal running performance index");
   push("/blog", "More from the RunAnalytics blog", "training tips, AI insights, and shoe reviews");
 
   return `<section class="ssr-related">
