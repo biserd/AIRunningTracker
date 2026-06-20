@@ -913,6 +913,11 @@ ${allPages.map(page => `  <url>
   });
 
   // SSR for shoe comparison pages - crawlers get bare HTML for SEO, humans get React SPA
+  // Server-side HTML cache for comparison SSR pages — avoids repeated DB
+  // round-trips + narrative generation on every Googlebot visit.
+  const comparisonSsrCache = new Map<string, { html: string; ts: number }>();
+  const COMPARISON_SSR_TTL_MS = 60 * 60 * 1000; // 1 hour
+
   app.get("/tools/shoes/compare/:slug", async (req: any, res, next) => {
     try {
       const userAgent = req.headers['user-agent'] || '';
@@ -923,6 +928,17 @@ ${allPages.map(page => `  <url>
       }
 
       const { slug } = req.params;
+
+      // Serve from in-memory cache if fresh
+      const cached = comparisonSsrCache.get(slug);
+      if (cached && Date.now() - cached.ts < COMPARISON_SSR_TTL_MS) {
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('X-Robots-Tag', 'index, follow');
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        res.setHeader('X-Cache', 'HIT');
+        return res.send(cached.html);
+      }
+
       const comparison = await storage.getShoeComparisonBySlug(slug);
       
       if (comparison) {
@@ -931,9 +947,11 @@ ${allPages.map(page => `  <url>
         res.setHeader('X-Robots-Tag', 'index, follow');
         res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
         
-        // Fetch shoe specs for comparison table by their IDs
-        const shoe1 = await storage.getShoeById(comparison.shoe1Id);
-        const shoe2 = await storage.getShoeById(comparison.shoe2Id);
+        // Fetch both shoes in parallel
+        const [shoe1, shoe2] = await Promise.all([
+          storage.getShoeById(comparison.shoe1Id),
+          storage.getShoeById(comparison.shoe2Id),
+        ]);
         
         const html = renderComparisonPage(slug, {
           title: comparison.title,
@@ -972,6 +990,7 @@ ${allPages.map(page => `  <url>
             bestFor: shoe2.bestFor,
           } : null
         });
+        comparisonSsrCache.set(slug, { html, ts: Date.now() });
         res.send(html);
       } else {
         next();

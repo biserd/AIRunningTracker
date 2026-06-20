@@ -98,8 +98,6 @@ function generateHtmlHead(meta: PageMeta, url: string, structuredData: string): 
   </script>
   
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
     .ssr-container { max-width: 800px; margin: 0 auto; padding: 20px; }
@@ -684,7 +682,6 @@ export function renderComparisonPage(slug: string, comparison: ComparisonData): 
       </article>
     </main>
   </div>
-  <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>`;
 }
@@ -758,8 +755,6 @@ export function renderHomepage(): string {
   </script>
   
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <style>
     * { box-sizing: border-box; }
     body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #1a1a2e; margin: 0; padding: 0; }
