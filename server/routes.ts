@@ -667,7 +667,7 @@ ${allPages.map(page => `  <url>
           <li><a href="${baseUrl}/tools/shoes">Running Shoe Database</a> — 280+ shoes with AI insights.</li>
           <li><a href="${baseUrl}/tools/shoe-finder">Shoe Finder</a> — get matched to the right pair.</li>
           <li><a href="${baseUrl}/tools/rotation-planner">Rotation Planner</a> — build a smart shoe rotation.</li>
-          <li><a href="${baseUrl}/runner-score">Runner Score</a> — your running performance index.</li>
+
         </ul>
       </section>
     </article>
