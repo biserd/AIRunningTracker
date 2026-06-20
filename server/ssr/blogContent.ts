@@ -7,6 +7,7 @@ export interface BlogPostContent {
   category: string;
   content: string;
   tableOfContents?: { id: string; title: string }[];
+  faqs?: { question: string; answer: string }[];
 }
 
 export const blogPosts: BlogPostContent[] = [
@@ -56,7 +57,37 @@ export const blogPosts: BlogPostContent[] = [
       
       <h2 id="getting-started">Getting Started</h2>
       <p>AI Agent Coach is available to Premium subscribers. Connect your Strava account, set your goals, and start receiving proactive coaching after your very next run.</p>
-    `
+    `,
+    faqs: [
+      {
+        question: "How accurate is AI coaching compared to a human coach?",
+        answer: "AI Agent Coach analyzes the same data a human coach would—heart rate, pace, cadence, elevation—but processes it instantly and consistently. It excels at pattern recognition across your entire training history, identifying trends a human might miss. However, it can't observe your running form visually or understand external life factors affecting your training."
+      },
+      {
+        question: "Can I use AI Agent Coach alongside a human running coach?",
+        answer: "Absolutely! Many runners use both. AI Agent Coach provides immediate feedback after every run, while your human coach handles big-picture strategy, race planning, and personal motivation. The AI insights can actually help your human coach by providing detailed data summaries."
+      },
+      {
+        question: "What data does AI Agent Coach analyze?",
+        answer: "The AI analyzes all available data from your Strava activities: pace and splits, heart rate zones and trends, cadence, elevation gain, time in zones, effort distribution, and historical patterns. It also considers your stated goals, upcoming races, and training preferences."
+      },
+      {
+        question: "How do I change my coaching preferences?",
+        answer: "You can update your coaching tone, goals, race dates, and available training days anytime in your Coach Settings. Changes take effect immediately for your next synced activity."
+      },
+      {
+        question: "Does AI Agent Coach work for non-running activities?",
+        answer: "Currently, AI Agent Coach is optimized for running activities. It will analyze walks and hikes but provides the most detailed insights for runs. Support for cycling and other activities is on our roadmap."
+      },
+      {
+        question: "Is my training data private and secure?",
+        answer: "Yes. Your data is encrypted in transit and at rest. AI analysis is performed securely using OpenAI's enterprise API with no data retention. We never share or sell your personal training data."
+      },
+      {
+        question: "What if I disagree with the AI's recommendation?",
+        answer: "You're always in control. AI Agent Coach provides recommendations, not mandates. If you disagree, run how you feel is best—the AI will learn from your choices over time and adjust future suggestions based on outcomes."
+      }
+    ]
   },
   {
     slug: "how-to-pick-a-training-plan",
@@ -102,7 +133,25 @@ export const blogPosts: BlogPostContent[] = [
       
       <h2 id="choosing">Choosing Your Plan</h2>
       <p>The best plan is one you can follow consistently. Consider your goals, schedule, and running experience when making your choice. AI-powered plans from RunAnalytics adapt to your needs while providing the structure necessary for improvement.</p>
-    `
+    `,
+    faqs: [
+      {
+        question: "How do I pick the right training plan for my running goals?",
+        answer: "Choose a training plan that matches your current fitness level, target race distance, and available training time. Look for plans that include progressive overload, scheduled recovery weeks, variety in workout types, and personalization based on your running history. Avoid generic one-size-fits-all plans."
+      },
+      {
+        question: "What makes a good training plan for runners?",
+        answer: "A quality training plan includes: progressive weekly mileage increases (no more than 10-15% per week), scheduled recovery weeks every 3-4 weeks, variety of workout types (easy runs, tempo, intervals, long runs), personalized pacing based on your current fitness, and built-in taper period before race day."
+      },
+      {
+        question: "Are AI-generated training plans better than generic plans?",
+        answer: "Yes, AI-generated plans analyze your actual running data to create truly personalized programs. They consider your baseline mileage, typical paces, recent training patterns, and recovery needs. Unlike generic plans, AI plans adapt to your progress and can adjust when you're tired or performing better than expected."
+      },
+      {
+        question: "How long should my training plan be for a marathon?",
+        answer: "Most marathon training plans are 12-20 weeks long, depending on your current fitness level. Beginners typically need 16-20 weeks, while experienced runners may use 12-16 week plans. The key is having enough time to build your long run distance progressively without injury."
+      }
+    ]
   },
   {
     slug: "ai-running-coach-complete-guide-2026",
@@ -441,7 +490,29 @@ export const blogPosts: BlogPostContent[] = [
         <li><strong>Phase explanations:</strong> Every week includes a "Why this week?" note explaining the training intent, so you understand the purpose behind each session</li>
       </ul>
       <p>Whether you're training for your first 50K or pushing toward a 100-mile buckle, an <strong>ultra marathon training plan</strong> built on real periodization science — not just a spreadsheet with increasing mileage — gives you the best chance of success. Start building your personalized plan today with RunAnalytics.</p>
-    `
+    `,
+    faqs: [
+      {
+        question: "How long should an ultra marathon training plan be?",
+        answer: "For a 100-mile race, plan for 24-30 weeks of structured training. This includes base building, progressive build phases, race-specific training with back-to-back long runs, a peak phase, and a 4-5 week taper."
+      },
+      {
+        question: "What weekly mileage do I need for 100-mile training?",
+        answer: "Build to a peak of 120-160 km (75-100 miles) per week. Start with a solid base of at least 70 km per week before beginning your ultra marathon training plan."
+      },
+      {
+        question: "What are back-to-back long runs and why are they important?",
+        answer: "Back-to-back long runs involve running long on Saturday (4-7 hours) followed by another long effort on Sunday (60-70% of Saturday). They teach your body to perform on pre-fatigued legs, simulating race conditions."
+      },
+      {
+        question: "How should I taper for a 100-mile race?",
+        answer: "A 100-mile taper should be 4-5 weeks, reducing volume by approximately 20% each week while maintaining some moderate intensity. This is significantly longer than a marathon taper."
+      },
+      {
+        question: "Can AI help build an ultra marathon training plan?",
+        answer: "Yes. AI-powered platforms like RunAnalytics create personalized ultra marathon training plans with true periodization, time-based long runs, back-to-back scheduling, vertical gain targets, and fueling practice sessions that adapt based on your training progress."
+      }
+    ]
   }
 ];
 

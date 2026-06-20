@@ -151,11 +151,39 @@ export function renderBlogPost(slug: string): string | null {
       </nav>`
     : '';
 
+  // Emit a second FAQPage JSON-LD block when the post defines FAQs.
+  // This gives crawlers the same structured Q&A signals the React page exposes.
+  const faqSchemaHtml = post.faqs?.length
+    ? `<script type="application/ld+json">
+  ${JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": post.faqs.map(f => ({
+      "@type": "Question",
+      "name": f.question,
+      "acceptedAnswer": { "@type": "Answer", "text": f.answer }
+    }))
+  }, null, 2)}
+  </script>`
+    : '';
+
+  const faqHtml = post.faqs?.length
+    ? `<section class="ssr-faq">
+        <h2>Frequently Asked Questions</h2>
+        ${post.faqs.map(f => `
+        <details>
+          <summary><strong>${escapeHtml(f.question)}</strong></summary>
+          <p>${escapeHtml(f.answer)}</p>
+        </details>`).join('')}
+      </section>`
+    : '';
+
   // Pick relevant tool/shoe links based on the post's category & title so each
   // post sends a unique mix of authority signals to the right destinations.
   const relatedHtml = generateRelatedToolsForBlog(post.title, post.category);
 
   return `${head}
+${faqSchemaHtml}
 <body>
   <div id="root">
     <header class="ssr-header">
@@ -167,6 +195,8 @@ export function renderBlogPost(slug: string): string | null {
       <article class="ssr-content">
         ${tocHtml}
         ${post.content}
+
+        ${faqHtml}
 
         ${relatedHtml}
 
@@ -1019,3 +1049,549 @@ ${faqSchema}
 }
 
 export { getAllToolSlugs } from './toolsContent';
+
+// ─── Per-route SSR renderers ─────────────────────────────────────────────────
+// Each function produces crawler-ready HTML that mirrors the real React page
+// content. Regular users always get the SPA (the route handler calls next()).
+
+export function renderFaqPage(): string {
+  const url = '/faq';
+  const meta: PageMeta = {
+    title: "FAQ | Frequently Asked Questions | RunAnalytics",
+    description: "Get answers to common questions about RunAnalytics, Strava integration, AI coaching, subscriptions, and how to get the most from your training data.",
+    keywords: "FAQ, frequently asked questions, help, support, running analytics help"
+  };
+  const faqItems = [
+    { q: "What is RunAnalytics?", a: "RunAnalytics is an AI-powered running analytics platform that integrates with Strava to provide personalized insights, performance tracking, and training recommendations. We use advanced machine learning algorithms to analyze your running data and help you improve your performance." },
+    { q: "Do I need a Strava account?", a: "While you can create an account without Strava, connecting your Strava account unlocks the full potential of our platform. Strava integration provides access to your historical running data, which enables more accurate AI insights and personalized recommendations." },
+    { q: "Is RunAnalytics free to use?", a: "RunAnalytics offers a 14-day free trial with full access to all Premium features — AI coaching, race predictions, training plans, and advanced analytics. After the trial, Premium is $7.99/month or $79.99/year. You can cancel anytime before the trial ends and you won't be charged." },
+    { q: "What kind of insights do you provide?", a: "Our AI analyzes your running data to provide insights on performance trends, pace analysis, training load, recovery recommendations, race predictions, injury risk assessment, and personalized training plans. Each insight is tailored to your specific running patterns and goals." },
+    { q: "How accurate are the race time predictions?", a: "Our race time predictions use advanced machine learning models trained on thousands of runner profiles and performance data. While individual results may vary, our predictions are typically accurate within 2-5% for most runners with consistent training data." },
+    { q: "What is the Runner Score?", a: "The Runner Score is our comprehensive fitness metric that evaluates multiple aspects of your running performance including endurance, speed, consistency, and efficiency. It's displayed on a radar chart with scores from 0-100 across different categories." },
+    { q: "What do CTL, ATL, and TSB mean?", a: "CTL (Chronic Training Load) is your Fitness — a 42-day rolling average showing your long-term training buildup. ATL (Acute Training Load) is your Fatigue — a 7-day rolling average showing your recent training stress. TSB (Training Stress Balance) is your Form — calculated as CTL minus ATL, showing your race readiness." },
+    { q: "How do you calculate VO2 Max?", a: "We use Jack Daniels' formula combined with your recent running performance data to estimate VO2 Max. This calculation considers your best recent race times or time trial performances across different distances to provide an accurate fitness assessment." },
+    { q: "What is AI Agent Coach?", a: "AI Agent Coach is a Premium feature that proactively analyzes every run after it syncs from Strava. Instead of waiting for you to check dashboards, it delivers personalized coaching recaps, observations, and next-step recommendations automatically." },
+    { q: "How is AI Agent Coach different from the AI Coach Chat?", a: "AI Coach Chat is reactive — you ask questions and get answers. AI Agent Coach is proactive — it analyzes your runs automatically and delivers coaching insights without you asking. Think of it as having a coach who reviews every run and leaves you notes." },
+    { q: "Is my running data secure?", a: "Absolutely. We use enterprise-grade security measures including data encryption, secure authentication, and trusted cloud infrastructure. Your data is never shared with third parties without your explicit consent." },
+    { q: "What happens if I delete my account?", a: "When you delete your account, all your personal data, analytics, and insights are permanently removed from our systems within 30 days. Your original Strava data remains unaffected in your Strava account." },
+  ];
+  const faqSchema = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": faqItems.map(f => ({
+      "@type": "Question",
+      "name": f.q,
+      "acceptedAnswer": { "@type": "Answer", "text": f.a }
+    }))
+  }, null, 2);
+  const webPageSchema = generateStructuredData(meta, url, 'WebPage');
+  const head = generateHtmlHead(meta, url, webPageSchema);
+  return `${head}
+<script type="application/ld+json">
+${faqSchema}
+</script>
+<body>
+  <div id="root">
+    <header class="ssr-header">
+      <h1>Frequently Asked Questions</h1>
+      <p style="opacity:0.9;margin-top:10px;">Find answers to common questions about RunAnalytics.</p>
+    </header>
+    <main class="ssr-container">
+      <article class="ssr-content">
+        ${faqItems.map(f => `<details>
+          <summary><strong>${escapeHtml(f.q)}</strong></summary>
+          <p>${escapeHtml(f.a)}</p>
+        </details>`).join('\n        ')}
+        <div class="ssr-cta">
+          <h3>Still have questions?</h3>
+          <p>Our support team is here to help.</p>
+          <a href="/contact">Contact Support &rarr;</a>
+        </div>
+      </article>
+    </main>
+  </div>
+</body>
+</html>`;
+}
+
+export function renderBlogIndex(): string {
+  const url = '/blog';
+  const meta: PageMeta = {
+    title: "Running Blog | Training Tips & AI Coaching Insights | RunAnalytics",
+    description: "Expert running advice, training tips, and AI coaching insights. Learn how to improve your pace, pick training plans, and run smarter.",
+    keywords: "running blog, training tips, running advice, AI running coach"
+  };
+  const posts = [
+    { slug: "ultra-marathon-training-plan-100-miler-guide", title: "Ultra Marathon Training Plan: The Complete Guide to Training for a 100 Miler", description: "Everything you need to know about creating an ultra marathon training plan for your first 100 mile race. Covers periodization, back-to-back long runs, fueling, tapering, and race day execution.", date: "February 11, 2026", category: "Ultra Running", readTime: "20 min read" },
+    { slug: "ai-agent-coach-proactive-coaching", title: "AI Agent Coach: How Proactive AI Coaching Transforms Your Running", description: "Discover how AI Agent Coach analyzes every run and delivers personalized coaching recaps, next-step recommendations, and training insights without you asking.", date: "January 18, 2026", category: "Premium Features", readTime: "10 min read" },
+    { slug: "how-to-pick-a-training-plan", title: "How to Pick a Training Plan: Complete Guide", description: "Learn how to choose the right training plan for your running goals. Discover why AI-personalized plans outperform generic schedules.", date: "January 12, 2026", category: "Training Plans", readTime: "15 min read" },
+    { slug: "ai-running-coach-complete-guide-2026", title: "AI Running Coach: Complete Guide 2026", description: "Everything you need to know about AI-powered running coaches, how they work, and how to use them to improve your training.", date: "January 15, 2026", category: "AI & Technology", readTime: "8 min read" },
+    { slug: "best-strava-analytics-tools-2026", title: "Best Strava Analytics Tools 2026", description: "Comprehensive comparison of the top Strava analytics platforms to help you choose the right tool for your training needs.", date: "January 15, 2026", category: "Tools & Reviews", readTime: "10 min read" },
+    { slug: "how-to-improve-running-pace", title: "How to Improve Running Pace: Complete Guide", description: "Proven strategies and training methods to run faster, backed by science and tested by elite coaches.", date: "January 15, 2026", category: "Training Tips", readTime: "12 min read" },
+  ];
+  const listSchema = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "RunAnalytics Running Blog",
+    "description": meta.description,
+    "url": `${BASE_URL}${url}`,
+    "itemListElement": posts.map((p, i) => ({
+      "@type": "ListItem",
+      "position": i + 1,
+      "url": `${BASE_URL}/blog/${p.slug}`,
+      "name": p.title
+    }))
+  }, null, 2);
+  const webPageSchema = generateStructuredData(meta, url, 'WebPage');
+  const head = generateHtmlHead(meta, url, webPageSchema);
+  return `${head}
+<script type="application/ld+json">
+${listSchema}
+</script>
+<body>
+  <div id="root">
+    <header class="ssr-header">
+      <h1>Running Blog</h1>
+      <p style="opacity:0.9;margin-top:10px;">Training tips, AI coaching insights, and running science — from the RunAnalytics team.</p>
+    </header>
+    <main class="ssr-container">
+      <article class="ssr-content">
+        ${posts.map(p => `<section style="margin-bottom:2rem;padding-bottom:2rem;border-bottom:1px solid #eee;">
+          <span style="font-size:0.8rem;color:#fc4c02;font-weight:600;text-transform:uppercase;">${escapeHtml(p.category)}</span>
+          <h2 style="margin:0.5rem 0;"><a href="/blog/${p.slug}" style="color:#1a1a2e;text-decoration:none;">${escapeHtml(p.title)}</a></h2>
+          <p style="color:#555;margin:0.5rem 0;">${escapeHtml(p.description)}</p>
+          <small style="color:#888;">${escapeHtml(p.date)} &bull; ${escapeHtml(p.readTime)}</small>
+        </section>`).join('\n        ')}
+        <div class="ssr-cta">
+          <h3>Get AI-powered running insights</h3>
+          <p>Connect your Strava account and start training smarter.</p>
+          <a href="/auth">Get Started Free &rarr;</a>
+        </div>
+      </article>
+    </main>
+  </div>
+</body>
+</html>`;
+}
+
+export function renderPricingPage(): string {
+  const url = '/pricing';
+  const meta: PageMeta = {
+    title: "Pricing | Free & Premium Plans | RunAnalytics",
+    description: "Start free with basic analytics. Upgrade to Premium for AI insights, training plans, Coach Chat, and unlimited features.",
+    keywords: "running app pricing, strava analytics cost, AI coach pricing"
+  };
+  const webPageSchema = generateStructuredData(meta, url, 'WebPage');
+  const head = generateHtmlHead(meta, url, webPageSchema);
+  return `${head}
+<body>
+  <div id="root">
+    <header class="ssr-header">
+      <h1>Simple, Transparent Pricing</h1>
+      <p style="opacity:0.9;margin-top:10px;">Start free. Upgrade when you're ready for AI-powered coaching.</p>
+    </header>
+    <main class="ssr-container">
+      <article class="ssr-content">
+        <section>
+          <h2>Free Plan</h2>
+          <p>Get started with no credit card required. Free includes:</p>
+          <ul>
+            <li>Strava integration &amp; activity sync</li>
+            <li>Runner Score calculation</li>
+            <li>Basic running analytics</li>
+            <li>Free calculator tools (race predictor, marathon fueling, and more)</li>
+            <li>Route maps with key moments</li>
+          </ul>
+        </section>
+        <section>
+          <h2>Premium — $7.99/month or $79.99/year</h2>
+          <p>Everything in Free, plus the full AI coaching suite:</p>
+          <h3>Activity Analysis</h3>
+          <ul>
+            <li>Full AI Coach verdict (grade + in-depth summary)</li>
+            <li>Performance metrics (drift, pacing, baseline comparisons)</li>
+            <li>Interactive run timeline</li>
+            <li>Detailed splits analysis</li>
+            <li>Heart rate, cadence &amp; power charts</li>
+            <li>Activity comparison tool</li>
+            <li>Ask AI Coach about any run</li>
+          </ul>
+          <h3>Training &amp; Coaching</h3>
+          <ul>
+            <li>AI-generated training plans (5K to 100-mile ultramarathon)</li>
+            <li>Race predictions for all standard distances</li>
+            <li>Injury risk analysis</li>
+            <li>Fitness / fatigue / form charts (CTL, ATL, TSB)</li>
+            <li>AI Coach Chat — conversational coaching across your training</li>
+            <li>AI Agent Coach — proactive post-run recaps sent automatically</li>
+          </ul>
+          <h3>Benchmarking &amp; Comparisons</h3>
+          <ul>
+            <li>Personal benchmarks (similar-run matching)</li>
+            <li>Same route trends (performance over time on your favourite routes)</li>
+            <li>Compare runs (overlay two runs, split-by-split diffs)</li>
+            <li>Form stability analysis (cadence and power stability over time)</li>
+          </ul>
+        </section>
+        <section>
+          <h2>Frequently Asked Questions about Pricing</h2>
+          <details>
+            <summary><strong>Is there a free trial?</strong></summary>
+            <p>Yes — all new accounts receive a 14-day Premium trial with no credit card required. You get full access to every feature. Cancel before the trial ends and you won't be charged.</p>
+          </details>
+          <details>
+            <summary><strong>Can I cancel anytime?</strong></summary>
+            <p>Absolutely. Cancel your subscription at any time from your billing settings. You keep access until the end of your billing period.</p>
+          </details>
+          <details>
+            <summary><strong>Is there an annual discount?</strong></summary>
+            <p>Yes. The annual plan is $79.99/year — equivalent to $6.67/month, saving you about 17% compared to the monthly plan.</p>
+          </details>
+        </section>
+        <div class="ssr-cta">
+          <h3>Start your free 14-day trial</h3>
+          <p>No credit card required. Full Premium access from day one.</p>
+          <a href="/auth">Get Started Free &rarr;</a>
+        </div>
+      </article>
+    </main>
+  </div>
+</body>
+</html>`;
+}
+
+export function renderFeaturesPage(): string {
+  const url = '/features';
+  const meta: PageMeta = {
+    title: "Features | AI Analytics & Coaching | RunAnalytics",
+    description: "Explore RunAnalytics features: Runner Score, AI insights, race predictions, training plans, shoe tracking, and proactive AI coaching.",
+    keywords: "running app features, AI running features, Strava analytics features"
+  };
+  const webPageSchema = generateStructuredData(meta, url, 'WebPage');
+  const head = generateHtmlHead(meta, url, webPageSchema);
+  return `${head}
+<body>
+  <div id="root">
+    <header class="ssr-header">
+      <h1>Powerful Features for Serious Runners</h1>
+      <p style="opacity:0.9;margin-top:10px;">Discover how RunAnalytics transforms your Strava data into actionable insights with AI-powered analytics.</p>
+    </header>
+    <main class="ssr-container">
+      <article class="ssr-content">
+        <section>
+          <h2>AI-Powered Insights</h2>
+          <p>Get personalized performance analysis powered by advanced AI that understands your unique running patterns. Every activity is automatically graded and summarized by an AI coach.</p>
+          <ul>
+            <li><strong>Performance Analysis:</strong> Deep dive into pace, heart rate, cadence, and efficiency trends</li>
+            <li><strong>Race Predictions:</strong> AI-powered finish time predictions for 5K, 10K, half, and full marathon</li>
+            <li><strong>Injury Prevention:</strong> Early warning signals for potential injury risks based on training load</li>
+            <li><strong>Effort Score:</strong> Understand how hard each run truly was relative to your fitness</li>
+          </ul>
+        </section>
+        <section>
+          <h2>AI Agent Coach — Proactive Coaching</h2>
+          <p>AI Agent Coach proactively analyzes every run after it syncs from Strava and sends you personalized coaching recaps — without you having to ask. Think of it as a dedicated running coach who reviews every workout and leaves you detailed notes.</p>
+          <ul>
+            <li>Post-activity coaching recaps delivered automatically</li>
+            <li>Personalized next-step recommendations (rest, easy run, workout, long run)</li>
+            <li>Training plan integration and goal tracking</li>
+            <li>Customizable coaching tone (gentle, balanced, or direct)</li>
+          </ul>
+        </section>
+        <section>
+          <h2>AI Coach Chat</h2>
+          <p>Have a real conversation with an AI coach that knows your full training history. Ask anything — from "why do I feel tired?" to "am I ready for my upcoming race?" — and get contextual, data-driven answers.</p>
+        </section>
+        <section>
+          <h2>Personalized Training Plans</h2>
+          <p>Get AI-generated training plans built specifically for your fitness level, race goals, and schedule. Plans cover every distance from 5K to 100-mile ultramarathons and adapt as your training progresses.</p>
+          <ul>
+            <li>True periodization with base, build, peak, and taper phases</li>
+            <li>Adaptive plans that adjust for missed workouts or life events</li>
+            <li>Integration with recovery and fatigue metrics (CTL/ATL/TSB)</li>
+            <li>Personalized target paces for every workout type</li>
+          </ul>
+        </section>
+        <section>
+          <h2>Runner Score</h2>
+          <p>Your Runner Score is a comprehensive performance index that combines endurance, speed, consistency, and efficiency into a single number. Track your score over time to see how your fitness evolves.</p>
+        </section>
+        <section>
+          <h2>Running Shoe Hub</h2>
+          <p>Browse and compare 280+ running shoes with detailed specs, AI-generated insights, and personalized recommendations. Use the shoe finder, rotation planner, and side-by-side comparison tools to make smarter gear choices.</p>
+        </section>
+        <section>
+          <h2>Free Running Tools</h2>
+          <ul>
+            <li><a href="/tools/race-predictor">Race Time Predictor</a> — predict 5K to marathon finish times from a recent effort</li>
+            <li><a href="/tools/marathon-fueling">Marathon Fueling Planner</a> — calculate gel timing, carb targets, and sodium needs</li>
+            <li><a href="/tools/aerobic-decoupling-calculator">Aerobic Decoupling Calculator</a> — measure aerobic efficiency on long runs</li>
+            <li><a href="/tools/training-split-analyzer">Training Split Analyzer</a> — analyze your easy/hard intensity balance</li>
+            <li><a href="/tools/cadence-analyzer">Cadence Analyzer</a> — detect form fade and stride instability</li>
+          </ul>
+        </section>
+        <div class="ssr-cta">
+          <h3>Try all features free for 14 days</h3>
+          <p>Connect your Strava account and start training smarter. No credit card required.</p>
+          <a href="/auth">Get Started Free &rarr;</a>
+        </div>
+      </article>
+    </main>
+  </div>
+</body>
+</html>`;
+}
+
+export function renderAboutPage(): string {
+  const url = '/about';
+  const meta: PageMeta = {
+    title: "About RunAnalytics | AI-Powered Running Analytics",
+    description: "Learn about RunAnalytics - the AI-powered platform helping runners improve with personalized insights, training analytics, and smart coaching.",
+    keywords: "about RunAnalytics, running analytics company, AI running platform"
+  };
+  const orgSchema = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "RunAnalytics",
+    "url": BASE_URL,
+    "description": meta.description,
+    "logo": `${BASE_URL}/favicon.svg`
+  }, null, 2);
+  const webPageSchema = generateStructuredData(meta, url, 'WebPage');
+  const head = generateHtmlHead(meta, url, webPageSchema);
+  return `${head}
+<script type="application/ld+json">
+${orgSchema}
+</script>
+<body>
+  <div id="root">
+    <header class="ssr-header">
+      <h1>About RunAnalytics</h1>
+      <p style="opacity:0.9;margin-top:10px;">AI-powered running analytics for Strava athletes.</p>
+    </header>
+    <main class="ssr-container">
+      <article class="ssr-content">
+        <section>
+          <h2>Our Mission</h2>
+          <p>RunAnalytics exists to make elite-level running coaching accessible to every runner. We believe that the insights previously available only to professional athletes — detailed performance analysis, personalized training plans, injury risk signals, and proactive coaching — should be available to anyone who laces up their shoes.</p>
+        </section>
+        <section>
+          <h2>What We Do</h2>
+          <p>RunAnalytics is an AI-powered running analytics platform that connects to your Strava account to deliver personalized insights, AI-generated training plans, race predictions, and proactive coaching. We analyze every run you complete and turn raw GPS and heart rate data into actionable guidance you can apply to your next workout.</p>
+          <ul>
+            <li>AI Coach Chat — ask questions about your training any time</li>
+            <li>AI Agent Coach — proactive post-run coaching recaps sent automatically</li>
+            <li>Race time predictions for 5K to ultramarathon distances</li>
+            <li>Personalized training plans with true periodization</li>
+            <li>Runner Score — a comprehensive fitness performance index</li>
+            <li>Running Shoe Hub — compare 280+ shoes with AI insights</li>
+            <li>Free tools: race predictor, marathon fueling planner, aerobic decoupling calculator, and more</li>
+          </ul>
+        </section>
+        <section>
+          <h2>Why Choose RunAnalytics</h2>
+          <p>Unlike generic fitness apps, RunAnalytics is built specifically for runners. Every feature — from the aerobic decoupling calculator to the shoe rotation planner — is designed around the real needs of runners training for events from parkrun 5Ks to 100-mile ultramarathons.</p>
+          <p>We integrate deeply with Strava so you never have to log your workouts manually. Our AI processes your full training history to give you advice that is always grounded in your actual data, not generic templates.</p>
+        </section>
+        <div class="ssr-cta">
+          <h3>Start your free trial</h3>
+          <p>Connect your Strava account and experience AI-powered coaching for yourself.</p>
+          <a href="/auth">Get Started Free &rarr;</a>
+        </div>
+      </article>
+    </main>
+  </div>
+</body>
+</html>`;
+}
+
+export function renderDevelopersPage(): string {
+  const url = '/developers';
+  const meta: PageMeta = {
+    title: "Developer Portal | RunAnalytics API",
+    description: "Build with RunAnalytics. Access our API documentation, integration guides, and developer resources for running analytics.",
+    keywords: "API, developers, integration, running API, developer portal"
+  };
+  const webPageSchema = generateStructuredData(meta, url, 'WebPage');
+  const head = generateHtmlHead(meta, url, webPageSchema);
+  return `${head}
+<body>
+  <div id="root">
+    <header class="ssr-header">
+      <h1>RunAnalytics Developer Portal</h1>
+      <p style="opacity:0.9;margin-top:10px;">Build integrations with the RunAnalytics API. Access running activities, AI insights, training plans, and goals programmatically.</p>
+    </header>
+    <main class="ssr-container">
+      <article class="ssr-content">
+        <section>
+          <h2>What You Can Build</h2>
+          <ul>
+            <li>Custom dashboards that display your RunAnalytics data</li>
+            <li>Integrations with other fitness platforms and tools</li>
+            <li>Automated training log analysis workflows</li>
+            <li>Personal apps that query your running activities, AI insights, and goals</li>
+          </ul>
+        </section>
+        <section>
+          <h2>API Features</h2>
+          <ul>
+            <li><strong>Secure Authentication:</strong> API key-based access with per-key permissions</li>
+            <li><strong>Fast &amp; Reliable:</strong> REST API with consistent response shapes and pagination</li>
+            <li><strong>Easy Integration:</strong> Standard JSON responses compatible with any programming language</li>
+          </ul>
+        </section>
+        <section>
+          <h2>Getting Started</h2>
+          <p>Generate an API key from your RunAnalytics account settings, then make authenticated requests to the REST API endpoints. Full documentation is available on the <a href="/developers/api">API documentation page</a>.</p>
+        </section>
+        <div class="ssr-cta">
+          <h3>Ready to build?</h3>
+          <p>Create a free account to get your API key and start integrating.</p>
+          <a href="/auth">Get Started &rarr;</a>
+        </div>
+      </article>
+    </main>
+  </div>
+</body>
+</html>`;
+}
+
+export function renderDevelopersApiPage(): string {
+  const url = '/developers/api';
+  const meta: PageMeta = {
+    title: "API Documentation | RunAnalytics Developers",
+    description: "Complete API documentation for RunAnalytics. Learn how to integrate running analytics, access activity data, and build custom solutions.",
+    keywords: "API documentation, REST API, running data API, developer docs"
+  };
+  const webPageSchema = generateStructuredData(meta, url, 'WebPage');
+  const head = generateHtmlHead(meta, url, webPageSchema);
+  return `${head}
+<body>
+  <div id="root">
+    <header class="ssr-header">
+      <h1>RunAnalytics API Documentation</h1>
+      <p style="opacity:0.9;margin-top:10px;">Complete reference for the RunAnalytics REST API. Integrate running analytics into your own tools and workflows.</p>
+    </header>
+    <main class="ssr-container">
+      <article class="ssr-content">
+        <section>
+          <h2>Authentication</h2>
+          <p>All API requests require an API key passed in the <code>Authorization</code> header:</p>
+          <pre style="background:#f4f4f4;padding:12px;border-radius:4px;overflow-x:auto;"><code>Authorization: Bearer YOUR_API_KEY</code></pre>
+          <p>Generate your API key from your RunAnalytics account settings page.</p>
+        </section>
+        <section>
+          <h2>Base URL</h2>
+          <pre style="background:#f4f4f4;padding:12px;border-radius:4px;overflow-x:auto;"><code>https://aitracker.run/api</code></pre>
+        </section>
+        <section>
+          <h2>Key Endpoints</h2>
+          <h3>Activities</h3>
+          <ul>
+            <li><code>GET /api/activities</code> — List your synced running activities with pagination</li>
+            <li><code>GET /api/activities/:id</code> — Get detailed data for a specific activity</li>
+          </ul>
+          <h3>AI Insights</h3>
+          <ul>
+            <li><code>GET /api/insights</code> — Get AI-generated insights for your recent activities</li>
+          </ul>
+          <h3>Training Plans</h3>
+          <ul>
+            <li><code>GET /api/training-plans</code> — Get your current AI-generated training plan</li>
+          </ul>
+          <h3>Runner Profile</h3>
+          <ul>
+            <li><code>GET /api/runner-score</code> — Get your current Runner Score and component metrics</li>
+          </ul>
+        </section>
+        <section>
+          <h2>Response Format</h2>
+          <p>All responses are JSON. Successful responses include a <code>data</code> field. Errors include a <code>message</code> field and an appropriate HTTP status code.</p>
+        </section>
+        <div class="ssr-cta">
+          <h3>Get your API key</h3>
+          <p>Create a free account to start building with the RunAnalytics API.</p>
+          <a href="/auth">Get Started &rarr;</a>
+        </div>
+      </article>
+    </main>
+  </div>
+</body>
+</html>`;
+}
+
+export function renderToolsHubPage(): string {
+  const url = '/tools';
+  const meta: PageMeta = {
+    title: "Free Running Tools & Calculators | RunAnalytics",
+    description: "Free running calculators: race predictor, marathon fueling, aerobic decoupling, cadence analysis & more. No signup required.",
+    keywords: "running tools, running calculators, free running apps, marathon calculator, running analysis"
+  };
+  const listSchema = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Free Running Tools — RunAnalytics",
+    "description": meta.description,
+    "url": `${BASE_URL}${url}`,
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "url": `${BASE_URL}/tools/race-predictor`, "name": "Race Time Predictor" },
+      { "@type": "ListItem", "position": 2, "url": `${BASE_URL}/tools/marathon-fueling`, "name": "Marathon Fueling Planner" },
+      { "@type": "ListItem", "position": 3, "url": `${BASE_URL}/tools/aerobic-decoupling-calculator`, "name": "Aerobic Decoupling Calculator" },
+      { "@type": "ListItem", "position": 4, "url": `${BASE_URL}/tools/training-split-analyzer`, "name": "Training Split Analyzer" },
+      { "@type": "ListItem", "position": 5, "url": `${BASE_URL}/tools/cadence-analyzer`, "name": "Running Cadence Analyzer" },
+      { "@type": "ListItem", "position": 6, "url": `${BASE_URL}/tools/heatmap`, "name": "Running Heatmap" },
+      { "@type": "ListItem", "position": 7, "url": `${BASE_URL}/tools/shoes`, "name": "Running Shoe Database" },
+      { "@type": "ListItem", "position": 8, "url": `${BASE_URL}/tools/shoe-finder`, "name": "Running Shoe Finder" },
+      { "@type": "ListItem", "position": 9, "url": `${BASE_URL}/tools/rotation-planner`, "name": "Shoe Rotation Planner" },
+    ]
+  }, null, 2);
+  const webPageSchema = generateStructuredData(meta, url, 'WebPage');
+  const head = generateHtmlHead(meta, url, webPageSchema);
+  return `${head}
+<script type="application/ld+json">
+${listSchema}
+</script>
+<body>
+  <div id="root">
+    <header class="ssr-header">
+      <h1>Free Running Tools &amp; Calculators</h1>
+      <p style="opacity:0.9;margin-top:10px;">No signup required. Free tools to help you train smarter and race faster.</p>
+    </header>
+    <main class="ssr-container">
+      <article class="ssr-content">
+        <section>
+          <h2>Performance Calculators</h2>
+          <ul>
+            <li><a href="/tools/race-predictor"><strong>Race Time Predictor</strong></a> — predict your 5K, 10K, half marathon, and marathon finish times from a recent effort using the Riegel formula. Import your Strava data for personalized predictions.</li>
+            <li><a href="/tools/marathon-fueling"><strong>Marathon Fueling Planner</strong></a> — calculate your race-day nutrition plan with exact gel timing, carb targets, and sodium needs. Build a personalized fueling strategy in minutes.</li>
+            <li><a href="/tools/aerobic-decoupling-calculator"><strong>Aerobic Decoupling Calculator</strong></a> — measure aerobic efficiency on long runs using the Pa:HR ratio. Identify cardiac drift and set better easy-run targets.</li>
+          </ul>
+        </section>
+        <section>
+          <h2>Training Analysis</h2>
+          <ul>
+            <li><a href="/tools/training-split-analyzer"><strong>Training Split Analyzer</strong></a> — analyze your intensity distribution. See whether you're training polarized, pyramidal, or threshold-heavy and how it compares to elite runners.</li>
+            <li><a href="/tools/cadence-analyzer"><strong>Running Cadence Analyzer</strong></a> — detect form fade with cadence and stride analysis. Get your Form Stability Score and identify late-run breakdown patterns.</li>
+            <li><a href="/tools/heatmap"><strong>Running Heatmap</strong></a> — visualize your most-run routes on an interactive map. Discover training patterns and favourite paths from all your Strava activities.</li>
+          </ul>
+        </section>
+        <section>
+          <h2>Running Shoe Hub</h2>
+          <ul>
+            <li><a href="/tools/shoes"><strong>Running Shoe Database</strong></a> — browse and compare 280+ running shoes with detailed specs, AI-generated insights, and user reviews. Includes 60+ confirmed 2026 releases.</li>
+            <li><a href="/tools/shoe-finder"><strong>Running Shoe Finder</strong></a> — answer a few questions about your running style and get AI-matched shoe recommendations from our full database.</li>
+            <li><a href="/tools/rotation-planner"><strong>Shoe Rotation Planner</strong></a> — build a smart multi-shoe rotation optimized for your training volume, race goals, and surface preferences.</li>
+            <li><a href="/tools/shoes/compare"><strong>Shoe Comparison Tool</strong></a> — compare any two running shoes side-by-side with specs, pros/cons, and an AI verdict.</li>
+          </ul>
+        </section>
+        <div class="ssr-cta">
+          <h3>Connect Strava for personalized insights</h3>
+          <p>All tools work without an account, but connecting Strava unlocks your personal data for more accurate analysis.</p>
+          <a href="/auth">Get Started Free &rarr;</a>
+        </div>
+      </article>
+    </main>
+  </div>
+</body>
+</html>`;
+}

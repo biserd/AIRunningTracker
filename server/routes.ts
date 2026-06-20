@@ -34,7 +34,7 @@ import { resolvePlan } from "./webhookHandlers";
 import { db } from "./db";
 import { sql, eq, isNull } from "drizzle-orm";
 import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getActivityHistoryLimit, getFreeActivityLimit, RATE_LIMITS, canSyncFromStrava, getInitialSyncCap, isPaidPlan } from "./rateLimits";
-import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage, renderToolPage, getAllToolSlugs } from "./ssr/renderer";
+import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage, renderToolPage, getAllToolSlugs, renderFaqPage, renderBlogIndex, renderPricingPage, renderFeaturesPage, renderAboutPage, renderDevelopersPage, renderDevelopersApiPage, renderToolsHubPage } from "./ssr/renderer";
 import { getAllBlogPosts } from "./ssr/blogContent";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 
@@ -749,7 +749,22 @@ ${allPages.map(page => `  <url>
         console.log(`[SEO] Serving pre-rendered HTML for crawler on ${route}: ${userAgent.substring(0, 50)}`);
         res.setHeader('Content-Type', 'text/html');
         res.setHeader('X-Robots-Tag', 'index, follow');
-        res.send(generateSEOHtml(meta, route));
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+
+        // Route-specific renderers return real page content; fall back to the
+        // generic template for utility pages (contact, privacy, terms, etc.).
+        let html: string | null = null;
+        switch (route) {
+          case '/faq':            html = renderFaqPage(); break;
+          case '/blog':           html = renderBlogIndex(); break;
+          case '/pricing':        html = renderPricingPage(); break;
+          case '/features':       html = renderFeaturesPage(); break;
+          case '/about':          html = renderAboutPage(); break;
+          case '/tools':          html = renderToolsHubPage(); break;
+          case '/developers':     html = renderDevelopersPage(); break;
+          case '/developers/api': html = renderDevelopersApiPage(); break;
+        }
+        res.send(html ?? generateSEOHtml(meta, route));
       } else {
         // Let Vite/static serving handle regular users
         next();
