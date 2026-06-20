@@ -406,10 +406,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Crawler detection helper
   const isCrawler = (userAgent: string): boolean => {
     const crawlerPatterns = [
-      /googlebot/i, /bingbot/i, /yandex/i, /baiduspider/i, 
-      /duckduckbot/i, /slurp/i, /facebookexternalhit/i, 
-      /twitterbot/i, /linkedinbot/i, /applebot/i,
-      /developers\.google\.com/i, /google-inspectiontool/i
+      // Traditional search engines
+      /googlebot/i, /bingbot/i, /yandex/i, /baiduspider/i,
+      /duckduckbot/i, /slurp/i, /applebot/i,
+      /developers\.google\.com/i, /google-inspectiontool/i,
+      // Social / link-preview bots
+      /facebookexternalhit/i, /twitterbot/i, /linkedinbot/i, /pinterest/i,
+      // SEO tools
+      /semrush/i, /ahrefsbot/i, /mj12bot/i, /dotbot/i,
+      /petalbot/i, /rogerbot/i, /dataforseo/i,
+      // AI crawlers (GEO — Generative Engine Optimization)
+      /GPTBot/i, /ClaudeBot/i, /PerplexityBot/i, /Applebot-Extended/i,
+      /anthropic-ai/i, /cohere-ai/i, /meta-externalagent/i,
     ];
     return crawlerPatterns.some(pattern => pattern.test(userAgent));
   };
@@ -694,8 +702,8 @@ ${allPages.map(page => `  <url>
   app.get("/", (req: any, res, next) => {
     const userAgent = req.get('user-agent') || '';
     
-    // Only serve SSG to search engine crawlers for SEO benefits
-    const isCrawlerRequest = /googlebot|bingbot|yandex|baiduspider|duckduckbot|slurp|facebookexternalhit|twitterbot|linkedinbot|pinterest|semrush|ahrefsbot|mj12bot|dotbot|petalbot|rogerbot|dataforseo/i.test(userAgent);
+    // Only serve SSG to crawlers (search engines + AI bots) for SEO/GEO benefits
+    const isCrawlerRequest = isCrawler(userAgent);
     
     if (isCrawlerRequest) {
       try {
@@ -773,10 +781,9 @@ ${allPages.map(page => `  <url>
   // SSG for blog posts - serves to crawlers only for SEO, regular users get SPA
   app.get("/blog/:slug", (req: any, res, next) => {
     const userAgent = req.get('user-agent') || '';
-    const isCrawlerRequest = /googlebot|bingbot|yandex|baiduspider|duckduckbot|slurp|facebookexternalhit|twitterbot|linkedinbot|pinterest|semrush|ahrefsbot|mj12bot|dotbot|petalbot|rogerbot|dataforseo/i.test(userAgent);
-    
-    // Only serve SSG to crawlers - regular users get the rich SPA
-    if (!isCrawlerRequest) {
+
+    // Only serve SSG to crawlers (search engines + AI bots) — regular users get the rich SPA
+    if (!isCrawler(userAgent)) {
       next();
       return;
     }
@@ -825,10 +832,9 @@ ${allPages.map(page => `  <url>
   Object.entries(toolRouteMap).forEach(([routeSlug, contentSlug]) => {
     app.get(`/tools/${routeSlug}`, (req: any, res, next) => {
       const userAgent = req.get('user-agent') || '';
-      const isCrawlerRequest = /googlebot|bingbot|yandex|baiduspider|duckduckbot|slurp|facebookexternalhit|twitterbot|linkedinbot|pinterest|semrush|ahrefsbot|mj12bot|dotbot|petalbot|rogerbot|dataforseo/i.test(userAgent);
-      
-      // Only serve SSR to crawlers - regular users get the rich SPA
-      if (!isCrawlerRequest) {
+
+      // Only serve SSR to crawlers (search engines + AI bots) — regular users get the rich SPA
+      if (!isCrawler(userAgent)) {
         next();
         return;
       }
@@ -863,10 +869,9 @@ ${allPages.map(page => `  <url>
   // SSG for individual shoe pages - serves to crawlers only for SEO, regular users get SPA
   app.get("/tools/shoes/:slug", async (req: any, res, next) => {
     const userAgent = req.get('user-agent') || '';
-    const isCrawlerRequest = /googlebot|bingbot|yandex|baiduspider|duckduckbot|slurp|facebookexternalhit|twitterbot|linkedinbot|pinterest|semrush|ahrefsbot|mj12bot|dotbot|petalbot|rogerbot|dataforseo/i.test(userAgent);
-    
-    // Only serve SSG to crawlers - regular users get the rich SPA
-    if (!isCrawlerRequest) {
+
+    // Only serve SSG to crawlers (search engines + AI bots) — regular users get the rich SPA
+    if (!isCrawler(userAgent)) {
       next();
       return;
     }
@@ -934,9 +939,9 @@ ${allPages.map(page => `  <url>
   app.get("/tools/shoes/compare/:slug", async (req: any, res, next) => {
     try {
       const userAgent = req.headers['user-agent'] || '';
-      const isCrawlerRequest = /googlebot|bingbot|yandex|baiduspider|duckduckbot|slurp|facebookexternalhit|twitterbot|linkedinbot|pinterest|semrush|ahrefsbot|mj12bot|dotbot|petalbot|rogerbot|dataforseo/i.test(userAgent);
 
-      if (!isCrawlerRequest) {
+      // Only serve SSR to crawlers (search engines + AI bots) — regular users get the rich SPA
+      if (!isCrawler(userAgent)) {
         return next();
       }
 

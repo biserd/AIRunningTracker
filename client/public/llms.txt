@@ -1,0 +1,48 @@
+# RunAnalytics
+
+> AI-powered running analytics platform for serious runners. Integrates with Strava to deliver personalized performance insights, injury-prevention tools, and training plan generation powered by GPT-5.5.
+
+## Key Sections
+
+- [Home](https://aitracker.run/) — Overview and platform entry point
+- [AI Running Coach](https://aitracker.run/ai-running-coach) — Conversational AI coach with real-time SSE streaming and full training context
+- [AI Agent Coach](https://aitracker.run/ai-agent-coach) — Proactive post-run coaching with personalized recaps and goal tracking
+- [Pricing](https://aitracker.run/pricing) — Free and Premium plan details
+- [Features](https://aitracker.run/features) — Full feature overview
+- [About](https://aitracker.run/about) — Company and mission
+
+## Free Tools
+
+- [Tools Hub](https://aitracker.run/tools) — All free running analytics tools in one place
+- [Race Predictor](https://aitracker.run/tools/race-predictor) — Predict finish times using Riegel formula and VDOT
+- [Aerobic Decoupling Calculator](https://aitracker.run/tools/aerobic-decoupling-calculator) — Measure aerobic efficiency and cardiac drift
+- [Training Split Analyzer](https://aitracker.run/tools/training-split-analyzer) — Analyze easy/hard/long run distribution
+- [Marathon Fueling Planner](https://aitracker.run/tools/marathon-fueling) — Personalized race-day nutrition strategy
+- [Cadence Analyzer](https://aitracker.run/tools/cadence-analyzer) — Form stability and step rate analysis
+- [Running Heatmap](https://aitracker.run/tools/heatmap) — Visual map of all your Strava routes
+
+## Running Shoe Hub
+
+- [Shoe Database](https://aitracker.run/tools/shoes) — 280+ shoes with AI-generated insights, specs, and ratings
+- [Shoe Finder](https://aitracker.run/tools/shoe-finder) — Personalized shoe recommendations based on your running profile
+- [Rotation Planner](https://aitracker.run/tools/rotation-planner) — Build a smart multi-shoe rotation strategy
+- [Shoe Comparison](https://aitracker.run/tools/shoes/compare) — Side-by-side spec and AI insight comparisons
+
+## Blog & Learning
+
+- [Blog Index](https://aitracker.run/blog) — Training guides, AI insights, and gear reviews
+- [AI Running Coach — Complete Guide 2026](https://aitracker.run/blog/ai-running-coach-complete-guide-2026)
+- [Best Strava Analytics Tools 2026](https://aitracker.run/blog/best-strava-analytics-tools-2026)
+- [How to Improve Running Pace](https://aitracker.run/blog/how-to-improve-running-pace)
+- [AI Agent Coach — Proactive Coaching](https://aitracker.run/blog/ai-agent-coach-proactive-coaching)
+- [How to Pick a Training Plan](https://aitracker.run/blog/how-to-pick-a-training-plan)
+- [Ultra Marathon Training Plan — 100-Miler Guide](https://aitracker.run/blog/ultra-marathon-training-plan-100-miler-guide)
+
+## Developers
+
+- [Developer Portal](https://aitracker.run/developers) — Integration guides and API overview
+- [API Documentation](https://aitracker.run/developers/api) — REST API reference for running analytics data
+
+## Sitemap
+
+- [sitemap.xml](https://aitracker.run/sitemap.xml)
