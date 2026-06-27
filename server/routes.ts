@@ -3321,7 +3321,12 @@ ${allPages.map(page => `  <url>
         res.end();
       } catch (error: any) {
         console.error('Chat error:', error);
-        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message || 'Failed to generate response' })}\n\n`);
+        // Detect quota / rate-limit errors and surface a helpful message
+        const isQuotaError = error.status === 429 || /quota|rate.?limit|billing/i.test(error.message || '');
+        const userMessage_err = isQuotaError
+          ? "The AI coach is temporarily unavailable due to high demand. Please try again in a few minutes."
+          : "Sorry, I couldn't generate a response. Please try again.";
+        res.write(`data: ${JSON.stringify({ type: 'error', message: userMessage_err, isQuota: isQuotaError })}\n\n`);
         res.end();
       }
     } catch (error: any) {

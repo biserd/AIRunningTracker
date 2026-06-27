@@ -330,6 +330,7 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState("");
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch conversations
@@ -411,6 +412,7 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
     setIsWaitingForResponse(true);
     setIsStreaming(true);
     setStreamingMessage("");
+    setChatError(null);
 
     try {
       const token = localStorage.getItem("auth_token");
@@ -466,6 +468,7 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
                 setIsStreaming(false);
                 setIsWaitingForResponse(false);
                 setStreamingMessage("");
+                setChatError(data.message || "Something went wrong. Please try again.");
               }
             } catch (e) {
               if (line.length > 2) {
@@ -746,6 +749,14 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
             </div>
           )}
         </ScrollArea>
+
+        {/* Chat error banner */}
+        {chatError && (
+          <div className="mx-4 mb-2 flex items-start gap-2 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs text-orange-800 dark:border-orange-800/40 dark:bg-orange-950/30 dark:text-orange-300">
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+            <span>{chatError}</span>
+          </div>
+        )}
 
         {/* Input */}
         <div className="p-4 border-t border-slate-200 dark:border-slate-800">
