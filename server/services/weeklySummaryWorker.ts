@@ -197,6 +197,13 @@ export async function sendWeeklySummaries(refDate?: Date): Promise<WeeklySummary
       const weekActs = allActivities.filter(a => inRange(a, weekStart, weekEnd));
       const priorActs = allActivities.filter(a => inRange(a, priorStart, priorEnd));
 
+      // Nothing to summarise — skip silently rather than sending "0 runs" email
+      if (weekActs.length === 0) {
+        console.log(`[WeeklySummary] SKIP user=${u.id} (${u.email}): 0 runs last week`);
+        skipped++;
+        continue;
+      }
+
       const sumDist = (acts: RawActivity[]) => acts.reduce((s, a) => s + (a.distance ?? 0), 0);
       const sumTime = (acts: RawActivity[]) => acts.reduce((s, a) => s + (a.moving_time ?? 0), 0);
       const sumElev = (acts: RawActivity[]) => acts.reduce((s, a) => s + (a.total_elevation_gain ?? 0), 0);
