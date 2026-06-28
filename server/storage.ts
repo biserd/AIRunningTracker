@@ -631,6 +631,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getActivityById(activityId: number): Promise<Activity | undefined> {
+    // Strava IDs are large 64-bit numbers that exceed PostgreSQL's 32-bit integer
+    // range (max 2,147,483,647). When a Strava ID arrives via the URL we must
+    // look up by the text strava_id column instead of the serial PK.
+    if (activityId > 2147483647) {
+      const [activity] = await db
+        .select()
+        .from(activities)
+        .where(eq(activities.stravaId, String(activityId)));
+      return activity || undefined;
+    }
     const [activity] = await db
       .select()
       .from(activities)

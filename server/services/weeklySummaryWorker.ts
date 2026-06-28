@@ -15,6 +15,7 @@ const openai = new OpenAI({
 });
 
 type RawActivity = {
+  id: number;
   strava_id: string | null;
   name: string;
   distance: number;
@@ -182,7 +183,7 @@ export async function sendWeeklySummaries(refDate?: Date): Promise<WeeklySummary
     try {
       // Fetch running activities in the 52-week window for this user
       const actsResult = await db.execute(sql`
-        SELECT strava_id, name, distance, moving_time, total_elevation_gain, average_heartrate, start_date, type
+        SELECT id, strava_id, name, distance, moving_time, total_elevation_gain, average_heartrate, start_date, type
         FROM activities
         WHERE user_id = ${u.id}
           AND start_date >= ${gridStart.toISOString()}
@@ -215,12 +216,14 @@ export async function sendWeeklySummaries(refDate?: Date): Promise<WeeklySummary
           ? weekActs.reduce((best, a) => (a.distance > best.distance ? a : best))
           : null;
 
-      // Build activity magic link for top run
+      // Build activity magic link for top run — use the DB integer id, NOT
+      // the Strava id, because the route handler looks up by activities.id
+      // (serial/int4) and passing a large Strava id causes a PG overflow error.
       let topRunActivityUrl: string | null = null;
-      if (topRunRaw?.strava_id) {
+      if (topRunRaw?.id) {
         topRunActivityUrl = await authService.wrapWithEmailMagicLink(
           u.email,
-          `/activity/${topRunRaw.strava_id}`,
+          `/activity/${topRunRaw.id}`,
           BASE_URL
         );
       }
