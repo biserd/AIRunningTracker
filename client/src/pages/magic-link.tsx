@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Activity, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { notifyExtensionAuth } from "@/lib/extensionBridge";
 
-type Status = "verifying" | "ok" | "error";
+type Status = "verifying" | "ok" | "error" | "expired";
 
 export default function MagicLinkPage() {
   const [, setLocation] = useLocation();
@@ -43,8 +43,12 @@ export default function MagicLinkPage() {
         if (cancelled) return;
 
         if (!res.ok) {
-          setStatus("error");
-          setErrorMsg(body?.message || "This sign-in link is no longer valid.");
+          if (body?.code === "EXPIRED_TOKEN") {
+            setStatus("expired");
+          } else {
+            setStatus("error");
+            setErrorMsg(body?.message || "This sign-in link is no longer valid.");
+          }
           return;
         }
 
@@ -104,6 +108,17 @@ export default function MagicLinkPage() {
                   <CardDescription>Taking you to your dashboard…</CardDescription>
                 </>
               )}
+              {status === "expired" && (
+                <>
+                  <div className="mx-auto mb-3 w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center">
+                    <AlertCircle className="w-7 h-7 text-amber-500" />
+                  </div>
+                  <CardTitle>This link has expired</CardTitle>
+                  <CardDescription>
+                    Sign-in links in emails are valid for 7 days. This one is past that window — just sign in directly or request a fresh link.
+                  </CardDescription>
+                </>
+              )}
               {status === "error" && (
                 <>
                   <div className="mx-auto mb-3 w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
@@ -115,13 +130,20 @@ export default function MagicLinkPage() {
               )}
             </CardHeader>
 
-            {status === "error" && (
+            {(status === "expired" || status === "error") && (
               <CardContent className="space-y-3">
                 <Link href="/auth">
                   <Button className="w-full bg-strava-orange hover:bg-strava-orange/90">
-                    Request a new sign-in link
+                    Sign in
                   </Button>
                 </Link>
+                {status === "error" && (
+                  <Link href="/auth">
+                    <Button variant="outline" className="w-full">
+                      Request a new sign-in link
+                    </Button>
+                  </Link>
+                )}
                 <Link href="/">
                   <Button variant="ghost" className="w-full">
                     Back to home

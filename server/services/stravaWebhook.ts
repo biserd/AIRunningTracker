@@ -394,8 +394,8 @@ class StravaWebhookService {
       const redirectPath = activityDbId ? `/activity/${activityDbId}` : `/dashboard`;
       const { authService } = await import("./auth");
       const baseUrl = `https://${domain}`;
-      const activityUrl = await authService.wrapWithMagicLink(user.email, redirectPath, baseUrl);
-      const dashboardUrl = await authService.wrapWithMagicLink(user.email, `/dashboard`, baseUrl);
+      const activityUrl = await authService.wrapWithEmailMagicLink(user.email, redirectPath, baseUrl);
+      const dashboardUrl = await authService.wrapWithEmailMagicLink(user.email, `/dashboard`, baseUrl);
 
       // Build training context from the last 30 days of activities
       const activityDate = new Date(activity.start_date || Date.now());

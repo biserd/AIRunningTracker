@@ -308,7 +308,7 @@ export class DripCampaignService {
       // Wrap drip CTA with a one-tap magic-link so users (free or paid) land
       // already signed in instead of bouncing off the /auth screen.
       const { authService } = await import("./auth");
-      const fullUrl = await authService.wrapWithMagicLink(user.email, ctaUrl);
+      const fullUrl = await authService.wrapWithEmailMagicLink(user.email, ctaUrl);
 
       await emailService.sendDripEmail({
         to: user.email,

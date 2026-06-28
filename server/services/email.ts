@@ -767,7 +767,7 @@ Added 60+ of 2026's new shoes across 13 brands, plus side-by-side comparisons, a
     // land in the app already authenticated.
     const { authService } = await import("./auth");
     const recapPath = data.activityId ? `/activity/${data.activityId}` : "/dashboard";
-    const activityLink = await authService.wrapWithMagicLink(email, recapPath);
+    const activityLink = await authService.wrapWithEmailMagicLink(email, recapPath);
 
     const subject = `🏃 Coach Recap: ${data.activityName}`;
     
@@ -927,7 +927,7 @@ Unsubscribe: https://aitracker.run/settings?unsubscribe=marketing
     const { to, userName, activityName, activityId } = options;
     // Wrap with magic-link so recipients land already signed in.
     const { authService } = await import("./auth");
-    const activityUrl = await authService.wrapWithMagicLink(
+    const activityUrl = await authService.wrapWithEmailMagicLink(
       to,
       `/activities/${activityId}?source=activity_ready`,
     );

@@ -188,11 +188,9 @@ export class AuthService {
   }
 
   /**
-   * Generate a short-lived JWT (15 min) that lets the user sign in with
-   * one click from an email link. We sign with a separate-purpose payload
-   * so a password-reset or session JWT can never be used as a magic link
-   * and vice versa. Returns null if the email isn't on file (so callers
-   * can stay anti-enumeration friendly).
+   * Generate a short-lived JWT (15 min) for on-demand web magic links
+   * (e.g. "Email me a sign-in link" in Settings). The short TTL is
+   * intentional — the user just requested it and is watching their inbox.
    */
   async generateMagicLinkToken(email: string): Promise<string | null> {
     const user = await storage.getUserByEmail(email);
@@ -205,10 +203,24 @@ export class AuthService {
   }
 
   /**
-   * Wrap an internal app path with a magic-link auto-sign-in URL for the
-   * given user. Use this anywhere we email a logged-in destination so the
-   * recipient (free OR paid) lands already signed in. Falls back to the
-   * plain absolute URL if token generation fails.
+   * Generate a longer-lived JWT (7 days) for links embedded inside
+   * outgoing emails (post-run recap, coach recap, drip campaigns, etc.).
+   * Runners often open emails hours or days after receiving them, so
+   * the 15-minute web TTL is nearly always expired by then.
+   */
+  async generateEmailMagicLinkToken(email: string): Promise<string | null> {
+    const user = await storage.getUserByEmail(email);
+    if (!user) return null;
+    return jwt.sign(
+      { userId: user.id, email: user.email, purpose: 'email-magic-link' },
+      JWT_SECRET,
+      { expiresIn: '7d' },
+    );
+  }
+
+  /**
+   * Wrap an internal app path with a 15-minute magic-link URL.
+   * Use for on-demand web sign-in links only (Settings → "Email me a link").
    */
   async wrapWithMagicLink(
     email: string | null | undefined,
@@ -216,8 +228,6 @@ export class AuthService {
     baseUrl: string = 'https://aitracker.run',
   ): Promise<string> {
     const base = baseUrl.replace(/\/$/, '');
-    // Only wrap same-origin app paths. Absolute external URLs or non-leading
-    // slashes are returned untouched.
     if (!path.startsWith('/') || path.startsWith('//')) {
       return path.startsWith('http') ? path : `${base}${path}`;
     }
@@ -232,17 +242,48 @@ export class AuthService {
   }
 
   /**
-   * Verify a magic-link token and, on success, mint a normal session JWT
-   * (same shape as login()). Throws AuthError on any validation issue.
+   * Wrap an internal app path with a 7-day magic-link URL.
+   * Use for every link embedded in an outgoing email so it works
+   * days after the email was delivered.
+   */
+  async wrapWithEmailMagicLink(
+    email: string | null | undefined,
+    path: string,
+    baseUrl: string = 'https://aitracker.run',
+  ): Promise<string> {
+    const base = baseUrl.replace(/\/$/, '');
+    if (!path.startsWith('/') || path.startsWith('//')) {
+      return path.startsWith('http') ? path : `${base}${path}`;
+    }
+    if (!email) return `${base}${path}`;
+    try {
+      const token = await this.generateEmailMagicLinkToken(email);
+      if (!token) return `${base}${path}`;
+      return `${base}/auth/magic-link?token=${encodeURIComponent(token)}&redirect=${encodeURIComponent(path)}`;
+    } catch {
+      return `${base}${path}`;
+    }
+  }
+
+  /**
+   * Verify a magic-link token (either the 15-min web or 7-day email
+   * variant) and mint a normal session JWT on success.
+   * Throws AuthError with code:
+   *   EXPIRED_TOKEN  — valid JWT but past its expiry (show "link expired" UI)
+   *   INVALID_TOKEN  — malformed, wrong purpose, or account gone
    */
   async verifyMagicLinkToken(token: string): Promise<{ user: AuthUser; token: string }> {
     let decoded: any;
     try {
       decoded = jwt.verify(token, JWT_SECRET);
-    } catch {
-      throw new AuthError('INVALID_TOKEN', 'This sign-in link has expired. Request a new one.');
+    } catch (err: any) {
+      if (err?.name === 'TokenExpiredError') {
+        throw new AuthError('EXPIRED_TOKEN', 'This sign-in link has expired. Please request a new one.');
+      }
+      throw new AuthError('INVALID_TOKEN', 'This sign-in link is invalid.');
     }
-    if (!decoded || decoded.purpose !== 'magic-link' || !decoded.userId) {
+    const validPurposes = ['magic-link', 'email-magic-link'];
+    if (!decoded || !validPurposes.includes(decoded.purpose) || !decoded.userId) {
       throw new AuthError('INVALID_TOKEN', 'This sign-in link is invalid.');
     }
     const user = await storage.getUser(decoded.userId);

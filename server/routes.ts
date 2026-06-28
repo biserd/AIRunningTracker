@@ -3598,7 +3598,7 @@ ${allPages.map(page => `  <url>
       // with the user already signed in, even if their browser session expired.
       const activityPath = `/activity/${activity.id}`;
       const activityUrl = await authService
-        .wrapWithMagicLink(user.email, activityPath, "https://aitracker.run")
+        .wrapWithEmailMagicLink(user.email, activityPath, "https://aitracker.run")
         .catch(() => `https://aitracker.run${activityPath}?utm_source=extension`);
 
       const isPremium =
