@@ -83,6 +83,7 @@ async function generateNarrative(params: {
 export interface WeeklySummaryResult {
   sent: number;
   skipped: number;
+  ineligible: number;
   errors: number;
   total: number;
 }
@@ -116,16 +117,31 @@ export async function sendWeeklySummaries(refDate?: Date): Promise<WeeklySummary
   gridStart.setUTCDate(weekEnd.getUTCDate() - 52 * 7);
 
   const runTypesArray = RUNNING_ACTIVITY_TYPES;
-  const runTypesPlaceholders = runTypesArray.map((_, i) => `$${i + 2}`).join(", ");
 
-  // Fetch opted-in users with email
+  // Fetch opted-in users with eligibility signals:
+  //   strava_connected — must be true
+  //   recent_run_count — number of running activities in last 90 days (must be > 0)
+  const cutoff90 = new Date(ref);
+  cutoff90.setUTCDate(cutoff90.getUTCDate() - 90);
+
   const optedInResult = await db.execute(sql`
-    SELECT id, email, first_name, unit_preference
-    FROM users
-    WHERE coach_notify_weekly_summary = true
-      AND email IS NOT NULL
-      AND email != ''
-    ORDER BY id
+    SELECT
+      u.id,
+      u.email,
+      u.first_name,
+      u.unit_preference,
+      u.strava_connected,
+      COUNT(a.id) AS recent_run_count
+    FROM users u
+    LEFT JOIN activities a
+      ON a.user_id = u.id
+      AND a.type = ANY(ARRAY['Run','TrailRun','VirtualRun'])
+      AND a.start_date >= ${cutoff90.toISOString()}
+    WHERE u.coach_notify_weekly_summary = true
+      AND u.email IS NOT NULL
+      AND u.email != ''
+    GROUP BY u.id, u.email, u.first_name, u.unit_preference, u.strava_connected
+    ORDER BY u.id
   `);
 
   type UserRow = {
@@ -133,10 +149,30 @@ export async function sendWeeklySummaries(refDate?: Date): Promise<WeeklySummary
     email: string;
     first_name: string | null;
     unit_preference: string | null;
+    strava_connected: boolean;
+    recent_run_count: string; // pg returns bigint counts as strings
   };
 
-  const userList = (optedInResult.rows ?? []) as UserRow[];
-  console.log(`[WeeklySummary] Sending to ${userList.length} opted-in users. Week: ${weekStart.toISOString()} – ${weekEnd.toISOString()}`);
+  const allOptedIn = (optedInResult.rows ?? []) as UserRow[];
+
+  // Filter to eligible users and log skips for admin visibility
+  const userList = allOptedIn.filter(u => {
+    if (!u.strava_connected) {
+      console.log(`[WeeklySummary] SKIP user=${u.id} (${u.email}): Strava not connected`);
+      return false;
+    }
+    if (parseInt(u.recent_run_count, 10) === 0) {
+      console.log(`[WeeklySummary] SKIP user=${u.id} (${u.email}): 0 runs in last 90 days`);
+      return false;
+    }
+    return true;
+  });
+
+  const skippedIneligible = allOptedIn.length - userList.length;
+  console.log(
+    `[WeeklySummary] ${allOptedIn.length} opted-in → ${userList.length} eligible, ${skippedIneligible} ineligible skipped. ` +
+    `Week: ${weekStart.toISOString()} – ${weekEnd.toISOString()}`
+  );
 
   let sent = 0;
   let skipped = 0;
@@ -292,8 +328,8 @@ export async function sendWeeklySummaries(refDate?: Date): Promise<WeeklySummary
     }
   }
 
-  console.log(`[WeeklySummary] Done: ${sent} sent, ${skipped} skipped, ${errors} errors`);
-  return { sent, skipped, errors, total: userList.length };
+  console.log(`[WeeklySummary] Done: ${sent} sent, ${skipped} send-skipped, ${skippedIneligible} ineligible, ${errors} errors`);
+  return { sent, skipped, ineligible: skippedIneligible, errors, total: allOptedIn.length };
 }
 
 // ─── Monday scheduler ────────────────────────────────────────────────────────
