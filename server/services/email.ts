@@ -1226,8 +1226,9 @@ ${unsubLine}`.trim();
     priorDistanceM: number;
     priorTimeSec: number;
     priorElevationM: number;
+    avgHeartrateWeek: number | null;
     gridDays: Array<{ date: string; distanceM: number }>;
-    topRun: { name: string; distanceM: number; movingTimeSec: number; avgHeartrate?: number | null; url: string } | null;
+    topRun: { name: string; distanceM: number; movingTimeSec: number; avgHeartrate?: number | null; activityUrl: string } | null;
     activePlan: {
       goalType: string;
       currentWeek: number;
@@ -1237,6 +1238,7 @@ ${unsubLine}`.trim();
       adherenceScore: number | null;
       phaseName: string | null;
     } | null;
+    aiNarrative: string | null;
     unsubscribeUrl: string;
     dashboardUrl: string;
   }): Promise<boolean> {
@@ -1244,7 +1246,8 @@ ${unsubLine}`.trim();
       to, firstName, unitPreference, weekStart, weekEnd,
       totalRuns, totalDistanceM, totalTimeSec, totalElevationM,
       priorRuns, priorDistanceM, priorTimeSec, priorElevationM,
-      gridDays, topRun, activePlan,
+      avgHeartrateWeek,
+      gridDays, topRun, activePlan, aiNarrative,
       unsubscribeUrl, dashboardUrl,
     } = params;
 
@@ -1274,16 +1277,16 @@ ${unsubLine}`.trim();
       return `${m}:${s.toString().padStart(2, "0")} /${isImperial ? "mi" : "km"}`;
     };
 
-    const pctChange = (curr: number, prior: number): string => {
-      if (prior === 0) return curr > 0 ? "new" : "";
+    // Arrow + colour for week-over-week deltas
+    const arrowDelta = (curr: number, prior: number, higherIsBetter = true): string => {
+      if (prior === 0) return "";
       const pct = Math.round(((curr - prior) / prior) * 100);
-      if (pct === 0) return "same";
-      return pct > 0 ? `+${pct}%` : `${pct}%`;
-    };
-
-    const pctColor = (curr: number, prior: number): string => {
-      if (prior === 0) return curr > 0 ? "#16a34a" : "#6b7280";
-      return curr >= prior ? "#16a34a" : "#ef4444";
+      if (pct === 0) return `<span style="color:#6b7280;font-size:11px;">= same</span>`;
+      const up = pct > 0;
+      const good = higherIsBetter ? up : !up;
+      const color = good ? "#16a34a" : "#ef4444";
+      const arrow = up ? "&#x2191;" : "&#x2193;";
+      return `<span style="color:${color};font-size:11px;">${arrow} ${Math.abs(pct)}%</span>`;
     };
 
     const weekLabel = (d: Date) =>
@@ -1295,21 +1298,26 @@ ${unsubLine}`.trim();
 
     const subject = `Your week in running: ${totalRuns} run${totalRuns !== 1 ? "s" : ""}, ${fmtDist(totalDistanceM)} 🏃`;
 
-    // ─── Activity grid (16 weeks × 7 days) ───────────────────────────────────
+    // ─── Activity grid (up to 52 weeks × 7 days, current week highlighted) ──
     const distMap = new Map<string, number>();
     for (const { date, distanceM } of gridDays) {
       distMap.set(date, (distMap.get(date) ?? 0) + distanceM);
     }
 
+    // Build a Sunday-aligned 52-week window ending on weekEnd
     const gridEnd = new Date(weekEnd);
-    gridEnd.setHours(23, 59, 59, 999);
-    const gridStart = new Date(gridEnd);
-    gridStart.setDate(gridStart.getDate() - 16 * 7 + 1);
-    // Align to Sunday start of that week
-    const startDow = gridStart.getDay();
-    gridStart.setDate(gridStart.getDate() - startDow);
+    gridEnd.setUTCHours(23, 59, 59, 999);
+    const gridColEnd = new Date(gridEnd); // last day of last (highlighted) week
+    const gridColEndDow = gridColEnd.getUTCDay(); // 0=Sun … 6=Sat
+    // Advance to Saturday (end of that week)
+    gridColEnd.setUTCDate(gridColEnd.getUTCDate() + (6 - gridColEndDow));
+    // Go back 52 weeks and align to Sunday
+    const gridColStart = new Date(gridColEnd);
+    gridColStart.setUTCDate(gridColEnd.getUTCDate() - 52 * 7 + 1);
+    const startDow = gridColStart.getUTCDay();
+    gridColStart.setUTCDate(gridColStart.getUTCDate() - startDow);
 
-    const cellColor = (m: number): string => {
+    const cellBg = (m: number): string => {
       if (m === 0) return "#ebedf0";
       const km = m / 1000;
       if (km < 5) return "#9be9a8";
@@ -1318,84 +1326,95 @@ ${unsubLine}`.trim();
       return "#216e39";
     };
 
-    const totalDays = Math.round((gridEnd.getTime() - gridStart.getTime()) / 86400000) + 1;
+    // Total cols = weeks from gridColStart to gridColEnd
+    const totalDays = Math.round((gridColEnd.getTime() - gridColStart.getTime()) / 86400000) + 1;
     const numWeeks = Math.ceil(totalDays / 7);
-    const weeks: string[][] = [];
+
+    // Identify which column index is the "current" (highlighted) week
+    // It's the week that contains weekEnd
+    const currentWeekColIdx = numWeeks - 1; // rightmost = most recent = the summarised week
+
+    // Build week columns: each column is an array of 7 day-cells [Sun…Sat]
+    const weekCols: Array<{ color: string; isCurrent: boolean }[]> = [];
     for (let w = 0; w < numWeeks; w++) {
-      const week: string[] = [];
+      const col: { color: string; isCurrent: boolean }[] = [];
+      const isCurrent = w === currentWeekColIdx;
       for (let d = 0; d < 7; d++) {
-        const day = new Date(gridStart);
-        day.setDate(gridStart.getDate() + w * 7 + d);
+        const day = new Date(gridColStart);
+        day.setUTCDate(gridColStart.getUTCDate() + w * 7 + d);
         const key = day.toISOString().slice(0, 10);
-        const dist = distMap.get(key) ?? 0;
-        week.push(cellColor(dist));
+        col.push({ color: cellBg(distMap.get(key) ?? 0), isCurrent });
       }
-      weeks.push(week);
+      weekCols.push(col);
     }
 
-    const gridRows = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const gridRowLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const gridHtml = `
-<table cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:3px;margin:0 auto;">
+<table cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:2px;margin:0 auto;table-layout:fixed;">
   <tbody>
-    ${gridRows.map((dayLabel, di) => `
+    ${gridRowLabels.map((lbl, di) => `
     <tr>
-      <td style="font-size:10px;color:#999;padding-right:6px;white-space:nowrap;width:28px;vertical-align:middle;">${dayLabel}</td>
-      ${weeks.map(week => `<td style="width:12px;height:12px;background:${week[di]};border-radius:2px;"></td>`).join("")}
+      <td style="font-size:10px;color:#999;padding-right:5px;white-space:nowrap;width:26px;vertical-align:middle;">${lbl}</td>
+      ${weekCols.map((col, wi) => {
+        const cell = col[di];
+        const outline = cell.isCurrent ? `outline:2px solid #FC5200;outline-offset:0px;` : "";
+        return `<td style="width:10px;height:10px;background:${cell.color};border-radius:2px;${outline}"></td>`;
+      }).join("")}
     </tr>`).join("")}
   </tbody>
 </table>`;
 
     // ─── Stats table ─────────────────────────────────────────────────────────
-    const stats = [
+    const statCols: Array<{ label: string; value: string; delta: string }> = [
       {
         label: "Runs",
         value: `${totalRuns}`,
-        change: pctChange(totalRuns, priorRuns),
-        color: pctColor(totalRuns, priorRuns),
+        delta: arrowDelta(totalRuns, priorRuns),
       },
       {
         label: "Distance",
         value: fmtDist(totalDistanceM),
-        change: pctChange(totalDistanceM, priorDistanceM),
-        color: pctColor(totalDistanceM, priorDistanceM),
+        delta: arrowDelta(totalDistanceM, priorDistanceM),
       },
       {
         label: "Time",
         value: fmtTime(totalTimeSec),
-        change: pctChange(totalTimeSec, priorTimeSec),
-        color: pctColor(totalTimeSec, priorTimeSec),
+        delta: arrowDelta(totalTimeSec, priorTimeSec),
       },
       {
         label: "Elevation",
         value: `${Math.round(totalElevationM)}m`,
-        change: pctChange(totalElevationM, priorElevationM),
-        color: pctColor(totalElevationM, priorElevationM),
+        delta: arrowDelta(totalElevationM, priorElevationM),
       },
     ];
+
+    if (avgHeartrateWeek) {
+      statCols.push({ label: "Avg HR", value: `${avgHeartrateWeek} bpm`, delta: "" });
+    }
+
+    const colWidth = Math.floor(100 / statCols.length);
 
     const statsHtml = `
 <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;">
   <tr>
-    ${stats.map(s => `
-    <td style="text-align:center;padding:8px 4px;width:25%;">
+    ${statCols.map(s => `
+    <td style="text-align:center;padding:8px 2px;width:${colWidth}%;">
       <div style="font-size:20px;font-weight:700;color:#1a1a1a;">${s.value}</div>
       <div style="font-size:11px;color:#666;margin-top:2px;">${s.label}</div>
-      ${s.change ? `<div style="font-size:11px;font-weight:600;color:${s.color};margin-top:2px;">${s.change} vs prior week</div>` : ""}
+      ${s.delta ? `<div style="margin-top:3px;">${s.delta}</div>` : ""}
     </td>`).join("")}
   </tr>
 </table>`;
 
-    // ─── Top run card ─────────────────────────────────────────────────────────
+    // ─── Top run card (with View Run magic link) ──────────────────────────────
     const topRunHtml = topRun ? `
 <div style="margin:0 0 24px;padding:16px 20px;background:#fff9f7;border-left:3px solid #FC5200;border-radius:0 8px 8px 0;">
   <div style="font-size:11px;font-weight:700;color:#FC5200;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Best Run This Week</div>
   <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:6px;">${topRun.name}</div>
-  <div style="font-size:13px;color:#555;display:flex;gap:16px;">
-    <span>${fmtDist(topRun.distanceM)}</span>
-    <span>·</span>
-    <span>${fmtPace(topRun.distanceM, topRun.movingTimeSec)}</span>
-    ${topRun.avgHeartrate ? `<span>·</span><span>${Math.round(topRun.avgHeartrate)} bpm avg</span>` : ""}
+  <div style="font-size:13px;color:#555;margin-bottom:12px;">
+    ${fmtDist(topRun.distanceM)}&nbsp;&nbsp;·&nbsp;&nbsp;${fmtPace(topRun.distanceM, topRun.movingTimeSec)}${topRun.avgHeartrate ? `&nbsp;&nbsp;·&nbsp;&nbsp;${Math.round(topRun.avgHeartrate)} bpm` : ""}
   </div>
+  <a href="${topRun.activityUrl}" style="display:inline-block;background:#FC5200;color:#ffffff;font-weight:600;font-size:12px;padding:7px 16px;border-radius:6px;text-decoration:none;">View Run &rarr;</a>
 </div>` : "";
 
     // ─── Training plan section ────────────────────────────────────────────────
@@ -1412,13 +1431,16 @@ ${unsubLine}`.trim();
       const adherePct = activePlan.adherenceScore != null
         ? Math.round(activePlan.adherenceScore * 100)
         : null;
+      const barColor = adherePct != null
+        ? (adherePct >= 80 ? "#16a34a" : adherePct >= 50 ? "#f59e0b" : "#ef4444")
+        : "#FC5200";
       const adherenceBar = adherePct != null
-        ? `<div style="margin-top:10px;"><div style="font-size:11px;color:#666;margin-bottom:4px;">Week adherence: <strong>${adherePct}%</strong></div><div style="height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;"><div style="height:6px;width:${Math.min(adherePct, 100)}%;background:${adherePct >= 80 ? "#16a34a" : adherePct >= 50 ? "#f59e0b" : "#ef4444"};border-radius:3px;"></div></div></div>`
+        ? `<div style="margin-top:10px;"><div style="font-size:11px;color:#666;margin-bottom:4px;">Week adherence: <strong>${adherePct}%</strong></div><table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;"><tr><td style="background:#e5e7eb;border-radius:3px;height:6px;"><table cellpadding="0" cellspacing="0" style="width:${Math.min(adherePct, 100)}%;border-collapse:collapse;"><tr><td style="background:${barColor};border-radius:3px;height:6px;"></td></tr></table></td></tr></table></div>`
         : "";
       return `
 <div style="margin:0 0 24px;padding:16px 20px;background:#f0f7ff;border-radius:8px;">
-  <div style="font-size:11px;font-weight:700;color:#1d4ed8;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Training Plan · Week ${activePlan.currentWeek} of ${activePlan.totalWeeks}</div>
-  <div style="font-size:14px;font-weight:600;color:#1a1a1a;">${goalLabel}${activePlan.phaseName ? ` — ${activePlan.phaseName}` : ""}</div>
+  <div style="font-size:11px;font-weight:700;color:#1d4ed8;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Training Plan &middot; Week ${activePlan.currentWeek} of ${activePlan.totalWeeks}</div>
+  <div style="font-size:14px;font-weight:600;color:#1a1a1a;">${goalLabel}${activePlan.phaseName ? ` &mdash; ${activePlan.phaseName}` : ""}</div>
   <div style="font-size:13px;color:#555;margin-top:6px;">${completed} completed of ${planned} planned</div>
   ${adherenceBar}
 </div>`;
@@ -1426,7 +1448,12 @@ ${unsubLine}`.trim();
 
     const hasActivity = totalRuns > 0;
     const emptyState = !hasActivity
-      ? `<p style="text-align:center;color:#6b7280;font-style:italic;padding:12px 0;">No runs logged last week — lace up and get out there this week! 👟</p>`
+      ? `<p style="text-align:center;color:#6b7280;font-style:italic;padding:12px 0;">No runs logged last week &mdash; lace up and get out there this week! &#x1F45F;</p>`
+      : "";
+
+    // ─── AI narrative ─────────────────────────────────────────────────────────
+    const narrativeHtml = aiNarrative
+      ? `<p style="margin:0 0 24px;font-size:15px;color:#444;line-height:1.65;font-style:italic;">&ldquo;${aiNarrative}&rdquo;</p>`
       : "";
 
     const html = `
@@ -1447,7 +1474,9 @@ ${unsubLine}`.trim();
   <!-- Body -->
   <div style="padding:28px;">
 
-    <p style="margin:0 0 24px;font-size:15px;color:#333;line-height:1.6;">${greeting} Here's how your training week shaped up.</p>
+    <p style="margin:0 0 20px;font-size:15px;color:#333;line-height:1.6;">${greeting} Here&rsquo;s how your training week shaped up.</p>
+
+    ${narrativeHtml}
 
     ${emptyState}
 
@@ -1463,24 +1492,26 @@ ${unsubLine}`.trim();
     ${planHtml}
     ` : ""}
 
-    <!-- Activity grid -->
+    <!-- Activity grid (last 52 weeks, current week outlined) -->
     <div style="margin:0 0 24px;">
-      <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;">Last 16 Weeks</div>
+      <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;">Last 52 Weeks</div>
       ${gridHtml}
-      <div style="margin-top:8px;font-size:11px;color:#999;display:flex;align-items:center;gap:4px;">
-        Less
-        <span style="display:inline-block;width:11px;height:11px;background:#ebedf0;border-radius:2px;"></span>
-        <span style="display:inline-block;width:11px;height:11px;background:#9be9a8;border-radius:2px;"></span>
-        <span style="display:inline-block;width:11px;height:11px;background:#40c463;border-radius:2px;"></span>
-        <span style="display:inline-block;width:11px;height:11px;background:#30a14e;border-radius:2px;"></span>
-        <span style="display:inline-block;width:11px;height:11px;background:#216e39;border-radius:2px;"></span>
-        More
-      </div>
+      <table cellpadding="0" cellspacing="0" style="margin-top:8px;border-collapse:collapse;">
+        <tr>
+          <td style="font-size:11px;color:#999;padding-right:4px;vertical-align:middle;">Less</td>
+          <td style="width:10px;height:10px;background:#ebedf0;border-radius:2px;padding:0 1px;"></td>
+          <td style="width:10px;height:10px;background:#9be9a8;border-radius:2px;padding:0 1px;"></td>
+          <td style="width:10px;height:10px;background:#40c463;border-radius:2px;padding:0 1px;"></td>
+          <td style="width:10px;height:10px;background:#30a14e;border-radius:2px;padding:0 1px;"></td>
+          <td style="width:10px;height:10px;background:#216e39;border-radius:2px;padding:0 1px;"></td>
+          <td style="font-size:11px;color:#999;padding-left:4px;vertical-align:middle;">More</td>
+        </tr>
+      </table>
     </div>
 
     <!-- CTA -->
     <div style="text-align:center;padding:8px 0 4px;">
-      <a href="${dashboardUrl}" style="display:inline-block;background:#FC5200;color:#ffffff;font-weight:700;font-size:14px;padding:13px 32px;border-radius:8px;text-decoration:none;">View Full Dashboard →</a>
+      <a href="${dashboardUrl}" style="display:inline-block;background:#FC5200;color:#ffffff;font-weight:700;font-size:14px;padding:13px 32px;border-radius:8px;text-decoration:none;">View Full Dashboard &rarr;</a>
     </div>
 
   </div>
@@ -1489,7 +1520,7 @@ ${unsubLine}`.trim();
   <div style="padding:16px 28px;border-top:1px solid #f0f0f0;font-size:12px;color:#aaa;text-align:center;line-height:1.8;">
     Train smarter, The RunAnalytics Team<br>
     <a href="${unsubscribeUrl}" style="color:#aaa;text-decoration:underline;">Unsubscribe from weekly summaries</a>
-    &nbsp;·&nbsp;
+    &nbsp;&middot;&nbsp;
     <a href="https://aitracker.run/settings" style="color:#aaa;text-decoration:underline;">Notification settings</a>
   </div>
 
