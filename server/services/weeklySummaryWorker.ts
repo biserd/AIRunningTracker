@@ -141,6 +141,7 @@ export async function sendWeeklySummaries(refDate?: Date): Promise<WeeklySummary
     WHERE u.coach_notify_weekly_summary = true
       AND u.email IS NOT NULL
       AND u.email != ''
+      AND u.marketing_opt_out = false
     GROUP BY u.id, u.email, u.first_name, u.unit_preference, u.strava_connected
     ORDER BY u.id
   `);
