@@ -36,6 +36,7 @@ function SettingsPageContent() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [notifyPostRun, setNotifyPostRun] = useState(true);
   const [postRunEmailFrequency, setPostRunEmailFrequency] = useState("every_run");
+  const [notifyWeeklySummary, setNotifyWeeklySummary] = useState(true);
   const [emailEditing, setEmailEditing] = useState(false);
   const [emailDraft, setEmailDraft] = useState("");
 
@@ -54,6 +55,9 @@ function SettingsPageContent() {
     }
     if (dashboardData?.user?.postRunEmailFrequency) {
       setPostRunEmailFrequency(dashboardData.user.postRunEmailFrequency);
+    }
+    if (dashboardData?.user?.coachNotifyWeeklySummary !== undefined) {
+      setNotifyWeeklySummary(dashboardData.user.coachNotifyWeeklySummary);
     }
   }, [dashboardData]);
 
@@ -148,18 +152,14 @@ function SettingsPageContent() {
   });
 
   const updateNotificationsMutation = useMutation({
-    mutationFn: async (settings: { notifyPostRun: boolean; postRunEmailFrequency: string }) => {
+    mutationFn: async (settings: { notifyPostRun: boolean; postRunEmailFrequency: string; coachNotifyWeeklySummary: boolean }) => {
       return apiRequest(`/api/users/${user!.id}/notifications`, "PATCH", settings);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user!.id}`] });
       toast({
         title: "Notification settings updated",
-        description: notifyPostRun 
-          ? postRunEmailFrequency === "weekly"
-            ? "You'll receive a weekly post-run analysis email"
-            : "You'll receive post-run analysis emails after every run"
-          : "Post-run emails disabled",
+        description: "Your email preferences have been saved.",
       });
     },
     onError: (error: any) => {
@@ -615,9 +615,26 @@ function SettingsPageContent() {
                   </RadioGroup>
                 </div>
               )}
+
+              <div className="flex items-center justify-between pt-2">
+                <div className="space-y-0.5">
+                  <Label htmlFor="weekly-summary-toggle" className="text-base font-medium">
+                    Weekly Summary Email
+                  </Label>
+                  <p className="text-sm text-gray-500">
+                    Every Monday — your week's runs, distance, and training progress
+                  </p>
+                </div>
+                <Switch
+                  id="weekly-summary-toggle"
+                  checked={notifyWeeklySummary}
+                  onCheckedChange={setNotifyWeeklySummary}
+                  data-testid="switch-weekly-summary"
+                />
+              </div>
               
               <Button
-                onClick={() => updateNotificationsMutation.mutate({ notifyPostRun, postRunEmailFrequency })}
+                onClick={() => updateNotificationsMutation.mutate({ notifyPostRun, postRunEmailFrequency, coachNotifyWeeklySummary: notifyWeeklySummary })}
                 disabled={updateNotificationsMutation.isPending}
                 className="flex items-center gap-2"
                 data-testid="button-save-notifications"

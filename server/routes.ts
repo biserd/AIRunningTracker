@@ -2287,6 +2287,225 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  app.get("/api/notifications/unsubscribe-weekly", async (req, res) => {
+    try {
+      const token = req.query.token as string;
+      if (!token) {
+        return res.status(400).send("<html><body><h2>Invalid unsubscribe link.</h2></body></html>");
+      }
+
+      const userId = stravaWebhookService.verifyWeeklyUnsubscribeToken(token);
+      if (!userId) {
+        return res.status(400).send("<html><body><h2>Invalid or expired unsubscribe link.</h2></body></html>");
+      }
+
+      await storage.updateUser(userId, { coachNotifyWeeklySummary: false });
+      console.log(`[Notifications] User ${userId} unsubscribed from weekly summary emails`);
+
+      res.send(`
+        <html>
+          <head><title>Unsubscribed | AITracker.run</title></head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 80px auto; text-align: center; padding: 20px;">
+            <h1 style="color: #2c3e50;">You've been unsubscribed</h1>
+            <p style="color: #666; font-size: 16px; line-height: 1.6;">You will no longer receive weekly running summary emails from AITracker.run.</p>
+            <p style="color: #999; font-size: 14px; margin-top: 20px;">You can re-enable these anytime in your <a href="https://aitracker.run/settings" style="color: #FC5200;">account settings</a>.</p>
+          </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error("[Notifications] Weekly unsubscribe error:", error);
+      res.status(500).send("<html><body><h2>Something went wrong. Please try again.</h2></body></html>");
+    }
+  });
+
+  // Admin: send weekly summary emails to all opted-in users
+  app.post("/api/admin/send-weekly-summaries", authenticateAdmin, async (req: any, res) => {
+    try {
+      const BASE_URL = process.env.APP_URL || "https://aitracker.run";
+
+      // Allow override of the reference Monday via ?date=YYYY-MM-DD (for testing)
+      let refDate: Date;
+      if (req.query.date) {
+        refDate = new Date(req.query.date as string);
+        if (isNaN(refDate.getTime())) {
+          return res.status(400).json({ message: "Invalid date parameter" });
+        }
+      } else {
+        refDate = new Date();
+      }
+
+      // Last week: Mon 00:00 to Sun 23:59 UTC
+      const today = new Date(refDate);
+      today.setUTCHours(0, 0, 0, 0);
+      const dow = today.getUTCDay(); // 0=Sun … 6=Sat
+      const weekEnd = new Date(today);
+      weekEnd.setUTCDate(today.getUTCDate() - (dow === 0 ? 1 : dow - 1) - 1); // last Sunday
+      weekEnd.setUTCHours(23, 59, 59, 999);
+      const weekStart = new Date(weekEnd);
+      weekStart.setUTCDate(weekEnd.getUTCDate() - 6);
+      weekStart.setUTCHours(0, 0, 0, 0);
+
+      const priorEnd = new Date(weekStart);
+      priorEnd.setUTCMilliseconds(-1); // Sunday before weekStart
+      const priorStart = new Date(priorEnd);
+      priorStart.setUTCDate(priorEnd.getUTCDate() - 6);
+      priorStart.setUTCHours(0, 0, 0, 0);
+
+      const gridStart = new Date(weekEnd);
+      gridStart.setUTCDate(weekEnd.getUTCDate() - 16 * 7);
+
+      // Fetch all opted-in users with an email
+      const optedInUsers = await db.execute(sql`
+        SELECT id, email, first_name, unit_preference, coach_notify_weekly_summary
+        FROM users
+        WHERE coach_notify_weekly_summary = true
+          AND email IS NOT NULL
+          AND email != ''
+        ORDER BY id
+      `);
+
+      const userList = (optedInUsers.rows ?? []) as Array<{
+        id: number;
+        email: string;
+        first_name: string | null;
+        unit_preference: string | null;
+        coach_notify_weekly_summary: boolean;
+      }>;
+
+      console.log(`[WeeklySummary] Sending to ${userList.length} opted-in users. Week: ${weekStart.toISOString()} – ${weekEnd.toISOString()}`);
+
+      let sent = 0;
+      let skipped = 0;
+      let errors = 0;
+
+      for (const u of userList) {
+        try {
+          // Fetch activities for this user over the needed date range
+          const allActivitiesRaw = await db.execute(sql`
+            SELECT name, distance, moving_time, total_elevation_gain, average_heartrate, start_date, type
+            FROM activities
+            WHERE user_id = ${u.id}
+              AND start_date >= ${gridStart.toISOString()}
+              AND type IN ('Run','TrailRun','VirtualRun','Treadmill','Walk','Hike')
+            ORDER BY start_date DESC
+          `);
+
+          type RawActivity = {
+            name: string;
+            distance: number;
+            moving_time: number;
+            total_elevation_gain: number;
+            average_heartrate: number | null;
+            start_date: string | Date;
+            type: string;
+          };
+
+          const allActivities = (allActivitiesRaw.rows ?? []) as RawActivity[];
+
+          const inRange = (a: RawActivity, from: Date, to: Date) => {
+            const d = new Date(a.start_date);
+            return d >= from && d <= to;
+          };
+
+          const weekActs = allActivities.filter(a => inRange(a, weekStart, weekEnd));
+          const priorActs = allActivities.filter(a => inRange(a, priorStart, priorEnd));
+
+          const sumDist = (acts: RawActivity[]) => acts.reduce((s, a) => s + (a.distance ?? 0), 0);
+          const sumTime = (acts: RawActivity[]) => acts.reduce((s, a) => s + (a.moving_time ?? 0), 0);
+          const sumElev = (acts: RawActivity[]) => acts.reduce((s, a) => s + (a.total_elevation_gain ?? 0), 0);
+
+          const topRun = weekActs.length > 0
+            ? weekActs.reduce((best, a) => (a.distance > best.distance ? a : best))
+            : null;
+
+          // Build grid days: group by ISO date string
+          const gridDayMap = new Map<string, number>();
+          for (const a of allActivities) {
+            const key = new Date(a.start_date).toISOString().slice(0, 10);
+            gridDayMap.set(key, (gridDayMap.get(key) ?? 0) + (a.distance ?? 0));
+          }
+          const gridDays = Array.from(gridDayMap.entries()).map(([date, distanceM]) => ({ date, distanceM }));
+
+          // Active training plan
+          let activePlan: {
+            goalType: string; currentWeek: number; totalWeeks: number;
+            plannedDistanceKm: number; completedDistanceKm: number;
+            adherenceScore: number | null; phaseName: string | null;
+          } | null = null;
+
+          try {
+            const plan = await storage.getActiveTrainingPlan(u.id);
+            if (plan) {
+              const weeks = await storage.getPlanWeeks(plan.id);
+              const currentWeekNum = plan.currentWeek ?? 1;
+              const currentWeekData = weeks.find(w => w.weekNumber === currentWeekNum);
+              activePlan = {
+                goalType: plan.goalType,
+                currentWeek: currentWeekNum,
+                totalWeeks: plan.totalWeeks,
+                plannedDistanceKm: currentWeekData?.plannedDistanceKm ?? 0,
+                completedDistanceKm: currentWeekData?.completedDistanceKm ?? 0,
+                adherenceScore: currentWeekData?.adherenceScore ?? null,
+                phaseName: currentWeekData?.phaseName ?? null,
+              };
+            }
+          } catch (_) {}
+
+          const unsubToken = stravaWebhookService.generateWeeklyUnsubscribeToken(u.id);
+          const unsubscribeUrl = `${BASE_URL}/api/notifications/unsubscribe-weekly?token=${unsubToken}`;
+          const dashboardUrl = `${BASE_URL}/dashboard`;
+
+          const ok = await emailService.sendWeeklySummaryEmail({
+            to: u.email,
+            firstName: u.first_name,
+            unitPreference: (u.unit_preference as "km" | "miles") ?? "miles",
+            weekStart,
+            weekEnd,
+            totalRuns: weekActs.length,
+            totalDistanceM: sumDist(weekActs),
+            totalTimeSec: sumTime(weekActs),
+            totalElevationM: sumElev(weekActs),
+            priorRuns: priorActs.length,
+            priorDistanceM: sumDist(priorActs),
+            priorTimeSec: sumTime(priorActs),
+            priorElevationM: sumElev(priorActs),
+            gridDays,
+            topRun: topRun
+              ? {
+                  name: topRun.name,
+                  distanceM: topRun.distance,
+                  movingTimeSec: topRun.moving_time,
+                  avgHeartrate: topRun.average_heartrate,
+                  url: dashboardUrl,
+                }
+              : null,
+            activePlan,
+            unsubscribeUrl,
+            dashboardUrl,
+          });
+
+          if (ok) {
+            sent++;
+          } else {
+            skipped++;
+          }
+
+          // Stagger sends to stay within Resend rate limits
+          await new Promise(r => setTimeout(r, 300));
+        } catch (userErr) {
+          console.error(`[WeeklySummary] Failed for user ${u.id}:`, userErr);
+          errors++;
+        }
+      }
+
+      console.log(`[WeeklySummary] Done: ${sent} sent, ${skipped} skipped, ${errors} errors`);
+      res.json({ success: true, sent, skipped, errors, total: userList.length });
+    } catch (error: any) {
+      console.error("[WeeklySummary] Admin send failed:", error);
+      res.status(500).json({ message: error.message || "Failed to send weekly summaries" });
+    }
+  });
+
   // Create short-lived SSE nonces for sync
   const sseNonces = new Map<string, { userId: number; maxActivities: number; expiresAt: number }>();
   
@@ -3931,7 +4150,7 @@ ${allPages.map(page => `  <url>
   app.patch("/api/users/:userId/notifications", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
-      const { notifyPostRun, postRunEmailFrequency } = req.body;
+      const { notifyPostRun, postRunEmailFrequency, coachNotifyWeeklySummary } = req.body;
       
       if (isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
@@ -3949,6 +4168,10 @@ ${allPages.map(page => `  <url>
 
       if (postRunEmailFrequency && ["every_run", "weekly"].includes(postRunEmailFrequency)) {
         updateData.postRunEmailFrequency = postRunEmailFrequency;
+      }
+
+      if (typeof coachNotifyWeeklySummary === "boolean") {
+        updateData.coachNotifyWeeklySummary = coachNotifyWeeklySummary;
       }
 
       if (Object.keys(updateData).length === 0) {

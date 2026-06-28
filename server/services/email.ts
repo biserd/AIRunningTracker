@@ -1211,6 +1211,294 @@ ${unsubLine}`.trim();
 
     return await this.sendEmail({ to, subject: emailSubject, html, text });
   }
+
+  async sendWeeklySummaryEmail(params: {
+    to: string;
+    firstName: string | null;
+    unitPreference: "km" | "miles";
+    weekStart: Date;
+    weekEnd: Date;
+    totalRuns: number;
+    totalDistanceM: number;
+    totalTimeSec: number;
+    totalElevationM: number;
+    priorRuns: number;
+    priorDistanceM: number;
+    priorTimeSec: number;
+    priorElevationM: number;
+    gridDays: Array<{ date: string; distanceM: number }>;
+    topRun: { name: string; distanceM: number; movingTimeSec: number; avgHeartrate?: number | null; url: string } | null;
+    activePlan: {
+      goalType: string;
+      currentWeek: number;
+      totalWeeks: number;
+      plannedDistanceKm: number;
+      completedDistanceKm: number;
+      adherenceScore: number | null;
+      phaseName: string | null;
+    } | null;
+    unsubscribeUrl: string;
+    dashboardUrl: string;
+  }): Promise<boolean> {
+    const {
+      to, firstName, unitPreference, weekStart, weekEnd,
+      totalRuns, totalDistanceM, totalTimeSec, totalElevationM,
+      priorRuns, priorDistanceM, priorTimeSec, priorElevationM,
+      gridDays, topRun, activePlan,
+      unsubscribeUrl, dashboardUrl,
+    } = params;
+
+    const isImperial = unitPreference === "miles";
+    const METERS_PER_MILE = 1609.344;
+
+    const fmtDist = (meters: number) =>
+      isImperial
+        ? `${(meters / METERS_PER_MILE).toFixed(1)} mi`
+        : `${(meters / 1000).toFixed(1)} km`;
+
+    const fmtDistKm = (km: number) => fmtDist(km * 1000);
+
+    const fmtTime = (seconds: number) => {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    };
+
+    const fmtPace = (meters: number, seconds: number) => {
+      if (meters === 0) return "—";
+      const secPerUnit = isImperial
+        ? (seconds / meters) * METERS_PER_MILE
+        : (seconds / meters) * 1000;
+      const m = Math.floor(secPerUnit / 60);
+      const s = Math.round(secPerUnit % 60);
+      return `${m}:${s.toString().padStart(2, "0")} /${isImperial ? "mi" : "km"}`;
+    };
+
+    const pctChange = (curr: number, prior: number): string => {
+      if (prior === 0) return curr > 0 ? "new" : "";
+      const pct = Math.round(((curr - prior) / prior) * 100);
+      if (pct === 0) return "same";
+      return pct > 0 ? `+${pct}%` : `${pct}%`;
+    };
+
+    const pctColor = (curr: number, prior: number): string => {
+      if (prior === 0) return curr > 0 ? "#16a34a" : "#6b7280";
+      return curr >= prior ? "#16a34a" : "#ef4444";
+    };
+
+    const weekLabel = (d: Date) =>
+      d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+    const greeting = firstName ? `Hey ${firstName},` : "Hey there,";
+
+    const weekStr = `${weekLabel(weekStart)} – ${weekLabel(weekEnd)}`;
+
+    const subject = `Your week in running: ${totalRuns} run${totalRuns !== 1 ? "s" : ""}, ${fmtDist(totalDistanceM)} 🏃`;
+
+    // ─── Activity grid (16 weeks × 7 days) ───────────────────────────────────
+    const distMap = new Map<string, number>();
+    for (const { date, distanceM } of gridDays) {
+      distMap.set(date, (distMap.get(date) ?? 0) + distanceM);
+    }
+
+    const gridEnd = new Date(weekEnd);
+    gridEnd.setHours(23, 59, 59, 999);
+    const gridStart = new Date(gridEnd);
+    gridStart.setDate(gridStart.getDate() - 16 * 7 + 1);
+    // Align to Sunday start of that week
+    const startDow = gridStart.getDay();
+    gridStart.setDate(gridStart.getDate() - startDow);
+
+    const cellColor = (m: number): string => {
+      if (m === 0) return "#ebedf0";
+      const km = m / 1000;
+      if (km < 5) return "#9be9a8";
+      if (km < 10) return "#40c463";
+      if (km < 20) return "#30a14e";
+      return "#216e39";
+    };
+
+    const totalDays = Math.round((gridEnd.getTime() - gridStart.getTime()) / 86400000) + 1;
+    const numWeeks = Math.ceil(totalDays / 7);
+    const weeks: string[][] = [];
+    for (let w = 0; w < numWeeks; w++) {
+      const week: string[] = [];
+      for (let d = 0; d < 7; d++) {
+        const day = new Date(gridStart);
+        day.setDate(gridStart.getDate() + w * 7 + d);
+        const key = day.toISOString().slice(0, 10);
+        const dist = distMap.get(key) ?? 0;
+        week.push(cellColor(dist));
+      }
+      weeks.push(week);
+    }
+
+    const gridRows = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const gridHtml = `
+<table cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:3px;margin:0 auto;">
+  <tbody>
+    ${gridRows.map((dayLabel, di) => `
+    <tr>
+      <td style="font-size:10px;color:#999;padding-right:6px;white-space:nowrap;width:28px;vertical-align:middle;">${dayLabel}</td>
+      ${weeks.map(week => `<td style="width:12px;height:12px;background:${week[di]};border-radius:2px;"></td>`).join("")}
+    </tr>`).join("")}
+  </tbody>
+</table>`;
+
+    // ─── Stats table ─────────────────────────────────────────────────────────
+    const stats = [
+      {
+        label: "Runs",
+        value: `${totalRuns}`,
+        change: pctChange(totalRuns, priorRuns),
+        color: pctColor(totalRuns, priorRuns),
+      },
+      {
+        label: "Distance",
+        value: fmtDist(totalDistanceM),
+        change: pctChange(totalDistanceM, priorDistanceM),
+        color: pctColor(totalDistanceM, priorDistanceM),
+      },
+      {
+        label: "Time",
+        value: fmtTime(totalTimeSec),
+        change: pctChange(totalTimeSec, priorTimeSec),
+        color: pctColor(totalTimeSec, priorTimeSec),
+      },
+      {
+        label: "Elevation",
+        value: `${Math.round(totalElevationM)}m`,
+        change: pctChange(totalElevationM, priorElevationM),
+        color: pctColor(totalElevationM, priorElevationM),
+      },
+    ];
+
+    const statsHtml = `
+<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;">
+  <tr>
+    ${stats.map(s => `
+    <td style="text-align:center;padding:8px 4px;width:25%;">
+      <div style="font-size:20px;font-weight:700;color:#1a1a1a;">${s.value}</div>
+      <div style="font-size:11px;color:#666;margin-top:2px;">${s.label}</div>
+      ${s.change ? `<div style="font-size:11px;font-weight:600;color:${s.color};margin-top:2px;">${s.change} vs prior week</div>` : ""}
+    </td>`).join("")}
+  </tr>
+</table>`;
+
+    // ─── Top run card ─────────────────────────────────────────────────────────
+    const topRunHtml = topRun ? `
+<div style="margin:0 0 24px;padding:16px 20px;background:#fff9f7;border-left:3px solid #FC5200;border-radius:0 8px 8px 0;">
+  <div style="font-size:11px;font-weight:700;color:#FC5200;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Best Run This Week</div>
+  <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:6px;">${topRun.name}</div>
+  <div style="font-size:13px;color:#555;display:flex;gap:16px;">
+    <span>${fmtDist(topRun.distanceM)}</span>
+    <span>·</span>
+    <span>${fmtPace(topRun.distanceM, topRun.movingTimeSec)}</span>
+    ${topRun.avgHeartrate ? `<span>·</span><span>${Math.round(topRun.avgHeartrate)} bpm avg</span>` : ""}
+  </div>
+</div>` : "";
+
+    // ─── Training plan section ────────────────────────────────────────────────
+    const goalLabels: Record<string, string> = {
+      "5k": "5K", "10k": "10K", "half_marathon": "Half Marathon",
+      "marathon": "Marathon", "50k": "50K", "50_mile": "50 Mile",
+      "100k": "100K", "100_mile": "100 Mile", "general_fitness": "General Fitness",
+    };
+
+    const planHtml = activePlan ? (() => {
+      const goalLabel = goalLabels[activePlan.goalType] ?? activePlan.goalType;
+      const planned = fmtDistKm(activePlan.plannedDistanceKm);
+      const completed = fmtDistKm(activePlan.completedDistanceKm);
+      const adherePct = activePlan.adherenceScore != null
+        ? Math.round(activePlan.adherenceScore * 100)
+        : null;
+      const adherenceBar = adherePct != null
+        ? `<div style="margin-top:10px;"><div style="font-size:11px;color:#666;margin-bottom:4px;">Week adherence: <strong>${adherePct}%</strong></div><div style="height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;"><div style="height:6px;width:${Math.min(adherePct, 100)}%;background:${adherePct >= 80 ? "#16a34a" : adherePct >= 50 ? "#f59e0b" : "#ef4444"};border-radius:3px;"></div></div></div>`
+        : "";
+      return `
+<div style="margin:0 0 24px;padding:16px 20px;background:#f0f7ff;border-radius:8px;">
+  <div style="font-size:11px;font-weight:700;color:#1d4ed8;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Training Plan · Week ${activePlan.currentWeek} of ${activePlan.totalWeeks}</div>
+  <div style="font-size:14px;font-weight:600;color:#1a1a1a;">${goalLabel}${activePlan.phaseName ? ` — ${activePlan.phaseName}` : ""}</div>
+  <div style="font-size:13px;color:#555;margin-top:6px;">${completed} completed of ${planned} planned</div>
+  ${adherenceBar}
+</div>`;
+    })() : "";
+
+    const hasActivity = totalRuns > 0;
+    const emptyState = !hasActivity
+      ? `<p style="text-align:center;color:#6b7280;font-style:italic;padding:12px 0;">No runs logged last week — lace up and get out there this week! 👟</p>`
+      : "";
+
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Your Week in Running</title></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+
+<div style="max-width:600px;margin:32px auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+
+  <!-- Header -->
+  <div style="background:linear-gradient(135deg,#FC5200 0%,#e04900 100%);padding:28px 28px 24px;">
+    <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.8);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">RunAnalytics Weekly Digest</div>
+    <div style="font-size:24px;font-weight:800;color:#ffffff;margin-bottom:4px;">Your Week in Running</div>
+    <div style="font-size:14px;color:rgba(255,255,255,0.85);">${weekStr}</div>
+  </div>
+
+  <!-- Body -->
+  <div style="padding:28px;">
+
+    <p style="margin:0 0 24px;font-size:15px;color:#333;line-height:1.6;">${greeting} Here's how your training week shaped up.</p>
+
+    ${emptyState}
+
+    ${hasActivity ? `
+    <!-- Stats -->
+    <div style="margin:0 0 28px;padding:20px;background:#f9fafb;border-radius:10px;">
+      <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px;">Week at a Glance</div>
+      ${statsHtml}
+    </div>
+
+    ${topRunHtml}
+
+    ${planHtml}
+    ` : ""}
+
+    <!-- Activity grid -->
+    <div style="margin:0 0 24px;">
+      <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;">Last 16 Weeks</div>
+      ${gridHtml}
+      <div style="margin-top:8px;font-size:11px;color:#999;display:flex;align-items:center;gap:4px;">
+        Less
+        <span style="display:inline-block;width:11px;height:11px;background:#ebedf0;border-radius:2px;"></span>
+        <span style="display:inline-block;width:11px;height:11px;background:#9be9a8;border-radius:2px;"></span>
+        <span style="display:inline-block;width:11px;height:11px;background:#40c463;border-radius:2px;"></span>
+        <span style="display:inline-block;width:11px;height:11px;background:#30a14e;border-radius:2px;"></span>
+        <span style="display:inline-block;width:11px;height:11px;background:#216e39;border-radius:2px;"></span>
+        More
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div style="text-align:center;padding:8px 0 4px;">
+      <a href="${dashboardUrl}" style="display:inline-block;background:#FC5200;color:#ffffff;font-weight:700;font-size:14px;padding:13px 32px;border-radius:8px;text-decoration:none;">View Full Dashboard →</a>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div style="padding:16px 28px;border-top:1px solid #f0f0f0;font-size:12px;color:#aaa;text-align:center;line-height:1.8;">
+    Train smarter, The RunAnalytics Team<br>
+    <a href="${unsubscribeUrl}" style="color:#aaa;text-decoration:underline;">Unsubscribe from weekly summaries</a>
+    &nbsp;·&nbsp;
+    <a href="https://aitracker.run/settings" style="color:#aaa;text-decoration:underline;">Notification settings</a>
+  </div>
+
+</div>
+</body>
+</html>`;
+
+    return this.sendEmail({ to, subject, html });
+  }
 }
 
 export const emailService = new EmailService();

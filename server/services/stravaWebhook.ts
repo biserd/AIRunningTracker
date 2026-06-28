@@ -79,6 +79,26 @@ class StravaWebhookService {
     }
   }
 
+  generateWeeklyUnsubscribeToken(userId: number): string {
+    const payload = `unsub-weekly:${userId}`;
+    const signature = crypto.createHmac("sha256", UNSUBSCRIBE_SECRET).update(payload).digest("hex").slice(0, 16);
+    return Buffer.from(`${userId}:${signature}`).toString("base64url");
+  }
+
+  verifyWeeklyUnsubscribeToken(token: string): number | null {
+    try {
+      const decoded = Buffer.from(token, "base64url").toString();
+      const [userIdStr, signature] = decoded.split(":");
+      const userId = parseInt(userIdStr);
+      if (isNaN(userId)) return null;
+      const expected = crypto.createHmac("sha256", UNSUBSCRIBE_SECRET).update(`unsub-weekly:${userId}`).digest("hex").slice(0, 16);
+      if (signature !== expected) return null;
+      return userId;
+    } catch {
+      return null;
+    }
+  }
+
   async verifySubscription(hubMode: string, hubChallenge: string, hubVerifyToken: string): Promise<{ valid: boolean; challenge?: string }> {
     if (hubMode === "subscribe" && hubVerifyToken === VERIFY_TOKEN) {
       console.log("[Strava Webhook] Subscription verified");
