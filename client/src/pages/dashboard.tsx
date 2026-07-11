@@ -25,7 +25,7 @@ import { FloatingAICoach } from "@/components/FloatingAICoach";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import RecentConversations from "@/components/RecentConversations";
 import TrialBadge from "@/components/TrialBadge";
-import { Gift, ChevronRight, Crown, Chrome } from "lucide-react";
+import { Gift, ChevronRight, Crown, Chrome, X } from "lucide-react";
 import EmailCaptureModal from "@/components/EmailCaptureModal";
 import { Link } from "wouter";
 import { useFeatureAccess, useSubscription } from "@/hooks/useSubscription";
