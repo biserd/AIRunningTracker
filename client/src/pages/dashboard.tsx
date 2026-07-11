@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { queryClient, apiRequest, getQueryFn } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
@@ -185,6 +185,22 @@ export default function Dashboard() {
       return false;
     },
   });
+
+  // When activities first land (0 → N), all sub-component queries fired at page load have
+  // stale empty data. Invalidate them so they refetch with real values.
+  const activitiesCount = dashboardData?.activities?.length ?? 0;
+  const prevActivitiesCount = useRef<number>(0);
+  useEffect(() => {
+    if (prevActivitiesCount.current === 0 && activitiesCount > 0) {
+      queryClient.invalidateQueries({ queryKey: [`/api/runner-score/${user.id}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/runner-score/${user.id}/history`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/activities/heatmap"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/chart/${user.id}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/performance/recovery/${user.id}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/goals/${user.id}`] });
+    }
+    prevActivitiesCount.current = activitiesCount;
+  }, [activitiesCount, user.id]);
 
   // Recovery status query
   const { data: recoveryData } = useQuery<{
