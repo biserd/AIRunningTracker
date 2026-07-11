@@ -2905,8 +2905,12 @@ ${allPages.map(page => `  <url>
         }),
       };
       
-      // Cache the response
-      setCachedResponse(cacheKey, dashboardData);
+      // Only cache when there are activities — skip caching for brand-new users
+      // so their polling picks up data the moment the sync completes rather
+      // than waiting for the 60-second TTL to expire.
+      if (activities.length > 0) {
+        setCachedResponse(cacheKey, dashboardData);
+      }
       
       // Prevent browser caching with 304 responses
       res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
