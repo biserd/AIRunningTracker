@@ -35,6 +35,10 @@ export default function Dashboard() {
   const { canAccessAICoachChat, insightsUsed, insightsLimit, maxInsightsPerMonth } = useFeatureAccess();
   const [chartTimeRange, setChartTimeRange] = useState<string>("30days");
   const [chromeExtBannerDismissed, setChromeExtBannerDismissed] = useState<boolean>(true);
+  const [newUserPolling, setNewUserPolling] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return new URLSearchParams(window.location.search).get("welcome") === "1";
+  });
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<number | undefined>();
   const [syncProgress, setSyncProgress] = useState<{
@@ -100,7 +104,7 @@ export default function Dashboard() {
     setTimeout(() => {
       toast({
         title: "Welcome to RunAnalytics!",
-        description: "You're on the free plan — your last 10 runs are ready to explore. Start a 14-day Premium trial anytime to unlock everything.",
+        description: "Your activities are syncing from Strava — they'll appear on your dashboard in a few seconds.",
         duration: 8000,
       });
       localStorage.setItem(seenKey, 'true');
@@ -170,18 +174,25 @@ export default function Dashboard() {
 
 
 
-  // Dashboard data query with polling when insights are generating
+  // Dashboard data query with polling when insights are generating or new user is waiting for first sync
   const { data: dashboardData, isLoading, error } = useQuery<any>({
     queryKey: [`/api/dashboard/${user.id}`],
     refetchInterval: (query) => {
-      // Only check status after successful initial fetch
-      if (!query.state.data) return false;
-      // Poll every 5 seconds while insights are being generated
-      const status = query.state.data?.insightsStatus;
-      if (status === 'syncing' || status === 'generating') {
-        return 5000;
+      const data = query.state.data;
+      // New user waiting for first sync — poll every 3 s until activities arrive
+      if (newUserPolling) {
+        if (data?.activities?.length > 0) {
+          setNewUserPolling(false);
+          return false;
+        }
+        return 3000;
       }
-      return false; // Stop polling when ready
+      // Only check status after successful initial fetch
+      if (!data) return false;
+      // Poll every 5 seconds while insights are being generated
+      const status = data?.insightsStatus;
+      if (status === 'syncing' || status === 'generating') return 5000;
+      return false;
     },
   });
 

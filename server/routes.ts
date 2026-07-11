@@ -2881,11 +2881,7 @@ ${allPages.map(page => `  <url>
         // - generating: sync complete but insights not yet generated (just synced, waiting for AI)
         // - ready: insights exist or no activities to analyze
         insightsStatus: (() => {
-          // Only show syncing if sync is actively running AND making progress
-          // If sync status is "running" but no progress/total, it's likely stuck
-          const isActivelySyncing = syncState.syncStatus === 'running' && 
-            (syncState.syncProgress > 0 || syncState.syncTotal > 0);
-          if (isActivelySyncing) return 'syncing';
+          if (syncState.syncStatus === 'running') return 'syncing';
           
           // If sync completed recently (within 2 minutes) and no insights yet, AI is generating
           const hasActivities = activities.length > 0;
