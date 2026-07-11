@@ -426,7 +426,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-light-grey">
       <AppHeader />
 
-      <EmailCaptureModal open={showEmailCaptureModal} />
+      <EmailCaptureModal open={showEmailCaptureModal} userId={user.id} />
 
       {/* Promote the Chrome extension to logged-in users */}
       {showChromeExtBanner && (

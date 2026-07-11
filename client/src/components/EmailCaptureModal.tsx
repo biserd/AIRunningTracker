@@ -10,9 +10,10 @@ import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   open: boolean;
+  userId: number;
 }
 
-export default function EmailCaptureModal({ open }: Props) {
+export default function EmailCaptureModal({ open, userId }: Props) {
   const [email, setEmail] = useState("");
   const { toast } = useToast();
 
@@ -21,7 +22,7 @@ export default function EmailCaptureModal({ open }: Props) {
       apiRequest("/api/auth/add-email", "POST", { email }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${userId}`] });
     },
     onError: (err: any) => {
       const msg = err?.message || "Something went wrong. Please try again.";
