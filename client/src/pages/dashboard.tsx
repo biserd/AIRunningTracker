@@ -196,6 +196,13 @@ export default function Dashboard() {
     },
   });
 
+  // Stop new-user polling the moment activities land (safety net — fires even if refetchInterval is stale)
+  useEffect(() => {
+    if (newUserPolling && (dashboardData?.activities?.length ?? 0) > 0) {
+      setNewUserPolling(false);
+    }
+  }, [dashboardData?.activities?.length, newUserPolling]);
+
   // Recovery status query
   const { data: recoveryData } = useQuery<{
     daysSinceLastRun: number;
@@ -424,6 +431,11 @@ export default function Dashboard() {
   const showEmailCaptureModal =
     !!dashboardData?.user?.stravaConnected && !dashboardData?.user?.email;
 
+  const showSyncingScreen =
+    !showEmailCaptureModal &&
+    newUserPolling &&
+    (dashboardData?.activities?.length ?? 0) === 0;
+
   const showChromeExtBanner = !!user?.id && !chromeExtBannerDismissed;
 
   const dismissChromeExtBanner = () => {
@@ -432,6 +444,32 @@ export default function Dashboard() {
     }
     setChromeExtBannerDismissed(true);
   };
+
+  if (showSyncingScreen) {
+    return (
+      <div className="min-h-screen bg-light-grey">
+        <AppHeader />
+        <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 text-center">
+          <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center mb-6">
+            <div className="animate-spin rounded-full h-8 w-8 border-[3px] border-orange-200 border-t-orange-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-charcoal mb-2">Importing your runs…</h2>
+          <p className="text-gray-500 max-w-sm mb-6">
+            We're pulling your activities from Strava. This usually takes under 30 seconds.
+          </p>
+          <div className="flex gap-1.5">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="w-2 h-2 rounded-full bg-orange-400 animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-light-grey">
