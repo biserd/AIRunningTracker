@@ -116,24 +116,17 @@ export default function Dashboard() {
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange mx-auto mb-4"></div>
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
+  // NOTE: All hooks must be declared before any conditional return. Early
+  // returns for authLoading / !user live just above the render section below —
+  // putting them here (before the hooks that follow) changes the hook count
+  // between renders and crashes React the moment auth or data state shifts.
 
   // Sync activities mutation
   const syncMutation = useMutation({
-    mutationFn: () => apiRequest(`/api/strava/sync/${user.id}`, "POST"),
+    mutationFn: () => {
+      if (!user?.id) return Promise.reject(new Error("Not signed in"));
+      return apiRequest(`/api/strava/sync/${user.id}`, "POST");
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user.id}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/activities/heatmap?range=3m`] });
@@ -172,7 +165,8 @@ export default function Dashboard() {
 
   // Dashboard data query with polling when insights are generating or new user is waiting for first sync
   const { data: dashboardData, isLoading, error } = useQuery<any>({
-    queryKey: [`/api/dashboard/${user.id}`],
+    queryKey: [`/api/dashboard/${user?.id}`],
+    enabled: !!user?.id,
     refetchInterval: (query) => {
       const data = query.state.data;
       if (!data) return false;
@@ -186,21 +180,22 @@ export default function Dashboard() {
     },
   });
 
-  // When activities first land (0 → N), all sub-component queries fired at page load have
-  // stale empty data. Invalidate them so they refetch with real values.
+  // When activities first land (0 → N), every other query on the page was
+  // fetched while the account was still empty and — with the app-wide
+  // staleTime of Infinity — will never refetch on its own. Invalidate the
+  // whole cache (except the dashboard query that just delivered the fresh
+  // data) so all sub-components repopulate immediately.
   const activitiesCount = dashboardData?.activities?.length ?? 0;
   const prevActivitiesCount = useRef<number>(0);
   useEffect(() => {
     if (prevActivitiesCount.current === 0 && activitiesCount > 0) {
-      queryClient.invalidateQueries({ queryKey: [`/api/runner-score/${user.id}`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/runner-score/${user.id}/history`] });
-      queryClient.invalidateQueries({ queryKey: ["/api/activities/heatmap"] });
-      queryClient.invalidateQueries({ queryKey: [`/api/chart/${user.id}`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/performance/recovery/${user.id}`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/goals/${user.id}`] });
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] !== `/api/dashboard/${user?.id}`,
+      });
     }
     prevActivitiesCount.current = activitiesCount;
-  }, [activitiesCount, user.id]);
+  }, [activitiesCount, user?.id]);
 
   // Recovery status query
   const { data: recoveryData } = useQuery<{
@@ -214,15 +209,16 @@ export default function Dashboard() {
     statusMessage: string;
     recoveryMessage: string;
   }>({
-    queryKey: [`/api/performance/recovery/${user.id}`],
+    queryKey: [`/api/performance/recovery/${user?.id}`],
     enabled: !!user?.id,
     staleTime: 30000,
   });
 
   // Chart data query with time range
   const { data: chartData } = useQuery({
-    queryKey: ['/api/chart', user.id, chartTimeRange],
-    queryFn: () => apiRequest(`/api/chart/${user.id}?range=${chartTimeRange}`, "GET"),
+    queryKey: ['/api/chart', user?.id, chartTimeRange],
+    queryFn: () => apiRequest(`/api/chart/${user?.id}?range=${chartTimeRange}`, "GET"),
+    enabled: !!user?.id,
   });
 
   const handleTimeRangeChange = (range: string) => {
@@ -233,6 +229,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     // Handle URL parameters for Strava connection feedback
+    if (!user?.id) return;
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('connected') === 'true') {
       toast({
@@ -392,6 +389,22 @@ export default function Dashboard() {
   };
 
 
+
+  // Early returns — safe here because every hook above has already run.
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   if (isLoading || !dashboardData) {
     return (

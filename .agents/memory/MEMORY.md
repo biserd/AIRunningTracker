@@ -1,1 +1,2 @@
 - [OpenAI GPT-5.x Chat Completions params](openai-gpt5-chat-params.md) — GPT-5.x needs `max_completion_tokens` not `max_tokens`; app's gpt-5.1 calls use the Responses API (different param shape).
+- [React Query staleTime Infinity model](react-query-stale-infinity.md) — queries never self-refetch; data arriving after page load needs blanket invalidation, and keep hooks above early returns.
