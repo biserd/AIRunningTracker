@@ -18,7 +18,7 @@ export default function EmailCaptureModal({ open }: Props) {
 
   const mutation = useMutation({
     mutationFn: (email: string) =>
-      apiRequest("POST", "/api/auth/add-email", { email }),
+      apiRequest("/api/auth/add-email", "POST", { email }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
