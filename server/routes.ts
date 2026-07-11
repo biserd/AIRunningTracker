@@ -1456,8 +1456,11 @@ ${allPages.map(page => `  <url>
           : null
       };
       
-      // Cache for 5 minutes
-      setCachedResponse(cacheKey, response);
+      // Cache for 5 minutes — but never cache an empty result, so new users
+      // whose first sync is still running get fresh data as soon as it lands.
+      if (metrics.length > 0) {
+        setCachedResponse(cacheKey, response);
+      }
       
       res.json(response);
     } catch (error: any) {
@@ -3148,8 +3151,12 @@ ${allPages.map(page => `  <url>
       
       const responseData = { chartData };
       
-      // Cache the response
-      setCachedResponse(cacheKey, responseData);
+      // Cache the response — but never cache an empty chart. New users hit this
+      // endpoint while their first Strava sync is still running; caching the
+      // empty result would keep serving it after activities land.
+      if (chartData.length > 0) {
+        setCachedResponse(cacheKey, responseData);
+      }
       
       // Prevent browser caching with 304 responses
       res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
