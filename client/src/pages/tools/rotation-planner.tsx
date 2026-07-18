@@ -347,32 +347,58 @@ export default function RotationPlannerPage() {
           )}
 
           <div className="mt-12 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-bold text-charcoal mb-4">Explore More</h2>
-            <div className="grid sm:grid-cols-2 gap-6">
+            <h2 className="text-xl font-bold text-charcoal mb-2">Find & Compare Your Next Shoe</h2>
+            <p className="text-sm text-gray-500 mb-5">Once you have your rotation roles, use these tools to pick the right shoe for each slot.</p>
+            <div className="grid sm:grid-cols-3 gap-4">
+              <Link href="/tools/shoe-finder">
+                <div className="p-5 border-2 border-strava-orange rounded-xl hover:shadow-md transition-all cursor-pointer bg-orange-50">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-lg bg-strava-orange flex items-center justify-center">
+                      <Zap className="h-5 w-5 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-charcoal">AI Shoe Finder</h3>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Answer 3 questions and get matched to your ideal shoe for each rotation role.
+                  </p>
+                  <div className="flex items-center gap-1 mt-3 text-strava-orange text-sm font-medium">
+                    <span>Find my shoe</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </div>
+                </div>
+              </Link>
+              <Link href="/tools/shoes/compare">
+                <div className="p-5 border border-gray-200 rounded-xl hover:border-strava-orange hover:shadow-md transition-all cursor-pointer">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-lg bg-strava-orange/10 flex items-center justify-center">
+                      <Scale className="h-5 w-5 text-strava-orange" />
+                    </div>
+                    <h3 className="font-semibold text-charcoal">Side-by-Side Compare</h3>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Compare two shoes spec-for-spec — weight, drop, cushioning, and price.
+                  </p>
+                  <div className="flex items-center gap-1 mt-3 text-strava-orange text-sm font-medium">
+                    <span>Compare shoes</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </div>
+                </div>
+              </Link>
               <Link href="/tools/shoes">
-                <div className="p-4 border border-gray-200 rounded-lg hover:border-strava-orange hover:shadow-md transition-all cursor-pointer">
+                <div className="p-5 border border-gray-200 rounded-xl hover:border-strava-orange hover:shadow-md transition-all cursor-pointer">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-10 h-10 rounded-lg bg-strava-orange/10 flex items-center justify-center">
                       <Check className="h-5 w-5 text-strava-orange" />
                     </div>
-                    <h3 className="font-semibold">Browse Full Database</h3>
+                    <h3 className="font-semibold text-charcoal">Browse Full Database</h3>
                   </div>
                   <p className="text-sm text-gray-600">
-                    Explore all 35+ shoes with detailed specifications.
+                    Explore 280+ shoes with detailed specs, AI reviews, and 2026 releases.
                   </p>
-                </div>
-              </Link>
-              <Link href="/tools/shoe-finder">
-                <div className="p-4 border border-gray-200 rounded-lg hover:border-strava-orange hover:shadow-md transition-all cursor-pointer">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-lg bg-strava-orange/10 flex items-center justify-center">
-                      <Zap className="h-5 w-5 text-strava-orange" />
-                    </div>
-                    <h3 className="font-semibold">Personalized Shoe Finder</h3>
+                  <div className="flex items-center gap-1 mt-3 text-strava-orange text-sm font-medium">
+                    <span>Browse shoes</span>
+                    <ArrowRight className="h-4 w-4" />
                   </div>
-                  <p className="text-sm text-gray-600">
-                    Get recommendations based on your specific needs.
-                  </p>
                 </div>
               </Link>
             </div>

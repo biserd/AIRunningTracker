@@ -76,11 +76,11 @@ export default function ShoeFinderPage() {
   return (
     <>
       <SEO
-        title="Running Shoe Finder — Match Your Perfect Shoe by Pace, Surface & Brand (2026)"
+        title="AI Running Shoe Finder — Find Your Perfect Running Shoe"
         description="Answer 5 questions and get matched to your ideal running shoe. Filter by pace, surface, brand, and foot type. Free tool used by 10,000+ runners."
         keywords="running shoe finder, best running shoes 2026, shoe recommendations by pace, shoe finder by brand, running shoe quiz"
         url="https://aitracker.run/tools/shoe-finder"
-        ogTitle="Running Shoe Finder — Find Your Perfect Match (2026)"
+        ogTitle="AI Running Shoe Finder — Find Your Perfect Running Shoe"
         ogDescription="Answer 5 questions and get matched to your ideal running shoe by pace, surface, and brand."
         structuredData={{
           "@context": "https://schema.org",
@@ -105,7 +105,7 @@ export default function ShoeFinderPage() {
               </div>
               
               <h1 className="text-3xl sm:text-4xl font-bold text-charcoal mb-4">
-                Find Your Perfect Running Shoe
+                AI Running Shoe Finder — Find Your Perfect Running Shoe
               </h1>
               
               <p className="text-lg text-gray-600">
