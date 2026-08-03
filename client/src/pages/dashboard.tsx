@@ -25,7 +25,6 @@ import { StravaConnectButton, StravaPoweredBy } from "@/components/StravaConnect
 import { FloatingAICoach } from "@/components/FloatingAICoach";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import RecentConversations from "@/components/RecentConversations";
-import TrialBadge from "@/components/TrialBadge";
 import { Gift, ChevronRight, Crown, Chrome, X } from "lucide-react";
 import EmailCaptureModal from "@/components/EmailCaptureModal";
 import { Link } from "wouter";
@@ -562,9 +561,6 @@ export default function Dashboard() {
         {canAccessAICoachChat && (
           <AnnouncementBanner onOpenChat={() => setIsChatOpen(true)} />
         )}
-
-        {/* Free-tier upgrade nudge */}
-        <TrialBadge />
 
         {/* One-time Premium Preview teaser — free users with a stored preview */}
         <PremiumPreviewTeaser />
