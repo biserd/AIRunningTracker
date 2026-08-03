@@ -50,6 +50,7 @@ import { buildUpgradeUrl, isBenefitKey, sanitizeReturnTo } from "@shared/upgrade
 import { recordFunnelEvent } from "./services/funnelAnalytics";
 import { isClientFunnelEvent, buildFunnelDedupeKey, billingPeriodFromInterval } from "@shared/funnelEvents";
 import { getDashboardCalendarPeriods, getLastMonthComparisonEnd, partitionDashboardActivities } from "./services/dashboardPeriods";
+import { formatRunDistance, formatRunDuration, formatRunPace, runUnitLabels } from "@shared/runFormatting";
 
 // Authentication middleware
 const authenticateJWT = async (req: any, res: Response, next: NextFunction) => {
@@ -2948,6 +2949,7 @@ ${allPages.map(page => `  <url>
           })() : "0:00",
           monthlyTotalActivities: totalActivities,
           monthlyTotalMinutes: Math.round(totalTime / 60),
+          monthlyPreviousActivities: lastMonthActivitiesCount,
           
           // Weekly totals
           weeklyTotalDistance: user.unitPreference === "miles" ? 
@@ -2959,6 +2961,7 @@ ${allPages.map(page => `  <url>
           })() : "0:00",
           weeklyTotalActivities: thisWeekActivitiesCount,
           weeklyTotalMinutes: Math.round(thisWeekTime / 60),
+          weeklyPreviousActivities: lastWeekActivitiesCount,
           
           // Recovery based on weekly activity
           recovery: thisWeekActivitiesCount >= 4 ? "Good" : thisWeekActivitiesCount >= 2 ? "Moderate" : thisWeekActivitiesCount === 1 ? "Light" : "No recent runs",
@@ -5595,10 +5598,7 @@ ${allPages.map(page => `  <url>
       // When locked, return ONLY preview-safe fields (name, date, totals).
       // No streams, laps, HR, splits, GPS — those are paid-only.
       if (isLocked) {
-        const distanceInKm = activity.distance / 1000;
-        const distanceConverted = user.unitPreference === "miles" ? distanceInKm * 0.621371 : distanceInKm;
-        const pacePerKm = activity.distance > 0 ? (activity.movingTime / 60) / distanceInKm : 0;
-        const paceConverted = user.unitPreference === "miles" ? pacePerKm / 0.621371 : pacePerKm;
+        const units = runUnitLabels(user.unitPreference);
         return res.json({
           locked: true,
           activity: {
@@ -5606,11 +5606,11 @@ ${allPages.map(page => `  <url>
             name: activity.name,
             startDate: activity.startDate,
             type: activity.type,
-            formattedDistance: distanceConverted.toFixed(2),
-            formattedDuration: `${Math.floor(activity.movingTime / 60)}:${String(activity.movingTime % 60).padStart(2, '0')}`,
-            formattedPace: paceConverted > 0 ? `${Math.floor(paceConverted)}:${String(Math.round((paceConverted % 1) * 60)).padStart(2, '0')}` : "0:00",
-            distanceUnit: user.unitPreference === "miles" ? "mi" : "km",
-            paceUnit: user.unitPreference === "miles" ? "/mi" : "/km",
+            formattedDistance: formatRunDistance(activity.distance, user.unitPreference),
+            formattedDuration: formatRunDuration(activity.movingTime),
+            formattedPace: formatRunPace(activity.movingTime, activity.distance, user.unitPreference),
+            distanceUnit: units.distanceUnit,
+            paceUnit: units.paceUnit,
             unitPreference: user.unitPreference,
             locked: true,
           },
@@ -5618,10 +5618,7 @@ ${allPages.map(page => `  <url>
       }
 
       // Format activity data with unit conversions
-      const distanceInKm = activity.distance / 1000;
-      const distanceConverted = user.unitPreference === "miles" ? distanceInKm * 0.621371 : distanceInKm;
-      const pacePerKm = activity.distance > 0 ? (activity.movingTime / 60) / distanceInKm : 0;
-      const paceConverted = user.unitPreference === "miles" ? pacePerKm / 0.621371 : pacePerKm;
+      const units = runUnitLabels(user.unitPreference);
       
       const {
         streamsData,
@@ -5651,9 +5648,9 @@ ${allPages.map(page => `  <url>
           maxWatts,
           sufferScore,
         } : {}),
-        formattedDistance: distanceConverted.toFixed(2),
-        formattedPace: paceConverted > 0 ? `${Math.floor(paceConverted)}:${String(Math.round((paceConverted % 1) * 60)).padStart(2, '0')}` : "0:00",
-        formattedDuration: `${Math.floor(activity.movingTime / 60)}:${String(activity.movingTime % 60).padStart(2, '0')}`,
+        formattedDistance: formatRunDistance(activity.distance, user.unitPreference),
+        formattedPace: formatRunPace(activity.movingTime, activity.distance, user.unitPreference),
+        formattedDuration: formatRunDuration(activity.movingTime),
         formattedSpeed: user.unitPreference === "miles" ? 
           (activity.averageSpeed * 2.23694).toFixed(1) : 
           (activity.averageSpeed * 3.6).toFixed(1),
@@ -5661,8 +5658,8 @@ ${allPages.map(page => `  <url>
           (activity.maxSpeed * 2.23694).toFixed(1) : 
           (activity.maxSpeed * 3.6).toFixed(1),
         unitPreference: user.unitPreference,
-        distanceUnit: user.unitPreference === "miles" ? "mi" : "km",
-        paceUnit: user.unitPreference === "miles" ? "/mi" : "/km",
+        distanceUnit: units.distanceUnit,
+        paceUnit: units.paceUnit,
         speedUnit: user.unitPreference === "miles" ? "mph" : "km/h",
         // Include GPS coordinates for mapping
         startLatitude: activity.startLatitude,

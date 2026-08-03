@@ -54,6 +54,9 @@ interface RunnerScoreComponents {
 interface RunnerScoreData {
   totalScore: number;
   grade: string;
+  sampleSize: number;
+  recentRunCount: number;
+  isProvisional: boolean;
   percentile: number;
   components: RunnerScoreComponents;
   trends: {
@@ -87,6 +90,11 @@ export class RunnerScoreService {
     }
 
     const components = this.calculateScoreComponents(activities);
+    const now = Date.now();
+    const recentRunCount = activities.filter((activity) => {
+      const activityTime = new Date(activity.startDate).getTime();
+      return activityTime > now - 30 * 24 * 60 * 60 * 1000 && activityTime <= now;
+    }).length;
     const totalScore = clampTotal(
       Math.round(components.consistency + components.performance + components.volume + components.improvement)
     );
@@ -100,6 +108,9 @@ export class RunnerScoreService {
     return {
       totalScore,
       grade,
+      sampleSize: activities.length,
+      recentRunCount,
+      isProvisional: recentRunCount < 3,
       percentile,
       components,
       trends,
@@ -415,6 +426,9 @@ export class RunnerScoreService {
     return {
       totalScore: 25,
       grade: 'D',
+      sampleSize: 0,
+      recentRunCount: 0,
+      isProvisional: true,
       percentile: 10,
       components: {
         consistency: 5,

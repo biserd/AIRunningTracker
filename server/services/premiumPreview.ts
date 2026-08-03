@@ -16,7 +16,7 @@ import { normalizeCadenceToSpm } from "@shared/cadenceNormalization";
 // Safe payload limits — the preview is stored on the users row and returned
 // verbatim to the client, so it must stay small and free of bulky fields
 // (streams, polylines, laps).
-export const PREMIUM_PREVIEW_VERSION = 3;
+export const PREMIUM_PREVIEW_VERSION = 4;
 export const PREVIEW_TEXT_MAX = 240;
 export const PREVIEW_NAME_MAX = 120;
 export const PREVIEW_PAYLOAD_MAX_BYTES = 4096;
@@ -106,9 +106,9 @@ export function selectLatestEligibleRun(activities: Activity[]): Activity | null
 }
 
 function formatDurationPerUnit(seconds: number, unitPreference: PreviewUnitPreference): string {
-  const secondsPerUnit = unitPreference === "miles" ? seconds * 1.609344 : seconds;
+  const secondsPerUnit = Math.round(unitPreference === "miles" ? seconds * 1.609344 : seconds);
   const min = Math.floor(secondsPerUnit / 60);
-  const sec = Math.round(secondsPerUnit % 60);
+  const sec = secondsPerUnit % 60;
   return `${min}:${String(sec).padStart(2, "0")}/${unitPreference === "miles" ? "mi" : "km"}`;
 }
 

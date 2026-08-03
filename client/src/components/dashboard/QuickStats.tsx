@@ -10,10 +10,12 @@ interface QuickStatsProps {
     monthlyAvgPace: string;
     monthlyTotalMinutes: number;
     monthlyTotalActivities: number;
+    monthlyPreviousActivities?: number;
     weeklyTotalDistance: string;
     weeklyAvgPace: string;
     weeklyTotalMinutes: number;
     weeklyTotalActivities: number;
+    weeklyPreviousActivities?: number;
     asOf?: string;
     
     recovery: string;
@@ -50,6 +52,7 @@ export default function QuickStats({ stats }: QuickStatsProps) {
   const getCurrentPace = () => comparisonPeriod === 'weekly' ? stats.weeklyAvgPace : stats.monthlyAvgPace;
   const getCurrentRunningTime = () => comparisonPeriod === 'weekly' ? stats.weeklyTotalMinutes : stats.monthlyTotalMinutes;
   const getCurrentActivities = () => comparisonPeriod === 'weekly' ? stats.weeklyTotalActivities : stats.monthlyTotalActivities;
+  const getPreviousActivities = () => comparisonPeriod === 'weekly' ? stats.weeklyPreviousActivities : stats.monthlyPreviousActivities;
   const getPeriodLabel = () => comparisonPeriod === 'weekly' ? 'this week' : 'this month';
   const hasNoRunsInPeriod = getCurrentActivities() === 0;
   const emptyPeriodLabel = comparisonPeriod === 'weekly'
@@ -98,6 +101,24 @@ export default function QuickStats({ stats }: QuickStatsProps) {
     );
   };
 
+  const formatRunComparison = () => {
+    const previous = getPreviousActivities();
+    if (previous === undefined || previous === 0) {
+      return (
+        <div className="mt-4 flex items-center text-sm">
+          <span className="text-gray-500">No comparable runs in the previous period</span>
+        </div>
+      );
+    }
+    const current = getCurrentActivities();
+    const comparisonLabel = comparisonPeriod === 'weekly' ? 'last week' : 'by this date last month';
+    return (
+      <div className="mt-4 text-sm text-gray-500">
+        <span className="font-medium text-charcoal">{current}</span> vs {previous} {comparisonLabel}
+      </div>
+    );
+  };
+
   return (
     <div className="mb-8">
       {/* Comparison Period Toggle */}
@@ -105,7 +126,9 @@ export default function QuickStats({ stats }: QuickStatsProps) {
         <div>
           <h2 className="text-xl font-bold text-charcoal">{comparisonPeriod === "weekly" ? "This week" : "This month"}</h2>
           <p className="text-xs text-gray-500">
-            Calendar totals{stats.asOf ? ` through ${new Date(stats.asOf).toLocaleString()}` : ""}
+            {stats.asOf
+              ? `Updated ${new Date(stats.asOf).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+              : 'Current calendar totals'}
           </p>
         </div>
         <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1" data-testid="comparison-toggle">
@@ -197,7 +220,7 @@ export default function QuickStats({ stats }: QuickStatsProps) {
                 <Calendar className="text-purple-600" size={20} />
               </div>
             </div>
-            {formatPercentageChange(stats.weeklyActivitiesChange, stats.monthlyActivitiesChange, true)}
+            {formatRunComparison()}
           </CardContent>
         </Card>
       </div>

@@ -40,6 +40,8 @@ export default function PerformanceChart({ data, unitPreference, onTimeRangeChan
     }
   };
 
+  const hasEnoughData = data.length >= 3;
+
   return (
     <Card>
       <CardHeader>
@@ -61,6 +63,14 @@ export default function PerformanceChart({ data, unitPreference, onTimeRangeChan
         </div>
       </CardHeader>
       <CardContent>
+        {!hasEnoughData ? (
+          <div className="flex h-80 flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 px-6 text-center" data-testid="performance-trends-insufficient-data">
+            <p className="font-semibold text-charcoal">More runs are needed for a trend</p>
+            <p className="mt-2 max-w-sm text-sm text-gray-500">
+              This view needs at least three comparable periods. A single point can describe a run, but it cannot show a reliable direction.
+            </p>
+          </div>
+        ) : (
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data}>
@@ -122,6 +132,7 @@ export default function PerformanceChart({ data, unitPreference, onTimeRangeChan
             </LineChart>
           </ResponsiveContainer>
         </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -13,6 +13,7 @@ import {
   PREVIEW_TEXT_MAX,
   PREVIEW_NAME_MAX,
   PREVIEW_PAYLOAD_MAX_BYTES,
+  PREMIUM_PREVIEW_VERSION,
   type PremiumPreviewPayload,
 } from "../server/services/premiumPreview";
 
@@ -80,6 +81,8 @@ assert.deepEqual(
 
 const payload = buildPremiumPreviewPayload(makeRun(), "miles", new Date("2026-08-03T12:00:00Z"));
 assert.equal(payload.kind, "premium_preview");
+assert.equal(payload.version, PREMIUM_PREVIEW_VERSION);
+assert.equal(PREMIUM_PREVIEW_VERSION, 4, "copy changes must refresh previously stored previews");
 assert.equal(payload.findings.length, 2, "exactly two findings");
 assert.ok(payload.nextAction.length > 0, "one next action present");
 for (const f of payload.findings) {

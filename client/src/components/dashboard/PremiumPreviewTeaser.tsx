@@ -95,7 +95,7 @@ export default function PremiumPreviewTeaser() {
               <Button size="sm" onClick={() => retry.mutate()} disabled={retry.isPending}>
                 {retry.isPending ? "Trying again…" : "Try again"}
               </Button>
-              <Link href="/activities"><Button size="sm" variant="outline">View activities</Button></Link>
+              <Button asChild size="sm" variant="outline"><Link href="/activities">View activities</Link></Button>
             </div>
           </div>
         </div>
@@ -126,7 +126,7 @@ export default function PremiumPreviewTeaser() {
           <div className="flex-1">
             <h3 className="font-bold text-gray-900">Your Premium Preview is waiting for a run</h3>
             <p className="text-sm text-gray-700 mt-1">Sync a recent run of at least 1 km and we'll turn it into two personalized findings and one recommended action.</p>
-            <Link href="/activities"><Button size="sm" variant="outline" className="mt-4">View activities</Button></Link>
+            <Button asChild size="sm" variant="outline" className="mt-4"><Link href="/activities">View activities</Link></Button>
           </div>
         </div>
       </PreviewShell>
@@ -189,15 +189,15 @@ export default function PremiumPreviewTeaser() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3 mt-5">
-        <Link href={`/activity/${activityId}`}>
-          <Button variant="outline" data-testid="premium-preview-teaser-cta" onClick={() => trackFunnelEvent(
+        <Button asChild variant="outline" data-testid="premium-preview-teaser-cta">
+          <Link href={`/activity/${activityId}`} onClick={() => trackFunnelEvent(
             "preview_cta_clicked",
             { source: "premium_preview_dashboard", capability: "activity_deep_dive", activityId },
             { dedupeParts: ["dashboard", activityId, Date.now()] },
           )}>
             See why this happened <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
         <TrackedUpgradeLink href={upgradeUrl}>
           <Button className="bg-amber-500 hover:bg-amber-600 text-white">Start my 14-day coaching trial</Button>
         </TrackedUpgradeLink>

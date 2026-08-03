@@ -9,6 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 interface RunnerScoreData {
   totalScore: number;
   grade: string;
+  sampleSize: number;
+  recentRunCount: number;
+  isProvisional: boolean;
   percentile: number;
   components: {
     consistency: number;
@@ -151,6 +154,23 @@ export default function RunnerScoreRadar() {
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0 space-y-3">
+        {scoreData.isProvisional ? (
+          <div className="rounded-lg border border-blue-100 bg-blue-50 p-4" data-testid="runner-score-provisional">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="font-semibold text-charcoal">Building your score</p>
+                <p className="mt-1 text-sm text-gray-600">
+                  {scoreData.recentRunCount === 0
+                    ? "No runs recorded in the last 30 days."
+                    : `${scoreData.recentRunCount} of 3 recent runs recorded.`}
+                </p>
+              </div>
+              <Badge variant="outline" className="border-blue-200 bg-white text-blue-700">Provisional</Badge>
+            </div>
+            <p className="mt-3 text-xs text-gray-500">The score and letter grade appear after three runs in 30 days so a single effort does not define your training.</p>
+          </div>
+        ) : (
+          <>
         {/* Score row */}
         <div className="flex items-center gap-3">
           <span className={`text-4xl font-bold ${getScoreColor(scoreData.totalScore)}`}>
@@ -164,6 +184,8 @@ export default function RunnerScoreRadar() {
         
         {/* Component bars */}
         <ComponentBars data={scoreData.components} />
+          </>
+        )}
       </CardContent>
     </Card>
   );

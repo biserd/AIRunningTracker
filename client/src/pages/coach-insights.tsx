@@ -271,7 +271,7 @@ function InsightsTab({ user, batchData, isDataLoading, recoveryData, isRecoveryL
         <div className={`rounded-lg border p-3 shadow-sm ${getInjuryRiskColor(injuryRisk?.riskLevel)}`}>
           <div className="flex items-center gap-2 mb-1">
             <AlertTriangle size={14} />
-            <span className="text-xs font-medium uppercase tracking-wide opacity-70">Injury Risk</span>
+            <span className="text-xs font-medium uppercase tracking-wide opacity-70">Training Load</span>
           </div>
           {isDataLoading ? (
             <div className="h-5 bg-gray-100 rounded animate-pulse"></div>
@@ -412,7 +412,7 @@ function InsightsTab({ user, batchData, isDataLoading, recoveryData, isRecoveryL
             <div className="space-y-3 text-sm text-gray-700">
               <div className="flex items-start space-x-2">
                 <div className="w-2 h-2 bg-emerald-500 rounded-full mt-1.5"></div>
-                <span><strong>Injury Risk:</strong> Early warning signals based on training patterns</span>
+                <span><strong>Training-load signals:</strong> Changes in volume and intensity relative to your recent baseline</span>
               </div>
               <div className="flex items-start space-x-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5"></div>
@@ -424,8 +424,7 @@ function InsightsTab({ user, batchData, isDataLoading, recoveryData, isRecoveryL
 
         <div className="mt-6 bg-white/60 backdrop-blur-sm rounded-lg p-4 border border-gray-100">
           <p className="text-sm text-gray-600 text-center">
-            <strong>Pro Tip:</strong> Balance your training to improve both your engine (power) and mechanics (durability). 
-            A strong engine with poor mechanics leads to injury. Good mechanics with a weak engine limits your potential.
+            <strong>Remember:</strong> Running data can show workload and form trends, but it cannot diagnose injury or replace how you feel.
           </p>
         </div>
       </div>
@@ -469,11 +468,11 @@ function AIAgentCoachTab({ user, canAccessAICoachChat }: { user: User; canAccess
               Unlock AI Agent Coach
             </Button>
           </TrackedUpgradeLink>
-          <Link href="/ai-agent-coach">
-            <Button variant="outline" data-testid="btn-learn-more">
+          <Button asChild variant="outline" data-testid="btn-learn-more">
+            <Link href="/ai-agent-coach">
               Learn More
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
     );
@@ -489,12 +488,12 @@ function AIAgentCoachTab({ user, canAccessAICoachChat }: { user: User; canAccess
         <p className="text-gray-600 max-w-md mx-auto mb-6">
           Complete the onboarding wizard to personalize your AI coaching experience. Set your goals, training preferences, and coaching style.
         </p>
-        <Link href="/coach/onboarding">
-          <Button className="bg-strava-orange text-white hover:bg-orange-600" data-testid="btn-start-onboarding">
+        <Button asChild className="bg-strava-orange text-white hover:bg-orange-600" data-testid="btn-start-onboarding">
+          <Link href="/coach/onboarding">
             <Sparkles className="mr-2 h-4 w-4" />
             Start Onboarding
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     );
   }
@@ -514,12 +513,12 @@ function AIAgentCoachTab({ user, canAccessAICoachChat }: { user: User; canAccess
                 <p className="text-sm text-gray-500">Customize how your coach interacts with you</p>
               </div>
             </div>
-            <Link href="/coach/settings">
-              <Button variant="outline" size="sm" data-testid="btn-coach-settings">
+            <Button asChild variant="outline" size="sm" data-testid="btn-coach-settings">
+              <Link href="/coach/settings">
                 <Settings className="mr-2 h-4 w-4" />
                 Edit Settings
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -683,7 +682,7 @@ export default function CoachInsightsPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-charcoal" data-testid="page-title">Coach Insights</h1>
-              <p className="text-gray-600">AI-powered analysis of your running performance and health</p>
+              <p className="text-gray-600">Running-performance analysis with clear data limits</p>
             </div>
           </div>
 
@@ -718,7 +717,7 @@ export default function CoachInsightsPage() {
         userId={user.id} 
         pageContext={{
           pageName: "Coach Insights",
-          pageDescription: "AI-powered analysis page showing race predictions, VO2 max, heart rate zones, injury risk, and running efficiency metrics",
+            pageDescription: "AI-powered analysis page showing race predictions, VO2 max, heart rate zones, training-load signals, and running efficiency metrics",
           relevantData: {
             activeTab: activeTab,
             hasCoachSetup: !!user.coachGoal

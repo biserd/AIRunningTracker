@@ -235,14 +235,15 @@ export default function ActivitiesPage() {
                   free trial — no charge today.
                 </p>
               </div>
-              <Link href="/pricing">
-                <Button
+              <Button
+                  asChild
                   className="bg-orange-600 hover:bg-orange-700 text-white whitespace-nowrap"
                   data-testid="button-upgrade-from-cap"
                 >
+                <Link href="/pricing">
                   Start 14-day Premium trial
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </CardContent>
           </Card>
         )}
@@ -518,6 +519,8 @@ export default function ActivitiesPage() {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
+                                type="button"
+                                aria-label={`Delete ${activity.name}`}
                                 className="flex-shrink-0 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                 onClick={(e) => {
                                   e.preventDefault();

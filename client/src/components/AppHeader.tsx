@@ -55,8 +55,9 @@ export default function AppHeader() {
               const isActive = location === item.path;
               
               return (
-                <Link key={item.path} href={item.path}>
-                  <Button
+                <Button
+                    key={item.path}
+                    asChild
                     variant={isActive ? "default" : "ghost"}
                     className={`flex items-center space-x-2 ${
                       isActive 
@@ -64,17 +65,18 @@ export default function AppHeader() {
                         : "text-gray-600 hover:text-gray-900"
                     }`}
                   >
+                  <Link href={item.path}>
                     <Icon size={16} />
                     <span>{item.label}</span>
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               );
             })}
             
             {/* Admin Link - only show for admin users */}
             {user?.isAdmin && (
-              <Link href="/admin">
-                <Button
+              <Button
+                  asChild
                   variant={location === "/admin" ? "default" : "ghost"}
                   className={`flex items-center space-x-2 ${
                     location === "/admin"
@@ -82,10 +84,11 @@ export default function AppHeader() {
                       : "text-gray-600 hover:text-gray-900"
                   }`}
                 >
+                <Link href="/admin">
                   <Shield size={16} />
                   <span>Admin</span>
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             )}
           </nav>
 
@@ -147,8 +150,9 @@ export default function AppHeader() {
             const isActive = location === item.path;
             
             return (
-              <Link key={item.path} href={item.path}>
-                <Button
+              <Button
+                  key={item.path}
+                  asChild
                   variant={isActive ? "default" : "ghost"}
                   size="sm"
                   className={`h-auto w-full flex-col gap-1 px-1 py-2 ${
@@ -157,17 +161,18 @@ export default function AppHeader() {
                       : "text-gray-600"
                   }`}
                 >
+                <Link href={item.path}>
                   <Icon size={16} />
                   <span className="text-[10px] leading-none">{item.mobileLabel}</span>
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             );
           })}
           
           {/* Admin Link - only show for admin users */}
           {user?.isAdmin && (
-            <Link href="/admin">
-              <Button
+            <Button
+                asChild
                 variant={location === "/admin" ? "default" : "ghost"}
                 size="sm"
                 className={`h-auto w-full flex-col gap-1 px-1 py-2 ${
@@ -177,10 +182,11 @@ export default function AppHeader() {
                 }`}
                 data-testid="mobile-nav-admin"
               >
+              <Link href="/admin">
                 <Shield size={16} />
                 <span className="text-[10px] leading-none">Admin</span>
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           )}
         </nav>
       </div>

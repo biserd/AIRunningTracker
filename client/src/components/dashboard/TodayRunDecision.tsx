@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Footprints, Moon, RotateCcw } from "lucide-react";
+import { getTodayRunDecision } from "@shared/todayRunDecision";
 
 interface RecoveryData {
   daysSinceLastRun: number;
@@ -9,30 +10,19 @@ interface RecoveryData {
 
 interface TodayRunDecisionProps {
   recoveryData?: RecoveryData;
+  isStravaConnected: boolean;
   recentRuns: number;
   latestRunAt?: string | Date | null;
 }
 
-export default function TodayRunDecision({ recoveryData, recentRuns, latestRunAt }: TodayRunDecisionProps) {
-  let title = "Connect Strava to get your first recommendation";
-  let action = "Once your runs arrive, this card will turn recent training into one clear next step.";
-  let Icon = Footprints;
-
-  if (recentRuns > 0 && recoveryData) {
-    if (recoveryData.daysSinceLastRun >= 14) {
-      title = "Ease back in";
-      action = "Try 20–30 minutes at a conversational effort. Finish feeling like you could comfortably continue.";
-      Icon = RotateCcw;
-    } else if (recoveryData.readyToRun) {
-      title = "An easy run is reasonable today";
-      action = "Keep the first 10 minutes relaxed, then stay conversational. Save hard work for a planned session.";
-      Icon = Footprints;
-    } else {
-      title = "Make today a recovery day";
-      action = "Skip intensity. Choose rest, a walk, or easy mobility, then reassess how you feel tomorrow.";
-      Icon = Moon;
-    }
-  }
+export default function TodayRunDecision({ recoveryData, isStravaConnected, recentRuns, latestRunAt }: TodayRunDecisionProps) {
+  const decision = getTodayRunDecision({
+    recoveryData,
+    isStravaConnected,
+    recentRuns,
+    latestRunAt,
+  });
+  const Icon = decision.kind === "recovery" ? Moon : decision.kind === "return" ? RotateCcw : Footprints;
 
   const latestLabel = latestRunAt
     ? new Date(latestRunAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })
@@ -52,12 +42,12 @@ export default function TodayRunDecision({ recoveryData, recentRuns, latestRunAt
                 Recent running only
               </Badge>
             </div>
-            <h2 className="text-xl font-bold text-charcoal">{title}</h2>
-            <p className="mt-1 max-w-2xl text-sm text-gray-600">{action}</p>
+            <h2 className="text-xl font-bold text-charcoal">{decision.title}</h2>
+            <p className="mt-1 max-w-2xl text-sm text-gray-600">{decision.action}</p>
           </div>
         </div>
         <div className="shrink-0 text-xs text-gray-500 sm:max-w-[220px] sm:text-right">
-          <p>Based on {recentRuns} recently imported run{recentRuns === 1 ? "" : "s"}{latestLabel ? ` · latest ${latestLabel}` : ""}.</p>
+          <p>{recentRuns > 0 ? `Based on ${recentRuns} recently imported run${recentRuns === 1 ? "" : "s"}${latestLabel ? ` · latest ${latestLabel}` : ""}.` : "Waiting for your first imported run."}</p>
           <p className="mt-1">Not based on sleep, soreness, illness, or injury data.</p>
         </div>
       </CardContent>

@@ -1,7 +1,7 @@
 import Footer from "@/components/Footer";
 import PublicHeader from "@/components/PublicHeader";
 import AppHeader from "@/components/AppHeader";
-import { Check, Crown, Quote, Trophy, MapPin, TrendingUp, Sparkles, ArrowLeft } from "lucide-react";
+import { Check, Crown, Trophy, MapPin, Sparkles, ArrowLeft } from "lucide-react";
 import { Link, useLocation, useSearch } from "wouter";
 import { parseUpgradeIntent, capabilityLabel } from "@shared/upgradeIntent";
 import { Button } from "@/components/ui/button";
@@ -89,7 +89,7 @@ const premiumFeatures: FeatureSection[] = [
     items: [
       "AI-generated training plans",
       "Race predictions",
-      "Injury risk analysis",
+      "Training-load warning signals",
       "Fitness / fatigue / form charts",
       "AI Coach Chat (across your training)",
       "AI Agent Coach — proactive post-run recaps",
@@ -259,11 +259,11 @@ export default function PricingPage() {
                     </div>
                   )}
                 </div>
-                <Link href={upgradeIntent.returnTo}>
-                  <Button variant="ghost" size="sm" className="text-gray-600 flex-shrink-0" data-testid="upgrade-intent-back">
+                <Button asChild variant="ghost" size="sm" className="text-gray-600 flex-shrink-0" data-testid="upgrade-intent-back">
+                  <Link href={upgradeIntent.returnTo}>
                     <ArrowLeft className="h-4 w-4 mr-1" /> Back
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </div>
             </div>
           )}
@@ -316,7 +316,7 @@ export default function PricingPage() {
               </button>
             </div>
             <p className="text-sm text-gray-500 mt-3">
-              Cancel anytime · 30-day money-back guarantee
+              Cancel anytime · No charge during the 14-day trial
             </p>
           </div>
 
@@ -406,41 +406,8 @@ export default function PricingPage() {
               <span className="text-sm text-gray-700 font-medium">Used for NYC Marathon training</span>
             </div>
             <div className="flex items-center gap-2 bg-white/80 backdrop-blur px-4 py-2 rounded-full shadow-sm">
-              <TrendingUp className="h-4 w-4 text-strava-orange" />
-              <span className="text-sm text-gray-700 font-medium">500+ PRs achieved</span>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6 mb-16" data-testid="testimonials">
-            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100">
-              <Quote className="h-8 w-8 text-strava-orange/30 mb-3" />
-              <p className="text-gray-700 mb-4 italic">
-                "The race predictor was spot-on for my Boston qualifying time. I ran within 30 seconds of what it predicted."
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-strava-orange to-orange-400 rounded-full flex items-center justify-center text-white font-bold">
-                  S
-                </div>
-                <div>
-                  <p className="font-semibold text-charcoal text-sm">Sarah M.</p>
-                  <p className="text-xs text-gray-500">Boston Marathon qualifier · 3:28 finish</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100">
-              <Quote className="h-8 w-8 text-strava-orange/30 mb-3" />
-              <p className="text-gray-700 mb-4 italic">
-                "I've been running for 3 years but never understood my data. The AI coach finally helped me train smarter, not harder."
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-                  M
-                </div>
-                <div>
-                  <p className="font-semibold text-charcoal text-sm">Mike T.</p>
-                  <p className="text-xs text-gray-500">Recreational runner · Half marathon PB</p>
-                </div>
-              </div>
+              <Sparkles className="h-4 w-4 text-strava-orange" />
+              <span className="text-sm text-gray-700 font-medium">14 days free · Cancel anytime</span>
             </div>
           </div>
 

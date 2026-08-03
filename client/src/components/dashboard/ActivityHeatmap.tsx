@@ -282,9 +282,9 @@ export default function ActivityHeatmap() {
             </div>
           </div>
           
-          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-xs text-gray-500">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4">
+            <div className="flex min-w-0 flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
                 <span>Less</span>
                 <div className="flex gap-1">
                   <div className="w-3 h-3 rounded-sm bg-gray-100 dark:bg-gray-800" />
@@ -302,7 +302,9 @@ export default function ActivityHeatmap() {
                 </div>
               </Link>
             </div>
-            <StravaPoweredBy variant="orange" size="sm" />
+            <div className="shrink-0">
+              <StravaPoweredBy variant="orange" size="sm" />
+            </div>
           </div>
         </div>
       </CardContent>

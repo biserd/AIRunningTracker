@@ -178,6 +178,24 @@ async function main(): Promise<void> {
     }
   });
 
+  await test("low recent sample is marked provisional", async () => {
+    const recentRun = makeActivity({
+      daysAgo: 0,
+      type: "Run",
+      startDate: new Date(Date.now() - DAY),
+    });
+    const original = storage.getActivitiesByUserId;
+    (storage as any).getActivitiesByUserId = async () => [recentRun];
+    try {
+      const result = await runnerScoreService.calculateRunnerScore(1);
+      assert.equal(result.sampleSize, 1);
+      assert.equal(result.recentRunCount, 1);
+      assert.equal(result.isProvisional, true);
+    } finally {
+      (storage as any).getActivitiesByUserId = original;
+    }
+  });
+
   await test("current and historical scores agree for equivalent period/data", async () => {
     const acts = buildRunningHistory();
     const original = storage.getActivitiesByUserId;

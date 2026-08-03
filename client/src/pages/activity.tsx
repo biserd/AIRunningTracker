@@ -30,6 +30,7 @@ import { normalizeZoneDurations, zonesFromFractions } from "@shared/zoneCalculat
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
 import { trackFunnelEvent, useOfferTracking } from "@/lib/analytics";
 import { normalizeCadenceToSpm } from "@shared/cadenceNormalization";
+import { formatRunDistance, formatRunPace, runUnitLabels } from "@shared/runFormatting";
 
 type ViewMode = "story" | "deep_dive";
 
@@ -194,16 +195,16 @@ function PremiumAnalysisUpsell({ activityId }: { activityId: number }) {
             </div>
           </div>
           <div className="lg:w-72 flex-shrink-0">
-            <Link href={pricingUrl}>
-              <Button
+            <Button
+                asChild
                 className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
                 data-testid="activity-premium-upsell-cta"
-                onClick={trackOfferClick}
               >
+              <Link href={pricingUrl} onClick={trackOfferClick}>
                 <Sparkles className="h-4 w-4 mr-2" />
                 Continue your analysis with Premium
-              </Button>
-            </Link>
+              </Link>
+            </Button>
             <p className="text-xs text-gray-500 text-center mt-2">
               Start 14 days free · $0 today · then $7.99/month · cancel anytime
             </p>
@@ -243,17 +244,14 @@ function PremiumPreviewCard({ preview, createdAt, unitPreference }: { preview: P
     returnTo: `/activity/${preview.sourceData.activityId}`,
   });
   const src = preview.sourceData;
-  const distanceKm = src.distanceMeters / 1000;
   const durationMin = Math.floor(src.movingTimeSec / 60);
   const useMiles = unitPreference === "miles";
-  const displayDistance = useMiles ? distanceKm * 0.621371 : distanceKm;
-  const paceSecPerPreferredUnit = displayDistance > 0 ? src.movingTimeSec / displayDistance : 0;
-  const preferredPaceDisplay = paceSecPerPreferredUnit > 0
-    ? `${Math.floor(paceSecPerPreferredUnit / 60)}:${String(Math.round(paceSecPerPreferredUnit % 60)).padStart(2, "0")}/${useMiles ? "mi" : "km"}`
-    : "—";
+  const units = runUnitLabels(unitPreference);
+  const preferredPace = formatRunPace(src.movingTimeSec, src.distanceMeters, unitPreference);
+  const preferredPaceDisplay = preferredPace === "0:00" ? "—" : `${preferredPace}${units.paceUnit}`;
 
   const sourceStats = [
-    { label: `${displayDistance.toFixed(2)} ${useMiles ? "mi" : "km"}`, sub: "Distance" },
+    { label: `${formatRunDistance(src.distanceMeters, unitPreference)} ${units.distanceUnit}`, sub: "Distance" },
     { label: `${durationMin} min`, sub: "Time" },
     { label: preferredPaceDisplay, sub: "Pace" },
     src.averageHeartrate ? { label: `${Math.round(src.averageHeartrate)} bpm`, sub: "Avg HR" } : null,
@@ -308,11 +306,14 @@ function PremiumPreviewCard({ preview, createdAt, unitPreference }: { preview: P
           <p className="text-xs text-gray-500 flex items-center gap-1">
             <Lock className="h-3 w-3" /> Splits, decoupling, and race predictions stay locked
           </p>
-          <Link href={upgradeUrl}>
-            <Button
+          <Button
+              asChild
               size="sm"
               className="bg-yellow-500 hover:bg-yellow-600 text-white"
               data-testid="premium-preview-upgrade"
+            >
+            <Link
+              href={upgradeUrl}
               onClick={() =>
                 trackFunnelEvent("preview_cta_clicked", {
                   source: "premium_preview",
@@ -323,8 +324,8 @@ function PremiumPreviewCard({ preview, createdAt, unitPreference }: { preview: P
               }
             >
               <Sparkles className="h-4 w-4 mr-1" /> Get this analysis after every run
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
         <p className="text-xs text-gray-500">Start 14 days free · $0 today · Cancel anytime</p>
       </CardContent>
@@ -667,24 +668,29 @@ export default function ActivityPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
-        </div>
+      <div className="min-h-screen bg-gray-50">
+        <AppHeader />
+        <main className="container mx-auto max-w-6xl px-4 py-8" aria-busy="true" aria-label="Loading activity">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 max-w-sm rounded bg-gray-200"></div>
+            <div className="h-20 rounded-xl bg-white"></div>
+            <div className="h-64 rounded-xl bg-gray-200"></div>
+          </div>
+        </main>
       </div>
     );
   }
 
   if (!activityData?.activity) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
+      <div className="min-h-screen bg-gray-50">
+        <AppHeader />
+        <main className="container mx-auto px-4 py-8">
+          <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Activity Not Found</h1>
-          <Link href="/dashboard">
-            <Button>Back to Dashboard</Button>
-          </Link>
-        </div>
+            <Button asChild><Link href="/dashboard">Back to Dashboard</Link></Button>
+          </div>
+        </main>
       </div>
     );
   }
@@ -702,11 +708,11 @@ export default function ActivityPage() {
       <div className="min-h-screen bg-gray-50">
         <AppHeader />
         <div className="container mx-auto px-4 py-6 max-w-4xl">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="sm" className="mb-4">
+          <Button asChild variant="ghost" size="sm" className="mb-4">
+            <Link href="/dashboard">
               <ArrowLeft className="h-4 w-4 mr-1" /> Back
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <h1 className="text-2xl font-bold text-gray-900 mb-1" data-testid="locked-activity-title">{a.name}</h1>
           <p className="text-sm text-gray-500 mb-6">
             {a.startDate ? new Date(a.startDate).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }) : ""}
@@ -754,18 +760,18 @@ export default function ActivityPage() {
                     to see the full breakdown of this run — splits, route map, coach
                     verdict, efficiency score, and personalized next-run tips.
                   </p>
-                  <Link href={buildUpgradeUrl({
+                  <Button asChild className="bg-yellow-500 hover:bg-yellow-600 text-white w-full" data-testid="button-upgrade-locked-activity">
+                    <Link href={buildUpgradeUrl({
                     source: "locked_activity",
                     capability: "unlimited_history",
                     activityId: Number(activityId),
                     benefitKey: "activity_history",
                     returnTo: `/activity/${activityId}`,
                   })}>
-                    <Button className="bg-yellow-500 hover:bg-yellow-600 text-white w-full" data-testid="button-upgrade-locked-activity">
                       <Sparkles className="h-4 w-4 mr-2" />
                       Start 14-day Premium trial
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                   <p className="text-xs text-gray-500 mt-3">Cancel anytime. No charge during trial.</p>
                 </CardContent>
               </Card>
@@ -793,11 +799,11 @@ export default function ActivityPage() {
           {/* Top Row: Back button + Title + Badges + Toggle */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
             <div className="flex items-center gap-3 flex-wrap">
-              <Link href="/dashboard">
-                <Button variant="ghost" size="sm" className="px-2">
+              <Button asChild variant="ghost" size="sm" className="px-2">
+                <Link href="/dashboard" aria-label="Back to dashboard">
                   <ArrowLeft className="h-4 w-4" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
               <h1 className="text-2xl font-bold text-gray-900">{activity.name}</h1>
               {verdictData && (
                 <TrainingConsistency

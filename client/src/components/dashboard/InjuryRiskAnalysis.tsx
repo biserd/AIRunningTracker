@@ -51,7 +51,7 @@ export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnal
     createGoalMutation.mutate({
       userId,
       title: "Take a recovery week",
-      description: "Based on injury risk analysis: reduce training load and focus on recovery to prevent injury",
+      description: "Based on elevated training-load signals: reduce training load and prioritize recovery",
       type: 'recovery',
       status: 'active',
       source: 'recommendation',
@@ -72,7 +72,7 @@ export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnal
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-charcoal flex items-center">
             <Shield className="mr-2 h-5 w-5 text-strava-orange" />
-            Injury Risk Analysis
+            Training Load Signals
             <Badge className="ml-2 bg-gradient-to-r from-yellow-500 to-amber-500 text-white text-xs">
               <Crown className="h-3 w-3 mr-1" />
               Premium
@@ -84,9 +84,9 @@ export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnal
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-orange-100 flex items-center justify-center">
               <Lock className="h-8 w-8 text-strava-orange" />
             </div>
-            <h3 className="text-lg font-semibold text-charcoal mb-2">Unlock Injury Risk Analysis</h3>
+            <h3 className="text-lg font-semibold text-charcoal mb-2">Unlock Training Load Signals</h3>
             <p className="text-gray-500 mb-4 max-w-sm mx-auto">
-              Get AI-powered injury risk assessments based on your training patterns and intensity.
+              Spot unusual changes in training volume and intensity. These signals are coaching guidance, not a medical diagnosis.
             </p>
             <TrackedUpgradeLink href={buildUpgradeUrl({
               source: "coach_injury_risk",
@@ -141,7 +141,7 @@ export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnal
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-charcoal flex items-center">
             <Shield className="mr-2 h-5 w-5 text-strava-orange" />
-            Injury Risk Analysis
+            Training Load Signals
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -160,13 +160,13 @@ export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnal
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-charcoal flex items-center">
             <Shield className="mr-2 h-5 w-5 text-strava-orange" />
-            Injury Risk Analysis
+            Training Load Signals
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-gray-500">
             <Shield className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-            <p>Complete more training runs to analyze injury risk</p>
+            <p>Complete more training runs to compare your recent load with your baseline.</p>
           </div>
         </CardContent>
       </Card>
@@ -181,7 +181,7 @@ export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnal
       <CardHeader>
         <CardTitle className="text-xl font-semibold text-charcoal flex items-center">
           <Shield className="mr-2 h-5 w-5 text-strava-orange" />
-          Injury Risk Analysis
+          Training Load Signals
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -191,12 +191,12 @@ export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnal
             <div className="flex items-center space-x-3">
               <RiskIcon className={`h-6 w-6 ${riskConfig.iconColor}`} />
               <div>
-                <h3 className="font-semibold text-charcoal">Current Risk Level</h3>
-                <p className="text-sm text-gray-600">Based on recent training patterns</p>
+                <h3 className="font-semibold text-charcoal">Current Load Signal</h3>
+                <p className="text-sm text-gray-600">Based only on recent training patterns</p>
               </div>
             </div>
             <Badge className={riskConfig.badge}>
-              {riskData.riskLevel} Risk
+              {riskData.riskLevel === 'Low' ? 'Within baseline' : riskData.riskLevel === 'Medium' ? 'Watch load' : 'Load elevated'}
             </Badge>
           </div>
 
@@ -205,7 +205,7 @@ export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnal
             <div>
               <h4 className="font-medium text-charcoal mb-3 flex items-center">
                 <AlertTriangle className="h-4 w-4 mr-2 text-yellow-600" />
-                Risk Factors Identified
+                Training changes to review
               </h4>
               <div className="space-y-2">
                 {riskData.riskFactors.map((factor: string, index: number) => (
@@ -245,12 +245,16 @@ export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnal
                 <div>
                   <h4 className="font-medium text-green-900">Great job!</h4>
                   <p className="text-sm text-green-800">
-                    Your training patterns show low injury risk. Keep up the consistent, well-balanced approach.
+                    Your recent training load is within your usual range. Continue adjusting for how you feel.
                   </p>
                 </div>
               </div>
             </div>
           )}
+
+          <p className="text-xs text-gray-500">
+            These signals cannot assess pain, illness, biomechanics, or injury. Stop and seek qualified medical advice if you have concerning symptoms.
+          </p>
 
           {/* General Tips */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

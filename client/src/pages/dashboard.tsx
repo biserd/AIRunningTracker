@@ -33,7 +33,7 @@ function getLocalCalendarDateKey(date: Date = new Date()) {
 
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
-  const { canAccessAICoachChat } = useFeatureAccess();
+  const { canAccessAICoachChat, canAccessAdvancedInsights } = useFeatureAccess();
   const { isFree } = useSubscription();
   const [chartTimeRange, setChartTimeRange] = useState<string>("30days");
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -183,7 +183,7 @@ export default function Dashboard() {
     recoveryMessage: string;
   }>({
     queryKey: [`/api/performance/recovery/${user?.id}`],
-    enabled: !!user?.id,
+    enabled: !!user?.id && canAccessAdvancedInsights,
     staleTime: 30000,
   });
 
@@ -387,9 +387,14 @@ export default function Dashboard() {
   if (isLoading || !dashboardData) {
     return (
       <div className="min-h-screen bg-light-grey">
-        <div className="max-w-7xl mx-auto px-6 py-8">
+        <AppHeader />
+        <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 sm:py-8" aria-busy="true" aria-label="Loading dashboard">
           <div className="animate-pulse">
-            <div className="h-8 bg-gray-300 rounded w-1/4 mb-8"></div>
+            <div className="mb-6 space-y-2">
+              <div className="h-8 max-w-xs rounded bg-gray-300"></div>
+              <div className="h-4 max-w-md rounded bg-gray-200"></div>
+            </div>
+            <div className="mb-6 h-32 rounded-xl border border-blue-100 bg-white"></div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="bg-white rounded-xl p-6 shadow-sm">
@@ -400,7 +405,7 @@ export default function Dashboard() {
               ))}
             </div>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
@@ -479,6 +484,7 @@ export default function Dashboard() {
         <div className="mb-6">
           <TodayRunDecision
             recoveryData={recoveryData}
+            isStravaConnected={!!dashboardData?.user?.stravaConnected}
             recentRuns={dashboardData?.activities?.length || 0}
             latestRunAt={dashboardData?.activities?.[0]?.startDate}
           />

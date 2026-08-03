@@ -678,12 +678,22 @@ export default function TrainingPlans() {
                     <div className="flex items-center gap-2">
                       <Checkbox 
                         id="speedwork" 
-                        checked={includeSpeedwork} 
+                        checked={safeIncludeSpeedwork}
                         onCheckedChange={(checked) => setIncludeSpeedwork(!!checked)}
                         disabled={(profile?.avgRunsPerWeek ?? 0) < 2}
                         data-testid="checkbox-speedwork"
                       />
-                      <Label htmlFor="speedwork" className="cursor-pointer">Include speedwork</Label>
+                      <div>
+                        <Label
+                          htmlFor="speedwork"
+                          className={(profile?.avgRunsPerWeek ?? 0) < 2 ? "text-gray-500" : "cursor-pointer"}
+                        >
+                          Include speedwork
+                        </Label>
+                        {(profile?.avgRunsPerWeek ?? 0) < 2 && (
+                          <p className="mt-0.5 text-xs text-gray-500">Available after your recent baseline reaches two runs per week.</p>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="flex items-center gap-2">

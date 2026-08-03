@@ -113,12 +113,12 @@ export default function DashboardHeatmap() {
             <MapPin className="h-5 w-5 text-blue-600" />
             <CardTitle className="text-lg font-semibold">Running Heatmap</CardTitle>
           </div>
-          <Link href="/tools/heatmap">
-            <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 gap-1">
+          <Button asChild variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 gap-1">
+            <Link href="/tools/heatmap">
               View Full Map
               <ExternalLink className="h-4 w-4" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
@@ -140,7 +140,7 @@ export default function DashboardHeatmap() {
               style={{ zIndex: 0 }}
             />
             <div className="absolute bottom-2 left-2 bg-white/90 dark:bg-gray-800/90 px-2 py-1 rounded text-xs text-gray-600 dark:text-gray-300 z-[1000]">
-              {routeCount} routes
+              {routeCount} mapped activity tracks
             </div>
           </div>
         )}

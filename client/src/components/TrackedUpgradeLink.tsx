@@ -1,6 +1,7 @@
 import { Link } from "wouter";
-import type { ReactNode } from "react";
+import { Children, isValidElement, type ReactElement, type ReactNode } from "react";
 import { useOfferTracking } from "@/lib/analytics";
+import { Button } from "@/components/ui/button";
 
 /**
  * Premium-gate CTA link with built-in funnel tracking.
@@ -24,6 +25,32 @@ export function TrackedUpgradeLink({
   children: ReactNode;
 }) {
   const trackClick = useOfferTracking(href, { source, capability, activityId });
+  const child = Children.only(children);
+
+  // Existing callers pass a styled Button. Render that style onto the anchor
+  // itself so the DOM contains one interactive element instead of a button
+  // nested inside a link.
+  if (isValidElement(child) && child.type === Button) {
+    const button = child as ReactElement<any>;
+    const { children: buttonChildren, onClick, disabled, ...buttonProps } = button.props;
+    if (disabled) {
+      return <Button {...buttonProps} disabled>{buttonChildren}</Button>;
+    }
+    return (
+      <Button {...buttonProps} asChild>
+        <Link
+          href={href}
+          onClick={(event) => {
+            onClick?.(event);
+            trackClick();
+          }}
+        >
+          {buttonChildren}
+        </Link>
+      </Button>
+    );
+  }
+
   return (
     <Link href={href} onClick={trackClick}>
       {children}

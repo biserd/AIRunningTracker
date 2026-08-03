@@ -52,7 +52,7 @@ export default function ThisWeekPlan() {
               <p className="mt-1 text-sm text-gray-500">Turn the dashboard into a simple plan-versus-actual view.</p>
             </div>
           </div>
-          <Link href="/training-plans"><Button variant="outline">Set my goal <ChevronRight className="ml-1 h-4 w-4" /></Button></Link>
+          <Button asChild variant="outline"><Link href="/training-plans">Set my goal <ChevronRight className="ml-1 h-4 w-4" /></Link></Button>
         </CardContent>
       </Card>
     );
@@ -66,7 +66,7 @@ export default function ThisWeekPlan() {
             <h2 className="font-semibold text-charcoal">Your training plan</h2>
             <p className="text-sm text-gray-500">Open the plan to see or adjust your next week.</p>
           </div>
-          <Link href={`/training-plans/${activePlan.id}`}><Button variant="outline">View plan</Button></Link>
+          <Button asChild variant="outline"><Link href={`/training-plans/${activePlan.id}`}>View plan</Link></Button>
         </CardContent>
       </Card>
     );
@@ -87,7 +87,7 @@ export default function ThisWeekPlan() {
             <p className="text-xs font-semibold uppercase tracking-wide text-orange-700">This week vs plan</p>
             <h2 className="mt-1 text-lg font-bold text-charcoal">{completed} of {workouts.length} runs completed</h2>
           </div>
-          <Link href={`/training-plans/${activePlan.id}`}><Button size="sm" variant="ghost">View plan <ChevronRight className="ml-1 h-4 w-4" /></Button></Link>
+          <Button asChild size="sm" variant="ghost"><Link href={`/training-plans/${activePlan.id}`}>View plan <ChevronRight className="ml-1 h-4 w-4" /></Link></Button>
         </div>
         <Progress value={progress} className="mt-3 h-2" />
         <div className="mt-4 flex items-start gap-2 text-sm">
