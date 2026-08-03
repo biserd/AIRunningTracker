@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Link, Redirect, useSearch } from "wouter";
+import { Link, Redirect, useSearch, useLocation } from "wouter";
+import { sanitizeReturnTo } from "@shared/upgradeIntent";
 import { ArrowLeft, CreditCard, Crown, Zap, Check, ExternalLink, Loader2, Calendar, CheckCircle } from "lucide-react";
 import { SEO } from "@/components/SEO";
 import { useToast } from "@/hooks/use-toast";
@@ -19,12 +20,18 @@ export default function BillingPage() {
   const { toast } = useToast();
   const searchString = useSearch();
   const params = new URLSearchParams(searchString);
+  const [, navigate] = useLocation();
 
   useEffect(() => {
     if (params.get('success') === 'true') {
+      // Upgrade-intent return destination carried through Stripe checkout.
+      // Sanitized again client-side so only same-app relative paths are used.
+      const returnTo = sanitizeReturnTo(params.get('returnTo'));
       toast({
         title: "Subscription Activated!",
-        description: "Thank you for subscribing. Your account has been upgraded.",
+        description: returnTo
+          ? "Premium is active — taking you back to what you were doing."
+          : "Thank you for subscribing. Your account has been upgraded.",
       });
       // Sync immediately from Stripe so the UI flips to Premium even if the
       // webhook is delayed or filtered. Then refresh the subscription query.
@@ -36,6 +43,9 @@ export default function BillingPage() {
         } finally {
           queryClient.invalidateQueries({ queryKey: ["/api/stripe/subscription"] });
           queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+          if (returnTo) {
+            navigate(returnTo);
+          }
         }
       })();
     }

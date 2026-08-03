@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { CoachRecap, User } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
+import { buildUpgradeUrl } from "@shared/upgradeIntent";
 
 function getConfidenceText(confidence: number): string {
   if (confidence >= 80) return "High";
@@ -453,10 +454,15 @@ function AIAgentCoachTab({ user, canAccessAICoachChat }: { user: User; canAccess
           Premium Feature
         </Badge>
         <div className="flex justify-center gap-4">
-          <Link href="/pricing">
+          <Link href={buildUpgradeUrl({
+            source: "coach_insights",
+            capability: "ai_coach",
+            benefit: "Get proactive post-run recaps and personalized coaching after every run.",
+            returnTo: "/coach-insights",
+          })}>
             <Button className="bg-strava-orange text-white hover:bg-orange-600" data-testid="btn-upgrade-premium">
               <Sparkles className="mr-2 h-4 w-4" />
-              Upgrade to Premium
+              Unlock AI Agent Coach
             </Button>
           </Link>
           <Link href="/ai-agent-coach">

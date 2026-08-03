@@ -44,6 +44,7 @@ import {
   getCapabilityMatrix,
 } from "@shared/entitlements";
 import { normalizeCadenceToSpm } from "@shared/cadenceNormalization";
+import { sanitizeReturnTo } from "@shared/upgradeIntent";
 
 // Authentication middleware
 const authenticateJWT = async (req: any, res: Response, next: NextFunction) => {
@@ -1162,7 +1163,7 @@ ${allPages.map(page => `  <url>
   // Create checkout session
   app.post("/api/stripe/create-checkout-session", authenticateJWT, async (req: any, res) => {
     try {
-      const { priceId } = req.body;
+      const { priceId, returnTo } = req.body;
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
@@ -1217,6 +1218,11 @@ ${allPages.map(page => `  <url>
         }
       }
 
+      // Preserve the user's upgrade intent: a sanitized relative returnTo
+      // path rides along on the success URL so the billing page can send
+      // the user straight back to the feature they were trying to use.
+      const safeReturnTo = sanitizeReturnTo(returnTo);
+
       // Create checkout session
       const appSlug = process.env.APP_SLUG || 'aitracker';
       const session = await stripe.checkout.sessions.create({
@@ -1225,7 +1231,7 @@ ${allPages.map(page => `  <url>
         line_items: [{ price: priceId, quantity: 1 }],
         mode: 'subscription',
         allow_promotion_codes: true,
-        success_url: `https://aitracker.run/billing?success=true`,
+        success_url: `https://aitracker.run/billing?success=true${safeReturnTo ? `&returnTo=${encodeURIComponent(safeReturnTo)}` : ''}`,
         cancel_url: `https://aitracker.run/pricing?canceled=true`,
         metadata: { userId: String(userId), app: appSlug },
         subscription_data: {

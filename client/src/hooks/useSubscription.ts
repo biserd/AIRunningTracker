@@ -60,9 +60,16 @@ export function useSubscription() {
   };
 }
 
+export interface CheckoutParams {
+  priceId: string;
+  /** Relative in-app path to return the user to after trial activation. */
+  returnTo?: string;
+}
+
 export function useCheckout(onRequiresEmail?: () => void) {
   return useMutation({
-    mutationFn: async (priceId: string) => {
+    mutationFn: async (params: string | CheckoutParams) => {
+      const { priceId, returnTo } = typeof params === "string" ? { priceId: params, returnTo: undefined } : params;
       const token = localStorage.getItem("auth_token");
       const res = await fetch("/api/stripe/create-checkout-session", {
         method: "POST",
@@ -71,7 +78,7 @@ export function useCheckout(onRequiresEmail?: () => void) {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         credentials: "include",
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ priceId, ...(returnTo ? { returnTo } : {}) }),
       });
       const data = await res.json();
       if (res.status === 402 && data.requiresEmail) {

@@ -7,9 +7,13 @@ interface LockedFeatureTeaserProps {
   teaser: string;
   className?: string;
   compact?: boolean;
+  /** Pricing URL carrying the upgrade intent (capability, activity, returnTo). */
+  pricingUrl?: string;
+  /** Capability-specific call to action, e.g. "Unlock splits analysis". */
+  ctaLabel?: string;
 }
 
-export function LockedFeatureTeaser({ tier, teaser, className = '', compact = false }: LockedFeatureTeaserProps) {
+export function LockedFeatureTeaser({ tier, teaser, className = '', compact = false, pricingUrl = '/pricing', ctaLabel = 'Unlock' }: LockedFeatureTeaserProps) {
   const tierConfig = { 
     label: 'Premium', 
     bgClass: 'bg-gradient-to-r from-yellow-50 to-amber-50',
@@ -26,9 +30,9 @@ export function LockedFeatureTeaser({ tier, teaser, className = '', compact = fa
           <Lock className={`h-4 w-4 ${tierConfig.iconColor}`} />
           <span className="text-sm text-gray-700">{teaser}</span>
         </div>
-        <Link href="/pricing">
+        <Link href={pricingUrl}>
           <Button size="sm" className={`${tierConfig.buttonClass} text-white text-xs h-7 px-3`} data-testid="button-unlock">
-            Unlock
+            {ctaLabel}
           </Button>
         </Link>
       </div>
@@ -48,10 +52,10 @@ export function LockedFeatureTeaser({ tier, teaser, className = '', compact = fa
           <p className="text-sm text-gray-700 mt-1">{teaser}</p>
         </div>
       </div>
-      <Link href="/pricing">
+      <Link href={pricingUrl}>
         <Button className={`${tierConfig.buttonClass} text-white`} data-testid="button-unlock">
           <Sparkles className="h-4 w-4 mr-2" />
-          Unlock
+          {ctaLabel}
         </Button>
       </Link>
     </div>
@@ -69,9 +73,11 @@ interface LockedOverlayProps {
   teaser: string;
   children: React.ReactNode;
   blur?: boolean;
+  pricingUrl?: string;
+  ctaLabel?: string;
 }
 
-export function LockedOverlay({ tier, teaser, children, blur = true }: LockedOverlayProps) {
+export function LockedOverlay({ tier, teaser, children, blur = true, pricingUrl = '/pricing', ctaLabel = 'Unlock' }: LockedOverlayProps) {
   const tierConfig = { 
     label: 'Premium', 
     borderClass: 'border-yellow-300',
@@ -88,9 +94,9 @@ export function LockedOverlay({ tier, teaser, children, blur = true }: LockedOve
         <div className={`flex items-center gap-3 px-4 py-3 bg-white/95 backdrop-blur-sm rounded-xl border-2 ${tierConfig.borderClass} shadow-lg`}>
           <Lock className={`h-5 w-5 ${tierConfig.iconColor}`} />
           <span className="text-sm text-gray-700 max-w-[200px]">{teaser}</span>
-          <Link href="/pricing">
+          <Link href={pricingUrl}>
             <Button size="sm" className={`${tierConfig.buttonClass} text-white`} data-testid="button-unlock-overlay">
-              Unlock
+              {ctaLabel}
             </Button>
           </Link>
         </div>

@@ -14,6 +14,7 @@ import { CalendarDays, PlayCircle, Clock, MapPin, Target, Lock, Crown, Loader2, 
 import { useToast } from "@/hooks/use-toast";
 import { useFeatureAccess } from "@/hooks/useSubscription";
 import { Link } from "wouter";
+import { buildUpgradeUrl } from "@shared/upgradeIntent";
 
 interface Workout {
   type: string;
@@ -259,37 +260,137 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
     },
   });
 
-  // Show upgrade prompt for Free users
+  // Show upgrade prompt for Free users, with a safe setup preview: they can
+  // explore the full plan configuration, but generation stays gated behind
+  // an upgrade CTA that carries their chosen goal back through pricing.
   if (!canAccessTrainingPlans) {
+    const goalLabels: Record<string, string> = {
+      "5k": "5K", "10k": "10K", "half-marathon": "half marathon",
+      "marathon": "marathon", "general": "general fitness",
+    };
+    const upgradeUrl = buildUpgradeUrl({
+      source: "training_plan",
+      capability: "training_plans",
+      benefit: `Generate your ${selectedWeeks}-week ${goalLabels[goal] || goal} training plan, personalized to your running data.`,
+      returnTo: "/dashboard",
+    });
     return (
-      <Card data-testid="training-plan-upgrade">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold text-charcoal flex items-center">
-            <CalendarDays className="mr-2 h-5 w-5 text-strava-orange" />
-            AI Training Plans
-            <Badge className="ml-2 bg-gradient-to-r from-strava-orange to-orange-500 text-white text-xs">
-              <Crown className="h-3 w-3 mr-1" />
-              Premium
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-orange-100 flex items-center justify-center">
-              <Lock className="h-8 w-8 text-strava-orange" />
+      <>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]" data-testid="training-plan-preview-dialog">
+            <DialogHeader>
+              <DialogTitle className="flex items-center">
+                <Target className="mr-2 h-5 w-5 text-strava-orange" />
+                Preview Your Training Plan Setup
+              </DialogTitle>
+              <DialogDescription>
+                Set up your plan now — upgrade to Premium to generate it. Your choices carry over.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="preview-goal">Training Goal</Label>
+                <Select value={goal} onValueChange={setGoal}>
+                  <SelectTrigger id="preview-goal" data-testid="select-goal-preview">
+                    <SelectValue placeholder="Select your goal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5k">5K Race</SelectItem>
+                    <SelectItem value="10k">10K Race</SelectItem>
+                    <SelectItem value="half-marathon">Half Marathon</SelectItem>
+                    <SelectItem value="marathon">Marathon</SelectItem>
+                    <SelectItem value="general">General Fitness</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Plan Duration</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[4, 6, 8, 12].map(weeks => (
+                    <Button
+                      key={weeks}
+                      variant={selectedWeeks === weeks ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedWeeks(weeks)}
+                      className={selectedWeeks === weeks ? "bg-strava-orange hover:bg-strava-orange/90" : ""}
+                      data-testid={`button-weeks-preview-${weeks}`}
+                    >
+                      {weeks}w
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="preview-fitness">Current Fitness Level</Label>
+                <Select value={fitnessLevel} onValueChange={setFitnessLevel}>
+                  <SelectTrigger id="preview-fitness" data-testid="select-fitness-preview">
+                    <SelectValue placeholder="Select fitness level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="beginner">Beginner</SelectItem>
+                    <SelectItem value="intermediate">Intermediate</SelectItem>
+                    <SelectItem value="advanced">Advanced</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <h3 className="text-lg font-semibold text-charcoal mb-2">Unlock AI Training Plans</h3>
-            <p className="text-gray-500 mb-4 max-w-sm mx-auto">
-              Get personalized training plans powered by AI that adapt to your goals and fitness level.
-            </p>
-            <Link href="/pricing">
-              <Button className="bg-gradient-to-r from-strava-orange to-orange-500 hover:from-orange-600 hover:to-orange-600">
-                Upgrade to Premium
+
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setDialogOpen(false)} data-testid="button-preview-cancel">
+                Cancel
               </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+              <Link href={upgradeUrl}>
+                <Button className="bg-gradient-to-r from-strava-orange to-orange-500 hover:from-orange-600 hover:to-orange-600" data-testid="button-preview-upgrade">
+                  <Crown className="h-4 w-4 mr-2" />
+                  Unlock plan generation
+                </Button>
+              </Link>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Card data-testid="training-plan-upgrade">
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold text-charcoal flex items-center">
+              <CalendarDays className="mr-2 h-5 w-5 text-strava-orange" />
+              AI Training Plans
+              <Badge className="ml-2 bg-gradient-to-r from-strava-orange to-orange-500 text-white text-xs">
+                <Crown className="h-3 w-3 mr-1" />
+                Premium
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-orange-100 flex items-center justify-center">
+                <Lock className="h-8 w-8 text-strava-orange" />
+              </div>
+              <h3 className="text-lg font-semibold text-charcoal mb-2">Unlock AI Training Plans</h3>
+              <p className="text-gray-500 mb-4 max-w-sm mx-auto">
+                Get personalized training plans powered by AI that adapt to your goals and fitness level.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setDialogOpen(true)}
+                  data-testid="button-preview-setup"
+                >
+                  <Target className="h-4 w-4 mr-2" />
+                  Preview plan setup
+                </Button>
+                <Link href={upgradeUrl}>
+                  <Button className="bg-gradient-to-r from-strava-orange to-orange-500 hover:from-orange-600 hover:to-orange-600" data-testid="button-upgrade-training-plans">
+                    Unlock AI Training Plans
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </>
     );
   }
 

@@ -1,8 +1,9 @@
 import Footer from "@/components/Footer";
 import PublicHeader from "@/components/PublicHeader";
 import AppHeader from "@/components/AppHeader";
-import { Check, Crown, Quote, Trophy, MapPin, TrendingUp } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { Check, Crown, Quote, Trophy, MapPin, TrendingUp, Sparkles, ArrowLeft } from "lucide-react";
+import { Link, useLocation, useSearch } from "wouter";
+import { parseUpgradeIntent, capabilityLabel } from "@shared/upgradeIntent";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription, useCheckout } from "@/hooks/useSubscription";
@@ -110,8 +111,14 @@ export default function PricingPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [, navigate] = useLocation();
+  const searchString = useSearch();
   const { toast } = useToast();
   const checkout = useCheckout(() => setShowEmailModal(true));
+
+  // Contextual upgrade intent (source, capability, activity, benefit,
+  // return destination) carried by Premium gates. Preserved through
+  // checkout so trial activation returns to the requested feature.
+  const upgradeIntent = parseUpgradeIntent(searchString);
 
   // Fetch live Stripe products so we use whichever price IDs exist in the
   // current Stripe environment (test or live). Public endpoint, cached briefly.
@@ -134,7 +141,7 @@ export default function PricingPage() {
       });
       return;
     }
-    checkout.mutate(premiumPriceId);
+    checkout.mutate({ priceId: premiumPriceId, returnTo: upgradeIntent?.returnTo });
   };
 
   return (
@@ -147,6 +154,36 @@ export default function PricingPage() {
 
       <section className="py-16 px-6">
         <div className="max-w-4xl mx-auto">
+          {upgradeIntent && (
+            <div
+              className="max-w-2xl mx-auto mb-10 rounded-xl border-2 border-yellow-200 bg-gradient-to-r from-yellow-50 to-amber-50 p-5"
+              data-testid="upgrade-intent-banner"
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="h-5 w-5 text-yellow-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-gray-900" data-testid="upgrade-intent-capability">
+                    Unlock {capabilityLabel(String(upgradeIntent.capability))}
+                  </p>
+                  {upgradeIntent.benefit && (
+                    <p className="text-sm text-gray-700 mt-1" data-testid="upgrade-intent-benefit">
+                      {upgradeIntent.benefit}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-2">
+                    Start your free trial and we'll take you right back to where you left off.
+                  </p>
+                </div>
+                <Link href={upgradeIntent.returnTo}>
+                  <Button variant="ghost" size="sm" className="text-gray-600 flex-shrink-0" data-testid="upgrade-intent-back">
+                    <ArrowLeft className="h-4 w-4 mr-1" /> Back
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
           <h1 className="text-5xl font-bold text-charcoal mb-4 text-center">
             Simple, <span className="text-strava-orange">Transparent</span> Pricing
           </h1>
@@ -361,7 +398,7 @@ export default function PricingPage() {
         onClose={() => setShowEmailModal(false)}
         onSuccess={() => {
           setShowEmailModal(false);
-          if (premiumPriceId) checkout.mutate(premiumPriceId);
+          if (premiumPriceId) checkout.mutate({ priceId: premiumPriceId, returnTo: upgradeIntent?.returnTo });
         }}
       />
     </div>

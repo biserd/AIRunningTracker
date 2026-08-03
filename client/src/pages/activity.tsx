@@ -28,6 +28,7 @@ import { useSubscription, useFeatureAccess } from "@/hooks/useSubscription";
 import type { CoachRecap } from "@shared/schema";
 import { LockedFeatureTeaser, LockedOverlay, TierBadge as TierBadgeComponent } from "@/components/LockedFeatureTeaser";
 import { normalizeZoneDurations, zonesFromFractions } from "@shared/zoneCalculations";
+import { buildUpgradeUrl } from "@shared/upgradeIntent";
 import {
   OPTIMAL_CADENCE_MIN_SPM,
   OPTIMAL_CADENCE_MAX_SPM,
@@ -47,11 +48,15 @@ function TierBadge({ tier }: { tier: 'pro' | 'premium' }) {
 function LockedFeaturePanel({ 
   tier, 
   title, 
-  description 
+  description,
+  pricingUrl = "/pricing",
+  ctaLabel,
 }: { 
   tier: 'pro' | 'premium'; 
   title: string;
   description: string;
+  pricingUrl?: string;
+  ctaLabel?: string;
 }) {
   const tierConfig = { 
     label: 'Premium', 
@@ -74,10 +79,10 @@ function LockedFeaturePanel({
         </span>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
         <p className="text-sm text-gray-600 mb-6 max-w-md">{description}</p>
-        <Link href="/pricing">
+        <Link href={pricingUrl}>
           <Button className={`${tierConfig.buttonClass} text-white`} data-testid="button-upgrade">
             <Sparkles className="h-4 w-4 mr-2" />
-            Upgrade to {tierConfig.label}
+            {ctaLabel || `Upgrade to ${tierConfig.label}`}
           </Button>
         </Link>
       </CardContent>
@@ -199,6 +204,13 @@ interface PremiumPreviewData {
 }
 
 function PremiumPreviewCard({ preview }: { preview: PremiumPreviewData }) {
+  const upgradeUrl = buildUpgradeUrl({
+    source: "premium_preview",
+    capability: "activity_deep_dive",
+    activityId: preview.sourceData.activityId,
+    benefit: "See splits, decoupling, and race predictions for every run — starting with this one.",
+    returnTo: `/activity/${preview.sourceData.activityId}`,
+  });
   const src = preview.sourceData;
   const distanceKm = src.distanceMeters / 1000;
   const paceSecPerKm = distanceKm > 0 ? src.movingTimeSec / distanceKm : 0;
@@ -263,7 +275,7 @@ function PremiumPreviewCard({ preview }: { preview: PremiumPreviewData }) {
           <p className="text-xs text-gray-500 flex items-center gap-1">
             <Lock className="h-3 w-3" /> Splits, decoupling, and race predictions stay locked
           </p>
-          <Link href="/pricing">
+          <Link href={upgradeUrl}>
             <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-white" data-testid="premium-preview-upgrade">
               <Sparkles className="h-4 w-4 mr-1" /> Unlock full analysis
             </Button>
@@ -696,7 +708,13 @@ export default function ActivityPage() {
                     to see the full breakdown of this run — splits, route map, coach
                     verdict, efficiency score, and personalized next-run tips.
                   </p>
-                  <Link href="/pricing">
+                  <Link href={buildUpgradeUrl({
+                    source: "locked_activity",
+                    capability: "unlimited_history",
+                    activityId: Number(activityId),
+                    benefit: `Unlock the full breakdown of "${a.name}" — splits, route map, coach verdict, and next-run tips.`,
+                    returnTo: `/activity/${activityId}`,
+                  })}>
                     <Button className="bg-yellow-500 hover:bg-yellow-600 text-white w-full" data-testid="button-upgrade-locked-activity">
                       <Sparkles className="h-4 w-4 mr-2" />
                       Start 14-day Premium trial
@@ -953,6 +971,14 @@ export default function ActivityPage() {
               <LockedFeatureTeaser 
                 tier="premium"
                 teaser="Unlock detailed Drift, Pacing, and Baseline comparison metrics"
+                ctaLabel="Unlock performance metrics"
+                pricingUrl={buildUpgradeUrl({
+                  source: "activity_deep_dive",
+                  capability: "activity_deep_dive",
+                  activityId: Number(activityId),
+                  benefit: "See drift, pacing stability, and baseline comparison for this run.",
+                  returnTo: `/activity/${activityId}`,
+                })}
               />
             ) : efficiencyData ? (
               <Card className="overflow-hidden">
@@ -1082,6 +1108,14 @@ export default function ActivityPage() {
               <LockedFeatureTeaser 
                 tier="premium"
                 teaser="See your run unfold second-by-second with interactive pace, heart rate, and elevation charts"
+                ctaLabel="Unlock run timeline"
+                pricingUrl={buildUpgradeUrl({
+                  source: "activity_timeline",
+                  capability: "activity_deep_dive",
+                  activityId: Number(activityId),
+                  benefit: "Replay this run second-by-second with interactive pace, HR, and elevation charts.",
+                  returnTo: `/activity/${activityId}`,
+                })}
               />
             ) : (
               <RunTimeline 
@@ -1097,6 +1131,14 @@ export default function ActivityPage() {
               <LockedFeatureTeaser 
                 tier="premium"
                 teaser="Analyze every split with pace consistency metrics and effort distribution"
+                ctaLabel="Unlock splits analysis"
+                pricingUrl={buildUpgradeUrl({
+                  source: "activity_splits",
+                  capability: "activity_deep_dive",
+                  activityId: Number(activityId),
+                  benefit: "Break down every split of this run with pace consistency and effort distribution.",
+                  returnTo: `/activity/${activityId}`,
+                })}
               />
             ) : (
               <DetailedSplitsAnalysis
@@ -1112,6 +1154,14 @@ export default function ActivityPage() {
               <LockedFeatureTeaser 
                 tier="premium"
                 teaser="Unlock detailed Heart Rate, Cadence, and Power analysis charts"
+                ctaLabel="Unlock HR & power charts"
+                pricingUrl={buildUpgradeUrl({
+                  source: "activity_hr_cadence_power",
+                  capability: "activity_deep_dive",
+                  activityId: Number(activityId),
+                  benefit: "See heart rate, cadence, and power charts for this run.",
+                  returnTo: `/activity/${activityId}`,
+                })}
               />
             ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1201,6 +1251,14 @@ export default function ActivityPage() {
               <LockedFeatureTeaser
                 tier="premium"
                 teaser="Compare this run against your PRs and similar past activities"
+                ctaLabel="Unlock run comparison"
+                pricingUrl={buildUpgradeUrl({
+                  source: "activity_comparison",
+                  capability: "activity_comparison",
+                  activityId: Number(activityId),
+                  benefit: "Compare this run against your PRs and similar past activities.",
+                  returnTo: `/activity/${activityId}`,
+                })}
               />
             )}
           </div>
