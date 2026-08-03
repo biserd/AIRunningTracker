@@ -177,7 +177,7 @@ export default function RunnerScore() {
                 {scoreData.grade}
               </Badge>
               <span className="text-xs text-gray-500 mt-0.5">
-                Top {100 - scoreData.percentile}%
+                Based on your last 30 days
               </span>
             </div>
           </div>

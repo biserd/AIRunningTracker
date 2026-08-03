@@ -1,31 +1,20 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Route, Timer, TrendingUp, Heart, ArrowUp, ArrowDown, Calendar, Clock, Shield } from "lucide-react";
-
-interface RecoveryData {
-  daysSinceLastRun: number;
-  freshnessScore: number;
-  riskLevel: string;
-  riskReduced: boolean;
-  originalRiskLevel: string;
-  readyToRun: boolean;
-  recommendedNextStep: string;
-  statusMessage: string;
-  recoveryMessage: string;
-}
+import { Route, Timer, ArrowUp, ArrowDown, Calendar, Clock } from "lucide-react";
 
 interface QuickStatsProps {
   stats: {
     // Period-specific totals
     monthlyTotalDistance: string;
     monthlyAvgPace: string;
-    monthlyTrainingLoad: number;
+    monthlyTotalMinutes: number;
     monthlyTotalActivities: number;
     weeklyTotalDistance: string;
     weeklyAvgPace: string;
-    weeklyTrainingLoad: number;
+    weeklyTotalMinutes: number;
     weeklyTotalActivities: number;
+    asOf?: string;
     
     recovery: string;
     unitPreference?: string;
@@ -34,37 +23,44 @@ interface QuickStatsProps {
     monthlyDistanceChange?: number | null;
     monthlyPaceChange?: number | null;
     monthlyActivitiesChange?: number | null;
-    monthlyTrainingLoadChange?: number | null;
+    monthlyRunningTimeChange?: number | null;
     // Weekly changes
     weeklyDistanceChange?: number | null;
     weeklyPaceChange?: number | null;
     weeklyActivitiesChange?: number | null;
-    weeklyTrainingLoadChange?: number | null;
+    weeklyRunningTimeChange?: number | null;
     
     // Backward compatibility
     totalDistance: string;
     avgPace: string;
-    trainingLoad: number;
+    runningTimeMinutes?: number;
     totalActivities?: number;
     distanceChange?: number | null;
     paceChange?: number | null;
     activitiesChange?: number | null;
-    trainingLoadChange?: number | null;
+    runningTimeChange?: number | null;
   };
-  recoveryData?: RecoveryData | null;
 }
 
-export default function QuickStats({ stats, recoveryData }: QuickStatsProps) {
+export default function QuickStats({ stats }: QuickStatsProps) {
   const [comparisonPeriod, setComparisonPeriod] = useState<'weekly' | 'monthly'>('monthly');
 
   // Helper functions to get period-specific values
   const getCurrentDistance = () => comparisonPeriod === 'weekly' ? stats.weeklyTotalDistance : stats.monthlyTotalDistance;
   const getCurrentPace = () => comparisonPeriod === 'weekly' ? stats.weeklyAvgPace : stats.monthlyAvgPace;
-  const getCurrentTrainingLoad = () => comparisonPeriod === 'weekly' ? stats.weeklyTrainingLoad : stats.monthlyTrainingLoad;
+  const getCurrentRunningTime = () => comparisonPeriod === 'weekly' ? stats.weeklyTotalMinutes : stats.monthlyTotalMinutes;
   const getCurrentActivities = () => comparisonPeriod === 'weekly' ? stats.weeklyTotalActivities : stats.monthlyTotalActivities;
   const getPeriodLabel = () => comparisonPeriod === 'weekly' ? 'this week' : 'this month';
-  const getTrainingLoadLabel = () => comparisonPeriod === 'weekly' ? 'TSS this week' : 'TSS this month';
   const hasNoRunsInPeriod = getCurrentActivities() === 0;
+  const emptyPeriodLabel = comparisonPeriod === 'weekly'
+    ? 'No runs yet this week'
+    : `No ${new Date(stats.asOf || Date.now()).toLocaleDateString(undefined, { month: 'long' })} runs yet`;
+  const formatRunningTime = (minutes: number) => {
+    if (minutes < 60) return `${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    const remaining = minutes % 60;
+    return remaining ? `${hours}h ${remaining}m` : `${hours}h`;
+  };
 
   const formatPercentageChange = (
     weeklyChange: number | undefined | null, 
@@ -72,7 +68,7 @@ export default function QuickStats({ stats, recoveryData }: QuickStatsProps) {
     positiveIsGood: boolean = true
   ) => {
     const change = comparisonPeriod === 'weekly' ? weeklyChange : monthlyChange;
-    const period = comparisonPeriod === 'weekly' ? 'last week' : 'last month';
+    const period = comparisonPeriod === 'weekly' ? 'last week' : 'same period last month';
     
     if (change === undefined || change === null) {
       return (
@@ -106,7 +102,12 @@ export default function QuickStats({ stats, recoveryData }: QuickStatsProps) {
     <div className="mb-8">
       {/* Comparison Period Toggle */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-charcoal">Quick Stats</h2>
+        <div>
+          <h2 className="text-xl font-bold text-charcoal">{comparisonPeriod === "weekly" ? "This week" : "This month"}</h2>
+          <p className="text-xs text-gray-500">
+            Calendar totals{stats.asOf ? ` through ${new Date(stats.asOf).toLocaleString()}` : ""}
+          </p>
+        </div>
         <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1" data-testid="comparison-toggle">
           <Button
             variant={comparisonPeriod === 'weekly' ? 'default' : 'ghost'}
@@ -137,7 +138,9 @@ export default function QuickStats({ stats, recoveryData }: QuickStatsProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Distance</p>
-                <p className="text-3xl font-bold text-charcoal">{getCurrentDistance()}</p>
+                <p className={`${hasNoRunsInPeriod ? 'text-xl' : 'text-3xl'} font-bold text-charcoal`}>
+                  {hasNoRunsInPeriod ? emptyPeriodLabel : getCurrentDistance()}
+                </p>
                 <p className="text-sm text-gray-500">{stats.unitPreference === "miles" ? "mi" : "km"} {getPeriodLabel()}</p>
               </div>
               <div className="w-12 h-12 bg-strava-orange/10 rounded-full flex items-center justify-center">
@@ -153,7 +156,7 @@ export default function QuickStats({ stats, recoveryData }: QuickStatsProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Avg Pace</p>
-                <p className="text-3xl font-bold text-charcoal">{getCurrentPace()}</p>
+                <p className="text-3xl font-bold text-charcoal">{hasNoRunsInPeriod ? '—' : getCurrentPace()}</p>
                 <p className="text-sm text-gray-500">min/{stats.unitPreference === "miles" ? "mi" : "km"} {getPeriodLabel()}</p>
               </div>
               <div className="w-12 h-12 bg-performance-blue/10 rounded-full flex items-center justify-center">
@@ -168,15 +171,17 @@ export default function QuickStats({ stats, recoveryData }: QuickStatsProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Training Load</p>
-                <p className="text-3xl font-bold text-charcoal">{getCurrentTrainingLoad()}</p>
-                <p className="text-sm text-gray-500">{getTrainingLoadLabel()}</p>
+                <p className="text-sm font-medium text-gray-600">Running Time</p>
+                <p className="text-3xl font-bold text-charcoal">
+                  {hasNoRunsInPeriod ? '—' : formatRunningTime(getCurrentRunningTime())}
+                </p>
+                <p className="text-sm text-gray-500">Recorded {getPeriodLabel()}</p>
               </div>
               <div className="w-12 h-12 bg-achievement-green/10 rounded-full flex items-center justify-center">
-                <TrendingUp className="text-achievement-green" size={20} />
+                <Clock className="text-achievement-green" size={20} />
               </div>
             </div>
-            {formatPercentageChange(stats.weeklyTrainingLoadChange, stats.monthlyTrainingLoadChange, true)}
+            {formatPercentageChange(stats.weeklyRunningTimeChange, stats.monthlyRunningTimeChange, true)}
           </CardContent>
         </Card>
 
@@ -184,82 +189,15 @@ export default function QuickStats({ stats, recoveryData }: QuickStatsProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Recovery Status</p>
-                {recoveryData ? (
-                  <>
-                    <p className="text-3xl font-bold text-charcoal">{recoveryData.freshnessScore}%</p>
-                    <p className="text-sm text-gray-500">
-                      {recoveryData.daysSinceLastRun === 0 
-                        ? "Ran today" 
-                        : recoveryData.daysSinceLastRun === 1 
-                          ? "1 day rest" 
-                          : `${recoveryData.daysSinceLastRun} days rest`}
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    {hasNoRunsInPeriod ? (
-                      <>
-                        <p className="text-xl font-bold text-charcoal">
-                          No runs yet {getPeriodLabel()}
-                        </p>
-                        <p className="text-sm text-gray-500 mt-1 max-w-xs">
-                          Sync your next run to update your training load and recovery status.
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-3xl font-bold text-charcoal">{stats.recovery}</p>
-                        <p className="text-sm text-gray-500">{getCurrentActivities()} runs {getPeriodLabel()}</p>
-                      </>
-                    )}
-                  </>
-                )}
+                <p className="text-sm font-medium text-gray-600">Runs</p>
+                <p className="text-3xl font-bold text-charcoal">{getCurrentActivities()}</p>
+                <p className="text-sm text-gray-500">Recorded {getPeriodLabel()}</p>
               </div>
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                recoveryData?.readyToRun 
-                  ? 'bg-achievement-green/10' 
-                  : recoveryData?.riskLevel === 'critical' || recoveryData?.riskLevel === 'high'
-                    ? 'bg-red-100'
-                    : 'bg-yellow-100'
-              }`}>
-                <Heart className={`${
-                  recoveryData?.readyToRun 
-                    ? 'text-achievement-green' 
-                    : recoveryData?.riskLevel === 'critical' || recoveryData?.riskLevel === 'high'
-                      ? 'text-red-500'
-                      : 'text-yellow-600'
-                }`} size={20} />
+              <div className="w-12 h-12 rounded-full flex items-center justify-center bg-purple-100">
+                <Calendar className="text-purple-600" size={20} />
               </div>
             </div>
-            <div className="mt-4 space-y-1">
-              {recoveryData ? (
-                <>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className={`font-medium ${
-                      recoveryData.readyToRun ? 'text-achievement-green' : 
-                      recoveryData.riskLevel === 'critical' || recoveryData.riskLevel === 'high' ? 'text-red-500' : 'text-yellow-600'
-                    }`}>
-                      {recoveryData.statusMessage}
-                    </span>
-                  </div>
-                  {recoveryData.riskReduced && (
-                    <div className="flex items-center gap-1 text-xs text-achievement-green">
-                      <Shield size={12} />
-                      <span>Risk reduced by rest</span>
-                    </div>
-                  )}
-                </>
-              ) : !hasNoRunsInPeriod ? (
-                <span className={`font-medium text-sm ${
-                  stats.recovery === 'Good' ? 'text-achievement-green' : 
-                  stats.recovery === 'Moderate' ? 'text-yellow-600' : 'text-red-500'
-                }`}>
-                  {stats.recovery === 'Good' ? 'Ready to train' : 
-                   stats.recovery === 'Moderate' ? 'Consider rest' : 'Take a break'}
-                </span>
-              ) : null}
-            </div>
+            {formatPercentageChange(stats.weeklyActivitiesChange, stats.monthlyActivitiesChange, true)}
           </CardContent>
         </Card>
       </div>

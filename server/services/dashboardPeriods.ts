@@ -63,6 +63,24 @@ export function getDashboardCalendarPeriods(now: Date = new Date()): DashboardCa
   };
 }
 
+/** End of the equivalent elapsed portion of the previous month. */
+export function getLastMonthComparisonEnd(periods: DashboardCalendarPeriods): Date {
+  const daysInLastMonth = new Date(
+    periods.lastMonth.getFullYear(),
+    periods.lastMonth.getMonth() + 1,
+    0,
+  ).getDate();
+  const end = new Date(periods.lastMonth);
+  end.setDate(Math.min(periods.now.getDate(), daysInLastMonth));
+  end.setHours(
+    periods.now.getHours(),
+    periods.now.getMinutes(),
+    periods.now.getSeconds(),
+    periods.now.getMilliseconds(),
+  );
+  return end;
+}
+
 /**
  * Partition activities into true calendar periods. The explicit `<= now`
  * upper bound prevents future-dated or timezone-skewed rows from appearing in

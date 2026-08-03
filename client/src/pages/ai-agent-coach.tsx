@@ -49,7 +49,7 @@ export default function AIAgentCoachLanding() {
     "offers": {
       "@type": "Offer",
       "priceCurrency": "USD",
-      "price": "14.99",
+      "price": "7.99",
       "availability": "https://schema.org/InStock"
     }
   };
@@ -356,7 +356,7 @@ export default function AIAgentCoachLanding() {
               </Link>
             </div>
             <p className="text-sm text-purple-200 mt-6" data-testid="text-pricing-info">
-              AI Agent Coach is included with RunAnalytics Premium at $14.99/month
+              AI Agent Coach is included with RunAnalytics Premium at $7.99/month
             </p>
           </div>
         </section>

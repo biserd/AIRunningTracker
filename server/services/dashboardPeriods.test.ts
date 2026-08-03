@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   getDashboardCalendarPeriods,
+  getLastMonthComparisonEnd,
   partitionDashboardActivities,
 } from "./dashboardPeriods";
 
@@ -12,6 +13,14 @@ assert.equal(periods.thisMonth.getMonth(), 7);
 assert.equal(periods.thisMonth.getDate(), 1);
 assert.equal(periods.thisWeek.getDay(), 1, "week starts Monday");
 assert.equal(periods.cachePartition, "2026-08-03");
+assert.equal(getLastMonthComparisonEnd(periods).getTime(), new Date(2026, 6, 3, 12, 0, 0).getTime());
+
+const march31 = getDashboardCalendarPeriods(new Date(2026, 2, 31, 12, 0, 0));
+assert.equal(
+  getLastMonthComparisonEnd(march31).getTime(),
+  new Date(2026, 1, 28, 12, 0, 0).getTime(),
+  "comparison clamps to the final day of a shorter previous month",
+);
 
 const activities = [
   { id: "july", startDate: new Date(2026, 6, 11, 8, 0, 0) },

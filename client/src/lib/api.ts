@@ -30,7 +30,15 @@ export interface DashboardData {
   stats: {
     totalDistance: string;
     avgPace: string;
-    trainingLoad: number;
+    runningTimeMinutes: number;
+    monthlyTotalDistance: string;
+    monthlyAvgPace: string;
+    monthlyTotalMinutes: number;
+    monthlyTotalActivities: number;
+    weeklyTotalDistance: string;
+    weeklyAvgPace: string;
+    weeklyTotalMinutes: number;
+    weeklyTotalActivities: number;
     recovery: string;
   };
   activities: Array<{

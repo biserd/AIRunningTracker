@@ -16,7 +16,7 @@ import { normalizeCadenceToSpm } from "@shared/cadenceNormalization";
 // Safe payload limits — the preview is stored on the users row and returned
 // verbatim to the client, so it must stay small and free of bulky fields
 // (streams, polylines, laps).
-export const PREMIUM_PREVIEW_VERSION = 2;
+export const PREMIUM_PREVIEW_VERSION = 3;
 export const PREVIEW_TEXT_MAX = 240;
 export const PREVIEW_NAME_MAX = 120;
 export const PREVIEW_PAYLOAD_MAX_BYTES = 4096;
@@ -145,10 +145,8 @@ export function buildPremiumPreviewPayload(
   // Effort / efficiency finding (HR-based) when heart rate exists.
   if (activity.averageHeartrate) {
     const hr = Math.round(activity.averageHeartrate);
-    const hrPerPaceMin = activity.averageHeartrate / (paceSecPerKm / 60);
-    const effLabel = hrPerPaceMin < 24 ? "strong aerobic efficiency" : hrPerPaceMin < 28 ? "moderate aerobic efficiency" : "a high cardiac cost for the pace";
     candidates.push(
-      `Your average heart rate of ${hr} bpm at ${paceDisplay} points to ${effLabel} — a signal most runners never see quantified.`,
+      `You averaged ${hr} bpm at ${paceDisplay}. Premium compares that effort with your own similar runs so the result is personal to you.`,
     );
   }
 
@@ -157,12 +155,7 @@ export function buildPremiumPreviewPayload(
   const normalizedCadence = normalizeCadenceToSpm(activity.averageCadence);
   if (normalizedCadence) {
     const spm = Math.round(normalizedCadence);
-    const cadenceNote = spm >= 170 && spm <= 180
-      ? "inside the typical 170–180 spm reference range"
-      : spm < 170
-        ? "below the typical 170–180 spm reference range"
-        : "above the typical 170–180 spm reference range";
-    candidates.push(`You averaged ${spm} steps per minute, ${cadenceNote}.`);
+    candidates.push(`You averaged ${spm} steps per minute. The useful signal is how that cadence changes at similar paces, especially late in a run.`);
   }
 
   // Elevation finding when meaningful climb exists.
@@ -177,7 +170,7 @@ export function buildPremiumPreviewPayload(
     `You held ${paceDisplay} across ${distanceDisplay} — consistent enough that a full split-by-split analysis would show exactly where you gained and lost time.`,
   );
   candidates.push(
-    `A ${distanceDisplay} run of ${Math.round(movingTime / 60)} minutes is a solid data sample — enough for Premium to model your race predictions and training load.`,
+    `This ${distanceDisplay}, ${Math.round(movingTime / 60)}-minute run gives Premium a useful baseline for comparisons with your future runs.`,
   );
 
   const findings: [string, string] = [
@@ -185,10 +178,8 @@ export function buildPremiumPreviewPayload(
     cap(candidates[1], PREVIEW_TEXT_MAX),
   ];
 
-  const nextAction = cap(
-    activity.averageHeartrate
-      ? `Next run: keep your heart rate under ${Math.round(activity.averageHeartrate)} bpm for the first half, then let pace come to you — Premium's full analysis shows whether you fade late and by how much.`
-      : `Next run: start ${unitPreference === "miles" ? "16–24 sec/mi" : "10–15 sec/km"} slower than ${paceDisplay} and aim to finish faster than you start — Premium's full analysis shows whether you fade late and by how much.`,
+  const safeNextAction = cap(
+    "Next run: start controlled, keep the middle steady, and finish only if it still feels comfortable. Premium compares both halves with this run and shows what changed.",
     PREVIEW_TEXT_MAX,
   );
 
@@ -199,7 +190,7 @@ export function buildPremiumPreviewPayload(
     unitPreference,
     activityId: activity.id,
     findings,
-    nextAction,
+    nextAction: safeNextAction,
     sourceData: {
       activityId: activity.id,
       stravaId: activity.stravaId ?? null,

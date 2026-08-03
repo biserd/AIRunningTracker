@@ -94,9 +94,20 @@ export default function HeartRateZones({ userId, batchData }: HeartRateZonesProp
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-gray-500">
-            <Heart className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-            <p>Unable to calculate heart rate zones</p>
+          <div className="py-6">
+            <p className="font-medium text-charcoal">Heart-rate data alone is not enough to set reliable zones</p>
+            <p className="mt-1 text-sm text-gray-500">Enter your known maximum and resting heart rate, or complete more sustained runs with heart-rate data.</p>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="emptyMaxHR" className="text-xs">Max heart rate</Label>
+                <Input id="emptyMaxHR" type="number" placeholder="190" value={maxHR} onChange={(e) => setMaxHR(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="emptyRestingHR" className="text-xs">Resting heart rate</Label>
+                <Input id="emptyRestingHR" type="number" placeholder="60" value={restingHR} onChange={(e) => setRestingHR(e.target.value)} />
+              </div>
+            </div>
+            <Button className="mt-3" size="sm" onClick={handleUpdateZones} disabled={!maxHR || !restingHR}>Calculate from my values</Button>
           </div>
         </CardContent>
       </Card>
@@ -119,7 +130,7 @@ export default function HeartRateZones({ userId, batchData }: HeartRateZonesProp
             <Settings className="h-4 w-4" />
           </Button>
         </CardTitle>
-        <p className="text-sm text-gray-500 mt-1">Automatically calculated from your recent runs</p>
+        <p className="text-sm text-gray-500 mt-1">Estimated from available heart-rate data. Add known values for a more useful starting point.</p>
       </CardHeader>
       <CardContent className="pt-2">
         <div className="space-y-3">
@@ -182,60 +193,13 @@ export default function HeartRateZones({ userId, batchData }: HeartRateZonesProp
             })}
           </div>
 
-          {/* Training Guidelines - Compact */}
+          {/* Training guidance */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <div className="flex items-center space-x-2 mb-2">
               <Info className="h-3.5 w-3.5 text-blue-600" />
-              <h4 className="font-medium text-blue-900 text-sm">Training Guidelines</h4>
+              <h4 className="font-medium text-blue-900 text-sm">Use as a starting point</h4>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-xs text-blue-800">
-              <div>
-                <strong>Zone 1-2 (80%):</strong> Aerobic base
-              </div>
-              <div>
-                <strong>Zone 3-4 (15%):</strong> Threshold
-              </div>
-              <div>
-                <strong>Zone 5 (5%):</strong> VO2 max
-              </div>
-              <div>
-                <strong>Recovery:</strong> Stay in Zone 1
-              </div>
-            </div>
-          </div>
-
-          {/* Zone Distribution - Compact */}
-          <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-3">
-            <h4 className="font-medium text-green-900 text-sm mb-1.5">Ideal Weekly Distribution</h4>
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-green-800">Zone 1-2</span>
-                <div className="flex items-center space-x-1.5">
-                  <div className="w-16 h-1.5 bg-green-200 rounded">
-                    <div className="w-4/5 h-1.5 bg-green-500 rounded"></div>
-                  </div>
-                  <span className="text-green-700 font-medium w-8">80%</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-orange-800">Zone 3-4</span>
-                <div className="flex items-center space-x-1.5">
-                  <div className="w-16 h-1.5 bg-orange-200 rounded">
-                    <div className="w-3/12 h-1.5 bg-orange-500 rounded"></div>
-                  </div>
-                  <span className="text-orange-700 font-medium w-8">15%</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-red-800">Zone 5</span>
-                <div className="flex items-center space-x-1.5">
-                  <div className="w-16 h-1.5 bg-red-200 rounded">
-                    <div className="w-1/12 h-1.5 bg-red-500 rounded"></div>
-                  </div>
-                  <span className="text-red-700 font-medium w-8">5%</span>
-                </div>
-              </div>
-            </div>
+            <p className="text-xs text-blue-800">Keep most easy running conversational. Use harder zones only in planned sessions, and revise these ranges if they do not match perceived effort.</p>
           </div>
         </div>
       </CardContent>

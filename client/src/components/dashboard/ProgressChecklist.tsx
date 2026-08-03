@@ -1,4 +1,4 @@
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, Circle, Sparkles } from "lucide-react";
 
 interface ProgressChecklistProps {
@@ -8,86 +8,46 @@ interface ProgressChecklistProps {
   hasChatted?: boolean;
 }
 
-export default function ProgressChecklist({ 
-  isStravaConnected, 
-  hasActivities,
-  hasViewedScore,
-  hasChatted = false
-}: ProgressChecklistProps) {
-  const checklistItems = [
-    { label: "Account created", completed: true, icon: CheckCircle2 },
-    { label: "Connect Strava", completed: isStravaConnected, icon: isStravaConnected ? CheckCircle2 : Circle },
-    { label: "View your first insights", completed: hasActivities, icon: hasActivities ? CheckCircle2 : Circle },
-    { label: "Chat with AI Coach", completed: hasChatted, icon: hasChatted ? CheckCircle2 : Circle },
+export default function ProgressChecklist({ isStravaConnected, hasActivities }: ProgressChecklistProps) {
+  // Chat and feature discovery are optional. Once imported running data is
+  // visible, the checklist has done its job and should leave the dashboard.
+  if (isStravaConnected && hasActivities) return null;
+
+  const items = [
+    { label: "Account created", completed: true },
+    { label: "Connect Strava", completed: isStravaConnected },
+    { label: "Import your first run", completed: hasActivities },
   ];
-
-  const completedCount = checklistItems.filter(item => item.completed).length;
-  const totalCount = checklistItems.length;
-  const progress = (completedCount / totalCount) * 100;
-
-  // Don't show if everything is complete
-  if (completedCount === totalCount) {
-    return null;
-  }
+  const completed = items.filter((item) => item.completed).length;
 
   return (
-    <Card className="border-strava-orange/20 bg-gradient-to-br from-orange-50 to-white" data-testid="progress-checklist">
+    <Card className="border-orange-200 bg-gradient-to-br from-orange-50 to-white" data-testid="progress-checklist">
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-strava-orange" />
-          <CardTitle className="text-lg">Get Started Checklist</CardTitle>
+          <Sparkles className="h-5 w-5 text-strava-orange" />
+          <CardTitle className="text-lg">Finish setting up</CardTitle>
         </div>
-        <p className="text-sm text-gray-600">
-          Complete these steps to unlock the full power of RunAnalytics
-        </p>
+        <p className="text-sm text-gray-600">Connect your running data so the dashboard can give you a useful next step.</p>
       </CardHeader>
-      <CardContent className="space-y-3">
-        {/* Progress Bar */}
-        <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
-          <div 
-            className="absolute top-0 left-0 h-full bg-gradient-to-r from-strava-orange to-orange-600 transition-all duration-500"
-            style={{ width: `${progress}%` }}
-          />
+      <CardContent>
+        <div className="mb-3 h-2 overflow-hidden rounded-full bg-gray-200">
+          <div className="h-full bg-strava-orange transition-all" style={{ width: `${(completed / items.length) * 100}%` }} />
         </div>
-        <div className="text-xs text-gray-500 text-right">
-          {completedCount} of {totalCount} completed
-        </div>
-
-        {/* Checklist Items */}
-        <div className="space-y-2" data-testid="checklist-items">
-          {checklistItems.map((item, index) => {
-            const Icon = item.icon;
+        <div className="space-y-2">
+          {items.map((item) => {
+            const Icon = item.completed ? CheckCircle2 : Circle;
             return (
-              <div 
-                key={index} 
-                className={`flex items-center gap-3 p-2 rounded-lg transition-all ${
-                  item.completed 
-                    ? 'bg-green-50 text-green-700' 
-                    : 'bg-white text-gray-600'
-                }`}
-                data-testid={`checklist-item-${index}`}
-              >
-                <Icon 
-                  className={`w-5 h-5 flex-shrink-0 ${
-                    item.completed ? 'text-green-600' : 'text-gray-400'
-                  }`} 
-                />
-                <span className={`text-sm font-medium ${
-                  item.completed ? 'line-through' : ''
-                }`}>
-                  {item.label}
-                </span>
+              <div key={item.label} className={`flex items-center gap-3 rounded-lg p-2 ${item.completed ? "bg-green-50 text-green-700" : "bg-white text-gray-600"}`}>
+                <Icon className={`h-5 w-5 shrink-0 ${item.completed ? "text-green-600" : "text-gray-400"}`} />
+                <span className="text-sm font-medium">{item.label}</span>
               </div>
             );
           })}
         </div>
-
         {!isStravaConnected && (
-          <div className="mt-4 p-3 bg-strava-orange/10 rounded-lg border border-strava-orange/20">
-            <p className="text-xs text-strava-orange font-medium">
-              💡 Connect Strava to sync your activities and unlock AI-powered insights!
-            </p>
-          </div>
+          <p className="mt-3 rounded-lg border border-orange-200 bg-orange-100/60 p-3 text-xs font-medium text-orange-800">
+            Connect Strava to import your runs and build your first recommendation.
+          </p>
         )}
       </CardContent>
     </Card>

@@ -29,13 +29,7 @@ import type { CoachRecap } from "@shared/schema";
 import { normalizeZoneDurations, zonesFromFractions } from "@shared/zoneCalculations";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
 import { trackFunnelEvent, useOfferTracking } from "@/lib/analytics";
-import {
-  OPTIMAL_CADENCE_MIN_SPM,
-  OPTIMAL_CADENCE_MAX_SPM,
-  OPTIMAL_CADENCE_TARGET_SPM,
-  normalizeCadenceToSpm,
-  cadenceBandPosition,
-} from "@shared/cadenceNormalization";
+import { normalizeCadenceToSpm } from "@shared/cadenceNormalization";
 
 type ViewMode = "story" | "deep_dive";
 
@@ -157,7 +151,7 @@ function PremiumAnalysisUpsell({ activityId }: { activityId: number }) {
     source: "activity_deep_dive",
     capability: "activity_deep_dive",
     activityId,
-    benefitKey: "activity_analysis_bundle",
+    benefitKey: "activity_history",
     returnTo: `/activity/${activityId}`,
   });
   const trackOfferClick = useOfferTracking(pricingUrl);
@@ -220,7 +214,7 @@ function PremiumAnalysisUpsell({ activityId }: { activityId: number }) {
   );
 }
 
-function PremiumPreviewCard({ preview, createdAt }: { preview: PremiumPreviewData; createdAt?: string | null }) {
+function PremiumPreviewCard({ preview, createdAt, unitPreference }: { preview: PremiumPreviewData; createdAt?: string | null; unitPreference?: string }) {
   // Freshness: age (days) of the preview at the moment it's shown.
   const freshnessDays = createdAt
     ? Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 86_400_000))
@@ -250,19 +244,21 @@ function PremiumPreviewCard({ preview, createdAt }: { preview: PremiumPreviewDat
   });
   const src = preview.sourceData;
   const distanceKm = src.distanceMeters / 1000;
-  const paceSecPerKm = distanceKm > 0 ? src.movingTimeSec / distanceKm : 0;
-  const paceDisplay = paceSecPerKm > 0
-    ? `${Math.floor(paceSecPerKm / 60)}:${String(Math.round(paceSecPerKm % 60)).padStart(2, "0")}/km`
-    : "—";
   const durationMin = Math.floor(src.movingTimeSec / 60);
+  const useMiles = unitPreference === "miles";
+  const displayDistance = useMiles ? distanceKm * 0.621371 : distanceKm;
+  const paceSecPerPreferredUnit = displayDistance > 0 ? src.movingTimeSec / displayDistance : 0;
+  const preferredPaceDisplay = paceSecPerPreferredUnit > 0
+    ? `${Math.floor(paceSecPerPreferredUnit / 60)}:${String(Math.round(paceSecPerPreferredUnit % 60)).padStart(2, "0")}/${useMiles ? "mi" : "km"}`
+    : "—";
 
   const sourceStats = [
-    { label: `${distanceKm.toFixed(2)} km`, sub: "Distance" },
+    { label: `${displayDistance.toFixed(2)} ${useMiles ? "mi" : "km"}`, sub: "Distance" },
     { label: `${durationMin} min`, sub: "Time" },
-    { label: paceDisplay, sub: "Pace" },
+    { label: preferredPaceDisplay, sub: "Pace" },
     src.averageHeartrate ? { label: `${Math.round(src.averageHeartrate)} bpm`, sub: "Avg HR" } : null,
     src.averageCadence ? { label: `${Math.round(src.averageCadence)} spm`, sub: "Cadence" } : null,
-    src.totalElevationGain ? { label: `${Math.round(src.totalElevationGain)} m`, sub: "Climb" } : null,
+    src.totalElevationGain ? { label: `${Math.round(useMiles ? src.totalElevationGain * 3.28084 : src.totalElevationGain)} ${useMiles ? "ft" : "m"}`, sub: "Climb" } : null,
   ].filter(Boolean) as { label: string; sub: string }[];
 
   return (
@@ -275,10 +271,10 @@ function PremiumPreviewCard({ preview, createdAt }: { preview: PremiumPreviewDat
           </span>
         </div>
         <CardTitle className="text-lg text-gray-900 mt-2">
-          Personalized insights from this run
+          Your last run → your next run
         </CardTitle>
         <p className="text-xs text-gray-500">
-          This one-time preview shows two findings and one action from {src.name}. Premium continues this analysis after every run.
+          Two evidence-backed findings and one practical action from {src.name}.
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -326,7 +322,7 @@ function PremiumPreviewCard({ preview, createdAt }: { preview: PremiumPreviewDat
                 }, { dedupeParts: [preview.sourceData.activityId, Date.now()] })
               }
             >
-              <Sparkles className="h-4 w-4 mr-1" /> Unlock ongoing personalized analysis
+              <Sparkles className="h-4 w-4 mr-1" /> Get this analysis after every run
             </Button>
           </Link>
         </div>
@@ -960,7 +956,13 @@ export default function ActivityPage() {
       <div className="container mx-auto px-4 py-8 max-w-6xl">
 
         {/* One-time Premium Preview (free users, first-synced run only) */}
-        {premiumPreview && <PremiumPreviewCard preview={premiumPreview} createdAt={premiumPreviewData?.createdAt} />}
+        {premiumPreview && (
+          <PremiumPreviewCard
+            preview={premiumPreview}
+            createdAt={premiumPreviewData?.createdAt}
+            unitPreference={userData?.unitPreference}
+          />
+        )}
 
         {/* Story Mode: Simplified Layout */}
         {viewMode === 'story' && (
@@ -1023,7 +1025,7 @@ export default function ActivityPage() {
         {/* Deep Dive Mode: Scrollable Sections */}
         {viewMode === 'deep_dive' && (
           <div className="space-y-6">
-            {hasLockedDeepDive && <PremiumAnalysisUpsell activityId={Number(activityId)} />}
+            {hasLockedDeepDive && !premiumPreview && <PremiumAnalysisUpsell activityId={Number(activityId)} />}
 
             {/* Section 1: Performance Metrics - Drift, Pacing, Baseline */}
             {featureAccess.activity.performanceMetrics && efficiencyData ? (
@@ -1424,7 +1426,7 @@ function CadenceChart({ activity, streams }: { activity: any, streams?: any }) {
     : avgCadence * 1.1;
   
   // Build chart data from real streams
-  const cadenceData: { time: string; cadence: number; target: number }[] = [];
+  const cadenceData: { time: string; cadence: number }[] = [];
   
   if (streams?.cadence?.data && streams?.time?.data) {
     const cadenceStream = streams.cadence.data;
@@ -1441,7 +1443,6 @@ function CadenceChart({ activity, streams }: { activity: any, streams?: any }) {
       cadenceData.push({
         time: `${timeMinutes}min`,
         cadence: Math.round(normalizeCadenceToSpm(cadenceStream[i])), // Already spm at API level
-        target: OPTIMAL_CADENCE_TARGET_SPM
       });
     }
   }
@@ -1459,7 +1460,6 @@ function CadenceChart({ activity, streams }: { activity: any, streams?: any }) {
           <YAxis domain={['dataMin - 5', 'dataMax + 5']} />
           <Tooltip />
           <Line type="monotone" dataKey="cadence" stroke="#8b5cf6" strokeWidth={2} dot={false} />
-          <Line type="monotone" dataKey="target" stroke="#22c55e" strokeDasharray="5 5" dot={false} />
         </LineChart>
       </ResponsiveContainer>
       
@@ -1476,11 +1476,7 @@ function CadenceChart({ activity, streams }: { activity: any, streams?: any }) {
       
       <div className="p-3 bg-purple-50 rounded-lg">
         <p className="text-xs text-purple-800">
-          Target cadence is {OPTIMAL_CADENCE_MIN_SPM}-{OPTIMAL_CADENCE_MAX_SPM} spm. Your average of {Math.round(avgCadence)} spm is {
-            cadenceBandPosition(avgCadence) === 'below' ? "below optimal - focus on quicker steps" :
-            cadenceBandPosition(avgCadence) === 'optimal' ? "in excellent range" :
-            "above optimal - consider longer strides"
-          }.
+          Cadence is individual and changes with pace and terrain. Use this chart to watch for a sustained late-run drop compared with your own similar runs.
         </p>
       </div>
     </div>

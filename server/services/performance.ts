@@ -1,5 +1,6 @@
 import { storage } from "../storage";
 import type { Activity } from "@shared/schema";
+import { normalizeCadenceToSpm } from "@shared/cadenceNormalization";
 
 // Running activity types based on Strava's sport_type field
 const RUNNING_TYPES = ['Run', 'TrailRun', 'VirtualRun'];
@@ -24,10 +25,12 @@ interface HeartRateZones {
 interface RunningEfficiencyData {
   averageCadence: number;
   strideLength: number;
-  verticalOscillation: number;
-  groundContactTime: number;
+  verticalOscillation: null;
+  groundContactTime: null;
   efficiency: number;
   recommendations: string[];
+  runsAnalyzed: number;
+  dataConfidence: 'limited' | 'moderate' | 'high';
 }
 
 interface VO2MaxData {
@@ -35,11 +38,9 @@ interface VO2MaxData {
   raceVO2Max: number;
   trainingVO2Max: number;
   trend: 'improving' | 'stable' | 'declining';
-  ageGradePercentile: number;
   comparison: string;
   raceComparison: string;
   trainingComparison: string;
-  targetRange: { min: number; max: number };
 }
 
 export class PerformanceAnalyticsService {
@@ -121,18 +122,15 @@ export class PerformanceAnalyticsService {
 
     // Calculate trend based on recent vs older activities
     const trend = this.calculateVO2Trend(runningActivities);
-    const ageGradePercentile = this.calculateAgeGradePercentile(primaryVO2);
     
     return {
       current: Math.round(primaryVO2 * 10) / 10,
       raceVO2Max: Math.round(raceVO2Max * 10) / 10,
       trainingVO2Max: Math.round(trainingVO2Max * 10) / 10,
       trend,
-      ageGradePercentile,
       comparison: this.getVO2Comparison(primaryVO2),
       raceComparison: this.getVO2Comparison(raceVO2Max),
-      trainingComparison: this.getVO2Comparison(trainingVO2Max),
-      targetRange: this.getTargetVO2Range(primaryVO2)
+      trainingComparison: this.getVO2Comparison(trainingVO2Max)
     };
   }
 
@@ -325,36 +323,51 @@ export class PerformanceAnalyticsService {
       return null;
     }
 
-    const activities = await storage.getActivitiesByUserId(userId, 30);
-    const runningActivities = activities.filter(a => a.distance > 1000);
+    const activities = await storage.getActivitiesByUserId(userId, 50);
+    const runningActivities = activities.filter(a =>
+      RUNNING_TYPES.includes(a.type) &&
+      a.distance > 1000 &&
+      a.movingTime > 0 &&
+      a.averageCadence !== null &&
+      a.averageCadence !== undefined &&
+      a.averageCadence > 0
+    );
     
-    if (runningActivities.length < 5) {
-      console.log(`Insufficient data for efficiency calculation: only ${runningActivities.length} activities`);
+    if (runningActivities.length < 3) {
+      console.log(`Insufficient cadence data for form signals: only ${runningActivities.length} activities`);
       return null;
     }
 
     // Calculate efficiency metrics from activity data
     const avgPace = this.calculateAveragePace(runningActivities);
     const paceConsistency = this.calculatePaceConsistency(runningActivities);
-    
-    // Estimate cadence based on pace (faster pace typically = higher cadence)
-    const estimatedCadence = this.estimateCadence(avgPace);
+    const totalMovingTime = runningActivities.reduce((sum, activity) => sum + activity.movingTime, 0);
+    const weightedCadence = runningActivities.reduce((sum, activity) => {
+      return sum + normalizeCadenceToSpm(activity.averageCadence || 0) * activity.movingTime;
+    }, 0) / totalMovingTime;
     
     // Calculate stride length: Speed = Cadence × Stride Length
     // avgPace is in seconds per meter, so 1/avgPace gives meters per second
     const avgSpeedMps = 1 / avgPace; // meters per second
-    const strideLength = (avgSpeedMps * 60) / estimatedCadence; // meters per stride
-    
-    // Efficiency score based on multiple factors
-    const efficiency = this.calculateEfficiencyScore(estimatedCadence, strideLength, paceConsistency);
+    const strideLength = (avgSpeedMps * 60) / weightedCadence; // meters per step
+    const dataConfidence = runningActivities.length >= 10
+      ? 'high'
+      : runningActivities.length >= 5
+        ? 'moderate'
+        : 'limited';
     
     return {
-      averageCadence: Math.round(estimatedCadence),
+      averageCadence: Math.round(weightedCadence),
       strideLength: Math.round(strideLength * 100) / 100,
-      verticalOscillation: this.estimateVerticalOscillation(efficiency),
-      groundContactTime: this.estimateGroundContactTime(estimatedCadence),
-      efficiency: Math.round(efficiency),
-      recommendations: this.getEfficiencyRecommendations(efficiency, estimatedCadence, strideLength)
+      verticalOscillation: null,
+      groundContactTime: null,
+      efficiency: Math.round(paceConsistency),
+      recommendations: [
+        'Compare cadence with your own runs at a similar pace and on similar terrain.',
+        'Watch whether cadence or pace changes late in a run; that personal trend is more useful than a universal target.'
+      ],
+      runsAnalyzed: runningActivities.length,
+      dataConfidence
     };
   }
 
@@ -487,33 +500,12 @@ export class PerformanceAnalyticsService {
     return 'stable';
   }
 
-  private calculateAgeGradePercentile(vo2Max: number): number {
-    // Simplified age grading (assuming age 30, male)
-    const ageGradeTable = {
-      70: 95, 65: 90, 60: 80, 55: 70, 50: 60, 45: 50, 40: 40, 35: 30
-    };
-    
-    for (const [vo2, percentile] of Object.entries(ageGradeTable)) {
-      if (vo2Max >= parseInt(vo2)) {
-        return percentile;
-      }
-    }
-    return 20;
-  }
-
   private getVO2Comparison(vo2Max: number): string {
-    if (vo2Max >= 60) return 'Excellent - Elite athlete level';
-    if (vo2Max >= 50) return 'Very good - Competitive runner level';
-    if (vo2Max >= 45) return 'Good - Above average fitness';
-    if (vo2Max >= 40) return 'Fair - Average fitness level';
-    return 'Needs improvement - Below average fitness';
-  }
-
-  private getTargetVO2Range(currentVO2: number): { min: number; max: number } {
-    return {
-      min: Math.round(currentVO2 * 1.05),
-      max: Math.round(currentVO2 * 1.15)
-    };
+    if (vo2Max >= 60) return 'Very high pace-based estimate';
+    if (vo2Max >= 50) return 'High pace-based estimate';
+    if (vo2Max >= 45) return 'Moderate-high pace-based estimate';
+    if (vo2Max >= 40) return 'Moderate pace-based estimate';
+    return 'Developing pace-based estimate';
   }
 
   private calculateAveragePace(activities: Activity[]): number {
@@ -530,71 +522,6 @@ export class PerformanceAnalyticsService {
     
     // Return consistency score (lower std dev = higher consistency)
     return Math.max(0, 100 - (standardDeviation / avgPace * 100));
-  }
-
-  private estimateCadence(avgPaceSecsPerMeter: number): number {
-    // Rough correlation between pace and cadence
-    const pacePerKm = avgPaceSecsPerMeter * 1000;
-    const minutesPerKm = pacePerKm / 60;
-    
-    // Faster runners typically have higher cadence
-    if (minutesPerKm < 3.5) return 190; // Very fast
-    if (minutesPerKm < 4.0) return 185; // Fast
-    if (minutesPerKm < 4.5) return 180; // Moderate
-    if (minutesPerKm < 5.5) return 175; // Slower
-    return 170; // Very slow
-  }
-
-  private calculateEfficiencyScore(cadence: number, strideLength: number, paceConsistency: number): number {
-    let score = 0;
-    
-    // Cadence score (optimal around 180)
-    const cadenceScore = Math.max(0, 100 - Math.abs(cadence - 180) * 2);
-    
-    // Stride length score (optimal around 1.0-1.3m depending on height)
-    const strideLengthScore = strideLength >= 1.0 && strideLength <= 1.3 ? 90 : 70;
-    
-    // Pace consistency score
-    const consistencyScore = paceConsistency;
-    
-    score = (cadenceScore * 0.4) + (strideLengthScore * 0.3) + (consistencyScore * 0.3);
-    
-    return Math.round(score);
-  }
-
-  private estimateVerticalOscillation(efficiency: number): number {
-    // Lower is better, efficient runners have less vertical movement
-    return efficiency > 80 ? 7.5 : efficiency > 60 ? 8.5 : 9.5;
-  }
-
-  private estimateGroundContactTime(cadence: number): number {
-    // Higher cadence typically means shorter ground contact time
-    return Math.round(300 - (cadence - 160) * 2);
-  }
-
-  private getEfficiencyRecommendations(efficiency: number, cadence: number, strideLength: number): string[] {
-    const recommendations: string[] = [];
-    
-    if (cadence < 170) {
-      recommendations.push('Increase your cadence - aim for 170-180 steps per minute');
-    } else if (cadence > 190) {
-      recommendations.push('Your cadence is quite high - focus on longer, more efficient strides');
-    }
-    
-    if (strideLength > 1.4) {
-      recommendations.push('Your stride may be too long - try shorter, quicker steps');
-    } else if (strideLength < 0.9) {
-      recommendations.push('Consider slightly longer strides for better efficiency');
-    }
-    
-    if (efficiency < 70) {
-      recommendations.push('Focus on consistent pacing and rhythm during your runs');
-      recommendations.push('Consider working with a running coach on form improvement');
-    } else if (efficiency > 85) {
-      recommendations.push('Excellent running efficiency! Maintain your current form');
-    }
-    
-    return recommendations;
   }
 
   private calculateTrainingStress(activities: Activity[]): number {

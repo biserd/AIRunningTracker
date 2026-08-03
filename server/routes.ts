@@ -49,7 +49,7 @@ import { normalizeCadenceToSpm } from "@shared/cadenceNormalization";
 import { buildUpgradeUrl, isBenefitKey, sanitizeReturnTo } from "@shared/upgradeIntent";
 import { recordFunnelEvent } from "./services/funnelAnalytics";
 import { isClientFunnelEvent, buildFunnelDedupeKey, billingPeriodFromInterval } from "@shared/funnelEvents";
-import { getDashboardCalendarPeriods, partitionDashboardActivities } from "./services/dashboardPeriods";
+import { getDashboardCalendarPeriods, getLastMonthComparisonEnd, partitionDashboardActivities } from "./services/dashboardPeriods";
 
 // Authentication middleware
 const authenticateJWT = async (req: any, res: Response, next: NextFunction) => {
@@ -2835,14 +2835,11 @@ ${allPages.map(page => `  <url>
       // This filters at the DATABASE level for maximum performance
       const { threeMonthsAgo } = calendarPeriods;
 
-      // Free-tier 20-run cap also applies to the stats fan-out: a free
-      // user's monthly/weekly numbers must be computed from the same set
-      // of runs they're allowed to see. Premium/trialing users get the
-      // full 3-month window (up to 100 runs) for accurate stats.
-      const dashStatsLimit = getFreeActivityLimit(user.subscriptionPlan, user.subscriptionStatus) ?? 100;
-      // Free users: exclude locked webhook activities from stats fan-out so
-      // the visible totals match the visible activity list.
-      const recentActivities = await storage.getActivitiesByUserId(userId, dashStatsLimit, threeMonthsAgo, { excludeLockedForFree: !dashIsPaidUser });
+      // Calendar totals must not inherit the activity-list pagination or
+      // entitlement cap. A card labelled "this month" must include every
+      // eligible imported run in that month, even when the list view shows a
+      // smaller recent subset. Locked free-tier webhook rows remain excluded.
+      const recentActivities = await storage.getActivitiesByUserId(userId, 500, threeMonthsAgo, { excludeLockedForFree: !dashIsPaidUser });
       
       // Filter to running activities only for stats (exclude walks, weight training, etc.)
       const runningActivities = recentActivities.filter(a => RUNNING_ACTIVITY_TYPES.includes(a.type));
@@ -2851,7 +2848,12 @@ ${allPages.map(page => `  <url>
       // future-dated, and previous-month rows are excluded from current totals.
       const partitionedActivities = partitionDashboardActivities(runningActivities, calendarPeriods);
       const thisMonthActivities = partitionedActivities.thisMonth;
-      const lastMonthActivities = partitionedActivities.lastMonth;
+      // Compare month-to-date with the same elapsed portion of last month,
+      // rather than comparing a partial current month with a complete month.
+      const lastMonthComparisonEnd = getLastMonthComparisonEnd(calendarPeriods);
+      const lastMonthActivities = partitionedActivities.lastMonth.filter((activity) =>
+        new Date(activity.startDate).getTime() <= lastMonthComparisonEnd.getTime()
+      );
       const thisWeekActivities = partitionedActivities.thisWeek;
       const lastWeekActivities = partitionedActivities.lastWeek;
       
@@ -2886,6 +2888,9 @@ ${allPages.map(page => `  <url>
         ((avgPace - lastMonthAvgPace) / lastMonthAvgPace) * 100 : null; // Positive means slower, negative means faster
       const monthlyActivitiesChange = lastMonthActivitiesCount > 0 ? 
         ((totalActivities - lastMonthActivitiesCount) / lastMonthActivitiesCount) * 100 : null;
+      const monthlyRunningTimeChange = lastMonthTime > 0 && totalTime > 0
+        ? ((totalTime - lastMonthTime) / lastMonthTime) * 100
+        : null;
       
       // Calculate percentage changes (weekly comparisons)
       const weeklyDistanceChange = lastWeekDistance > 0 && thisWeekDistance > 0 ? 
@@ -2894,6 +2899,9 @@ ${allPages.map(page => `  <url>
         ((thisWeekAvgPace - lastWeekAvgPace) / lastWeekAvgPace) * 100 : null;
       const weeklyActivitiesChange = lastWeekActivitiesCount > 0 ? 
         ((thisWeekActivitiesCount - lastWeekActivitiesCount) / lastWeekActivitiesCount) * 100 : null;
+      const weeklyRunningTimeChange = lastWeekTime > 0 && thisWeekTime > 0
+        ? ((thisWeekTime - lastWeekTime) / lastWeekTime) * 100
+        : null;
       
       // Get usage stats for the response
       const usageStats = await getUserUsageStats(userId);
@@ -2939,7 +2947,7 @@ ${allPages.map(page => `  <url>
             return `${Math.floor(paceToShow)}:${String(Math.round((paceToShow % 1) * 60)).padStart(2, '0')}`;
           })() : "0:00",
           monthlyTotalActivities: totalActivities,
-          monthlyTrainingLoad: totalActivities * 85,
+          monthlyTotalMinutes: Math.round(totalTime / 60),
           
           // Weekly totals
           weeklyTotalDistance: user.unitPreference === "miles" ? 
@@ -2950,29 +2958,23 @@ ${allPages.map(page => `  <url>
             return `${Math.floor(paceToShow)}:${String(Math.round((paceToShow % 1) * 60)).padStart(2, '0')}`;
           })() : "0:00",
           weeklyTotalActivities: thisWeekActivitiesCount,
-          weeklyTrainingLoad: thisWeekActivitiesCount * 85,
+          weeklyTotalMinutes: Math.round(thisWeekTime / 60),
           
           // Recovery based on weekly activity
           recovery: thisWeekActivitiesCount >= 4 ? "Good" : thisWeekActivitiesCount >= 2 ? "Moderate" : thisWeekActivitiesCount === 1 ? "Light" : "No recent runs",
           unitPreference: user.unitPreference || "km",
           
-          // Calculate proper training load changes
-          monthlyTrainingLoadActual: totalActivities * 85,
-          lastMonthTrainingLoadActual: lastMonthActivitiesCount * 85,
-          weeklyTrainingLoadActual: thisWeekActivitiesCount * 85,
-          lastWeekTrainingLoadActual: lastWeekActivitiesCount * 85,
-          
           // Monthly percentage changes
           monthlyDistanceChange: monthlyDistanceChange !== null ? Math.round(monthlyDistanceChange) : null,
           monthlyPaceChange: monthlyPaceChange !== null ? Math.round(monthlyPaceChange) : null,
           monthlyActivitiesChange: monthlyActivitiesChange !== null ? Math.round(monthlyActivitiesChange) : null,
-          monthlyTrainingLoadChange: lastMonthActivitiesCount > 0 ? Math.round(((totalActivities * 85 - lastMonthActivitiesCount * 85) / (lastMonthActivitiesCount * 85)) * 100) : null,
+          monthlyRunningTimeChange: monthlyRunningTimeChange !== null ? Math.round(monthlyRunningTimeChange) : null,
           
           // Weekly percentage changes
           weeklyDistanceChange: weeklyDistanceChange !== null ? Math.round(weeklyDistanceChange) : null,
           weeklyPaceChange: weeklyPaceChange !== null ? Math.round(weeklyPaceChange) : null,
           weeklyActivitiesChange: weeklyActivitiesChange !== null ? Math.round(weeklyActivitiesChange) : null,
-          weeklyTrainingLoadChange: lastWeekActivitiesCount > 0 ? Math.round(((thisWeekActivitiesCount * 85 - lastWeekActivitiesCount * 85) / (lastWeekActivitiesCount * 85)) * 100) : null,
+          weeklyRunningTimeChange: weeklyRunningTimeChange !== null ? Math.round(weeklyRunningTimeChange) : null,
           
           // Backward compatibility (default to monthly)
           totalDistance: user.unitPreference === "miles" ? 
@@ -2982,54 +2984,15 @@ ${allPages.map(page => `  <url>
             const paceToShow = user.unitPreference === "miles" ? avgPace / 0.621371 : avgPace;
             return `${Math.floor(paceToShow)}:${String(Math.round((paceToShow % 1) * 60)).padStart(2, '0')}`;
           })() : "0:00",
-          trainingLoad: totalActivities * 85,
+          runningTimeMinutes: Math.round(totalTime / 60),
           totalActivities: totalActivities,
           distanceChange: monthlyDistanceChange !== null ? Math.round(monthlyDistanceChange) : null,
           paceChange: monthlyPaceChange !== null ? Math.round(monthlyPaceChange) : null,
           activitiesChange: monthlyActivitiesChange !== null ? Math.round(monthlyActivitiesChange) : null,
-          trainingLoadChange: lastMonthActivitiesCount > 0 ? Math.round(((totalActivities * 85 - lastMonthActivitiesCount * 85) / (lastMonthActivitiesCount * 85)) * 100) : null,
+          runningTimeChange: monthlyRunningTimeChange !== null ? Math.round(monthlyRunningTimeChange) : null,
         },
         activities: (() => {
-          // Calculate fallback averages for activities without cached grade
-          const avgDistance = activities.length > 0 
-            ? activities.reduce((sum, a) => sum + (a.distance || 0), 0) / activities.length 
-            : 0;
-          const validPaceActivities = activities.filter(a => a.distance > 0 && a.movingTime > 0);
-          const avgPaceValue = validPaceActivities.length > 0
-            ? validPaceActivities.reduce((sum, a) => {
-                const distKm = a.distance / 1000;
-                return sum + (a.movingTime / 60) / distKm;
-              }, 0) / validPaceActivities.length
-            : 0;
-
           return activities.map(activity => {
-            // Use cached grade if available, otherwise calculate fallback
-            let grade: "A" | "B" | "C" | "D" | "F" = activity.cachedGrade as any || (() => {
-              if (avgDistance <= 0) return "C";
-              let score = 70;
-              const distanceRatio = activity.distance / avgDistance;
-              const distKm = activity.distance / 1000;
-              const pacePerKm = distKm > 0 ? (activity.movingTime / 60) / distKm : 0;
-              const paceRatio = avgPaceValue > 0 ? avgPaceValue / pacePerKm : 1;
-              
-              if (paceRatio > 1.1) score += 15;
-              else if (paceRatio > 1.05) score += 10;
-              else if (paceRatio > 1.0) score += 5;
-              else if (paceRatio < 0.9) score -= 10;
-              else if (paceRatio < 0.95) score -= 5;
-              
-              if (distanceRatio > 1.2) score += 10;
-              else if (distanceRatio > 1.0) score += 5;
-              else if (distanceRatio < 0.5) score -= 15;
-              else if (distanceRatio < 0.8) score -= 5;
-              
-              if (score >= 85) return "A";
-              if (score >= 75) return "B";
-              if (score >= 65) return "C";
-              if (score >= 55) return "D";
-              return "F";
-            })();
-            
             return {
               id: activity.id,
               name: activity.name,
@@ -3046,7 +3009,9 @@ ${allPages.map(page => `  <url>
               elevation: `+${Math.round(activity.totalElevationGain)}m`,
               date: new Date(activity.startDate).toLocaleDateString(),
               startDate: activity.startDate,
-              grade,
+              // Only show a grade generated from the complete activity
+              // analysis. Page/filter-relative fallback grades were unstable.
+              grade: activity.cachedGrade || null,
             };
           });
         })(),
@@ -5366,51 +5331,13 @@ ${allPages.map(page => `  <url>
         result.totalPages = Math.ceil(result.total / pageSize);
       }
 
-      // Use cached grades from verdicts, calculate fallback if not available
-      const activitiesWithGrades = (() => {
-        const allActivities = result.activities || [];
-        if (allActivities.length === 0) return allActivities;
-
-        // Calculate averages for fallback grade calculation
-        const avgDistance = allActivities.reduce((sum: number, a: any) => sum + (a.distance || 0), 0) / allActivities.length;
-        const validPaceActivities = allActivities.filter((a: any) => a.distance > 0 && a.movingTime > 0);
-        const avgPaceValue = validPaceActivities.length > 0
-          ? validPaceActivities.reduce((sum: number, a: any) => {
-              const distKm = a.distance / 1000;
-              return sum + (a.movingTime / 60) / distKm;
-            }, 0) / validPaceActivities.length
-          : 0;
-
-        return allActivities.map((activity: any) => {
-          // Use cached grade if available, otherwise calculate fallback
-          const grade = activity.cachedGrade || (() => {
-            if (avgDistance <= 0) return "C";
-            let score = 70;
-            const distanceRatio = activity.distance / avgDistance;
-            const distKm = activity.distance / 1000;
-            const pacePerKm = distKm > 0 ? (activity.movingTime / 60) / distKm : 0;
-            const paceRatio = avgPaceValue > 0 ? avgPaceValue / pacePerKm : 1;
-            
-            if (paceRatio > 1.1) score += 15;
-            else if (paceRatio > 1.05) score += 10;
-            else if (paceRatio > 1.0) score += 5;
-            else if (paceRatio < 0.9) score -= 10;
-            else if (paceRatio < 0.95) score -= 5;
-            
-            if (distanceRatio > 1.2) score += 10;
-            else if (distanceRatio > 1.0) score += 5;
-            else if (distanceRatio < 0.5) score -= 15;
-            else if (distanceRatio < 0.8) score -= 5;
-            
-            if (score >= 85) return "A";
-            if (score >= 75) return "B";
-            if (score >= 65) return "C";
-            if (score >= 55) return "D";
-            return "F";
-          })();
-          return { ...activity, grade };
-        });
-      })();
+      // A grade is only trustworthy after the complete verdict pipeline has
+      // analyzed the activity. Do not invent a grade from the current page or
+      // filters; that made the same run change grade as the user browsed.
+      const activitiesWithGrades = (result.activities || []).map((activity: any) => ({
+        ...activity,
+        grade: activity.cachedGrade || null,
+      }));
 
       res.json({ ...result, activities: activitiesWithGrades });
     } catch (error: any) {

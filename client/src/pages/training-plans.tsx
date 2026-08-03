@@ -23,6 +23,7 @@ import {
 import { format, parseISO } from "date-fns";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
 import { TrackedUpgradeLink } from "@/components/TrackedUpgradeLink";
+import { selectSafePreferredRunDays } from "@shared/trainingPlanSafety";
 
 const KM_TO_MILES = 0.621371;
 
@@ -121,6 +122,8 @@ export default function TrainingPlans() {
     queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: !!user,
   });
+  const safePreferredDays = selectSafePreferredRunDays(preferredDays, profile?.avgRunsPerWeek);
+  const safeIncludeSpeedwork = (profile?.avgRunsPerWeek ?? 0) >= 2 && includeSpeedwork;
   
   // Fetch existing plans
   const { data: plans, isLoading: plansLoading } = useQuery<TrainingPlan[]>({
@@ -138,10 +141,10 @@ export default function TrainingPlans() {
         raceDate: raceDate || undefined,
         raceName: raceName || undefined,
         experienceLevel,
-        includeSpeedwork,
+        includeSpeedwork: safeIncludeSpeedwork,
         includeLongRuns,
         constraints: constraints || undefined,
-        preferredRunDays: preferredDays,
+        preferredRunDays: safePreferredDays,
         terrainType: terrainType !== "road" ? terrainType : undefined,
       };
       
@@ -285,11 +288,11 @@ export default function TrainingPlans() {
   const previewWeeks = raceDate
     ? Math.max(4, Math.min(24, Math.ceil((new Date(`${raceDate}T12:00:00`).getTime() - Date.now()) / (7 * 86_400_000))))
     : 12;
-  const previewWorkouts = preferredDays.slice(0, 5).map((day, index, days) => ({
+  const previewWorkouts = safePreferredDays.map((day, index, days) => ({
     day: day.charAt(0).toUpperCase() + day.slice(1),
     workout: index === days.length - 1 && includeLongRuns
       ? "Long easy run"
-      : index === 1 && includeSpeedwork
+      : index === 1 && safeIncludeSpeedwork
         ? "Controlled quality session"
         : "Easy aerobic run",
   }));
@@ -663,6 +666,12 @@ export default function TrainingPlans() {
                         </button>
                       ))}
                     </div>
+                    <p className="mt-2 text-xs text-gray-500">
+                      {profile?.avgRunsPerWeek
+                        ? `You average ${profile.avgRunsPerWeek.toFixed(1)} runs per week, so Week 1 starts with ${safePreferredDays.length} selected run days.`
+                        : `We do not have a stable frequency baseline yet, so Week 1 starts with ${safePreferredDays.length} run days.`}
+                      {preferredDays.length > safePreferredDays.length ? " Add another day later from plan settings after you have built consistency." : ""}
+                    </p>
                   </div>
                   
                   <div className="flex items-center gap-6">
@@ -671,6 +680,7 @@ export default function TrainingPlans() {
                         id="speedwork" 
                         checked={includeSpeedwork} 
                         onCheckedChange={(checked) => setIncludeSpeedwork(!!checked)}
+                        disabled={(profile?.avgRunsPerWeek ?? 0) < 2}
                         data-testid="checkbox-speedwork"
                       />
                       <Label htmlFor="speedwork" className="cursor-pointer">Include speedwork</Label>
@@ -724,6 +734,11 @@ export default function TrainingPlans() {
                     </h3>
                     <p className="mt-2 text-sm text-gray-700">
                       Built from your recent mileage, preferred running days, and race goal.
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-amber-900">
+                      {profile?.avgRunsPerWeek
+                        ? `You average ${profile.avgRunsPerWeek.toFixed(1)} runs per week. This plan starts with ${safePreferredDays.length} runs per week; you can add frequency later after building consistency.`
+                        : `With no stable recent frequency yet, Week 1 starts conservatively with ${safePreferredDays.length} runs.`}
                     </p>
 
                     <div className="mt-5 rounded-lg bg-white p-4 shadow-sm">

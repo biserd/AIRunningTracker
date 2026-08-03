@@ -4,6 +4,7 @@ import { athleteProfileService } from "./athleteProfile";
 import { trainingGuardrails, type GeneratedPlan, type PlanWeekInput, type PlanDayInput } from "./trainingGuardrails";
 import { generateSkeleton, type PlanSkeleton, type SkeletonWeek, type SkeletonDay } from "./skeletonGenerator";
 import type { AthleteProfile, TrainingPlan, InsertTrainingPlan, InsertPlanWeek, InsertPlanDay, GoalType, TerrainType } from "@shared/schema";
+import { selectSafePreferredRunDays } from "@shared/trainingPlanSafety";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -85,6 +86,13 @@ export class PlanGeneratorService {
     try {
       // 1. Get or compute athlete profile
       const profile = await athleteProfileService.getOrComputeProfile(request.userId);
+      if (request.preferredRunDays?.length) {
+        request = {
+          ...request,
+          preferredRunDays: selectSafePreferredRunDays(request.preferredRunDays, profile.avgRunsPerWeek),
+          includeSpeedwork: (profile.avgRunsPerWeek ?? 0) >= 2 && request.includeSpeedwork !== false,
+        };
+      }
       
       // 2. Calculate plan duration
       const raceDate = request.raceDate ? new Date(request.raceDate) : undefined;
@@ -159,6 +167,13 @@ export class PlanGeneratorService {
     try {
       // 1. Get or compute athlete profile
       const profile = await athleteProfileService.getOrComputeProfile(request.userId);
+      if (request.preferredRunDays?.length) {
+        request = {
+          ...request,
+          preferredRunDays: selectSafePreferredRunDays(request.preferredRunDays, profile.avgRunsPerWeek),
+          includeSpeedwork: (profile.avgRunsPerWeek ?? 0) >= 2 && request.includeSpeedwork !== false,
+        };
+      }
       
       // 2. Calculate plan duration
       const raceDate = request.raceDate ? new Date(request.raceDate) : undefined;

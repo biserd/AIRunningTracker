@@ -1,7 +1,7 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
-import { queryClient, apiRequest, getQueryFn } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import AppHeader from "@/components/AppHeader";
 import QuickStats from "@/components/dashboard/QuickStats";
@@ -9,23 +9,19 @@ import PerformanceChart from "@/components/dashboard/PerformanceChart";
 import ActivityHeatmap from "@/components/dashboard/ActivityHeatmap";
 import AIInsights from "@/components/dashboard/AIInsights";
 import TrainingRecommendations from "@/components/dashboard/TrainingRecommendations";
-import FitnessTrends from "@/components/dashboard/FitnessTrends";
-import GoalProgress from "@/components/dashboard/GoalProgress";
 import RunnerScoreRadar from "@/components/dashboard/RunnerScoreRadar";
-import HistoricalRunnerScore from "@/components/dashboard/HistoricalRunnerScore";
 import ProgressChecklist from "@/components/dashboard/ProgressChecklist";
 import PremiumPreviewTeaser from "@/components/dashboard/PremiumPreviewTeaser";
-import ShoeHub from "@/components/dashboard/ShoeHub";
+import TodayRunDecision from "@/components/dashboard/TodayRunDecision";
+import ThisWeekPlan from "@/components/dashboard/ThisWeekPlan";
 import { SyncProgress } from "@/components/SyncProgress";
-import { FitnessChart } from "@/components/FitnessChart";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { StravaConnectButton, StravaPoweredBy } from "@/components/StravaConnect";
+import { StravaConnectButton } from "@/components/StravaConnect";
 import { FloatingAICoach } from "@/components/FloatingAICoach";
-import AnnouncementBanner from "@/components/AnnouncementBanner";
 import RecentConversations from "@/components/RecentConversations";
-import { Gift, ChevronRight, Crown, Chrome, X } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import EmailCaptureModal from "@/components/EmailCaptureModal";
 import { Link } from "wouter";
 import { useFeatureAccess, useSubscription } from "@/hooks/useSubscription";
@@ -37,9 +33,9 @@ function getLocalCalendarDateKey(date: Date = new Date()) {
 
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
-  const { canAccessAICoachChat, insightsUsed, insightsLimit, maxInsightsPerMonth } = useFeatureAccess();
+  const { canAccessAICoachChat } = useFeatureAccess();
+  const { isFree } = useSubscription();
   const [chartTimeRange, setChartTimeRange] = useState<string>("30days");
-  const [chromeExtBannerDismissed, setChromeExtBannerDismissed] = useState<boolean>(true);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [dashboardCalendarDate, setDashboardCalendarDate] = useState(getLocalCalendarDateKey);
   const [selectedConversationId, setSelectedConversationId] = useState<number | undefined>();
@@ -68,15 +64,6 @@ export default function Dashboard() {
       window.history.replaceState({}, '', '/dashboard');
     }
   }, []);
-
-  // Initialize per-user Chrome extension banner dismissal state
-  useEffect(() => {
-    if (user?.id && typeof window !== "undefined") {
-      setChromeExtBannerDismissed(
-        localStorage.getItem(`chromeExtBannerDismissed_${user.id}`) === "1"
-      );
-    }
-  }, [user?.id]);
 
   // Send heartbeat to track user activity and record activation
   useEffect(() => {
@@ -129,63 +116,10 @@ export default function Dashboard() {
     }, 800);
   }, [user?.id, toast]);
 
-  // Check if user has chatted (for checklist)
-  const { data: conversationSummaries } = useQuery<Array<{ id: number }>>({
-    queryKey: ['/api/chat/summaries?limit=1'],
-    queryFn: getQueryFn({ on401: "returnNull" }),
-  });
-
   // NOTE: All hooks must be declared before any conditional return. Early
   // returns for authLoading / !user live just above the render section below —
   // putting them here (before the hooks that follow) changes the hook count
   // between renders and crashes React the moment auth or data state shifts.
-
-  // Sync activities mutation
-  const syncMutation = useMutation({
-    mutationFn: () => {
-      if (!user?.id) return Promise.reject(new Error("Not signed in"));
-      return apiRequest(`/api/strava/sync/${user.id}`, "POST");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user.id}`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/activities/heatmap?range=3m`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/activities/heatmap?range=6m`] });
-      toast({
-        title: "Sync started",
-        description: "Syncing activities from Strava. Your dashboard will update automatically.",
-      });
-    },
-    onError: (error: any) => {
-      const code = error?.data?.code || error?.code;
-      if (code === 'TRIAL_REQUIRED' || /TRIAL_REQUIRED/i.test(error?.message || '')) {
-        toast({
-          title: "Upgrade to keep syncing",
-          description: "Free accounts get one Strava sync. Start a free Premium trial to keep importing new activities.",
-          variant: "destructive",
-          action: (
-            <Link href={buildUpgradeUrl({
-              source: "dashboard_sync_limit",
-              capability: "unlimited_sync",
-              benefitKey: "unlimited_sync",
-              returnTo: "/dashboard",
-            })}>
-              <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white">
-                Start trial
-              </Button>
-            </Link>
-          ),
-        });
-        return;
-      }
-      toast({
-        title: "Sync failed",
-        description: error.message || "Failed to sync activities",
-        variant: "destructive",
-      });
-    },
-  });
-
-
 
   // Dashboard data query with polling when insights are generating or new user is waiting for first sync
   const { data: dashboardData, isLoading, error } = useQuery<any>({
@@ -494,15 +428,6 @@ export default function Dashboard() {
     !dashboardData?.user?.lastSyncAt &&
     (dashboardData?.activities?.length ?? 0) === 0;
 
-  const showChromeExtBanner = !!user?.id && !chromeExtBannerDismissed;
-
-  const dismissChromeExtBanner = () => {
-    if (user?.id && typeof window !== "undefined") {
-      localStorage.setItem(`chromeExtBannerDismissed_${user.id}`, "1");
-    }
-    setChromeExtBannerDismissed(true);
-  };
-
   if (showSyncingScreen) {
     return (
       <div className="min-h-screen bg-light-grey">
@@ -535,57 +460,52 @@ export default function Dashboard() {
 
       <EmailCaptureModal open={showEmailCaptureModal} userId={user.id} />
 
-      {/* Promote the Chrome extension to logged-in users */}
-      {showChromeExtBanner && (
-        <div className="bg-orange-50 border-b border-orange-200" data-testid="banner-chrome-extension">
-          <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-4">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="shrink-0 w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
-                <Chrome className="h-4 w-4 text-orange-700" />
-              </div>
-              <p className="text-sm text-orange-900 truncate">
-                <span className="font-medium">New: RunAnalytics Chrome extension</span> — get your AI run insights right inside Strava.
-              </p>
-            </div>
-            <Link href="/chrome-extension">
-              <Button
-                size="sm"
-                className="bg-orange-600 hover:bg-orange-700 text-white shrink-0"
-                data-testid="button-banner-chrome-extension"
-              >
-                Get the extension
-              </Button>
-            </Link>
-            <button
-              type="button"
-              onClick={dismissChromeExtBanner}
-              className="shrink-0 p-1 rounded hover:bg-orange-100 text-orange-700"
-              aria-label="Dismiss"
-              data-testid="button-banner-chrome-dismiss"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+      <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-charcoal sm:text-3xl">Your running today</h1>
+          <p className="mt-1 text-sm text-gray-500">One next step, your latest evidence, and this week’s progress.</p>
         </div>
-      )}
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* AI Chat Announcement Banner - Only for Premium Users */}
-        {canAccessAICoachChat && (
-          <AnnouncementBanner onOpenChat={() => setIsChatOpen(true)} />
+        {!(dashboardData?.user?.stravaConnected && (dashboardData?.activities?.length || 0) > 0) && (
+          <div className="mb-6">
+            <ProgressChecklist
+              isStravaConnected={dashboardData?.user?.stravaConnected || false}
+              hasActivities={(dashboardData?.activities?.length || 0) > 0}
+              hasViewedScore={true}
+            />
+          </div>
         )}
+
+        <div className="mb-6">
+          <TodayRunDecision
+            recoveryData={recoveryData}
+            recentRuns={dashboardData?.activities?.length || 0}
+            latestRunAt={dashboardData?.activities?.[0]?.startDate}
+          />
+        </div>
 
         {/* One-time Premium Preview teaser — free users with a stored preview */}
         <PremiumPreviewTeaser />
 
         {/* Strava Sync Actions */}
-        <div className="mb-8 flex flex-wrap gap-4">
+        <div className="mb-6 flex flex-wrap gap-4">
           {!dashboardData?.user?.stravaConnected ? (
             <StravaConnectButton 
               onClick={handleStravaConnect}
               variant="orange"
               size="default"
             />
+          ) : isFree ? (
+            <div className="flex items-start gap-2 text-sm text-gray-600" data-testid="status-strava-connected">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
+              <div>
+                <p className="font-medium text-charcoal">Strava connected</p>
+                <p>Automatic Strava updates are on. Free dashboard history remains limited.</p>
+                {dashboardData?.user?.lastSyncAt && (
+                  <p className="mt-0.5 text-xs text-gray-500">Last update: {new Date(dashboardData.user.lastSyncAt).toLocaleString()}</p>
+                )}
+              </div>
+            </div>
           ) : (
             <div className="flex flex-col w-full">
               <Button 
@@ -619,51 +539,49 @@ export default function Dashboard() {
           </div>
         )}
         
-        <QuickStats stats={dashboardData?.stats || { totalDistance: "0.0", avgPace: "0:00", trainingLoad: 0, recovery: "Unknown" }} recoveryData={recoveryData} />
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
-            <PerformanceChart 
-              data={(chartData?.chartData?.length ? chartData.chartData : dashboardData?.chartData) || []} 
-              unitPreference={dashboardData?.user?.unitPreference}
-              onTimeRangeChange={handleTimeRangeChange}
-              currentTimeRange={chartTimeRange}
-            />
-            <FitnessChart userId={user?.id!} />
-            <RunnerScoreRadar />
-            <HistoricalRunnerScore />
-            <ActivityHeatmap />
+        <div className="mb-6">
+          <QuickStats stats={dashboardData?.stats || {
+            monthlyTotalDistance: "0.0", monthlyAvgPace: "0:00", monthlyTotalMinutes: 0, monthlyTotalActivities: 0,
+            weeklyTotalDistance: "0.0", weeklyAvgPace: "0:00", weeklyTotalMinutes: 0, weeklyTotalActivities: 0,
+            totalDistance: "0.0", avgPace: "0:00", runningTimeMinutes: 0, recovery: "Unknown",
+          }} />
+        </div>
+
+        <div className="mb-8">
+          <ThisWeekPlan />
+        </div>
+
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+          <PerformanceChart
+            data={(chartData?.chartData?.length ? chartData.chartData : dashboardData?.chartData) || []}
+            unitPreference={dashboardData?.user?.unitPreference}
+            onTimeRangeChange={handleTimeRangeChange}
+            currentTimeRange={chartTimeRange}
+          />
+          <RunnerScoreRadar />
+        </div>
+
+        {!isFree && (
+          <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
+            <AIInsights insights={dashboardData?.insights || {}} userId={user.id} insightsStatus={dashboardData?.insightsStatus} />
+            <TrainingRecommendations recommendations={dashboardData?.insights?.recommendations || []} userId={user.id} insightsStatus={dashboardData?.insightsStatus} />
           </div>
-          
-          <div className="space-y-6">
-            {/* Progress Checklist for New Users */}
-            <ProgressChecklist 
-              isStravaConnected={dashboardData?.user?.stravaConnected || false}
-              hasActivities={(dashboardData?.activities?.length || 0) > 0}
-              hasViewedScore={true} // They're on the dashboard, so they've seen it
-              hasChatted={(conversationSummaries?.length || 0) > 0}
-            />
+        )}
 
-            {/* My Goals - moved up for visibility */}
-            <GoalProgress userId={user?.id!} unitPreference={dashboardData?.user?.unitPreference} />
-            
-            <AIInsights insights={dashboardData?.insights || {}} userId={user?.id!} insightsStatus={dashboardData?.insightsStatus} />
-            <TrainingRecommendations recommendations={dashboardData?.insights?.recommendations || []} userId={user?.id!} insightsStatus={dashboardData?.insightsStatus} />
-            <FitnessTrends chartData={dashboardData?.chartData || []} unitPreference={dashboardData?.user?.unitPreference} />
-
-            {/* Recent Conversations - Premium Only */}
+        <details className="mt-8 rounded-xl border border-gray-200 bg-white shadow-sm">
+          <summary className="cursor-pointer px-5 py-4 font-medium text-charcoal">More analytics</summary>
+          <div className="space-y-8 border-t border-gray-100 p-5">
+            <ActivityHeatmap />
             {canAccessAICoachChat && (
-              <RecentConversations 
+              <RecentConversations
                 onOpenConversation={(id) => {
                   setSelectedConversationId(id);
                   setIsChatOpen(true);
                 }}
               />
             )}
-            
-            <ShoeHub />
           </div>
-        </div>
+        </details>
       </main>
       
       {user && (
@@ -678,7 +596,7 @@ export default function Dashboard() {
             relevantData: {
               totalDistance: dashboardData?.stats?.totalDistance,
               avgPace: dashboardData?.stats?.avgPace,
-              trainingLoad: dashboardData?.stats?.trainingLoad,
+              runningTimeMinutes: dashboardData?.stats?.runningTimeMinutes,
               recovery: dashboardData?.stats?.recovery,
               recentActivities: dashboardData?.activities?.length || 0
             }

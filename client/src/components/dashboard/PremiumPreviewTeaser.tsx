@@ -164,10 +164,10 @@ export default function PremiumPreviewTeaser() {
   return (
     <PreviewShell testId="premium-preview-teaser">
       <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-amber-700">
-        <Sparkles className="h-4 w-4" /> YOUR PREMIUM PREVIEW
+        <Sparkles className="h-4 w-4" /> PREMIUM PREVIEW · LAST RUN → NEXT RUN
       </div>
-      <h2 className="text-2xl font-bold text-gray-900 mt-3">We found something useful in your latest run</h2>
-      <p className="text-sm text-gray-700 mt-1">Here's a sample of the personalized analysis available with RunAnalytics Premium.</p>
+      <h2 className="text-2xl font-bold text-gray-900 mt-3">What this run can teach you</h2>
+      <p className="text-sm text-gray-700 mt-1">See what changed, why it matters, and what to try next run.</p>
       <p className="text-xs text-gray-500 mt-2">
         {preview.sourceData.name}{activityDate ? ` · ${activityDate}` : ""}
       </p>
@@ -195,14 +195,14 @@ export default function PremiumPreviewTeaser() {
             { source: "premium_preview_dashboard", capability: "activity_deep_dive", activityId },
             { dedupeParts: ["dashboard", activityId, Date.now()] },
           )}>
-            View your Premium Preview <ChevronRight className="h-4 w-4 ml-1" />
+            See why this happened <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </Link>
         <TrackedUpgradeLink href={upgradeUrl}>
-          <Button className="bg-amber-500 hover:bg-amber-600 text-white">Unlock ongoing personalized analysis</Button>
+          <Button className="bg-amber-500 hover:bg-amber-600 text-white">Start my 14-day coaching trial</Button>
         </TrackedUpgradeLink>
       </div>
-      <p className="text-xs text-gray-500 mt-3">Start 14 days free · $0 today · Cancel anytime</p>
+      <p className="text-xs text-gray-500 mt-3">Get this analysis after every run · $0 today · Cancel anytime</p>
     </PreviewShell>
   );
 }

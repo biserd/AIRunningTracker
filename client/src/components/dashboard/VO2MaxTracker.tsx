@@ -1,8 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { TrendingUp, TrendingDown, Minus, Heart, Target } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Heart } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 interface VO2MaxData {
@@ -10,11 +9,9 @@ interface VO2MaxData {
   raceVO2Max: number;
   trainingVO2Max: number;
   trend: 'improving' | 'stable' | 'declining';
-  ageGradePercentile: number;
   comparison: string;
   raceComparison: string;
   trainingComparison: string;
-  targetRange: { min: number; max: number };
 }
 
 interface VO2MaxTrackerProps {
@@ -53,20 +50,13 @@ export default function VO2MaxTracker({ userId, batchData }: VO2MaxTrackerProps)
     }
   };
 
-  const getPercentileColor = (percentile: number) => {
-    if (percentile >= 80) return "text-green-600";
-    if (percentile >= 60) return "text-blue-600";
-    if (percentile >= 40) return "text-yellow-600";
-    return "text-red-600";
-  };
-
   if (isLoading) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-charcoal flex items-center">
             <Heart className="mr-2 h-5 w-5 text-red-500" />
-            VO2 Max Analysis
+            Estimated VO₂ Max
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -85,27 +75,26 @@ export default function VO2MaxTracker({ userId, batchData }: VO2MaxTrackerProps)
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-charcoal flex items-center">
             <Heart className="mr-2 h-5 w-5 text-red-500" />
-            VO2 Max Analysis
+            Estimated VO₂ Max
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-gray-500">
             <Heart className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-            <p>Complete more training runs to calculate VO2 Max</p>
+            <p>Not enough comparable efforts yet</p>
+            <p className="mt-1 text-sm">We’ll estimate this after more suitable runs. This is a pace-based estimate, not a laboratory measurement.</p>
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  const progressPercentage = Math.min(100, (vo2Data.current / 70) * 100); // Scale to 70 as max display
-
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-xl font-semibold text-charcoal flex items-center">
           <Heart className="mr-2 h-5 w-5 text-red-500" />
-          VO2 Max Analysis
+          Estimated VO₂ Max
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -124,7 +113,7 @@ export default function VO2MaxTracker({ userId, batchData }: VO2MaxTrackerProps)
               </div>
               <p className="text-xs text-orange-800">{vo2Data.raceComparison}</p>
               <p className="text-xs text-orange-700 mt-2 italic">
-                Your maximum aerobic capacity measured from race performances
+                Estimated from your faster eligible efforts
               </p>
             </div>
 
@@ -140,7 +129,7 @@ export default function VO2MaxTracker({ userId, batchData }: VO2MaxTrackerProps)
               </div>
               <p className="text-xs text-blue-800">{vo2Data.trainingComparison}</p>
               <p className="text-xs text-blue-700 mt-2 italic">
-                Your typical aerobic fitness from regular training runs
+                Estimated from your regular eligible training runs
               </p>
             </div>
           </div>
@@ -149,92 +138,18 @@ export default function VO2MaxTracker({ userId, batchData }: VO2MaxTrackerProps)
           <div className="bg-gradient-to-r from-gray-50 to-blue-50 border border-gray-200 rounded-lg p-4">
             <h4 className="font-medium text-charcoal mb-2 flex items-center">
               <span className="mr-2">💡</span>
-              Understanding Your VO2 Max Values
+              Understanding these estimates
             </h4>
             <div className="text-sm text-gray-700 space-y-2">
               <p>
-                <strong className="text-strava-orange">Race VO2 Max</strong> shows your peak aerobic capacity during race efforts. 
-                It's calculated from your best 5K, 10K, and race performances where you pushed your hardest.
+                <strong className="text-strava-orange">Race estimate</strong> uses your faster eligible efforts. It may move when a more representative effort is imported.
               </p>
               <p>
-                <strong className="text-performance-blue">Training VO2 Max</strong> reflects your everyday training fitness. 
-                It's based on regular training runs and shows your sustainable aerobic capacity.
+                <strong className="text-performance-blue">Training estimate</strong> uses regular training runs and is usually lower than the race estimate.
               </p>
               <p className="text-xs text-gray-600 pt-1 border-t border-gray-200">
-                A gap between these values is normal - you run faster in races than in training!
+                These values are model estimates from pace and duration. Weather, terrain, stops, and effort can affect them.
               </p>
-            </div>
-          </div>
-
-          {/* Age Grade Percentile */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-medium text-charcoal">Age Grade Percentile</span>
-              <span className={`text-xl font-bold ${getPercentileColor(vo2Data.ageGradePercentile)}`}>
-                {vo2Data.ageGradePercentile}%
-              </span>
-            </div>
-            <Progress 
-              value={vo2Data.ageGradePercentile} 
-              className="h-2"
-            />
-            <p className="text-xs text-gray-600 mt-1">
-              Compared to others in your age group
-            </p>
-          </div>
-
-          {/* Target Range */}
-          <div className="border border-blue-200 bg-blue-50 rounded-lg p-4">
-            <div className="flex items-center space-x-2 mb-2">
-              <Target className="h-4 w-4 text-blue-600" />
-              <span className="font-medium text-blue-900">Target Range</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-blue-800">
-                {vo2Data.targetRange.min} - {vo2Data.targetRange.max} ml/kg/min
-              </span>
-              <Badge variant="outline" className="border-blue-300 text-blue-700">
-                Improvement Goal
-              </Badge>
-            </div>
-          </div>
-
-          {/* VO2 Max Scale Reference */}
-          <div className="space-y-3">
-            <h4 className="font-medium text-charcoal">VO2 Max Scale</h4>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Elite (60+)</span>
-                <div className="flex-1 mx-3">
-                  <div className="h-1 bg-green-200 rounded">
-                    <div className="h-1 bg-green-500 rounded w-full"></div>
-                  </div>
-                </div>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Excellent (50-59)</span>
-                <div className="flex-1 mx-3">
-                  <div className="h-1 bg-blue-200 rounded">
-                    <div className="h-1 bg-blue-500 rounded w-4/5"></div>
-                  </div>
-                </div>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Good (40-49)</span>
-                <div className="flex-1 mx-3">
-                  <div className="h-1 bg-yellow-200 rounded">
-                    <div className="h-1 bg-yellow-500 rounded w-3/5"></div>
-                  </div>
-                </div>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Fair (35-39)</span>
-                <div className="flex-1 mx-3">
-                  <div className="h-1 bg-orange-200 rounded">
-                    <div className="h-1 bg-orange-500 rounded w-2/5"></div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
 

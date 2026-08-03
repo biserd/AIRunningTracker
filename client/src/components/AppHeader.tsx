@@ -16,10 +16,10 @@ import { Badge } from "@/components/ui/badge";
 import FeedbackDialog from "@/components/FeedbackDialog";
 
 const navigationItems = [
-  { path: "/dashboard", label: "Dashboard", icon: Home },
-  { path: "/activities", label: "Activities", icon: List },
-  { path: "/coach-insights", label: "Coach Insights", icon: Brain },
-  { path: "/training-plans", label: "Training Plans", icon: CalendarCheck },
+  { path: "/dashboard", label: "Dashboard", mobileLabel: "Home", icon: Home },
+  { path: "/activities", label: "Activities", mobileLabel: "Runs", icon: List },
+  { path: "/coach-insights", label: "Coach Insights", mobileLabel: "Coach", icon: Brain },
+  { path: "/training-plans", label: "Training Plans", mobileLabel: "Plans", icon: CalendarCheck },
 ];
 
 export default function AppHeader() {
@@ -34,16 +34,16 @@ export default function AppHeader() {
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="max-w-7xl mx-auto px-4 py-3 sm:px-6 md:py-4">
         <div className="flex items-center justify-between">
           {/* Logo and Brand */}
           <div className="flex items-center space-x-4">
             <Link href="/dashboard">
               <div className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity">
-                <div className="w-10 h-10 bg-strava-orange rounded-lg flex items-center justify-center">
+                <div className="w-9 h-9 md:w-10 md:h-10 bg-strava-orange rounded-lg flex items-center justify-center">
                   <Activity className="text-white" size={20} />
                 </div>
-                <h1 className="text-2xl font-bold text-charcoal">RunAnalytics</h1>
+                <h1 className="text-xl md:text-2xl font-bold text-charcoal">RunAnalytics</h1>
               </div>
             </Link>
           </div>
@@ -138,7 +138,10 @@ export default function AppHeader() {
         </div>
 
         {/* Mobile Navigation */}
-        <nav className="md:hidden mt-4 flex space-x-1 overflow-x-auto">
+        <nav
+          className="md:hidden mt-3 grid gap-1"
+          style={{ gridTemplateColumns: `repeat(${user?.isAdmin ? 5 : 4}, minmax(0, 1fr))` }}
+        >
           {navigationItems.map((item) => {
             const Icon = item.icon;
             const isActive = location === item.path;
@@ -148,14 +151,14 @@ export default function AppHeader() {
                 <Button
                   variant={isActive ? "default" : "ghost"}
                   size="sm"
-                  className={`flex items-center space-x-2 whitespace-nowrap ${
+                  className={`h-auto w-full flex-col gap-1 px-1 py-2 ${
                     isActive 
                       ? "bg-strava-orange text-white" 
                       : "text-gray-600"
                   }`}
                 >
-                  <Icon size={14} />
-                  <span>{item.label}</span>
+                  <Icon size={16} />
+                  <span className="text-[10px] leading-none">{item.mobileLabel}</span>
                 </Button>
               </Link>
             );
@@ -167,15 +170,15 @@ export default function AppHeader() {
               <Button
                 variant={location === "/admin" ? "default" : "ghost"}
                 size="sm"
-                className={`flex items-center space-x-2 whitespace-nowrap ${
+                className={`h-auto w-full flex-col gap-1 px-1 py-2 ${
                   location === "/admin"
                     ? "bg-strava-orange text-white" 
                     : "text-gray-600"
                 }`}
                 data-testid="mobile-nav-admin"
               >
-                <Shield size={14} />
-                <span>Admin</span>
+                <Shield size={16} />
+                <span className="text-[10px] leading-none">Admin</span>
               </Button>
             </Link>
           )}

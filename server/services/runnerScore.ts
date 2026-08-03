@@ -77,7 +77,9 @@ export class RunnerScoreService {
    * Calculate comprehensive runner score based on multiple factors
    */
   async calculateRunnerScore(userId: number): Promise<RunnerScoreData> {
-    const allActivities = await storage.getActivitiesByUserId(userId, 100);
+    // Use the same history window as the historical endpoint so the current
+    // value is exactly the final point on the history chart.
+    const allActivities = await storage.getActivitiesByUserId(userId, 500);
     const activities = filterRunningActivities(allActivities);
     
     if (activities.length === 0) {

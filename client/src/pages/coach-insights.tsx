@@ -196,6 +196,7 @@ function InsightsTab({ user, batchData, isDataLoading, recoveryData, isRecoveryL
   const vo2Max = batchData?.vo2Max;
   const injuryRisk = batchData?.injuryRisk;
   const efficiency = batchData?.efficiency;
+  const hasEngineEvidence = canAccessAdvancedInsights && Boolean(topPrediction || vo2Max?.current);
 
   return (
     <>
@@ -251,7 +252,7 @@ function InsightsTab({ user, batchData, isDataLoading, recoveryData, isRecoveryL
         <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <Heart size={14} className="text-red-500" />
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Fitness</span>
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Estimated fitness</span>
           </div>
           {isDataLoading ? (
             <div className="h-5 bg-gray-100 rounded animate-pulse"></div>
@@ -287,7 +288,7 @@ function InsightsTab({ user, batchData, isDataLoading, recoveryData, isRecoveryL
         <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <Gauge size={14} className="text-blue-500" />
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Efficiency</span>
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Pace consistency</span>
           </div>
           {isDataLoading ? (
             <div className="h-5 bg-gray-100 rounded animate-pulse"></div>
@@ -338,7 +339,9 @@ function InsightsTab({ user, batchData, isDataLoading, recoveryData, isRecoveryL
           <div className="bg-gradient-to-r from-orange-50 via-white to-emerald-50 px-6 py-3 rounded-full border border-gray-200 shadow-sm">
             <p className="text-sm font-medium text-gray-700 flex items-center gap-2">
               <span className="text-orange-500">●</span>
-              Your fitness is strong. Now let's check your durability.
+              {hasEngineEvidence
+                ? "Now see how your recent training and form signals fit together."
+                : "As more comparable runs arrive, these estimates will become more reliable."}
               <span className="text-emerald-500">●</span>
             </p>
           </div>
@@ -391,11 +394,11 @@ function InsightsTab({ user, batchData, isDataLoading, recoveryData, isRecoveryL
               </div>
               <div className="flex items-start space-x-2">
                 <div className="w-2 h-2 bg-red-500 rounded-full mt-1.5"></div>
-                <span><strong>VO2 Max:</strong> Your maximum oxygen capacity - the ceiling of your endurance</span>
+                <span><strong>Estimated VO2 max:</strong> A pace-based estimate, not a laboratory measurement</span>
               </div>
               <div className="flex items-start space-x-2">
                 <div className="w-2 h-2 bg-amber-500 rounded-full mt-1.5"></div>
-                <span><strong>Heart Rate Zones:</strong> Training intensity targets for optimal adaptation</span>
+                <span><strong>Heart-rate zones:</strong> Training ranges that are most useful when your max and resting heart rate are known</span>
               </div>
             </div>
           </div>
@@ -413,7 +416,7 @@ function InsightsTab({ user, batchData, isDataLoading, recoveryData, isRecoveryL
               </div>
               <div className="flex items-start space-x-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5"></div>
-                <span><strong>Running Efficiency:</strong> Cadence and form analysis for sustainable performance</span>
+                <span><strong>Form signals:</strong> Personal cadence and pace-consistency trends from runs that recorded cadence</span>
               </div>
             </div>
           </div>

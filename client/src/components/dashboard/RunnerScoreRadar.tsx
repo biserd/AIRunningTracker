@@ -159,15 +159,7 @@ export default function RunnerScoreRadar() {
           <Badge className={`text-sm px-2.5 py-0.5 font-semibold ${getGradeColor(scoreData.grade)}`}>
             {scoreData.grade}
           </Badge>
-          <span className="text-xs text-gray-500">Top {100 - scoreData.percentile}%</span>
-          {/* Inline badges */}
-          <div className="flex gap-1 ml-auto">
-            {scoreData.badges.slice(0, 2).map((badge, index) => (
-              <Badge key={index} variant="outline" className="text-[10px] px-1.5 py-0">
-                {badge}
-              </Badge>
-            ))}
-          </div>
+          <span className="text-xs text-gray-500 ml-auto">Based on your last 30 days</span>
         </div>
         
         {/* Component bars */}
