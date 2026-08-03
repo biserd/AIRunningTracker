@@ -7,7 +7,8 @@ import { parseUpgradeIntent, capabilityLabel } from "@shared/upgradeIntent";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription, useCheckout } from "@/hooks/useSubscription";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { trackFunnelEvent } from "@/lib/analytics";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { SEO } from "@/components/SEO";
@@ -120,6 +121,45 @@ export default function PricingPage() {
   // checkout so trial activation returns to the requested feature.
   const upgradeIntent = parseUpgradeIntent(searchString);
 
+  // Funnel: pricing page viewed (once per session per source), an arriving
+  // upgrade intent counts as an offer click on the originating surface, and
+  // a Stripe cancel_url return counts as checkout abandoned.
+  useEffect(() => {
+    const source = upgradeIntent?.source || "direct";
+    trackFunnelEvent(
+      "pricing_viewed",
+      {
+        source,
+        capability: upgradeIntent?.capability ? String(upgradeIntent.capability) : undefined,
+        activityId: upgradeIntent?.activityId,
+      },
+      { oncePerSession: true, dedupeParts: [source, upgradeIntent?.capability] },
+    );
+    if (upgradeIntent) {
+      trackFunnelEvent(
+        "offer_clicked",
+        {
+          source: upgradeIntent.source,
+          capability: String(upgradeIntent.capability),
+          activityId: upgradeIntent.activityId,
+        },
+        {
+          oncePerSession: true,
+          dedupeParts: [upgradeIntent.source, upgradeIntent.capability, upgradeIntent.activityId],
+        },
+      );
+    }
+    const params = new URLSearchParams(searchString.startsWith("?") ? searchString.slice(1) : searchString);
+    if (params.get("canceled") === "true") {
+      trackFunnelEvent(
+        "checkout_abandoned",
+        { source, capability: upgradeIntent?.capability ? String(upgradeIntent.capability) : undefined },
+        { oncePerSession: true, dedupeParts: [source] },
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Fetch live Stripe products so we use whichever price IDs exist in the
   // current Stripe environment (test or live). Public endpoint, cached briefly.
   const { data: productsData, isLoading: isLoadingPrices } = useQuery<{ products: StripeProduct[] }>({
@@ -128,7 +168,22 @@ export default function PricingPage() {
   });
   const premiumPriceId = pickPremiumPriceId(productsData?.products, billingCycle);
 
+  const selectBillingCycle = (cycle: 'monthly' | 'annual') => {
+    setBillingCycle(cycle);
+    trackFunnelEvent("billing_period_selected", {
+      source: upgradeIntent?.source || "direct",
+      billingPeriod: cycle,
+      capability: upgradeIntent?.capability ? String(upgradeIntent.capability) : undefined,
+    }, { dedupeParts: [cycle, Date.now()] });
+  };
+
   const handleSubscribe = () => {
+    trackFunnelEvent("checkout_started", {
+      source: upgradeIntent?.source || "pricing",
+      billingPeriod: billingCycle,
+      capability: upgradeIntent?.capability ? String(upgradeIntent.capability) : undefined,
+      activityId: upgradeIntent?.activityId,
+    }, { dedupeParts: [billingCycle, Date.now()] });
     if (!isAuthenticated) {
       navigate('/auth');
       return;
@@ -141,7 +196,12 @@ export default function PricingPage() {
       });
       return;
     }
-    checkout.mutate({ priceId: premiumPriceId, returnTo: upgradeIntent?.returnTo });
+    checkout.mutate({
+      priceId: premiumPriceId,
+      returnTo: upgradeIntent?.returnTo,
+      source: upgradeIntent?.source || "pricing",
+      capability: upgradeIntent?.capability ? String(upgradeIntent.capability) : undefined,
+    });
   };
 
   return (
@@ -195,7 +255,7 @@ export default function PricingPage() {
           <div className="flex flex-col items-center mb-12">
             <div className="bg-white rounded-full p-1 shadow-md inline-flex">
               <button
-                onClick={() => setBillingCycle('monthly')}
+                onClick={() => selectBillingCycle('monthly')}
                 className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
                   billingCycle === 'monthly'
                     ? 'bg-strava-orange text-white'
@@ -206,7 +266,7 @@ export default function PricingPage() {
                 Monthly
               </button>
               <button
-                onClick={() => setBillingCycle('annual')}
+                onClick={() => selectBillingCycle('annual')}
                 className={`px-6 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
                   billingCycle === 'annual'
                     ? 'bg-strava-orange text-white'
@@ -398,7 +458,14 @@ export default function PricingPage() {
         onClose={() => setShowEmailModal(false)}
         onSuccess={() => {
           setShowEmailModal(false);
-          if (premiumPriceId) checkout.mutate({ priceId: premiumPriceId, returnTo: upgradeIntent?.returnTo });
+          if (premiumPriceId) {
+            checkout.mutate({
+              priceId: premiumPriceId,
+              returnTo: upgradeIntent?.returnTo,
+              source: upgradeIntent?.source || "pricing",
+              capability: upgradeIntent?.capability ? String(upgradeIntent.capability) : undefined,
+            });
+          }
         }}
       />
     </div>

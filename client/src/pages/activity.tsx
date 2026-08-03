@@ -29,6 +29,7 @@ import type { CoachRecap } from "@shared/schema";
 import { LockedFeatureTeaser, LockedOverlay, TierBadge as TierBadgeComponent } from "@/components/LockedFeatureTeaser";
 import { normalizeZoneDurations, zonesFromFractions } from "@shared/zoneCalculations";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
+import { trackFunnelEvent, useOfferTracking } from "@/lib/analytics";
 import {
   OPTIMAL_CADENCE_MIN_SPM,
   OPTIMAL_CADENCE_MAX_SPM,
@@ -58,6 +59,8 @@ function LockedFeaturePanel({
   pricingUrl?: string;
   ctaLabel?: string;
 }) {
+  // Funnel: offer_viewed on mount (once/session), offer_clicked on CTA.
+  const trackOfferClick = useOfferTracking(pricingUrl);
   const tierConfig = { 
     label: 'Premium', 
     color: 'yellow',
@@ -80,7 +83,7 @@ function LockedFeaturePanel({
         <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
         <p className="text-sm text-gray-600 mb-6 max-w-md">{description}</p>
         <Link href={pricingUrl}>
-          <Button className={`${tierConfig.buttonClass} text-white`} data-testid="button-upgrade">
+          <Button className={`${tierConfig.buttonClass} text-white`} data-testid="button-upgrade" onClick={trackOfferClick}>
             <Sparkles className="h-4 w-4 mr-2" />
             {ctaLabel || `Upgrade to ${tierConfig.label}`}
           </Button>
@@ -203,7 +206,27 @@ interface PremiumPreviewData {
   };
 }
 
-function PremiumPreviewCard({ preview }: { preview: PremiumPreviewData }) {
+function PremiumPreviewCard({ preview, createdAt }: { preview: PremiumPreviewData; createdAt?: string | null }) {
+  // Freshness: age (days) of the preview at the moment it's shown.
+  const freshnessDays = createdAt
+    ? Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 86_400_000))
+    : undefined;
+
+  // Funnel: preview viewed once per session per activity.
+  useEffect(() => {
+    trackFunnelEvent(
+      "preview_viewed",
+      {
+        source: "premium_preview",
+        capability: "activity_deep_dive",
+        activityId: preview.sourceData.activityId,
+        freshnessDays,
+      },
+      { oncePerSession: true, dedupeParts: [preview.sourceData.activityId] },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preview.sourceData.activityId]);
+
   const upgradeUrl = buildUpgradeUrl({
     source: "premium_preview",
     capability: "activity_deep_dive",
@@ -276,7 +299,19 @@ function PremiumPreviewCard({ preview }: { preview: PremiumPreviewData }) {
             <Lock className="h-3 w-3" /> Splits, decoupling, and race predictions stay locked
           </p>
           <Link href={upgradeUrl}>
-            <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-white" data-testid="premium-preview-upgrade">
+            <Button
+              size="sm"
+              className="bg-yellow-500 hover:bg-yellow-600 text-white"
+              data-testid="premium-preview-upgrade"
+              onClick={() =>
+                trackFunnelEvent("preview_cta_clicked", {
+                  source: "premium_preview",
+                  capability: "activity_deep_dive",
+                  activityId: preview.sourceData.activityId,
+                  freshnessDays,
+                }, { dedupeParts: [preview.sourceData.activityId, Date.now()] })
+              }
+            >
               <Sparkles className="h-4 w-4 mr-1" /> Unlock full analysis
             </Button>
           </Link>
@@ -409,7 +444,7 @@ export default function ActivityPage() {
   // One-time Premium Preview created after the user's first successful
   // Strava sync. Only fetched for non-premium users; rendered when the
   // preview was generated from this specific activity.
-  const { data: premiumPreviewData } = useQuery<{ preview: PremiumPreviewData | null }>({
+  const { data: premiumPreviewData } = useQuery<{ preview: PremiumPreviewData | null; createdAt?: string | null }>({
     queryKey: ['/api/premium-preview'],
     queryFn: async () => {
       const res = await fetch('/api/premium-preview', {
@@ -903,7 +938,7 @@ export default function ActivityPage() {
       <div className="container mx-auto px-4 py-8 max-w-6xl">
 
         {/* One-time Premium Preview (free users, first-synced run only) */}
-        {premiumPreview && <PremiumPreviewCard preview={premiumPreview} />}
+        {premiumPreview && <PremiumPreviewCard preview={premiumPreview} createdAt={premiumPreviewData?.createdAt} />}
 
         {/* Story Mode: Simplified Layout */}
         {viewMode === 'story' && (

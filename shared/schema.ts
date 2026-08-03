@@ -683,6 +683,34 @@ export const apiKeys = pgTable("api_keys", {
   userIdIdx: index("api_keys_user_id_idx").on(table.userId),
 }));
 
+// Premium conversion funnel events. One row per logical funnel step,
+// idempotent on dedupe_key so webhook replays / client retries can never
+// double-count. Event names + required properties live in shared/funnelEvents.ts.
+export const funnelEvents = pgTable("funnel_events", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  event: text("event").notNull(),
+  source: text("source"),
+  capability: text("capability"),
+  activityId: integer("activity_id"),
+  billingPeriod: text("billing_period"),
+  experimentVariant: text("experiment_variant"),
+  properties: jsonb("properties"),
+  dedupeKey: text("dedupe_key").notNull().unique(),
+  occurredAt: timestamp("occurred_at").defaultNow().notNull(),
+}, (table) => ({
+  eventIdx: index("funnel_events_event_idx").on(table.event),
+  userIdIdx: index("funnel_events_user_id_idx").on(table.userId),
+  occurredAtIdx: index("funnel_events_occurred_at_idx").on(table.occurredAt),
+}));
+
+export const insertFunnelEventSchema = createInsertSchema(funnelEvents).omit({
+  id: true,
+  occurredAt: true,
+});
+export type InsertFunnelEvent = z.infer<typeof insertFunnelEventSchema>;
+export type FunnelEvent = typeof funnelEvents.$inferSelect;
+
 export const refreshTokens = pgTable("refresh_tokens", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),

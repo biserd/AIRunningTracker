@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Brain, Crown, Lock, Loader2, Sparkles } from "lucide-react";
-import { Link } from "wouter";
+import { TrackedUpgradeLink } from "@/components/TrackedUpgradeLink";
 import { useFeatureAccess } from "@/hooks/useSubscription";
 
 interface InsightData {
@@ -130,12 +130,12 @@ export default function AIInsights({ insights, userId, insightsStatus = 'ready' 
                 <div className="text-center">
                   <Lock className="h-6 w-6 text-gray-500 mx-auto mb-2" />
                   <p className="text-sm font-medium text-gray-700 mb-2">Advanced Insights Locked</p>
-                  <Link href="/pricing">
+                  <TrackedUpgradeLink href="/pricing" source="dashboard_insights" capability="advanced_insights">
                     <Button size="sm" className="bg-strava-orange hover:bg-strava-orange/90" data-testid="button-unlock-insights">
                       <Crown className="h-3 w-3 mr-1" />
                       Upgrade to Premium
                     </Button>
-                  </Link>
+                  </TrackedUpgradeLink>
                 </div>
               </div>
               

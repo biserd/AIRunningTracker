@@ -1,6 +1,7 @@
 import { Lock, Sparkles } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { useOfferTracking } from "@/lib/analytics";
 
 interface LockedFeatureTeaserProps {
   tier?: 'premium';
@@ -14,6 +15,8 @@ interface LockedFeatureTeaserProps {
 }
 
 export function LockedFeatureTeaser({ tier, teaser, className = '', compact = false, pricingUrl = '/pricing', ctaLabel = 'Unlock' }: LockedFeatureTeaserProps) {
+  // Funnel: offer_viewed on mount (once/session), offer_clicked on CTA.
+  const trackOfferClick = useOfferTracking(pricingUrl);
   const tierConfig = { 
     label: 'Premium', 
     bgClass: 'bg-gradient-to-r from-yellow-50 to-amber-50',
@@ -31,7 +34,7 @@ export function LockedFeatureTeaser({ tier, teaser, className = '', compact = fa
           <span className="text-sm text-gray-700">{teaser}</span>
         </div>
         <Link href={pricingUrl}>
-          <Button size="sm" className={`${tierConfig.buttonClass} text-white text-xs h-7 px-3`} data-testid="button-unlock">
+          <Button size="sm" className={`${tierConfig.buttonClass} text-white text-xs h-7 px-3`} data-testid="button-unlock" onClick={trackOfferClick}>
             {ctaLabel}
           </Button>
         </Link>
@@ -53,7 +56,7 @@ export function LockedFeatureTeaser({ tier, teaser, className = '', compact = fa
         </div>
       </div>
       <Link href={pricingUrl}>
-        <Button className={`${tierConfig.buttonClass} text-white`} data-testid="button-unlock">
+        <Button className={`${tierConfig.buttonClass} text-white`} data-testid="button-unlock" onClick={trackOfferClick}>
           <Sparkles className="h-4 w-4 mr-2" />
           {ctaLabel}
         </Button>
@@ -78,6 +81,8 @@ interface LockedOverlayProps {
 }
 
 export function LockedOverlay({ tier, teaser, children, blur = true, pricingUrl = '/pricing', ctaLabel = 'Unlock' }: LockedOverlayProps) {
+  // Funnel: offer_viewed on mount (once/session), offer_clicked on CTA.
+  const trackOfferClick = useOfferTracking(pricingUrl);
   const tierConfig = { 
     label: 'Premium', 
     borderClass: 'border-yellow-300',
@@ -95,7 +100,7 @@ export function LockedOverlay({ tier, teaser, children, blur = true, pricingUrl 
           <Lock className={`h-5 w-5 ${tierConfig.iconColor}`} />
           <span className="text-sm text-gray-700 max-w-[200px]">{teaser}</span>
           <Link href={pricingUrl}>
-            <Button size="sm" className={`${tierConfig.buttonClass} text-white`} data-testid="button-unlock-overlay">
+            <Button size="sm" className={`${tierConfig.buttonClass} text-white`} data-testid="button-unlock-overlay" onClick={trackOfferClick}>
               {ctaLabel}
             </Button>
           </Link>

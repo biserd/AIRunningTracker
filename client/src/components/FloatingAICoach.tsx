@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ChatPanel } from "@/components/ChatPanel";
 import { cn } from "@/lib/utils";
 import { useFeatureAccess } from "@/hooks/useSubscription";
-import { Link } from "wouter";
+import { TrackedUpgradeLink } from "@/components/TrackedUpgradeLink";
 
 export interface PageContext {
   pageName: string;
@@ -106,7 +106,7 @@ export function FloatingAICoach({ userId, className, pageContext, isOpen: contro
                     </div>
                   </div>
                   
-                  <Link href="/pricing">
+                  <TrackedUpgradeLink href="/pricing" source="floating_ai_coach" capability="ai_coach">
                     <Button 
                       className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-3 text-base font-semibold"
                       data-testid="button-upgrade-to-premium"
@@ -114,7 +114,7 @@ export function FloatingAICoach({ userId, className, pageContext, isOpen: contro
                       <Crown className="w-4 h-4 mr-2" />
                       Upgrade to Premium
                     </Button>
-                  </Link>
+                  </TrackedUpgradeLink>
                   
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-4">
                     Premium includes unlimited AI coach access

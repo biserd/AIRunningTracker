@@ -64,12 +64,19 @@ export interface CheckoutParams {
   priceId: string;
   /** Relative in-app path to return the user to after trial activation. */
   returnTo?: string;
+  /** Funnel attribution: where the checkout was initiated from. */
+  source?: string;
+  /** Funnel attribution: the capability the user was trying to unlock. */
+  capability?: string;
 }
 
 export function useCheckout(onRequiresEmail?: () => void) {
   return useMutation({
     mutationFn: async (params: string | CheckoutParams) => {
-      const { priceId, returnTo } = typeof params === "string" ? { priceId: params, returnTo: undefined } : params;
+      const { priceId, returnTo, source, capability } =
+        typeof params === "string"
+          ? { priceId: params, returnTo: undefined, source: undefined, capability: undefined }
+          : params;
       const token = localStorage.getItem("auth_token");
       const res = await fetch("/api/stripe/create-checkout-session", {
         method: "POST",
@@ -78,7 +85,12 @@ export function useCheckout(onRequiresEmail?: () => void) {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         credentials: "include",
-        body: JSON.stringify({ priceId, ...(returnTo ? { returnTo } : {}) }),
+        body: JSON.stringify({
+          priceId,
+          ...(returnTo ? { returnTo } : {}),
+          ...(source ? { source } : {}),
+          ...(capability ? { capability } : {}),
+        }),
       });
       const data = await res.json();
       if (res.status === 402 && data.requiresEmail) {

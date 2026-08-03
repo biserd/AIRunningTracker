@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown, Minus, X, Crown, Calendar, Route, Clock, Heart, Zap, ChevronRight, Loader2 } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { Link } from "wouter";
+import { TrackedUpgradeLink } from "@/components/TrackedUpgradeLink";
 
 const KM_TO_MILES = 0.621371;
 
@@ -165,12 +166,12 @@ function PremiumUpgradePrompt({ message }: { message: string }) {
         <Crown className="w-5 h-5 text-amber-500 mt-0.5" />
         <div className="flex-1">
           <p className="text-sm text-gray-700 mb-3">{message}</p>
-          <Link href="/pricing">
+          <TrackedUpgradeLink href="/pricing" source="activity_compare" capability="activity_comparison">
             <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600">
               Upgrade to Premium
               <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
-          </Link>
+          </TrackedUpgradeLink>
         </div>
       </div>
     </div>

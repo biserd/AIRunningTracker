@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useFeatureAccess } from "@/hooks/useSubscription";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { TrackedUpgradeLink } from "@/components/TrackedUpgradeLink";
 import AppHeader from "@/components/AppHeader";
 import { FloatingAICoach } from "@/components/FloatingAICoach";
 import RacePredictions from "@/components/dashboard/RacePredictions";
@@ -454,7 +455,7 @@ function AIAgentCoachTab({ user, canAccessAICoachChat }: { user: User; canAccess
           Premium Feature
         </Badge>
         <div className="flex justify-center gap-4">
-          <Link href={buildUpgradeUrl({
+          <TrackedUpgradeLink href={buildUpgradeUrl({
             source: "coach_insights",
             capability: "ai_coach",
             benefit: "Get proactive post-run recaps and personalized coaching after every run.",
@@ -464,7 +465,7 @@ function AIAgentCoachTab({ user, canAccessAICoachChat }: { user: User; canAccess
               <Sparkles className="mr-2 h-4 w-4" />
               Unlock AI Agent Coach
             </Button>
-          </Link>
+          </TrackedUpgradeLink>
           <Link href="/ai-agent-coach">
             <Button variant="outline" data-testid="btn-learn-more">
               Learn More

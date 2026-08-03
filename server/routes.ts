@@ -45,6 +45,8 @@ import {
 } from "@shared/entitlements";
 import { normalizeCadenceToSpm } from "@shared/cadenceNormalization";
 import { sanitizeReturnTo } from "@shared/upgradeIntent";
+import { recordFunnelEvent } from "./services/funnelAnalytics";
+import { isClientFunnelEvent, buildFunnelDedupeKey, billingPeriodFromInterval } from "@shared/funnelEvents";
 
 // Authentication middleware
 const authenticateJWT = async (req: any, res: Response, next: NextFunction) => {
@@ -1160,10 +1162,60 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Funnel analytics ingestion (client-emitted events only). Auth is
+  // optional — anonymous visitors can still emit pricing/offer events.
+  // Server-authoritative events (trial/paid/cancellation) are rejected here;
+  // they may only be written by checkout + Stripe webhook code paths.
+  app.post("/api/analytics/funnel", async (req: any, res) => {
+    try {
+      const bodySchema = z.object({
+        event: z.string().min(1).max(64),
+        dedupeKey: z.string().min(8).max(512),
+        props: z.record(z.unknown()).optional(),
+      });
+      const parsed = bodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid analytics payload" });
+      }
+      const { event, dedupeKey, props } = parsed.data;
+
+      if (!isClientFunnelEvent(event)) {
+        return res.status(400).json({ message: "Event not accepted from client" });
+      }
+
+      // Optional auth: attribute to the user when a valid token is present.
+      let userId: number | null = null;
+      const authHeader = req.headers.authorization;
+      const token = authHeader && authHeader.split(' ')[1];
+      if (token) {
+        try {
+          const user = await authService.verifyToken(token);
+          if (user) userId = user.id;
+        } catch {
+          // ignore — event stays anonymous
+        }
+      }
+
+      const result = await recordFunnelEvent({
+        event,
+        dedupeKey,
+        userId,
+        props: (props ?? {}) as any,
+      });
+      if (result.errors?.length) {
+        return res.status(400).json({ message: "Invalid event", errors: result.errors });
+      }
+      res.json({ recorded: result.recorded, deduped: result.deduped ?? false });
+    } catch (error: any) {
+      console.error('Funnel analytics error:', error);
+      res.status(500).json({ message: "Failed to record event" });
+    }
+  });
+
   // Create checkout session
   app.post("/api/stripe/create-checkout-session", authenticateJWT, async (req: any, res) => {
     try {
-      const { priceId, returnTo } = req.body;
+      const { priceId, returnTo, source, capability } = req.body;
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
@@ -1238,6 +1290,30 @@ ${allPages.map(page => `  <url>
           ...(trialEligible ? { trial_period_days: 14 } : {}),
           metadata: { app: appSlug, userId: String(userId) }
         }
+      });
+
+      // Server-authoritative funnel event, idempotent on the session id.
+      let billingPeriod = 'unknown';
+      try {
+        const priceRow = await db.execute(sql`
+          SELECT recurring->>'interval' AS interval FROM stripe.prices WHERE id = ${priceId} LIMIT 1
+        `);
+        billingPeriod = billingPeriodFromInterval((priceRow.rows?.[0] as any)?.interval);
+      } catch {
+        // leave 'unknown' — analytics must not block checkout
+      }
+      await recordFunnelEvent({
+        event: 'checkout_session_created',
+        dedupeKey: buildFunnelDedupeKey('checkout_session_created', [session.id]),
+        userId,
+        props: {
+          priceId,
+          billingPeriod,
+          trialEligible,
+          source: typeof source === 'string' ? source.slice(0, 100) : undefined,
+          capability: typeof capability === 'string' ? capability.slice(0, 100) : undefined,
+          checkoutSessionId: session.id,
+        },
       });
 
       res.json({ url: session.url });

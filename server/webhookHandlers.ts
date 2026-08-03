@@ -4,6 +4,8 @@
 import { getStripeSync, getUncachableStripeClient } from './stripeClient';
 import { storage } from './storage';
 import { emailService } from './services/email';
+import { recordFunnelEvent } from './services/funnelAnalytics';
+import { buildFunnelDedupeKey, billingPeriodFromInterval, conversionEventForSubscriptionChange } from '@shared/funnelEvents';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'hello@bigappledigital.nyc';
 const APP_SLUG = process.env.APP_SLUG || 'aitracker';
@@ -365,6 +367,56 @@ export class WebhookHandlers {
           );
         }
         
+        // --- Server-authoritative funnel events (idempotent on subscription id) ---
+        // These are the source of truth for trial/paid conversion measurement;
+        // client events are directional only.
+        const interval = subscription.items?.data?.[0]?.price?.recurring?.interval;
+        const funnelBase = {
+          userId: user.id,
+          props: {
+            subscriptionId: subscription.id,
+            priceId: resolved.priceId,
+            billingPeriod: billingPeriodFromInterval(interval),
+            plan: planToWrite,
+            previousPlan,
+            source: 'stripe_webhook',
+            stripeEventId: event.id,
+            occurredAt: new Date((event.created || Math.floor(Date.now() / 1000)) * 1000).toISOString(),
+          },
+        };
+        const prev = event.data?.previous_attributes || {};
+
+        // trial_started / trial_converted / subscription_activated — classified
+        // by the shared transition table (covers created→trialing/active and
+        // updated→active from ANY non-active status, e.g. incomplete or
+        // past_due recoveries). Idempotent on the subscription id.
+        const conversionEvent = conversionEventForSubscriptionChange(
+          event.type,
+          status,
+          prev.status ?? null,
+        );
+        if (conversionEvent) {
+          await recordFunnelEvent({
+            event: conversionEvent,
+            dedupeKey: buildFunnelDedupeKey(conversionEvent, [subscription.id]),
+            ...funnelBase,
+          });
+        }
+        if (
+          event.type === 'customer.subscription.updated' &&
+          subscription.cancel_at_period_end === true &&
+          prev.cancel_at_period_end === false
+        ) {
+          await recordFunnelEvent({
+            event: 'cancellation_scheduled',
+            dedupeKey: buildFunnelDedupeKey('cancellation_scheduled', [
+              subscription.id,
+              subscription.cancel_at ?? subscription.current_period_end ?? '',
+            ]),
+            ...funnelBase,
+          });
+        }
+
         // Send admin notification for new trial starts
         if (event.type === 'customer.subscription.created' && status === 'trialing') {
           await WebhookHandlers.sendAdminNotification(
@@ -387,6 +439,23 @@ export class WebhookHandlers {
       if (user) {
         const previousPlan = user.subscriptionPlan || 'unknown';
         await storage.updateSubscriptionStatus(user.id, 'canceled', 'free');
+
+        // Authoritative cancellation event, idempotent on subscription id.
+        await recordFunnelEvent({
+          event: 'subscription_canceled',
+          dedupeKey: buildFunnelDedupeKey('subscription_canceled', [subscription.id]),
+          userId: user.id,
+          props: {
+            subscriptionId: subscription.id,
+            billingPeriod: billingPeriodFromInterval(
+              subscription.items?.data?.[0]?.price?.recurring?.interval,
+            ),
+            previousPlan,
+            source: 'stripe_webhook',
+            stripeEventId: event.id,
+            occurredAt: new Date((event.created || Math.floor(Date.now() / 1000)) * 1000).toISOString(),
+          },
+        });
         
         // Send admin notification for cancellation
         await WebhookHandlers.sendAdminNotification(

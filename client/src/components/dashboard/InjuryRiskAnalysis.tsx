@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Shield, AlertTriangle, CheckCircle, XCircle, Lock, Crown, Target, Plus } from "lucide-react";
 import { useFeatureAccess } from "@/hooks/useSubscription";
-import { Link } from "wouter";
+import { TrackedUpgradeLink } from "@/components/TrackedUpgradeLink";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -87,11 +87,11 @@ export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnal
             <p className="text-gray-500 mb-4 max-w-sm mx-auto">
               Get AI-powered injury risk assessments based on your training patterns and intensity.
             </p>
-            <Link href="/pricing">
+            <TrackedUpgradeLink href="/pricing" source="dashboard_injury_risk" capability="injury_risk">
               <Button className="bg-gradient-to-r from-strava-orange to-orange-500 hover:from-orange-600 hover:to-orange-600">
                 Upgrade to Premium
               </Button>
-            </Link>
+            </TrackedUpgradeLink>
           </div>
         </CardContent>
       </Card>
