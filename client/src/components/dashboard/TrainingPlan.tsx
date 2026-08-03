@@ -272,7 +272,7 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
     const upgradeUrl = buildUpgradeUrl({
       source: "training_plan",
       capability: "training_plans",
-      benefit: `Generate your ${selectedWeeks}-week ${goalLabels[goal] || goal} training plan, personalized to your running data.`,
+      benefitKey: "training_plan",
       returnTo: "/dashboard",
     });
     return (

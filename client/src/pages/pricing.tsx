@@ -120,6 +120,8 @@ export default function PricingPage() {
   // return destination) carried by Premium gates. Preserved through
   // checkout so trial activation returns to the requested feature.
   const upgradeIntent = parseUpgradeIntent(searchString);
+  const searchParams = new URLSearchParams(searchString.startsWith("?") ? searchString.slice(1) : searchString);
+  const checkoutCanceled = searchParams.get("canceled") === "true";
 
   // Funnel: pricing page viewed (once per session per source), an arriving
   // upgrade intent counts as an offer click on the originating surface, and
@@ -185,7 +187,8 @@ export default function PricingPage() {
       activityId: upgradeIntent?.activityId,
     }, { dedupeParts: [billingCycle, Date.now()] });
     if (!isAuthenticated) {
-      navigate('/auth');
+      const pricingDestination = `/pricing${searchString.startsWith("?") ? searchString : searchString ? `?${searchString}` : ""}`;
+      navigate(`/auth?redirect=${encodeURIComponent(pricingDestination)}`);
       return;
     }
     if (!premiumPriceId) {
@@ -201,6 +204,10 @@ export default function PricingPage() {
       returnTo: upgradeIntent?.returnTo,
       source: upgradeIntent?.source || "pricing",
       capability: upgradeIntent?.capability ? String(upgradeIntent.capability) : undefined,
+      activityId: upgradeIntent?.activityId,
+      benefitKey: upgradeIntent?.benefitKey,
+      pendingResourceId: upgradeIntent?.pendingResourceId,
+      experimentVariant: upgradeIntent?.experimentVariant,
     });
   };
 
@@ -242,6 +249,14 @@ export default function PricingPage() {
                   </Button>
                 </Link>
               </div>
+            </div>
+          )}
+          {checkoutCanceled && (
+            <div className="max-w-2xl mx-auto mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4" data-testid="checkout-canceled-message">
+              <p className="font-semibold text-gray-900">Checkout canceled — nothing was charged.</p>
+              <p className="text-sm text-gray-700 mt-1">
+                Your selection is still here. You can continue when you're ready or go back to the feature you were exploring.
+              </p>
             </div>
           )}
           <h1 className="text-5xl font-bold text-charcoal mb-4 text-center">
@@ -464,6 +479,10 @@ export default function PricingPage() {
               returnTo: upgradeIntent?.returnTo,
               source: upgradeIntent?.source || "pricing",
               capability: upgradeIntent?.capability ? String(upgradeIntent.capability) : undefined,
+              activityId: upgradeIntent?.activityId,
+              benefitKey: upgradeIntent?.benefitKey,
+              pendingResourceId: upgradeIntent?.pendingResourceId,
+              experimentVariant: upgradeIntent?.experimentVariant,
             });
           }
         }}

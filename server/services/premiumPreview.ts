@@ -10,6 +10,8 @@ import { db } from "../db";
 import { users, type Activity } from "@shared/schema";
 import { and, eq, isNull } from "drizzle-orm";
 import { storage, RUNNING_ACTIVITY_TYPES } from "../storage";
+import { hasPremiumAccess } from "@shared/entitlements";
+import { normalizeCadenceToSpm } from "@shared/cadenceNormalization";
 
 // Safe payload limits — the preview is stored on the users row and returned
 // verbatim to the client, so it must stay small and free of bulky fields
@@ -93,14 +95,16 @@ export function buildPremiumPreviewPayload(activity: Activity, now: Date = new D
     );
   }
 
-  // Cadence finding when cadence exists.
-  if (activity.averageCadence) {
-    const spm = Math.round(activity.averageCadence);
-    const cadenceNote = spm >= 170 && spm <= 185
-      ? "right in the efficient 170–185 spm window"
+  // Cadence is stored as steps/minute in current ingestion, but historical
+  // rows may still contain Strava's single-leg value. Normalize defensively.
+  const normalizedCadence = normalizeCadenceToSpm(activity.averageCadence);
+  if (normalizedCadence) {
+    const spm = Math.round(normalizedCadence);
+    const cadenceNote = spm >= 170 && spm <= 180
+      ? "inside the typical 170–180 spm reference range"
       : spm < 170
-        ? `below the efficient 170–185 spm window — a common source of overstriding`
-        : `above the typical 170–185 spm window`;
+        ? "below the typical 170–180 spm reference range"
+        : "above the typical 170–180 spm reference range";
     candidates.push(`You averaged ${spm} steps per minute, ${cadenceNote}.`);
   }
 
@@ -147,7 +151,7 @@ export function buildPremiumPreviewPayload(activity: Activity, now: Date = new D
       movingTimeSec: movingTime,
       averageSpeed: activity.averageSpeed ?? null,
       averageHeartrate: activity.averageHeartrate ?? null,
-      averageCadence: activity.averageCadence ?? null,
+      averageCadence: normalizedCadence || null,
       totalElevationGain: activity.totalElevationGain ?? null,
     },
   };
@@ -160,7 +164,12 @@ export function buildPremiumPreviewPayload(activity: Activity, now: Date = new D
 }
 
 export interface CreatePreviewDeps {
-  loadUser: () => Promise<{ premiumPreview: unknown } | undefined>;
+  loadUser: () => Promise<{
+    premiumPreview: unknown;
+    stravaConnected?: boolean | null;
+    subscriptionPlan?: string | null;
+    subscriptionStatus?: string | null;
+  } | undefined>;
   loadActivities: () => Promise<Activity[]>;
   /** Atomic compare-and-set: persist only if no preview exists. Returns true when written. */
   persistIfAbsent: (payload: PremiumPreviewPayload) => Promise<boolean>;
@@ -169,7 +178,7 @@ export interface CreatePreviewDeps {
 
 export type CreatePreviewResult =
   | { created: true; payload: PremiumPreviewPayload }
-  | { created: false; reason: "already_exists" | "no_user" | "no_eligible_run" };
+  | { created: false; reason: "already_exists" | "no_user" | "not_eligible" | "no_eligible_run" };
 
 /**
  * Core creation logic, dependency-injected for testability. Guarantees at
@@ -179,6 +188,9 @@ export async function createPremiumPreviewCore(deps: CreatePreviewDeps): Promise
   const user = await deps.loadUser();
   if (!user) return { created: false, reason: "no_user" };
   if (user.premiumPreview) return { created: false, reason: "already_exists" };
+  if (user.stravaConnected === false || hasPremiumAccess(user)) {
+    return { created: false, reason: "not_eligible" };
+  }
 
   const activities = await deps.loadActivities();
   const run = selectLatestEligibleRun(activities);
@@ -195,11 +207,16 @@ export async function createPremiumPreviewCore(deps: CreatePreviewDeps): Promise
  * after their first successful Strava sync. Safe to call repeatedly — the
  * DB-level compare-and-set (`premium_preview IS NULL`) makes it exactly-once.
  */
-export async function createPremiumPreviewAfterFirstSync(userId: number): Promise<CreatePreviewResult> {
+export async function createPremiumPreviewForUser(userId: number): Promise<CreatePreviewResult> {
   return createPremiumPreviewCore({
     loadUser: async () => {
       const u = await storage.getUser(userId);
-      return u ? { premiumPreview: (u as any).premiumPreview } : undefined;
+      return u ? {
+        premiumPreview: (u as any).premiumPreview,
+        stravaConnected: u.stravaConnected,
+        subscriptionPlan: u.subscriptionPlan,
+        subscriptionStatus: u.subscriptionStatus,
+      } : undefined;
     },
     loadActivities: () => storage.getActivitiesByUserId(userId, 100),
     persistIfAbsent: async (payload) => {
@@ -212,3 +229,6 @@ export async function createPremiumPreviewAfterFirstSync(userId: number): Promis
     },
   });
 }
+
+/** Backward-compatible alias for existing sync callers. */
+export const createPremiumPreviewAfterFirstSync = createPremiumPreviewForUser;

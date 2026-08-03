@@ -68,14 +68,18 @@ export interface CheckoutParams {
   source?: string;
   /** Funnel attribution: the capability the user was trying to unlock. */
   capability?: string;
+  activityId?: number;
+  benefitKey?: string;
+  pendingResourceId?: string;
+  experimentVariant?: string;
 }
 
 export function useCheckout(onRequiresEmail?: () => void) {
   return useMutation({
     mutationFn: async (params: string | CheckoutParams) => {
-      const { priceId, returnTo, source, capability } =
+      const { priceId, returnTo, source, capability, activityId, benefitKey, pendingResourceId, experimentVariant } =
         typeof params === "string"
-          ? { priceId: params, returnTo: undefined, source: undefined, capability: undefined }
+          ? { priceId: params, returnTo: undefined, source: undefined, capability: undefined, activityId: undefined, benefitKey: undefined, pendingResourceId: undefined, experimentVariant: undefined }
           : params;
       const token = localStorage.getItem("auth_token");
       const res = await fetch("/api/stripe/create-checkout-session", {
@@ -90,6 +94,10 @@ export function useCheckout(onRequiresEmail?: () => void) {
           ...(returnTo ? { returnTo } : {}),
           ...(source ? { source } : {}),
           ...(capability ? { capability } : {}),
+          ...(activityId ? { activityId } : {}),
+          ...(benefitKey ? { benefitKey } : {}),
+          ...(pendingResourceId ? { pendingResourceId } : {}),
+          ...(experimentVariant ? { experimentVariant } : {}),
         }),
       });
       const data = await res.json();

@@ -458,7 +458,7 @@ function AIAgentCoachTab({ user, canAccessAICoachChat }: { user: User; canAccess
           <TrackedUpgradeLink href={buildUpgradeUrl({
             source: "coach_insights",
             capability: "ai_coach",
-            benefit: "Get proactive post-run recaps and personalized coaching after every run.",
+            benefitKey: "ai_coach",
             returnTo: "/coach-insights",
           })}>
             <Button className="bg-strava-orange text-white hover:bg-orange-600" data-testid="btn-upgrade-premium">

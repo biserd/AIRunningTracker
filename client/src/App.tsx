@@ -252,7 +252,7 @@ function Router() {
           <PremiumProtectedRoute component={YearRecapPage} />
         </Route>
         <Route path="/training-plans">
-          <PremiumProtectedRoute component={TrainingPlansPage} />
+          <ProtectedRoute component={TrainingPlansPage} />
         </Route>
         <Route path="/training-plans/:planId">
           <PremiumProtectedRoute component={TrainingPlanDetailPage} />

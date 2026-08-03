@@ -141,17 +141,20 @@ class StravaWebhookService {
       const { isPaidPlan } = await import("../rateLimits");
       const userIsPaid = isPaidPlan(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null);
 
+      // Notification preferences should suppress only the email, not activity
+      // ingestion or Premium Preview creation.
+      let emailSkipReason: "notifications_disabled" | "weekly_throttle" | null = null;
       if (!user.notifyPostRun) {
-        console.log(`[Strava Webhook] User ${user.id} has post-run notifications disabled`);
-        return "skipped:notifications_disabled";
+        console.log(`[Strava Webhook] User ${user.id} has post-run notifications disabled; storing activity without email`);
+        emailSkipReason = "notifications_disabled";
       }
 
       const frequency = user.postRunEmailFrequency ?? "every_run";
       if (frequency === "weekly" && user.lastPostRunEmailAt) {
         const daysSinceLastEmail = (Date.now() - new Date(user.lastPostRunEmailAt).getTime()) / (1000 * 60 * 60 * 24);
         if (daysSinceLastEmail < 7) {
-          console.log(`[Strava Webhook] User ${user.id} set to weekly emails, last sent ${daysSinceLastEmail.toFixed(1)} days ago — skipping`);
-          return "skipped:weekly_throttle";
+          console.log(`[Strava Webhook] User ${user.id} set to weekly emails, last sent ${daysSinceLastEmail.toFixed(1)} days ago — storing without email`);
+          emailSkipReason = "weekly_throttle";
         }
       }
 
@@ -200,7 +203,8 @@ class StravaWebhookService {
       // for history but never trigger an email — so there's no point spending a
       // Strava streams call or AI analysis on a run that won't be emailed.
       const minDistanceMeters = (user.unitPreference ?? "miles") === "km" ? 1000 : 1609.34;
-      const willEmail = (activity.distance ?? 0) >= minDistanceMeters;
+      const meetsDistanceThreshold = (activity.distance ?? 0) >= minDistanceMeters;
+      const willEmail = meetsDistanceThreshold && emailSkipReason === null;
 
       // Best-effort: pull the detailed streams (GPS/HR/cadence) so the AI email
       // can talk about pacing, fade, and aerobic decoupling instead of just
@@ -270,11 +274,30 @@ class StravaWebhookService {
         console.log(`[Strava Webhook] Activity ${stravaId} already in DB for user ${user.id}, skipping insert`);
       }
 
+      // The first eligible run may arrive only through a webhook. Preview
+      // creation is best-effort and exactly-once, so webhook retries and a
+      // concurrent manual sync cannot create duplicates.
+      if (!userIsPaid && activityDbId) {
+        try {
+          const { createPremiumPreviewForUser } = await import("./premiumPreview");
+          const previewResult = await createPremiumPreviewForUser(user.id);
+          console.log(
+            `[PremiumPreview] Webhook preview for user ${user.id}: ` +
+            (previewResult.created ? `created from activity ${previewResult.payload.activityId}` : `skipped (${previewResult.reason})`),
+          );
+        } catch (previewErr) {
+          console.error(`[PremiumPreview] Webhook preview failed for user ${user.id}:`, previewErr);
+        }
+      }
+
       // Threshold gate computed above (willEmail). We already stored the activity
       // so history stays accurate even when we skip the email.
-      if (!willEmail) {
+      if (!meetsDistanceThreshold) {
         console.log(`[Strava Webhook] Activity ${event.object_id} too short (${activity.distance}m < ${minDistanceMeters}m) — stored but skipping email`);
         return `stored_no_email:below_min_distance(${Math.round(activity.distance ?? 0)}m)`;
+      }
+      if (emailSkipReason) {
+        return `stored_no_email:${emailSkipReason}`;
       }
 
       console.log(`[Strava Webhook] Processing run activity ${event.object_id} for user ${user.id}`);

@@ -27,6 +27,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useFeatureAccess } from "@/hooks/useSubscription";
 import { Link } from "wouter";
+import { buildUpgradeUrl } from "@shared/upgradeIntent";
 
 interface FitnessMetric {
   date: string;
@@ -86,7 +87,12 @@ export function FitnessChart({ userId }: FitnessChartProps) {
             <p className="text-gray-500 mb-4 max-w-sm mx-auto">
               Track your CTL (fitness), ATL (fatigue), and TSB (form) to optimize training and recovery timing.
             </p>
-            <Link href="/pricing">
+            <Link href={buildUpgradeUrl({
+              source: "dashboard_fitness_form",
+              capability: "advanced_insights",
+              benefitKey: "fitness_form",
+              returnTo: "/dashboard",
+            })}>
               <Button className="bg-gradient-to-r from-strava-orange to-orange-500 hover:from-orange-600 hover:to-orange-600">
                 Upgrade to Premium
               </Button>

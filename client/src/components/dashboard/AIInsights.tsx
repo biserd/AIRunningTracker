@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Brain, Crown, Lock, Loader2, Sparkles } from "lucide-react";
 import { TrackedUpgradeLink } from "@/components/TrackedUpgradeLink";
 import { useFeatureAccess } from "@/hooks/useSubscription";
+import { buildUpgradeUrl } from "@shared/upgradeIntent";
 
 interface InsightData {
   title: string;
@@ -130,7 +131,12 @@ export default function AIInsights({ insights, userId, insightsStatus = 'ready' 
                 <div className="text-center">
                   <Lock className="h-6 w-6 text-gray-500 mx-auto mb-2" />
                   <p className="text-sm font-medium text-gray-700 mb-2">Advanced Insights Locked</p>
-                  <TrackedUpgradeLink href="/pricing" source="dashboard_insights" capability="advanced_insights">
+                  <TrackedUpgradeLink href={buildUpgradeUrl({
+                    source: "dashboard_insights",
+                    capability: "advanced_insights",
+                    benefitKey: "advanced_insights",
+                    returnTo: "/dashboard",
+                  })}>
                     <Button size="sm" className="bg-strava-orange hover:bg-strava-orange/90" data-testid="button-unlock-insights">
                       <Crown className="h-3 w-3 mr-1" />
                       Upgrade to Premium

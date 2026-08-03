@@ -481,15 +481,16 @@ export class StravaService {
       console.log(`Sport types found: ${Array.from(sportTypes).join(', ')}`);
       console.log(`Successfully synced ${syncedCount} activities for user ${userId}`);
 
-      // Trial-conversion Phase 2: after the user's FIRST successful sync,
-      // create their one-time Premium Preview from the latest eligible run.
-      // Best-effort and exactly-once (DB compare-and-set inside the service).
-      if (!afterTimestamp && syncedCount > 0) {
+      // Create or recover the user's one-time Premium Preview after any
+      // successful sync. Re-running this is safe because persistence is an
+      // atomic compare-and-set; this also backfills users who predate the
+      // preview feature or whose first sync ended before preview creation.
+      if (syncedCount > 0) {
         try {
           const { createPremiumPreviewAfterFirstSync } = await import("./premiumPreview");
           const previewResult = await createPremiumPreviewAfterFirstSync(userId);
           console.log(
-            `[PremiumPreview] First-sync preview for user ${userId}: ` +
+            `[PremiumPreview] Sync preview for user ${userId}: ` +
             (previewResult.created ? `created from activity ${previewResult.payload.activityId}` : `skipped (${previewResult.reason})`)
           );
         } catch (previewErr) {

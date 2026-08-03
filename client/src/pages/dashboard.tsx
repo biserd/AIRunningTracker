@@ -30,6 +30,7 @@ import { Gift, ChevronRight, Crown, Chrome, X } from "lucide-react";
 import EmailCaptureModal from "@/components/EmailCaptureModal";
 import { Link } from "wouter";
 import { useFeatureAccess, useSubscription } from "@/hooks/useSubscription";
+import { buildUpgradeUrl } from "@shared/upgradeIntent";
 
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
@@ -145,7 +146,12 @@ export default function Dashboard() {
           description: "Free accounts get one Strava sync. Start a free Premium trial to keep importing new activities.",
           variant: "destructive",
           action: (
-            <Link href="/pricing">
+            <Link href={buildUpgradeUrl({
+              source: "dashboard_sync_limit",
+              capability: "unlimited_sync",
+              benefitKey: "unlimited_sync",
+              returnTo: "/dashboard",
+            })}>
               <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white">
                 Start trial
               </Button>
@@ -370,7 +376,12 @@ export default function Dashboard() {
           description: "Free accounts get one Strava sync. Start a free Premium trial to keep importing new activities.",
           variant: "destructive",
           action: (
-            <Link href="/pricing">
+            <Link href={buildUpgradeUrl({
+              source: "dashboard_sync_limit",
+              capability: "unlimited_sync",
+              benefitKey: "unlimited_sync",
+              returnTo: "/dashboard",
+            })}>
               <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white">
                 Start trial
               </Button>

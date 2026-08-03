@@ -13,6 +13,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { notifyExtensionAuth } from "@/lib/extensionBridge";
 import { useToast } from "@/hooks/use-toast";
 import { registerSchema, type RegisterData } from "@shared/schema";
+import { sanitizeReturnTo } from "@shared/upgradeIntent";
 
 type AuthMode = "signin" | "signup";
 
@@ -24,6 +25,7 @@ export default function AuthPage() {
   const [magicLinkSentTo, setMagicLinkSentTo] = useState<string | null>(null);
   const [magicLinkSubmitting, setMagicLinkSubmitting] = useState(false);
   const { toast } = useToast();
+  const requestedRedirect = sanitizeReturnTo(new URLSearchParams(window.location.search).get("redirect"));
 
   // Handle Strava OAuth error redirects — e.g., user denied Strava access
   useEffect(() => {
@@ -51,7 +53,7 @@ export default function AuthPage() {
       localStorage.setItem("auth_token", response.token);
       notifyExtensionAuth(response.token, response.user || {});
       toast({ title: "Welcome to RunAnalytics!", description: "Account created successfully" });
-      setLocation("/dashboard?welcome=1");
+      setLocation(requestedRedirect || "/dashboard?welcome=1");
     },
     onError: (error: any) => {
       toast({
@@ -65,7 +67,9 @@ export default function AuthPage() {
   const onRegisterSubmit = (data: RegisterData) => registerMutation.mutate(data);
 
   const handleStravaLogin = () => {
-    window.location.href = "/api/auth/strava-login";
+    window.location.href = requestedRedirect
+      ? `/api/auth/strava-login?redirect=${encodeURIComponent(requestedRedirect)}`
+      : "/api/auth/strava-login";
   };
 
   const handleMagicLinkSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -80,7 +84,7 @@ export default function AuthPage() {
       const res = await fetch("/api/auth/magic-link/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, ...(requestedRedirect ? { redirect: requestedRedirect } : {}) }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));

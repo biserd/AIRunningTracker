@@ -44,7 +44,7 @@ import {
   getCapabilityMatrix,
 } from "@shared/entitlements";
 import { normalizeCadenceToSpm } from "@shared/cadenceNormalization";
-import { sanitizeReturnTo } from "@shared/upgradeIntent";
+import { buildUpgradeUrl, isBenefitKey, sanitizeReturnTo } from "@shared/upgradeIntent";
 import { recordFunnelEvent } from "./services/funnelAnalytics";
 import { isClientFunnelEvent, buildFunnelDedupeKey, billingPeriodFromInterval } from "@shared/funnelEvents";
 
@@ -1215,7 +1215,7 @@ ${allPages.map(page => `  <url>
   // Create checkout session
   app.post("/api/stripe/create-checkout-session", authenticateJWT, async (req: any, res) => {
     try {
-      const { priceId, returnTo, source, capability } = req.body;
+      const { priceId, returnTo, source, capability, activityId, benefitKey, pendingResourceId, experimentVariant } = req.body;
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
@@ -1275,6 +1275,32 @@ ${allPages.map(page => `  <url>
       // the user straight back to the feature they were trying to use.
       const safeReturnTo = sanitizeReturnTo(returnTo);
 
+      // Stripe must return to the environment where checkout started. This is
+      // especially important for Replit/dev testing, and avoids silently
+      // dropping a runner into production after they cancel.
+      const forwardedHost = String(req.get('x-forwarded-host') || req.get('host') || '').split(',')[0].trim();
+      const forwardedProto = String(req.get('x-forwarded-proto') || req.protocol || 'https').split(',')[0].trim();
+      const requestBaseUrl = forwardedHost && /^(https?)$/.test(forwardedProto)
+        ? `${forwardedProto}://${forwardedHost}`
+        : 'https://aitracker.run';
+      const checkoutBaseUrl = requestBaseUrl;
+
+      const safeCapability = typeof capability === 'string' ? capability.slice(0, 80) : 'premium';
+      const safeSource = typeof source === 'string' ? source.slice(0, 80) : 'pricing';
+      const safeActivityId = Number.isInteger(activityId) && activityId > 0 ? activityId : undefined;
+      const safeBenefitKey = isBenefitKey(benefitKey) ? benefitKey : undefined;
+      const safePendingResourceId = typeof pendingResourceId === 'string' ? pendingResourceId.slice(0, 80) : undefined;
+      const safeExperimentVariant = typeof experimentVariant === 'string' ? experimentVariant.slice(0, 80) : undefined;
+      const cancelPath = buildUpgradeUrl({
+        source: safeSource,
+        capability: safeCapability,
+        activityId: safeActivityId,
+        benefitKey: safeBenefitKey,
+        returnTo: safeReturnTo || '/dashboard',
+        pendingResourceId: safePendingResourceId,
+        experimentVariant: safeExperimentVariant,
+      });
+
       // Create checkout session
       const appSlug = process.env.APP_SLUG || 'aitracker';
       const session = await stripe.checkout.sessions.create({
@@ -1283,9 +1309,17 @@ ${allPages.map(page => `  <url>
         line_items: [{ price: priceId, quantity: 1 }],
         mode: 'subscription',
         allow_promotion_codes: true,
-        success_url: `https://aitracker.run/billing?success=true${safeReturnTo ? `&returnTo=${encodeURIComponent(safeReturnTo)}` : ''}`,
-        cancel_url: `https://aitracker.run/pricing?canceled=true`,
-        metadata: { userId: String(userId), app: appSlug },
+        success_url: `${checkoutBaseUrl}/billing?success=true${safeReturnTo ? `&returnTo=${encodeURIComponent(safeReturnTo)}` : ''}`,
+        cancel_url: `${checkoutBaseUrl}${cancelPath}&canceled=true`,
+        metadata: {
+          userId: String(userId),
+          app: appSlug,
+          source: safeSource,
+          capability: safeCapability,
+          ...(safeActivityId ? { activityId: String(safeActivityId) } : {}),
+          ...(safePendingResourceId ? { pendingResourceId: safePendingResourceId } : {}),
+          ...(safeExperimentVariant ? { experimentVariant: safeExperimentVariant } : {}),
+        },
         subscription_data: {
           ...(trialEligible ? { trial_period_days: 14 } : {}),
           metadata: { app: appSlug, userId: String(userId) }
@@ -1528,22 +1562,58 @@ ${allPages.map(page => `  <url>
     }
   });
 
-  // One-time Premium Preview created after the user's first successful
-  // Strava sync. Read-only: the preview itself is intentionally accessible
-  // to free users; every follow-up Premium action stays capability-gated.
+  // Return the one-time Premium Preview. If an eligible free runner predates
+  // the feature, recover it on demand from their latest stored run. The same
+  // exactly-once service is shared by sync and webhook ingestion.
   app.get("/api/premium-preview", authenticateJWT, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.id);
+      let user = await storage.getUser(req.user.id);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
+      let creationReason: string | undefined;
+      if (!(user as any).premiumPreview && user.stravaConnected) {
+        const { createPremiumPreviewForUser } = await import("./services/premiumPreview");
+        const result = await createPremiumPreviewForUser(user.id);
+        creationReason = result.created ? "created" : result.reason;
+        if (result.created || result.reason === "already_exists") {
+          user = (await storage.getUser(req.user.id)) || user;
+        }
+      }
+      const preview = (user as any).premiumPreview ?? null;
+      const status = preview
+        ? "ready"
+        : user.syncStatus === "running"
+          ? "preparing"
+          : creationReason === "no_eligible_run"
+            ? "waiting_for_run"
+            : "not_eligible";
       res.json({
-        preview: (user as any).premiumPreview ?? null,
+        preview,
         createdAt: (user as any).premiumPreviewCreatedAt ?? null,
+        status,
       });
     } catch (error: any) {
       console.error('Get premium preview error:', error);
-      res.status(500).json({ message: "Failed to get premium preview" });
+      res.status(500).json({ message: "Failed to get premium preview", status: "failed" });
+    }
+  });
+
+  app.post("/api/premium-preview/retry", authenticateJWT, async (req: any, res) => {
+    try {
+      const { createPremiumPreviewForUser } = await import("./services/premiumPreview");
+      const result = await createPremiumPreviewForUser(req.user.id);
+      const user = await storage.getUser(req.user.id);
+      const preview = (user as any)?.premiumPreview ?? null;
+      const outcome = result.created ? "created" : result.reason;
+      res.json({
+        preview,
+        createdAt: (user as any)?.premiumPreviewCreatedAt ?? null,
+        status: preview ? "ready" : outcome === "no_eligible_run" ? "waiting_for_run" : "not_eligible",
+      });
+    } catch (error: any) {
+      console.error('Retry premium preview error:', error);
+      res.status(500).json({ message: "Failed to prepare premium preview", status: "failed" });
     }
   });
 
@@ -1775,7 +1845,11 @@ ${allPages.map(page => `  <url>
   // in 15 minutes and are signed JWTs (no DB writes needed).
   app.post("/api/auth/magic-link/request", async (req, res) => {
     try {
-      const { email } = z.object({ email: z.string().email() }).parse(req.body);
+      const { email, redirect } = z.object({
+        email: z.string().email(),
+        redirect: z.string().max(300).optional(),
+      }).parse(req.body);
+      const safeRedirect = sanitizeReturnTo(redirect);
       const token = await authService.generateMagicLinkToken(email);
       if (token) {
         // Use the actual request origin so the link works in dev / preview
@@ -1785,7 +1859,7 @@ ${allPages.map(page => `  <url>
         const proto = req.get('x-forwarded-proto') || req.protocol;
         const baseUrl = host ? `${proto}://${host}` : 'https://aitracker.run';
         console.log(`[MagicLink] Sending link to ${email} via ${baseUrl}`);
-        await emailService.sendMagicLinkEmail(email, token, baseUrl);
+        await emailService.sendMagicLinkEmail(email, token, baseUrl, safeRedirect || undefined);
       } else {
         console.log(`[MagicLink] No account for ${email} (silently 200ing)`);
       }
@@ -1857,6 +1931,10 @@ ${allPages.map(page => `  <url>
     const prefix = isMobile ? 'strava_login_m_' : 'strava_login_';
     const state = `${prefix}${randomBytes(16).toString('hex')}`;
     res.cookie('strava_oauth_state', state, { maxAge: 300000, httpOnly: true, sameSite: 'lax', path: '/' });
+    const safeRedirect = sanitizeReturnTo(req.query.redirect);
+    if (safeRedirect) {
+      res.cookie('strava_oauth_redirect', encodeURIComponent(safeRedirect), { maxAge: 300000, httpOnly: true, sameSite: 'lax', path: '/' });
+    }
     const stravaUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&approval_prompt=auto&scope=read,activity:read_all&state=${encodeURIComponent(state)}`;
     res.redirect(stravaUrl);
   });
@@ -1872,11 +1950,17 @@ ${allPages.map(page => `  <url>
         .map(c => c.trim())
         .find(c => c.startsWith('strava_oauth_state='))
         ?.split('=').slice(1).join('=');
+      const redirectCookie = rawCookies.split(';')
+        .map(c => c.trim())
+        .find(c => c.startsWith('strava_oauth_redirect='))
+        ?.split('=').slice(1).join('=');
+      const requestedRedirect = sanitizeReturnTo(redirectCookie ? decodeURIComponent(redirectCookie) : undefined);
       if (!expectedState || !state || state !== expectedState) {
         return res.redirect("/auth?error=strava_failed");
       }
       // Clear the state cookie
       res.cookie('strava_oauth_state', '', { maxAge: 0, path: '/', sameSite: 'lax' });
+      res.cookie('strava_oauth_redirect', '', { maxAge: 0, path: '/', sameSite: 'lax' });
 
       // Mobile flag was encoded into the state prefix in step 1 — extract it
       // before the success/error branches so both can redirect appropriately.
@@ -1922,7 +2006,7 @@ ${allPages.map(page => `  <url>
         }
         // Pass JWT via short-lived cookie to avoid token in URL (security)
         res.cookie('_sta', token, { maxAge: 60000, path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
-        return res.redirect('/dashboard?strava_login=success');
+        return res.redirect(requestedRedirect || '/dashboard?strava_login=success');
       }
 
       // New user — create account silently, no email or password required.
@@ -1978,7 +2062,7 @@ ${allPages.map(page => `  <url>
       }
       // Pass JWT via short-lived cookie to avoid token in URL (security)
       res.cookie('_sta', token, { maxAge: 60000, path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
-      return res.redirect('/dashboard?welcome=1');
+      return res.redirect(requestedRedirect || '/dashboard?welcome=1');
     } catch (error: any) {
       console.error('[StravaLogin] Callback error:', error);
       const isMobile =
@@ -2757,49 +2841,19 @@ ${allPages.map(page => `  <url>
       // the visible totals match the visible activity list.
       const recentActivities = await storage.getActivitiesByUserId(userId, dashStatsLimit, threeMonthsAgo, { excludeLockedForFree: !dashIsPaidUser });
       
-      // FIX: Use the most recent activity date to determine "current month" instead of server time
-      // This prevents timezone issues where server is in UTC Nov 1 but user activities are Oct 31
-      let referenceDate = new Date();
-      if (recentActivities.length > 0) {
-        const mostRecentActivity = recentActivities[0];
-        const parsed = new Date(mostRecentActivity.startDate);
-        if (!isNaN(parsed.getTime())) {
-          referenceDate = parsed;
-        }
-      }
-      
-      // Recalculate thisMonth and lastMonth based on the reference date
-      const adjustedThisMonth = new Date(referenceDate);
-      adjustedThisMonth.setDate(1);
-      adjustedThisMonth.setHours(0, 0, 0, 0);
-      
-      const adjustedLastMonth = new Date(adjustedThisMonth);
-      adjustedLastMonth.setMonth(adjustedLastMonth.getMonth() - 1);
-      
-      console.log(`[Dashboard Debug] User ${userId}:`);
-      console.log(`  Server time: ${new Date().toISOString()}`);
-      console.log(`  Reference date (from most recent activity): ${referenceDate.toISOString()}`);
-      console.log(`  Adjusted This Month starts: ${adjustedThisMonth.toISOString()}`);
-      console.log(`  Adjusted Last Month: ${adjustedLastMonth.toISOString()} to ${adjustedThisMonth.toISOString()}`);
-      console.log(`  Total recent activities fetched: ${recentActivities.length}`);
-      if (recentActivities.length > 0) {
-        console.log(`  Sample activity dates: ${recentActivities.slice(0, 3).map(a => { const d = new Date(a.startDate); return isNaN(d.getTime()) ? `INVALID(${a.startDate})` : d.toISOString(); }).join(', ')}`);
-      }
-      
       // Filter to running activities only for stats (exclude walks, weight training, etc.)
       const runningActivities = recentActivities.filter(a => RUNNING_ACTIVITY_TYPES.includes(a.type));
       
-      // Filter activities by time periods (using adjusted month boundaries)
+      // Calendar labels must describe the actual current period. Anchoring
+      // "this month" to the latest activity made stale July data appear as
+      // current in August and undermined trust in every dashboard metric.
       const thisMonthActivities = runningActivities.filter(a => 
-        new Date(a.startDate) >= adjustedThisMonth
+        new Date(a.startDate) >= thisMonth
       );
       
       const lastMonthActivities = runningActivities.filter(a => 
-        new Date(a.startDate) >= adjustedLastMonth && new Date(a.startDate) < adjustedThisMonth
+        new Date(a.startDate) >= lastMonth && new Date(a.startDate) < thisMonth
       );
-      
-      console.log(`  This month activities: ${thisMonthActivities.length}`);
-      console.log(`  Last month activities: ${lastMonthActivities.length}`);
       
       const thisWeekActivities = runningActivities.filter(a => 
         new Date(a.startDate) >= thisWeek
@@ -2904,7 +2958,7 @@ ${allPages.map(page => `  <url>
           weeklyTrainingLoad: thisWeekActivitiesCount * 85,
           
           // Recovery based on weekly activity
-          recovery: thisWeekActivitiesCount >= 4 ? "Good" : thisWeekActivitiesCount >= 2 ? "Moderate" : "Low",
+          recovery: thisWeekActivitiesCount >= 4 ? "Good" : thisWeekActivitiesCount >= 2 ? "Moderate" : thisWeekActivitiesCount === 1 ? "Light" : "No recent runs",
           unitPreference: user.unitPreference || "km",
           
           // Calculate proper training load changes

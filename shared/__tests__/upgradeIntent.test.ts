@@ -9,6 +9,7 @@ import {
   buildUpgradeUrl,
   parseUpgradeIntent,
   capabilityLabel,
+  benefitCopy,
 } from "../upgradeIntent";
 
 let failures = 0;
@@ -24,6 +25,7 @@ function check(name: string, condition: boolean, detail?: unknown) {
 console.log("sanitizeReturnTo");
 check("accepts relative path", sanitizeReturnTo("/activity/123") === "/activity/123");
 check("accepts path with query", sanitizeReturnTo("/coach-insights?tab=agent") === "/coach-insights?tab=agent");
+check("accepts contextual pricing return used by auth", sanitizeReturnTo("/pricing?capability=ai_coach") === "/pricing?capability=ai_coach");
 check("rejects protocol-relative", sanitizeReturnTo("//evil.com") === null);
 check("rejects absolute URL", sanitizeReturnTo("https://evil.com") === null);
 check("rejects scheme smuggling", sanitizeReturnTo("/javascript:alert(1)") === null);
@@ -31,15 +33,17 @@ check("rejects backslashes", sanitizeReturnTo("/\\evil.com") === null);
 check("rejects empty string", sanitizeReturnTo("") === null);
 check("rejects non-string", sanitizeReturnTo(42 as any) === null);
 check("rejects overly long paths", sanitizeReturnTo("/" + "a".repeat(400)) === null);
-check("allows nested path segment with colon after ?", sanitizeReturnTo("/x?y=a:b") === "/x?y=a:b");
+check("rejects unapproved same-origin path", sanitizeReturnTo("/x?y=a:b") === null);
 
 console.log("buildUpgradeUrl → parseUpgradeIntent round-trip");
 const intent = {
   source: "activity_splits",
   capability: "activity_deep_dive",
   activityId: 987,
-  benefit: "Break down every split of this run.",
+  benefitKey: "activity_splits" as const,
   returnTo: "/activity/987",
+  pendingResourceId: "draft_123",
+  experimentVariant: "context_v1",
 };
 const url = buildUpgradeUrl(intent);
 check("URL targets /pricing", url.startsWith("/pricing?"));
@@ -48,8 +52,11 @@ check("round-trip parses", parsed !== null);
 check("source preserved", parsed?.source === intent.source);
 check("capability preserved", parsed?.capability === intent.capability, parsed);
 check("activityId preserved", parsed?.activityId === intent.activityId, parsed);
-check("benefit preserved", parsed?.benefit === intent.benefit, parsed);
+check("benefit key preserved", parsed?.benefitKey === intent.benefitKey, parsed);
+check("benefit copy resolved from approved map", parsed?.benefit === benefitCopy(intent.benefitKey), parsed);
 check("returnTo preserved", parsed?.returnTo === intent.returnTo, parsed);
+check("pending resource preserved", parsed?.pendingResourceId === intent.pendingResourceId, parsed);
+check("experiment preserved", parsed?.experimentVariant === intent.experimentVariant, parsed);
 
 console.log("parseUpgradeIntent edge cases");
 check("plain pricing visit yields null", parseUpgradeIntent("") === null);
@@ -65,8 +72,10 @@ check("leading ? tolerated", parseUpgradeIntent("?capability=ai_coach")?.capabil
 console.log("buildUpgradeUrl safety");
 const evil = buildUpgradeUrl({ source: "s", capability: "c", returnTo: "https://evil.com" });
 check("unsafe returnTo omitted from URL", !evil.includes("returnTo"), evil);
-const longBenefit = buildUpgradeUrl({ source: "s", capability: "c", benefit: "b".repeat(500), returnTo: "/x" });
-check("benefit truncated to 200 chars", (parseUpgradeIntent(longBenefit.split("?")[1])?.benefit?.length ?? 0) <= 200);
+const injectedBenefit = parseUpgradeIntent("capability=ai_coach&benefit=Anything+an+attacker+wants&returnTo=/dashboard");
+check("arbitrary benefit query copy is ignored", injectedBenefit?.benefit === undefined, injectedBenefit);
+const unknownBenefit = parseUpgradeIntent("capability=ai_coach&benefitKey=unknown&returnTo=/dashboard");
+check("unknown benefit key is ignored", unknownBenefit?.benefit === undefined, unknownBenefit);
 
 console.log("capabilityLabel");
 check("known capability labeled", capabilityLabel("training_plans") === "AI Training Plans");

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Activity, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { notifyExtensionAuth } from "@/lib/extensionBridge";
+import { sanitizeReturnTo } from "@shared/upgradeIntent";
 
 type Status = "verifying" | "ok" | "error" | "expired";
 
@@ -19,11 +20,7 @@ export default function MagicLinkPage() {
     // Optional deep-link destination (e.g. /activity/123) — only same-origin
     // paths are accepted to prevent open-redirect abuse. Anything that isn't
     // a single-leading-slash path falls back to /dashboard.
-    const rawRedirect = params.get("redirect") || "";
-    const safeRedirect =
-      rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
-        ? rawRedirect
-        : "/dashboard";
+    const safeRedirect = sanitizeReturnTo(params.get("redirect")) || "/dashboard";
 
     if (!token) {
       setStatus("error");

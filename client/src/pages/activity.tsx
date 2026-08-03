@@ -231,7 +231,7 @@ function PremiumPreviewCard({ preview, createdAt }: { preview: PremiumPreviewDat
     source: "premium_preview",
     capability: "activity_deep_dive",
     activityId: preview.sourceData.activityId,
-    benefit: "See splits, decoupling, and race predictions for every run — starting with this one.",
+    benefitKey: "premium_preview",
     returnTo: `/activity/${preview.sourceData.activityId}`,
   });
   const src = preview.sourceData;
@@ -261,10 +261,10 @@ function PremiumPreviewCard({ preview, createdAt }: { preview: PremiumPreviewDat
           </span>
         </div>
         <CardTitle className="text-lg text-gray-900 mt-2">
-          What Premium sees in this run
+          Personalized insights from this run
         </CardTitle>
         <p className="text-xs text-gray-500">
-          A one-time look at your run, {src.name}. The full analysis stays Premium.
+          This one-time preview shows two findings and one action from {src.name}. Premium continues this analysis after every run.
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -294,7 +294,7 @@ function PremiumPreviewCard({ preview, createdAt }: { preview: PremiumPreviewDat
             ))}
           </div>
         </div>
-        <div className="flex items-center justify-between pt-1">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
           <p className="text-xs text-gray-500 flex items-center gap-1">
             <Lock className="h-3 w-3" /> Splits, decoupling, and race predictions stay locked
           </p>
@@ -312,10 +312,11 @@ function PremiumPreviewCard({ preview, createdAt }: { preview: PremiumPreviewDat
                 }, { dedupeParts: [preview.sourceData.activityId, Date.now()] })
               }
             >
-              <Sparkles className="h-4 w-4 mr-1" /> Unlock full analysis
+              <Sparkles className="h-4 w-4 mr-1" /> Unlock ongoing personalized analysis
             </Button>
           </Link>
         </div>
+        <p className="text-xs text-gray-500">Start 14 days free · $0 today · Cancel anytime</p>
       </CardContent>
     </Card>
   );
@@ -747,7 +748,7 @@ export default function ActivityPage() {
                     source: "locked_activity",
                     capability: "unlimited_history",
                     activityId: Number(activityId),
-                    benefit: `Unlock the full breakdown of "${a.name}" — splits, route map, coach verdict, and next-run tips.`,
+                    benefitKey: "activity_history",
                     returnTo: `/activity/${activityId}`,
                   })}>
                     <Button className="bg-yellow-500 hover:bg-yellow-600 text-white w-full" data-testid="button-upgrade-locked-activity">
@@ -1011,7 +1012,7 @@ export default function ActivityPage() {
                   source: "activity_deep_dive",
                   capability: "activity_deep_dive",
                   activityId: Number(activityId),
-                  benefit: "See drift, pacing stability, and baseline comparison for this run.",
+                  benefitKey: "activity_metrics",
                   returnTo: `/activity/${activityId}`,
                 })}
               />
@@ -1148,7 +1149,7 @@ export default function ActivityPage() {
                   source: "activity_timeline",
                   capability: "activity_deep_dive",
                   activityId: Number(activityId),
-                  benefit: "Replay this run second-by-second with interactive pace, HR, and elevation charts.",
+                  benefitKey: "activity_timeline",
                   returnTo: `/activity/${activityId}`,
                 })}
               />
@@ -1171,7 +1172,7 @@ export default function ActivityPage() {
                   source: "activity_splits",
                   capability: "activity_deep_dive",
                   activityId: Number(activityId),
-                  benefit: "Break down every split of this run with pace consistency and effort distribution.",
+                  benefitKey: "activity_splits",
                   returnTo: `/activity/${activityId}`,
                 })}
               />
@@ -1194,7 +1195,7 @@ export default function ActivityPage() {
                   source: "activity_hr_cadence_power",
                   capability: "activity_deep_dive",
                   activityId: Number(activityId),
-                  benefit: "See heart rate, cadence, and power charts for this run.",
+                  benefitKey: "activity_charts",
                   returnTo: `/activity/${activityId}`,
                 })}
               />
@@ -1291,7 +1292,7 @@ export default function ActivityPage() {
                   source: "activity_comparison",
                   capability: "activity_comparison",
                   activityId: Number(activityId),
-                  benefit: "Compare this run against your PRs and similar past activities.",
+                  benefitKey: "activity_comparison",
                   returnTo: `/activity/${activityId}`,
                 })}
               />

@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { queryClient, apiRequest, getQueryFn } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureAccess } from "@/hooks/useSubscription";
@@ -18,9 +18,11 @@ import { Link, useLocation } from "wouter";
 import { 
   Plus, Calendar, Target, Clock, ChevronRight, ChevronLeft,
   Loader2, CheckCircle, AlertTriangle, TrendingUp, Footprints,
-  Sparkles, ArrowRight, RefreshCw, Archive
+  Sparkles, ArrowRight, RefreshCw, Archive, Lock, Crown
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { buildUpgradeUrl } from "@shared/upgradeIntent";
+import { TrackedUpgradeLink } from "@/components/TrackedUpgradeLink";
 
 const KM_TO_MILES = 0.621371;
 
@@ -61,7 +63,7 @@ type WizardStep = "goal" | "preferences" | "generating" | "preview";
 
 export default function TrainingPlans() {
   const { user, isLoading: authLoading } = useAuth();
-  const { canAccessAICoachChat } = useFeatureAccess();
+  const { canAccessAICoachChat, canAccessTrainingPlans } = useFeatureAccess();
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [showWizard, setShowWizard] = useState(false);
@@ -88,6 +90,30 @@ export default function TrainingPlans() {
   const [recommendedMode, setRecommendedMode] = useState<string>("single");
   
   const useMiles = (user as any)?.unitPreference === "miles";
+
+  useEffect(() => {
+    if (!window.location.search.includes("resume=1")) return;
+    try {
+      const saved = sessionStorage.getItem("pending_training_plan");
+      if (!saved) return;
+      const draft = JSON.parse(saved);
+      setGoalType(draft.goalType || "half_marathon");
+      setGoalTimeTarget(draft.goalTimeTarget || "");
+      setRaceDate(draft.raceDate || "");
+      setRaceName(draft.raceName || "");
+      setExperienceLevel(draft.experienceLevel || "intermediate");
+      setPreferredDays(Array.isArray(draft.preferredDays) ? draft.preferredDays : preferredDays);
+      setIncludeSpeedwork(draft.includeSpeedwork !== false);
+      setIncludeLongRuns(draft.includeLongRuns !== false);
+      setConstraints(draft.constraints || "");
+      setShowWizard(true);
+      setWizardStep(canAccessTrainingPlans ? "preferences" : "preview");
+    } catch {
+      sessionStorage.removeItem("pending_training_plan");
+    }
+    // Restore only once on arrival from checkout.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canAccessTrainingPlans]);
   
   // Fetch athlete profile
   const { data: profile, isLoading: profileLoading } = useQuery<AthleteProfile>({
@@ -100,7 +126,7 @@ export default function TrainingPlans() {
   const { data: plans, isLoading: plansLoading } = useQuery<TrainingPlan[]>({
     queryKey: ["/api/training/plans"],
     queryFn: getQueryFn({ on401: "returnNull" }),
-    enabled: !!user,
+    enabled: !!user && canAccessTrainingPlans,
   });
   
   // Generate plan mutation - instant generation, navigate immediately
@@ -141,6 +167,7 @@ export default function TrainingPlans() {
       return await apiRequest("/api/training/plans/generate", "POST", body);
     },
     onSuccess: (data: { planId?: number; plan?: TrainingPlan }) => {
+      sessionStorage.removeItem("pending_training_plan");
       queryClient.invalidateQueries({ queryKey: ["/api/training/plans"] });
       setShowWizard(false);
       setWizardStep("goal");
@@ -171,6 +198,36 @@ export default function TrainingPlans() {
   });
   
   const handleGeneratePlan = () => {
+    if (preferredDays.length < 2) {
+      toast({
+        title: "Choose at least two running days",
+        description: "A useful plan needs at least two available days each week.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (raceDate) {
+      const selected = new Date(`${raceDate}T23:59:59`);
+      if (Number.isNaN(selected.getTime()) || selected <= new Date()) {
+        toast({
+          title: "Choose a future race date",
+          description: "Your race date must be later than today so we can build a safe progression.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    const draft = {
+      goalType, goalTimeTarget, raceDate, raceName, experienceLevel,
+      includeSpeedwork, includeLongRuns, constraints, preferredDays, terrainType,
+    };
+    sessionStorage.setItem("pending_training_plan", JSON.stringify(draft));
+
+    if (!canAccessTrainingPlans) {
+      setWizardStep("preview");
+      return;
+    }
     setWizardStep("generating");
     generateMutation.mutate();
   };
@@ -225,6 +282,24 @@ export default function TrainingPlans() {
   };
   
   const isUltraGoal = ["50k", "50_mile", "100k", "100_mile"].includes(goalType);
+  const previewWeeks = raceDate
+    ? Math.max(4, Math.min(24, Math.ceil((new Date(`${raceDate}T12:00:00`).getTime() - Date.now()) / (7 * 86_400_000))))
+    : 12;
+  const previewWorkouts = preferredDays.slice(0, 5).map((day, index, days) => ({
+    day: day.charAt(0).toUpperCase() + day.slice(1),
+    workout: index === days.length - 1 && includeLongRuns
+      ? "Long easy run"
+      : index === 1 && includeSpeedwork
+        ? "Controlled quality session"
+        : "Easy aerobic run",
+  }));
+  const trainingPlanUpgradeUrl = buildUpgradeUrl({
+    source: "training_plan_preview",
+    capability: "training_plans",
+    benefitKey: "training_plan",
+    returnTo: "/training-plans?resume=1",
+    pendingResourceId: "training_plan_draft",
+  });
   
   if (authLoading || !user) {
     return (
@@ -637,6 +712,47 @@ export default function TrainingPlans() {
                   </p>
                 </div>
               )}
+
+              {wizardStep === "preview" && (
+                <div className="space-y-5" data-testid="training-plan-preview">
+                  <div className="rounded-xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-5">
+                    <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-amber-700">
+                      <Sparkles className="h-4 w-4" /> YOUR PLAN PREVIEW
+                    </div>
+                    <h3 className="mt-3 text-2xl font-bold text-gray-900">
+                      Your personalized {previewWeeks}-week {goalTypeLabels[goalType]} plan
+                    </h3>
+                    <p className="mt-2 text-sm text-gray-700">
+                      Built from your recent mileage, preferred running days, and race goal.
+                    </p>
+
+                    <div className="mt-5 rounded-lg bg-white p-4 shadow-sm">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="font-semibold text-gray-900">Week 1: establish your rhythm</p>
+                        <Badge variant="secondary">Preview</Badge>
+                      </div>
+                      <div className="space-y-2">
+                        {previewWorkouts.map((item) => (
+                          <div key={item.day} className="flex items-center justify-between border-b border-gray-100 py-2 last:border-0">
+                            <span className="text-sm font-medium text-gray-700">{item.day}</span>
+                            <span className="text-sm text-gray-600">{item.workout}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex items-start gap-3 rounded-lg border border-amber-200 bg-white/80 p-4">
+                      <Lock className="h-5 w-5 text-amber-600 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-gray-900">Your complete plan is ready to be built</p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Premium unlocks every week, workout details, pace guidance, and adjustments as your training changes.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
             
             {wizardStep !== "generating" && (
@@ -663,6 +779,22 @@ export default function TrainingPlans() {
                       <Sparkles className="w-4 h-4 mr-2" />
                       Generate Plan
                     </Button>
+                  </>
+                )}
+
+                {wizardStep === "preview" && (
+                  <>
+                    <Button variant="outline" onClick={() => setWizardStep("preferences")} data-testid="button-preview-back">
+                      <ChevronLeft className="w-4 h-4 mr-1" /> Edit setup
+                    </Button>
+                    <div className="text-right">
+                      <TrackedUpgradeLink href={trainingPlanUpgradeUrl}>
+                        <Button className="bg-strava-orange hover:bg-orange-600" data-testid="button-unlock-training-plan">
+                          <Crown className="w-4 h-4 mr-2" /> Unlock my training plan
+                        </Button>
+                      </TrackedUpgradeLink>
+                      <p className="text-xs text-gray-500 mt-2">Start 14 days free · $0 today · Cancel anytime</p>
+                    </div>
                   </>
                 )}
               </CardFooter>

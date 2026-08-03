@@ -2,6 +2,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
 import { Sparkles, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
+import { buildUpgradeUrl } from "@shared/upgradeIntent";
 
 /**
  * Free-tier upgrade nudge shown on the dashboard.
@@ -40,13 +41,18 @@ export default function TrialBadge() {
           </div>
         </div>
 
-        <Link href="/pricing">
+        <Link href={buildUpgradeUrl({
+          source: "dashboard_trial_banner",
+          capability: "advanced_insights",
+          benefitKey: "dashboard_trial",
+          returnTo: "/dashboard",
+        })}>
           <Button
             size="sm"
             className="bg-orange-600 hover:bg-orange-700 text-white border-0"
             data-testid="trial-upgrade-button"
           >
-            Start 14-day trial
+            Start 14 days free
             <ChevronRight size={16} className="ml-1" />
           </Button>
         </Link>

@@ -300,8 +300,9 @@ The RunAnalytics Team`;
    * preview environments link back to themselves instead of always landing on
    * the production deploy (which may not yet ship this feature).
    */
-  async sendMagicLinkEmail(email: string, magicToken: string, baseUrl: string = 'https://aitracker.run'): Promise<void> {
-    const url = `${baseUrl.replace(/\/$/, '')}/auth/magic-link?token=${encodeURIComponent(magicToken)}`;
+  async sendMagicLinkEmail(email: string, magicToken: string, baseUrl: string = 'https://aitracker.run', redirect?: string): Promise<void> {
+    const redirectParam = redirect ? `&redirect=${encodeURIComponent(redirect)}` : '';
+    const url = `${baseUrl.replace(/\/$/, '')}/auth/magic-link?token=${encodeURIComponent(magicToken)}${redirectParam}`;
     const subject = 'Your one-tap sign-in link';
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">

@@ -8,6 +8,7 @@ import { useFeatureAccess } from "@/hooks/useSubscription";
 import { TrackedUpgradeLink } from "@/components/TrackedUpgradeLink";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { buildUpgradeUrl } from "@shared/upgradeIntent";
 
 interface InjuryRiskData {
   riskLevel: 'Low' | 'Medium' | 'High';
@@ -87,7 +88,12 @@ export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnal
             <p className="text-gray-500 mb-4 max-w-sm mx-auto">
               Get AI-powered injury risk assessments based on your training patterns and intensity.
             </p>
-            <TrackedUpgradeLink href="/pricing" source="dashboard_injury_risk" capability="injury_risk">
+            <TrackedUpgradeLink href={buildUpgradeUrl({
+              source: "coach_injury_risk",
+              capability: "injury_risk",
+              benefitKey: "injury_risk",
+              returnTo: "/coach-insights",
+            })}>
               <Button className="bg-gradient-to-r from-strava-orange to-orange-500 hover:from-orange-600 hover:to-orange-600">
                 Upgrade to Premium
               </Button>

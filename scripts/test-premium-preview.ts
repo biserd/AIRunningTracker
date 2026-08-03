@@ -62,6 +62,11 @@ assert.ok(payload.nextAction.length <= PREVIEW_TEXT_MAX);
 assert.ok(payload.sourceData.name.length <= PREVIEW_NAME_MAX);
 assert.equal(payload.sourceData.activityId, 101);
 assert.equal(payload.sourceData.distanceMeters, 8123);
+assert.equal(payload.sourceData.averageCadence, 172, "already-normalized cadence is unchanged");
+
+const historicalCadencePayload = buildPremiumPreviewPayload(makeRun({ averageCadence: 86 }));
+assert.equal(historicalCadencePayload.sourceData.averageCadence, 172, "historical single-leg cadence is normalized once");
+assert.ok(historicalCadencePayload.findings.some((finding) => finding.includes("172 steps per minute")));
 
 // No bulky/raw fields may leak into the stored payload.
 const json = JSON.stringify(payload);
@@ -139,5 +144,15 @@ const noUserResult = await createPremiumPreviewCore({
 });
 assert.equal(noUserResult.created, false);
 assert.equal((noUserResult as any).reason, "no_user");
+
+const paidUserResult = await createPremiumPreviewCore({
+  loadUser: async () => ({ premiumPreview: null, stravaConnected: true, subscriptionPlan: "premium", subscriptionStatus: "active" }),
+  loadActivities: async () => [makeRun()],
+  persistIfAbsent: async () => {
+    throw new Error("should not create a free preview for a paid user");
+  },
+});
+assert.equal(paidUserResult.created, false);
+assert.equal((paidUserResult as any).reason, "not_eligible");
 
 console.log("test-premium-preview: all assertions passed ✔");
