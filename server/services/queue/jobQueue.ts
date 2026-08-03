@@ -10,6 +10,7 @@ import { processCoachRecapJob } from '../coachingService';
 import { aiService } from '../ai';
 import goalsService from '../goals';
 import { deleteCachedResponse } from '../../routes';
+import { canAccessCapability } from '@shared/entitlements';
 
 // Track users with active sync operations
 const activeSyncs = new Map<number, { startedAt: Date; totalActivities: number; processedActivities: number }>();
@@ -368,8 +369,7 @@ class JobQueue {
     const newJobs: Omit<Job, 'id' | 'createdAt' | 'status' | 'attempts'>[] = [];
     
     const user = await storage.getUser(job.userId);
-    if (user?.subscriptionPlan === 'premium' && 
-        ["active", "trialing"].includes(user?.subscriptionStatus || "") && 
+    if (user && canAccessCapability(user, "ai_coach") &&
         user?.coachOnboardingCompleted) {
       const activity = await storage.getActivityById(activityId);
       if (activity?.type?.toLowerCase().includes('run')) {

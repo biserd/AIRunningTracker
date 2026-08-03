@@ -1,18 +1,21 @@
 import { db } from "./db";
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import {
+  FREE_ACTIVITY_HISTORY_DAYS,
+  FREE_ACTIVITY_LIMIT,
+  FREE_MONTHLY_INSIGHTS,
+  hasPremiumAccess,
+} from "@shared/entitlements";
 
 export const RATE_LIMITS = {
-  FREE_MONTHLY_INSIGHTS: 3,
-  FREE_ACTIVITY_HISTORY_DAYS: 30,
-  FREE_ACTIVITY_LIMIT: 20,
+  FREE_MONTHLY_INSIGHTS,
+  FREE_ACTIVITY_HISTORY_DAYS,
+  FREE_ACTIVITY_LIMIT,
 };
 
 export function isPaidPlan(subscriptionPlan: string | null, subscriptionStatus: string | null): boolean {
-  return (
-    (subscriptionPlan === 'pro' || subscriptionPlan === 'premium') &&
-    (subscriptionStatus === 'active' || subscriptionStatus === 'trialing')
-  );
+  return hasPremiumAccess({ subscriptionPlan, subscriptionStatus });
 }
 
 export function getFreeActivityLimit(subscriptionPlan: string | null, subscriptionStatus: string | null): number | null {
@@ -64,9 +67,7 @@ export async function checkInsightRateLimit(userId: number): Promise<RateLimitRe
     return { allowed: false, remaining: 0, limit: 0, message: "User not found" };
   }
 
-  const isPaidUser = 
-    (user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'premium') &&
-    (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing');
+  const isPaidUser = isPaidPlan(user.subscriptionPlan, user.subscriptionStatus);
 
   if (isPaidUser) {
     return { allowed: true, remaining: Infinity, limit: Infinity };
@@ -114,9 +115,7 @@ export async function incrementInsightCount(userId: number): Promise<void> {
   
   if (!user) return;
 
-  const isPaidUser = 
-    (user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'premium') &&
-    (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing');
+  const isPaidUser = isPaidPlan(user.subscriptionPlan, user.subscriptionStatus);
 
   if (isPaidUser) return;
 
@@ -139,9 +138,7 @@ export async function incrementInsightCount(userId: number): Promise<void> {
 }
 
 export function getActivityHistoryLimit(subscriptionPlan: string | null, subscriptionStatus: string | null): number | null {
-  const isPaidUser = 
-    (subscriptionPlan === 'pro' || subscriptionPlan === 'premium') &&
-    (subscriptionStatus === 'active' || subscriptionStatus === 'trialing');
+  const isPaidUser = isPaidPlan(subscriptionPlan, subscriptionStatus);
 
   if (isPaidUser) {
     return null;
@@ -169,9 +166,7 @@ export async function getUserUsageStats(userId: number): Promise<{
     };
   }
 
-  const isPaidUser = 
-    (user.subscriptionPlan === 'pro' || user.subscriptionPlan === 'premium') &&
-    (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing');
+  const isPaidUser = isPaidPlan(user.subscriptionPlan, user.subscriptionStatus);
 
   if (isPaidUser) {
     return {

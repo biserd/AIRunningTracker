@@ -32,7 +32,7 @@ function SettingsPageContent() {
 
   const [unitPreference, setUnitPreference] = useState("km");
   const [stravaBrandingEnabled, setStravaBrandingEnabled] = useState(false);
-  const [stravaBrandingTemplate, setStravaBrandingTemplate] = useState("🏃 Runner Score: {score} | {insight} — Analyzed with AITracker.run");
+  const [stravaBrandingTemplate, setStravaBrandingTemplate] = useState("🏃 Runner Score: {score} | {insight} — Analyzed with RunAnalytics");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [notifyPostRun, setNotifyPostRun] = useState(true);
   const [postRunEmailFrequency, setPostRunEmailFrequency] = useState("every_run");
@@ -138,7 +138,7 @@ function SettingsPageContent() {
       toast({
         title: "Branding settings updated",
         description: stravaBrandingEnabled 
-          ? "Your Strava activities will now include AITracker insights" 
+          ? "Your Strava activities will now include RunAnalytics insights"
           : "Strava branding has been disabled",
       });
     },
@@ -478,7 +478,7 @@ function SettingsPageContent() {
                         Enable Activity Branding
                       </Label>
                       <p className="text-sm text-gray-500">
-                        Add AITracker insights to your Strava posts
+                        Add RunAnalytics insights to your Strava posts
                       </p>
                     </div>
                     <Switch
@@ -498,7 +498,7 @@ function SettingsPageContent() {
                         id="branding-template"
                         value={stravaBrandingTemplate}
                         onChange={(e) => setStravaBrandingTemplate(e.target.value)}
-                        placeholder="🏃 Runner Score: {score} | {insight} — Analyzed with AITracker.run"
+                        placeholder="🏃 Runner Score: {score} | {insight} — Analyzed with RunAnalytics"
                         data-testid="input-branding-template"
                       />
                       <p className="text-xs text-gray-500">

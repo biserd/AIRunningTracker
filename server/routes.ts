@@ -38,6 +38,12 @@ import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getAct
 import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage, renderToolPage, getAllToolSlugs, renderFaqPage, renderBlogIndex, renderPricingPage, renderFeaturesPage, renderAboutPage, renderDevelopersPage, renderDevelopersApiPage, renderToolsHubPage } from "./ssr/renderer";
 import { getAllBlogPosts } from "./ssr/blogContent";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
+import {
+  type Capability,
+  canAccessCapability,
+  getCapabilityMatrix,
+} from "@shared/entitlements";
+import { normalizeCadenceToSpm } from "@shared/cadenceNormalization";
 
 // Authentication middleware
 const authenticateJWT = async (req: any, res: Response, next: NextFunction) => {
@@ -59,6 +65,29 @@ const authenticateJWT = async (req: any, res: Response, next: NextFunction) => {
     return res.status(401).json({ message: "Invalid token" });
   }
 };
+
+async function requireCapability(
+  req: any,
+  res: Response,
+  capability: Capability,
+) {
+  const user = await storage.getUser(req.user.id);
+  if (!user) {
+    res.status(404).json({ message: "User not found" });
+    return null;
+  }
+
+  if (!canAccessCapability(user, capability)) {
+    res.status(403).json({
+      code: "PREMIUM_REQUIRED",
+      capability,
+      message: "Premium access required.",
+    });
+    return null;
+  }
+
+  return user;
+}
 
 // Admin middleware
 const authenticateAdmin = async (req: any, res: Response, next: NextFunction) => {
@@ -2277,10 +2306,10 @@ ${allPages.map(page => `  <url>
 
       res.send(`
         <html>
-          <head><title>Unsubscribed | AITracker.run</title></head>
+          <head><title>Unsubscribed | RunAnalytics</title></head>
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 80px auto; text-align: center; padding: 20px;">
             <h1 style="color: #2c3e50;">You've been unsubscribed</h1>
-            <p style="color: #666; font-size: 16px; line-height: 1.6;">You will no longer receive post-run analysis emails from AITracker.run.</p>
+            <p style="color: #666; font-size: 16px; line-height: 1.6;">You will no longer receive post-run analysis emails from RunAnalytics.</p>
             <p style="color: #999; font-size: 14px; margin-top: 20px;">You can re-enable these notifications anytime in your <a href="https://aitracker.run/settings" style="color: #FC5200;">account settings</a>.</p>
           </body>
         </html>
@@ -2308,10 +2337,10 @@ ${allPages.map(page => `  <url>
 
       res.send(`
         <html>
-          <head><title>Unsubscribed | AITracker.run</title></head>
+          <head><title>Unsubscribed | RunAnalytics</title></head>
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 80px auto; text-align: center; padding: 20px;">
             <h1 style="color: #2c3e50;">You've been unsubscribed</h1>
-            <p style="color: #666; font-size: 16px; line-height: 1.6;">You will no longer receive weekly running summary emails from AITracker.run.</p>
+            <p style="color: #666; font-size: 16px; line-height: 1.6;">You will no longer receive weekly running summary emails from RunAnalytics.</p>
             <p style="color: #999; font-size: 14px; margin-top: 20px;">You can re-enable these anytime in your <a href="https://aitracker.run/settings" style="color: #FC5200;">account settings</a>.</p>
           </body>
         </html>
@@ -2729,7 +2758,7 @@ ${allPages.map(page => `  <url>
           stravaConnected: user.stravaConnected,
           stravaHasWriteScope: user.stravaHasWriteScope || false,
           stravaBrandingEnabled: user.stravaBrandingEnabled || false,
-          stravaBrandingTemplate: user.stravaBrandingTemplate || "🏃 Runner Score: {score} | {insight} — Analyzed with AITracker.run",
+          stravaBrandingTemplate: user.stravaBrandingTemplate || "🏃 Runner Score: {score} | {insight} — Analyzed with RunAnalytics",
           unitPreference: user.unitPreference || "km",
           lastSyncAt: user.lastSyncAt,
           subscriptionPlan: user.subscriptionPlan || 'free',
@@ -3659,9 +3688,7 @@ ${allPages.map(page => `  <url>
         .wrapWithEmailMagicLink(user.email, activityPath, "https://aitracker.run")
         .catch(() => `https://aitracker.run${activityPath}?utm_source=extension`);
 
-      const isPremium =
-        user.subscriptionPlan === "premium" &&
-        ["active", "trialing"].includes(user.subscriptionStatus || "");
+      const isPremium = isPaidPlan(user.subscriptionPlan, user.subscriptionStatus);
 
       res.json({
         // Deep-link with auto sign-in
@@ -4053,7 +4080,7 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
       
-      if (user.subscriptionPlan !== "premium" || !["active", "trialing"].includes(user.subscriptionStatus || "")) {
+      if (!canAccessCapability(user, "ai_coach")) {
         return res.status(403).json({ message: "AI Coach is a Premium feature" });
       }
 
@@ -4171,7 +4198,7 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
       
-      if (user.subscriptionPlan !== "premium" || !["active", "trialing"].includes(user.subscriptionStatus || "")) {
+      if (!canAccessCapability(user, "ai_coach")) {
         return res.status(403).json({ message: "Premium subscription required for coach recaps" });
       }
 
@@ -4207,7 +4234,7 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
       
-      if (user.subscriptionPlan !== "premium" || !["active", "trialing"].includes(user.subscriptionStatus || "")) {
+      if (!canAccessCapability(user, "ai_coach")) {
         return res.status(403).json({ message: "Premium subscription required for coach recaps" });
       }
 
@@ -4234,7 +4261,7 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
       
-      if (user.subscriptionPlan !== "premium" || !["active", "trialing"].includes(user.subscriptionStatus || "")) {
+      if (!canAccessCapability(user, "ai_coach")) {
         return res.status(403).json({ message: "Premium subscription required for coach recaps" });
       }
       
@@ -5519,8 +5546,34 @@ ${allPages.map(page => `  <url>
       const pacePerKm = activity.distance > 0 ? (activity.movingTime / 60) / distanceInKm : 0;
       const paceConverted = user.unitPreference === "miles" ? pacePerKm / 0.621371 : pacePerKm;
       
+      const {
+        streamsData,
+        lapsData,
+        detailedPolyline,
+        averageHeartrate,
+        maxHeartrate,
+        averageCadence,
+        maxCadence,
+        averageWatts,
+        maxWatts,
+        sufferScore,
+        ...activitySummary
+      } = activity;
+      const mayViewDeepDive = canAccessCapability(user, "activity_deep_dive");
       const formattedActivity = {
-        ...activity,
+        ...activitySummary,
+        ...(mayViewDeepDive ? {
+          streamsData,
+          lapsData,
+          detailedPolyline,
+          averageHeartrate,
+          maxHeartrate,
+          averageCadence,
+          maxCadence,
+          averageWatts,
+          maxWatts,
+          sufferScore,
+        } : {}),
         formattedDistance: distanceConverted.toFixed(2),
         formattedPace: paceConverted > 0 ? `${Math.floor(paceConverted)}:${String(Math.round((paceConverted % 1) * 60)).padStart(2, '0')}` : "0:00",
         formattedDuration: `${Math.floor(activity.movingTime / 60)}:${String(activity.movingTime % 60).padStart(2, '0')}`,
@@ -5540,6 +5593,7 @@ ${allPages.map(page => `  <url>
         endLatitude: activity.endLatitude,
         endLongitude: activity.endLongitude,
         locked: isLocked,
+        deepDiveLocked: !mayViewDeepDive,
       };
 
       res.json({ activity: formattedActivity, locked: isLocked });
@@ -5557,6 +5611,7 @@ ${allPages.map(page => `  <url>
       if (isNaN(activityId)) {
         return res.status(400).json({ message: "Invalid activity ID" });
       }
+      if (!await requireCapability(req, res, "activity_deep_dive")) return;
 
       const activity = await storage.getActivityById(activityId);
       if (!activity) {
@@ -5879,13 +5934,17 @@ ${allPages.map(page => `  <url>
   });
 
   // ML Features - Race Predictions
-  app.get("/api/ml/predictions/:userId", async (req, res) => {
+  app.get("/api/ml/predictions/:userId", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
       
       if (isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
+      if (req.user.id !== userId) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      if (!await requireCapability(req, res, "race_predictions")) return;
 
       // Check cache first
       const cacheKey = `predictions:${userId}`;
@@ -5911,7 +5970,7 @@ ${allPages.map(page => `  <url>
   });
 
   // ML Features - Training Plans
-  app.post("/api/ml/training-plan/:userId", async (req, res) => {
+  app.post("/api/ml/training-plan/:userId", authenticateJWT, async (req: any, res) => {
     const startTime = Date.now();
     try {
       const userId = parseInt(req.params.userId);
@@ -5929,6 +5988,10 @@ ${allPages.map(page => `  <url>
       if (isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
+      if (req.user.id !== userId) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      if (!await requireCapability(req, res, "training_plans")) return;
 
       const params = {
         weeks,
@@ -5966,13 +6029,17 @@ ${allPages.map(page => `  <url>
   });
 
   // Get latest training plan
-  app.get("/api/ml/training-plan/:userId", async (req, res) => {
+  app.get("/api/ml/training-plan/:userId", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
       
       if (isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
+      if (req.user.id !== userId) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      if (!await requireCapability(req, res, "training_plans")) return;
 
       const savedPlan = await storage.getLatestTrainingPlan(userId);
       
@@ -6132,6 +6199,7 @@ ${allPages.map(page => `  <url>
       if (activity.userId !== req.user.id) {
         return res.status(404).json({ message: "Activity not found" });
       }
+      if (!await requireCapability(req, res, "activity_deep_dive")) return;
 
       // Lock-gate: free users can't pull streams/laps for webhook-ingested
       // activities — the detail page renders a blur + upgrade CTA instead.
@@ -6149,9 +6217,9 @@ ${allPages.map(page => `  <url>
         try {
           streams = JSON.parse(activity.streamsData);
           
-          // Convert cadence stream data from RPM to SPM (multiply by 2)
+          // Normalize cadence to canonical steps/minute exactly once.
           if (streams?.cadence?.data) {
-            streams.cadence.data = streams.cadence.data.map((rpm: number) => rpm * 2);
+            streams.cadence.data = streams.cadence.data.map((value: number) => normalizeCadenceToSpm(value));
           }
         } catch (e) {
           console.error('Error parsing streams data:', e);
@@ -6162,12 +6230,12 @@ ${allPages.map(page => `  <url>
         try {
           laps = JSON.parse(activity.lapsData);
           
-          // Convert lap cadence data from RPM to SPM (multiply by 2)
+          // Normalize lap cadence to canonical steps/minute exactly once.
           if (laps && Array.isArray(laps)) {
             laps = laps.map(lap => ({
               ...lap,
-              average_cadence: lap.average_cadence ? lap.average_cadence * 2 : lap.average_cadence,
-              max_cadence: lap.max_cadence ? lap.max_cadence * 2 : lap.max_cadence
+              average_cadence: normalizeCadenceToSpm(lap.average_cadence),
+              max_cadence: normalizeCadenceToSpm(lap.max_cadence)
             }));
           }
         } catch (e) {
@@ -6199,6 +6267,7 @@ ${allPages.map(page => `  <url>
       if (req.user.id !== userId) {
         return res.status(403).json({ message: "Unauthorized" });
       }
+      if (!await requireCapability(req, res, "activity_deep_dive")) return;
 
       const cacheKey = `baseline:${userId}`;
       const cached = getCachedResponse(cacheKey);
@@ -6228,6 +6297,7 @@ ${allPages.map(page => `  <url>
       if (req.user.id !== userId) {
         return res.status(403).json({ message: "Unauthorized" });
       }
+      if (!await requireCapability(req, res, "injury_risk")) return;
 
       const cacheKey = `recovery:${userId}`;
       const cached = getCachedResponse(cacheKey, 30);
@@ -6269,13 +6339,12 @@ ${allPages.map(page => `  <url>
       if (!verdictActivity || verdictActivity.userId !== userId) {
         return res.status(404).json({ message: "Activity not found" });
       }
+      if (!await requireCapability(req, res, "activity_deep_dive")) return;
       if (verdictActivity.lockedForFree) {
         return res.status(402).json({ locked: true, message: "Upgrade required." });
       }
 
-      // Per-activity data (verdict, timeline, splits, etc.) is available to
-      // every signed-in user post free-tier pivot. The only free-tier gate is
-      // HOW MANY activities they can reach (last 20 via the server-side cap).
+      // The verdict is part of the Premium Activity Deep Dive capability.
       const unitPreference = user.unitPreference || 'km';
       const cacheKey = `verdict:${activityId}:${userId}:${unitPreference}`;
       const cached = getCachedResponse(cacheKey);
@@ -6314,6 +6383,7 @@ ${allPages.map(page => `  <url>
       if (!activity || activity.userId !== userId) {
         return res.status(404).json({ message: "Activity not found" });
       }
+      if (!await requireCapability(req, res, "activity_deep_dive")) return;
 
       if (activity.lockedForFree) {
         return res.status(402).json({ locked: true, message: "Upgrade required." });
@@ -6362,6 +6432,7 @@ ${allPages.map(page => `  <url>
       if (!activity || activity.userId !== userId) {
         return res.status(404).json({ message: "Activity not found" });
       }
+      if (!await requireCapability(req, res, "activity_deep_dive")) return;
 
       if (activity.lockedForFree) {
         return res.status(402).json({ locked: true, message: "Upgrade required." });
@@ -6435,13 +6506,33 @@ ${allPages.map(page => `  <url>
   });
 
   // Batch Analytics Endpoint - Combines all ML and performance calculations
-  app.get("/api/analytics/batch/:userId", async (req, res) => {
+  app.get("/api/analytics/batch/:userId", authenticateJWT, async (req: any, res) => {
     const startTime = Date.now();
     try {
       const userId = parseInt(req.params.userId);
       
       if (isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
+      }
+      if (req.user.id !== userId) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const requestingUser = await storage.getUser(userId);
+      if (!requestingUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      if (!canAccessCapability(requestingUser, "advanced_insights")) {
+        return res.json({
+          predictions: [],
+          injuryRisk: null,
+          trainingPlan: null,
+          vo2Max: null,
+          efficiency: null,
+          hrZones: null,
+          unitPreference: requestingUser.unitPreference || "miles",
+          entitlements: getCapabilityMatrix(requestingUser),
+        });
       }
 
       // Check cache first
@@ -6513,13 +6604,17 @@ ${allPages.map(page => `  <url>
   });
 
   // ML Features - Injury Risk Analysis
-  app.get("/api/ml/injury-risk/:userId", async (req, res) => {
+  app.get("/api/ml/injury-risk/:userId", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
       
       if (isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
+      if (req.user.id !== userId) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      if (!await requireCapability(req, res, "injury_risk")) return;
 
       // Check cache first
       const cacheKey = `injury-risk:${userId}`;
@@ -6544,13 +6639,17 @@ ${allPages.map(page => `  <url>
   });
 
   // Performance Analytics - VO2 Max
-  app.get("/api/performance/vo2max/:userId", async (req, res) => {
+  app.get("/api/performance/vo2max/:userId", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
       
       if (isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
+      if (req.user.id !== userId) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      if (!await requireCapability(req, res, "advanced_insights")) return;
 
       const vo2MaxData = await performanceService.calculateVO2Max(userId);
       res.json(vo2MaxData);
@@ -6561,7 +6660,7 @@ ${allPages.map(page => `  <url>
   });
 
   // Performance Analytics - Heart Rate Zones
-  app.get("/api/performance/hr-zones/:userId", async (req, res) => {
+  app.get("/api/performance/hr-zones/:userId", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const { maxHR, restingHR } = req.query;
@@ -6569,6 +6668,10 @@ ${allPages.map(page => `  <url>
       if (isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
+      if (req.user.id !== userId) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      if (!await requireCapability(req, res, "advanced_insights")) return;
 
       // Check cache first (only if no custom HR values provided)
       const cacheKey = `hr-zones:${userId}`;
@@ -6603,13 +6706,17 @@ ${allPages.map(page => `  <url>
   });
 
   // Performance Analytics - Running Efficiency
-  app.get("/api/performance/efficiency/:userId", async (req, res) => {
+  app.get("/api/performance/efficiency/:userId", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
       
       if (isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
+      if (req.user.id !== userId) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      if (!await requireCapability(req, res, "advanced_insights")) return;
 
       const efficiencyData = await performanceService.analyzeRunningEfficiency(userId);
       
@@ -6633,13 +6740,17 @@ ${allPages.map(page => `  <url>
   });
 
   // Performance Analytics - Complete Metrics
-  app.get("/api/performance/metrics/:userId", async (req, res) => {
+  app.get("/api/performance/metrics/:userId", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
       
       if (isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
+      if (req.user.id !== userId) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      if (!await requireCapability(req, res, "advanced_insights")) return;
 
       const performanceMetrics = await performanceService.getPerformanceMetrics(userId);
       res.json(performanceMetrics);
@@ -8125,9 +8236,11 @@ ${allPages.map(page => `  <url>
       const userId = req.user.id;
       const activityId = parseInt(req.params.activityId);
       
-      // Check Premium tier for full comparison features
-      const user = await storage.getUser(userId);
-      const isPremium = user?.subscriptionPlan === 'premium' && ["active", "trialing"].includes(user?.subscriptionStatus || "");
+      if (!await requireCapability(req, res, "activity_comparison")) return;
+      const comparisonActivity = await storage.getActivityById(activityId);
+      if (!comparisonActivity || comparisonActivity.userId !== userId) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
       
       // Import services dynamically to avoid circular deps
       const { getOrComputeComparison, getWhatChanged } = await import('./services/comparableRunsService');
@@ -8150,21 +8263,6 @@ ${allPages.map(page => `  <url>
       
       // Get route info
       const routeInfo = await getActivityRoute(activityId);
-      
-      // For non-premium users, limit the data
-      if (!isPremium) {
-        return res.json({
-          hasComparison: true,
-          isPremium: false,
-          comparableCount: comparison.comparableRuns.length,
-          deltas: comparison.deltas,
-          routeMatch: routeInfo ? {
-            runCount: routeInfo.route.runCount,
-            hasHistory: routeInfo.history.length > 1
-          } : null,
-          upgradeMessage: "Upgrade to Premium for full run comparison, route trends, and detailed history"
-        });
-      }
       
       res.json({
         hasComparison: true,
@@ -8205,6 +8303,7 @@ ${allPages.map(page => `  <url>
       if (!rhActivity || rhActivity.userId !== req.user.id) {
         return res.status(404).json({ message: "Activity not found" });
       }
+      if (!await requireCapability(req, res, "activity_deep_dive")) return;
       const rhOwner = await storage.getUser(rhActivity.userId);
       const { isPaidPlan: rhIsPaid } = await import("./rateLimits");
       if (rhActivity.lockedForFree && !rhIsPaid(rhOwner?.subscriptionPlan ?? null, rhOwner?.subscriptionStatus ?? null)) {

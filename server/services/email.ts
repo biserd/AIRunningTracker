@@ -531,7 +531,7 @@ This feedback has been stored in the deletion_feedback table for analysis.`;
         <p>Thanks for signing up. We've already started analyzing your training data to find opportunities for improvement.</p>
         
         <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
-          <p style="margin: 0; color: #856404;"><strong>Your free dashboard is ready.</strong> Connect Strava to see your last 10 runs, then start a 14-day Premium trial anytime to unlock unlimited history, AI insights, training plans, and the Coach Chat.</p>
+          <p style="margin: 0; color: #856404;"><strong>Your free dashboard is ready.</strong> Connect Strava to see your last 20 runs, then start a 14-day Premium trial anytime to unlock unlimited history, AI insights, training plans, and the Coach Chat.</p>
         </div>
         
         <div style="text-align: center; margin: 30px 0;">
@@ -571,7 +571,7 @@ Hey ${name}!
 
 Thanks for signing up. We've already started analyzing your training data to find opportunities for improvement.
 
-Your free dashboard is ready. Connect Strava to see your last 10 runs, then start a 14-day Premium trial anytime to unlock unlimited history, AI insights, training plans, and the Coach Chat.
+Your free dashboard is ready. Connect Strava to see your last 20 runs, then start a 14-day Premium trial anytime to unlock unlimited history, AI insights, training plans, and the Coach Chat.
 
 Open your dashboard: https://aitracker.run/dashboard
 
@@ -620,7 +620,7 @@ The RunAnalytics Team
         
         <p style="font-size: 16px; line-height: 1.6;">You signed up for our waitlist, and we're thrilled to let you know that <strong>RunAnalytics is now live!</strong></p>
         
-        <p style="font-size: 16px; line-height: 1.6;">Sign up free to see your <strong>last 10 Strava runs</strong> on your dashboard, with a one-tap path into a 14-day Premium trial whenever you're ready.</p>
+        <p style="font-size: 16px; line-height: 1.6;">Sign up free to see your <strong>last 20 Strava runs</strong> on your dashboard, with a one-tap path into a 14-day Premium trial whenever you're ready.</p>
         
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 25px 0;">
           <h3 style="color: #27ae60; margin-top: 0;">What Premium Runners Get:</h3>
@@ -658,7 +658,7 @@ Hey there!
 
 You signed up for our waitlist, and we're thrilled to let you know that RunAnalytics is now live!
 
-Sign up free to see your last 10 Strava runs on your dashboard, with a one-tap path into a 14-day Premium trial whenever you're ready.
+Sign up free to see your last 20 Strava runs on your dashboard, with a one-tap path into a 14-day Premium trial whenever you're ready.
 
 What Premium Runners Get:
 - AI Running Coach Chat: Ask questions, get personalized advice
@@ -982,16 +982,16 @@ The RunAnalytics Team
   }
 
   async sendFoundersWelcomeEmail(to: string): Promise<boolean> {
-    const subject = 'Welcome to AITracker.run and thank you for being early';
+    const subject = 'Welcome to RunAnalytics and thank you for being early';
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333; line-height: 1.7;">
         <p>Hi everyone,</p>
         
         <p>Thank you for being part of our early journey.</p>
         
-        <p>I've texted with many of you already, and I'm truly grateful for the feedback, what you like, what's confusing, and what you want next. That kind of early input is invaluable for a startup, and it's helping shape AITracker.run every week.</p>
+        <p>I've texted with many of you already, and I'm truly grateful for the feedback, what you like, what's confusing, and what you want next. That kind of early input is invaluable for a startup, and it's helping shape RunAnalytics every week.</p>
         
-        <p><strong>A quick intro and the "why" behind this project:</strong> I'm a runner too (<a href="https://www.strava.com/athletes/23786606" style="color: #fc4c02;">Strava: Biser</a>). While training for the NYC Marathon 2025, I realized I wasn't fully satisfied with the tools I was using. The training plan didn't feel right, routes weren't great, and even the suggested distances often felt off. Instead of complaining, I started building something small that solved my own problems. The idea was simple: if it genuinely helps me, it'll likely help other runners too. That's how AITracker.run was born.</p>
+        <p><strong>A quick intro and the "why" behind this project:</strong> I'm a runner too (<a href="https://www.strava.com/athletes/23786606" style="color: #fc4c02;">Strava: Biser</a>). While training for the NYC Marathon 2025, I realized I wasn't fully satisfied with the tools I was using. The training plan didn't feel right, routes weren't great, and even the suggested distances often felt off. Instead of complaining, I started building something small that solved my own problems. The idea was simple: if it genuinely helps me, it'll likely help other runners too. That's how RunAnalytics was born.</p>
         
         <p><strong>A few features I'm especially proud of so far:</strong></p>
         <ul style="margin: 15px 0; padding-left: 25px;">
@@ -1020,7 +1020,7 @@ The RunAnalytics Team
         <p><strong>Quick tip:</strong> to see the "WOW" fastest, connect Strava, sync, then open your most recent run and check the Story tab. That's the quickest way to see the verdict and what to do next.</p>
         
         <p style="margin: 25px 0;">
-          <a href="https://aitracker.run/auth" style="background: #fc4c02; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Open AITracker.run →</a>
+          <a href="https://aitracker.run/auth" style="background: #fc4c02; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Open RunAnalytics →</a>
         </p>
         
         <p>Also, I'd love to learn a bit about you. If you hit reply, tell me what you're training for right now (race + date), and what your biggest running challenge is. I read every reply, and I use that feedback to prioritize what we build next.</p>
@@ -1042,7 +1042,7 @@ The RunAnalytics Team
         </p>
         
         <div style="border-top: 1px solid #eee; padding-top: 15px; margin-top: 30px; font-size: 12px; color: #999;">
-          <p>You're receiving this because you signed up for AITracker.run</p>
+          <p>You're receiving this because you signed up for RunAnalytics</p>
         </div>
       </div>
     `;
@@ -1051,9 +1051,9 @@ The RunAnalytics Team
 
 Thank you for being part of our early journey.
 
-I've texted with many of you already, and I'm truly grateful for the feedback, what you like, what's confusing, and what you want next. That kind of early input is invaluable for a startup, and it's helping shape AITracker.run every week.
+I've texted with many of you already, and I'm truly grateful for the feedback, what you like, what's confusing, and what you want next. That kind of early input is invaluable for a startup, and it's helping shape RunAnalytics every week.
 
-A quick intro and the "why" behind this project: I'm a runner too (Strava: https://www.strava.com/athletes/23786606). While training for the NYC Marathon 2025, I realized I wasn't fully satisfied with the tools I was using. The training plan didn't feel right, routes weren't great, and even the suggested distances often felt off. Instead of complaining, I started building something small that solved my own problems. The idea was simple: if it genuinely helps me, it'll likely help other runners too. That's how AITracker.run was born.
+A quick intro and the "why" behind this project: I'm a runner too (Strava: https://www.strava.com/athletes/23786606). While training for the NYC Marathon 2025, I realized I wasn't fully satisfied with the tools I was using. The training plan didn't feel right, routes weren't great, and even the suggested distances often felt off. Instead of complaining, I started building something small that solved my own problems. The idea was simple: if it genuinely helps me, it'll likely help other runners too. That's how RunAnalytics was born.
 
 A few features I'm especially proud of so far:
 - Coach Insights that explain what's happening in your training (and what to do next)
@@ -1075,7 +1075,7 @@ A few things coming soon:
 
 Quick tip: to see the "WOW" fastest, connect Strava, sync, then open your most recent run and check the Story tab. That's the quickest way to see the verdict and what to do next.
 
-Open AITracker.run here: https://aitracker.run/auth
+Open RunAnalytics here: https://aitracker.run/auth
 
 Also, I'd love to learn a bit about you. If you hit reply, tell me what you're training for right now (race + date), and what your biggest running challenge is. I read every reply, and I use that feedback to prioritize what we build next.
 
@@ -1152,7 +1152,7 @@ ${nextRunTip ? `\nNext Run: ${nextRunTip}` : ""}
 See your full analysis: ${ctaUrl}
 
 Train smarter,
-The AITracker Running Coach
+The RunAnalytics Running Coach
 ${unsubLine}`.trim();
 
     // HTML version
@@ -1203,7 +1203,7 @@ ${unsubLine}`.trim();
 
   <!-- Footer -->
   <div style="padding:16px 28px;border-top:1px solid #f0f0f0;font-size:12px;color:#aaa;">
-    Train smarter, The AITracker Running Coach<br>
+    Train smarter, The RunAnalytics Running Coach<br>
     ${unsubscribeUrl ? `<a href="${unsubscribeUrl}" style="color:#aaa;">Unsubscribe from post-run emails</a> · ` : ""}<a href="https://aitracker.run/settings" style="color:#aaa;">Change email frequency</a>
   </div>
 

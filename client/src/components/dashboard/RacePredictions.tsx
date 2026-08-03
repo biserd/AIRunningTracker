@@ -60,7 +60,7 @@ export default function RacePredictions({ userId, batchData }: RacePredictionsPr
   // All hooks must be called before any conditional returns
   const { data: predictionsData, isLoading } = useQuery({
     queryKey: ['/api/ml/predictions', userId],
-    queryFn: () => fetch(`/api/ml/predictions/${userId}`).then(res => res.json()),
+    queryFn: () => apiRequest(`/api/ml/predictions/${userId}`),
     enabled: canAccessRacePredictions && (batchData === undefined ? false : !batchData),
   });
   
@@ -74,7 +74,7 @@ export default function RacePredictions({ userId, batchData }: RacePredictionsPr
             Race Predictions
             <Badge className="ml-2 bg-gradient-to-r from-strava-orange to-orange-500 text-white text-xs">
               <Crown className="h-3 w-3 mr-1" />
-              Pro
+              Premium
             </Badge>
           </CardTitle>
         </CardHeader>

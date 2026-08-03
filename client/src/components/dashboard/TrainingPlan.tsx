@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -91,9 +91,7 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
   // Load existing training plan (only if batchData doesn't already have it)
   const { data: savedPlan } = useQuery({
     queryKey: ['training-plan', userId],
-    queryFn: () => 
-      fetch(`/api/ml/training-plan/${userId}`)
-        .then(res => res.json()),
+    queryFn: () => apiRequest(`/api/ml/training-plan/${userId}`),
     enabled: canAccessTrainingPlans && !!userId && !batchData?.trainingPlan,
   });
   
@@ -163,9 +161,13 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
       const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second timeout for longer plans
       
       try {
+        const token = localStorage.getItem("auth_token");
         const response = await fetch(`/api/ml/training-plan/${userId}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
           body: JSON.stringify(params),
           signal: controller.signal
         });
@@ -267,7 +269,7 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
             AI Training Plans
             <Badge className="ml-2 bg-gradient-to-r from-strava-orange to-orange-500 text-white text-xs">
               <Crown className="h-3 w-3 mr-1" />
-              Pro
+              Premium
             </Badge>
           </CardTitle>
         </CardHeader>

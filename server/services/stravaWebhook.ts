@@ -530,7 +530,7 @@ class StravaWebhookService {
         : "";
       const loadLine = ctx.loadComparison ? `\n- Weekly load: ${ctx.loadComparison}` : "";
 
-      const prompt = `You are the Running Coach for AITracker.run. Write a sharp, personalized post-run email for ${firstName}.
+      const prompt = `You are the Running Coach for RunAnalytics. Write a sharp, personalized post-run email for ${firstName}.
 
 CRITICAL: The runner is already looking at a stats table showing pace, distance, duration, average HR, elevation, efficiency, and effort score. Restating any of those numbers is worthless. Your entire job is to tell them something they CANNOT see by reading that table — a pattern, a comparison, or what the numbers mean for their training.
 

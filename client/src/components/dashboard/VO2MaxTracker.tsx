@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { TrendingUp, TrendingDown, Minus, Heart, Target } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 interface VO2MaxData {
   current: number;
@@ -24,7 +25,7 @@ interface VO2MaxTrackerProps {
 export default function VO2MaxTracker({ userId, batchData }: VO2MaxTrackerProps) {
   const { data: vo2DataResponse, isLoading } = useQuery({
     queryKey: ['/api/performance/vo2max', userId],
-    queryFn: () => fetch(`/api/performance/vo2max/${userId}`).then(res => res.json()),
+    queryFn: () => apiRequest(`/api/performance/vo2max/${userId}`),
     enabled: batchData === undefined ? false : !batchData,
   });
   

@@ -238,7 +238,7 @@ export class StravaService {
   }
 
   generateBrandingText(template: string, runnerScore?: number, insight?: string): string {
-    let text = template || "🏃 Analyzed with AITracker.run";
+    let text = template || "🏃 Analyzed with RunAnalytics";
     
     // Replace placeholders (check for valid finite number to allow score of 0)
     const validScore = runnerScore !== undefined && Number.isFinite(runnerScore);
@@ -525,7 +525,7 @@ export class StravaService {
       // Apply branding to newly synced activities if enabled
       if (syncedCount > 0 && user.stravaHasWriteScope && user.stravaBrandingEnabled) {
         console.log(`[Branding] Applying branding to ${syncedCount} newly synced activities`);
-        const brandingTemplate = user.stravaBrandingTemplate || "🏃 Analyzed with AITracker.run";
+        const brandingTemplate = user.stravaBrandingTemplate || "🏃 Analyzed with RunAnalytics";
         
         // Calculate Runner Score for branding
         let runnerScore: number | undefined;

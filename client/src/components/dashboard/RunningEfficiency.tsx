@@ -11,6 +11,11 @@ import {
   cmToInches, 
   type UnitSystem 
 } from "@shared/utils";
+import {
+  OPTIMAL_CADENCE_MIN_SPM,
+  OPTIMAL_CADENCE_MAX_SPM,
+  isCadenceOptimal,
+} from "@shared/cadenceNormalization";
 
 interface RunningEfficiencyData {
   averageCadence: number;
@@ -65,7 +70,7 @@ export default function RunningEfficiency({ userId, batchData }: RunningEfficien
   
   const { data: efficiencyDataResponse, isLoading } = useQuery({
     queryKey: ['/api/performance/efficiency', userId],
-    queryFn: () => fetch(`/api/performance/efficiency/${userId}`).then(res => res.json()),
+    queryFn: () => apiRequest(`/api/performance/efficiency/${userId}`),
     enabled: batchData === undefined ? false : !batchData,
   });
   
@@ -86,7 +91,7 @@ export default function RunningEfficiency({ userId, batchData }: RunningEfficien
   };
 
   const getCadenceStatus = (cadence: number) => {
-    if (cadence >= 170 && cadence <= 190) return { icon: CheckCircle, color: "text-green-600", text: "Optimal" };
+    if (isCadenceOptimal(cadence)) return { icon: CheckCircle, color: "text-green-600", text: "Optimal" };
     return { icon: AlertCircle, color: "text-yellow-600", text: "Can Improve" };
   };
 
@@ -254,7 +259,7 @@ export default function RunningEfficiency({ userId, batchData }: RunningEfficien
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <Footprints className="h-3 w-3" />
-                  <span><strong>Optimal Cadence:</strong> 170-180 spm</span>
+                  <span><strong>Optimal Cadence:</strong> {OPTIMAL_CADENCE_MIN_SPM}-{OPTIMAL_CADENCE_MAX_SPM} spm</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <TrendingUp className="h-3 w-3" />

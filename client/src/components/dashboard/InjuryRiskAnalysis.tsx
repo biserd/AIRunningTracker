@@ -60,7 +60,7 @@ export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnal
   // All hooks must be called before any conditional returns
   const { data: riskDataResponse, isLoading } = useQuery({
     queryKey: ['/api/ml/injury-risk', userId],
-    queryFn: () => fetch(`/api/ml/injury-risk/${userId}`).then(res => res.json()),
+    queryFn: () => apiRequest(`/api/ml/injury-risk/${userId}`),
     enabled: canAccessAdvancedInsights && (batchData === undefined ? false : !batchData),
   });
   

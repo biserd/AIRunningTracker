@@ -4,6 +4,46 @@ import { Activity } from "@shared/schema";
 // Running activity types based on Strava's sport_type field
 const RUNNING_TYPES = ['Run', 'TrailRun', 'VirtualRun'];
 
+/**
+ * Returns a new array containing only running activities.
+ * Does NOT mutate the input array.
+ */
+function filterRunningActivities(activities: Activity[]): Activity[] {
+  return activities.filter(a => RUNNING_TYPES.includes(a.type));
+}
+
+/**
+ * Returns a new array sorted ascending by startDate (oldest first).
+ * Does NOT mutate the input array.
+ */
+function sortByStartDateAsc(activities: Activity[]): Activity[] {
+  return [...activities].sort(
+    (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+  );
+}
+
+/**
+ * Returns a new array sorted descending by startDate (newest first).
+ * Does NOT mutate the input array.
+ */
+function sortByStartDateDesc(activities: Activity[]): Activity[] {
+  return [...activities].sort(
+    (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+  );
+}
+
+/** Clamp a component score to the valid 0..25 range. */
+function clampComponent(score: number): number {
+  if (Number.isNaN(score)) return 0;
+  return Math.min(25, Math.max(0, score));
+}
+
+/** Clamp a total score to the valid 0..100 range. */
+function clampTotal(score: number): number {
+  if (Number.isNaN(score)) return 0;
+  return Math.min(100, Math.max(0, score));
+}
+
 interface RunnerScoreComponents {
   consistency: number; // 0-25 points
   performance: number; // 0-25 points  
@@ -38,14 +78,16 @@ export class RunnerScoreService {
    */
   async calculateRunnerScore(userId: number): Promise<RunnerScoreData> {
     const allActivities = await storage.getActivitiesByUserId(userId, 100);
-    const activities = allActivities.filter(a => RUNNING_TYPES.includes(a.type));
+    const activities = filterRunningActivities(allActivities);
     
     if (activities.length === 0) {
       return this.getDefaultScore();
     }
 
     const components = this.calculateScoreComponents(activities);
-    const totalScore = Math.round(components.consistency + components.performance + components.volume + components.improvement);
+    const totalScore = clampTotal(
+      Math.round(components.consistency + components.performance + components.volume + components.improvement)
+    );
     
     const grade = this.getGrade(totalScore);
     const percentile = this.calculatePercentile(totalScore);
@@ -66,10 +108,17 @@ export class RunnerScoreService {
 
   private calculateScoreComponents(activities: Activity[], referenceDate?: Date): RunnerScoreComponents {
     const refDate = referenceDate || new Date();
-    const consistency = this.calculateConsistencyScore(activities, refDate);
-    const performance = this.calculatePerformanceScore(activities, refDate);
-    const volume = this.calculateVolumeScore(activities, refDate);
-    const improvement = this.calculateImprovementScore(activities, refDate);
+    // Filter to running activities and sort once, ascending (oldest first), so
+    // every sub-calculation operates on a consistently filtered, ordered,
+    // non-mutated copy. Filtering here (rather than only at the public callers)
+    // guarantees the current-score and historical-score paths agree for
+    // equivalent data/periods regardless of what the caller passes in.
+    const sorted = sortByStartDateAsc(filterRunningActivities(activities));
+
+    const consistency = clampComponent(this.calculateConsistencyScore(sorted, refDate));
+    const performance = clampComponent(this.calculatePerformanceScore(sorted, refDate));
+    const volume = clampComponent(this.calculateVolumeScore(sorted, refDate));
+    const improvement = clampComponent(this.calculateImprovementScore(sorted, refDate));
 
     return { consistency, performance, volume, improvement };
   }
@@ -102,14 +151,17 @@ export class RunnerScoreService {
   private calculatePerformanceScore(activities: Activity[], referenceDate: Date): number {
     if (activities.length === 0) return 5;
 
-    // Focus on recent 30-day performance for more dynamic scoring
+    // Focus on recent 30-day performance for more dynamic scoring.
+    // `activities` is sorted ascending (oldest first) by calculateScoreComponents.
     const refTime = referenceDate.getTime();
-    const recentActivities = activities.filter(a => {
+    const upToRef = activities.filter(a => new Date(a.startDate).getTime() <= refTime);
+    const recentActivities = upToRef.filter(a => {
       const activityTime = new Date(a.startDate).getTime();
-      return activityTime > refTime - 30 * 24 * 60 * 60 * 1000 && activityTime <= refTime;
+      return activityTime > refTime - 30 * 24 * 60 * 60 * 1000;
     });
 
-    const activitiesToScore = recentActivities.length >= 3 ? recentActivities : activities.slice(-10);
+    // Fallback to the 10 most recent activities (ascending sort => tail slice).
+    const activitiesToScore = recentActivities.length >= 3 ? recentActivities : upToRef.slice(-10);
 
     // Calculate average pace from speed (averageSpeed is in m/s)
     const validActivities = activitiesToScore.filter(a => a.averageSpeed && a.averageSpeed > 0);
@@ -239,7 +291,8 @@ export class RunnerScoreService {
       return { weeklyChange: 0, monthlyChange: 0 };
     }
 
-    const sorted = activities.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+    // Sort a copy descending (newest first); do NOT mutate the caller's array.
+    const sorted = sortByStartDateDesc(activities);
     
     const lastWeek = sorted.filter(a => 
       new Date(a.startDate) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
@@ -313,13 +366,16 @@ export class RunnerScoreService {
    * Generates weekly data points for 6 months of granular progression tracking
    */
   async calculateHistoricalRunnerScore(userId: number): Promise<HistoricalScorePoint[]> {
-    const activities = await storage.getActivitiesByUserId(userId, 500); // Get more activities for history
+    const allActivities = await storage.getActivitiesByUserId(userId, 500); // Get more activities for history
+    // Consistently filter to running activities, matching the current-score path.
+    const activities = filterRunningActivities(allActivities);
     
     if (activities.length < 5) {
       return []; // Not enough data for meaningful history
     }
 
-    const sortedActivities = activities.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+    // Sort a copy ascending (oldest first); do NOT mutate the caller's array.
+    const sortedActivities = sortByStartDateAsc(activities);
     const now = new Date();
     const historicalPoints: HistoricalScorePoint[] = [];
 
@@ -335,7 +391,9 @@ export class RunnerScoreService {
       if (activitiesUpToCutoff.length >= 3) {
         // Pass cutoffDate as reference so scores are calculated relative to that point in time
         const components = this.calculateScoreComponents(activitiesUpToCutoff, cutoffDate);
-        const totalScore = Math.round(components.consistency + components.performance + components.volume + components.improvement);
+        const totalScore = clampTotal(
+          Math.round(components.consistency + components.performance + components.volume + components.improvement)
+        );
         const grade = this.getGrade(totalScore);
         
         historicalPoints.push({

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Heart, Settings, Info } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 interface HeartRateZone {
   min: number;
@@ -41,7 +42,7 @@ export default function HeartRateZones({ userId, batchData }: HeartRateZonesProp
       if (restingHR) params.append('restingHR', restingHR);
       if (params.toString()) url += `?${params.toString()}`;
       
-      return fetch(url).then(res => res.json());
+      return apiRequest(url);
     },
     enabled: (batchData === undefined ? false : !batchData) || !!maxHR || !!restingHR,
   });

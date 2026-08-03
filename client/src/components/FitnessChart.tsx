@@ -72,7 +72,7 @@ export function FitnessChart({ userId }: FitnessChartProps) {
             Fitness, Fatigue & Form
             <Badge className="ml-2 bg-gradient-to-r from-strava-orange to-orange-500 text-white text-xs">
               <Crown className="h-3 w-3 mr-1" />
-              Pro
+              Premium
             </Badge>
           </CardTitle>
           <CardDescription>Track your training load and recovery status</CardDescription>

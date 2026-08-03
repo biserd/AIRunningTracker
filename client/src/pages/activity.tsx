@@ -27,6 +27,14 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useSubscription, useFeatureAccess } from "@/hooks/useSubscription";
 import type { CoachRecap } from "@shared/schema";
 import { LockedFeatureTeaser, LockedOverlay, TierBadge as TierBadgeComponent } from "@/components/LockedFeatureTeaser";
+import { normalizeZoneDurations, zonesFromFractions } from "@shared/zoneCalculations";
+import {
+  OPTIMAL_CADENCE_MIN_SPM,
+  OPTIMAL_CADENCE_MAX_SPM,
+  OPTIMAL_CADENCE_TARGET_SPM,
+  normalizeCadenceToSpm,
+  cadenceBandPosition,
+} from "@shared/cadenceNormalization";
 
 type ViewMode = "story" | "deep_dive";
 
@@ -227,7 +235,10 @@ export default function ActivityPage() {
 
   const isLocked = !!(activityData as any)?.locked || !!(activityData?.activity as any)?.locked;
 
-  const needsPerformanceData = (viewMode === 'story' || viewMode === 'deep_dive') && !isLocked;
+  const needsPerformanceData =
+    featureAccess.activity.performanceMetrics &&
+    (viewMode === 'story' || viewMode === 'deep_dive') &&
+    !isLocked;
   
   const { data: performanceData, isLoading: performanceLoading } = useQuery({
     queryKey: ['/api/activities', activityId, 'performance'],
@@ -248,7 +259,7 @@ export default function ActivityPage() {
       if (!res.ok) throw new Error('Failed to fetch verdict');
       return res.json();
     },
-    enabled: !!activityId && subscriptionReady && !isLocked,
+    enabled: !!activityId && subscriptionReady && featureAccess.activity.performanceMetrics && !isLocked,
     retry: false
   });
 
@@ -261,7 +272,7 @@ export default function ActivityPage() {
       if (!res.ok) return null;
       return res.json();
     },
-    enabled: !!activityId && subscriptionReady && !isLocked,
+    enabled: !!activityId && subscriptionReady && featureAccess.activity.performanceMetrics && !isLocked,
     retry: false
   });
 
@@ -295,7 +306,7 @@ export default function ActivityPage() {
   const hydrationTriggered = useRef(false);
 
   const activity = activityData?.activity;
-  const needsHydration = activity && (
+  const needsHydration = featureAccess.activity.performanceMetrics && activity && (
     activity.hydrationStatus === 'pending' || 
     (!activity.streamsData || activity.streamsData === 'null')
   );
@@ -567,14 +578,14 @@ export default function ActivityPage() {
                     Unlock your full AI run analysis
                   </h2>
                   <p className="text-sm text-gray-700 mb-5">
-                    Your free plan includes your 10 most-recent runs. Upgrade to Premium
+                    Your free plan includes your 20 most-recent runs. Upgrade to Premium
                     to see the full breakdown of this run — splits, route map, coach
                     verdict, efficiency score, and personalized next-run tips.
                   </p>
                   <Link href="/pricing">
                     <Button className="bg-yellow-500 hover:bg-yellow-600 text-white w-full" data-testid="button-upgrade-locked-activity">
                       <Sparkles className="h-4 w-4 mr-2" />
-                      Start 7-day Premium trial
+                      Start 14-day Premium trial
                     </Button>
                   </Link>
                   <p className="text-xs text-gray-500 mt-3">Cancel anytime. No charge during trial.</p>
@@ -1149,10 +1160,11 @@ function HeartRateChart({ activity, streams }: { activity: any, streams?: any })
       }
     });
     
-    // Update zones with actual data
+    // Normalize measured seconds into bounded durations/percentages.
+    const normalized = normalizeZoneDurations(zoneTimes, totalTime);
     zones = zones.map((zone, index) => ({
       ...zone,
-      time: zoneTimes[index] / totalTime // Convert to percentage
+      time: normalized[index].fraction,
     }));
   } else {
     // Fallback to estimated distribution based on average HR
@@ -1165,17 +1177,24 @@ function HeartRateChart({ activity, streams }: { activity: any, streams?: any })
     } else {
       zoneDistribution = [0.02, 0.15, 0.35, 0.35, 0.13];
     }
-    
+
+    const normalized = zonesFromFractions(zoneDistribution, activity.movingTime);
     zones = zones.map((zone, index) => ({
       ...zone,
-      time: zoneDistribution[index]
+      time: normalized[index].fraction,
     }));
   }
 
-  const timeInZones = zones.map(zone => ({
+  // Derive bounded display values from the normalized fractions so no zone can
+  // exceed the activity duration and percentages never total more than 100.
+  const normalizedDisplay = normalizeZoneDurations(
+    zones.map((zone) => zone.time * activity.movingTime),
+    activity.movingTime,
+  );
+  const timeInZones = zones.map((zone, index) => ({
     ...zone,
-    timeMinutes: Math.round((zone.time * activity.movingTime) / 60),
-    percentage: Math.round(zone.time * 100)
+    timeMinutes: normalizedDisplay[index].minutes,
+    percentage: normalizedDisplay[index].percentage,
   }));
 
   // Create chart data with proper structure
@@ -1227,8 +1246,13 @@ function HeartRateChart({ activity, streams }: { activity: any, streams?: any })
 
 // Cadence Chart Component - Uses real streams data only
 function CadenceChart({ activity, streams }: { activity: any, streams?: any }) {
-  const avgCadence = activity.averageCadence || 0;
-  const maxCadence = activity.maxCadence || avgCadence * 1.1;
+  // Ingested cadence is already steps-per-minute (doubled at the API level);
+  // normalize defensively so any stray single-leg value is corrected without
+  // double-converting values that are already spm.
+  const avgCadence = normalizeCadenceToSpm(activity.averageCadence);
+  const maxCadence = activity.maxCadence
+    ? normalizeCadenceToSpm(activity.maxCadence)
+    : avgCadence * 1.1;
   
   // Build chart data from real streams
   const cadenceData: { time: string; cadence: number; target: number }[] = [];
@@ -1247,8 +1271,8 @@ function CadenceChart({ activity, streams }: { activity: any, streams?: any }) {
       
       cadenceData.push({
         time: `${timeMinutes}min`,
-        cadence: Math.round(cadenceStream[i]), // Already doubled at API level
-        target: 180
+        cadence: Math.round(normalizeCadenceToSpm(cadenceStream[i])), // Already spm at API level
+        target: OPTIMAL_CADENCE_TARGET_SPM
       });
     }
   }
@@ -1283,9 +1307,9 @@ function CadenceChart({ activity, streams }: { activity: any, streams?: any }) {
       
       <div className="p-3 bg-purple-50 rounded-lg">
         <p className="text-xs text-purple-800">
-          Target cadence is 170-180 spm. Your average of {Math.round(avgCadence)} spm is {
-            avgCadence < 170 ? "below optimal - focus on quicker steps" :
-            avgCadence <= 180 ? "in excellent range" :
+          Target cadence is {OPTIMAL_CADENCE_MIN_SPM}-{OPTIMAL_CADENCE_MAX_SPM} spm. Your average of {Math.round(avgCadence)} spm is {
+            cadenceBandPosition(avgCadence) === 'below' ? "below optimal - focus on quicker steps" :
+            cadenceBandPosition(avgCadence) === 'optimal' ? "in excellent range" :
             "above optimal - consider longer strides"
           }.
         </p>
@@ -1339,16 +1363,18 @@ function PowerChart({ activity, streams }: { activity: any, streams?: any }) {
     }
   });
   
-  // Update zones with actual data
+  // Normalize measured seconds into bounded durations/percentages so no zone
+  // can exceed the activity duration and percentages never total more than 100.
+  const normalized = normalizeZoneDurations(zoneTimes, totalTime);
   powerZones = powerZones.map((zone, index) => ({
     ...zone,
-    time: zoneTimes[index] / totalTime
+    time: normalized[index].fraction,
   }));
 
-  const timeInZones = powerZones.map(zone => ({
+  const timeInZones = powerZones.map((zone, index) => ({
     ...zone,
-    timeMinutes: Math.round((zone.time * activity.movingTime) / 60),
-    percentage: Math.round(zone.time * 100)
+    timeMinutes: normalized[index].minutes,
+    percentage: normalized[index].percentage,
   }));
 
   // Create chart data with proper structure

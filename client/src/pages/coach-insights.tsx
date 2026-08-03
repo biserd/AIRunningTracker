@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { CoachRecap, User } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 
 function getConfidenceText(confidence: number): string {
   if (confidence >= 80) return "High";
@@ -184,7 +185,7 @@ function RecoveryStatusCard({ recovery, isLoading }: { recovery: RecoveryState |
   );
 }
 
-function InsightsTab({ user, batchData, isDataLoading, recoveryData, isRecoveryLoading }: { user: User; batchData: any; isDataLoading: boolean; recoveryData: RecoveryState | null; isRecoveryLoading: boolean }) {
+function InsightsTab({ user, batchData, isDataLoading, recoveryData, isRecoveryLoading, canAccessAdvancedInsights }: { user: User; batchData: any; isDataLoading: boolean; recoveryData: RecoveryState | null; isRecoveryLoading: boolean; canAccessAdvancedInsights: boolean }) {
   const scrollToSection = (sectionId: string) => {
     document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -197,7 +198,9 @@ function InsightsTab({ user, batchData, isDataLoading, recoveryData, isRecoveryL
   return (
     <>
       {/* Recovery Status Card - Time-aware freshness indicator */}
-      <RecoveryStatusCard recovery={recoveryData} isLoading={isRecoveryLoading} />
+      {canAccessAdvancedInsights && (
+        <RecoveryStatusCard recovery={recoveryData} isLoading={isRecoveryLoading} />
+      )}
 
       {/* Anchor Navigation Bar */}
       <div className="flex items-center gap-4 mb-6" data-testid="anchor-nav">
@@ -230,6 +233,8 @@ function InsightsTab({ user, batchData, isDataLoading, recoveryData, isRecoveryL
           </div>
           {isDataLoading ? (
             <div className="h-5 bg-gray-100 rounded animate-pulse"></div>
+          ) : !canAccessAdvancedInsights ? (
+            <p className="text-sm font-medium text-strava-orange">Premium prediction locked</p>
           ) : topPrediction ? (
             <p className="text-sm font-semibold text-charcoal">
               {topPrediction.distance} · {topPrediction.predictedTime}
@@ -248,6 +253,8 @@ function InsightsTab({ user, batchData, isDataLoading, recoveryData, isRecoveryL
           </div>
           {isDataLoading ? (
             <div className="h-5 bg-gray-100 rounded animate-pulse"></div>
+          ) : !canAccessAdvancedInsights ? (
+            <p className="text-sm font-medium text-strava-orange">Premium fitness detail locked</p>
           ) : vo2Max?.current ? (
             <p className="text-sm font-semibold text-charcoal">
               VO₂ Max {vo2Max.current.toFixed(1)} · <span className="text-red-600">{vo2Max.comparison || 'Good'}</span>
@@ -265,6 +272,8 @@ function InsightsTab({ user, batchData, isDataLoading, recoveryData, isRecoveryL
           </div>
           {isDataLoading ? (
             <div className="h-5 bg-gray-100 rounded animate-pulse"></div>
+          ) : !canAccessAdvancedInsights ? (
+            <p className="text-sm font-medium text-strava-orange">Premium risk analysis locked</p>
           ) : injuryRisk?.riskLevel ? (
             <p className="text-sm font-semibold capitalize">{injuryRisk.riskLevel}</p>
           ) : (
@@ -280,6 +289,8 @@ function InsightsTab({ user, batchData, isDataLoading, recoveryData, isRecoveryL
           </div>
           {isDataLoading ? (
             <div className="h-5 bg-gray-100 rounded animate-pulse"></div>
+          ) : !canAccessAdvancedInsights ? (
+            <p className="text-sm font-medium text-strava-orange">Premium efficiency detail locked</p>
           ) : efficiency?.efficiency ? (
             <p className="text-sm font-semibold text-charcoal">
               {Math.round(efficiency.efficiency)}% · <span className="text-blue-600">{getEfficiencyLabel(efficiency.efficiency)}</span>
@@ -609,12 +620,12 @@ function AIAgentCoachTab({ user, canAccessAICoachChat }: { user: User; canAccess
 
 export default function CoachInsightsPage() {
   const { user, isLoading } = useAuth();
-  const { canAccessAICoachChat } = useFeatureAccess();
+  const { canAccessAICoachChat, canAccessAdvancedInsights } = useFeatureAccess();
   const [activeTab, setActiveTab] = useState("insights");
   
   const { data: batchData, isLoading: isDataLoading } = useQuery({
     queryKey: ['/api/analytics/batch', user?.id],
-    queryFn: () => fetch(`/api/analytics/batch/${user!.id}`).then(res => res.json()),
+    queryFn: () => apiRequest(`/api/analytics/batch/${user!.id}`),
     enabled: !!user?.id,
     staleTime: 60000,
   });
@@ -629,7 +640,7 @@ export default function CoachInsightsPage() {
       if (!res.ok) throw new Error('Failed to fetch recovery state');
       return res.json();
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && canAccessAdvancedInsights,
     staleTime: 30000,
     refetchInterval: 60000,
   });
@@ -683,7 +694,7 @@ export default function CoachInsightsPage() {
             </TabsList>
             
             <TabsContent value="insights" className="mt-6">
-              <InsightsTab user={user} batchData={batchData} isDataLoading={isDataLoading} recoveryData={recoveryData || null} isRecoveryLoading={isRecoveryLoading} />
+              <InsightsTab user={user} batchData={batchData} isDataLoading={isDataLoading} recoveryData={recoveryData || null} isRecoveryLoading={isRecoveryLoading} canAccessAdvancedInsights={canAccessAdvancedInsights} />
             </TabsContent>
             
             <TabsContent value="agent-coach" className="mt-6">

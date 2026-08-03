@@ -1,6 +1,11 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "./useAuth";
+import {
+  canAccessCapability,
+  getCapabilityMatrix,
+  hasPremiumAccess,
+} from "@shared/entitlements";
 
 export interface UsageStats {
   insightsUsed: number;
@@ -32,8 +37,9 @@ export function useSubscription() {
   const plan = subscription?.subscriptionPlan || 'free';
   const status = subscription?.subscriptionStatus || 'free';
 
-  const isPremium = (plan === 'premium' || plan === 'pro') && (status === 'active' || status === 'trialing');
-  const isFree = plan === 'free' || status === 'canceled' || status === 'past_due';
+  const subject = { subscriptionPlan: plan, subscriptionStatus: status };
+  const isPremium = hasPremiumAccess(subject);
+  const isFree = !isPremium;
 
   const usage = subscription?.usage;
 
@@ -98,20 +104,24 @@ export function useManageSubscription() {
 }
 
 export function useFeatureAccess() {
-  const { isPremium, isFree, usage } = useSubscription();
+  const { isPremium, isFree, usage, plan, status } = useSubscription();
 
   const hasPremiumAccess = isPremium;
   const hasFreeAccess = isFree;
+  const subject = { subscriptionPlan: plan, subscriptionStatus: status };
+  const matrix = getCapabilityMatrix(subject);
 
   return {
+    entitlementState: matrix.state,
+    capabilityMatrix: matrix,
     canAccessBasicAnalytics: true,
     canAccessStravaIntegration: true,
     canAccessRunnerScore: true,
     
-    canAccessAdvancedInsights: hasPremiumAccess,
+    canAccessAdvancedInsights: canAccessCapability(subject, "advanced_insights"),
     canAccessInsightHistory: hasPremiumAccess,
-    canAccessTrainingPlans: hasPremiumAccess,
-    canAccessRacePredictions: hasPremiumAccess,
+    canAccessTrainingPlans: canAccessCapability(subject, "training_plans"),
+    canAccessRacePredictions: canAccessCapability(subject, "race_predictions"),
     
     canAccessAICoachChat: hasPremiumAccess,
     canAccessFormAnalysis: hasPremiumAccess,
@@ -127,23 +137,19 @@ export function useFeatureAccess() {
     insightsLimit: usage?.insightsLimit ?? 3,
     usageResetAt: usage?.resetAt ? new Date(usage.resetAt) : null,
 
-    // All per-activity data is available to every signed-in user.
-    // The only free-tier gate is HOW MANY activities they can reach
-    // (last 20 via the server-side cap). Once they open an activity
-    // they see everything — verdict, timeline, splits, HR, etc.
     activity: {
       coachVerdict: 'full',
       nextSteps: 'full',
       routeMap: true,
       baselineComparison: true,
 
-      performanceMetrics: true,
-      timeline: 'full',
-      splits: 'full',
-      hrCadencePower: true,
+      performanceMetrics: canAccessCapability(subject, "activity_deep_dive"),
+      timeline: canAccessCapability(subject, "activity_deep_dive") ? 'full' : 'locked',
+      splits: canAccessCapability(subject, "activity_deep_dive") ? 'full' : 'locked',
+      hrCadencePower: canAccessCapability(subject, "activity_deep_dive"),
 
       askCoach: hasPremiumAccess,
-      activityComparison: true,
+      activityComparison: canAccessCapability(subject, "activity_comparison"),
       goalPlanActions: hasPremiumAccess,
     }
   };

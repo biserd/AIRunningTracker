@@ -24,7 +24,7 @@ export const users = pgTable("users", {
   stravaConnected: boolean("strava_connected").default(false),
   stravaHasWriteScope: boolean("strava_has_write_scope").default(false),
   stravaBrandingEnabled: boolean("strava_branding_enabled").default(false),
-  stravaBrandingTemplate: text("strava_branding_template").default("🏃 Runner Score: {score} | {insight} — Analyzed with AITracker.run"),
+  stravaBrandingTemplate: text("strava_branding_template").default("🏃 Runner Score: {score} | {insight} — Analyzed with RunAnalytics"),
   unitPreference: text("unit_preference", { enum: ["km", "miles"] }).default("miles"),
   activityViewMode: text("activity_view_mode", { enum: ["story", "deep_dive"] }).default("story"),
   isAdmin: boolean("is_admin").default(false),

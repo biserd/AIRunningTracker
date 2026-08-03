@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { storage } from "../storage";
 import type { Activity, User, CoachRecap } from "@shared/schema";
 import { getRecoveryState, type RecoveryState } from "./recoveryService";
+import { canAccessCapability } from "@shared/entitlements";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -24,7 +25,7 @@ export async function generateCoachRecap(
     return null;
   }
 
-  if (user.subscriptionPlan !== "premium" || !["active", "trialing"].includes(user.subscriptionStatus || "")) {
+  if (!canAccessCapability(user, "ai_coach")) {
     console.log(`[Coach] User ${userId} is not a Premium subscriber`);
     return null;
   }
