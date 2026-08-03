@@ -9,7 +9,7 @@ import { metrics } from './metrics';
 import { processCoachRecapJob } from '../coachingService';
 import { aiService } from '../ai';
 import goalsService from '../goals';
-import { deleteCachedResponse } from '../../routes';
+import { deleteCachedByPrefix, deleteCachedResponse } from '../../routes';
 import { canAccessCapability } from '@shared/entitlements';
 
 // Track users with active sync operations
@@ -504,7 +504,7 @@ class JobQueue {
             }
             
             // Invalidate cache for user's dashboard and chart data
-            deleteCachedResponse(`dashboard:${userId}`);
+            deleteCachedByPrefix(`dashboard:${userId}:`);
             deleteCachedResponse(`chart:${userId}:30days`);
             console.log(`[JobQueue] Cache invalidated for user ${userId}`);
           }

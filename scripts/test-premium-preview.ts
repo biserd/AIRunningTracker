@@ -155,4 +155,16 @@ const paidUserResult = await createPremiumPreviewCore({
 assert.equal(paidUserResult.created, false);
 assert.equal((paidUserResult as any).reason, "not_eligible");
 
+const disconnectedUserResult = await createPremiumPreviewCore({
+  loadUser: async () => ({ premiumPreview: null, stravaConnected: false, subscriptionPlan: "free", subscriptionStatus: "free" }),
+  loadActivities: async () => {
+    throw new Error("should not load activities before Strava is connected");
+  },
+  persistIfAbsent: async () => {
+    throw new Error("should not create a preview before Strava is connected");
+  },
+});
+assert.equal(disconnectedUserResult.created, false);
+assert.equal((disconnectedUserResult as any).reason, "not_eligible");
+
 console.log("test-premium-preview: all assertions passed ✔");

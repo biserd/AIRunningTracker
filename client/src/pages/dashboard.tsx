@@ -32,12 +32,17 @@ import { Link } from "wouter";
 import { useFeatureAccess, useSubscription } from "@/hooks/useSubscription";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
 
+function getLocalCalendarDateKey(date: Date = new Date()) {
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+}
+
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const { canAccessAICoachChat, insightsUsed, insightsLimit, maxInsightsPerMonth } = useFeatureAccess();
   const [chartTimeRange, setChartTimeRange] = useState<string>("30days");
   const [chromeExtBannerDismissed, setChromeExtBannerDismissed] = useState<boolean>(true);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [dashboardCalendarDate, setDashboardCalendarDate] = useState(getLocalCalendarDateKey);
   const [selectedConversationId, setSelectedConversationId] = useState<number | undefined>();
   const [syncProgress, setSyncProgress] = useState<{
     current: number;
@@ -172,8 +177,10 @@ export default function Dashboard() {
 
   // Dashboard data query with polling when insights are generating or new user is waiting for first sync
   const { data: dashboardData, isLoading, error } = useQuery<any>({
-    queryKey: [`/api/dashboard/${user?.id}`],
+    queryKey: [`/api/dashboard/${user?.id}`, dashboardCalendarDate],
     enabled: !!user?.id,
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: true,
     refetchInterval: (query) => {
       const data = query.state.data;
       if (!data) return false;
@@ -186,6 +193,19 @@ export default function Dashboard() {
       return false;
     },
   });
+
+  // Roll the query key at local midnight so an open dashboard cannot keep
+  // yesterday's week/month totals under today's labels.
+  useEffect(() => {
+    const now = new Date();
+    const nextMidnight = new Date(now);
+    nextMidnight.setHours(24, 0, 1, 0);
+    const timeout = window.setTimeout(
+      () => setDashboardCalendarDate(getLocalCalendarDateKey()),
+      Math.max(1000, nextMidnight.getTime() - now.getTime()),
+    );
+    return () => window.clearTimeout(timeout);
+  }, [dashboardCalendarDate]);
 
   // When activities first land (0 → N), every other query on the page was
   // fetched while the account was still empty and — with the app-wide

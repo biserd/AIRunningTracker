@@ -8,7 +8,6 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { trackFunnelEvent } from "@/lib/analytics";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
 import { TrackedUpgradeLink } from "@/components/TrackedUpgradeLink";
-import { useAuth } from "@/hooks/useAuth";
 
 interface PremiumPreviewTeaserData {
   preview: {
@@ -22,7 +21,8 @@ interface PremiumPreviewTeaserData {
     };
   } | null;
   createdAt?: string | null;
-  status?: "ready" | "preparing" | "waiting_for_run" | "not_eligible" | "failed";
+  status?: "ready" | "preparing" | "waiting_for_run" | "not_connected" | "not_eligible" | "failed";
+  reason?: string | null;
 }
 
 function PreviewShell({ children, testId }: { children: React.ReactNode; testId: string }) {
@@ -35,7 +35,6 @@ function PreviewShell({ children, testId }: { children: React.ReactNode; testId:
 
 export default function PremiumPreviewTeaser() {
   const { isFree, isLoading: subscriptionLoading } = useSubscription();
-  const { user } = useAuth();
   const queryClient = useQueryClient();
   const query = useQuery<PremiumPreviewTeaserData>({
     queryKey: ["/api/premium-preview"],
@@ -46,8 +45,13 @@ export default function PremiumPreviewTeaser() {
       if (!res.ok) throw new Error("Failed to prepare preview");
       return res.json();
     },
-    enabled: !subscriptionLoading && isFree && !!user?.stravaConnected,
+    // The endpoint is authoritative for connection and eligibility state.
+    // Do not silently suppress recovery because a second user query is stale.
+    enabled: !subscriptionLoading && isFree,
     retry: 1,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
     refetchInterval: (state) => state.state.data?.status === "preparing" ? 4000 : false,
   });
 
@@ -75,7 +79,9 @@ export default function PremiumPreviewTeaser() {
     );
   }, [activityId]);
 
-  if (subscriptionLoading || !isFree || !user?.stravaConnected) return null;
+  if (subscriptionLoading || !isFree) return null;
+
+  if (query.data?.status === "not_connected") return null;
 
   if (query.isError || retry.isError || query.data?.status === "failed") {
     return (
@@ -112,7 +118,37 @@ export default function PremiumPreviewTeaser() {
     );
   }
 
-  if (!preview || !activityId) return null;
+  if (query.data?.status === "waiting_for_run") {
+    return (
+      <PreviewShell testId="premium-preview-waiting-for-run">
+        <div className="flex items-start gap-3">
+          <Sparkles className="h-5 w-5 text-amber-700 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="font-bold text-gray-900">Your Premium Preview is waiting for a run</h3>
+            <p className="text-sm text-gray-700 mt-1">Sync a recent run of at least 1 km and we'll turn it into two personalized findings and one recommended action.</p>
+            <Link href="/activities"><Button size="sm" variant="outline" className="mt-4">View activities</Button></Link>
+          </div>
+        </div>
+      </PreviewShell>
+    );
+  }
+
+  if (!preview || !activityId) {
+    return (
+      <PreviewShell testId="premium-preview-unavailable">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-amber-700 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="font-bold text-gray-900">Your preview isn't ready yet</h3>
+            <p className="text-sm text-gray-700 mt-1">You have eligible running data, so we'll try preparing it again without affecting your activities.</p>
+            <Button size="sm" className="mt-4" onClick={() => retry.mutate()} disabled={retry.isPending}>
+              {retry.isPending ? "Trying again…" : "Prepare my preview"}
+            </Button>
+          </div>
+        </div>
+      </PreviewShell>
+    );
+  }
 
   const activityDate = preview.sourceData.startDate
     ? new Date(preview.sourceData.startDate).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })

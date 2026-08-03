@@ -42,11 +42,13 @@ import {
   type Capability,
   canAccessCapability,
   getCapabilityMatrix,
+  hasPremiumAccess,
 } from "@shared/entitlements";
 import { normalizeCadenceToSpm } from "@shared/cadenceNormalization";
 import { buildUpgradeUrl, isBenefitKey, sanitizeReturnTo } from "@shared/upgradeIntent";
 import { recordFunnelEvent } from "./services/funnelAnalytics";
 import { isClientFunnelEvent, buildFunnelDedupeKey, billingPeriodFromInterval } from "@shared/funnelEvents";
+import { getDashboardCalendarPeriods, partitionDashboardActivities } from "./services/dashboardPeriods";
 
 // Authentication middleware
 const authenticateJWT = async (req: any, res: Response, next: NextFunction) => {
@@ -1572,7 +1574,7 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
       let creationReason: string | undefined;
-      if (!(user as any).premiumPreview && user.stravaConnected) {
+      if (!(user as any).premiumPreview && user.stravaConnected && !hasPremiumAccess(user)) {
         const { createPremiumPreviewForUser } = await import("./services/premiumPreview");
         const result = await createPremiumPreviewForUser(user.id);
         creationReason = result.created ? "created" : result.reason;
@@ -1581,17 +1583,19 @@ ${allPages.map(page => `  <url>
         }
       }
       const preview = (user as any).premiumPreview ?? null;
-      const status = preview
-        ? "ready"
-        : user.syncStatus === "running"
-          ? "preparing"
-          : creationReason === "no_eligible_run"
-            ? "waiting_for_run"
-            : "not_eligible";
+      let status: "ready" | "preparing" | "waiting_for_run" | "not_connected" | "not_eligible";
+      if (preview) status = "ready";
+      else if (hasPremiumAccess(user)) status = "not_eligible";
+      else if (!user.stravaConnected) status = "not_connected";
+      else if (user.syncStatus === "running") status = "preparing";
+      else if (creationReason === "no_eligible_run") status = "waiting_for_run";
+      else status = "not_eligible";
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
       res.json({
         preview,
         createdAt: (user as any).premiumPreviewCreatedAt ?? null,
         status,
+        reason: creationReason ?? null,
       });
     } catch (error: any) {
       console.error('Get premium preview error:', error);
@@ -1606,10 +1610,18 @@ ${allPages.map(page => `  <url>
       const user = await storage.getUser(req.user.id);
       const preview = (user as any)?.premiumPreview ?? null;
       const outcome = result.created ? "created" : result.reason;
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
       res.json({
         preview,
         createdAt: (user as any)?.premiumPreviewCreatedAt ?? null,
-        status: preview ? "ready" : outcome === "no_eligible_run" ? "waiting_for_run" : "not_eligible",
+        status: preview
+          ? "ready"
+          : !user?.stravaConnected
+            ? "not_connected"
+            : outcome === "no_eligible_run"
+              ? "waiting_for_run"
+              : "not_eligible",
+        reason: outcome,
       });
     } catch (error: any) {
       console.error('Retry premium preview error:', error);
@@ -2088,7 +2100,7 @@ ${allPages.map(page => `  <url>
 
       await storage.updateUser(userId, { email });
       // Invalidate the cached dashboard payload so the saved email shows up immediately
-      deleteCachedResponse(`dashboard:${userId}`);
+      deleteCachedByPrefix(`dashboard:${userId}:`);
       res.json({ success: true });
     } catch (error: any) {
       console.error('[AddEmail] Error:', error);
@@ -2676,7 +2688,7 @@ ${allPages.map(page => `  <url>
         }
         
         // Invalidate cache for user's dashboard and chart data since new data was synced
-        deleteCachedResponse(`dashboard:${userId}`);
+        deleteCachedByPrefix(`dashboard:${userId}:`);
         deleteCachedResponse(`chart:${userId}:30days`);
         console.log(`Cache invalidated for user ${userId} after SSE sync with ${result.syncedCount} new activities`);
       }
@@ -2736,7 +2748,7 @@ ${allPages.map(page => `  <url>
         }
         
         // Invalidate cache for user's dashboard and chart data since new data was synced
-        deleteCachedResponse(`dashboard:${userId}`);
+        deleteCachedByPrefix(`dashboard:${userId}:`);
         deleteCachedResponse(`chart:${userId}:30days`);
         console.log(`Cache invalidated for user ${userId} after legacy sync with ${result.syncedCount} new activities`);
       }
@@ -2762,8 +2774,10 @@ ${allPages.map(page => `  <url>
         return res.status(403).json({ message: "Access denied: cannot access another user's dashboard" });
       }
 
-      // Check cache first
-      const cacheKey = `dashboard:${userId}`;
+      // Bind cache and calculations to one calendar clock reading. A response
+      // produced before midnight can never leak into a new dashboard day.
+      const calendarPeriods = getDashboardCalendarPeriods();
+      const cacheKey = `dashboard:${userId}:${calendarPeriods.cachePartition}`;
       const cachedData = getCachedResponse(cacheKey);
       if (cachedData) {
         // Prevent browser caching with 304 responses
@@ -2809,28 +2823,9 @@ ${allPages.map(page => `  <url>
       
       const insights = await storage.getAIInsightsByUserId(userId);
       
-      // Calculate quick stats for this month and last month, plus weekly comparisons
-      const thisMonth = new Date();
-      thisMonth.setDate(1);
-      thisMonth.setHours(0, 0, 0, 0);
-      
-      const lastMonth = new Date(thisMonth);
-      lastMonth.setMonth(lastMonth.getMonth() - 1);
-      
-      // Calculate weekly periods
-      const thisWeek = new Date();
-      const daysSinceMonday = (thisWeek.getDay() + 6) % 7; // Monday = 0
-      thisWeek.setDate(thisWeek.getDate() - daysSinceMonday);
-      thisWeek.setHours(0, 0, 0, 0);
-      
-      const lastWeek = new Date(thisWeek);
-      lastWeek.setDate(lastWeek.getDate() - 7);
-      
       // OPTIMIZATION: Only fetch activities from last 3 months instead of all activities
       // This filters at the DATABASE level for maximum performance
-      const threeMonthsAgo = new Date();
-      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-      threeMonthsAgo.setHours(0, 0, 0, 0);
+      const { threeMonthsAgo } = calendarPeriods;
 
       // Free-tier 20-run cap also applies to the stats fan-out: a free
       // user's monthly/weekly numbers must be computed from the same set
@@ -2844,24 +2839,13 @@ ${allPages.map(page => `  <url>
       // Filter to running activities only for stats (exclude walks, weight training, etc.)
       const runningActivities = recentActivities.filter(a => RUNNING_ACTIVITY_TYPES.includes(a.type));
       
-      // Calendar labels must describe the actual current period. Anchoring
-      // "this month" to the latest activity made stale July data appear as
-      // current in August and undermined trust in every dashboard metric.
-      const thisMonthActivities = runningActivities.filter(a => 
-        new Date(a.startDate) >= thisMonth
-      );
-      
-      const lastMonthActivities = runningActivities.filter(a => 
-        new Date(a.startDate) >= lastMonth && new Date(a.startDate) < thisMonth
-      );
-      
-      const thisWeekActivities = runningActivities.filter(a => 
-        new Date(a.startDate) >= thisWeek
-      );
-      
-      const lastWeekActivities = runningActivities.filter(a => 
-        new Date(a.startDate) >= lastWeek && new Date(a.startDate) < thisWeek
-      );
+      // Calendar labels must describe the actual current period. Invalid,
+      // future-dated, and previous-month rows are excluded from current totals.
+      const partitionedActivities = partitionDashboardActivities(runningActivities, calendarPeriods);
+      const thisMonthActivities = partitionedActivities.thisMonth;
+      const lastMonthActivities = partitionedActivities.lastMonth;
+      const thisWeekActivities = partitionedActivities.thisWeek;
+      const lastWeekActivities = partitionedActivities.lastWeek;
       
       // Calculate this month stats
       const totalDistance = thisMonthActivities.reduce((sum, a) => sum + a.distance, 0);
@@ -2935,6 +2919,9 @@ ${allPages.map(page => `  <url>
         },
         usage: usageStats,
         stats: {
+          asOf: calendarPeriods.now.toISOString(),
+          monthStart: calendarPeriods.thisMonth.toISOString(),
+          weekStart: calendarPeriods.thisWeek.toISOString(),
           // Monthly totals (current behavior)
           monthlyTotalDistance: user.unitPreference === "miles" ? 
             ((totalDistance / 1000) * 0.621371).toFixed(1) : 
@@ -4121,7 +4108,7 @@ ${allPages.map(page => `  <url>
       }
 
       // Invalidate cached dashboard and chart data since they depend on unit preference
-      deleteCachedResponse(`dashboard:${userId}`);
+      deleteCachedByPrefix(`dashboard:${userId}:`);
       deleteCachedResponse(`chart:${userId}:30days`);
       console.log(`[Settings] Invalidated cache for user ${userId} after unit preference change to ${unitPreference}`);
 
@@ -4157,7 +4144,7 @@ ${allPages.map(page => `  <url>
       }
 
       // Invalidate cached dashboard
-      deleteCachedResponse(`dashboard:${userId}`);
+      deleteCachedByPrefix(`dashboard:${userId}:`);
       console.log(`[Branding] Updated branding settings for user ${userId}: enabled=${stravaBrandingEnabled}`);
 
       res.json({ success: true, user: updatedUser });
@@ -4205,7 +4192,7 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
 
-      deleteCachedResponse(`dashboard:${userId}`);
+      deleteCachedByPrefix(`dashboard:${userId}:`);
       console.log(`[Notifications] Updated notification settings for user ${userId}:`, updateData);
 
       res.json({ success: true, user: updatedUser });
@@ -4323,7 +4310,7 @@ ${allPages.map(page => `  <url>
       }
 
       // Invalidate cached dashboard
-      deleteCachedResponse(`dashboard:${userId}`);
+      deleteCachedByPrefix(`dashboard:${userId}:`);
       console.log(`[Coach] Updated coach preferences for user ${userId}`);
 
       res.json({ success: true, user: updatedUser });
@@ -4480,7 +4467,7 @@ ${allPages.map(page => `  <url>
       }
 
       // Clear backend caches for this user
-      deleteCachedResponse(`dashboard:${userId}`);
+      deleteCachedByPrefix(`dashboard:${userId}:`);
       deleteCachedResponse(`chart:${userId}:7days`);
       deleteCachedResponse(`chart:${userId}:30days`);
       deleteCachedResponse(`chart:${userId}:90days`);
@@ -5626,7 +5613,7 @@ ${allPages.map(page => `  <url>
       }
 
       await storage.deleteActivity(activityId);
-      deleteCachedResponse(`dashboard:${userId}`);
+      deleteCachedByPrefix(`dashboard:${userId}:`);
       deleteCachedByPrefix(`chart:${userId}:`);
       deleteCachedByPrefix(`fitness:${userId}:`);
       deleteCachedResponse(`analytics-batch:${userId}`);
@@ -6005,7 +5992,7 @@ ${allPages.map(page => `  <url>
         }
         
         // Invalidate cache for user's dashboard and chart data since new data was synced
-        deleteCachedResponse(`dashboard:${userId}`);
+        deleteCachedByPrefix(`dashboard:${userId}:`);
         deleteCachedResponse(`chart:${userId}:30days`);
         console.log(`Cache invalidated for user ${userId} after syncing ${result.syncedCount} new activities`);
       }
