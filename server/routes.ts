@@ -1574,7 +1574,7 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
       let creationReason: string | undefined;
-      if (!(user as any).premiumPreview && user.stravaConnected && !hasPremiumAccess(user)) {
+      if (user.stravaConnected && !hasPremiumAccess(user)) {
         const { createPremiumPreviewForUser } = await import("./services/premiumPreview");
         const result = await createPremiumPreviewForUser(user.id);
         creationReason = result.created ? "created" : result.reason;

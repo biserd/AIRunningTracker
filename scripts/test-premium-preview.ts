@@ -78,7 +78,7 @@ assert.deepEqual(
 
 // ---------- Payload shape & safe limits ----------
 
-const payload = buildPremiumPreviewPayload(makeRun(), new Date("2026-08-03T12:00:00Z"));
+const payload = buildPremiumPreviewPayload(makeRun(), "miles", new Date("2026-08-03T12:00:00Z"));
 assert.equal(payload.kind, "premium_preview");
 assert.equal(payload.findings.length, 2, "exactly two findings");
 assert.ok(payload.nextAction.length > 0, "one next action present");
@@ -90,10 +90,15 @@ assert.ok(payload.sourceData.name.length <= PREVIEW_NAME_MAX);
 assert.equal(payload.sourceData.activityId, 101);
 assert.equal(payload.sourceData.distanceMeters, 8123);
 assert.equal(payload.sourceData.averageCadence, 172, "already-normalized cadence is unchanged");
+assert.equal(payload.unitPreference, "miles");
+assert.ok(payload.findings.some((finding) => finding.includes("/mi")));
+assert.ok(!payload.findings.some((finding) => finding.includes("/km")));
 
-const historicalCadencePayload = buildPremiumPreviewPayload(makeRun({ averageCadence: 86 }));
+const historicalCadencePayload = buildPremiumPreviewPayload(makeRun({ averageCadence: 86 }), "km");
 assert.equal(historicalCadencePayload.sourceData.averageCadence, 172, "historical single-leg cadence is normalized once");
 assert.ok(historicalCadencePayload.findings.some((finding) => finding.includes("172 steps per minute")));
+assert.equal(historicalCadencePayload.unitPreference, "km");
+assert.ok(historicalCadencePayload.findings.some((finding) => finding.includes("/km")));
 
 // No bulky/raw fields may leak into the stored payload.
 const json = JSON.stringify(payload);
@@ -113,6 +118,7 @@ assert.ok(
 // Works without HR/cadence/elevation (still exactly two findings + action).
 const barePayload = buildPremiumPreviewPayload(
   makeRun({ averageHeartrate: null, averageCadence: null, totalElevationGain: 0 }),
+  "miles",
 );
 assert.equal(barePayload.findings.length, 2);
 assert.ok(barePayload.nextAction.length > 0);
@@ -123,7 +129,7 @@ function makeFakeStore(activities: any[]) {
   let stored: PremiumPreviewPayload | null = null;
   return {
     deps: {
-      loadUser: async () => ({ premiumPreview: stored }),
+      loadUser: async () => ({ premiumPreview: stored, unitPreference: "miles" }),
       loadActivities: async () => activities,
       // Atomic compare-and-set, like the SQL `WHERE premium_preview IS NULL`.
       persistIfAbsent: async (p: PremiumPreviewPayload) => {

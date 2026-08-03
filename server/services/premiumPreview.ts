@@ -8,14 +8,15 @@
  */
 import { db } from "../db";
 import { users, type Activity } from "@shared/schema";
-import { and, eq, isNull } from "drizzle-orm";
-import { storage, RUNNING_ACTIVITY_TYPES } from "../storage";
+import { and, eq, isNull, sql } from "drizzle-orm";
+import { storage } from "../storage";
 import { hasPremiumAccess } from "@shared/entitlements";
 import { normalizeCadenceToSpm } from "@shared/cadenceNormalization";
 
 // Safe payload limits — the preview is stored on the users row and returned
 // verbatim to the client, so it must stay small and free of bulky fields
 // (streams, polylines, laps).
+export const PREMIUM_PREVIEW_VERSION = 2;
 export const PREVIEW_TEXT_MAX = 240;
 export const PREVIEW_NAME_MAX = 120;
 export const PREVIEW_PAYLOAD_MAX_BYTES = 4096;
@@ -36,8 +37,9 @@ export interface PremiumPreviewSourceData {
 
 export interface PremiumPreviewPayload {
   kind: "premium_preview";
-  version: 1;
+  version: typeof PREMIUM_PREVIEW_VERSION;
   createdAt: string;
+  unitPreference: "km" | "miles";
   activityId: number;
   findings: [string, string];
   nextAction: string;
@@ -51,6 +53,8 @@ export interface PreviewEligibilitySummary {
   movingTimeQualifiedRuns: number;
   eligibleRuns: number;
 }
+
+type PreviewUnitPreference = "km" | "miles";
 
 function cap(text: string, max: number): string {
   if (text.length <= max) return text;
@@ -101,10 +105,23 @@ export function selectLatestEligibleRun(activities: Activity[]): Activity | null
   });
 }
 
-function formatPace(secPerKm: number): string {
-  const min = Math.floor(secPerKm / 60);
-  const sec = Math.round(secPerKm % 60);
-  return `${min}:${String(sec).padStart(2, "0")}/km`;
+function formatDurationPerUnit(seconds: number, unitPreference: PreviewUnitPreference): string {
+  const secondsPerUnit = unitPreference === "miles" ? seconds * 1.609344 : seconds;
+  const min = Math.floor(secondsPerUnit / 60);
+  const sec = Math.round(secondsPerUnit % 60);
+  return `${min}:${String(sec).padStart(2, "0")}/${unitPreference === "miles" ? "mi" : "km"}`;
+}
+
+function formatDistance(distanceKm: number, unitPreference: PreviewUnitPreference): string {
+  return unitPreference === "miles"
+    ? `${(distanceKm * 0.621371).toFixed(1)} mi`
+    : `${distanceKm.toFixed(1)} km`;
+}
+
+function formatElevation(elevationMeters: number, unitPreference: PreviewUnitPreference): string {
+  return unitPreference === "miles"
+    ? `${Math.round(elevationMeters * 3.28084)} ft`
+    : `${Math.round(elevationMeters)} m`;
 }
 
 /**
@@ -112,11 +129,16 @@ function formatPace(secPerKm: number): string {
  * streams/laps/polylines). Deterministic — no AI call — so the very first
  * impression a new runner gets is trustworthy and repeatable.
  */
-export function buildPremiumPreviewPayload(activity: Activity, now: Date = new Date()): PremiumPreviewPayload {
+export function buildPremiumPreviewPayload(
+  activity: Activity,
+  unitPreference: PreviewUnitPreference = "miles",
+  now: Date = new Date(),
+): PremiumPreviewPayload {
   const distanceKm = (activity.distance ?? 0) / 1000;
   const movingTime = activity.movingTime ?? 0;
   const paceSecPerKm = distanceKm > 0 ? movingTime / distanceKm : 0;
-  const paceDisplay = formatPace(paceSecPerKm);
+  const paceDisplay = formatDurationPerUnit(paceSecPerKm, unitPreference);
+  const distanceDisplay = formatDistance(distanceKm, unitPreference);
 
   const candidates: string[] = [];
 
@@ -146,16 +168,16 @@ export function buildPremiumPreviewPayload(activity: Activity, now: Date = new D
   // Elevation finding when meaningful climb exists.
   if ((activity.totalElevationGain ?? 0) >= 30) {
     candidates.push(
-      `This run packed ${Math.round(activity.totalElevationGain!)} m of climbing into ${distanceKm.toFixed(1)} km — hilly runs like this quietly build strength but also raise recovery cost.`,
+      `This run packed ${formatElevation(activity.totalElevationGain!, unitPreference)} of climbing into ${distanceDisplay} — hilly runs like this quietly build strength but also raise recovery cost.`,
     );
   }
 
   // Pacing/volume finding — always available as a fallback.
   candidates.push(
-    `You held ${paceDisplay} across ${distanceKm.toFixed(1)} km — consistent enough that a full split-by-split analysis would show exactly where you gained and lost time.`,
+    `You held ${paceDisplay} across ${distanceDisplay} — consistent enough that a full split-by-split analysis would show exactly where you gained and lost time.`,
   );
   candidates.push(
-    `A ${distanceKm.toFixed(1)} km run of ${Math.round(movingTime / 60)} minutes is a solid data sample — enough for Premium to model your race predictions and training load.`,
+    `A ${distanceDisplay} run of ${Math.round(movingTime / 60)} minutes is a solid data sample — enough for Premium to model your race predictions and training load.`,
   );
 
   const findings: [string, string] = [
@@ -166,14 +188,15 @@ export function buildPremiumPreviewPayload(activity: Activity, now: Date = new D
   const nextAction = cap(
     activity.averageHeartrate
       ? `Next run: keep your heart rate under ${Math.round(activity.averageHeartrate)} bpm for the first half, then let pace come to you — Premium's full analysis shows whether you fade late and by how much.`
-      : `Next run: start 10–15 sec/km slower than ${paceDisplay} and aim to finish faster than you start — Premium's full analysis shows whether you fade late and by how much.`,
+      : `Next run: start ${unitPreference === "miles" ? "16–24 sec/mi" : "10–15 sec/km"} slower than ${paceDisplay} and aim to finish faster than you start — Premium's full analysis shows whether you fade late and by how much.`,
     PREVIEW_TEXT_MAX,
   );
 
   const payload: PremiumPreviewPayload = {
     kind: "premium_preview",
-    version: 1,
+    version: PREMIUM_PREVIEW_VERSION,
     createdAt: now.toISOString(),
+    unitPreference,
     activityId: activity.id,
     findings,
     nextAction,
@@ -201,6 +224,7 @@ export function buildPremiumPreviewPayload(activity: Activity, now: Date = new D
 export interface CreatePreviewDeps {
   loadUser: () => Promise<{
     premiumPreview: unknown;
+    unitPreference?: string | null;
     stravaConnected?: boolean | null;
     subscriptionPlan?: string | null;
     subscriptionStatus?: string | null;
@@ -208,6 +232,7 @@ export interface CreatePreviewDeps {
   loadActivities: () => Promise<Activity[]>;
   /** Atomic compare-and-set: persist only if no preview exists. Returns true when written. */
   persistIfAbsent: (payload: PremiumPreviewPayload) => Promise<boolean>;
+  replaceIfStale?: (payload: PremiumPreviewPayload) => Promise<boolean>;
   now?: () => Date;
 }
 
@@ -222,7 +247,13 @@ export type CreatePreviewResult =
 export async function createPremiumPreviewCore(deps: CreatePreviewDeps): Promise<CreatePreviewResult> {
   const user = await deps.loadUser();
   if (!user) return { created: false, reason: "no_user" };
-  if (user.premiumPreview) return { created: false, reason: "already_exists" };
+  const unitPreference: PreviewUnitPreference = user.unitPreference === "km" ? "km" : "miles";
+  const existingPreview = user.premiumPreview as Partial<PremiumPreviewPayload> | null;
+  const previewNeedsUnitRefresh = Boolean(
+    existingPreview &&
+    (existingPreview.version !== PREMIUM_PREVIEW_VERSION || existingPreview.unitPreference !== unitPreference),
+  );
+  if (existingPreview && !previewNeedsUnitRefresh) return { created: false, reason: "already_exists" };
   if (user.stravaConnected === false || hasPremiumAccess(user)) {
     return { created: false, reason: "not_eligible" };
   }
@@ -234,8 +265,17 @@ export async function createPremiumPreviewCore(deps: CreatePreviewDeps): Promise
     return { created: false, reason: "no_eligible_run" };
   }
 
-  const payload = buildPremiumPreviewPayload(run, deps.now ? deps.now() : new Date());
-  const written = await deps.persistIfAbsent(payload);
+  const payload = buildPremiumPreviewPayload(
+    run,
+    unitPreference,
+    deps.now ? deps.now() : new Date(),
+  );
+  const written = previewNeedsUnitRefresh
+    ? await deps.replaceIfStale?.(payload)
+    : await deps.persistIfAbsent(payload);
+  if (previewNeedsUnitRefresh && !deps.replaceIfStale) {
+    return { created: false, reason: "already_exists" };
+  }
   if (!written) return { created: false, reason: "already_exists" };
   return { created: true, payload };
 }
@@ -251,6 +291,7 @@ export async function createPremiumPreviewForUser(userId: number): Promise<Creat
       const u = await storage.getUser(userId);
       return u ? {
         premiumPreview: (u as any).premiumPreview,
+        unitPreference: u.unitPreference,
         stravaConnected: u.stravaConnected,
         subscriptionPlan: u.subscriptionPlan,
         subscriptionStatus: u.subscriptionStatus,
@@ -262,6 +303,22 @@ export async function createPremiumPreviewForUser(userId: number): Promise<Creat
         .update(users)
         .set({ premiumPreview: payload as any, premiumPreviewCreatedAt: new Date() })
         .where(and(eq(users.id, userId), isNull(users.premiumPreview)))
+        .returning({ id: users.id });
+      return result.length > 0;
+    },
+    replaceIfStale: async (payload) => {
+      const result = await db
+        .update(users)
+        .set({ premiumPreview: payload as any, premiumPreviewCreatedAt: new Date() })
+        .where(and(
+          eq(users.id, userId),
+          sql`(
+            ${users.premiumPreview} IS NULL OR
+            (${users.premiumPreview}->>'version') IS NULL OR
+            (${users.premiumPreview}->>'version')::int < ${PREMIUM_PREVIEW_VERSION} OR
+            (${users.premiumPreview}->>'unitPreference') IS DISTINCT FROM ${payload.unitPreference}
+          )`,
+        ))
         .returning({ id: users.id });
       return result.length > 0;
     },
