@@ -1446,6 +1446,25 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // One-time Premium Preview created after the user's first successful
+  // Strava sync. Read-only: the preview itself is intentionally accessible
+  // to free users; every follow-up Premium action stays capability-gated.
+  app.get("/api/premium-preview", authenticateJWT, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json({
+        preview: (user as any).premiumPreview ?? null,
+        createdAt: (user as any).premiumPreviewCreatedAt ?? null,
+      });
+    } catch (error: any) {
+      console.error('Get premium preview error:', error);
+      res.status(500).json({ message: "Failed to get premium preview" });
+    }
+  });
+
   // Get fitness metrics (CTL/ATL/TSB chart data)
   app.get("/api/fitness/:userId", authenticateJWT, async (req: any, res) => {
     try {

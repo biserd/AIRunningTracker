@@ -97,6 +97,11 @@ export const users = pgTable("users", {
     enum: ["3", "4", "5+"] 
   }),
   onboardingCompletedAt: timestamp("onboarding_completed_at"),
+  // One-time Premium Preview generated after the user's first successful
+  // Strava sync. Small JSON payload (two findings, one next action, source
+  // data). Written exactly once via a compare-and-set update.
+  premiumPreview: jsonb("premium_preview"),
+  premiumPreviewCreatedAt: timestamp("premium_preview_created_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

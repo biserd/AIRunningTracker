@@ -182,6 +182,98 @@ function CappedKPIRibbon({
   );
 }
 
+interface PremiumPreviewData {
+  kind: "premium_preview";
+  findings: [string, string];
+  nextAction: string;
+  sourceData: {
+    activityId: number;
+    name: string;
+    startDate: string | null;
+    distanceMeters: number;
+    movingTimeSec: number;
+    averageHeartrate: number | null;
+    averageCadence: number | null;
+    totalElevationGain: number | null;
+  };
+}
+
+function PremiumPreviewCard({ preview }: { preview: PremiumPreviewData }) {
+  const src = preview.sourceData;
+  const distanceKm = src.distanceMeters / 1000;
+  const paceSecPerKm = distanceKm > 0 ? src.movingTimeSec / distanceKm : 0;
+  const paceDisplay = paceSecPerKm > 0
+    ? `${Math.floor(paceSecPerKm / 60)}:${String(Math.round(paceSecPerKm % 60)).padStart(2, "0")}/km`
+    : "—";
+  const durationMin = Math.floor(src.movingTimeSec / 60);
+
+  const sourceStats = [
+    { label: `${distanceKm.toFixed(2)} km`, sub: "Distance" },
+    { label: `${durationMin} min`, sub: "Time" },
+    { label: paceDisplay, sub: "Pace" },
+    src.averageHeartrate ? { label: `${Math.round(src.averageHeartrate)} bpm`, sub: "Avg HR" } : null,
+    src.averageCadence ? { label: `${Math.round(src.averageCadence)} spm`, sub: "Cadence" } : null,
+    src.totalElevationGain ? { label: `${Math.round(src.totalElevationGain)} m`, sub: "Climb" } : null,
+  ].filter(Boolean) as { label: string; sub: string }[];
+
+  return (
+    <Card className="border-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-amber-50 mb-6" data-testid="premium-preview-card">
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-yellow-600" />
+          <span className="text-xs font-bold px-2 py-1 rounded bg-yellow-100 text-yellow-700 uppercase tracking-wide" data-testid="premium-preview-badge">
+            Premium Preview
+          </span>
+        </div>
+        <CardTitle className="text-lg text-gray-900 mt-2">
+          What Premium sees in this run
+        </CardTitle>
+        <p className="text-xs text-gray-500">
+          A one-time look at your run, {src.name}. The full analysis stays Premium.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-3">
+          {preview.findings.map((finding, i) => (
+            <div key={i} className="flex items-start gap-3 bg-white rounded-lg p-3 shadow-sm" data-testid={`premium-preview-finding-${i + 1}`}>
+              <BarChart2 className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-gray-800">{finding}</p>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-start gap-3 bg-white rounded-lg p-3 shadow-sm border-l-4 border-yellow-400" data-testid="premium-preview-next-action">
+          <Flag className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-xs font-semibold text-yellow-700 uppercase mb-1">Your next action</p>
+            <p className="text-sm text-gray-800">{preview.nextAction}</p>
+          </div>
+        </div>
+        <div data-testid="premium-preview-source-data">
+          <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Source data for this preview</p>
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
+            {sourceStats.map((s, i) => (
+              <div key={i} className="flex items-baseline gap-1">
+                <span className="text-sm font-bold text-gray-900">{s.label}</span>
+                <span className="text-xs text-gray-500">{s.sub}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center justify-between pt-1">
+          <p className="text-xs text-gray-500 flex items-center gap-1">
+            <Lock className="h-3 w-3" /> Splits, decoupling, and race predictions stay locked
+          </p>
+          <Link href="/pricing">
+            <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-white" data-testid="premium-preview-upgrade">
+              <Sparkles className="h-4 w-4 mr-1" /> Unlock full analysis
+            </Button>
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function ActivityPage() {
   const [match, params] = useRoute("/activity/:id");
   const activityId = params?.id;
@@ -301,6 +393,28 @@ export default function ActivityPage() {
     enabled: !!activityId && subscriptionReady && isPremium && !isLocked,
     retry: false
   });
+
+  // One-time Premium Preview created after the user's first successful
+  // Strava sync. Only fetched for non-premium users; rendered when the
+  // preview was generated from this specific activity.
+  const { data: premiumPreviewData } = useQuery<{ preview: PremiumPreviewData | null }>({
+    queryKey: ['/api/premium-preview'],
+    queryFn: async () => {
+      const res = await fetch('/api/premium-preview', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+      });
+      if (!res.ok) return { preview: null };
+      return res.json();
+    },
+    enabled: subscriptionReady && isFree && !isLocked,
+    retry: false
+  });
+
+  const premiumPreview =
+    premiumPreviewData?.preview &&
+    premiumPreviewData.preview.sourceData?.activityId === Number(activityId)
+      ? premiumPreviewData.preview
+      : null;
 
   const [isHydrating, setIsHydrating] = useState(false);
   const hydrationTriggered = useRef(false);
@@ -769,7 +883,10 @@ export default function ActivityPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8 max-w-6xl">
-        
+
+        {/* One-time Premium Preview (free users, first-synced run only) */}
+        {premiumPreview && <PremiumPreviewCard preview={premiumPreview} />}
+
         {/* Story Mode: Simplified Layout */}
         {viewMode === 'story' && (
           <>

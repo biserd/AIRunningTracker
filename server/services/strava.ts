@@ -480,6 +480,23 @@ export class StravaService {
       console.log(`Activity types found: ${Array.from(activityTypes).join(', ')}`);
       console.log(`Sport types found: ${Array.from(sportTypes).join(', ')}`);
       console.log(`Successfully synced ${syncedCount} activities for user ${userId}`);
+
+      // Trial-conversion Phase 2: after the user's FIRST successful sync,
+      // create their one-time Premium Preview from the latest eligible run.
+      // Best-effort and exactly-once (DB compare-and-set inside the service).
+      if (!afterTimestamp && syncedCount > 0) {
+        try {
+          const { createPremiumPreviewAfterFirstSync } = await import("./premiumPreview");
+          const previewResult = await createPremiumPreviewAfterFirstSync(userId);
+          console.log(
+            `[PremiumPreview] First-sync preview for user ${userId}: ` +
+            (previewResult.created ? `created from activity ${previewResult.payload.activityId}` : `skipped (${previewResult.reason})`)
+          );
+        } catch (previewErr) {
+          console.error(`[PremiumPreview] Failed to create preview for user ${userId}:`, previewErr);
+        }
+      }
+
       
       // Enqueue hydration jobs for recent activities (last 10 weeks) 
       // These run in the background with priority ordering
