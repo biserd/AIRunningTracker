@@ -35,6 +35,11 @@ export const users = pgTable("users", {
   syncTotal: integer("sync_total").default(0),
   syncError: text("sync_error"),
   lastIncrementalSince: timestamp("last_incremental_since"),
+  // Free accounts are paused after 30 days without an app visit. While
+  // paused, Strava webhook activities are acknowledged but not fetched,
+  // stored, analyzed, or emailed. Paid and trial accounts are exempt.
+  stravaWebhookPausedAt: timestamp("strava_webhook_paused_at"),
+  dormancyNoticeSentAt: timestamp("dormancy_notice_sent_at"),
   // Set true when a free user upgrades to a paid plan (trial or active) so the
   // next time they load the app we automatically backfill their full Strava
   // history beyond the original 20-activity free-tier cap.

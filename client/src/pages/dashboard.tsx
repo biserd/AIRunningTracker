@@ -82,17 +82,30 @@ export default function Dashboard() {
   useEffect(() => {
     if (user?.id) {
       // Send heartbeat for lastSeen tracking
-      apiRequest('POST', `/api/users/${user.id}/heartbeat`).catch(() => {});
+      apiRequest(`/api/users/${user.id}/heartbeat`, "POST")
+        .then((result) => {
+          const params = new URLSearchParams(window.location.search);
+          if (result?.reactivated || params.get("account") === "reactivate") {
+            toast({
+              title: "Account reactivated",
+              description: "New Strava activities will be processed again.",
+            });
+            params.delete("account");
+            const query = params.toString();
+            window.history.replaceState({}, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
+          }
+        })
+        .catch(() => {});
       
       // Record activation when user views dashboard (one-time event)
       const activationKey = `activation_recorded_${user.id}`;
       if (!localStorage.getItem(activationKey)) {
-        apiRequest('POST', `/api/users/${user.id}/activation`, { activationType: 'dashboard_view' })
+        apiRequest(`/api/users/${user.id}/activation`, "POST", { activationType: 'dashboard_view' })
           .then(() => localStorage.setItem(activationKey, 'true'))
           .catch(() => {});
       }
     }
-  }, [user?.id]);
+  }, [user?.id, toast]);
 
   // Show one-time "welcome" toast for users arriving fresh from signup.
   // New users land here on the free plan with a 20-run cap and a

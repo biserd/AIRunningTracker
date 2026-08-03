@@ -473,6 +473,14 @@ export class DatabaseStorage implements IStorage {
     if (plan) {
       updates.subscriptionPlan = plan as any;
     }
+    if (
+      (plan === "premium" || plan === "pro") &&
+      (status === "active" || status === "trialing")
+    ) {
+      // An upgrade or trial always resumes webhook processing immediately.
+      updates.stravaWebhookPausedAt = null;
+      updates.dormancyNoticeSentAt = null;
+    }
     const [user] = await db
       .update(users)
       .set(updates)

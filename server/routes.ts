@@ -25,6 +25,7 @@ import { efficiencyService } from "./services/efficiency";
 import { dripCampaignService } from "./services/dripCampaign";
 import { dripCampaignWorker } from "./services/dripCampaignWorker";
 import { sendWeeklySummaries, weeklySummaryWorker } from "./services/weeklySummaryWorker";
+import { accountDormancyWorker, reactivateDormantAccount } from "./services/accountDormancy";
 import { stravaWebhookService } from "./services/stravaWebhook";
 import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, emailWaitlist, users, stravaWebhookLogs, type Activity, type RunningShoe } from "@shared/schema";
 import { shoeData } from "./shoe-data";
@@ -1522,7 +1523,8 @@ ${allPages.map(page => `  <url>
     try {
       const loginData = loginSchema.parse(req.body);
       const result = await authService.login(loginData);
-      res.json(result);
+      const reactivation = await reactivateDormantAccount(result.user.id);
+      res.json({ ...result, accountReactivated: reactivation.reactivated });
     } catch (error: any) {
       // Surface a machine-readable code so the web client can switch the UI
       // (e.g. show a "Sign in with Strava" CTA on STRAVA_ONLY accounts
@@ -1538,6 +1540,9 @@ ${allPages.map(page => `  <url>
 
   app.get("/api/auth/user", authenticateJWT, async (req: any, res) => {
     try {
+      // Loading any authenticated app screen counts as a return visit, not
+      // only loading the dashboard.
+      await reactivateDormantAccount(req.user.id);
       const user = await storage.getUser(req.user.id);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -1887,7 +1892,8 @@ ${allPages.map(page => `  <url>
     try {
       const { token } = z.object({ token: z.string().min(1) }).parse(req.body);
       const result = await authService.verifyMagicLinkToken(token);
-      res.json(result);
+      const reactivation = await reactivateDormantAccount(result.user.id);
+      res.json({ ...result, accountReactivated: reactivation.reactivated });
     } catch (error: any) {
       if (error instanceof AuthError) {
         return res.status(401).json({ message: error.message, code: error.code });
@@ -2009,6 +2015,7 @@ ${allPages.map(page => `  <url>
           stravaRefreshToken: tokenData.refresh_token,
           stravaConnected: true,
         });
+        await reactivateDormantAccount(existingUser.id);
         const token = authService.generateToken(existingUser);
         if (isMobile) {
           // Hand the JWT back to the native app via custom-scheme deep link.
@@ -2124,6 +2131,7 @@ ${allPages.map(page => `  <url>
       
       // Verify credentials using existing auth service
       const result = await authService.login({ email, password });
+      await reactivateDormantAccount(result.user.id);
       
       // Get full user data from storage for complete mobile response
       const fullUser = await storage.getUser(result.user.id);
@@ -8967,8 +8975,8 @@ ${allPages.map(page => `  <url>
         return res.status(403).json({ message: "Access denied" });
       }
       
-      await dripCampaignService.recordLastSeen(userId);
-      res.json({ success: true });
+      const result = await reactivateDormantAccount(userId);
+      res.json({ success: true, reactivated: result.reactivated });
     } catch (error: any) {
       // Silent failure for heartbeat
       res.json({ success: false });
@@ -9000,6 +9008,9 @@ ${allPages.map(page => `  <url>
 
   // Start the weekly summary worker (fires every Monday UTC)
   weeklySummaryWorker.start();
+
+  // Pause free Strava processing after 30 days without an app visit.
+  accountDormancyWorker.start();
 
   const httpServer = createServer(app);
   return httpServer;

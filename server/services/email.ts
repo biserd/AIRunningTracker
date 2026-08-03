@@ -1213,6 +1213,69 @@ ${unsubLine}`.trim();
     return await this.sendEmail({ to, subject: emailSubject, html, text });
   }
 
+  async sendAccountDormantEmail(params: {
+    to: string;
+    firstName?: string | null;
+    reactivateUrl: string;
+    settingsUrl: string;
+    inactivityDays: number;
+  }): Promise<boolean> {
+    const { to, firstName, reactivateUrl, settingsUrl, inactivityDays } = params;
+    const safeFirstName = (firstName || "there")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+    const subject = "Your RunAnalytics account is now inactive";
+    const text = [
+      `Hi ${firstName || "there"},`,
+      "",
+      `You haven't opened RunAnalytics in ${inactivityDays} days, so activity processing for your free account has been paused.`,
+      "",
+      "New Strava activities will not be imported or analyzed, and post-run emails are paused while your account is inactive.",
+      "",
+      "Sign in to reactivate your account. New activities will be processed again after you return.",
+      "",
+      `Reactivate your account: ${reactivateUrl}`,
+      "",
+      "Paid subscriptions and active trials are never paused.",
+      `Email settings: ${settingsUrl}`,
+    ].join("\n");
+
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${subject}</title></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <div style="max-width:560px;margin:32px auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+    <div style="background:linear-gradient(135deg,#FC5200 0%,#e04900 100%);padding:28px;text-align:center;">
+      <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.82);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:7px;">RunAnalytics</div>
+      <div style="font-size:24px;font-weight:800;color:#ffffff;">Activity processing has been paused</div>
+    </div>
+    <div style="padding:30px 32px;">
+      <p style="margin:0 0 18px;font-size:15px;color:#333;line-height:1.65;">Hi ${safeFirstName},</p>
+      <p style="margin:0 0 18px;font-size:15px;color:#333;line-height:1.65;">You haven&rsquo;t opened RunAnalytics in ${inactivityDays} days, so activity processing for your free account has been paused.</p>
+      <div style="margin:0 0 22px;padding:16px 18px;background:#fff8f5;border-left:3px solid #FC5200;border-radius:0 8px 8px 0;">
+        <p style="margin:0;font-size:14px;color:#444;line-height:1.6;">New Strava activities will not be imported or analyzed, and post-run emails are paused while your account is inactive.</p>
+      </div>
+      <p style="margin:0 0 24px;font-size:15px;color:#333;line-height:1.65;">Sign in to reactivate your account. New activities will be processed again after you return.</p>
+      <div style="text-align:center;margin:0 0 24px;">
+        <a href="${reactivateUrl}" style="display:inline-block;background:#FC5200;color:#ffffff;font-weight:700;font-size:14px;padding:13px 28px;border-radius:8px;text-decoration:none;">Reactivate my account</a>
+      </div>
+      <p style="margin:0;font-size:12px;color:#777;line-height:1.55;text-align:center;">Paid subscriptions and active trials are never paused.</p>
+    </div>
+    <div style="padding:16px 28px;border-top:1px solid #f0f0f0;font-size:12px;color:#999;text-align:center;line-height:1.7;">
+      You are receiving this service notice because your RunAnalytics account is connected to Strava.<br>
+      <a href="${settingsUrl}" style="color:#777;text-decoration:underline;">Email and notification settings</a>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    return this.sendEmail({ to, subject, html, text });
+  }
+
   async sendWeeklySummaryEmail(params: {
     to: string;
     firstName: string | null;

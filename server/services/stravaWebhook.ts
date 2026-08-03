@@ -133,11 +133,23 @@ class StravaWebhookService {
         return "skipped:strava_not_connected";
       }
 
-      // Free users still get the AI coach email — it's a retention magnet to
-      // pull them back into the funnel. We just mark the activity as
+      // Active free users still get the AI coach email as a retention path.
+      // We mark the activity as
       // `lockedForFree=true` so it doesn't appear in their visible 10-run
       // list; the email link routes to the activity page where the data is
       // rendered behind a blur + upgrade CTA.
+      // Enforce the 30-day free-account pause before making any Strava API
+      // call or doing any activity processing. Paid and trial users are
+      // explicitly exempt inside the dormancy policy.
+      const { enforceAccountDormancy } = await import("./accountDormancy");
+      const dormancy = await enforceAccountDormancy(user.id);
+      if (dormancy.paused) {
+        console.log(`[Strava Webhook] User ${user.id} is an inactive free account; activity ${event.object_id} acknowledged without processing`);
+        return dormancy.newlyPaused
+          ? "skipped:free_account_became_dormant"
+          : "skipped:dormant_free_account";
+      }
+
       const { isPaidPlan } = await import("../rateLimits");
       const userIsPaid = isPaidPlan(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null);
 
