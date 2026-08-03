@@ -1,0 +1,202 @@
+# RunAnalytics Trial Conversion Improvement
+
+## Objective
+
+Increase 14-day Premium trial starts by:
+
+1. Making the premium value clear and personalized.
+2. Fixing inconsistent feature gating.
+3. Preserving user intent throughout the upgrade flow.
+4. Reducing checkout uncertainty.
+5. Instrumenting the complete conversion funnel.
+
+Do not change pricing in this implementation.
+
+## Phase 1: Fix trust and entitlement problems
+
+Create one centralized capability matrix enforced by both the backend and frontend:
+
+- Free
+- Premium Preview
+- Trial
+- Paid
+- Expired
+
+Audit every premium feature against this matrix.
+
+Fix the following issues:
+
+- Free users can currently access most of the Activity Deep Dive.
+- The exact race prediction appears outside its locked card.
+- Injury-risk classification appears outside its locked card.
+- The UI says free users receive 10 activities, but more are displayed.
+- Runner Score values disagree between dashboard sections.
+- Heart-rate and power-zone percentages can exceed 100%.
+- Cadence values such as 76 spm are compared directly with a 170–180 spm target without detecting single-leg cadence.
+- Product naming varies between RunAnalytics, AITracker, RunAITracker, and “Pro.”
+- Premium API responses must not expose locked data in the page payload.
+
+Add automated entitlement, calculation, and regression tests.
+
+## Phase 2: Introduce an intentional Premium Preview
+
+After a user’s first successful Strava sync, create one personalized Premium Preview based on their latest eligible run.
+
+The preview should show:
+
+- Two trustworthy personalized findings.
+- One recommended next action.
+- The data used to produce each finding.
+- A clear indication that this is a Premium Preview.
+
+Do not reveal the entire premium analysis.
+
+Gate the higher-value follow-up actions:
+
+- Compare this run with similar runs.
+- View performance changes over time.
+- Ask the Coach about this run.
+- Generate or adapt a training plan.
+- Receive proactive post-run coaching.
+
+Example CTA:
+
+> Compare this run with 12 similar efforts — start 14 days free
+
+## Phase 3: Add contextual upgrade flows
+
+Replace generic “Upgrade to Premium” buttons with capability-specific actions.
+
+Examples:
+
+- Activity detail: “Compare this run with similar efforts”
+- Coach Insights: “Unlock all race predictions”
+- Training Plans: “Build my first four weeks”
+- Agent Coach: “Preview my post-run coaching recap”
+- Dashboard: “See what changed across my recent training”
+
+Pass context into the pricing flow:
+
+- Upgrade source
+- Activity ID, when relevant
+- Requested capability
+- Personalized benefit text
+- Return destination after trial activation
+
+Do not redirect Training Plans directly to generic pricing. Let users enter their race goal and availability, show a safe preview of the proposed plan, and gate plan creation or adaptation.
+
+## Phase 4: Redesign the pricing page
+
+Keep monthly billing selected by default.
+
+The page should show:
+
+- “$0 today”
+- Exact billing date after the trial
+- Price after the trial
+- Three outcome-led Premium benefits
+- A short cancellation explanation
+- The personalized capability the user was trying to unlock
+
+Example headline:
+
+> Unlock your personalized run comparison
+
+Example CTA:
+
+> Start 14 days free — $0 today
+
+Remove unrelated promotions, including the Chrome extension banner, from onboarding, pricing, and checkout flows.
+
+Use one consistent product and plan name everywhere.
+
+## Phase 5: Test a lower-commitment preview
+
+Implement a feature-flagged experiment:
+
+- Control: current card-required 14-day trial
+- Variant: no-card Premium Preview covering three runs or a short fixed period
+
+At the end of the no-card preview, offer the normal card-required trial or paid subscription.
+
+Do not silently enroll or charge users.
+
+## Analytics instrumentation
+
+Add these events:
+
+- `trial_offer_impression`
+- `premium_preview_opened`
+- `premium_feature_blocked`
+- `upgrade_clicked`
+- `pricing_viewed`
+- `billing_period_selected`
+- `checkout_started`
+- `trial_started`
+- `premium_value_action_completed`
+- `trial_canceled`
+- `paid_conversion`
+
+Include these properties where applicable:
+
+- `user_id`
+- `source_surface`
+- `requested_capability`
+- `activity_id`
+- `run_count`
+- `account_age_days`
+- `billing_period`
+- `experiment_variant`
+- `preview_completed`
+- `data_freshness`
+- `timestamp`
+
+## Success metrics
+
+Primary metric:
+
+- Trial starts ÷ activated, trial-eligible free users
+
+An activated user must have connected Strava and successfully generated at least one analysis.
+
+Diagnostic metrics:
+
+- Premium Preview → upgrade click
+- Upgrade click → pricing view
+- Pricing view → checkout start
+- Checkout start → trial start
+- Median time from first analysis to trial start
+
+Guardrails:
+
+- First Premium value action within 24 hours of trial start
+- Trial-to-paid conversion
+- Early cancellation and refund rate
+- Successful activity-sync rate
+- Calculation or data-quality error rate
+
+## Required tests
+
+Cover these flows:
+
+1. New free user completes first sync and receives one Premium Preview.
+2. Free user cannot access premium API data directly.
+3. Contextual CTA preserves capability and return destination.
+4. Trial activation unlocks the requested feature immediately.
+5. Expired trial returns to the correct limited state.
+6. Monthly and annual checkout display the correct price and billing date.
+7. Zone durations and percentages cannot exceed activity duration or 100%.
+8. Cadence normalization correctly handles single-leg and total cadence.
+9. Dashboard score values use one canonical calculation.
+10. Funnel events fire once with the correct properties.
+
+## Definition of done
+
+- Entitlements are centralized and enforced server-side.
+- Free users receive one deliberate Premium Preview, not accidental broad access.
+- Every premium gate explains the personalized outcome being unlocked.
+- Pricing preserves the user’s original intent.
+- Product naming and subscription terminology are consistent.
+- Calculation defects identified above are fixed.
+- The complete trial funnel is measurable.
+- Existing paid and trial users retain access without regression.
