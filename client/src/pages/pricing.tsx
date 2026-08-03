@@ -242,6 +242,22 @@ export default function PricingPage() {
                   <p className="text-xs text-gray-500 mt-2">
                     Start your free trial and we'll take you right back to where you left off.
                   </p>
+                  {!isPremium && (
+                    <div className="mt-4">
+                      <Button
+                        className="w-full sm:w-auto bg-strava-orange text-white hover:bg-strava-orange/90"
+                        onClick={handleSubscribe}
+                        disabled={checkout.isPending}
+                        data-testid="upgrade-intent-subscribe"
+                      >
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        {checkout.isPending ? 'Processing...' : 'Start 14 days free — $0 today'}
+                      </Button>
+                      <p className="text-xs text-gray-500 mt-2">
+                        {billingCycle === 'monthly' ? 'Then $7.99/month' : 'Then $79.99/year'} · Cancel anytime
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <Link href={upgradeIntent.returnTo}>
                   <Button variant="ghost" size="sm" className="text-gray-600 flex-shrink-0" data-testid="upgrade-intent-back">
@@ -374,7 +390,7 @@ export default function PricingPage() {
                   disabled={checkout.isPending}
                   data-testid="subscribe-premium"
                 >
-                  {checkout.isPending ? 'Processing...' : 'Start Free Trial'}
+                  {checkout.isPending ? 'Processing...' : 'Start 14 days free — $0 today'}
                 </Button>
               )}
             </div>

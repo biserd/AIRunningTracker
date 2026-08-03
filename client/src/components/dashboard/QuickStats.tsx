@@ -64,6 +64,7 @@ export default function QuickStats({ stats, recoveryData }: QuickStatsProps) {
   const getCurrentActivities = () => comparisonPeriod === 'weekly' ? stats.weeklyTotalActivities : stats.monthlyTotalActivities;
   const getPeriodLabel = () => comparisonPeriod === 'weekly' ? 'this week' : 'this month';
   const getTrainingLoadLabel = () => comparisonPeriod === 'weekly' ? 'TSS this week' : 'TSS this month';
+  const hasNoRunsInPeriod = getCurrentActivities() === 0;
 
   const formatPercentageChange = (
     weeklyChange: number | undefined | null, 
@@ -197,8 +198,21 @@ export default function QuickStats({ stats, recoveryData }: QuickStatsProps) {
                   </>
                 ) : (
                   <>
-                    <p className="text-3xl font-bold text-charcoal">{stats.recovery}</p>
-                    <p className="text-sm text-gray-500">{getCurrentActivities()} runs {getPeriodLabel()}</p>
+                    {hasNoRunsInPeriod ? (
+                      <>
+                        <p className="text-xl font-bold text-charcoal">
+                          No runs yet {getPeriodLabel()}
+                        </p>
+                        <p className="text-sm text-gray-500 mt-1 max-w-xs">
+                          Sync your next run to update your training load and recovery status.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-3xl font-bold text-charcoal">{stats.recovery}</p>
+                        <p className="text-sm text-gray-500">{getCurrentActivities()} runs {getPeriodLabel()}</p>
+                      </>
+                    )}
                   </>
                 )}
               </div>
@@ -236,7 +250,7 @@ export default function QuickStats({ stats, recoveryData }: QuickStatsProps) {
                     </div>
                   )}
                 </>
-              ) : (
+              ) : !hasNoRunsInPeriod ? (
                 <span className={`font-medium text-sm ${
                   stats.recovery === 'Good' ? 'text-achievement-green' : 
                   stats.recovery === 'Moderate' ? 'text-yellow-600' : 'text-red-500'
@@ -244,7 +258,7 @@ export default function QuickStats({ stats, recoveryData }: QuickStatsProps) {
                   {stats.recovery === 'Good' ? 'Ready to train' : 
                    stats.recovery === 'Moderate' ? 'Consider rest' : 'Take a break'}
                 </span>
-              )}
+              ) : null}
             </div>
           </CardContent>
         </Card>
