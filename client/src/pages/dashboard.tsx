@@ -14,6 +14,7 @@ import GoalProgress from "@/components/dashboard/GoalProgress";
 import RunnerScoreRadar from "@/components/dashboard/RunnerScoreRadar";
 import HistoricalRunnerScore from "@/components/dashboard/HistoricalRunnerScore";
 import ProgressChecklist from "@/components/dashboard/ProgressChecklist";
+import PremiumPreviewTeaser from "@/components/dashboard/PremiumPreviewTeaser";
 import ShoeHub from "@/components/dashboard/ShoeHub";
 import { SyncProgress } from "@/components/SyncProgress";
 import { FitnessChart } from "@/components/FitnessChart";
@@ -533,6 +534,9 @@ export default function Dashboard() {
 
         {/* Free-tier upgrade nudge */}
         <TrialBadge />
+
+        {/* One-time Premium Preview teaser — free users with a stored preview */}
+        <PremiumPreviewTeaser />
 
         {/* Strava Sync Actions */}
         <div className="mb-8 flex flex-wrap gap-4">
