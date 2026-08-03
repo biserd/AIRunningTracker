@@ -9,6 +9,7 @@ import {
   createPremiumPreviewCore,
   selectLatestEligibleRun,
   isEligiblePreviewRun,
+  summarizePreviewEligibility,
   PREVIEW_TEXT_MAX,
   PREVIEW_NAME_MAX,
   PREVIEW_PAYLOAD_MAX_BYTES,
@@ -38,6 +39,7 @@ assert.equal(isEligiblePreviewRun(makeRun()), true);
 assert.equal(isEligiblePreviewRun(makeRun({ type: "Ride" })), false, "non-running types are ineligible");
 assert.equal(isEligiblePreviewRun(makeRun({ distance: 500 })), false, "sub-1km blips are ineligible");
 assert.equal(isEligiblePreviewRun(makeRun({ movingTime: 0 })), false, "zero moving time is ineligible");
+assert.equal(isEligiblePreviewRun(makeRun({ type: " trail run " })), true, "legacy spaced/cased run types are eligible");
 
 const latest = selectLatestEligibleRun([
   makeRun({ id: 1, startDate: new Date("2026-07-01T07:00:00Z") }),
@@ -48,6 +50,31 @@ const latest = selectLatestEligibleRun([
 assert.equal(latest?.id, 2, "picks the latest eligible RUN, ignoring newer non-runs");
 assert.equal(selectLatestEligibleRun([]), null);
 assert.equal(selectLatestEligibleRun([makeRun({ type: "Ride" })]), null);
+assert.equal(
+  selectLatestEligibleRun([
+    makeRun({ id: 5, type: "Run", startDate: new Date("invalid") }),
+    makeRun({ id: 6, type: "Run", startDate: new Date("2026-08-04T07:00:00Z") }),
+  ])?.id,
+  6,
+  "invalid legacy dates do not block a valid latest run",
+);
+
+assert.deepEqual(
+  summarizePreviewEligibility([
+    makeRun(),
+    makeRun({ type: "Ride" }),
+    makeRun({ distance: 500 }),
+    makeRun({ movingTime: 0 }),
+  ]),
+  {
+    totalActivities: 4,
+    runningActivities: 3,
+    distanceQualifiedRuns: 2,
+    movingTimeQualifiedRuns: 1,
+    eligibleRuns: 1,
+  },
+  "eligibility diagnostics describe why legacy activity sets do not qualify",
+);
 
 // ---------- Payload shape & safe limits ----------
 

@@ -44,26 +44,61 @@ export interface PremiumPreviewPayload {
   sourceData: PremiumPreviewSourceData;
 }
 
+export interface PreviewEligibilitySummary {
+  totalActivities: number;
+  runningActivities: number;
+  distanceQualifiedRuns: number;
+  movingTimeQualifiedRuns: number;
+  eligibleRuns: number;
+}
+
 function cap(text: string, max: number): string {
   if (text.length <= max) return text;
   return text.slice(0, max - 1).trimEnd() + "…";
 }
 
 export function isEligiblePreviewRun(activity: Pick<Activity, "type" | "distance" | "movingTime">): boolean {
+  const type = activity.type?.trim().toLowerCase();
+  const isRun = type === "run" || type === "trailrun" || type === "trail run" || type === "virtualrun" || type === "virtual run";
   return (
-    RUNNING_ACTIVITY_TYPES.includes(activity.type || "") &&
-    (activity.distance ?? 0) >= PREVIEW_MIN_DISTANCE_METERS &&
-    (activity.movingTime ?? 0) > 0
+    isRun &&
+    Number(activity.distance ?? 0) >= PREVIEW_MIN_DISTANCE_METERS &&
+    Number(activity.movingTime ?? 0) > 0
   );
+}
+
+export function summarizePreviewEligibility(activities: Activity[]): PreviewEligibilitySummary {
+  const runningActivities = activities.filter((activity) => {
+    const type = activity.type?.trim().toLowerCase();
+    return type === "run" || type === "trailrun" || type === "trail run" || type === "virtualrun" || type === "virtual run";
+  });
+  const distanceQualifiedRuns = runningActivities.filter(
+    (activity) => Number(activity.distance ?? 0) >= PREVIEW_MIN_DISTANCE_METERS,
+  );
+  const movingTimeQualifiedRuns = distanceQualifiedRuns.filter(
+    (activity) => Number(activity.movingTime ?? 0) > 0,
+  );
+
+  return {
+    totalActivities: activities.length,
+    runningActivities: runningActivities.length,
+    distanceQualifiedRuns: distanceQualifiedRuns.length,
+    movingTimeQualifiedRuns: movingTimeQualifiedRuns.length,
+    eligibleRuns: movingTimeQualifiedRuns.length,
+  };
 }
 
 /** Latest eligible run by start date, or null. */
 export function selectLatestEligibleRun(activities: Activity[]): Activity | null {
   const eligible = activities.filter(isEligiblePreviewRun);
   if (eligible.length === 0) return null;
-  return eligible.reduce((latest, a) =>
-    new Date(a.startDate).getTime() > new Date(latest.startDate).getTime() ? a : latest,
-  );
+  return eligible.reduce((latest, activity) => {
+    const latestTime = new Date(latest.startDate).getTime();
+    const activityTime = new Date(activity.startDate).getTime();
+    if (!Number.isFinite(latestTime)) return activity;
+    if (!Number.isFinite(activityTime)) return latest;
+    return activityTime > latestTime ? activity : latest;
+  });
 }
 
 function formatPace(secPerKm: number): string {
@@ -194,7 +229,10 @@ export async function createPremiumPreviewCore(deps: CreatePreviewDeps): Promise
 
   const activities = await deps.loadActivities();
   const run = selectLatestEligibleRun(activities);
-  if (!run) return { created: false, reason: "no_eligible_run" };
+  if (!run) {
+    console.info("[PremiumPreview] No eligible run found", summarizePreviewEligibility(activities));
+    return { created: false, reason: "no_eligible_run" };
+  }
 
   const payload = buildPremiumPreviewPayload(run, deps.now ? deps.now() : new Date());
   const written = await deps.persistIfAbsent(payload);
@@ -208,7 +246,7 @@ export async function createPremiumPreviewCore(deps: CreatePreviewDeps): Promise
  * DB-level compare-and-set (`premium_preview IS NULL`) makes it exactly-once.
  */
 export async function createPremiumPreviewForUser(userId: number): Promise<CreatePreviewResult> {
-  return createPremiumPreviewCore({
+  const result = await createPremiumPreviewCore({
     loadUser: async () => {
       const u = await storage.getUser(userId);
       return u ? {
@@ -228,6 +266,11 @@ export async function createPremiumPreviewForUser(userId: number): Promise<Creat
       return result.length > 0;
     },
   });
+  console.info(`[PremiumPreview] Creation result for user ${userId}:`, {
+    created: result.created,
+    reason: result.created ? undefined : result.reason,
+  });
+  return result;
 }
 
 /** Backward-compatible alias for existing sync callers. */
