@@ -148,7 +148,7 @@ export default function CadenceAnalyzer() {
 
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
         {/* Header */}
-        {isAuthenticated ? <AppHeader /> : <PublicHeader />}
+        <PublicHeader />
 
         {/* Main Content */}
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">

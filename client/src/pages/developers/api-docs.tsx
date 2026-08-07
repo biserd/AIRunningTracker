@@ -1,11 +1,12 @@
 import { Helmet } from "react-helmet";
 import { Link } from "wouter";
-import AppHeader from "@/components/AppHeader";
+import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, Smartphone, User, Activity, Brain, Target, Shield, RefreshCw, LogOut } from "lucide-react";
+import { SEO } from "@/components/SEO";
 
 export default function APIDocs() {
   return (
@@ -14,8 +15,9 @@ export default function APIDocs() {
         <title>Mobile API Documentation | RunAnalytics</title>
         <meta name="description" content="Documentation for the RunAnalytics mobile API. Learn how to authenticate iOS and Android apps using JWT tokens." />
       </Helmet>
+      <SEO title="RunAnalytics API Documentation" description="Authentication, endpoints, request examples and response formats for building integrations with the RunAnalytics API." url="https://aitracker.run/developers/api" />
       
-      <AppHeader />
+      <PublicHeader />
       
       <main className="flex-1 max-w-5xl mx-auto px-6 py-8">
         <Link href="/developers">

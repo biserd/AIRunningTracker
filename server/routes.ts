@@ -51,6 +51,8 @@ import { recordFunnelEvent } from "./services/funnelAnalytics";
 import { isClientFunnelEvent, buildFunnelDedupeKey, billingPeriodFromInterval } from "@shared/funnelEvents";
 import { getDashboardCalendarPeriods, getLastMonthComparisonEnd, partitionDashboardActivities } from "./services/dashboardPeriods";
 import { formatRunDistance, formatRunDuration, formatRunPace, runUnitLabels } from "@shared/runFormatting";
+import { summarizeTrainingSplit } from "@shared/trainingSplit";
+import { canonicalizeShoeCatalog, normalizedShoeModelKey } from "@shared/shoeCanonicalization";
 
 // Authentication middleware
 const authenticateJWT = async (req: any, res: Response, next: NextFunction) => {
@@ -567,7 +569,8 @@ Sitemap: ${baseUrl}/sitemap.xml`;
 
       // Fetch all shoes for individual shoe pages
       const shoes = await storage.getShoes({});
-      const shoePages = shoes.map(shoe => ({
+      const { canonicalShoes } = canonicalizeShoeCatalog(shoes);
+      const shoePages = canonicalShoes.map(shoe => ({
         url: `/tools/shoes/${shoe.slug}`,
         changefreq: "monthly",
         priority: "0.7",
@@ -932,6 +935,12 @@ ${allPages.map(page => `  <url>
       const shoe = await storage.getShoeBySlug(slug);
       
       if (shoe) {
+        const allShoes = await storage.getShoes({});
+        const sameModelShoes = allShoes.filter((candidate) => normalizedShoeModelKey(candidate) === normalizedShoeModelKey(shoe));
+        const canonicalSlug = canonicalizeShoeCatalog(sameModelShoes).canonicalShoes[0]?.slug;
+        if (canonicalSlug && canonicalSlug !== slug) {
+          return res.redirect(301, `/tools/shoes/${canonicalSlug}`);
+        }
         console.log(`[SSR] Fallback: serving server-rendered shoe page to crawler: ${slug}`);
         res.setHeader('Content-Type', 'text/html');
         res.setHeader('X-Robots-Tag', 'index, follow');
@@ -956,7 +965,9 @@ ${allPages.map(page => `  <url>
           comfortRating: shoe.comfortRating,
           durabilityRating: shoe.durabilityRating,
           responsivenessRating: shoe.responsivenessRating
-        }, similar.map(s => ({ brand: s.brand, model: s.model, slug: s.slug, weight: s.weight, price: s.price })));
+        }, similar
+          .filter((s): s is typeof s & { slug: string } => typeof s.slug === "string")
+          .map(s => ({ brand: s.brand, model: s.model, slug: s.slug, weight: s.weight, price: s.price })));
         res.send(html);
       } else {
         next();
@@ -4951,18 +4962,23 @@ ${allPages.map(page => `  <url>
         }
       }
 
+      const safeSummary = summarizeTrainingSplit(totalZ1, totalZ2, totalZ3, periodDays, user.coachGoal || "general");
+
       res.json({
-        zone1Percent: z1Pct,
-        zone2Percent: z2Pct,
-        zone3Percent: z3Pct,
+        zone1Percent: safeSummary.zone1Percent,
+        zone2Percent: safeSummary.zone2Percent,
+        zone3Percent: safeSummary.zone3Percent,
         zone1Minutes: Math.round(totalZ1),
         zone2Minutes: Math.round(totalZ2),
         zone3Minutes: Math.round(totalZ3),
         totalMinutes: Math.round(totalMinutes),
-        classification,
-        classificationColor,
+        periodDays,
+        weeksInPeriod: safeSummary.weeksInPeriod,
+        weeklyAverageMinutes: safeSummary.weeklyAverageMinutes,
+        classification: safeSummary.classification,
+        classificationColor: safeSummary.classificationColor,
         weeklyData,
-        recommendations,
+        recommendations: safeSummary.recommendations,
         hrZones: {
           lt1HR,
           lt2HR,
@@ -5078,7 +5094,10 @@ ${allPages.map(page => `  <url>
 
       // Extract cadence time series
       const times = streamsData.time?.data || [];
-      const cadences = streamsData.cadence?.data || [];
+      // Strava cadence streams may be per-leg RPM while stored activity
+      // summaries are steps/minute. Normalize at the analysis boundary so the
+      // selected-run value and detailed result use the same unit exactly once.
+      const cadences = (streamsData.cadence?.data || []).map((value: number) => normalizeCadenceToSpm(value));
       const velocities = streamsData.velocity_smooth?.data || [];
 
       if (cadences.length === 0) {
@@ -7178,6 +7197,11 @@ ${allPages.map(page => `  <url>
       if (!shoe) {
         return res.status(404).json({ message: "Shoe not found" });
       }
+
+      const allShoes = await storage.getShoes({});
+      const sameModelShoes = allShoes.filter((candidate) => normalizedShoeModelKey(candidate) === normalizedShoeModelKey(shoe));
+      const { canonicalShoes } = canonicalizeShoeCatalog(sameModelShoes);
+      const canonicalSlug = canonicalShoes[0]?.slug || shoe.slug;
       
       // Get related shoes in the same series for comparison charts
       let seriesShoes: RunningShoe[] = [];
@@ -7194,6 +7218,7 @@ ${allPages.map(page => `  <url>
       
       res.json({
         shoe,
+        canonicalSlug,
         seriesShoes,
         hasSeriesData: seriesShoes.length > 1
       });

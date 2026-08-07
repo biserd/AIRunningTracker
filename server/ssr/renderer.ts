@@ -22,6 +22,11 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#039;');
 }
 
+function truncateMetadata(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength - 3).trimEnd()}...`;
+}
+
 function generateStructuredData(meta: PageMeta, url: string, type: 'BlogPosting' | 'Product' | 'WebPage' = 'WebPage', extra: any = {}): string {
   if (type === 'BlogPosting') {
     return JSON.stringify({
@@ -68,13 +73,15 @@ function generateStructuredData(meta: PageMeta, url: string, type: 'BlogPosting'
 }
 
 function generateHtmlHead(meta: PageMeta, url: string, structuredData: string): string {
+  const title = truncateMetadata(meta.title, 60);
+  const description = truncateMetadata(meta.description, 160);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5, user-scalable=yes" />
-  <title>${escapeHtml(meta.title)}</title>
-  <meta name="description" content="${escapeHtml(meta.description)}" />
+  <title>${escapeHtml(title)}</title>
+  <meta name="description" content="${escapeHtml(description)}" />
   ${meta.keywords ? `<meta name="keywords" content="${escapeHtml(meta.keywords)}" />` : ''}
   <meta name="author" content="RunAnalytics" />
   <meta name="theme-color" content="#fc4c02" />
@@ -82,15 +89,15 @@ function generateHtmlHead(meta: PageMeta, url: string, structuredData: string): 
   
   <meta property="og:type" content="${meta.type || 'website'}" />
   <meta property="og:url" content="${BASE_URL}${url}" />
-  <meta property="og:title" content="${escapeHtml(meta.title)}" />
-  <meta property="og:description" content="${escapeHtml(meta.description)}" />
+  <meta property="og:title" content="${escapeHtml(title)}" />
+  <meta property="og:description" content="${escapeHtml(description)}" />
   <meta property="og:image" content="${BASE_URL}/og-image.jpg" />
   <meta property="og:site_name" content="RunAnalytics" />
   
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:url" content="${BASE_URL}${url}" />
-  <meta name="twitter:title" content="${escapeHtml(meta.title)}" />
-  <meta name="twitter:description" content="${escapeHtml(meta.description)}" />
+  <meta name="twitter:title" content="${escapeHtml(title)}" />
+  <meta name="twitter:description" content="${escapeHtml(description)}" />
   <meta name="twitter:image" content="${BASE_URL}/og-image.jpg" />
   
   <script type="application/ld+json">
@@ -193,6 +200,11 @@ ${faqSchemaHtml}
     
     <main class="ssr-container">
       <article class="ssr-content">
+        <aside class="ssr-byline" aria-label="Article editorial information">
+          <p><strong>By the RunAnalytics Editorial Team</strong> &bull; Product and data claims reviewed &bull; Updated August 7, 2026</p>
+          <p>Educational content only. Training estimates depend on data quality and are not medical diagnosis.</p>
+          <p><a href="/faq">Methodology and limitations</a> &bull; <a href="https://www.who.int/news-room/fact-sheets/detail/physical-activity">WHO physical activity guidance</a></p>
+        </aside>
         ${tocHtml}
         ${post.content}
 
@@ -297,27 +309,13 @@ export function renderShoePage(slug: string, shoe: ShoeData, similarShoes?: { br
     ? (shoe.imageUrl.startsWith('http') ? shoe.imageUrl : `${BASE_URL}${shoe.imageUrl}`)
     : undefined;
 
-  const ratings = [shoe.comfortRating, shoe.durabilityRating, shoe.responsivenessRating]
-    .filter((r): r is number => typeof r === 'number' && r > 0);
-  const aggregateRating = ratings.length > 0
-    ? {
-        "@type": "AggregateRating",
-        "ratingValue": (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1),
-        "ratingCount": 50,
-        "bestRating": 5,
-        "worstRating": 1,
-      }
-    : undefined;
-
   const structuredData = generateStructuredData(meta, url, 'Product', {
     brand: shoe.brand,
     ...(productImage ? { image: productImage } : {}),
-    ...(aggregateRating ? { aggregateRating } : {}),
     offers: shoe.price ? {
       "@type": "Offer",
       "price": shoe.price,
-      "priceCurrency": "USD",
-      "availability": "https://schema.org/InStock"
+      "priceCurrency": "USD"
     } : undefined
   });
 
@@ -737,11 +735,6 @@ export function renderHomepage(): string {
           "price": "0",
           "priceCurrency": "USD"
         },
-        "aggregateRating": {
-          "@type": "AggregateRating",
-          "ratingValue": "4.8",
-          "ratingCount": "1250"
-        },
         "description": "AI-powered running analytics platform with Runner Score, race predictions, and personalized training insights"
       },
       {
@@ -1065,7 +1058,7 @@ export function renderFaqPage(): string {
     { q: "Do I need a Strava account?", a: "While you can create an account without Strava, connecting your Strava account unlocks the full potential of our platform. Strava integration provides access to your historical running data, which enables more accurate AI insights and personalized recommendations." },
     { q: "Is RunAnalytics free to use?", a: "RunAnalytics offers a 14-day free trial with full access to all Premium features — AI coaching, race predictions, training plans, and advanced analytics. After the trial, Premium is $7.99/month or $79.99/year. You can cancel anytime before the trial ends and you won't be charged." },
     { q: "What kind of insights do you provide?", a: "Our AI analyzes your running data to provide insights on performance trends, pace analysis, training load, recovery recommendations, race predictions, injury risk assessment, and personalized training plans. Each insight is tailored to your specific running patterns and goals." },
-    { q: "How accurate are the race time predictions?", a: "Our race time predictions use advanced machine learning models trained on thousands of runner profiles and performance data. While individual results may vary, our predictions are typically accurate within 2-5% for most runners with consistent training data." },
+    { q: "How accurate are the race time predictions?", a: "Race predictions are modeled estimates based on the activity data available. Weather, terrain, pacing, distance from the input effort and data quality can materially change the result; the displayed range is not a calibrated probability interval." },
     { q: "What is the Runner Score?", a: "The Runner Score is our comprehensive fitness metric that evaluates multiple aspects of your running performance including endurance, speed, consistency, and efficiency. It's displayed on a radar chart with scores from 0-100 across different categories." },
     { q: "What do CTL, ATL, and TSB mean?", a: "CTL (Chronic Training Load) is your Fitness — a 42-day rolling average showing your long-term training buildup. ATL (Acute Training Load) is your Fatigue — a 7-day rolling average showing your recent training stress. TSB (Training Stress Balance) is your Form — calculated as CTL minus ATL, showing your race readiness." },
     { q: "How do you calculate VO2 Max?", a: "We use Jack Daniels' formula combined with your recent running performance data to estimate VO2 Max. This calculation considers your best recent race times or time trial performances across different distances to provide an accurate fitness assessment." },
@@ -1126,7 +1119,7 @@ export function renderBlogIndex(): string {
     { slug: "how-to-pick-a-training-plan", title: "How to Pick a Training Plan: Complete Guide", description: "Learn how to choose the right training plan for your running goals. Discover why AI-personalized plans outperform generic schedules.", date: "January 12, 2026", category: "Training Plans", readTime: "15 min read" },
     { slug: "ai-running-coach-complete-guide-2026", title: "AI Running Coach: Complete Guide 2026", description: "Everything you need to know about AI-powered running coaches, how they work, and how to use them to improve your training.", date: "January 15, 2026", category: "AI & Technology", readTime: "8 min read" },
     { slug: "best-strava-analytics-tools-2026", title: "Best Strava Analytics Tools 2026", description: "Comprehensive comparison of the top Strava analytics platforms to help you choose the right tool for your training needs.", date: "January 15, 2026", category: "Tools & Reviews", readTime: "10 min read" },
-    { slug: "how-to-improve-running-pace", title: "How to Improve Running Pace: Complete Guide", description: "Proven strategies and training methods to run faster, backed by science and tested by elite coaches.", date: "January 15, 2026", category: "Training Tips", readTime: "12 min read" },
+    { slug: "how-to-improve-running-pace", title: "How to Improve Running Pace: Complete Guide", description: "Practical pace training with intervals, tempo running, strength work, recovery and safety context.", date: "January 15, 2026", category: "Training Tips", readTime: "12 min read" },
   ];
   const listSchema = JSON.stringify({
     "@context": "https://schema.org",
@@ -1283,7 +1276,7 @@ export function renderFeaturesPage(): string {
           <ul>
             <li><strong>Performance Analysis:</strong> Deep dive into pace, heart rate, cadence, and efficiency trends</li>
             <li><strong>Race Predictions:</strong> AI-powered finish time predictions for 5K, 10K, half, and full marathon</li>
-            <li><strong>Injury Prevention:</strong> Early warning signals for potential injury risks based on training load</li>
+            <li><strong>Training-load signals:</strong> Flags abrupt workload and fatigue patterns for review; it does not diagnose or prevent injury</li>
             <li><strong>Effort Score:</strong> Understand how hard each run truly was relative to your fitness</li>
           </ul>
         </section>
@@ -1577,7 +1570,7 @@ ${listSchema}
         <section>
           <h2>Running Shoe Hub</h2>
           <ul>
-            <li><a href="/tools/shoes"><strong>Running Shoe Database</strong></a> — browse and compare 280+ running shoes with detailed specs, AI-generated insights, and user reviews. Includes 60+ confirmed 2026 releases.</li>
+            <li><a href="/tools/shoes"><strong>Running Shoe Database</strong></a> — browse detailed specs, source and verification dates, and clearly labeled editorial insights.</li>
             <li><a href="/tools/shoe-finder"><strong>Running Shoe Finder</strong></a> — answer a few questions about your running style and get AI-matched shoe recommendations from our full database.</li>
             <li><a href="/tools/rotation-planner"><strong>Shoe Rotation Planner</strong></a> — build a smart multi-shoe rotation optimized for your training volume, race goals, and surface preferences.</li>
             <li><a href="/tools/shoes/compare"><strong>Shoe Comparison Tool</strong></a> — compare any two running shoes side-by-side with specs, pros/cons, and an AI verdict.</li>

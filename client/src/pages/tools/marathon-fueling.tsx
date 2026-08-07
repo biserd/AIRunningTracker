@@ -179,7 +179,7 @@ export default function MarathonFuelingPlanner() {
       <FAQSchema faqs={MARATHON_FUELING_FAQS} />
 
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-        {isAuthenticated ? <AppHeader /> : <PublicHeader />}
+        <PublicHeader />
         
         <div className="container mx-auto px-4 py-8 max-w-7xl">
           <div className="mb-8">

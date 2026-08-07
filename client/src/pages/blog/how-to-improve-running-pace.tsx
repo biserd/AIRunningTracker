@@ -25,6 +25,7 @@ import {
   Bot
 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
+import { ArticleTrust } from "@/components/ArticleTrust";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 
@@ -33,7 +34,7 @@ export default function ImproveRunningPace() {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     "headline": "How to Improve Running Pace: Complete Guide",
-    "description": "Discover proven strategies to improve your running pace. Learn about interval training, tempo runs, strength training, proper pacing strategies, and common mistakes to avoid. Backed by science and tested by elite coaches.",
+    "description": "Practical ways to improve running pace with intervals, tempo running, strength work, recovery and better pacing, including limitations and safety context.",
     "image": "https://aitracker.run/og-image.jpg",
     "author": {
       "@type": "Organization",
@@ -60,13 +61,14 @@ export default function ImproveRunningPace() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <SEO
         title="How to Improve Running Pace: Complete Guide 2025 | RunAnalytics"
-        description="Discover proven strategies to improve your running pace. Learn about interval training, tempo runs, strength training, proper pacing strategies, and common mistakes to avoid. Backed by science and tested by elite coaches."
+        description="Practical ways to improve running pace with intervals, tempo running, strength work, recovery and better pacing, including limitations and safety context."
         keywords="improve running pace, run faster, speed training, interval training, tempo runs, running performance, increase running speed, pace training"
         url="https://aitracker.run/blog/how-to-improve-running-pace"
         type="article"
         structuredData={blogPostingSchema}
       />
       <PublicHeader />
+      <ArticleTrust topic="training" />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         {/* Breadcrumbs */}
@@ -826,7 +828,7 @@ export default function ImproveRunningPace() {
                 <Brain className="mx-auto mb-4" size={48} />
                 <h3 className="text-3xl font-bold mb-4">Train Smarter with AI Guidance</h3>
                 <p className="text-xl mb-6 max-w-2xl mx-auto">
-                  Get personalized training recommendations, accurate pace predictions, and expert insights from <Link href="/ai-running-coach" className="underline font-bold hover:text-gray-100">RunAnalytics AI Coach</Link>. All completely free.
+                  Preview personalized analysis with a free account, then use the 14-day Premium trial for complete coaching and planning features from <Link href="/ai-running-coach" className="underline font-bold hover:text-gray-100">RunAnalytics AI Coach</Link>.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link href="/auth">

@@ -12,6 +12,7 @@ import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
+import { SEO } from "@/components/SEO";
 
 const contactSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -49,6 +50,7 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-light-grey">
+      <SEO title="Contact RunAnalytics Support" description="Contact RunAnalytics for account, Strava sync, billing, privacy or product support." url="https://aitracker.run/contact" />
       <PublicHeader />
 
       <main className="max-w-6xl mx-auto px-6 py-12">

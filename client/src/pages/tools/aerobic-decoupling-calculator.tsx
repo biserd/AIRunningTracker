@@ -19,9 +19,11 @@ import { z } from "zod";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { FAQSchema } from "@/components/FAQSchema";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { calculateAerobicDecoupling, type DecouplingClassification } from "@shared/aerobicDecoupling";
+import { ToolResultActions } from "@/components/ToolResultActions";
 
 // Validation schema for manual input
 const manualInputSchema = z.object({
@@ -71,6 +73,9 @@ const AEROBIC_DECOUPLING_FAQS = [
   }
 ];
 
+// Keep the public methodology copy aligned with the shared calculation.
+AEROBIC_DECOUPLING_FAQS[1].answer = "We divide speed by heart rate for each half, then calculate (1 - second-half efficiency / first-half efficiency) x 100. A positive result means efficiency faded; a negative result means it improved. Manual and Strava analysis use the same convention.";
+
 export default function AerobicDecouplingCalculator() {
   const { isAuthenticated, user } = useAuth();
   const [result, setResult] = useState<DecouplingResult | null>(null);
@@ -103,54 +108,29 @@ export default function AerobicDecouplingCalculator() {
     return distanceMeters / totalSeconds;
   };
 
+  const presentResult = (analysis: ReturnType<typeof calculateAerobicDecoupling>): DecouplingResult => {
+    const presentations: Record<DecouplingClassification, Pick<DecouplingResult, "interpretation" | "badge" | "color">> = {
+      "Significant Fade": { badge: "Significant Fade", interpretation: "Efficiency fell substantially in the second half. Check pacing, heat, hills, hydration and accumulated fatigue before treating this as a fitness verdict.", color: "bg-red-500" },
+      "Moderate Fade": { badge: "Moderate Fade", interpretation: "Efficiency faded in the second half. Compare this with similar steady runs before changing training.", color: "bg-orange-500" },
+      "Mild Fade": { badge: "Mild Fade", interpretation: "A small amount of fade was detected and may be normal for a long run.", color: "bg-yellow-500" },
+      "Stable": { badge: "Stable", interpretation: "Your pace-to-heart-rate efficiency stayed within a narrow range across both halves.", color: "bg-green-500" },
+      "Improved": { badge: "Improved", interpretation: "Efficiency improved in the second half, which can reflect a conservative start, warming up, or favorable terrain.", color: "bg-blue-500" },
+    };
+    return {
+      decouplingPercent: analysis.decouplingPercent,
+      firstHalfPaHR: analysis.firstHalfEfficiency,
+      secondHalfPaHR: analysis.secondHalfEfficiency,
+      ...presentations[analysis.classification],
+    };
+  };
+
   // Calculate aerobic decoupling
   const calculateDecoupling = (data: ManualInputFormData): DecouplingResult => {
     // Convert pace to speed
     const speed1 = paceToSpeed(data.firstHalfPace, data.unit);
     const speed2 = paceToSpeed(data.secondHalfPace, data.unit);
 
-    // Calculate Pa:HR (pace-to-heart-rate ratio)
-    const paHR1 = speed1 / data.firstHalfHR;
-    const paHR2 = speed2 / data.secondHalfHR;
-
-    // Calculate decoupling percentage
-    const decouplingPercent = ((paHR2 / paHR1) - 1) * 100;
-
-    // Interpret results
-    let interpretation = "";
-    let badge = "";
-    let color = "";
-
-    if (decouplingPercent <= -8) {
-      badge = "Significant Fade";
-      interpretation = "Your aerobic system showed significant fatigue in the second half. This suggests you may need to build more aerobic base or reduce your initial pace.";
-      color = "bg-red-500";
-    } else if (decouplingPercent <= -5) {
-      badge = "Moderate Fade";
-      interpretation = "Some aerobic fade detected. Consider slightly reducing your pace or building more aerobic endurance through longer, easier runs.";
-      color = "bg-orange-500";
-    } else if (decouplingPercent <= -3) {
-      badge = "Mild Fade";
-      interpretation = "Slight aerobic fade within normal range. Your pacing was generally good, with room for minor improvements.";
-      color = "bg-yellow-500";
-    } else if (decouplingPercent <= 3) {
-      badge = "Excellent";
-      interpretation = "Outstanding aerobic efficiency! Your pace and heart rate remained well-coupled throughout the run. Your aerobic base is strong.";
-      color = "bg-green-500";
-    } else {
-      badge = "Improved";
-      interpretation = "Interesting - you actually improved in the second half! This could indicate a conservative start or excellent negative-split pacing.";
-      color = "bg-blue-500";
-    }
-
-    return {
-      decouplingPercent,
-      interpretation,
-      badge,
-      color,
-      firstHalfPaHR: paHR1,
-      secondHalfPaHR: paHR2
-    };
+    return presentResult(calculateAerobicDecoupling(speed1, data.firstHalfHR, speed2, data.secondHalfHR));
   };
 
   const onSubmit = (data: ManualInputFormData) => {
@@ -187,48 +167,12 @@ export default function AerobicDecouplingCalculator() {
       const firstHalfHR = hrData.slice(0, midpointIndex).reduce((sum: number, hr: number) => sum + hr, 0) / midpointIndex;
       const secondHalfHR = hrData.slice(midpointIndex).reduce((sum: number, hr: number) => sum + hr, 0) / (hrData.length - midpointIndex);
       
-      // Calculate Pa:HR ratios
-      const paHR1 = firstHalfVelocity / firstHalfHR;
-      const paHR2 = secondHalfVelocity / secondHalfHR;
-      
-      // Calculate decoupling percentage
-      const decouplingPercent = ((paHR2 / paHR1) - 1) * 100;
-      
-      // Interpret results (same logic as manual)
-      let interpretation = "";
-      let badge = "";
-      let color = "";
-
-      if (decouplingPercent <= -8) {
-        badge = "Significant Fade";
-        interpretation = "Your aerobic system showed significant fatigue in the second half. This suggests you may need to build more aerobic base or reduce your initial pace.";
-        color = "bg-red-500";
-      } else if (decouplingPercent <= -5) {
-        badge = "Moderate Fade";
-        interpretation = "Some aerobic fade detected. Consider slightly reducing your pace or building more aerobic endurance through longer, easier runs.";
-        color = "bg-orange-500";
-      } else if (decouplingPercent <= -3) {
-        badge = "Mild Fade";
-        interpretation = "Slight aerobic fade within normal range. Your pacing was generally good, with room for minor improvements.";
-        color = "bg-yellow-500";
-      } else if (decouplingPercent <= 3) {
-        badge = "Excellent";
-        interpretation = "Outstanding aerobic efficiency! Your pace and heart rate remained well-coupled throughout the run. Your aerobic base is strong.";
-        color = "bg-green-500";
-      } else {
-        badge = "Improved";
-        interpretation = "Interesting - you actually improved in the second half! This could indicate a conservative start or excellent negative-split pacing.";
-        color = "bg-blue-500";
-      }
-
-      setResult({
-        decouplingPercent,
-        interpretation,
-        badge,
-        color,
-        firstHalfPaHR: paHR1,
-        secondHalfPaHR: paHR2
-      });
+      setResult(presentResult(calculateAerobicDecoupling(
+        firstHalfVelocity,
+        firstHalfHR,
+        secondHalfVelocity,
+        secondHalfHR,
+      )));
     } catch (error) {
       console.error("Error calculating from activity:", error);
     }
@@ -255,7 +199,7 @@ export default function AerobicDecouplingCalculator() {
 
       <div className="min-h-screen bg-light-grey">
         {/* Header */}
-        {isAuthenticated ? <AppHeader /> : <PublicHeader />}
+        <PublicHeader />
 
         {/* Main Content */}
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
@@ -605,9 +549,9 @@ export default function AerobicDecouplingCalculator() {
                           <BarChart
                             data={[
                               { category: 'Your Run', value: result.decouplingPercent, fill: result.color.replace('bg-', '#') },
-                              { category: 'Excellent Threshold', value: -3, fill: '#22c55e' },
-                              { category: 'Good Threshold', value: -5, fill: '#3b82f6' },
-                              { category: 'Fade Threshold', value: -8, fill: '#ef4444' }
+                              { category: 'Mild Fade', value: 3, fill: '#eab308' },
+                              { category: 'Moderate Fade', value: 5, fill: '#f97316' },
+                              { category: 'Significant Fade', value: 8, fill: '#ef4444' }
                             ]}
                             margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                           >
@@ -618,19 +562,9 @@ export default function AerobicDecouplingCalculator() {
                               formatter={(value: number) => `${value.toFixed(2)}%`}
                               contentStyle={{ backgroundColor: 'white', border: '1px solid #ccc' }}
                             />
-                            <Bar 
-                              dataKey="value" 
-                              fill="#ff5800"
-                            >
-                              {[0, 1, 2, 3].map((index) => (
-                                <Bar key={index} dataKey="value" fill={
-                                  index === 0 ? (result.color === 'bg-red-500' ? '#ef4444' : 
-                                                 result.color === 'bg-orange-500' ? '#f97316' :
-                                                 result.color === 'bg-yellow-500' ? '#eab308' :
-                                                 result.color === 'bg-green-500' ? '#22c55e' : '#3b82f6') :
-                                  index === 1 ? '#22c55e' :
-                                  index === 2 ? '#3b82f6' : '#ef4444'
-                                } />
+                            <Bar dataKey="value" fill="#ff5800">
+                              {['#6366f1', '#eab308', '#f97316', '#ef4444'].map((fill, index) => (
+                                <Cell key={index} fill={fill} />
                               ))}
                             </Bar>
                           </BarChart>
@@ -638,6 +572,7 @@ export default function AerobicDecouplingCalculator() {
                       </CardContent>
                     </Card>
                   </div>
+                  <ToolResultActions source="aerobic_decoupling_result" />
                 </div>
               )}
             </CardContent>

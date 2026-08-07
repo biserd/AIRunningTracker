@@ -90,7 +90,7 @@ export default function AICoachLanding() {
               ))}
             </div>
             <p className="text-gray-700 dark:text-gray-300 text-lg">
-              Trusted by thousands of runners improving their performance with AI
+              See exactly which activity data supports each coaching suggestion
             </p>
           </div>
           
@@ -524,7 +524,7 @@ export default function AICoachLanding() {
                 <CardTitle className="text-lg dark:text-white">How accurate are the AI's recommendations?</CardTitle>
               </CardHeader>
               <CardContent className="text-gray-700 dark:text-gray-300">
-                The AI analyzes thousands of successful training programs and your personal running history to provide evidence-based recommendations. Race predictions are typically within 2-5% of actual times when based on sufficient training data. The more you use it, the more it learns about what works for you.
+                Recommendations are generated from the activity data available in your account and should be treated as training suggestions, not medical advice. Race predictions are estimates; weather, terrain, pacing and data quality can materially change the result.
               </CardContent>
             </Card>
 
@@ -592,7 +592,7 @@ export default function AICoachLanding() {
                     Start Free Trial <ArrowRight className="ml-2" size={20} />
                   </Button>
                 </Link>
-                <Link href="/blog/ai-running-coach-complete-guide-2025">
+                <Link href="/blog/ai-running-coach-complete-guide-2026">
                   <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 px-10 py-6 text-lg" data-testid="cta-final-learn">
                     Read Complete Guide
                   </Button>

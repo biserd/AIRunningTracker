@@ -289,7 +289,7 @@ export default function ShoeDatabasePage() {
       />
 
       <div className="min-h-screen bg-light-grey">
-        {isAuthenticated ? <AppHeader /> : <PublicHeader />}
+        <PublicHeader />
 
         <div className="bg-gradient-to-br from-orange-50 via-white to-amber-50 border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">

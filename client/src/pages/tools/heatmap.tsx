@@ -201,7 +201,7 @@ export default function RunningHeatmapPage() {
   if (isAuthenticated && isLoading) {
     return (
       <div className="min-h-screen bg-light-grey">
-        <AppHeader />
+        <PublicHeader />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <Skeleton className="h-[600px] w-full" />
         </div>
@@ -232,7 +232,7 @@ export default function RunningHeatmapPage() {
       <FAQSchema faqs={HEATMAP_FAQS} />
 
       <div className="min-h-screen bg-light-grey">
-        {isAuthenticated ? <AppHeader /> : <PublicHeader />}
+        <PublicHeader />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           {/* Header */}

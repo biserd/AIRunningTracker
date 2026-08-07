@@ -1,9 +1,11 @@
 import Footer from "@/components/Footer";
 import PublicHeader from "@/components/PublicHeader";
+import { SEO } from "@/components/SEO";
 
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
+      <SEO title="Terms of Service | RunAnalytics" description="The terms governing RunAnalytics accounts, Strava integration, subscriptions and responsible use." url="https://aitracker.run/terms" />
       <PublicHeader />
 
       {/* Terms Content */}

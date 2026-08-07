@@ -24,6 +24,7 @@ import {
   HelpCircle
 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
+import { ArticleTrust } from "@/components/ArticleTrust";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 
@@ -66,6 +67,7 @@ export default function BestStravaTools() {
         structuredData={blogPostingSchema}
       />
       <PublicHeader />
+      <ArticleTrust topic="tools" />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         {/* Breadcrumbs */}

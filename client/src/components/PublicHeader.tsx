@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Activity, Menu, X } from "lucide-react";
+import { Activity, ArrowLeft, Menu, X } from "lucide-react";
 import { SiStrava } from "react-icons/si";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 const NAV_LINKS = [
   { label: "Pricing", href: "/pricing" },
@@ -12,6 +13,7 @@ const NAV_LINKS = [
 ];
 
 export default function PublicHeader() {
+  const { isAuthenticated } = useAuth();
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -36,7 +38,7 @@ export default function PublicHeader() {
               <div className="w-10 h-10 bg-strava-orange rounded-lg flex items-center justify-center">
                 <Activity className="text-white" size={20} />
               </div>
-              <h1 className="text-2xl font-bold text-charcoal">RunAnalytics</h1>
+              <span className="text-2xl font-bold text-charcoal">RunAnalytics</span>
             </div>
           </Link>
 
@@ -51,13 +53,14 @@ export default function PublicHeader() {
 
           {/* Desktop right side */}
           <div className="hidden md:flex items-center gap-4">
-            <Link href="/auth">
+            <Link href={isAuthenticated ? "/dashboard" : "/auth"}>
               <Button
-                className="bg-strava-orange text-white hover:bg-strava-orange/90 flex items-center gap-2"
+                className={isAuthenticated ? "flex items-center gap-2" : "bg-strava-orange text-white hover:bg-strava-orange/90 flex items-center gap-2"}
+                variant={isAuthenticated ? "outline" : "default"}
                 data-testid="header-continue-strava"
               >
-                <SiStrava className="h-4 w-4" />
-                Continue with Strava or Login
+                {isAuthenticated ? <ArrowLeft className="h-4 w-4" /> : <SiStrava className="h-4 w-4" />}
+                {isAuthenticated ? "Back to dashboard" : "Continue with Strava or Login"}
               </Button>
             </Link>
           </div>
@@ -92,13 +95,13 @@ export default function PublicHeader() {
               </Link>
             ))}
             <div className="px-6 py-4">
-              <Link href="/auth">
+              <Link href={isAuthenticated ? "/dashboard" : "/auth"}>
                 <Button
                   className="w-full bg-strava-orange text-white hover:bg-strava-orange/90 flex items-center justify-center gap-2"
                   onClick={() => setMobileOpen(false)}
                 >
-                  <SiStrava className="h-4 w-4" />
-                  Continue with Strava or Login
+                  {isAuthenticated ? <ArrowLeft className="h-4 w-4" /> : <SiStrava className="h-4 w-4" />}
+                  {isAuthenticated ? "Back to dashboard" : "Continue with Strava or Login"}
                 </Button>
               </Link>
             </div>

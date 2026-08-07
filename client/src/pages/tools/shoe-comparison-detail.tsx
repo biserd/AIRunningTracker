@@ -95,7 +95,7 @@ export default function ShoeComparisonDetail() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        {isAuthenticated ? <AppHeader /> : <PublicHeader />}
+        <PublicHeader />
         <div className="max-w-6xl mx-auto px-4 py-8">
           <Skeleton className="h-8 w-64 mb-4" />
           <Skeleton className="h-96 w-full" />
@@ -108,7 +108,7 @@ export default function ShoeComparisonDetail() {
   if (error || !comparison) {
     return (
       <div className="min-h-screen bg-background">
-        {isAuthenticated ? <AppHeader /> : <PublicHeader />}
+        <PublicHeader />
         <div className="max-w-6xl mx-auto px-4 py-8 text-center">
           <h1 className="text-2xl font-bold mb-4">Comparison Not Found</h1>
           <p className="text-gray-600 mb-6">This shoe comparison doesn't exist.</p>
@@ -135,7 +135,7 @@ export default function ShoeComparisonDetail() {
         <link rel="canonical" href={`https://aitracker.run/tools/shoes/compare/${comparison.slug}`} />
       </Helmet>
 
-      {isAuthenticated ? <AppHeader /> : <PublicHeader />}
+      <PublicHeader />
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         <Link href="/tools/shoes/compare">

@@ -23,6 +23,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FAQSchema } from "@/components/FAQSchema";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { summarizeTrainingSplit } from "@shared/trainingSplit";
+import { ToolResultActions } from "@/components/ToolResultActions";
 
 const manualInputSchema = z.object({
   periodDays: z.coerce.number().min(28, "Minimum 28 days").max(42, "Maximum 42 days"),
@@ -44,6 +46,9 @@ interface ZoneDistribution {
   zone2Minutes: number;
   zone3Minutes: number;
   totalMinutes: number;
+  periodDays: number;
+  weeksInPeriod: number;
+  weeklyAverageMinutes: number;
   classification: string;
   classificationColor: string;
   weeklyData?: Array<{
@@ -193,24 +198,27 @@ export default function TrainingSplitAnalyzer() {
 
   const calculateManualDistribution = (data: ManualInputFormData): ZoneDistribution => {
     const totalMinutes = data.zone1Minutes + data.zone2Minutes + data.zone3Minutes;
-    const z1Pct = (data.zone1Minutes / totalMinutes) * 100;
-    const z2Pct = (data.zone2Minutes / totalMinutes) * 100;
-    const z3Pct = (data.zone3Minutes / totalMinutes) * 100;
-
-    const { classification, color } = classifyDistribution(z1Pct, z2Pct, z3Pct);
-    const recommendations = generateRecommendations(z1Pct, z2Pct, z3Pct, totalMinutes, classification);
+    const summary = summarizeTrainingSplit(
+      data.zone1Minutes,
+      data.zone2Minutes,
+      data.zone3Minutes,
+      data.periodDays,
+    );
 
     return {
-      zone1Percent: z1Pct,
-      zone2Percent: z2Pct,
-      zone3Percent: z3Pct,
+      zone1Percent: summary.zone1Percent,
+      zone2Percent: summary.zone2Percent,
+      zone3Percent: summary.zone3Percent,
       zone1Minutes: data.zone1Minutes,
       zone2Minutes: data.zone2Minutes,
       zone3Minutes: data.zone3Minutes,
       totalMinutes,
-      classification,
-      classificationColor: color,
-      recommendations,
+      periodDays: data.periodDays,
+      weeksInPeriod: summary.weeksInPeriod,
+      weeklyAverageMinutes: summary.weeklyAverageMinutes,
+      classification: summary.classification,
+      classificationColor: summary.classificationColor,
+      recommendations: summary.recommendations,
     };
   };
 
@@ -270,7 +278,7 @@ export default function TrainingSplitAnalyzer() {
       <FAQSchema faqs={TRAINING_SPLIT_FAQS} />
 
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
-        {isAuthenticated ? <AppHeader /> : <PublicHeader />}
+        <PublicHeader />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center mb-12">
@@ -432,7 +440,8 @@ export default function TrainingSplitAnalyzer() {
                       </div>
 
                       <div className="border-t pt-6">
-                        <h3 className="text-lg font-semibold mb-4">Time in Zone (minutes)</h3>
+                        <h3 className="text-lg font-semibold mb-1">Time in Zone for the full period</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Enter totals for all {form.watch("periodDays")} days. Results also show a weekly average.</p>
                         <div className="grid md:grid-cols-3 gap-6">
                           <FormField
                             control={form.control}
@@ -580,7 +589,7 @@ export default function TrainingSplitAnalyzer() {
                           {result.zone1Percent.toFixed(1)}%
                         </div>
                         <div className="text-sm text-gray-600 dark:text-gray-400 mt-1" data-testid="text-zone1-minutes">
-                          {result.zone1Minutes} minutes
+                          {Math.round(result.zone1Minutes)} period min · {Math.round(result.zone1Minutes / result.weeksInPeriod)} min/week
                         </div>
                       </CardContent>
                     </Card>
@@ -594,7 +603,7 @@ export default function TrainingSplitAnalyzer() {
                           {result.zone2Percent.toFixed(1)}%
                         </div>
                         <div className="text-sm text-gray-600 dark:text-gray-400 mt-1" data-testid="text-zone2-minutes">
-                          {result.zone2Minutes} minutes
+                          {Math.round(result.zone2Minutes)} period min · {Math.round(result.zone2Minutes / result.weeksInPeriod)} min/week
                         </div>
                       </CardContent>
                     </Card>
@@ -608,7 +617,7 @@ export default function TrainingSplitAnalyzer() {
                           {result.zone3Percent.toFixed(1)}%
                         </div>
                         <div className="text-sm text-gray-600 dark:text-gray-400 mt-1" data-testid="text-zone3-minutes">
-                          {result.zone3Minutes} minutes
+                          {Math.round(result.zone3Minutes)} period min · {Math.round(result.zone3Minutes / result.weeksInPeriod)} min/week
                         </div>
                       </CardContent>
                     </Card>
@@ -730,7 +739,7 @@ export default function TrainingSplitAnalyzer() {
 
                   <div className="text-sm text-gray-600 dark:text-gray-400">
                     <p className="mb-2">
-                      <strong>Total Training Time:</strong> {result.totalMinutes} minutes ({(result.totalMinutes / 60).toFixed(1)} hours)
+                      <strong>Weekly average:</strong> {Math.round(result.weeklyAverageMinutes)} minutes ({(result.weeklyAverageMinutes / 60).toFixed(1)} hours). <strong>Full period:</strong> {Math.round(result.totalMinutes)} minutes across {result.periodDays} days.
                     </p>
                     <p>
                       Research from elite endurance athletes suggests that polarized and pyramidal distributions are associated with better performance and lower injury rates compared to threshold-heavy approaches.
@@ -738,6 +747,7 @@ export default function TrainingSplitAnalyzer() {
                   </div>
                 </CardContent>
               </Card>
+              <ToolResultActions source="training_split_result" />
             </div>
           )}
 

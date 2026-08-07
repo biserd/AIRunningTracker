@@ -52,11 +52,6 @@ export default function LandingPage() {
           "priceCurrency": "USD",
           "description": "14-day free trial, then $7.99/month or $79.99/year. Cancel anytime."
         },
-        "aggregateRating": {
-          "@type": "AggregateRating",
-          "ratingValue": "4.8",
-          "ratingCount": "1250"
-        },
         "description": "AI-powered running analytics platform with Runner Score, race predictions, and personalized training insights"
       },
       {
@@ -114,10 +109,10 @@ export default function LandingPage() {
                 </div>
                 <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center h-8 min-w-[60px]">
                   {statsLoading ? <StatSkeleton /> : (
-                    <><AnimatedCounter end={(stats?.totalUsers || 0) * 3} className="text-strava-orange" />+</>
+                    <><AnimatedCounter end={stats?.totalUsers || 0} className="text-strava-orange" /></>
                   )}
                 </div>
-                <div className="text-xs sm:text-sm text-gray-600 font-medium">Active Runners</div>
+                <div className="text-xs sm:text-sm text-gray-600 font-medium">Registered accounts</div>
               </div>
               <div className="text-center min-h-[72px]">
                 <div className="flex items-center justify-center gap-1 mb-1">
@@ -125,7 +120,7 @@ export default function LandingPage() {
                 </div>
                 <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center h-8 min-w-[60px]">
                   {statsLoading ? <StatSkeleton /> : (
-                    <><AnimatedCounter end={(stats?.totalInsights || 0) * 3} className="text-blue-600" />+</>
+                    <><AnimatedCounter end={stats?.totalInsights || 0} className="text-blue-600" /></>
                   )}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600 font-medium">Key Insights</div>
@@ -342,7 +337,7 @@ export default function LandingPage() {
                 Are you an A+ Athlete or a C-Student?
               </p>
               <p className="text-base sm:text-lg text-gray-600 mb-6">
-                Our algorithm ranks you against thousands of other runners to show exactly where you stand. Finally, a metric that rewards <strong>consistency</strong>, not just speed.
+                Your score summarizes consistency, performance, volume and improvement from your own recent training. Use it to track direction, not to compare your body with strangers.
               </p>
               <div className="space-y-4 mb-6">
                 <div className="flex items-start gap-3">
@@ -378,7 +373,7 @@ export default function LandingPage() {
                 <div className="text-5xl sm:text-6xl font-bold text-blue-600">87</div>
                 <div className="flex items-center justify-center gap-2">
                   <Badge className="bg-blue-100 text-blue-800 px-3 py-1">Grade A-</Badge>
-                  <span className="text-gray-600">92nd percentile</span>
+                  <span className="text-gray-600">Illustrative score</span>
                 </div>
                 {/* Simple radar chart representation */}
                 <svg width="200" height="200" viewBox="0 0 200 200" className="mx-auto">
@@ -471,9 +466,9 @@ export default function LandingPage() {
               <div className="w-11 h-11 sm:w-12 sm:h-12 bg-red-500 rounded-xl flex items-center justify-center mb-4">
                 <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-charcoal mb-3">Injury Prevention</h3>
+              <h3 className="text-lg sm:text-xl font-semibold text-charcoal mb-3">Training-load signals</h3>
               <p className="text-gray-600 mb-4">
-                Smart analysis identifies training patterns that may lead to injury and provides prevention strategies.
+                Review abrupt volume and fatigue patterns that may deserve recovery or a conversation with a qualified professional.
               </p>
               <div className="bg-white p-3 rounded-lg text-sm">
                 <div className="flex items-center gap-2 mb-1">
@@ -648,7 +643,7 @@ export default function LandingPage() {
                     </div>
                     <h3 className="font-semibold text-charcoal">Race Time Predictor</h3>
                   </div>
-                  <p className="text-gray-600 text-sm mb-3">Predict your race times with confidence intervals.</p>
+                  <p className="text-gray-600 text-sm mb-3">Get a modeled finish-time estimate with a practical variability range.</p>
                   <span className="text-green-600 text-sm font-medium flex items-center">
                     Predict Times <ArrowRight className="ml-1 h-3 w-3" />
                   </span>
@@ -772,11 +767,11 @@ export default function LandingPage() {
           <div className="flex items-center justify-center gap-2 mb-6 sm:mb-8 text-gray-700 px-4">
             <Users className="h-5 w-5 text-strava-orange" />
             <span className="text-sm sm:text-base font-medium">
-              Trusted by {statsLoading ? (
+              Used by {statsLoading ? (
                 <span className="inline-block h-5 w-12 bg-gray-200 rounded animate-pulse align-middle" />
               ) : (
-                <span className="font-bold text-strava-orange">{((stats?.totalUsers || 0) * 5).toLocaleString()}+</span>
-              )} runners worldwide
+                <span className="font-bold text-strava-orange">{(stats?.totalUsers || 0).toLocaleString()}</span>
+              )} registered runners
             </span>
           </div>
 

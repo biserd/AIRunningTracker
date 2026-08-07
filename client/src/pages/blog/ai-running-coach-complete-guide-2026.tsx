@@ -21,6 +21,7 @@ import {
   Home
 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
+import { ArticleTrust } from "@/components/ArticleTrust";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 
@@ -63,6 +64,7 @@ export default function AIRunningCoachGuide() {
         structuredData={blogPostingSchema}
       />
       <PublicHeader />
+      <ArticleTrust topic="ai" />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         {/* Breadcrumbs */}
@@ -129,7 +131,7 @@ export default function AIRunningCoachGuide() {
               An AI running coach is a sophisticated software system that uses artificial intelligence and machine learning algorithms to provide personalized running guidance, training plans, and performance analysis. Unlike static training plans or basic fitness apps, AI coaches adapt to your unique physiology, goals, and progress in real-time.
             </p>
             <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-              Think of it as having a personal coach who never sleeps, analyzes thousands of data points from your runs, and continuously learns from your performance to provide increasingly accurate recommendations. The technology combines data science, exercise physiology, and natural language processing to deliver coaching that feels personal and responsive.
+              Think of it as an analysis assistant that reviews the activity data you authorize and turns recent patterns into conversational suggestions. Its output depends on the completeness of your data and should be checked against your own context.
             </p>
             <Card className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border-purple-200 dark:border-purple-800">
               <CardContent className="pt-6">
@@ -190,7 +192,7 @@ export default function AIRunningCoachGuide() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-gray-700 dark:text-gray-300">
-                  The system learns from millions of training sessions and outcomes, understanding what training approaches work best for different types of runners and goals.
+                  The system combines your recent activity history, stated goals and established training concepts. RunAnalytics does not claim that your recommendations are validated against millions of runner outcomes.
                 </CardContent>
               </Card>
 
@@ -269,7 +271,7 @@ export default function AIRunningCoachGuide() {
 
               <Card className="border-l-4 border-l-red-600 dark:border-l-red-500">
                 <CardHeader>
-                  <CardTitle className="dark:text-white">Injury Prevention</CardTitle>
+                  <CardTitle className="dark:text-white">Training-load review</CardTitle>
                 </CardHeader>
                 <CardContent className="text-gray-700 dark:text-gray-300">
                   Advanced AI systems can detect early warning signs of overtraining or injury risk by analyzing patterns in your pace, heart rate variability, and recovery metrics. This preventive approach helps you stay healthy and consistent.
@@ -281,7 +283,7 @@ export default function AIRunningCoachGuide() {
                   <CardTitle className="dark:text-white">Scalable Learning</CardTitle>
                 </CardHeader>
                 <CardContent className="text-gray-700 dark:text-gray-300">
-                  AI coaches learn from thousands or millions of runners' data, incorporating best practices and successful training patterns at a scale no human coach could match. You benefit from collective wisdom.
+                  AI can consistently summarize large activity histories, but it lacks a human coach's direct observation, medical judgment and knowledge of everything happening outside the data.
                 </CardContent>
               </Card>
             </div>
@@ -434,7 +436,7 @@ export default function AIRunningCoachGuide() {
               <CardContent className="pt-6">
                 <h3 className="text-xl font-bold mb-3">Ready to Transform Your Running?</h3>
                 <p className="mb-4">
-                  Get started with RunAnalytics AI Coach today. It's completely free and takes less than 2 minutes to set up.
+                  Create a free account to sync a limited activity history and preview the analysis. Full AI coaching is available during the 14-day Premium trial and on Premium afterward.
                 </p>
                 <Link href="/auth">
                   <Button className="bg-white text-strava-orange hover:bg-gray-100" data-testid="cta-get-started-ai-coach">
@@ -519,7 +521,7 @@ export default function AIRunningCoachGuide() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-gray-700 dark:text-gray-300">
-                  AI recommendations are based on data from thousands of successful training programs. Even if a suggestion seems unusual, give it a fair try before dismissing it. The AI often identifies opportunities you might have overlooked.
+                  Check every recommendation against your recent workload, recovery and real-world constraints. If a suggestion seems unsafe or does not fit your context, do not follow it; ask for the reasoning or consult a qualified coach or clinician.
                 </CardContent>
               </Card>
             </div>
@@ -545,7 +547,7 @@ export default function AIRunningCoachGuide() {
                   <CardTitle className="text-lg dark:text-white">How accurate are AI race predictions?</CardTitle>
                 </CardHeader>
                 <CardContent className="text-gray-700 dark:text-gray-300">
-                  Modern AI race predictions are remarkably accurate, typically within 2-5% of actual race times when based on sufficient training data. The accuracy improves as the AI learns more about your running patterns. Tools like the <Link href="/tools/race-predictor" className="text-blue-600 dark:text-blue-400 hover:underline">RunAnalytics Race Predictor</Link> use advanced algorithms that consider pace, heart rate, and recent performance trends.
+                  Race predictions are estimates, not guarantees or calibrated confidence forecasts. A recent hard effort at a similar distance generally provides a more useful input. The <Link href="/tools/race-predictor" className="text-blue-600 dark:text-blue-400 hover:underline">RunAnalytics Race Predictor</Link> shows both a modeled time and a scenario range so you can plan conservatively.
                 </CardContent>
               </Card>
 
@@ -601,7 +603,7 @@ export default function AIRunningCoachGuide() {
             <CardContent className="py-12 text-center">
               <h2 className="text-3xl font-bold mb-4">Experience AI Coaching Today</h2>
               <p className="text-xl mb-6 max-w-2xl mx-auto">
-                Join thousands of runners who are training smarter with RunAnalytics AI Coach. Get personalized insights, race predictions, and expert guidance—completely free.
+                Connect Strava for a limited free preview, or start the 14-day Premium trial for the complete AI coaching workflow.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/auth">

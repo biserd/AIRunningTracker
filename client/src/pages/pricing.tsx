@@ -217,7 +217,7 @@ export default function PricingPage() {
         title="Pricing | RunAnalytics"
         description="Start your 14-day free trial of RunAnalytics Premium. AI coaching, race predictions, training plans, and deep performance analytics. Cancel anytime."
       />
-      {isAuthenticated ? <AppHeader /> : <PublicHeader />}
+      <PublicHeader />
 
       <section className="py-16 px-6">
         <div className="max-w-4xl mx-auto">

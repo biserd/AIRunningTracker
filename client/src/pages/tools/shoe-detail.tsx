@@ -297,14 +297,6 @@ function ProductJsonLd({ shoe }: { shoe: RunningShoe }) {
       "@type": "Offer",
       price: shoe.price,
       priceCurrency: "USD",
-      availability: "https://schema.org/InStock",
-    },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: ((shoe.comfortRating + shoe.durabilityRating + shoe.responsivenessRating) / 3).toFixed(1),
-      ratingCount: 50,
-      bestRating: 5,
-      worstRating: 1,
     },
     weight: {
       "@type": "QuantitativeValue",
@@ -389,6 +381,7 @@ export default function ShoeDetailPage() {
 
   const { data, isLoading, error } = useQuery<{
     shoe: RunningShoe;
+    canonicalSlug: string | null;
     seriesShoes: RunningShoe[];
     hasSeriesData: boolean;
   }>({
@@ -405,10 +398,16 @@ export default function ShoeDetailPage() {
     window.scrollTo(0, 0);
   }, [slug]);
 
+  useEffect(() => {
+    if (data?.canonicalSlug && data.canonicalSlug !== slug) {
+      window.location.replace(`/tools/shoes/${data.canonicalSlug}`);
+    }
+  }, [data?.canonicalSlug, slug]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        {isAuthenticated ? <AppHeader /> : <PublicHeader />}
+        <PublicHeader />
         <main className="container mx-auto px-4 py-8">
           <Skeleton className="h-8 w-64 mb-6" />
           <div className="grid lg:grid-cols-3 gap-8">
@@ -430,7 +429,7 @@ export default function ShoeDetailPage() {
   if (error || !data?.shoe) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        {isAuthenticated ? <AppHeader /> : <PublicHeader />}
+        <PublicHeader />
         <main className="container mx-auto px-4 py-8 text-center">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             Shoe Not Found
@@ -485,7 +484,7 @@ export default function ShoeDetailPage() {
       <ProductJsonLd shoe={shoe} />
       <BreadcrumbJsonLd brand={shoe.brand} model={shoe.model} slug={shoe.slug || ""} />
 
-      {isAuthenticated ? <AppHeader /> : <PublicHeader />}
+      <PublicHeader />
 
       <main className="container mx-auto px-4 py-8" data-testid="shoe-detail-page">
         <Breadcrumbs brand={shoe.brand} model={shoe.model} slug={shoe.slug || ""} />
@@ -535,6 +534,12 @@ export default function ShoeDetailPage() {
                       )}
                     </div>
                     <p className="text-gray-600 dark:text-gray-400">{shoe.description}</p>
+                    <div className="mt-4 rounded-lg bg-gray-50 dark:bg-gray-800 p-3 text-xs text-gray-600 dark:text-gray-300">
+                      <strong className="text-gray-900 dark:text-white">Data transparency:</strong>{" "}
+                      {shoe.dataSource ? `Source type: ${shoe.dataSource.replace(/_/g, " ")}. ` : "Curated catalog record. "}
+                      {shoe.lastVerified ? `Last checked ${new Date(shoe.lastVerified).toLocaleDateString()}. ` : "Verification date not yet recorded. "}
+                      {shoe.sourceUrl && <a href={shoe.sourceUrl} target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-300 hover:underline">View source</a>}
+                    </div>
                   </div>
                   <div className="flex items-center gap-4 md:flex-col md:items-end">
                     <div className="flex items-center gap-1">

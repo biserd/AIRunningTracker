@@ -242,7 +242,7 @@ export default function ShoeComparePage() {
         }}
       />
 
-      {isAuthenticated ? <AppHeader /> : <PublicHeader />}
+      <PublicHeader />
 
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">

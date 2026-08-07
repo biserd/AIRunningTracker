@@ -20,6 +20,7 @@ import {
   Cpu
 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
+import { ArticleTrust } from "@/components/ArticleTrust";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 
@@ -110,6 +111,7 @@ export default function UltraMarathonTrainingPlanBlogPost() {
         structuredData={structuredData}
       />
       <PublicHeader />
+      <ArticleTrust topic="ultra" />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <nav className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6" aria-label="Breadcrumb">

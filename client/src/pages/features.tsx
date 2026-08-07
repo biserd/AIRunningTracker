@@ -3,10 +3,12 @@ import PublicHeader from "@/components/PublicHeader";
 import { Activity, Brain, Target, TrendingUp, Calendar, Shield } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { SEO } from "@/components/SEO";
 
 export default function FeaturesPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
+      <SEO title="Running Analytics Features | RunAnalytics" description="Explore post-run analysis, training trends, running calculators, shoe comparisons and optional AI coaching built from your Strava data." url="https://aitracker.run/features" />
       <PublicHeader />
 
       {/* Features Content */}
@@ -45,8 +47,8 @@ export default function FeaturesPage() {
                 </div>
                 <div className="text-center">
                   <Shield className="text-strava-orange mx-auto mb-2" size={32} />
-                  <h3 className="font-semibold mb-2">Injury Prevention</h3>
-                  <p className="text-sm text-gray-600">Early warning systems for potential injury risks</p>
+                  <h3 className="font-semibold mb-2">Training-load signals</h3>
+                  <p className="text-sm text-gray-600">Flags abrupt workload and fatigue patterns for you to review; it does not diagnose or prevent injury.</p>
                 </div>
               </div>
             </div>

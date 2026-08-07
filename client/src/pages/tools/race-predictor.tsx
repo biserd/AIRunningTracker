@@ -63,7 +63,7 @@ const RACE_DISTANCES = [
 const RACE_PREDICTOR_FAQS = [
   {
     question: "How accurate is the race time predictor?",
-    answer: "Our race time predictor uses the scientifically-validated Riegel formula with personalized adjustments for training volume and consistency. For runners with consistent training, predictions are typically within 2-5% of actual race performance. Accuracy improves when your base effort is recent (within 6-8 weeks) and at a similar distance to your target race."
+    answer: "The predictor uses the Riegel model with adjustments for training volume and consistency. It is an estimate, not a calibrated probability forecast. A recent all-out effort at a similar distance generally provides a more useful input than an old or easy run."
   },
   {
     question: "What is the Riegel formula and how does it work?",
@@ -243,14 +243,14 @@ export default function RacePredictor() {
       <FAQSchema faqs={RACE_PREDICTOR_FAQS} />
 
       <div className="min-h-screen bg-light-grey">
-        {isAuthenticated ? <AppHeader /> : <PublicHeader />}
+        <PublicHeader />
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
           <Alert className="mb-8 bg-blue-50 border-blue-200">
             <Info className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-sm text-gray-700 ml-2">
               <strong>Race Prediction</strong> uses the Riegel formula with personalized adjustments based on your training volume, 
-              consistency, and race-specific factors. Predictions include confidence bands to account for variability in performance. 
+              consistency, and race-specific factors. The displayed range is a scenario band for normal performance variability, not a statistical confidence interval.
               Want to run faster? Learn how to <Link href="/blog/how-to-improve-running-pace" className="text-blue-600 hover:text-blue-800 underline">improve your running pace</Link>.
             </AlertDescription>
           </Alert>
@@ -658,7 +658,7 @@ export default function RacePredictor() {
 
                     <Card className="bg-gradient-to-br from-green-50 to-emerald-50">
                       <CardContent className="pt-6">
-                        <div className="text-sm text-gray-600 mb-1">Confidence Range (80%)</div>
+                        <div className="text-sm text-gray-600 mb-1">Estimated performance range</div>
                         <div className="text-lg font-bold text-charcoal" data-testid="text-confidence-range">
                           {formatTime(result.confidenceLower)} - {formatTime(result.confidenceUpper)}
                         </div>
@@ -690,7 +690,7 @@ export default function RacePredictor() {
 
                   <Card className="mb-6">
                     <CardHeader>
-                      <CardTitle className="text-base">Confidence Band Visualization</CardTitle>
+                      <CardTitle className="text-base">Estimate Range Visualization</CardTitle>
                       <CardDescription>Predicted time range throughout the race</CardDescription>
                     </CardHeader>
                     <CardContent>

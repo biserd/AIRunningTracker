@@ -20,6 +20,7 @@ import {
   Home
 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
+import { ArticleTrust } from "@/components/ArticleTrust";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 
@@ -126,6 +127,7 @@ export default function AIAgentCoachBlogPost() {
         structuredData={structuredData}
       />
       <PublicHeader />
+      <ArticleTrust topic="ai" />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Breadcrumbs */}

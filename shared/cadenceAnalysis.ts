@@ -139,6 +139,7 @@ export function calculateFormStabilityScore(
   cadenceCV: number,
   strideCV: number
 ): number {
+  if (![drift, cadenceCV, strideCV].every(Number.isFinite)) return 0;
   // Weights
   const w1 = 0.5; // drift weight
   const w2 = 0.3; // cadence CV weight
@@ -228,6 +229,12 @@ function getInterpretation(
  */
 export function analyzeCadence(input: CadenceAnalysisInput): CadenceAnalysisResult {
   const { dataPoints, activityDuration, activityName, distance } = input;
+  if (!Number.isFinite(activityDuration) || activityDuration <= 0 || dataPoints.length < 2) {
+    throw new Error("At least two valid cadence samples and a positive duration are required");
+  }
+  if (dataPoints.some((point) => !Number.isFinite(point.time) || !Number.isFinite(point.cadence) || point.cadence <= 0)) {
+    throw new Error("Cadence samples must contain positive, finite values");
+  }
   
   // Calculate drift
   const drift = calculateCadenceDrift(dataPoints, activityDuration);

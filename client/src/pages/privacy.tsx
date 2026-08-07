@@ -2,13 +2,16 @@ import { Shield, Eye, Lock, Database, Activity } from "lucide-react";
 import { Link } from "wouter";
 import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
+import { SEO } from "@/components/SEO";
 
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-light-grey">
+      <SEO title="Privacy Policy | RunAnalytics" description="How RunAnalytics collects, uses, stores and deletes account, Strava and AI Coach data." url="https://aitracker.run/privacy" />
       <PublicHeader />
 
       <main className="max-w-4xl mx-auto px-6 py-12">
+        <h1 className="text-4xl font-bold text-charcoal mb-8">RunAnalytics Privacy Policy</h1>
         <div className="prose prose-lg max-w-none">
           <div className="mb-8">
             <p className="text-gray-600 text-lg">

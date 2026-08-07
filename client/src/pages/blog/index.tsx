@@ -5,6 +5,8 @@ import { Calendar, Clock, ArrowRight, Brain, TrendingUp, BarChart, Target, Bot, 
 import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
+import { Input } from "@/components/ui/input";
+import { useMemo, useState } from "react";
 
 interface BlogPost {
   slug: string;
@@ -71,7 +73,7 @@ const blogPosts: BlogPost[] = [
   {
     slug: "how-to-improve-running-pace",
     title: "How to Improve Running Pace: Complete Guide",
-    description: "Proven strategies and training methods to run faster, backed by science and tested by elite coaches.",
+    description: "Practical pace training with intervals, tempo running, strength work, recovery and safety context.",
     date: "January 15, 2026",
     readTime: "12 min read",
     category: "Training Tips",
@@ -81,6 +83,17 @@ const blogPosts: BlogPost[] = [
 ];
 
 export default function BlogIndex() {
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("All");
+  const categories = ["All", ...Array.from(new Set(blogPosts.map((post) => post.category)))];
+  const filteredPosts = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    return blogPosts.filter((post) =>
+      (category === "All" || post.category === category)
+      && (!normalizedQuery || `${post.title} ${post.description} ${post.category}`.toLowerCase().includes(normalizedQuery))
+    );
+  }, [category, query]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <SEO
@@ -103,9 +116,21 @@ export default function BlogIndex() {
           </p>
         </div>
 
+        <section className="mb-10 rounded-xl border border-gray-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 p-4" aria-label="Find running articles">
+          <label htmlFor="blog-search" className="block text-sm font-semibold text-charcoal dark:text-white mb-2">Find an article by goal or topic</label>
+          <Input id="blog-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Try: marathon, pace, Strava, AI coach" className="mb-4" />
+          <div className="flex flex-wrap gap-2">
+            {categories.map((item) => (
+              <button key={item} type="button" onClick={() => setCategory(item)} className={`rounded-full px-3 py-1.5 text-sm border ${category === item ? "bg-strava-orange text-white border-strava-orange" : "bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-600"}`} aria-pressed={category === item}>
+                {item}
+              </button>
+            ))}
+          </div>
+        </section>
+
         {/* Blog Posts Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-          {blogPosts.map((post) => (
+          {filteredPosts.map((post) => (
             <Link key={post.slug} href={`/blog/${post.slug}`}>
               <Card className="h-full hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 cursor-pointer bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
                 <CardHeader>
@@ -141,6 +166,10 @@ export default function BlogIndex() {
             </Link>
           ))}
         </div>
+
+        {filteredPosts.length === 0 && (
+          <p className="text-center text-gray-600 dark:text-gray-300 -mt-8 mb-16">No article matches that search. Try a broader topic.</p>
+        )}
 
         {/* CTA Section */}
         <Card className="bg-gradient-to-r from-purple-500 to-indigo-600 border-0 text-white">

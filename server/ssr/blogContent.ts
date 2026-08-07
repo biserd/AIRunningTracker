@@ -171,7 +171,7 @@ export const blogPosts: BlogPostContent[] = [
     content: `
       <h2 id="what-is">What is an AI Running Coach?</h2>
       <p>An AI running coach is a sophisticated software system that uses artificial intelligence and machine learning algorithms to provide personalized running guidance, training plans, and performance analysis. Unlike static training plans or basic fitness apps, AI coaches adapt to your unique physiology, goals, and progress in real-time.</p>
-      <p>Think of it as having a personal coach who never sleeps, analyzes thousands of data points from your runs, and continuously learns from your performance to provide increasingly accurate recommendations.</p>
+      <p>Think of it as an analysis assistant that reviews the activity data you authorize and turns recent patterns into conversational suggestions. Its output depends on data completeness and should be checked against your own context.</p>
       
       <h2 id="how-it-works">How AI Running Coaches Work</h2>
       <p>Modern AI running coaches leverage multiple technologies:</p>
@@ -250,7 +250,7 @@ export const blogPosts: BlogPostContent[] = [
   {
     slug: "how-to-improve-running-pace",
     title: "How to Improve Running Pace: Complete Guide",
-    description: "Proven strategies and training methods to run faster, backed by science and tested by elite coaches.",
+    description: "Practical pace training with intervals, tempo running, strength work, recovery and safety context.",
     date: "January 15, 2026",
     readTime: "12 min read",
     category: "Training Tips",

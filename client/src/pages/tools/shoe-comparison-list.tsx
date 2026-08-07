@@ -112,7 +112,7 @@ export default function ShoeComparisonList() {
         <link rel="canonical" href="https://aitracker.run/tools/shoes/compare" />
       </Helmet>
 
-      {isAuthenticated ? <AppHeader /> : <PublicHeader />}
+      <PublicHeader />
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         <Link href="/tools/shoes">

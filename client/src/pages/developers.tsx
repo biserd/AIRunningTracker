@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Helmet } from "react-helmet";
-import AppHeader from "@/components/AppHeader";
+import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,7 @@ export default function DevelopersPage() {
         <link rel="canonical" href="https://aitracker.run/developers" />
       </Helmet>
       
-      <AppHeader />
+      <PublicHeader />
       
       <main className="flex-1">
         <section className="py-16 md:py-24 bg-gradient-to-b from-gray-900 to-gray-800 text-white">

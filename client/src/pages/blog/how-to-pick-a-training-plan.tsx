@@ -28,6 +28,7 @@ import {
   Bot
 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
+import { ArticleTrust } from "@/components/ArticleTrust";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 import comparisonImage from "@assets/generated_images/generic_vs_ai_plan_comparison.png";
@@ -114,6 +115,7 @@ export default function HowToPickTrainingPlan() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
       <PublicHeader />
+      <ArticleTrust topic="training" />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         {/* Breadcrumbs */}
@@ -184,27 +186,27 @@ export default function HowToPickTrainingPlan() {
             <div className="grid md:grid-cols-3 gap-6 mb-6">
               <Card className="dark:border-slate-700">
                 <CardContent className="pt-6 text-center">
-                  <div className="text-4xl font-bold text-red-600 mb-2">60%</div>
+                  <div className="text-xl font-bold text-red-600 mb-2">Mismatch risk</div>
                   <p className="text-gray-700 dark:text-gray-300 text-sm">
-                    of runners who follow generic plans report injury or burnout
+                    Generic plans may not reflect your current volume, available days or recovery needs.
                   </p>
                 </CardContent>
               </Card>
 
               <Card className="dark:border-slate-700">
                 <CardContent className="pt-6 text-center">
-                  <div className="text-4xl font-bold text-green-600 mb-2">3x</div>
+                  <div className="text-xl font-bold text-green-600 mb-2">Personal context</div>
                   <p className="text-gray-700 dark:text-gray-300 text-sm">
-                    more likely to hit race goals with personalized training
+                    A useful plan starts from recent training and a realistic goal rather than a marketing label.
                   </p>
                 </CardContent>
               </Card>
 
               <Card className="dark:border-slate-700">
                 <CardContent className="pt-6 text-center">
-                  <div className="text-4xl font-bold text-blue-600 mb-2">12-15%</div>
+                  <div className="text-xl font-bold text-blue-600 mb-2">Gradual progression</div>
                   <p className="text-gray-700 dark:text-gray-300 text-sm">
-                    max weekly mileage increase for safe progression
+                    Progression should respond to training history and recovery; no fixed percentage is safe for everyone.
                   </p>
                 </CardContent>
               </Card>
@@ -596,7 +598,7 @@ export default function HowToPickTrainingPlan() {
                     <div>
                       <h4 className="font-bold mb-1">Built-In Safety Guardrails</h4>
                       <p className="text-white/90 text-sm">
-                        Every plan is validated against coaching best practices to prevent injury.
+                        Guardrails cap abrupt workload changes and hard-session frequency, but they cannot prevent or diagnose injury.
                       </p>
                     </div>
                   </div>

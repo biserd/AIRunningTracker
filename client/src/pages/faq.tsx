@@ -3,13 +3,16 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
+import { SEO } from "@/components/SEO";
 
 export default function FAQPage() {
   return (
     <div className="min-h-screen bg-light-grey">
+      <SEO title="RunAnalytics FAQ | Strava, Data and Premium" description="Answers about RunAnalytics, Strava syncing, running metrics, privacy, free access and the Premium trial." url="https://aitracker.run/faq" />
       <PublicHeader />
 
       <main className="max-w-4xl mx-auto px-6 py-12">
+        <h1 className="text-4xl font-bold text-charcoal mb-8">RunAnalytics frequently asked questions</h1>
         <div className="prose prose-lg max-w-none">
           <div className="mb-8">
             <p className="text-gray-600">
@@ -19,6 +22,14 @@ export default function FAQPage() {
           </div>
 
           <div className="grid gap-8">
+            <section className="bg-white rounded-lg p-6 border border-gray-200" id="methodology">
+              <h2 className="text-xl font-semibold text-charcoal mb-4">Methodology and limitations</h2>
+              <div className="space-y-3 text-gray-700">
+                <p>Metrics are calculated from the Strava fields and streams available for each activity. Missing heart-rate, cadence, power, GPS or elapsed-time data can make a result unavailable or less useful.</p>
+                <p>Runner Score and coaching suggestions describe patterns in your own history. They are not population percentiles, medical diagnosis, or guarantees of performance.</p>
+                <p>Race predictions and training recommendations are modeled estimates. Weather, terrain, illness, recovery, execution and inaccurate input data can materially change the outcome.</p>
+              </div>
+            </section>
             <section className="bg-white rounded-lg p-6 border border-gray-200">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -76,9 +87,7 @@ export default function FAQPage() {
                 <div>
                   <h3 className="font-semibold text-charcoal mb-2">How accurate are the race time predictions?</h3>
                   <p>
-                    Our race time predictions use advanced machine learning models trained on thousands of runner 
-                    profiles and performance data. While individual results may vary, our predictions are typically 
-                    accurate within 2-5% for most runners with consistent training data.
+                    Race predictions are modeled estimates based on the activity data available. The displayed range is a scenario band rather than a calibrated probability interval. Similar recent efforts generally provide more useful inputs, but weather, terrain and race execution can still change the result.
                   </p>
                 </div>
                 

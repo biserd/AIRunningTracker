@@ -170,14 +170,14 @@ export default function ToolsPage() {
     <>
       <SEO
         title="Free Running Tools & Calculators | RunAnalytics"
-        description="Free running calculators: race predictor, marathon fueling, aerobic decoupling, cadence analysis & more. No signup required."
+        description="Running calculators for race pacing, fueling and training analysis. Manual tools work without an account; Strava-powered analysis requires sign-in."
         keywords="running tools, running calculators, free running apps, marathon calculator, running analysis"
         url="https://aitracker.run/tools"
         structuredData={{
           "@context": "https://schema.org",
           "@type": "ItemList",
           "name": "Free Running Tools & Calculators",
-          "description": "Free running calculators: race predictor, marathon fueling, aerobic decoupling, cadence analysis & more. No signup required.",
+          "description": "Running calculators and analyzers. Manual tools work without an account; connected analysis requires Strava sign-in.",
           "numberOfItems": 10,
           "itemListElement": [
             { "@type": "ListItem", "position": 1, "name": "Running Heatmap", "url": "https://aitracker.run/tools/heatmap" },
@@ -196,7 +196,7 @@ export default function ToolsPage() {
 
       <div className="min-h-screen bg-light-grey">
         {/* Header */}
-        {isAuthenticated ? <AppHeader /> : <PublicHeader />}
+        <PublicHeader />
 
         {/* Hero Section */}
         <div className="bg-gradient-to-br from-blue-50 via-white to-indigo-50 border-b border-gray-200">
@@ -212,11 +212,11 @@ export default function ToolsPage() {
               </h1>
               
               <p className="text-lg sm:text-xl text-gray-600 mb-8 leading-relaxed">
-                Access powerful calculators and analyzers used by elite coaches. 
+                Use focused calculators and analyzers with clearly labeled inputs and limitations.
                 {isAuthenticated ? (
                   <> Auto-import your Strava data or enter values manually.</>
                 ) : (
-                  <> Works with manual input - no account required. Connect Strava for auto-import.</>
+                  <> Manual tools need no account; connected analyzers clearly show when Strava sign-in is required.</>
                 )}
               </p>
 

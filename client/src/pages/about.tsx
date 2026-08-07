@@ -1,9 +1,11 @@
 import Footer from "@/components/Footer";
 import PublicHeader from "@/components/PublicHeader";
+import { SEO } from "@/components/SEO";
 
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
+      <SEO title="About RunAnalytics | Built for Runners" description="Learn how RunAnalytics turns Strava activity data into clear running insights, practical tools and optional AI coaching." url="https://aitracker.run/about" />
       <PublicHeader />
 
       {/* About Content */}
@@ -46,6 +48,16 @@ export default function AboutPage() {
                 </ul>
               </div>
             </div>
+
+            <section className="mt-16 rounded-2xl border border-gray-200 bg-white p-8">
+              <h2 className="text-2xl font-bold text-charcoal mb-4">How the analysis works</h2>
+              <div className="grid md:grid-cols-3 gap-6 text-gray-600">
+                <div><h3 className="font-semibold text-charcoal mb-2">1. Your data</h3><p>RunAnalytics reads the Strava activities and streams you authorize. Missing heart-rate, cadence or GPS data limits the metrics we can calculate.</p></div>
+                <div><h3 className="font-semibold text-charcoal mb-2">2. Transparent metrics</h3><p>Calculators apply documented formulas and show the inputs behind the result. Estimates should be compared with similar runs, not treated as laboratory measurements.</p></div>
+                <div><h3 className="font-semibold text-charcoal mb-2">3. Coaching context</h3><p>AI turns those metrics into suggestions based on your recent history and goals. It does not diagnose injury or replace a qualified coach or clinician.</p></div>
+              </div>
+              <p className="mt-6 text-sm text-gray-500">See the <a className="text-strava-orange hover:underline" href="/faq">methodology and limitations FAQ</a> or <a className="text-strava-orange hover:underline" href="/contact">ask us a data question</a>.</p>
+            </section>
           </div>
         </div>
       </section>
