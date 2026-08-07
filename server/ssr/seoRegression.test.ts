@@ -14,6 +14,17 @@ import {
   getAllToolSlugs,
 } from "./renderer";
 import { getAllBlogPosts } from "./blogContent";
+import { editorialPosts } from "../../shared/editorialPosts";
+
+function assertExternalLinksAreProtected(html: string, expectedPath: string) {
+  const externalAnchors = [...html.matchAll(/<a\b[^>]*href=["']https?:\/\/[^"']+["'][^>]*>/gi)].map((match) => match[0]);
+  for (const anchor of externalAnchors) {
+    const rel = anchor.match(/\brel=["']([^"']+)["']/i)?.[1].toLowerCase().split(/\s+/) ?? [];
+    for (const token of ["nofollow", "noopener", "noreferrer"]) {
+      assert.ok(rel.includes(token), `${expectedPath}: external link must include ${token}: ${anchor}`);
+    }
+  }
+}
 
 function assertSeoDocument(html: string, expectedPath: string) {
   const titles = [...html.matchAll(/<title>(.*?)<\/title>/g)].map((match) => match[1]);
@@ -40,6 +51,7 @@ test("static public SSR pages have one self-canonical and one H1", () => {
     ["/developers/api", renderDevelopersApiPage()],
   ];
   pages.forEach(([path, html]) => assertSeoDocument(html, path));
+  pages.forEach(([path, html]) => assertExternalLinksAreProtected(html, path));
 });
 
 test("every SSR tool has correct metadata", () => {
@@ -47,6 +59,7 @@ test("every SSR tool has correct metadata", () => {
     const html = renderToolPage(slug);
     assert.ok(html);
     assertSeoDocument(html!, `/tools/${slug}`);
+    assertExternalLinksAreProtected(html!, `/tools/${slug}`);
   }
 });
 
@@ -55,7 +68,24 @@ test("every SSR blog has correct metadata and visible editorial information", ()
     const html = renderBlogPost(post.slug);
     assert.ok(html);
     assertSeoDocument(html!, `/blog/${post.slug}`);
+    assertExternalLinksAreProtected(html!, `/blog/${post.slug}`);
     assert.match(html!, /By the RunAnalytics Editorial Team/);
+  }
+});
+
+test("new editorial guides remain substantive, sourced, and internally connected", () => {
+  for (const post of editorialPosts) {
+    const text = post.sections.map((section) => section.html)
+      .join(" ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&[a-z0-9#]+;/gi, " ");
+    const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+    const externalSources = post.sources.filter((source) => /^https?:\/\//.test(source.href));
+    const internalArticleLinks = [...post.sections.map((section) => section.html).join(" ").matchAll(/href="\/blog\/[^"#]+/g)];
+
+    assert.ok(wordCount >= 900, `${post.slug}: at least 900 words, found ${wordCount}`);
+    assert.ok(externalSources.length >= 3, `${post.slug}: at least three primary or authoritative sources`);
+    assert.ok(internalArticleLinks.length >= 2, `${post.slug}: at least two contextual blog links`);
   }
 });
 

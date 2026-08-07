@@ -139,7 +139,7 @@ export default function ChromeExtensionLanding() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
-            <a href={CHROME_STORE_URL} target="_blank" rel="noopener noreferrer">
+            <a href={CHROME_STORE_URL} target="_blank" rel="nofollow noopener noreferrer">
               <Button
                 size="lg"
                 className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-600 text-white px-8 py-6 text-lg"
@@ -275,7 +275,7 @@ export default function ChromeExtensionLanding() {
                   <a
                     href={CHROME_STORE_URL}
                     target="_blank"
-                    rel="noopener noreferrer"
+                    rel="nofollow noopener noreferrer"
                     className="block"
                   >
                     <Button
@@ -301,7 +301,7 @@ export default function ChromeExtensionLanding() {
             Install the free RunAnalytics Chrome extension and turn Strava into a
             coaching tool.
           </p>
-          <a href={CHROME_STORE_URL} target="_blank" rel="noopener noreferrer">
+          <a href={CHROME_STORE_URL} target="_blank" rel="nofollow noopener noreferrer">
             <Button
               size="lg"
               className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-600 text-white px-8 py-6 text-lg"

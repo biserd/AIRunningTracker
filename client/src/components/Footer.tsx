@@ -73,7 +73,9 @@ export default function Footer() {
               <li><Link href="/blog/best-strava-analytics-tools-2026" className="hover:text-white transition-colors">Best Strava Analytics Tools 2026</Link></li>
               <li><Link href="/blog/how-to-improve-running-pace" className="hover:text-white transition-colors">How to Improve Running Pace</Link></li>
               <li><Link href="/blog/heart-rate-drift-aerobic-decoupling" className="hover:text-white transition-colors">Heart Rate Drift Explained</Link></li>
+              <li><Link href="/blog/running-cadence-by-pace" className="hover:text-white transition-colors">Running Cadence by Pace</Link></li>
               <li><Link href="/blog/80-20-running-training-split" className="hover:text-white transition-colors">80/20 Training Split</Link></li>
+              <li><Link href="/blog/marathon-fueling-calculator-guide" className="hover:text-white transition-colors">Marathon Fueling Guide</Link></li>
               <li><Link href="/blog/ai-running-coach-vs-training-plan" className="hover:text-white transition-colors">AI Coach vs Training Plan</Link></li>
             </ul>
           </div>

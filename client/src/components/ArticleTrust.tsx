@@ -33,7 +33,7 @@ export function ArticleTrust({ topic }: { topic: Topic }) {
         <p className="mb-2">Educational content only. Training estimates depend on data quality and are not medical diagnosis or individualized clinical advice.</p>
         <div className="flex flex-wrap gap-x-4 gap-y-1">
           {SOURCES[topic].map((source) => (
-            <a key={source.href} href={source.href} target={source.href.startsWith("http") ? "_blank" : undefined} rel={source.href.startsWith("http") ? "noreferrer" : undefined} className="inline-flex items-center gap-1 text-blue-700 dark:text-blue-300 hover:underline">
+            <a key={source.href} href={source.href} target={source.href.startsWith("http") ? "_blank" : undefined} rel={source.href.startsWith("http") ? "nofollow noopener noreferrer" : undefined} className="inline-flex items-center gap-1 text-blue-700 dark:text-blue-300 hover:underline">
               {source.label}{source.href.startsWith("http") && <ExternalLink className="h-3 w-3" />}
             </a>
           ))}

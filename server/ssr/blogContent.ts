@@ -10,6 +10,7 @@ export interface BlogPostContent {
   content: string;
   tableOfContents?: { id: string; title: string }[];
   faqs?: { question: string; answer: string }[];
+  sources?: { label: string; href: string }[];
 }
 
 export const blogPosts: BlogPostContent[] = [
@@ -525,9 +526,19 @@ blogPosts.push(...editorialPosts.map((post) => ({
   date: post.dateLabel,
   readTime: post.readTime,
   category: post.category,
-  tableOfContents: post.sections.map((section) => ({ id: section.id, title: section.title })),
-  content: post.sections.map((section) => `<h2 id="${section.id}">${section.title}</h2>${section.html}`).join("\n"),
+  tableOfContents: [
+    ...post.sections.map((section) => ({ id: section.id, title: section.title })),
+    { id: "sources", title: "Sources and related tools" },
+  ],
+  content: [
+    ...post.sections.map((section) => `<h2 id="${section.id}">${section.title}</h2>${section.html}`),
+    `<h2 id="sources">Sources and related tools</h2><ul>${post.sources.map((source) => {
+      const external = /^https?:\/\//.test(source.href);
+      return `<li><a href="${source.href}"${external ? ' rel="nofollow noopener noreferrer"' : ""}>${source.label}</a></li>`;
+    }).join("")}</ul>`,
+  ].join("\n"),
   faqs: post.faqs,
+  sources: post.sources,
 })));
 
 export function getBlogPostBySlug(slug: string): BlogPostContent | undefined {

@@ -22,6 +22,7 @@ export default function EditorialArticlePage() {
     author: { "@type": "Organization", name: "RunAnalytics Editorial Team" },
     publisher: { "@type": "Organization", name: "RunAnalytics", url: "https://aitracker.run" },
     mainEntityOfPage: `https://aitracker.run/blog/${post.slug}`,
+    citation: post.sources.filter((source) => source.href.startsWith("http")).map((source) => source.href),
   };
 
   return (
@@ -41,7 +42,7 @@ export default function EditorialArticlePage() {
         <article className="prose prose-slate max-w-none dark:prose-invert prose-a:text-blue-700 dark:prose-a:text-blue-300 prose-table:block prose-table:overflow-x-auto">
           {post.sections.map((section) => <section key={section.id} id={section.id} className="scroll-mt-24"><h2>{section.title}</h2><div dangerouslySetInnerHTML={{ __html: section.html }} /></section>)}
           <section><h2>Frequently asked questions</h2>{post.faqs.map((faq) => <details key={faq.question}><summary><strong>{faq.question}</strong></summary><p>{faq.answer}</p></details>)}</section>
-          <section><h2>Sources and related tools</h2><ul>{post.sources.map((source) => <li key={source.href}><a href={source.href} target={source.href.startsWith("http") ? "_blank" : undefined} rel={source.href.startsWith("http") ? "noreferrer" : undefined}>{source.label}{source.href.startsWith("http") && <ExternalLink className="ml-1 inline h-3 w-3" />}</a></li>)}</ul></section>
+          <section><h2>Sources and related tools</h2><ul>{post.sources.map((source) => <li key={source.href}><a href={source.href} target={source.href.startsWith("http") ? "_blank" : undefined} rel={source.href.startsWith("http") ? "nofollow noopener noreferrer" : undefined}>{source.label}{source.href.startsWith("http") && <ExternalLink className="ml-1 inline h-3 w-3" />}</a></li>)}</ul></section>
         </article>
       </main>
       <Footer />

@@ -538,7 +538,7 @@ export default function ShoeDetailPage() {
                       <strong className="text-gray-900 dark:text-white">Data transparency:</strong>{" "}
                       {shoe.dataSource ? `Source type: ${shoe.dataSource.replace(/_/g, " ")}. ` : "Curated catalog record. "}
                       {shoe.lastVerified ? `Last checked ${new Date(shoe.lastVerified).toLocaleDateString()}. ` : "Verification date not yet recorded. "}
-                      {shoe.sourceUrl && <a href={shoe.sourceUrl} target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-300 hover:underline">View source</a>}
+                      {shoe.sourceUrl && <a href={shoe.sourceUrl} target="_blank" rel="nofollow noopener noreferrer" className="text-blue-600 dark:text-blue-300 hover:underline">View source</a>}
                     </div>
                   </div>
                   <div className="flex items-center gap-4 md:flex-col md:items-end">

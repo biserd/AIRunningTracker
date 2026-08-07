@@ -107,7 +107,7 @@ export function ViewOnStravaLink({ activityId, className = "" }: ViewOnStravaLin
     <a
       href={`https://www.strava.com/activities/${activityId}`}
       target="_blank"
-      rel="noopener noreferrer"
+      rel="nofollow noopener noreferrer"
       className={`inline-flex items-center text-[#FC5200] hover:text-[#e04900] font-medium underline transition-colors ${className}`}
       data-testid="view-on-strava-link"
     >

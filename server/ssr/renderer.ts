@@ -148,7 +148,9 @@ export function renderBlogPost(slug: string): string | null {
     datePublished: post.date
   };
 
-  const structuredData = generateStructuredData(meta, url, 'BlogPosting');
+  const structuredData = generateStructuredData(meta, url, 'BlogPosting', post.sources?.length
+    ? { citation: post.sources.filter(source => /^https?:\/\//.test(source.href)).map(source => source.href) }
+    : {});
   const head = generateHtmlHead(meta, url, structuredData);
 
   const tocHtml = post.tableOfContents 
@@ -204,7 +206,7 @@ ${faqSchemaHtml}
         <aside class="ssr-byline" aria-label="Article editorial information">
           <p><strong>By the RunAnalytics Editorial Team</strong> &bull; Product and data claims reviewed &bull; Updated August 7, 2026</p>
           <p>Educational content only. Training estimates depend on data quality and are not medical diagnosis.</p>
-          <p><a href="/faq">Methodology and limitations</a> &bull; <a href="https://www.who.int/news-room/fact-sheets/detail/physical-activity">WHO physical activity guidance</a></p>
+          <p><a href="/faq">Methodology and limitations</a> &bull; <a href="https://www.who.int/news-room/fact-sheets/detail/physical-activity" rel="nofollow noopener noreferrer">WHO physical activity guidance</a></p>
         </aside>
         ${editorialUpdateHtml}
         ${tocHtml}
