@@ -20,6 +20,10 @@ export interface FunnelEventSpec {
 }
 
 export const FUNNEL_EVENTS = {
+  // --- Public acquisition tools ---
+  tool_viewed: { side: "client", required: ["source", "capability"] },
+  tool_completed: { side: "client", required: ["source", "capability"] },
+
   // --- Offer surfaces (Premium gates / CTAs) ---
   offer_viewed: { side: "client", required: ["source", "capability"] },
   offer_clicked: { side: "client", required: ["source", "capability"] },

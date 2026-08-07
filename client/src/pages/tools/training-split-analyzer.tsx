@@ -25,6 +25,7 @@ import { FAQSchema } from "@/components/FAQSchema";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { summarizeTrainingSplit } from "@shared/trainingSplit";
 import { ToolResultActions } from "@/components/ToolResultActions";
+import { ToolEducationPanel } from "@/components/ToolEducationPanel";
 
 const manualInputSchema = z.object({
   periodDays: z.coerce.number().min(28, "Minimum 28 days").max(42, "Maximum 42 days"),
@@ -68,11 +69,11 @@ interface ZoneDistribution {
 const TRAINING_SPLIT_FAQS = [
   {
     question: "What is polarized vs pyramidal training?",
-    answer: "Polarized training emphasizes a clear split: 70-80% easy/recovery runs (Zone 1), minimal moderate intensity (10-20% Zone 2), and 10-20% high-intensity (Zone 3). This minimizes time in the 'grey zone' that can lead to fatigue without enough stimulus. Pyramidal training has a gradual distribution with most time easy (60-70% Zone 1), moderate Zone 2 work (20-30%), and smaller amounts of high intensity (5-15% Zone 3). Both are effective - polarized is popular for elite endurance athletes, while pyramidal works well for many recreational runners."
+    answer: "Polarized training has a large easy share, limited moderate time and a distinct hard share. Pyramidal training also prioritizes easy work but contains more moderate than hard time. Both are reference patterns rather than universal targets, and the percentages depend on whether a source counts minutes or sessions."
   },
   {
     question: "How do I calculate my heart rate training zones?",
-    answer: "The most accurate zones use lactate threshold testing, but you can estimate: Zone 1 (Easy/Recovery) is below your first lactate threshold (LT1), typically 60-75% max HR or conversational pace. Zone 2 (Tempo/Threshold) is between LT1 and second lactate threshold (LT2), roughly 75-85% max HR - comfortably hard but sustainable for 30-60 minutes. Zone 3 (VO2max/High Intensity) is above LT2, typically 85%+ max HR - hard efforts you can sustain for 5-15 minutes. This tool uses these thresholds to classify your training distribution."
+    answer: "A three-zone model is usually anchored around the first and second physiological thresholds. Lab or carefully conducted field testing is more individualized than percentages of maximum heart rate. If using estimates, treat the classification as provisional and verify it against breathing and talk-test cues."
   },
   {
     question: "Why is too much Zone 2 training problematic?",
@@ -84,7 +85,7 @@ const TRAINING_SPLIT_FAQS = [
   },
   {
     question: "Should I use max HR or lactate thresholds for zone calculation?",
-    answer: "Lactate thresholds (LT1 and LT2) are more accurate for defining training zones than simple max HR percentages. The tool allows both: if you know your threshold heart rates from testing, use those for precise zones. If not, the tool will estimate zones from max HR. LT1 typically occurs around 70-75% max HR (where breathing becomes noticeably harder), and LT2 around 85-90% max HR (sustainable hard effort for 30-60 min). Lab testing or field tests can determine your specific thresholds."
+    answer: "Measured or well-estimated thresholds are more individualized than simple maximum-heart-rate percentages. The tool supports threshold inputs when you have them; otherwise its estimated zones should be treated as broad starting points."
   }
 ];
 
@@ -111,90 +112,6 @@ export default function TrainingSplitAnalyzer() {
       zone3Minutes: 100,
     }
   });
-
-  const classifyDistribution = (z1Pct: number, z2Pct: number, z3Pct: number): { classification: string; color: string } => {
-    if (z1Pct >= 70 && z3Pct >= 10 && z2Pct <= 20) {
-      return { classification: "Polarized", color: "bg-blue-500" };
-    } else if (z2Pct >= 25) {
-      return { classification: "Threshold-Heavy", color: "bg-orange-500" };
-    } else if (z1Pct > z2Pct && z2Pct > z3Pct && z2Pct >= 10 && z2Pct <= 25) {
-      return { classification: "Pyramidal", color: "bg-green-500" };
-    } else {
-      return { classification: "Mixed", color: "bg-gray-500" };
-    }
-  };
-
-  const generateRecommendations = (z1Pct: number, z2Pct: number, z3Pct: number, totalMin: number, classification: string): Array<{ zone: string; adjustment: string; rationale: string }> => {
-    const recs = [];
-    
-    if (classification === "Threshold-Heavy") {
-      const reduceZ2 = Math.round((z2Pct - 20) * totalMin / 100);
-      const addZ1 = Math.round(reduceZ2 * 0.7);
-      const addZ3 = Math.round(reduceZ2 * 0.3);
-      
-      recs.push({
-        zone: "Zone 1",
-        adjustment: `+${addZ1} min/week`,
-        rationale: "Increase aerobic base to balance intensity"
-      });
-      recs.push({
-        zone: "Zone 2",
-        adjustment: `-${reduceZ2} min/week`,
-        rationale: "Reduce threshold work to prevent overtraining"
-      });
-      recs.push({
-        zone: "Zone 3",
-        adjustment: `+${addZ3} min/week`,
-        rationale: "Add high-intensity to maintain fitness"
-      });
-    } else if (classification === "Polarized" || classification === "Pyramidal") {
-      recs.push({
-        zone: "Current Split",
-        adjustment: "Maintain",
-        rationale: "Your distribution is well-balanced for sustainable progress"
-      });
-      
-      if (z3Pct < 15) {
-        recs.push({
-          zone: "Zone 3",
-          adjustment: `+${Math.round((15 - z3Pct) * totalMin / 100)} min/week`,
-          rationale: "Consider adding more high-intensity for speed development"
-        });
-      }
-    } else {
-      const targetZ1 = 75;
-      const targetZ2 = 15;
-      const targetZ3 = 10;
-      
-      const z1Delta = Math.round((targetZ1 - z1Pct) * totalMin / 100);
-      const z2Delta = Math.round((targetZ2 - z2Pct) * totalMin / 100);
-      const z3Delta = Math.round((targetZ3 - z3Pct) * totalMin / 100);
-      
-      if (Math.abs(z1Delta) > 30) {
-        recs.push({
-          zone: "Zone 1",
-          adjustment: `${z1Delta > 0 ? '+' : ''}${z1Delta} min/week`,
-          rationale: z1Delta > 0 ? "Build aerobic base" : "Reduce easy volume slightly"
-        });
-      }
-      if (Math.abs(z2Delta) > 20) {
-        recs.push({
-          zone: "Zone 2",
-          adjustment: `${z2Delta > 0 ? '+' : ''}${z2Delta} min/week`,
-          rationale: z2Delta > 0 ? "Add threshold work" : "Reduce threshold volume"
-        });
-      }
-      if (Math.abs(z3Delta) > 15) {
-        recs.push({
-          zone: "Zone 3",
-          adjustment: `${z3Delta > 0 ? '+' : ''}${z3Delta} min/week`,
-          rationale: z3Delta > 0 ? "Increase high-intensity" : "Reduce high-intensity volume"
-        });
-      }
-    }
-    
-    return recs;
-  };
 
   const calculateManualDistribution = (data: ManualInputFormData): ZoneDistribution => {
     const totalMinutes = data.zone1Minutes + data.zone2Minutes + data.zone3Minutes;
@@ -292,7 +209,7 @@ export default function TrainingSplitAnalyzer() {
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
               Analyze your training intensity distribution and discover if you're following a polarized, pyramidal, or threshold-heavy approach. 
-              Explore more <Link href="/blog/best-strava-analytics-tools-2025" className="text-blue-600 hover:text-blue-800 underline">Strava analytics tools</Link>.
+              Explore more <Link href="/blog/best-strava-analytics-tools-2026" className="text-blue-600 hover:text-blue-800 underline">Strava analytics tools</Link>.
             </p>
           </div>
 
@@ -305,7 +222,7 @@ export default function TrainingSplitAnalyzer() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-gray-600 dark:text-gray-400">
-                Training intensity distribution refers to how you allocate your training time across different heart rate or power zones. Research shows that elite endurance athletes typically follow one of three main approaches:
+                Training intensity distribution describes how recorded time is allocated across easy, moderate and hard zones. The categories below are reference patterns, not universal prescriptions:
               </p>
               <div className="grid md:grid-cols-3 gap-4">
                 <Card className="border-blue-200 dark:border-blue-800">
@@ -316,7 +233,7 @@ export default function TrainingSplitAnalyzer() {
                   </CardHeader>
                   <CardContent className="text-sm">
                     <p className="mb-2 font-semibold">≥70% Z1, ≥10% Z3, ≤20% Z2</p>
-                    <p className="text-gray-600 dark:text-gray-400">Lots of easy running, minimal moderate intensity, regular hard efforts. Popular among elite marathoners.</p>
+                    <p className="text-gray-600 dark:text-gray-400">Lots of easy running, limited moderate intensity and a distinct hard share.</p>
                   </CardContent>
                 </Card>
 
@@ -724,7 +641,7 @@ export default function TrainingSplitAnalyzer() {
                     <Alert className="border-orange-200 dark:border-orange-800">
                       <Info className="h-4 w-4" />
                       <AlertDescription>
-                        <strong>Caution:</strong> Your training has a high proportion of threshold/moderate intensity work. While this can build fitness quickly, it may increase injury risk and lead to overtraining. Consider shifting some Zone 2 time to Zone 1 (easy) and Zone 3 (hard).
+                        <strong>Caution:</strong> Your training has a high proportion of threshold/moderate intensity work. Consider shifting some Zone 2 time to Zone 1 before adding any additional hard work.
                       </AlertDescription>
                     </Alert>
                   )}
@@ -742,7 +659,7 @@ export default function TrainingSplitAnalyzer() {
                       <strong>Weekly average:</strong> {Math.round(result.weeklyAverageMinutes)} minutes ({(result.weeklyAverageMinutes / 60).toFixed(1)} hours). <strong>Full period:</strong> {Math.round(result.totalMinutes)} minutes across {result.periodDays} days.
                     </p>
                     <p>
-                      Research from elite endurance athletes suggests that polarized and pyramidal distributions are associated with better performance and lower injury rates compared to threshold-heavy approaches.
+                      Distribution is only one part of training load. Review zone definitions, total volume, recovery and symptoms before changing the plan.
                     </p>
                   </div>
                 </CardContent>
@@ -793,6 +710,7 @@ export default function TrainingSplitAnalyzer() {
           </Card>
         </div>
 
+        <div className="max-w-6xl mx-auto px-4 sm:px-6"><ToolEducationPanel variant="training-split" /></div>
         <Footer />
       </div>
     </>

@@ -28,6 +28,8 @@ import {
 import Footer from '@/components/Footer';
 import { FAQSchema } from "@/components/FAQSchema";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ToolEducationPanel } from "@/components/ToolEducationPanel";
+import { ToolResultActions } from "@/components/ToolResultActions";
 
 const MARATHON_FUELING_FAQS = [
   {
@@ -44,7 +46,7 @@ const MARATHON_FUELING_FAQS = [
   },
   {
     question: "How much sodium do I need during a marathon?",
-    answer: "Most runners need 400-800mg of sodium per hour, depending on sweat rate, heat, and individual sodium loss. Higher sweat rates, hot conditions, and salty sweaters (white residue on clothes) need toward the upper end. Sodium helps maintain fluid balance and prevents hyponatremia (dangerously low blood sodium). Many gels contain 50-100mg sodium, so supplement with electrolyte drinks or salt tablets to hit your hourly target. Practice your sodium strategy during training - too little causes cramps, too much causes GI issues."
+    answer: "Sodium needs vary substantially with sweat rate, sweat composition, conditions, fluid intake and health context. The calculator can organize a target you have chosen, but it cannot measure your losses or prevent hyponatremia. Practice conservatively and seek qualified guidance for medical concerns."
   },
   {
     question: "Should I use caffeine gels during my marathon?",
@@ -52,7 +54,7 @@ const MARATHON_FUELING_FAQS = [
   },
   {
     question: "How do I avoid GI issues with my fueling plan?",
-    answer: "Train your gut: practice your exact race-day fueling plan on long runs at race pace. Start conservatively (60g carbs/hour) and gradually increase. Always take gels with water to dilute them. Avoid high-fiber, high-fat foods before and during the race. Use gels with multiple carb sources (glucose + fructose) to maximize absorption. Don't experiment on race day - only use products you've successfully tested in training. If prone to GI issues, consider isotonic gels, lower carb targets, or spreading intake across more frequent, smaller doses."
+    answer: "Practice the intended products, concentration and timing during long runs. Begin with intake you already tolerate and adjust gradually. Follow the product instructions for water, avoid introducing new products on race day and reduce the target when gastrointestinal symptoms appear."
   }
 ];
 
@@ -173,7 +175,7 @@ export default function MarathonFuelingPlanner() {
           "applicationCategory": "HealthApplication",
           "operatingSystem": "Web",
           "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-          "description": "Calculate your marathon nutrition plan with exact gel timing, carb targets & sodium needs. Get a personalized race fueling strategy in minutes."
+          "description": "Turn a practiced carbohydrate target and product choice into a marathon fueling schedule with transparent limitations."
         }}
       />
       <FAQSchema faqs={MARATHON_FUELING_FAQS} />
@@ -185,8 +187,8 @@ export default function MarathonFuelingPlanner() {
           <div className="mb-8">
             <h1 className="text-4xl font-bold mb-3" data-testid="text-page-title">Marathon Fueling Planner</h1>
             <p className="text-xl text-muted-foreground" data-testid="text-page-description">
-              Calculate your optimal race nutrition strategy with precise gel timing and fueling targets. 
-              Check your <Link href="/tools/race-predictor" className="text-blue-600 hover:text-blue-800 underline">race time predictions</Link> to plan accurate fueling.
+              Turn a practiced intake target into a simple race schedule, then rehearse it in training.
+              Check your <Link href="/tools/race-predictor" className="text-blue-600 hover:text-blue-800 underline">race time estimate</Link> to plan for realistic time on course.
             </p>
           </div>
 
@@ -638,6 +640,7 @@ export default function MarathonFuelingPlanner() {
                   </CardContent>
                 </Card>
               )}
+              {plan && <ToolResultActions source="marathon_fueling_result" capability="fueling_plan" />}
             </div>
           </div>
 
@@ -655,7 +658,7 @@ export default function MarathonFuelingPlanner() {
                 <li><strong>Enter your projected finish time</strong> - Be realistic based on training</li>
                 <li><strong>Set your nutrition targets</strong> - Use presets or customize based on your gut training</li>
                 <li><strong>Configure drink strategy</strong> - Plan your hydration and electrolyte intake</li>
-                <li><strong>Review the timeline</strong> - See exactly when to take each gel</li>
+                <li><strong>Review the timeline</strong> - Create simple prompts you can rehearse and adjust</li>
                 <li><strong>Click "Optimize"</strong> - Let the calculator suggest the best gel combination</li>
               </ol>
 
@@ -705,6 +708,7 @@ export default function MarathonFuelingPlanner() {
           </Card>
         </div>
 
+        <div className="max-w-7xl mx-auto px-4 sm:px-6"><ToolEducationPanel variant="marathon-fueling" /></div>
         <Footer />
       </div>
     </>

@@ -58,3 +58,20 @@ test("every SSR blog has correct metadata and visible editorial information", ()
     assert.match(html!, /By the RunAnalytics Editorial Team/);
   }
 });
+
+test("new calculators and editorial guides are discoverable", () => {
+  const toolSlugs = new Set(getAllToolSlugs());
+  assert.ok(toolSlugs.has("training-pace-calculator"));
+  assert.ok(toolSlugs.has("race-split-calculator"));
+
+  const blogSlugs = new Set(getAllBlogPosts().map((post) => post.slug));
+  for (const slug of [
+    "heart-rate-drift-aerobic-decoupling",
+    "running-cadence-by-pace",
+    "80-20-running-training-split",
+    "marathon-fueling-calculator-guide",
+    "ai-running-coach-vs-training-plan",
+  ]) {
+    assert.ok(blogSlugs.has(slug), `${slug}: included in SSR blog catalog`);
+  }
+});

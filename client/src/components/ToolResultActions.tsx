@@ -3,9 +3,14 @@ import { Button } from "@/components/ui/button";
 import { TrackedUpgradeLink } from "@/components/TrackedUpgradeLink";
 import { useSubscription } from "@/hooks/useSubscription";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
+import { useEffect } from "react";
+import { trackFunnelEvent } from "@/lib/analytics";
 
-export function ToolResultActions({ source }: { source: string }) {
+export function ToolResultActions({ source, capability = "public_tool" }: { source: string; capability?: string }) {
   const { hasActiveSubscription } = useSubscription();
+  useEffect(() => {
+    trackFunnelEvent("tool_completed", { source, capability }, { oncePerSession: true, dedupeParts: [source, capability] });
+  }, [source, capability]);
   const coachHref = hasActiveSubscription
     ? "/dashboard?openChat=true"
     : buildUpgradeUrl({ source, capability: "ai_coach", benefitKey: "ai_coach", returnTo: "/dashboard?openChat=true" });

@@ -104,17 +104,19 @@ export const homepageContent: HomepageContent = {
       description: "AI-powered predictions for 5K, 10K, half marathon, and marathon distances based on your training data."
     },
     {
-      title: "Injury Prevention",
+      title: "Training-Risk Awareness",
       icon: "shield",
-      description: "Smart analysis identifies training patterns that may lead to injury and provides prevention strategies."
+      description: "Smart analysis highlights abrupt load changes and recovery patterns worth reviewing; it does not diagnose or prevent injury."
     }
   ],
   freeTools: [
+    { title: "Training Pace Calculator", description: "Turn a recent race into broad training pace ranges", href: "/tools/training-pace-calculator", badge: "New" },
+    { title: "Race Split Calculator", description: "Create exact mile or kilometer goal-time splits", href: "/tools/race-split-calculator", badge: "New" },
     { title: "Race Time Predictor", description: "Predict your 5K to marathon times using the Riegel formula", href: "/tools/race-predictor" },
-    { title: "Marathon Fueling Calculator", description: "Calculate exact gel timing and carb targets", href: "/tools/marathon-fueling" },
+    { title: "Marathon Fueling Calculator", description: "Turn practiced intake targets into a race schedule", href: "/tools/marathon-fueling" },
     { title: "Aerobic Decoupling", description: "Measure your endurance efficiency", href: "/tools/aerobic-decoupling-calculator" },
     { title: "Training Split Analyzer", description: "Discover your training intensity distribution", href: "/tools/training-split-analyzer" },
-    { title: "Cadence Analyzer", description: "Detect running form fade patterns", href: "/tools/cadence-analyzer" },
+    { title: "Cadence Analyzer", description: "Review cadence stability and late-run change", href: "/tools/cadence-analyzer" },
     { title: "Running Heatmap", description: "Visualize your most-run routes", href: "/tools/heatmap" },
     { title: "Shoe Database", description: "Browse and compare 100+ running shoes", href: "/tools/shoes", badge: "New" },
     { title: "Shoe Finder", description: "Find your perfect running shoe", href: "/tools/shoe-finder" },

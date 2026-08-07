@@ -4,6 +4,7 @@ import { calculateAerobicDecoupling } from "../aerobicDecoupling";
 import { summarizeTrainingSplit } from "../trainingSplit";
 import { analyzeCadence } from "../cadenceAnalysis";
 import { canonicalizeShoeCatalog } from "../shoeCanonicalization";
+import { calculateRaceSplits, calculateTrainingPaces } from "../runningCalculators";
 
 test("decoupling uses one positive-fade convention", () => {
   const faded = calculateAerobicDecoupling(3, 150, 2.8, 155);
@@ -45,4 +46,28 @@ test("shoe aliases resolve to one sourced canonical record", () => {
   const result = canonicalizeShoeCatalog(shoes);
   assert.equal(result.canonicalShoes.length, 1);
   assert.equal(result.aliasToCanonical.get("asics-novablast-5-mens"), "asics-novablast-5");
+});
+
+test("training paces are ordered from faster to slower within every zone", () => {
+  const result = calculateTrainingPaces({
+    distanceMeters: 10_000,
+    timeSeconds: 45 * 60,
+    raceAgeDays: 14,
+    weeklyDistanceKm: 40,
+  });
+  assert.equal(result.confidence, "High");
+  result.zones.forEach((zone) => assert.ok(zone.fasterSecondsPerKm <= zone.slowerSecondsPerKm));
+  assert.ok(result.zones.find((zone) => zone.key === "easy")!.fasterSecondsPerKm > result.zones.find((zone) => zone.key === "threshold")!.fasterSecondsPerKm);
+});
+
+test("race splits always add up to the exact goal time", () => {
+  for (const strategy of ["even", "conservative", "negative"] as const) {
+    const result = calculateRaceSplits({ distanceMeters: 42_195, goalTimeSeconds: 4 * 3600, unit: "miles", strategy });
+    assert.equal(result.rows.at(-1)?.cumulativeSeconds, 4 * 3600);
+  }
+});
+
+test("negative split strategy makes the second half faster", () => {
+  const result = calculateRaceSplits({ distanceMeters: 10_000, goalTimeSeconds: 50 * 60, unit: "km", strategy: "negative" });
+  assert.ok(result.secondHalfSeconds < result.firstHalfSeconds);
 });

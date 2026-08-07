@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
 import { ArticleTrust } from "@/components/ArticleTrust";
+import { ArticleRefreshSections } from "@/components/ArticleRefreshSections";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 import comparisonImage from "@assets/generated_images/generic_vs_ai_plan_comparison.png";
@@ -38,7 +39,7 @@ export default function HowToPickTrainingPlan() {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     "headline": "How to Pick a Training Plan: Complete Guide to Finding Your Perfect Running Program",
-    "description": "Learn how to choose the right training plan for your running goals. Discover why AI-personalized plans outperform generic schedules, what to look for in a quality training program, and how RunAnalytics Training Plan HQ creates custom plans based on your Strava data.",
+    "description": "Learn how to choose a training plan that fits your current consistency, goal date, available days, and need for adaptation.",
     "image": "https://aitracker.run/og-image.jpg",
     "author": {
       "@type": "Organization",
@@ -104,7 +105,7 @@ export default function HowToPickTrainingPlan() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <SEO
         title="How to Pick a Training Plan: Complete Guide 2025 | RunAnalytics"
-        description="Learn how to choose the right training plan for your running goals. Discover why AI-personalized plans outperform generic schedules and how to find your perfect running program."
+        description="Choose a training plan that fits your current consistency, goal date, available days, and need for adaptation."
         keywords="how to pick a training plan, best training plan for runners, personalized running plan, marathon training plan, AI training plan, custom running schedule, training plan selection, half marathon plan, 5k training plan"
         url="https://aitracker.run/blog/how-to-pick-a-training-plan"
         type="article"
@@ -116,6 +117,7 @@ export default function HowToPickTrainingPlan() {
       />
       <PublicHeader />
       <ArticleTrust topic="training" />
+      <ArticleRefreshSections variant="training-plan" />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         {/* Breadcrumbs */}

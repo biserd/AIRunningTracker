@@ -261,9 +261,9 @@ ${crossTrainingActivities.slice(0, 10).map(a => `- ${a.name || a.type} (${a.type
 INSTRUCTIONS FOR CROSS-TRAINING-ONLY USERS:
 - Performance: Highlight the fitness foundation built through cross-training (${(crossTrainingStats.totalTime / 3600).toFixed(1)} hours total)
 - Pattern: Note the cross-training consistency and readiness to add running
-- Recovery: Emphasize that cross-training reduces injury risk and builds aerobic base
+- Recovery: Explain that cross-training can support aerobic fitness while noting that it does not establish running-specific tissue readiness
 - Motivation: Encourage starting running with confidence based on current fitness
-- Technique: Provide beginner running tips (easy pace, midfoot landing, 170-180 cadence)
+- Technique: Provide beginner running tips centered on easy effort, relaxed mechanics, and a comfortable natural cadence; do not prescribe one foot strike or cadence target
 - Recommendations: Suggest gentle running introduction (${isMetric ? '2-3km' : '1-2mi'} easy runs 2-3x/week, run-walk method, balance with cross-training)
 - Gear: Suggest exploring shoe options for starting their running journey
 

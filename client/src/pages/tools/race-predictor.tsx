@@ -37,6 +37,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { FAQSchema } from "@/components/FAQSchema";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ToolEducationPanel } from "@/components/ToolEducationPanel";
+import { ToolResultActions } from "@/components/ToolResultActions";
 
 const manualInputSchema = z.object({
   baseDistance: z.coerce.number().min(0.5, "Minimum 0.5").max(50, "Maximum 50"),
@@ -246,6 +248,7 @@ export default function RacePredictor() {
         <PublicHeader />
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+          <div className="mb-8"><h1 className="text-3xl font-bold text-charcoal sm:text-5xl">Race Time Predictor</h1><p className="mt-3 max-w-3xl text-lg text-gray-600">Estimate a finish-time scenario from a recent performance and see the assumptions that make longer-distance predictions less certain.</p></div>
           <Alert className="mb-8 bg-blue-50 border-blue-200">
             <Info className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-sm text-gray-700 ml-2">
@@ -785,6 +788,7 @@ export default function RacePredictor() {
                       </CardContent>
                     </Card>
                   )}
+                  <ToolResultActions source="race_predictor_result" capability="race_prediction" />
                 </div>
               )}
             </CardContent>
@@ -817,6 +821,7 @@ export default function RacePredictor() {
           </Card>
         </div>
 
+        <div className="max-w-6xl mx-auto px-4 sm:px-6"><ToolEducationPanel variant="race-predictor" /></div>
         <Footer />
       </div>
     </>

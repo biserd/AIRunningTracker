@@ -12,17 +12,17 @@ export interface ToolContent {
 export const toolsContent: ToolContent[] = [
   {
     slug: "race-predictor",
-    title: "Race Predictor: Free AI Tool for Marathon & 10K Finish Times",
-    description: "Predict your race finish time from your last run. Our free AI race predictor uses your Strava or Garmin data plus VDOT models. Try it in 30 seconds.",
+    title: "Race Time Predictor | Riegel Running Calculator",
+    description: "Estimate a race finish time from a recent performance using a transparent Riegel model and clearly labeled scenario range.",
     keywords: "race predictor, ai race predictor, marathon time predictor, half marathon predictor, 10k race predictor, 5k race predictor, strava race predictor, vdot calculator",
     features: [
       "Predict times for 5K, 10K, Half Marathon, and Marathon",
-      "Uses the scientifically-validated Riegel formula",
+      "Uses the published Riegel distance relationship",
       "Import your best race from Strava automatically",
       "See equivalent times across all standard distances",
-      "Calculate your VDOT running fitness score"
+      "Shows assumptions and limitations"
     ],
-    howItWorks: "Enter a recent race time or connect Strava to import your best performance. The calculator uses Pete Riegel's formula (T2 = T1 × (D2/D1)^1.06) to predict times at other distances. For Strava users, we auto-detect your races and use your best performance for predictions.",
+    howItWorks: "Enter a recent race time or connect Strava to select a suitable performance. The calculator uses the Riegel relationship T2 = T1 × (D2/D1)^1.06, plus the training variables you provide. The output is an estimate rather than a calibrated probability forecast.",
     benefits: [
       "Set realistic race goals backed by science",
       "Identify which race distance suits you best",
@@ -30,14 +30,14 @@ export const toolsContent: ToolContent[] = [
       "Plan your training paces accurately"
     ],
     faq: [
-      { question: "How accurate is the Race Predictor?", answer: "The Riegel formula is highly accurate for well-trained runners. Predictions assume similar training and racing conditions across distances." },
+      { question: "How accurate is the Race Predictor?", answer: "Use it as a planning estimate. A recent all-out result at a nearby distance is more informative, while weather, terrain, pacing, fueling and distance-specific training can materially change the outcome." },
       { question: "Do I need a Strava account?", answer: "No! You can manually enter any recent race time. Strava integration just makes it easier by finding your best races automatically." }
     ]
   },
   {
     slug: "marathon-fueling",
     title: "Marathon Fueling Calculator | Gel Timing & Nutrition Plan",
-    description: "Calculate your marathon nutrition plan with exact gel timing, carb targets & sodium needs. Get a personalized race fueling strategy in minutes.",
+    description: "Turn your chosen carbohydrate, product and timing inputs into a marathon fueling schedule that you can rehearse in training.",
     keywords: "marathon fueling, gel timing calculator, marathon nutrition plan, race nutrition, carbohydrate calculator, sodium intake running",
     features: [
       "Personalized carb targets based on your goal time",
@@ -46,7 +46,7 @@ export const toolsContent: ToolContent[] = [
       "Choose your preferred gel brand",
       "Printable race day fueling card"
     ],
-    howItWorks: "Enter your marathon goal time, body weight, and preferred gel brand. We calculate your hourly carbohydrate needs (30-90g/hour depending on intensity), then create a precise fueling schedule with gel intake at optimal intervals to prevent bonking.",
+    howItWorks: "Enter a realistic marathon time and the intake you have practiced. The planner converts product serving sizes and timing preferences into a schedule. It does not measure individual tolerance, sweat rate or medical needs.",
     benefits: [
       "Avoid the dreaded 'wall' with proper fueling",
       "Practice race-day nutrition in training",
@@ -70,7 +70,7 @@ export const toolsContent: ToolContent[] = [
       "Get your Aerobic Efficiency Score",
       "Track aerobic development over months"
     ],
-    howItWorks: "Aerobic decoupling measures how well your heart rate stays stable relative to pace during a long run. We compare the first and second halves of your run: (HR2/Pace2) vs (HR1/Pace1). Under 5% decoupling indicates excellent aerobic fitness; over 10% suggests more base training is needed.",
+    howItWorks: "The calculator compares speed-to-heart-rate efficiency in equal halves and uses one positive-fade convention. A positive result means efficiency declined. Heat, hills, hydration and sensor quality can affect the number.",
     benefits: [
       "Objectively measure aerobic fitness progress",
       "Know when you're ready for harder training",
@@ -90,11 +90,11 @@ export const toolsContent: ToolContent[] = [
     features: [
       "Calculate your Zone 1/2/3 training distribution",
       "Identify if you're polarized, pyramidal, or threshold-heavy",
-      "Compare your split to elite training patterns",
+      "Compare your split with clearly labeled reference patterns",
       "Sync with Strava for automatic analysis",
       "Track distribution changes over training blocks"
     ],
-    howItWorks: "We analyze your recent runs by heart rate or pace to calculate time spent in each training zone. Polarized training (80% easy, 5% moderate, 15% hard) and pyramidal (70-75% easy, 15-20% moderate, 5-10% hard) are both effective approaches used by elites.",
+    howItWorks: "The analyzer calculates time in a three-zone model, normalizes the selected period into weekly averages and classifies the distribution. Zone definitions and data quality must be checked before acting on the result.",
     benefits: [
       "Avoid the 'gray zone' trap of mediocre training",
       "Optimize your hard/easy balance",
@@ -126,9 +126,35 @@ export const toolsContent: ToolContent[] = [
       "Prevent overstriding when tired"
     ],
     faq: [
-      { question: "What's a good running cadence?", answer: "Most efficient runners land between 170-190 steps per minute. What matters more is consistency throughout your run." },
+      { question: "What's a good running cadence?", answer: "There is no universal target. Cadence varies with pace, height, terrain and individual mechanics. Compare your own values on similar runs and focus on comfort and stability." },
       { question: "Why does cadence drop late in runs?", answer: "Fatigue causes muscle weakness and coordination loss, leading to longer ground contact time and lower cadence." }
     ]
+  },
+  {
+    slug: "training-pace-calculator",
+    title: "Training Pace Calculator | Free Running Pace Zones",
+    description: "Calculate broad easy, long-run, steady, threshold and interval pace ranges from a recent race, with transparent assumptions.",
+    keywords: "training pace calculator, running pace zones, easy run pace, threshold pace, interval pace",
+    features: ["Five practical pace ranges", "Miles or kilometers", "Usefulness rating based on recency and distance", "No account required"],
+    howItWorks: "A recent result is normalized to a 10K equivalent using the Riegel relationship. Broad multipliers create starting pace ranges; recency, race distance and weekly volume determine the usefulness label.",
+    benefits: ["Start workouts with realistic pace ranges", "Avoid one-number false precision", "Understand when a result is less dependable", "Connect the result to a personalized training plan"],
+    faq: [
+      { question: "Are these physiological training zones?", answer: "No. They are broad pace starting ranges, not laboratory-measured thresholds." },
+      { question: "Which result should I enter?", answer: "Use a recent, well-paced race or hard effort. A 5K through half marathon usually transfers most directly." },
+    ],
+  },
+  {
+    slug: "race-split-calculator",
+    title: "Race Split Calculator | Mile and Kilometer Chart",
+    description: "Create exact mile or kilometer splits for even, conservative-start or negative-split race strategies.",
+    keywords: "race split calculator, marathon pace chart, mile splits, kilometer splits, negative split",
+    features: ["Even, conservative-start and negative-split strategies", "Exact cumulative time", "Partial final split", "Copy and print plan"],
+    howItWorks: "The calculator applies a small strategy weight to each segment, scales all segments back to the requested finish time and includes the final partial mile or kilometer.",
+    benefits: ["Carry a simple race-day pacing plan", "See cumulative checkpoints", "Avoid accidental rounding errors", "Practice the same strategy in training"],
+    faq: [
+      { question: "Which strategy is best?", answer: "Even pacing is the simplest default. Use another strategy only when it fits the course and has been practiced." },
+      { question: "Why is the last split shorter?", answer: "Standard race distances are not whole numbers of both miles and kilometers, so the final row covers the exact remaining distance." },
+    ],
   },
   {
     slug: "heatmap",

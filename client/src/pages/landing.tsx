@@ -586,6 +586,38 @@ export default function LandingPage() {
               className="flex gap-4 overflow-x-auto pb-4 px-2 md:px-8 scrollbar-hide scroll-smooth snap-x snap-mandatory"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
+              {/* Tool Card - Training Paces */}
+              <Link href="/tools/training-pace-calculator" className="flex-shrink-0 w-72 snap-start">
+                <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 h-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                      <Calculator className="h-5 w-5 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-charcoal">Training Pace Calculator</h3>
+                  </div>
+                  <p className="text-gray-600 text-sm mb-3">Turn a recent race into broad, practical training pace ranges.</p>
+                  <span className="text-indigo-600 text-sm font-medium flex items-center">
+                    Calculate Paces <ArrowRight className="ml-1 h-3 w-3" />
+                  </span>
+                </div>
+              </Link>
+
+              {/* Tool Card - Race Splits */}
+              <Link href="/tools/race-split-calculator" className="flex-shrink-0 w-72 snap-start">
+                <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 h-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-700 rounded-lg flex items-center justify-center">
+                      <Target className="h-5 w-5 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-charcoal">Race Split Calculator</h3>
+                  </div>
+                  <p className="text-gray-600 text-sm mb-3">Create exact mile or kilometer splits for your goal finish time.</p>
+                  <span className="text-emerald-700 text-sm font-medium flex items-center">
+                    Build Split Chart <ArrowRight className="ml-1 h-3 w-3" />
+                  </span>
+                </div>
+              </Link>
+
               {/* Tool Card - Aerobic Decoupling */}
               <Link href="/tools/aerobic-decoupling-calculator" className="flex-shrink-0 w-72 snap-start">
                 <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 h-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
@@ -627,7 +659,7 @@ export default function LandingPage() {
                     </div>
                     <h3 className="font-semibold text-charcoal">Marathon Fueling</h3>
                   </div>
-                  <p className="text-gray-600 text-sm mb-3">Calculate optimal race nutrition with precise gel timing.</p>
+                  <p className="text-gray-600 text-sm mb-3">Turn a practiced carbohydrate target into a simple race schedule.</p>
                   <span className="text-orange-600 text-sm font-medium flex items-center">
                     Plan Nutrition <ArrowRight className="ml-1 h-3 w-3" />
                   </span>
@@ -659,7 +691,7 @@ export default function LandingPage() {
                     </div>
                     <h3 className="font-semibold text-charcoal">Form Stability Analyzer</h3>
                   </div>
-                  <p className="text-gray-600 text-sm mb-3">Detect form fade through cadence drift analysis.</p>
+                  <p className="text-gray-600 text-sm mb-3">Review cadence stability and late-run change in context.</p>
                   <span className="text-cyan-600 text-sm font-medium flex items-center">
                     Analyze Form <ArrowRight className="ml-1 h-3 w-3" />
                   </span>
@@ -675,7 +707,7 @@ export default function LandingPage() {
                     </div>
                     <h3 className="font-semibold text-charcoal">Running Shoe Hub</h3>
                   </div>
-                  <p className="text-gray-600 text-sm mb-3">Browse 100+ verified shoes with detailed specs.</p>
+                  <p className="text-gray-600 text-sm mb-3">Browse 100+ shoe models with detailed specifications.</p>
                   <span className="text-amber-600 text-sm font-medium flex items-center">
                     Browse Shoes <ArrowRight className="ml-1 h-3 w-3" />
                   </span>

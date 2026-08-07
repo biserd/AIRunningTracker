@@ -188,6 +188,7 @@ export function renderBlogPost(slug: string): string | null {
   // Pick relevant tool/shoe links based on the post's category & title so each
   // post sends a unique mix of authority signals to the right destinations.
   const relatedHtml = generateRelatedToolsForBlog(post.title, post.category);
+  const editorialUpdateHtml = generateEditorialUpdateForBlog(post.slug);
 
   return `${head}
 ${faqSchemaHtml}
@@ -205,6 +206,7 @@ ${faqSchemaHtml}
           <p>Educational content only. Training estimates depend on data quality and are not medical diagnosis.</p>
           <p><a href="/faq">Methodology and limitations</a> &bull; <a href="https://www.who.int/news-room/fact-sheets/detail/physical-activity">WHO physical activity guidance</a></p>
         </aside>
+        ${editorialUpdateHtml}
         ${tocHtml}
         ${post.content}
 
@@ -225,6 +227,50 @@ ${faqSchemaHtml}
 </html>`;
 }
 
+function generateEditorialUpdateForBlog(slug: string): string {
+  const updates: Record<string, { title: string; intro: string; rows: Array<[string, string]>; link: string; label: string }> = {
+    "best-strava-analytics-tools-2026": {
+      title: "How this comparison was evaluated",
+      intro: "Products are compared by current use case, price visibility, data depth, setup friction and disclosed limitations—not by unsupported claims that one product is best for everyone.",
+      rows: [["Post-run explanation", "Verify whether the product explains why a metric changed."], ["Long-term exploration", "Check filters, comparable periods and export options."], ["Free use", "Confirm what works before connecting an account or paying."], ["Adaptive next step", "Check whether the runner's context survives signup and checkout."]],
+      link: "/tools", label: "Try the current free tools",
+    },
+    "how-to-improve-running-pace": {
+      title: "Diagnose the limiter before adding speed",
+      intro: "A pace plateau can reflect aerobic durability, excessive moderate intensity, stale workout targets, recovery or conditions. Several comparable weeks are more useful than one slow run.",
+      rows: [["Pace slows while heart rate rises", "Compare similar runs with the aerobic-decoupling calculator."], ["Most training is moderate", "Review four to six weeks in the Training Split Analyzer."], ["Race fitness changed", "Recalculate broad training pace ranges."], ["Cadence changed", "Compare it at the same pace and terrain before altering form."]],
+      link: "/tools/training-pace-calculator", label: "Calculate training pace ranges",
+    },
+    "how-to-pick-a-training-plan": {
+      title: "Choose the least aggressive plan that fits",
+      intro: "Plan selection should begin with current consistency, available days and goal-date feasibility—not the finish time a runner hopes to achieve.",
+      rows: [["New or returning", "Begin near current weekly volume with mostly easy running."], ["Consistent intermediate", "Protect recovery around one or two purposeful sessions."], ["Race focused", "Add event-specific work only on a stable baseline."], ["Changing schedule", "Use adaptation without stacking missed workouts."]],
+      link: "/blog/ai-running-coach-vs-training-plan", label: "Compare static plans and AI coaching",
+    },
+    "ai-running-coach-complete-guide-2026": {
+      title: "Recorded evidence versus missing context",
+      intro: "An AI coach may use pace, heart rate, cadence, elevation, volume and goals when available. It cannot safely infer pain, illness, sleep, life stress or why a workout was missed.",
+      rows: [["Recorded run data", "Useful for summaries and comparable trends."], ["Training history", "Useful only when activities are complete and correctly synced."], ["Symptoms and health", "Must come from the runner and qualified professionals."], ["Life constraints", "Must be supplied before a recommendation can reflect them."]],
+      link: "/faq", label: "Read methodology and limitations",
+    },
+    "ai-agent-coach-proactive-coaching": {
+      title: "What should trigger proactive coaching",
+      intro: "A useful proactive message identifies the evidence, states what is unknown and gives one proportionate action.",
+      rows: [["Return after inactivity", "Recommend an easy return without claiming readiness."], ["Sudden volume increase", "Flag the load change without diagnosing injury risk."], ["Missed planned run", "Ask why before moving or stacking training."], ["Race preparation gap", "Explain the evidence and offer a safer goal or timeline."]],
+      link: "/ai-agent-coach", label: "See the Premium Preview workflow",
+    },
+    "ultra-marathon-training-plan-100-miler-guide": {
+      title: "Scope and readiness",
+      intro: "This is a planning framework, not an individualized 100-mile prescription. Terrain, altitude, climate, cutoff times and medical context can materially change preparation.",
+      rows: [["Training consistency", "Review several months of repeatable training and recovery."], ["Course specificity", "Practice the surface, climbing and descending demands."], ["Fueling", "Use only products and timing rehearsed in training."], ["Safety", "Set stop criteria and follow race medical guidance."]],
+      link: "/blog/marathon-fueling-calculator-guide", label: "Build and rehearse a fueling plan",
+    },
+  };
+  const update = updates[slug];
+  if (!update) return "";
+  return `<section class="ssr-editorial-update"><h2>${escapeHtml(update.title)}</h2><p>${escapeHtml(update.intro)}</p><table><tbody>${update.rows.map(([question, action]) => `<tr><th>${escapeHtml(question)}</th><td>${escapeHtml(action)}</td></tr>`).join("")}</tbody></table><p><a href="${update.link}">${escapeHtml(update.label)} &rarr;</a></p></section>`;
+}
+
 // Build a "Related tools & resources" block for blog posts. The set of links
 // is chosen by category + title keywords so Google sees topical relevance,
 // not boilerplate. Every post gets links to the shoe hub + a coaching tool.
@@ -239,6 +285,8 @@ function generateRelatedToolsForBlog(title: string, category: string): string {
   // Topical matches first
   if (/race|marathon|half|10k|5k|pace|predict/.test(haystack)) {
     push("/tools/race-predictor", "Race Time Predictor", "predict your finish time from a recent effort");
+    push("/tools/race-split-calculator", "Race Split Calculator", "turn a goal time into exact course checkpoints");
+    push("/tools/training-pace-calculator", "Training Pace Calculator", "derive broad workout pace ranges from a recent race");
   }
   if (/marathon|fuel|carb|nutrition|gel/.test(haystack)) {
     push("/tools/marathon-fueling", "Marathon Fueling Planner", "build a personalized race-day fuel strategy");
@@ -257,13 +305,14 @@ function generateRelatedToolsForBlog(title: string, category: string): string {
     push("/ai-agent-coach", "AI Agent Coach", "proactive post-activity coaching for Premium members");
   }
   if (/shoe|footwear|carbon|drop|stack|cushion/.test(haystack)) {
-    push("/tools/shoes", "Running Shoe Database", "browse 280+ shoes with AI insights");
+    push("/tools/shoes", "Running Shoe Database", "browse sourced shoe specifications and editorial insights");
     push("/tools/shoe-finder", "Shoe Finder", "get matched to the right shoe for your stride");
     push("/tools/rotation-planner", "Rotation Planner", "build a smart multi-shoe rotation");
   }
 
-  // Always-on baseline links so every blog post sends some authority to the hubs.
-  push("/tools/shoes", "Running Shoe Database", "browse 280+ shoes with AI insights");
+  // Always-on baseline link keeps the information architecture connected
+  // without forcing unrelated shoe links into every training article.
+  push("/tools", "Running Tools", "use free calculators with transparent methods and limitations");
   push("/blog", "More from the RunAnalytics blog", "training tips, AI insights, and shoe reviews");
 
   return `<section class="ssr-related">
@@ -1029,7 +1078,7 @@ ${faqSchema}
         
         <div class="ssr-cta">
           <h3>Try ${escapeHtml(tool.title.split('|')[0].trim())} Free</h3>
-          <p>No signup required. Connect Strava for personalized insights.</p>
+          <p>Manual calculators work immediately. Connected analysis requires sign-in and available Strava data.</p>
           <a href="${url}">Use This Tool &rarr;</a>
         </div>
       </article>
@@ -1310,21 +1359,21 @@ export function renderFeaturesPage(): string {
         </section>
         <section>
           <h2>Running Shoe Hub</h2>
-          <p>Browse and compare 280+ running shoes with detailed specs, AI-generated insights, and personalized recommendations. Use the shoe finder, rotation planner, and side-by-side comparison tools to make smarter gear choices.</p>
+          <p>Browse and compare the current running-shoe catalog with detailed specifications and editorial insights. Use the shoe finder, rotation planner, and side-by-side comparison tools to narrow the options.</p>
         </section>
         <section>
           <h2>Free Running Tools</h2>
           <ul>
             <li><a href="/tools/race-predictor">Race Time Predictor</a> — predict 5K to marathon finish times from a recent effort</li>
-            <li><a href="/tools/marathon-fueling">Marathon Fueling Planner</a> — calculate gel timing, carb targets, and sodium needs</li>
+            <li><a href="/tools/marathon-fueling">Marathon Fueling Planner</a> — turn practiced intake targets into a race schedule</li>
             <li><a href="/tools/aerobic-decoupling-calculator">Aerobic Decoupling Calculator</a> — measure aerobic efficiency on long runs</li>
             <li><a href="/tools/training-split-analyzer">Training Split Analyzer</a> — analyze your easy/hard intensity balance</li>
-            <li><a href="/tools/cadence-analyzer">Cadence Analyzer</a> — detect form fade and stride instability</li>
+            <li><a href="/tools/cadence-analyzer">Cadence Analyzer</a> — review cadence stability and late-run change</li>
           </ul>
         </section>
         <div class="ssr-cta">
           <h3>Try all features free for 14 days</h3>
-          <p>Connect your Strava account and start training smarter. No credit card required.</p>
+          <p>Connect Strava, review your current data, and inspect the trial terms before starting.</p>
           <a href="/auth">Get Started Free &rarr;</a>
         </div>
       </article>
@@ -1516,7 +1565,7 @@ export function renderToolsHubPage(): string {
   const url = '/tools';
   const meta: PageMeta = {
     title: "Free Running Tools & Calculators | RunAnalytics",
-    description: "Free running calculators: race predictor, marathon fueling, aerobic decoupling, cadence analysis & more. No signup required.",
+    description: "Free running calculators for pacing, splits and fueling, plus connected Strava analyzers for cadence, training balance and aerobic drift.",
     keywords: "running tools, running calculators, free running apps, marathon calculator, running analysis"
   };
   const listSchema = JSON.stringify({
@@ -1531,10 +1580,12 @@ export function renderToolsHubPage(): string {
       { "@type": "ListItem", "position": 3, "url": `${BASE_URL}/tools/aerobic-decoupling-calculator`, "name": "Aerobic Decoupling Calculator" },
       { "@type": "ListItem", "position": 4, "url": `${BASE_URL}/tools/training-split-analyzer`, "name": "Training Split Analyzer" },
       { "@type": "ListItem", "position": 5, "url": `${BASE_URL}/tools/cadence-analyzer`, "name": "Running Cadence Analyzer" },
-      { "@type": "ListItem", "position": 6, "url": `${BASE_URL}/tools/heatmap`, "name": "Running Heatmap" },
-      { "@type": "ListItem", "position": 7, "url": `${BASE_URL}/tools/shoes`, "name": "Running Shoe Database" },
-      { "@type": "ListItem", "position": 8, "url": `${BASE_URL}/tools/shoe-finder`, "name": "Running Shoe Finder" },
-      { "@type": "ListItem", "position": 9, "url": `${BASE_URL}/tools/rotation-planner`, "name": "Shoe Rotation Planner" },
+      { "@type": "ListItem", "position": 6, "url": `${BASE_URL}/tools/training-pace-calculator`, "name": "Training Pace Calculator" },
+      { "@type": "ListItem", "position": 7, "url": `${BASE_URL}/tools/race-split-calculator`, "name": "Race Split Calculator" },
+      { "@type": "ListItem", "position": 8, "url": `${BASE_URL}/tools/heatmap`, "name": "Running Heatmap" },
+      { "@type": "ListItem", "position": 9, "url": `${BASE_URL}/tools/shoes`, "name": "Running Shoe Database" },
+      { "@type": "ListItem", "position": 10, "url": `${BASE_URL}/tools/shoe-finder`, "name": "Running Shoe Finder" },
+      { "@type": "ListItem", "position": 11, "url": `${BASE_URL}/tools/rotation-planner`, "name": "Shoe Rotation Planner" },
     ]
   }, null, 2);
   const webPageSchema = generateStructuredData(meta, url, 'WebPage');
@@ -1547,7 +1598,7 @@ ${listSchema}
   <div id="root">
     <header class="ssr-header">
       <h1>Free Running Tools &amp; Calculators</h1>
-      <p style="opacity:0.9;margin-top:10px;">No signup required. Free tools to help you train smarter and race faster.</p>
+      <p style="opacity:0.9;margin-top:10px;">Use manual calculators instantly. Sign in only for tools that analyze your Strava history.</p>
     </header>
     <main class="ssr-container">
       <article class="ssr-content">
@@ -1555,15 +1606,17 @@ ${listSchema}
           <h2>Performance Calculators</h2>
           <ul>
             <li><a href="/tools/race-predictor"><strong>Race Time Predictor</strong></a> — predict your 5K, 10K, half marathon, and marathon finish times from a recent effort using the Riegel formula. Import your Strava data for personalized predictions.</li>
-            <li><a href="/tools/marathon-fueling"><strong>Marathon Fueling Planner</strong></a> — calculate your race-day nutrition plan with exact gel timing, carb targets, and sodium needs. Build a personalized fueling strategy in minutes.</li>
-            <li><a href="/tools/aerobic-decoupling-calculator"><strong>Aerobic Decoupling Calculator</strong></a> — measure aerobic efficiency on long runs using the Pa:HR ratio. Identify cardiac drift and set better easy-run targets.</li>
+            <li><a href="/tools/marathon-fueling"><strong>Marathon Fueling Planner</strong></a> — turn a practiced carbohydrate target and product serving size into a simple race schedule. Sodium and fluid remain individualized.</li>
+            <li><a href="/tools/aerobic-decoupling-calculator"><strong>Aerobic Decoupling Calculator</strong></a> — compare pace-to-heart-rate efficiency across two halves of a suitable steady run.</li>
+            <li><a href="/tools/training-pace-calculator"><strong>Training Pace Calculator</strong></a> — turn a recent race into broad workout pace ranges with a usefulness rating.</li>
+            <li><a href="/tools/race-split-calculator"><strong>Race Split Calculator</strong></a> — create exact mile or kilometer checkpoints for three modest pacing strategies.</li>
           </ul>
         </section>
         <section>
           <h2>Training Analysis</h2>
           <ul>
-            <li><a href="/tools/training-split-analyzer"><strong>Training Split Analyzer</strong></a> — analyze your intensity distribution. See whether you're training polarized, pyramidal, or threshold-heavy and how it compares to elite runners.</li>
-            <li><a href="/tools/cadence-analyzer"><strong>Running Cadence Analyzer</strong></a> — detect form fade with cadence and stride analysis. Get your Form Stability Score and identify late-run breakdown patterns.</li>
+            <li><a href="/tools/training-split-analyzer"><strong>Training Split Analyzer</strong></a> — analyze whether your recent intensity distribution is polarized, pyramidal, or threshold-heavy.</li>
+            <li><a href="/tools/cadence-analyzer"><strong>Running Cadence Analyzer</strong></a> — review cadence stability and late-run change while keeping pace, terrain and device quality in context.</li>
             <li><a href="/tools/heatmap"><strong>Running Heatmap</strong></a> — visualize your most-run routes on an interactive map. Discover training patterns and favourite paths from all your Strava activities.</li>
           </ul>
         </section>
@@ -1578,7 +1631,7 @@ ${listSchema}
         </section>
         <div class="ssr-cta">
           <h3>Connect Strava for personalized insights</h3>
-          <p>All tools work without an account, but connecting Strava unlocks your personal data for more accurate analysis.</p>
+          <p>Manual calculators work without an account. Tools that analyze your training history require sign-in and a Strava connection.</p>
           <a href="/auth">Get Started Free &rarr;</a>
         </div>
       </article>

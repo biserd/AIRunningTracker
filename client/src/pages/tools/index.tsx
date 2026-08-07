@@ -59,7 +59,7 @@ const tools = [
   {
     id: "marathon-fueling",
     title: "Marathon Fueling Planner",
-    description: "Calculate your optimal race nutrition strategy with precise gel timing, carb targets, and electrolyte balance for marathon success.",
+    description: "Turn a practiced carbohydrate target and product choice into a marathon fueling schedule you can rehearse before race day.",
     icon: Zap,
     url: "/tools/marathon-fueling",
     status: "available",
@@ -80,7 +80,7 @@ const tools = [
     status: "available",
     ctaLabel: "Predict Times",
     features: [
-      "Confidence intervals",
+      "Modeled performance range",
       "Pace tables",
       "Weather adjustments",
       "Course profiles"
@@ -102,15 +102,37 @@ const tools = [
     ]
   },
   {
+    id: "training-pace-calculator",
+    title: "Training Pace Calculator",
+    description: "Turn a recent race into broad easy, long-run, steady, threshold, and interval pace ranges with a transparent usefulness rating.",
+    icon: Calculator,
+    url: "/tools/training-pace-calculator",
+    status: "available",
+    authRequired: false,
+    ctaLabel: "Calculate Paces",
+    features: ["Five practical pace ranges", "Race-recency rating", "Miles or kilometers", "No account required"]
+  },
+  {
+    id: "race-split-calculator",
+    title: "Race Split Calculator",
+    description: "Create exact mile or kilometer splits for even, conservative-start, or negative-split race strategies.",
+    icon: Target,
+    url: "/tools/race-split-calculator",
+    status: "available",
+    authRequired: false,
+    ctaLabel: "Build Split Chart",
+    features: ["Exact cumulative times", "Three pacing strategies", "Partial final splits", "Copy and print"]
+  },
+  {
     id: "shoe-database",
     title: "Running Shoe Database",
-    description: "Browse 100+ verified running shoes from 16 top brands with detailed specs including cushioning, weight, stack heights, and best use cases.",
+    description: "Browse currently available sourced running-shoe records with specifications, verification details, and clearly labeled editorial guidance.",
     icon: ShoppingBag,
     url: "/tools/shoes",
     status: "available",
     ctaLabel: "Browse Shoes",
     features: [
-      "100+ shoes from 16 brands",
+      "Sourced shoe specifications",
       "Verified specifications",
       "Filter by category",
       "Compare side-by-side"
@@ -134,7 +156,7 @@ const tools = [
   {
     id: "rotation-planner",
     title: "Shoe Rotation Planner",
-    description: "Build the optimal shoe rotation for your training with personalized recommendations for daily training, speed work, long runs, and racing.",
+    description: "Draft a practical shoe rotation for daily training, speed work, long runs, and racing based on the records currently available.",
     icon: RefreshCw,
     url: "/tools/rotation-planner",
     status: "available",
@@ -149,13 +171,13 @@ const tools = [
   {
     id: "shoe-comparisons",
     title: "Shoe Comparisons",
-    description: "Browse 160+ pre-built side-by-side comparisons of popular running shoes with detailed specs and expert verdicts.",
+    description: "Browse current side-by-side comparisons with sourced specifications and clearly labeled editorial verdicts.",
     icon: GitCompare,
     url: "/tools/shoes/compare",
     status: "available",
     ctaLabel: "Browse Comparisons",
     features: [
-      "160+ comparisons",
+      "Current indexed comparisons",
       "Side-by-side specs",
       "Expert verdicts",
       "Evolution & rivals"
@@ -178,7 +200,7 @@ export default function ToolsPage() {
           "@type": "ItemList",
           "name": "Free Running Tools & Calculators",
           "description": "Running calculators and analyzers. Manual tools work without an account; connected analysis requires Strava sign-in.",
-          "numberOfItems": 10,
+          "numberOfItems": 12,
           "itemListElement": [
             { "@type": "ListItem", "position": 1, "name": "Running Heatmap", "url": "https://aitracker.run/tools/heatmap" },
             { "@type": "ListItem", "position": 2, "name": "Aerobic Decoupling Calculator", "url": "https://aitracker.run/tools/aerobic-decoupling-calculator" },
@@ -186,10 +208,12 @@ export default function ToolsPage() {
             { "@type": "ListItem", "position": 4, "name": "Marathon Fueling Planner", "url": "https://aitracker.run/tools/marathon-fueling" },
             { "@type": "ListItem", "position": 5, "name": "Race Time Predictor", "url": "https://aitracker.run/tools/race-predictor" },
             { "@type": "ListItem", "position": 6, "name": "Cadence Analyzer", "url": "https://aitracker.run/tools/cadence-analyzer" },
-            { "@type": "ListItem", "position": 7, "name": "Running Shoe Database", "url": "https://aitracker.run/tools/shoes" },
-            { "@type": "ListItem", "position": 8, "name": "Shoe Finder", "url": "https://aitracker.run/tools/shoe-finder" },
-            { "@type": "ListItem", "position": 9, "name": "Rotation Planner", "url": "https://aitracker.run/tools/rotation-planner" },
-            { "@type": "ListItem", "position": 10, "name": "Shoe Comparisons", "url": "https://aitracker.run/tools/shoes/compare" }
+            { "@type": "ListItem", "position": 7, "name": "Training Pace Calculator", "url": "https://aitracker.run/tools/training-pace-calculator" },
+            { "@type": "ListItem", "position": 8, "name": "Race Split Calculator", "url": "https://aitracker.run/tools/race-split-calculator" },
+            { "@type": "ListItem", "position": 9, "name": "Running Shoe Database", "url": "https://aitracker.run/tools/shoes" },
+            { "@type": "ListItem", "position": 10, "name": "Shoe Finder", "url": "https://aitracker.run/tools/shoe-finder" },
+            { "@type": "ListItem", "position": 11, "name": "Rotation Planner", "url": "https://aitracker.run/tools/rotation-planner" },
+            { "@type": "ListItem", "position": 12, "name": "Shoe Comparisons", "url": "https://aitracker.run/tools/shoes/compare" }
           ]
         }}
       />
@@ -339,7 +363,7 @@ export default function ToolsPage() {
               <div>
                 <h3 className="font-semibold text-charcoal mb-2">🏃 Optimize Race Day</h3>
                 <p className="text-sm leading-relaxed">
-                  Get realistic race predictions with confidence intervals. Plan your pacing strategy 
+                  Get realistic race estimates with a modeled scenario range. Plan your pacing strategy
                   and adjust for course terrain and weather conditions.
                 </p>
               </div>

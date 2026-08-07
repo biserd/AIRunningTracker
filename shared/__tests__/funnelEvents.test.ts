@@ -31,6 +31,7 @@ function check(name: string, condition: boolean, detail?: unknown) {
 
 console.log("catalog completeness");
 const expected = [
+  "tool_viewed", "tool_completed",
   "offer_viewed", "offer_clicked",
   "preview_viewed", "preview_cta_clicked",
   "pricing_viewed", "billing_period_selected",
@@ -47,7 +48,7 @@ console.log("client/server classification (server events are authoritative)");
 for (const e of ["trial_started", "trial_converted", "subscription_activated", "cancellation_scheduled", "subscription_canceled", "checkout_session_created"]) {
   check(`${e} is server-side`, isServerFunnelEvent(e) && !isClientFunnelEvent(e));
 }
-for (const e of ["offer_viewed", "offer_clicked", "preview_viewed", "preview_cta_clicked", "pricing_viewed", "billing_period_selected", "checkout_started", "checkout_abandoned"]) {
+for (const e of ["tool_viewed", "tool_completed", "offer_viewed", "offer_clicked", "preview_viewed", "preview_cta_clicked", "pricing_viewed", "billing_period_selected", "checkout_started", "checkout_abandoned"]) {
   check(`${e} is client-side`, isClientFunnelEvent(e) && !isServerFunnelEvent(e));
 }
 
@@ -60,6 +61,14 @@ check(
 check(
   "offer_viewed valid with source + capability",
   validateFunnelEvent("offer_viewed", { source: "activity", capability: "activity_deep_dive" }).length === 0,
+);
+check(
+  "tool_completed requires source + capability",
+  validateFunnelEvent("tool_completed", {}).length === 2,
+);
+check(
+  "tool_completed valid with tool context",
+  validateFunnelEvent("tool_completed", { source: "public_tool", capability: "race_split_calculator" }).length === 0,
 );
 check(
   "empty-string source counts as missing",

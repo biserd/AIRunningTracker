@@ -17,6 +17,8 @@ import { CadenceAnalysisResult, formatDrift, getScoreColor } from "@shared/caden
 import { apiRequest } from "@/lib/queryClient";
 import { FAQSchema } from "@/components/FAQSchema";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ToolEducationPanel } from "@/components/ToolEducationPanel";
+import { ToolResultActions } from "@/components/ToolResultActions";
 
 interface SuitableActivity {
   id: number;
@@ -36,7 +38,7 @@ interface SuitableActivitiesResponse {
 const CADENCE_ANALYZER_FAQS = [
   {
     question: "What is cadence drift and why does it matter?",
-    answer: "Cadence drift is the tendency for your running cadence (steps per minute) to decrease as you fatigue during a long run. It's a key indicator of form breakdown and neuromuscular fatigue. As you tire, each stride becomes less efficient - longer ground contact time, reduced leg turnover, and compensatory movements. Monitoring drift helps identify when fatigue is affecting your running economy, which can predict form-related injury risk and help you adjust training intensity."
+    answer: "Cadence drift is a change in steps per minute across a run. It can accompany fatigue, pace changes, terrain or device error. The pattern is useful for comparing similar runs, but it does not diagnose form quality or injury risk."
   },
   {
     question: "What is a good Form Stability Score?",
@@ -52,11 +54,11 @@ const CADENCE_ANALYZER_FAQS = [
   },
   {
     question: "Is a higher or lower cadence better?",
-    answer: "Optimal cadence is individual, but most efficient runners land around 170-180 steps per minute. Higher cadence (shorter, quicker steps) generally reduces impact forces and injury risk by minimizing overstriding. However, forcing an unnaturally high cadence can increase energy cost. Focus less on hitting a specific number and more on minimizing cadence drift during runs. If your cadence drops from 175 to 165 over a long run, that 6% drop signals significant form breakdown regardless of your starting cadence."
+    answer: "There is no universal target. Cadence changes with pace, height, terrain and mechanics. Compare your values at similar paces and use only small, comfortable experiments rather than forcing 180 steps per minute."
   },
   {
     question: "Can I use this tool for race preparation?",
-    answer: "Yes! Analyze cadence stability on your long training runs to predict race-day form durability. If you show minimal drift (<3%) on 20-mile training runs, you're likely ready for marathon-pace efforts. Significant drift (>5%) suggests you need more aerobic base or are running too fast. Use the tool throughout your training block to track improvements in neuromuscular endurance. Before key races, confirm your cadence stays stable on race-pace long runs - this validates your fitness and pacing strategy."
+    answer: "Use cadence as one comparison point in race preparation, not as a readiness test. Similar long runs can reveal whether the recorded pattern is becoming more stable, but race readiness also depends on volume, pacing, fueling, recovery and conditions."
   }
 ];
 
@@ -152,13 +154,13 @@ export default function CadenceAnalyzer() {
 
         {/* Main Content */}
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+          <div className="mb-8"><h1 className="text-3xl font-bold text-charcoal dark:text-white sm:text-5xl">Running Cadence Analyzer</h1><p className="mt-3 max-w-3xl text-lg text-gray-600 dark:text-gray-300">Normalize device cadence and compare within-run stability without treating 180 steps per minute as a universal target.</p></div>
           {/* What is Cadence Drift Analysis */}
           <Alert className="mb-8 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
             <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             <AlertDescription className="text-sm text-gray-700 dark:text-gray-300 ml-2">
-              <strong>Cadence Drift Analysis</strong> measures how your running cadence changes during a run, detecting form fade and fatigue. 
-              A stable cadence indicates good form endurance. Significant drift suggests you may need to work on strength and running economy. 
-              Learn more about <Link href="/blog/how-to-improve-running-pace" className="text-blue-600 hover:text-blue-800 underline">improving running pace</Link>.
+              <strong>Cadence Drift Analysis</strong> measures how recorded step rate changes during a run. Pace, terrain, fatigue, and device quality can all contribute.
+              Learn more about <Link href="/blog/running-cadence-by-pace" className="text-blue-600 hover:text-blue-800 underline">interpreting cadence by pace</Link>.
             </AlertDescription>
           </Alert>
 
@@ -512,6 +514,7 @@ export default function CadenceAnalyzer() {
                   </Button>
                 </div>
               )}
+              <ToolResultActions source="cadence_analyzer_result" capability="cadence_analysis" />
             </div>
           )}
 
@@ -540,8 +543,7 @@ export default function CadenceAnalyzer() {
                       <span>Form Stability Score</span>
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Your score (0-100) combines cadence drift, variability, and stride consistency. Higher scores indicate 
-                      better form endurance. Elite runners typically score 85+.
+                      Your score (0-100) combines cadence drift, variability, and stride consistency. It describes this recorded run and should be compared with your own similar activities.
                     </p>
                   </div>
 
@@ -596,6 +598,7 @@ export default function CadenceAnalyzer() {
           </Card>
         </div>
 
+        <div className="max-w-5xl mx-auto px-4 sm:px-6"><ToolEducationPanel variant="cadence" /></div>
         <Footer />
       </div>
     </>

@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
 import { ArticleTrust } from "@/components/ArticleTrust";
+import { ArticleRefreshSections } from "@/components/ArticleRefreshSections";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 
@@ -100,7 +101,7 @@ export default function AIAgentCoachBlogPost() {
             "name": "Is my training data private and secure?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Yes. Your data is encrypted in transit and at rest. AI analysis is performed securely using OpenAI's enterprise API with no data retention. We never share or sell your personal training data."
+              "text": "Review the current RunAnalytics Privacy Policy for how training data is stored, processed, and shared."
             }
           },
           {
@@ -108,7 +109,7 @@ export default function AIAgentCoachBlogPost() {
             "name": "What if I disagree with the AI's recommendation?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "You're always in control. AI Agent Coach provides recommendations, not mandates. If you disagree, run how you feel is best—the AI will learn from your choices over time and adjust future suggestions based on outcomes."
+              "text": "You're always in control. Add context the activity data missed and do not follow advice that conflicts with symptoms or qualified professional guidance."
             }
           }
         ]
@@ -128,6 +129,7 @@ export default function AIAgentCoachBlogPost() {
       />
       <PublicHeader />
       <ArticleTrust topic="ai" />
+      <ArticleRefreshSections variant="agent-coach" />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Breadcrumbs */}
@@ -437,7 +439,7 @@ export default function AIAgentCoachBlogPost() {
             </div>
             
             <p className="text-gray-600 dark:text-gray-400 text-sm mt-4 italic">
-              Many elite runners use both: a human coach for strategy and emotional support, and AI Agent Coach for immediate post-run feedback and daily accountability.
+              The two can be complementary: a human coach can handle strategy, observation and personal context, while AI can summarize recorded runs between conversations.
             </p>
           </section>
 
@@ -508,7 +510,7 @@ export default function AIAgentCoachBlogPost() {
                     Is my training data private and secure?
                   </h3>
                   <p className="text-gray-600 dark:text-gray-300 text-sm">
-                    Yes. Your data is encrypted in transit and at rest. AI analysis is performed securely using OpenAI's enterprise API with no data retention. We never share or sell your personal training data.
+                    Review the current <Link href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link> for how training data is stored, processed, and shared.
                   </p>
                 </CardContent>
               </Card>
@@ -519,7 +521,7 @@ export default function AIAgentCoachBlogPost() {
                     What if I disagree with the AI's recommendation?
                   </h3>
                   <p className="text-gray-600 dark:text-gray-300 text-sm">
-                    You're always in control. AI Agent Coach provides recommendations, not mandates. If you disagree, run how you feel is best—the AI will learn from your choices over time and adjust future suggestions based on outcomes.
+                    You're always in control. Add context the activity data missed and do not follow advice that conflicts with symptoms or qualified professional guidance.
                   </p>
                 </CardContent>
               </Card>

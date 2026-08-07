@@ -41,6 +41,8 @@ export default function Footer() {
               <li><Link href="/tools/training-split-analyzer" className="hover:text-white transition-colors" data-testid="link-tool-training-split">Training Split Analyzer</Link></li>
               <li><Link href="/tools/marathon-fueling" className="hover:text-white transition-colors" data-testid="link-tool-fueling">Marathon Fueling</Link></li>
               <li><Link href="/tools/cadence-analyzer" className="hover:text-white transition-colors" data-testid="link-tool-cadence">Form Stability</Link></li>
+              <li><Link href="/tools/training-pace-calculator" className="hover:text-white transition-colors">Training Paces</Link></li>
+              <li><Link href="/tools/race-split-calculator" className="hover:text-white transition-colors">Race Splits</Link></li>
               <li><Link href="/tools/shoes" className="hover:text-white transition-colors" data-testid="link-tool-shoes">Running Shoe Hub</Link></li>
               <li><Link href="/tools/shoe-finder" className="hover:text-white transition-colors" data-testid="link-tool-shoe-finder">Shoe Finder</Link></li>
               <li><Link href="/tools/shoes/compare" className="hover:text-white transition-colors" data-testid="link-tool-shoe-comparisons">Shoe Comparisons</Link></li>
@@ -70,6 +72,9 @@ export default function Footer() {
               <li><Link href="/blog/ai-running-coach-complete-guide-2026" className="hover:text-white transition-colors">AI Running Coach Guide 2026</Link></li>
               <li><Link href="/blog/best-strava-analytics-tools-2026" className="hover:text-white transition-colors">Best Strava Analytics Tools 2026</Link></li>
               <li><Link href="/blog/how-to-improve-running-pace" className="hover:text-white transition-colors">How to Improve Running Pace</Link></li>
+              <li><Link href="/blog/heart-rate-drift-aerobic-decoupling" className="hover:text-white transition-colors">Heart Rate Drift Explained</Link></li>
+              <li><Link href="/blog/80-20-running-training-split" className="hover:text-white transition-colors">80/20 Training Split</Link></li>
+              <li><Link href="/blog/ai-running-coach-vs-training-plan" className="hover:text-white transition-colors">AI Coach vs Training Plan</Link></li>
             </ul>
           </div>
         </div>

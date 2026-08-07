@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
 import { ArticleTrust } from "@/components/ArticleTrust";
+import { ArticleRefreshSections } from "@/components/ArticleRefreshSections";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 
@@ -65,6 +66,7 @@ export default function AIRunningCoachGuide() {
       />
       <PublicHeader />
       <ArticleTrust topic="ai" />
+      <ArticleRefreshSections variant="ai-guide" />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         {/* Breadcrumbs */}
@@ -151,7 +153,7 @@ export default function AIRunningCoachGuide() {
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="text-green-600 mt-1 flex-shrink-0" size={18} />
-                    <span>Detect potential injury risks before they become serious</span>
+                    <span>Flag unusual training-load changes for review</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="text-green-600 mt-1 flex-shrink-0" size={18} />
@@ -274,7 +276,7 @@ export default function AIRunningCoachGuide() {
                   <CardTitle className="dark:text-white">Training-load review</CardTitle>
                 </CardHeader>
                 <CardContent className="text-gray-700 dark:text-gray-300">
-                  Advanced AI systems can detect early warning signs of overtraining or injury risk by analyzing patterns in your pace, heart rate variability, and recovery metrics. This preventive approach helps you stay healthy and consistent.
+                  AI systems can flag unusual changes in recorded pace, volume, heart-rate patterns, and recovery inputs. These signals cannot diagnose overtraining or injury and should be interpreted with symptoms and human context.
                 </CardContent>
               </Card>
 
@@ -344,7 +346,7 @@ export default function AIRunningCoachGuide() {
                   <tr className="bg-gray-50 dark:bg-slate-750">
                     <td className="border border-gray-300 dark:border-slate-600 px-4 py-3 font-semibold">Best For</td>
                     <td className="border border-gray-300 dark:border-slate-600 px-4 py-3">Data lovers, budget-conscious, self-motivated</td>
-                    <td className="border border-gray-300 dark:border-slate-600 px-4 py-3">Those needing accountability, elite athletes</td>
+                    <td className="border border-gray-300 dark:border-slate-600 px-4 py-3">Runners needing observation, complex context, or relationship-based accountability</td>
                   </tr>
                 </tbody>
               </table>

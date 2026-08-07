@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
 import { ArticleTrust } from "@/components/ArticleTrust";
+import { ArticleRefreshSections } from "@/components/ArticleRefreshSections";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 
@@ -112,6 +113,7 @@ export default function UltraMarathonTrainingPlanBlogPost() {
       />
       <PublicHeader />
       <ArticleTrust topic="ultra" />
+      <ArticleRefreshSections variant="ultra" />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <nav className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6" aria-label="Breadcrumb">
@@ -562,7 +564,7 @@ export default function UltraMarathonTrainingPlanBlogPost() {
             </div>
 
             <p className="text-gray-700 dark:text-gray-300">
-              <strong>The key mental skill:</strong> Learning to separate pain from injury. Pain is normal and expected in a 100-miler—everything will hurt. Injury is structural damage that worsens with each step. Knowing the difference keeps you both safe and moving forward.
+              <strong>Set stop criteria before race day:</strong> Do not rely on self-diagnosing pain under fatigue. Follow race medical guidance and stop for concerning, severe, or worsening symptoms.
             </p>
           </section>
 

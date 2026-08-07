@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 import { Input } from "@/components/ui/input";
 import { useMemo, useState } from "react";
+import { editorialPosts } from "@shared/editorialPosts";
 
 interface BlogPost {
   slug: string;
@@ -43,7 +44,7 @@ const blogPosts: BlogPost[] = [
   {
     slug: "how-to-pick-a-training-plan",
     title: "How to Pick a Training Plan: Complete Guide",
-    description: "Learn how to choose the right training plan for your running goals. Discover why AI-personalized plans outperform generic schedules.",
+    description: "Choose a plan that fits your current consistency, goal date, available days, and need for adaptation.",
     date: "January 12, 2026",
     readTime: "15 min read",
     category: "Training Plans",
@@ -81,6 +82,17 @@ const blogPosts: BlogPost[] = [
     gradient: "from-orange-500 to-red-600"
   }
 ];
+
+blogPosts.unshift(...editorialPosts.map((post) => ({
+  slug: post.slug,
+  title: post.title,
+  description: post.description,
+  date: post.dateLabel,
+  readTime: post.readTime,
+  category: post.category,
+  icon: post.topic === "ai" ? Brain : post.slug.includes("fueling") ? Target : TrendingUp,
+  gradient: post.topic === "ai" ? "from-purple-600 to-indigo-700" : post.slug.includes("fueling") ? "from-amber-500 to-orange-600" : "from-blue-600 to-cyan-700",
+})));
 
 export default function BlogIndex() {
   const [query, setQuery] = useState("");

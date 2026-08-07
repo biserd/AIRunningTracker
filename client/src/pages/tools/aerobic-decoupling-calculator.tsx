@@ -24,6 +24,7 @@ import { FAQSchema } from "@/components/FAQSchema";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { calculateAerobicDecoupling, type DecouplingClassification } from "@shared/aerobicDecoupling";
 import { ToolResultActions } from "@/components/ToolResultActions";
+import { ToolEducationPanel } from "@/components/ToolEducationPanel";
 
 // Validation schema for manual input
 const manualInputSchema = z.object({
@@ -203,12 +204,13 @@ export default function AerobicDecouplingCalculator() {
 
         {/* Main Content */}
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+          <div className="mb-8"><h1 className="text-3xl font-bold text-charcoal sm:text-5xl">Aerobic Decoupling Calculator</h1><p className="mt-3 max-w-3xl text-lg text-gray-600">Compare speed-to-heart-rate efficiency in two equal halves using one consistent positive-fade convention.</p></div>
           {/* What is Aerobic Decoupling */}
           <Alert className="mb-8 bg-blue-50 border-blue-200">
             <Info className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-sm text-gray-700 ml-2">
               <strong>Aerobic Decoupling</strong> measures how your pace-to-heart-rate relationship changes during a long run. 
-              A low decoupling (&lt;5%) indicates strong aerobic fitness. Higher values suggest you need more aerobic base training or started too fast. 
+              Lower fade can indicate a sustainable effort in suitable conditions. Heat, hills, hydration, fatigue, and sensor quality can also change the result.
               Need personalized training guidance? Try our <Link href="/ai-running-coach" className="text-blue-600 hover:text-blue-800 underline">AI Running Coach</Link>.
             </AlertDescription>
           </Alert>
@@ -632,6 +634,7 @@ export default function AerobicDecouplingCalculator() {
           </div>
         </div>
 
+        <div className="max-w-6xl mx-auto px-4 sm:px-6"><ToolEducationPanel variant="aerobic-decoupling" /></div>
         <Footer />
       </div>
     </>

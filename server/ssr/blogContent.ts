@@ -1,3 +1,5 @@
+import { editorialPosts } from "../../shared/editorialPosts";
+
 export interface BlogPostContent {
   slug: string;
   title: string;
@@ -47,12 +49,12 @@ export const blogPosts: BlogPostContent[] = [
       <p><strong>Recovery Guidance:</strong> Receive personalized recovery recommendations based on your training load and fatigue levels.</p>
       
       <h2 id="benefits">Benefits for Runners</h2>
-      <p>Runners using AI Agent Coach report:</p>
+      <p>The feature is designed to support:</p>
       <ul>
         <li>Better adherence to training plans</li>
         <li>Faster recovery between hard workouts</li>
         <li>More confidence in race-day preparation</li>
-        <li>Reduced injury risk through early detection</li>
+        <li>Earlier review of unusual training-load changes</li>
       </ul>
       
       <h2 id="getting-started">Getting Started</h2>
@@ -81,18 +83,18 @@ export const blogPosts: BlogPostContent[] = [
       },
       {
         question: "Is my training data private and secure?",
-        answer: "Yes. Your data is encrypted in transit and at rest. AI analysis is performed securely using OpenAI's enterprise API with no data retention. We never share or sell your personal training data."
+        answer: "Review the current Privacy Policy for how training data is stored, processed and shared. Product pages should not substitute for the governing policy."
       },
       {
         question: "What if I disagree with the AI's recommendation?",
-        answer: "You're always in control. AI Agent Coach provides recommendations, not mandates. If you disagree, run how you feel is best—the AI will learn from your choices over time and adjust future suggestions based on outcomes."
+        answer: "You're always in control. Treat the output as a recommendation, add context the activity data missed and do not follow advice that conflicts with symptoms or qualified professional guidance."
       }
     ]
   },
   {
     slug: "how-to-pick-a-training-plan",
     title: "How to Pick a Training Plan: Complete Guide",
-    description: "Learn how to choose the right training plan for your running goals. Discover why AI-personalized plans outperform generic schedules.",
+    description: "Learn how to choose a training plan that fits your current consistency, goal date, available days and need for adaptation.",
     date: "January 12, 2026",
     readTime: "15 min read",
     category: "Training Plans",
@@ -318,7 +320,7 @@ export const blogPosts: BlogPostContent[] = [
       <p>Unlike marathon training, where the focus is primarily on speed and aerobic threshold, ultra marathon training emphasizes time on feet, resilience, fueling under fatigue, and the ability to keep moving through the night. Your <strong>ultra running training</strong> plan needs to account for all of these factors — and that's exactly what we'll break down here.</p>
 
       <h2 id="prerequisites">Prerequisites: Are You Ready for an Ultra Marathon Training Plan?</h2>
-      <p>Before starting a <strong>100 mile training plan</strong>, you need a solid running foundation. Jumping into ultra marathon training without adequate base fitness dramatically increases your injury risk and reduces your chances of finishing.</p>
+      <p>Before starting a <strong>100 mile training plan</strong>, review whether your recent training is consistent and whether you have enough time to prepare for the course demands. A large jump from current volume is a reason to choose a longer timeline or a shorter event.</p>
       <p><strong>Minimum prerequisites before starting your ultra marathon training plan:</strong></p>
       <ul>
         <li><strong>Weekly mileage base:</strong> Consistently running 70+ km (45+ miles) per week for at least 6 months</li>
@@ -406,7 +408,7 @@ export const blogPosts: BlogPostContent[] = [
         <li><strong>Target intake:</strong> 200-300 calories per hour (you cannot replace all calories burned)</li>
         <li><strong>Carbohydrate goal:</strong> 60-90g of carbs per hour for optimal performance</li>
         <li><strong>Hydration:</strong> 500-800ml per hour, adjusted for heat and humidity</li>
-        <li><strong>Sodium:</strong> 500-1000mg per hour to prevent hyponatremia</li>
+        <li><strong>Sodium:</strong> Use an individualized, practiced target; needs vary with sweat losses, conditions and fluid intake</li>
       </ul>
       
       <p><strong>How to practice fueling during ultra marathon training:</strong></p>
@@ -432,7 +434,7 @@ export const blogPosts: BlogPostContent[] = [
         <li><strong>Mantras:</strong> Develop personal phrases that anchor you when things get hard ("relentless forward progress," "one step at a time")</li>
         <li><strong>Crew and pacer strategy:</strong> Plan who will pace you and when — having a familiar face at mile 70 can be transformative</li>
       </ul>
-      <p>Perhaps the most important mental skill in <strong>ultra running training</strong> is learning to separate pain from injury. Discomfort is guaranteed in a 100-miler. Knowing when it's safe to push through and when to stop requires experience — which is why building up through shorter ultra distances is so valuable.</p>
+      <p>Mental preparation should never encourage a runner to self-diagnose pain. Establish stop criteria in advance, follow race medical guidance and seek qualified assessment for concerning or worsening symptoms.</p>
 
       <h2 id="tapering">Tapering for Your 100 Mile Race</h2>
       <p>The taper is one of the most misunderstood parts of a <strong>100 mile training plan</strong>. Many runners taper too short or not aggressively enough for ultra distances.</p>
@@ -515,6 +517,18 @@ export const blogPosts: BlogPostContent[] = [
     ]
   }
 ];
+
+blogPosts.push(...editorialPosts.map((post) => ({
+  slug: post.slug,
+  title: post.title,
+  description: post.description,
+  date: post.dateLabel,
+  readTime: post.readTime,
+  category: post.category,
+  tableOfContents: post.sections.map((section) => ({ id: section.id, title: section.title })),
+  content: post.sections.map((section) => `<h2 id="${section.id}">${section.title}</h2>${section.html}`).join("\n"),
+  faqs: post.faqs,
+})));
 
 export function getBlogPostBySlug(slug: string): BlogPostContent | undefined {
   return blogPosts.find(post => post.slug === slug);

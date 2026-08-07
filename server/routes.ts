@@ -290,7 +290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
     "/tools": {
       title: "Free Running Tools & Calculators | RunAnalytics",
-      description: "Free running calculators: race predictor, marathon fueling, aerobic decoupling, cadence analysis & more. No signup required.",
+      description: "Free running calculators for pacing, splits and fueling, plus connected Strava analyzers for cadence, training balance and aerobic drift.",
       keywords: "running tools, running calculators, free running apps, marathon calculator, running analysis"
     },
     "/tools/race-predictor": {
@@ -300,7 +300,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
     "/tools/marathon-fueling": {
       title: "Marathon Fueling Calculator | Gel Timing & Nutrition Plan | RunAnalytics",
-      description: "Calculate your marathon nutrition plan with exact gel timing, carb targets & sodium needs. Get a personalized race fueling strategy in minutes.",
+      description: "Turn practiced carbohydrate and product targets into a simple marathon fueling schedule, with clear sodium and fluid limitations.",
       keywords: "marathon fueling, gel timing calculator, marathon nutrition plan, race nutrition"
     },
     "/tools/aerobic-decoupling-calculator": {
@@ -315,8 +315,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
     "/tools/cadence-analyzer": {
       title: "Running Cadence Analyzer | Form Stability Score | RunAnalytics",
-      description: "Detect running form fade with cadence and stride analysis. Get your Form Stability Score and identify late-run form breakdown.",
+      description: "Review cadence stability and late-run change from connected activity data, with pace context, methodology and clear limitations.",
       keywords: "running cadence analyzer, form stability, stride length, running form analysis"
+    },
+    "/tools/training-pace-calculator": {
+      title: "Training Pace Calculator | Free Running Pace Zones",
+      description: "Calculate broad easy, long-run, steady, threshold and interval pace ranges from a recent race with transparent assumptions.",
+      keywords: "training pace calculator, running pace zones, easy run pace, threshold pace"
+    },
+    "/tools/race-split-calculator": {
+      title: "Race Split Calculator | Mile & Kilometer Pace Chart",
+      description: "Create exact mile or kilometer race splits for even, conservative-start or negative-split pacing strategies.",
+      keywords: "race split calculator, marathon pace chart, mile splits, negative split"
     },
     "/tools/heatmap": {
       title: "Running Heatmap | Visualize Your Training Routes | RunAnalytics",
@@ -548,6 +558,8 @@ Sitemap: ${baseUrl}/sitemap.xml`;
         { url: "/tools/marathon-fueling", changefreq: "weekly", priority: "0.8", lastmod: today },
         { url: "/tools/race-predictor", changefreq: "weekly", priority: "0.8", lastmod: today },
         { url: "/tools/cadence-analyzer", changefreq: "weekly", priority: "0.8", lastmod: today },
+        { url: "/tools/training-pace-calculator", changefreq: "weekly", priority: "0.8", lastmod: today },
+        { url: "/tools/race-split-calculator", changefreq: "weekly", priority: "0.8", lastmod: today },
         { url: "/tools/heatmap", changefreq: "weekly", priority: "0.7", lastmod: today },
         
         // Running Shoe Hub
@@ -579,7 +591,10 @@ Sitemap: ${baseUrl}/sitemap.xml`;
 
       // Fetch all shoe comparisons for comparison pages
       const comparisons = await storage.getShoeComparisons({});
-      const comparisonPages = comparisons.map(comparison => ({
+      const existingShoeIds = new Set(shoes.map((shoe) => shoe.id));
+      const comparisonPages = comparisons.filter((comparison) =>
+        existingShoeIds.has(comparison.shoe1Id) && existingShoeIds.has(comparison.shoe2Id)
+      ).map(comparison => ({
         url: `/tools/shoes/compare/${comparison.slug}`,
         changefreq: "monthly",
         priority: "0.7",
@@ -864,6 +879,8 @@ ${allPages.map(page => `  <url>
     'aerobic-decoupling-calculator': 'aerobic-decoupling-calculator',
     'training-split-analyzer': 'training-split-analyzer',
     'cadence-analyzer': 'cadence-analyzer',
+    'training-pace-calculator': 'training-pace-calculator',
+    'race-split-calculator': 'race-split-calculator',
     'heatmap': 'heatmap',
     'shoe-finder': 'shoe-finder',
     'rotation-planner': 'rotation-planner'
@@ -919,18 +936,9 @@ ${allPages.map(page => `  <url>
     const { slug } = req.params;
     const staticFilePath = path.join(process.cwd(), 'dist', 'prerender', `shoes-${slug}.html`);
     
-    // Try to serve pre-rendered static file first (SSG)
-    if (fs.existsSync(staticFilePath)) {
-      console.log(`[SSG] Serving static shoe page to crawler: ${slug}`);
-      res.setHeader('Content-Type', 'text/html');
-      res.setHeader('X-Robots-Tag', 'index, follow');
-      res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
-      const html = fs.readFileSync(staticFilePath, 'utf-8');
-      res.send(html);
-      return;
-    }
-    
-    // Fallback to SSR if static file doesn't exist
+    // Validate the current database record before serving any cached SSG file.
+    // This prevents deleted or aliased shoes from continuing to return indexable
+    // 200 responses from an old build artifact.
     try {
       const shoe = await storage.getShoeBySlug(slug);
       
@@ -940,6 +948,12 @@ ${allPages.map(page => `  <url>
         const canonicalSlug = canonicalizeShoeCatalog(sameModelShoes).canonicalShoes[0]?.slug;
         if (canonicalSlug && canonicalSlug !== slug) {
           return res.redirect(301, `/tools/shoes/${canonicalSlug}`);
+        }
+        if (fs.existsSync(staticFilePath)) {
+          res.setHeader('Content-Type', 'text/html');
+          res.setHeader('X-Robots-Tag', 'index, follow');
+          res.setHeader('Cache-Control', 'public, max-age=3600');
+          return res.send(fs.readFileSync(staticFilePath, 'utf-8'));
         }
         console.log(`[SSR] Fallback: serving server-rendered shoe page to crawler: ${slug}`);
         res.setHeader('Content-Type', 'text/html');
@@ -970,7 +984,11 @@ ${allPages.map(page => `  <url>
           .map(s => ({ brand: s.brand, model: s.model, slug: s.slug, weight: s.weight, price: s.price })));
         res.send(html);
       } else {
-        next();
+        res.status(404);
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('X-Robots-Tag', 'noindex, follow');
+        res.setHeader('Cache-Control', 'public, max-age=300');
+        return res.send('<!doctype html><html><head><title>Running Shoe Not Found | RunAnalytics</title><meta name="robots" content="noindex, follow"></head><body><main><h1>Running shoe not found</h1><p>This record is unavailable or has moved.</p><a href="/tools/shoes">Browse verified running shoes</a></main></body></html>');
       }
     } catch (error) {
       console.error('[SSR] Error generating shoe page:', error);
@@ -1018,6 +1036,13 @@ ${allPages.map(page => `  <url>
           storage.getShoeById(comparison.shoe1Id),
           storage.getShoeById(comparison.shoe2Id),
         ]);
+        if (!shoe1 || !shoe2) {
+          res.status(404);
+          res.setHeader('Content-Type', 'text/html');
+          res.setHeader('X-Robots-Tag', 'noindex, follow');
+          res.setHeader('Cache-Control', 'public, max-age=300');
+          return res.send('<!doctype html><html><head><title>Shoe Comparison Not Found | RunAnalytics</title><meta name="robots" content="noindex, follow"></head><body><main><h1>Shoe comparison not found</h1><p>One or more shoe records are unavailable.</p><a href="/tools/shoes/compare">Browse current comparisons</a></main></body></html>');
+        }
         
         const html = renderComparisonPage(slug, {
           title: comparison.title,
@@ -1059,7 +1084,11 @@ ${allPages.map(page => `  <url>
         comparisonSsrCache.set(slug, { html, ts: Date.now() });
         res.send(html);
       } else {
-        next();
+        res.status(404);
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('X-Robots-Tag', 'noindex, follow');
+        res.setHeader('Cache-Control', 'public, max-age=300');
+        return res.send('<!doctype html><html><head><title>Shoe Comparison Not Found | RunAnalytics</title><meta name="robots" content="noindex, follow"></head><body><main><h1>Shoe comparison not found</h1><p>This comparison is unavailable or has moved.</p><a href="/tools/shoes/compare">Browse current comparisons</a></main></body></html>');
       }
     } catch (error) {
       console.error('[SSR] Error generating comparison page:', error);

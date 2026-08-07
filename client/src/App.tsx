@@ -42,6 +42,8 @@ const TrainingSplitAnalyzer = lazy(() => import("@/pages/tools/training-split-an
 const MarathonFuelingPlanner = lazy(() => import("@/pages/tools/marathon-fueling"));
 const RacePredictor = lazy(() => import("@/pages/tools/race-predictor"));
 const CadenceAnalyzer = lazy(() => import("@/pages/tools/cadence-analyzer"));
+const TrainingPaceCalculator = lazy(() => import("@/pages/tools/training-pace-calculator"));
+const RaceSplitCalculator = lazy(() => import("@/pages/tools/race-split-calculator"));
 const RunningHeatmap = lazy(() => import("@/pages/tools/heatmap"));
 const ShoeDatabase = lazy(() => import("@/pages/tools/shoes"));
 const ShoeDetail = lazy(() => import("@/pages/tools/shoe-detail"));
@@ -61,6 +63,7 @@ const ChromeExtensionLanding = lazy(() => import("@/pages/chrome-extension"));
 const AIAgentCoachLanding = lazy(() => import("@/pages/ai-agent-coach"));
 const AIAgentCoachBlogPost = lazy(() => import("@/pages/blog/ai-agent-coach-proactive-coaching"));
 const UltraMarathonTrainingPlanBlogPost = lazy(() => import("@/pages/blog/ultra-marathon-training-plan-100-miler-guide"));
+const EditorialArticlePage = lazy(() => import("@/pages/blog/editorial-article"));
 const DevelopersPage = lazy(() => import("@/pages/developers"));
 const ApiDocsPage = lazy(() => import("@/pages/developers/api-docs"));
 const YearRecapPage = lazy(() => import("@/pages/year-recap"));
@@ -179,6 +182,8 @@ function Router() {
         <Route path="/tools/marathon-fueling" component={MarathonFuelingPlanner} />
         <Route path="/tools/race-predictor" component={RacePredictor} />
         <Route path="/tools/cadence-analyzer" component={CadenceAnalyzer} />
+        <Route path="/tools/training-pace-calculator" component={TrainingPaceCalculator} />
+        <Route path="/tools/race-split-calculator" component={RaceSplitCalculator} />
         <Route path="/tools/shoes" component={ShoeDatabase} />
         <Route path="/tools/shoes/compare" component={ShoeComparisonList} />
         <Route path="/tools/shoes/compare/:slug" component={ShoeComparisonDetail} />
@@ -195,6 +200,7 @@ function Router() {
         <Route path="/blog/how-to-pick-a-training-plan" component={HowToPickTrainingPlan} />
         <Route path="/blog/ai-agent-coach-proactive-coaching" component={AIAgentCoachBlogPost} />
         <Route path="/blog/ultra-marathon-training-plan-100-miler-guide" component={UltraMarathonTrainingPlanBlogPost} />
+        <Route path="/blog/:slug" component={EditorialArticlePage} />
         <Route path="/ai-running-coach" component={AICoachLanding} />
         <Route path="/ai-agent-coach" component={AIAgentCoachLanding} />
         

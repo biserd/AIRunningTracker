@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
 import { ArticleTrust } from "@/components/ArticleTrust";
+import { ArticleRefreshSections } from "@/components/ArticleRefreshSections";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
 
@@ -69,6 +70,7 @@ export default function ImproveRunningPace() {
       />
       <PublicHeader />
       <ArticleTrust topic="training" />
+      <ArticleRefreshSections variant="pace" />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         {/* Breadcrumbs */}
@@ -103,7 +105,7 @@ export default function ImproveRunningPace() {
               </div>
             </div>
             <p className="text-xl text-gray-700 dark:text-gray-300 leading-relaxed">
-              Want to run faster? This comprehensive guide covers proven strategies and training methods to improve your running pace, backed by exercise science and tested by elite coaches. Whether you're a beginner or experienced runner, you'll find actionable advice to help you reach your speed goals.
+              Want to run faster? This guide organizes common pace limiters, training options, recovery context, and practical ways to evaluate progress without promising one universal method.
             </p>
           </div>
 
@@ -287,7 +289,7 @@ export default function ImproveRunningPace() {
                   <div>
                     <p className="font-bold text-gray-800 dark:text-gray-200 mb-2">Important:</p>
                     <p className="text-gray-700 dark:text-gray-300">
-                      Always warm up for 10-15 minutes with easy running before intervals, and cool down for 10 minutes afterward. Skipping warm-up significantly increases injury risk.
+                      Use a progressive warm-up before faster running and an easy transition afterward. Adjust the duration for the session, conditions, and your experience.
                     </p>
                   </div>
                 </div>
@@ -381,7 +383,7 @@ export default function ImproveRunningPace() {
             </h2>
             
             <p className="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
-              Many runners overlook strength training, but it's crucial for improving pace. Stronger muscles generate more power with each stride, improve running economy, and reduce injury risk.
+              Strength training can support force production and running economy, but the appropriate exercises and load depend on experience, technique, and the rest of the training week.
             </p>
 
             <div className="mb-8">
@@ -499,7 +501,7 @@ export default function ImproveRunningPace() {
                 </CardHeader>
                 <CardContent className="text-gray-700 dark:text-gray-300">
                   <p className="mb-3">
-                    Elite runners do 80% of their training at easy pace and only 20% at moderate-to-hard intensity. This approach allows for harder quality workouts while minimizing injury risk and overtraining.
+                    Many endurance programs protect a large share of easy running. Treat 80/20 as a broad reference across a training block rather than a universal weekly rule.
                   </p>
                   <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
                     <p className="font-bold mb-2 dark:text-white">Your Easy Pace Should Be:</p>
@@ -596,7 +598,7 @@ export default function ImproveRunningPace() {
                 <CardContent className="pt-6">
                   <h3 className="font-bold text-lg mb-3 dark:text-white">Ignoring Form and Technique</h3>
                   <p className="text-gray-700 dark:text-gray-300 mb-3">
-                    <strong>The Problem:</strong> Poor running form wastes energy and increases injury risk, no matter how hard you train.
+                    <strong>The question:</strong> Does a repeatable change in cadence, stride, or posture appear when pace and terrain are comparable?
                   </p>
                   <p className="text-gray-700 dark:text-gray-300">
                     <strong>The Fix:</strong> Focus on quick cadence (170-180 steps per minute), landing under your center of mass, and relaxed shoulders. Use our <Link href="/tools/cadence-analyzer" className="text-blue-600 dark:text-blue-400 hover:underline" data-testid="link-inline-cadence">Cadence Analyzer</Link> to track your step rate patterns. Consider video analysis or working with a coach.
@@ -866,7 +868,7 @@ export default function ImproveRunningPace() {
                   <CardTitle className="text-lg dark:text-white">Should I run every day to get faster?</CardTitle>
                 </CardHeader>
                 <CardContent className="text-gray-700 dark:text-gray-300">
-                  Not necessarily. Quality matters more than quantity. Most recreational runners benefit from 3-5 running days per week with rest days for recovery. Overtraining can actually slow your progress and increase injury risk.
+                  Not necessarily. The appropriate number depends on current consistency, total volume, workout intensity, recovery, and schedule. Add days only when the existing routine is repeatable.
                 </CardContent>
               </Card>
               <Card className="dark:border-slate-700">
