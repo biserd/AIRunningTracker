@@ -19,7 +19,9 @@ type AuthMode = "signin" | "signup";
 
 export default function AuthPage() {
   const [, setLocation] = useLocation();
-  const [mode, setMode] = useState<AuthMode>("signin");
+  const [mode, setMode] = useState<AuthMode>(() =>
+    new URLSearchParams(window.location.search).get("mode") === "signup" ? "signup" : "signin"
+  );
   const [showPassword, setShowPassword] = useState(false);
   const [magicLinkEmail, setMagicLinkEmail] = useState("");
   const [magicLinkSentTo, setMagicLinkSentTo] = useState<string | null>(null);

@@ -27,6 +27,7 @@ export const FUNNEL_EVENTS = {
   // --- Offer surfaces (Premium gates / CTAs) ---
   offer_viewed: { side: "client", required: ["source", "capability"] },
   offer_clicked: { side: "client", required: ["source", "capability"] },
+  ebook_gumroad_clicked: { side: "client", required: ["source", "capability"] },
 
   // --- One-time Premium Preview ---
   preview_viewed: { side: "client", required: ["source", "activityId"] },
@@ -40,6 +41,8 @@ export const FUNNEL_EVENTS = {
   checkout_started: { side: "client", required: ["source", "billingPeriod"] },
   checkout_abandoned: { side: "client", required: ["source"] },
   checkout_session_created: { side: "server", required: ["priceId", "billingPeriod"] },
+  ebook_delivery_attempted: { side: "server", required: ["subscriptionId"] },
+  ebook_downloaded: { side: "server", required: ["source"] },
 
   // --- Trial / paid lifecycle (server-authoritative, from Stripe webhooks) ---
   trial_started: { side: "server", required: ["subscriptionId"] },

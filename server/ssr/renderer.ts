@@ -1448,6 +1448,87 @@ ${orgSchema}
 </html>`;
 }
 
+export function renderEbookLandingPage(): string {
+  const url = '/ai-running-coaching-guide';
+  const meta: PageMeta = {
+    title: "Free AI Running Coaching Ebook | RunAnalytics",
+    description: "Start a 14-day RunAnalytics Premium trial and get the $49 Runner's Guide to AI Coaching free. Learn what AI does well and where it fails.",
+    keywords: "AI running coaching ebook, AI running coach guide, running analytics guide"
+  };
+  const bookSchema = JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "name": "The Runner's Guide to AI Coaching",
+        "description": meta.description,
+        "url": `${BASE_URL}${url}`
+      },
+      {
+        "@type": "Book",
+        "name": "The Runner's Guide to AI Coaching",
+        "author": { "@type": "Person", "name": "Biser" },
+        "publisher": { "@type": "Organization", "name": "RunAnalytics" },
+        "numberOfPages": 33,
+        "bookFormat": "https://schema.org/EBook",
+        "inLanguage": "en",
+        "image": `${BASE_URL}/ebook/ai-coaching-guide-cover.webp`
+      }
+    ]
+  }, null, 2);
+  const head = generateHtmlHead(meta, url, bookSchema)
+    .replaceAll(`${BASE_URL}/og-image.jpg`, `${BASE_URL}/ebook/ai-coaching-guide-cover.webp`);
+
+  return `${head}
+<body>
+  <div id="root">
+    <header class="ssr-header">
+      <div class="ssr-meta">33 pages &bull; 17 chapters &bull; 15 research sources</div>
+      <h1>The Runner's Guide to AI Coaching</h1>
+      <p style="opacity:0.9;margin-top:10px;">Start a 14-day Premium trial and get the $49 ebook free.</p>
+    </header>
+    <main class="ssr-container">
+      <article class="ssr-content">
+        <section>
+          <h2>Use AI to train smarter. Keep the runner in control.</h2>
+          <p>Learn what AI running coaches can do, what they commonly get wrong, and how to make safer decisions with pace, heart rate, perceived effort, recovery, and real-life context.</p>
+          <p><strong>$0 today.</strong> Card required. Cancel anytime. Premium is $7.99 per month or $79.99 per year after the trial.</p>
+        </section>
+        <section>
+          <h2>What is inside the guide</h2>
+          <ul>
+            <li>A visual explanation of how running data becomes a recommendation</li>
+            <li>A 20-point AI Coach Scorecard</li>
+            <li>Practical guidance for load, intensity, recovery, strength, tapering, and race preparation</li>
+            <li>A runner briefing template, weekly review, and worked 10K adaptation</li>
+            <li>Privacy, uncertainty, safety, and stop-rule checklists</li>
+          </ul>
+        </section>
+        <section>
+          <h2>Written by a runner, for runners</h2>
+          <p>Biser created RunAnalytics after wanting running data to produce better decisions, not simply more charts. Trial readers receive the complete guide and a personal welcome message from the author.</p>
+        </section>
+        <section>
+          <h2>How the offer works</h2>
+          <ol>
+            <li>Create a RunAnalytics account with Strava or email.</li>
+            <li>Activate the 14-day Premium trial through secure Stripe checkout.</li>
+            <li>Download the complete PDF and apply it to your own training.</li>
+          </ol>
+        </section>
+        <div class="ssr-cta">
+          <h3>Start the trial. Keep the guide.</h3>
+          <p>Get the complete $49 ebook at no additional cost.</p>
+          <a href="/auth?mode=signup&amp;redirect=%2Fpricing%3Fsource%3Debook_landing%26capability%3Debook_bundle%26benefitKey%3Debook_bundle%26returnTo%3D%252Fai-running-coaching-guide%253Fdownload%253D1%26pendingResourceId%3Dai-coaching-ebook%26experimentVariant%3Debook_bundle_v1">Start 14 days free &rarr;</a>
+        </div>
+        <p style="text-align:center;margin-top:24px;">Prefer the ebook without a trial? <a href="https://airunning.gumroad.com/l/the_running_guide_to_ai_coaching" rel="nofollow noopener noreferrer">Buy the standalone edition for $49 on Gumroad</a>.</p>
+      </article>
+    </main>
+  </div>
+</body>
+</html>`;
+}
+
 export function renderDevelopersPage(): string {
   const url = '/developers';
   const meta: PageMeta = {

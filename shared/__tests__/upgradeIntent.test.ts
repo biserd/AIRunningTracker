@@ -26,6 +26,7 @@ console.log("sanitizeReturnTo");
 check("accepts relative path", sanitizeReturnTo("/activity/123") === "/activity/123");
 check("accepts path with query", sanitizeReturnTo("/coach-insights?tab=agent") === "/coach-insights?tab=agent");
 check("accepts contextual pricing return used by auth", sanitizeReturnTo("/pricing?capability=ai_coach") === "/pricing?capability=ai_coach");
+check("accepts ebook fulfillment return", sanitizeReturnTo("/ai-running-coaching-guide?download=1") === "/ai-running-coaching-guide?download=1");
 check("rejects protocol-relative", sanitizeReturnTo("//evil.com") === null);
 check("rejects absolute URL", sanitizeReturnTo("https://evil.com") === null);
 check("rejects scheme smuggling", sanitizeReturnTo("/javascript:alert(1)") === null);
@@ -76,9 +77,12 @@ const injectedBenefit = parseUpgradeIntent("capability=ai_coach&benefit=Anything
 check("arbitrary benefit query copy is ignored", injectedBenefit?.benefit === undefined, injectedBenefit);
 const unknownBenefit = parseUpgradeIntent("capability=ai_coach&benefitKey=unknown&returnTo=/dashboard");
 check("unknown benefit key is ignored", unknownBenefit?.benefit === undefined, unknownBenefit);
+const ebook = parseUpgradeIntent("capability=ebook_bundle&benefitKey=ebook_bundle&returnTo=/ai-running-coaching-guide?download=1");
+check("ebook bundle resolves approved copy", ebook?.benefit === benefitCopy("ebook_bundle"), ebook);
 
 console.log("capabilityLabel");
 check("known capability labeled", capabilityLabel("training_plans") === "AI Training Plans");
+check("ebook bundle labeled", capabilityLabel("ebook_bundle") === "AI Coaching Guide + Premium");
 check("unknown capability falls back", capabilityLabel("mystery") === "Premium features");
 
 if (failures > 0) {

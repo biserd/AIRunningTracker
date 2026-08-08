@@ -33,9 +33,11 @@ console.log("catalog completeness");
 const expected = [
   "tool_viewed", "tool_completed",
   "offer_viewed", "offer_clicked",
+  "ebook_gumroad_clicked",
   "preview_viewed", "preview_cta_clicked",
   "pricing_viewed", "billing_period_selected",
   "checkout_started", "checkout_abandoned", "checkout_session_created",
+  "ebook_delivery_attempted", "ebook_downloaded",
   "trial_started", "trial_converted", "subscription_activated",
   "cancellation_scheduled", "subscription_canceled",
 ];
@@ -45,10 +47,10 @@ for (const e of expected) {
 check("unknown event not in catalog", !isFunnelEvent("made_up_event"));
 
 console.log("client/server classification (server events are authoritative)");
-for (const e of ["trial_started", "trial_converted", "subscription_activated", "cancellation_scheduled", "subscription_canceled", "checkout_session_created"]) {
+for (const e of ["trial_started", "trial_converted", "subscription_activated", "cancellation_scheduled", "subscription_canceled", "checkout_session_created", "ebook_delivery_attempted", "ebook_downloaded"]) {
   check(`${e} is server-side`, isServerFunnelEvent(e) && !isClientFunnelEvent(e));
 }
-for (const e of ["tool_viewed", "tool_completed", "offer_viewed", "offer_clicked", "preview_viewed", "preview_cta_clicked", "pricing_viewed", "billing_period_selected", "checkout_started", "checkout_abandoned"]) {
+for (const e of ["tool_viewed", "tool_completed", "offer_viewed", "offer_clicked", "ebook_gumroad_clicked", "preview_viewed", "preview_cta_clicked", "pricing_viewed", "billing_period_selected", "checkout_started", "checkout_abandoned"]) {
   check(`${e} is client-side`, isClientFunnelEvent(e) && !isServerFunnelEvent(e));
 }
 

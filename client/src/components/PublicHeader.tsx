@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 const NAV_LINKS = [
   { label: "Pricing", href: "/pricing" },
+  { label: "Guide", href: "/ai-running-coaching-guide" },
   { label: "Tools", href: "/tools" },
   { label: "Blog", href: "/blog" },
   { label: "Features", href: "/features" },
@@ -20,6 +21,7 @@ export default function PublicHeader() {
   const isActive = (href: string) => {
     if (href === "/blog") return location.startsWith("/blog");
     if (href === "/tools") return location.startsWith("/tools");
+    if (href === "/ai-running-coaching-guide") return location === href;
     return location === href;
   };
 
@@ -43,7 +45,7 @@ export default function PublicHeader() {
           </Link>
 
           {/* Desktop center nav */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-5 lg:gap-8">
             {NAV_LINKS.map(({ label, href }) => (
               <Link key={href} href={href}>
                 <span className={linkClass(href)}>{label}</span>

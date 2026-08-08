@@ -36,7 +36,7 @@ import { resolvePlan } from "./webhookHandlers";
 import { db } from "./db";
 import { sql, eq, isNull } from "drizzle-orm";
 import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getActivityHistoryLimit, getFreeActivityLimit, RATE_LIMITS, canSyncFromStrava, getInitialSyncCap, isPaidPlan } from "./rateLimits";
-import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage, renderToolPage, getAllToolSlugs, renderFaqPage, renderBlogIndex, renderPricingPage, renderFeaturesPage, renderAboutPage, renderDevelopersPage, renderDevelopersApiPage, renderToolsHubPage } from "./ssr/renderer";
+import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage, renderToolPage, getAllToolSlugs, renderFaqPage, renderBlogIndex, renderPricingPage, renderFeaturesPage, renderAboutPage, renderEbookLandingPage, renderDevelopersPage, renderDevelopersApiPage, renderToolsHubPage } from "./ssr/renderer";
 import { getAllBlogPosts } from "./ssr/blogContent";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import {
@@ -393,6 +393,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       description: "Get personalized running advice from an AI coach that knows your training. Ask questions, get insights, and improve your running.",
       keywords: "AI running coach, running advice, AI training, personalized coaching"
     },
+    "/ai-running-coaching-guide": {
+      title: "Free AI Running Coaching Ebook | RunAnalytics",
+      description: "Start a 14-day RunAnalytics Premium trial and get the $49 Runner's Guide to AI Coaching free. Learn what AI does well and where it fails.",
+      keywords: "AI running coaching ebook, AI running coach guide, running analytics guide",
+      ogImage: "https://aitracker.run/ebook/ai-coaching-guide-cover.webp"
+    },
     "/chrome-extension": {
       title: "RunAnalytics Chrome Extension for Strava | AI Insights on Every Run",
       description: "Add AI-powered running insights to every Strava activity with the free RunAnalytics Chrome extension. Get run grades, your Runner Score, readiness, and injury-risk signals without leaving Strava.",
@@ -548,6 +554,7 @@ Sitemap: ${baseUrl}/sitemap.xml`;
         // Blog & Content Marketing — derived from blogContent.ts so no post is ever missed
         { url: "/blog", changefreq: "weekly", priority: "0.9", lastmod: today },
         { url: "/ai-running-coach", changefreq: "weekly", priority: "0.9", lastmod: today },
+        { url: "/ai-running-coaching-guide", changefreq: "weekly", priority: "0.9", lastmod: today },
         { url: "/ai-agent-coach", changefreq: "weekly", priority: "0.9", lastmod: today },
         { url: "/chrome-extension", changefreq: "weekly", priority: "0.8", lastmod: today },
         
@@ -821,6 +828,7 @@ ${allPages.map(page => `  <url>
           case '/pricing':        html = renderPricingPage(); break;
           case '/features':       html = renderFeaturesPage(); break;
           case '/about':          html = renderAboutPage(); break;
+          case '/ai-running-coaching-guide': html = renderEbookLandingPage(); break;
           case '/tools':          html = renderToolsHubPage(); break;
           case '/developers':     html = renderDevelopersPage(); break;
           case '/developers/api': html = renderDevelopersApiPage(); break;
@@ -1256,6 +1264,44 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Premium/trial bonus: authenticated ebook download. The PDF remains outside
+  // the public static directory so the $49 standalone asset is not exposed by
+  // a guessable URL. Active trial and paid accounts may keep the downloaded file.
+  app.get("/api/ebook/ai-coaching-guide", authenticateJWT, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      if (!hasPremiumAccess(user)) {
+        return res.status(403).json({ message: "Start a Premium trial to download the guide" });
+      }
+
+      const ebookPath = path.resolve(
+        process.cwd(),
+        "attached_assets",
+        "ebook",
+        "the-runners-guide-to-ai-coaching.pdf",
+      );
+      if (!fs.existsSync(ebookPath)) {
+        console.error("[Ebook] PDF asset missing:", ebookPath);
+        return res.status(503).json({ message: "The guide is temporarily unavailable" });
+      }
+
+      await recordFunnelEvent({
+        event: "ebook_downloaded",
+        dedupeKey: buildFunnelDedupeKey("ebook_downloaded", [user.id]),
+        userId: user.id,
+        props: { source: "ebook_landing", capability: "ebook_bundle" },
+      });
+
+      res.setHeader("Cache-Control", "private, no-store");
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      return res.download(ebookPath, "the-runners-guide-to-ai-coaching.pdf");
+    } catch (error: any) {
+      console.error("[Ebook] Download failed:", error);
+      return res.status(500).json({ message: "Failed to download the guide" });
+    }
+  });
+
   // Create checkout session
   app.post("/api/stripe/create-checkout-session", authenticateJWT, async (req: any, res) => {
     try {
@@ -1366,7 +1412,13 @@ ${allPages.map(page => `  <url>
         },
         subscription_data: {
           ...(trialEligible ? { trial_period_days: 14 } : {}),
-          metadata: { app: appSlug, userId: String(userId) }
+          metadata: {
+            app: appSlug,
+            userId: String(userId),
+            source: safeSource,
+            capability: safeCapability,
+            ...(safePendingResourceId ? { pendingResourceId: safePendingResourceId } : {}),
+          }
         }
       });
 

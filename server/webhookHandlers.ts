@@ -348,6 +348,43 @@ export class WebhookHandlers {
           }
         }
 
+        // Ebook bundle fulfillment. The checkout copies the bounded resource
+        // id into subscription metadata, so only the dedicated landing-page
+        // offer triggers this personal delivery email. The attempted event is
+        // persistent and idempotent across Stripe webhook replays.
+        if (
+          event.type === 'customer.subscription.created' &&
+          (status === 'trialing' || status === 'active') &&
+          subscription.metadata?.pendingResourceId === 'ai-coaching-ebook'
+        ) {
+          try {
+            const delivery = await recordFunnelEvent({
+              event: 'ebook_delivery_attempted',
+              dedupeKey: buildFunnelDedupeKey('ebook_delivery_attempted', [subscription.id]),
+              userId: user.id,
+              props: {
+                subscriptionId: subscription.id,
+                source: subscription.metadata?.source || 'ebook_landing',
+                capability: 'ebook_bundle',
+              },
+            });
+            if (delivery.recorded) {
+              const deliveryUser = await storage.getUser(user.id);
+              if (deliveryUser?.email) {
+                const sent = await emailService.sendEbookTrialWelcomeEmail(
+                  deliveryUser.email,
+                  deliveryUser.firstName,
+                );
+                console.log(`[Webhook] Ebook welcome email ${sent ? 'sent' : 'failed'} for user ${user.id}`);
+              } else {
+                console.warn(`[Webhook] Ebook delivery skipped: no email for user ${user.id}`);
+              }
+            }
+          } catch (ebookError) {
+            console.error(`[Webhook] Ebook fulfillment failed for user ${user.id}:`, ebookError);
+          }
+        }
+
         // Admin notification when the resolver had to fall back to a status
         // guess. This catches future Stripe price additions that aren't tagged.
         if (resolved.source === 'status-fallback') {

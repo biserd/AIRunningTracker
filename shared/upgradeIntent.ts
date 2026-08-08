@@ -24,6 +24,7 @@ export const BENEFIT_COPY = {
   injury_risk: "Understand training-load risk factors and receive practical recovery recommendations.",
   training_plan: "Turn your goal, recent mileage, and available running days into a complete adaptive plan.",
   ai_coach: "Get proactive post-run recaps and personalized coaching after every run.",
+  ebook_bundle: "Start your 14-day Premium trial and receive The Runner's Guide to AI Coaching free - a $49 standalone value.",
 } as const;
 
 export type BenefitKey = keyof typeof BENEFIT_COPY;
@@ -61,6 +62,7 @@ const ALLOWED_RETURN_PATHS = [
   /^\/training-plans(?:\/\d+)?(?:[/?#]|$)/,
   /^\/billing(?:[/?#]|$)/,
   /^\/settings(?:[/?#]|$)/,
+  /^\/ai-running-coaching-guide(?:[/?#]|$)/,
 ];
 
 function cleanField(value: unknown): string | undefined {
@@ -138,6 +140,7 @@ export const CAPABILITY_LABELS: Record<string, string> = {
   training_plans: "AI Training Plans",
   advanced_insights: "Advanced Insights",
   ai_coach: "AI Agent Coach",
+  ebook_bundle: "AI Coaching Guide + Premium",
   activity_comparison: "Run Comparison",
   unlimited_history: "Unlimited Activity History",
   unlimited_sync: "Unlimited Strava Sync",

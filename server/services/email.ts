@@ -982,6 +982,45 @@ The RunAnalytics Team
     });
   }
 
+  async sendEbookTrialWelcomeEmail(to: string, firstName?: string | null): Promise<boolean> {
+    const safeName = (firstName || "Runner").replace(/[<>&"]/g, "");
+    const guideUrl = "https://aitracker.run/ai-running-coaching-guide?download=1";
+    const subject = "Your AI Coaching Guide is ready";
+    const html = `
+      <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;padding:24px;color:#172033;line-height:1.65;">
+        <div style="background:#071b2d;border-radius:14px;padding:28px;color:#fff;">
+          <p style="color:#22d3ee;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin:0 0 8px;">RunAnalytics</p>
+          <h1 style="font-size:28px;line-height:1.2;margin:0;">Your guide is ready</h1>
+          <p style="color:#d7e2ec;margin:12px 0 0;">The Runner's Guide to AI Coaching is included with your Premium access.</p>
+        </div>
+        <p style="margin-top:28px;">Hi ${safeName},</p>
+        <p>Thank you for activating RunAnalytics Premium. I wrote this guide because, as a runner, I have seen how useful training data can be - and how easily confident-looking numbers can point us in the wrong direction.</p>
+        <p>The goal is simple: help you use AI as a thoughtful training partner while keeping your experience, judgment, and safety at the center of every decision.</p>
+        <div style="margin:30px 0;text-align:center;">
+          <a href="${guideUrl}" style="display:inline-block;background:#fc4c02;color:#fff;text-decoration:none;font-weight:700;padding:14px 24px;border-radius:8px;">Download your ebook</a>
+        </div>
+        <p>Inside, you will find the 20-point AI Coach Scorecard, a runner briefing template, a weekly review, a worked 10K adaptation, and practical guidance for evaluating any AI coach.</p>
+        <p>Use the guide alongside your own RunAnalytics data. The most useful loop is: observe the evidence, understand the explanation, make one bounded decision, and review what happened next.</p>
+        <p style="margin-top:28px;">Run well,<br><strong>Biser</strong><br><span style="color:#607086;">Author, experienced runner, and creator of RunAnalytics</span></p>
+        <p style="border-top:1px solid #e5e7eb;margin-top:28px;padding-top:18px;color:#607086;font-size:12px;">You are receiving this service email because you activated a RunAnalytics Premium offer that included the ebook.</p>
+      </div>
+    `;
+    const text = `Hi ${safeName},
+
+Thank you for activating RunAnalytics Premium. I wrote this guide because, as a runner, I have seen how useful training data can be - and how easily confident-looking numbers can point us in the wrong direction.
+
+Download The Runner's Guide to AI Coaching:
+${guideUrl}
+
+Use the guide alongside your own RunAnalytics data. Observe the evidence, understand the explanation, make one bounded decision, and review what happened next.
+
+Run well,
+Biser
+Author, experienced runner, and creator of RunAnalytics`;
+
+    return this.sendEmail({ to, subject, html, text });
+  }
+
   async sendFoundersWelcomeEmail(to: string): Promise<boolean> {
     const subject = 'Welcome to RunAnalytics and thank you for being early';
     const html = `

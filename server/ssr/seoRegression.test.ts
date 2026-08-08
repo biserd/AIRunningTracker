@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   renderAboutPage,
+  renderEbookLandingPage,
   renderBlogIndex,
   renderBlogPost,
   renderDevelopersApiPage,
@@ -44,6 +45,7 @@ test("static public SSR pages have one self-canonical and one H1", () => {
     ["/pricing", renderPricingPage()],
     ["/features", renderFeaturesPage()],
     ["/about", renderAboutPage()],
+    ["/ai-running-coaching-guide", renderEbookLandingPage()],
     ["/faq", renderFaqPage()],
     ["/blog", renderBlogIndex()],
     ["/tools", renderToolsHubPage()],
