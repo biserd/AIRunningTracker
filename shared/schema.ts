@@ -713,6 +713,95 @@ export const insertFunnelEventSchema = createInsertSchema(funnelEvents).omit({
   id: true,
   occurredAt: true,
 });
+
+// Dedicated OAuth 2.1 state for the read-only MCP server. These records are
+// deliberately separate from web sessions, API keys, password-reset tokens,
+// email magic links, Strava credentials, and Stripe identifiers.
+export const mcpOauthClients = pgTable("mcp_oauth_clients", {
+  clientId: text("client_id").primaryKey(),
+  clientName: text("client_name").notNull(),
+  redirectUris: jsonb("redirect_uris").$type<string[]>().notNull(),
+  tokenEndpointAuthMethod: text("token_endpoint_auth_method").notNull().default("none"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  disabledAt: timestamp("disabled_at"),
+});
+
+export const mcpOauthRequests = pgTable("mcp_oauth_requests", {
+  requestHash: text("request_hash").primaryKey(),
+  clientId: text("client_id").notNull(),
+  redirectUri: text("redirect_uri").notNull(),
+  scopes: text("scopes").array().notNull(),
+  state: text("state").notNull(),
+  resource: text("resource").notNull(),
+  codeChallenge: text("code_challenge").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  consumedAt: timestamp("consumed_at"),
+}, (table) => ({
+  clientIdx: index("mcp_oauth_requests_client_idx").on(table.clientId),
+  expiryIdx: index("mcp_oauth_requests_expiry_idx").on(table.expiresAt),
+}));
+
+export const mcpOauthAuthorizationCodes = pgTable("mcp_oauth_authorization_codes", {
+  codeHash: text("code_hash").primaryKey(),
+  userId: integer("user_id").notNull(),
+  clientId: text("client_id").notNull(),
+  redirectUri: text("redirect_uri").notNull(),
+  scopes: text("scopes").array().notNull(),
+  resource: text("resource").notNull(),
+  codeChallenge: text("code_challenge").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  consumedAt: timestamp("consumed_at"),
+}, (table) => ({
+  userIdx: index("mcp_oauth_codes_user_idx").on(table.userId),
+  clientIdx: index("mcp_oauth_codes_client_idx").on(table.clientId),
+  expiryIdx: index("mcp_oauth_codes_expiry_idx").on(table.expiresAt),
+}));
+
+export const mcpOauthTokens = pgTable("mcp_oauth_tokens", {
+  id: serial("id").primaryKey(),
+  accessTokenHash: text("access_token_hash").notNull().unique(),
+  refreshTokenHash: text("refresh_token_hash").notNull().unique(),
+  userId: integer("user_id").notNull(),
+  clientId: text("client_id").notNull(),
+  scopes: text("scopes").array().notNull(),
+  resource: text("resource").notNull(),
+  accessExpiresAt: timestamp("access_expires_at").notNull(),
+  refreshExpiresAt: timestamp("refresh_expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  lastUsedAt: timestamp("last_used_at"),
+  revokedAt: timestamp("revoked_at"),
+}, (table) => ({
+  accessIdx: index("mcp_oauth_tokens_access_idx").on(table.accessTokenHash),
+  refreshIdx: index("mcp_oauth_tokens_refresh_idx").on(table.refreshTokenHash),
+  userClientIdx: index("mcp_oauth_tokens_user_client_idx").on(table.userId, table.clientId),
+}));
+
+export const mcpAuditEvents = pgTable("mcp_audit_events", {
+  id: serial("id").primaryKey(),
+  eventType: text("event_type").notNull(),
+  userId: integer("user_id"),
+  clientId: text("client_id"),
+  toolName: text("tool_name"),
+  success: boolean("success").notNull(),
+  errorCode: text("error_code"),
+  durationMs: integer("duration_ms"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  createdIdx: index("mcp_audit_events_created_idx").on(table.createdAt),
+  userIdx: index("mcp_audit_events_user_idx").on(table.userId),
+  clientIdx: index("mcp_audit_events_client_idx").on(table.clientId),
+}));
+
+// One atomic bucket per subject keeps rate limiting consistent across Replit
+// autoscale instances without requiring a separate worker or in-memory state.
+export const mcpRateLimits = pgTable("mcp_rate_limits", {
+  key: text("key").primaryKey(),
+  windowStartedAt: timestamp("window_started_at").notNull(),
+  count: integer("count").notNull().default(0),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
 export type InsertFunnelEvent = z.infer<typeof insertFunnelEventSchema>;
 export type FunnelEvent = typeof funnelEvents.$inferSelect;
 

@@ -63,6 +63,7 @@ const ALLOWED_RETURN_PATHS = [
   /^\/billing(?:[/?#]|$)/,
   /^\/settings(?:[/?#]|$)/,
   /^\/ai-running-coaching-guide(?:[/?#]|$)/,
+  /^\/mcp\/consent(?:[/?#]|$)/,
 ];
 
 function cleanField(value: unknown): string | undefined {

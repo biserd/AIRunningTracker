@@ -11,7 +11,11 @@ const SENSITIVE_ENDPOINTS = [
   '/api/auth/confirm-reset',
   '/api/user/password',
   '/api/stripe',
-  '/api/payment'
+  '/api/payment',
+  // MCP requests can contain OAuth codes/tokens or private runner responses.
+  // Keep bodies out of the generic performance log; the MCP subsystem emits
+  // metadata-only audit rows instead.
+  '/mcp'
 ];
 
 /**

@@ -27,6 +27,7 @@ check("accepts relative path", sanitizeReturnTo("/activity/123") === "/activity/
 check("accepts path with query", sanitizeReturnTo("/coach-insights?tab=agent") === "/coach-insights?tab=agent");
 check("accepts contextual pricing return used by auth", sanitizeReturnTo("/pricing?capability=ai_coach") === "/pricing?capability=ai_coach");
 check("accepts ebook fulfillment return", sanitizeReturnTo("/ai-running-coaching-guide?download=1") === "/ai-running-coaching-guide?download=1");
+check("accepts MCP consent return after sign-in", sanitizeReturnTo("/mcp/consent?request=ra_mcp_req_example") === "/mcp/consent?request=ra_mcp_req_example");
 check("rejects protocol-relative", sanitizeReturnTo("//evil.com") === null);
 check("rejects absolute URL", sanitizeReturnTo("https://evil.com") === null);
 check("rejects scheme smuggling", sanitizeReturnTo("/javascript:alert(1)") === null);

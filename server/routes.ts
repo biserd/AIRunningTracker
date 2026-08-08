@@ -53,6 +53,7 @@ import { getDashboardCalendarPeriods, getLastMonthComparisonEnd, partitionDashbo
 import { formatRunDistance, formatRunDuration, formatRunPace, runUnitLabels } from "@shared/runFormatting";
 import { summarizeTrainingSplit } from "@shared/trainingSplit";
 import { canonicalizeShoeCatalog, normalizedShoeModelKey } from "@shared/shoeCanonicalization";
+import { registerMcpRoutes } from "./mcp/router";
 
 // Authentication middleware
 const authenticateJWT = async (req: any, res: Response, next: NextFunction) => {
@@ -278,6 +279,7 @@ async function isAllowedCheckoutPriceId(priceId: unknown): Promise<boolean> {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   registerObjectStorageRoutes(app);
+  await registerMcpRoutes(app);
 
   
   // SEO: Page-specific meta data for dynamic rendering

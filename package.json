@@ -15,8 +15,9 @@
     "test:funnel-events": "tsx shared/__tests__/funnelEvents.test.ts",
     "test:public-tools": "tsx --test shared/__tests__/publicTools.test.ts",
     "test:seo": "tsx --test server/ssr/seoRegression.test.ts",
+    "test:mcp": "tsx --test server/mcp/__tests__/*.test.ts",
     "backfill:premium-previews": "tsx scripts/backfill-premium-previews.ts",
-    "test:phase1": "npm run test:entitlements && npm run test:premium-preview && npm run test:dashboard-periods && npm run test:account-dormancy && npm run test:training-plan-safety && npm run test:today-run-decision && npm run test:run-formatting && tsx server/services/runnerScore.test.ts && tsx shared/__tests__/zoneCadence.test.ts && npm run test:upgrade-intent && npm run test:funnel-events && npm run test:public-tools && npm run test:seo",
+    "test:phase1": "npm run test:entitlements && npm run test:premium-preview && npm run test:dashboard-periods && npm run test:account-dormancy && npm run test:training-plan-safety && npm run test:today-run-decision && npm run test:run-formatting && tsx server/services/runnerScore.test.ts && tsx shared/__tests__/zoneCadence.test.ts && npm run test:upgrade-intent && npm run test:funnel-events && npm run test:public-tools && npm run test:seo && npm run test:mcp",
     "dev": "NODE_ENV=development tsx server/index.ts",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
@@ -29,6 +30,7 @@
     "@googlemaps/polyline-codec": "^1.0.28",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@neondatabase/serverless": "^0.10.4",
     "@radix-ui/react-accordion": "^1.2.4",
     "@radix-ui/react-alert-dialog": "^1.1.7",
@@ -121,7 +123,7 @@
     "web-push": "^3.6.7",
     "wouter": "^3.3.5",
     "ws": "^8.18.0",
-    "zod": "^3.24.2",
+    "zod": "^3.25.76",
     "zod-validation-error": "^3.4.0"
   },
   "devDependencies": {
