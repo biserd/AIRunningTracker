@@ -11,6 +11,8 @@ interface ProcessingResult {
   errors: string[];
 }
 
+const MAX_ACTIVITY_RECAP_AGE_MS = 24 * 60 * 60 * 1000;
+
 export async function processNotifications(limit = 50): Promise<ProcessingResult> {
   const result: ProcessingResult = {
     processed: 0,
@@ -27,6 +29,15 @@ export async function processNotifications(limit = 50): Promise<ProcessingResult
       result.processed++;
       
       try {
+        if (
+          notification.type === "activity_recap" &&
+          Date.now() - new Date(notification.createdAt ?? 0).getTime() > MAX_ACTIVITY_RECAP_AGE_MS
+        ) {
+          await storage.markNotificationFailed(notification.id, "Stale activity recap suppressed");
+          result.failed++;
+          continue;
+        }
+
         const user = await storage.getUser(notification.userId);
         if (!user) {
           await storage.markNotificationFailed(notification.id, "User not found");
@@ -41,6 +52,11 @@ export async function processNotifications(limit = 50): Promise<ProcessingResult
         const isCoachMessage = ["activity_recap", "next_step", "weekly_summary", "plan_reminder", "morning_briefing", "daily_checkin", "missed_workout", "race_week"].includes(notification.type);
         if (isCoachMessage && (!user.coachEnabled || (user.coachSnoozedUntil && new Date(user.coachSnoozedUntil) > new Date()))) {
           await storage.markNotificationFailed(notification.id, "Coach paused or snoozed by runner");
+          result.failed++;
+          continue;
+        }
+        if (notification.type === "activity_recap" && (!user.coachOnboardingCompleted || !user.coachNotifyRecap)) {
+          await storage.markNotificationFailed(notification.id, "Coach recap email is not enabled for runner");
           result.failed++;
           continue;
         }
@@ -220,6 +236,10 @@ class NotificationDeliveryWorker {
 
   start(): void {
     if (this.intervalId) return;
+    if (process.env.ENABLE_NOTIFICATION_DELIVERY !== "true") {
+      console.warn("[NotificationProcessor] Delivery worker disabled; set ENABLE_NOTIFICATION_DELIVERY=true to enable");
+      return;
+    }
     const tick = async () => {
       if (this.running) return;
       this.running = true;

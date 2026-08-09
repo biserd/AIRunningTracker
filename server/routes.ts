@@ -9198,8 +9198,12 @@ ${allPages.map(page => `  <url>
   // Pause free Strava processing after 30 days without an app visit.
   accountDormancyWorker.start();
 
-  // Start proactive coach delivery after its runtime schema is ready.
-  proactiveCoachWorker.start();
+  // Background delivery is opt-in so publishing cannot drain a dormant queue.
+  if (process.env.ENABLE_PROACTIVE_COACH_WORKER === "true") {
+    proactiveCoachWorker.start();
+  } else {
+    console.warn("[ProactiveCoach] Worker disabled; set ENABLE_PROACTIVE_COACH_WORKER=true to enable");
+  }
   notificationDeliveryWorker.start();
 
   const httpServer = createServer(app);
