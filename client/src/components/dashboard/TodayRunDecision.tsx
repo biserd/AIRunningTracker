@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Footprints, Moon, RotateCcw } from "lucide-react";
 import { getTodayRunDecision } from "@shared/todayRunDecision";
+import { Button } from "@/components/ui/button";
 
 interface RecoveryData {
   daysSinceLastRun: number;
@@ -13,9 +14,11 @@ interface TodayRunDecisionProps {
   isStravaConnected: boolean;
   recentRuns: number;
   latestRunAt?: string | Date | null;
+  availability?: "available" | "limited" | "unavailable" | null;
+  onAvailabilityChange?: (availability: "available" | "limited" | "unavailable") => void;
 }
 
-export default function TodayRunDecision({ recoveryData, isStravaConnected, recentRuns, latestRunAt }: TodayRunDecisionProps) {
+export default function TodayRunDecision({ recoveryData, isStravaConnected, recentRuns, latestRunAt, availability, onAvailabilityChange }: TodayRunDecisionProps) {
   const decision = getTodayRunDecision({
     recoveryData,
     isStravaConnected,
@@ -49,6 +52,16 @@ export default function TodayRunDecision({ recoveryData, isStravaConnected, rece
         <div className="shrink-0 text-xs text-gray-500 sm:max-w-[220px] sm:text-right">
           <p>{recentRuns > 0 ? `Based on ${recentRuns} recently imported run${recentRuns === 1 ? "" : "s"}${latestLabel ? ` · latest ${latestLabel}` : ""}.` : "Waiting for your first imported run."}</p>
           <p className="mt-1">Not based on sleep, soreness, illness, or injury data.</p>
+          {onAvailabilityChange && (
+            <div className="mt-3">
+              <p className="mb-1.5 font-medium text-gray-600">Can you run today?</p>
+              <div className="flex flex-wrap justify-start gap-1.5 sm:justify-end">
+                {([['available', 'Yes'], ['limited', 'Briefly'], ['unavailable', 'Not today']] as const).map(([value, label]) => (
+                  <Button key={value} type="button" size="sm" variant={availability === value ? "default" : "outline"} className="h-7 px-2 text-xs" onClick={() => onAvailabilityChange(value)}>{label}</Button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

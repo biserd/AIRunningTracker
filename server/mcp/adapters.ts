@@ -365,6 +365,79 @@ export async function readRunnerTrainingPlan(userId: number, planId: number) {
   };
 }
 
+/**
+ * Fast, bounded coaching context for agent clients. This deliberately composes
+ * existing ownership-enforcing readers instead of exposing raw records.
+ */
+export async function readRunnerCoachSnapshot(userId: number, daysInput = 28) {
+  const days = clampInteger(daysInput, 28, 7, 90);
+  const startDate = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+  const [profile, activities, trends, recovery, score, goals, plans] = await Promise.all([
+    readRunnerProfile(userId),
+    listRunnerActivities(userId, { page: 1, pageSize: 20, startDate }),
+    readDashboardTrends(userId, days),
+    readRecoveryStatus(userId),
+    readRunnerScore(userId),
+    listRunnerGoals(userId, "active"),
+    listRunnerTrainingPlans(userId),
+  ]);
+  const activePlan = plans.plans.find((plan: any) => plan.status === "active") ?? null;
+  let activePlanDetail: Record<string, unknown> | null = null;
+  if (activePlan) {
+    const full = await readRunnerTrainingPlan(userId, Number((activePlan as any).planId));
+    const currentWeek = Number((activePlan as any).currentWeek || 1);
+    activePlanDetail = {
+      ...activePlan,
+      currentWeek: (full.weeks as any[]).find((week) => week.weekNumber === currentWeek) ?? null,
+      goals: full.goals,
+    };
+  }
+  return {
+    generatedAt: new Date().toISOString(),
+    periodDays: days,
+    profile,
+    recentActivities: activities.activities,
+    recentActivitiesTruncatedByPlan: activities.truncatedByPlan,
+    trends,
+    recovery,
+    runnerScore: score.score,
+    activeGoals: goals.goals,
+    activePlan: activePlanDetail,
+    limitations: [
+      "Read-only snapshot; recommendations cannot update the training plan.",
+      "Recovery is training-load context, not medical clearance.",
+      "Unrecorded sleep, pain, illness, schedule, and weather require runner confirmation.",
+    ],
+  };
+}
+
+export async function readPostRunBrief(userId: number, activityId: number) {
+  const [profile, activity, recovery, trends, plans] = await Promise.all([
+    readRunnerProfile(userId),
+    readRunnerActivity(userId, activityId, true),
+    readRecoveryStatus(userId),
+    readDashboardTrends(userId, 28),
+    listRunnerTrainingPlans(userId),
+  ]);
+  const safeActivity = activity.activity as Record<string, unknown>;
+  const missing: string[] = [];
+  if (safeActivity.averageHeartRate == null) missing.push("heart_rate");
+  if (safeActivity.averageCadenceSpm == null) missing.push("cadence");
+  if (!Array.isArray(safeActivity.laps) || safeActivity.laps.length === 0) missing.push("laps");
+  const activePlan = plans.plans.find((plan: any) => plan.status === "active") ?? null;
+  return {
+    generatedAt: new Date().toISOString(),
+    activity: safeActivity,
+    runner: profile,
+    recovery,
+    recentTrend: trends,
+    activePlan,
+    confidence: missing.length === 0 ? "high" : missing.length <= 2 ? "medium" : "low",
+    missingSignals: missing,
+    limitation: "Observational coaching context only; not a diagnosis or medical clearance.",
+  };
+}
+
 function sanitizeShoe(shoe: RunningShoe) {
   return {
     slug: shoe.slug,

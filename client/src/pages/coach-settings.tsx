@@ -20,7 +20,10 @@ import {
   Bell, 
   Save,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  CloudSun,
+  Clock,
+  PauseCircle
 } from "lucide-react";
 import type { DashboardData } from "@/lib/api";
 
@@ -70,6 +73,15 @@ export default function CoachSettingsPage() {
   const [coachNotifyWeeklySummary, setCoachNotifyWeeklySummary] = useState(true);
   const [coachQuietHoursStart, setCoachQuietHoursStart] = useState("");
   const [coachQuietHoursEnd, setCoachQuietHoursEnd] = useState("");
+  const [coachEnabled, setCoachEnabled] = useState(true);
+  const [coachDailyBriefingEnabled, setCoachDailyBriefingEnabled] = useState(true);
+  const [coachDailyBriefingHour, setCoachDailyBriefingHour] = useState("7");
+  const [coachTimezone, setCoachTimezone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+  const [coachWeatherEnabled, setCoachWeatherEnabled] = useState(false);
+  const [coachWeatherLocation, setCoachWeatherLocation] = useState<{ label: string; latitude: number; longitude: number } | null>(null);
+  const [coachPreferredChannel, setCoachPreferredChannel] = useState<"email" | "push" | "in_app">("email");
+  const [coachSnoozedUntil, setCoachSnoozedUntil] = useState<string | null>(null);
+  const [coachDailyAvailability, setCoachDailyAvailability] = useState<"available" | "limited" | "unavailable" | null>(null);
 
   useEffect(() => {
     if (dashboardData?.user) {
@@ -84,6 +96,15 @@ export default function CoachSettingsPage() {
       setCoachNotifyWeeklySummary(u.coachNotifyWeeklySummary ?? true);
       setCoachQuietHoursStart(u.coachQuietHoursStart?.toString() || "");
       setCoachQuietHoursEnd(u.coachQuietHoursEnd?.toString() || "");
+      setCoachEnabled(u.coachEnabled ?? true);
+      setCoachDailyBriefingEnabled(u.coachDailyBriefingEnabled ?? true);
+      setCoachDailyBriefingHour(String(u.coachDailyBriefingHour ?? 7));
+      setCoachTimezone(u.coachTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+      setCoachWeatherEnabled(u.coachWeatherEnabled ?? false);
+      setCoachWeatherLocation(u.coachWeatherLocation ?? null);
+      setCoachPreferredChannel(u.coachPreferredChannel ?? "email");
+      setCoachSnoozedUntil(u.coachSnoozedUntil ?? null);
+      setCoachDailyAvailability(u.coachDailyAvailability ?? null);
     }
   }, [dashboardData]);
 
@@ -135,7 +156,37 @@ export default function CoachSettingsPage() {
       coachNotifyWeeklySummary: Boolean(coachNotifyWeeklySummary),
       coachQuietHoursStart: coachQuietHoursStart ? parseInt(coachQuietHoursStart) : null,
       coachQuietHoursEnd: coachQuietHoursEnd ? parseInt(coachQuietHoursEnd) : null,
+      coachEnabled,
+      coachDailyBriefingEnabled,
+      coachDailyBriefingHour: parseInt(coachDailyBriefingHour),
+      coachTimezone,
+      coachWeatherEnabled,
+      coachWeatherLocation,
+      coachPreferredChannel,
+      coachSnoozedUntil,
+      coachDailyAvailability,
     });
+  };
+
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast({ title: "Location unavailable", description: "This browser does not provide location access.", variant: "destructive" });
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setCoachWeatherLocation({ label: "Current location", latitude: coords.latitude, longitude: coords.longitude });
+        setCoachWeatherEnabled(true);
+        toast({ title: "Weather location added", description: "Only approximate coordinates are saved for forecasts." });
+      },
+      () => toast({ title: "Location not shared", description: "Weather coaching stays off until you choose a location.", variant: "destructive" }),
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 3600000 },
+    );
+  };
+
+  const snoozeCoach = (hours: number) => {
+    setCoachSnoozedUntil(new Date(Date.now() + hours * 60 * 60 * 1000).toISOString());
+    setCoachEnabled(true);
   };
 
   if (authLoading || subLoading || dataLoading) {
@@ -246,6 +297,84 @@ export default function CoachSettingsPage() {
                   </div>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-strava-orange" />
+                Proactive Coach
+              </CardTitle>
+              <CardDescription>
+                A short, useful briefing at the right time—not another stream of notifications.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                <div>
+                  <Label className="font-medium">Coach is {coachEnabled ? "active" : "paused"}</Label>
+                  <p className="text-sm text-gray-500">Pause every proactive coach message without changing your training data.</p>
+                </div>
+                <Checkbox checked={coachEnabled} onCheckedChange={(checked) => { setCoachEnabled(!!checked); if (!checked) setCoachSnoozedUntil(null); }} />
+              </div>
+
+              <div className="rounded-lg border p-4 space-y-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <Label className="font-medium">Morning run briefing</Label>
+                    <p className="text-sm text-gray-500">Today's plan, recovery context, missed-run adjustment, race-week mode and optional weather.</p>
+                  </div>
+                  <Checkbox checked={coachDailyBriefingEnabled} onCheckedChange={(checked) => setCoachDailyBriefingEnabled(!!checked)} />
+                </div>
+                {coachDailyBriefingEnabled && (
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div>
+                      <Label htmlFor="briefing-hour">Local hour</Label>
+                      <Input id="briefing-hour" type="number" min={0} max={23} value={coachDailyBriefingHour} onChange={(e) => setCoachDailyBriefingHour(e.target.value)} />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <Label htmlFor="coach-timezone">Timezone</Label>
+                      <Input id="coach-timezone" value={coachTimezone} onChange={(e) => setCoachTimezone(e.target.value)} placeholder="America/New_York" />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-lg border p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <CloudSun className="h-4 w-4 text-strava-orange" />
+                  <Label className="font-medium">Weather-aware advice</Label>
+                </div>
+                <p className="text-sm text-gray-500">Optional. We use approximate coordinates only to adjust timing, effort and safety guidance.</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button type="button" variant="outline" onClick={useCurrentLocation}>Use my current location</Button>
+                  {coachWeatherLocation && <span className="text-sm text-gray-600">{coachWeatherLocation.label} added</span>}
+                  {coachWeatherLocation && (
+                    <Button type="button" variant="ghost" onClick={() => { setCoachWeatherEnabled(false); setCoachWeatherLocation(null); }}>Remove</Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-lg border p-4 space-y-3">
+                <Label className="font-medium">Can you run today?</Label>
+                <p className="text-sm text-gray-500">A one-tap check-in keeps the coach from recommending a session you cannot do.</p>
+                <div className="flex flex-wrap gap-2">
+                  {([['available', 'Yes'], ['limited', 'Only briefly'], ['unavailable', 'Not today']] as const).map(([value, label]) => (
+                    <Button key={value} type="button" variant={coachDailyAvailability === value ? "default" : "outline"} onClick={() => setCoachDailyAvailability(value)}>{label}</Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-lg border p-4 space-y-3">
+                <div className="flex items-center gap-2"><PauseCircle className="h-4 w-4" /><Label className="font-medium">Need some quiet?</Label></div>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" variant="outline" onClick={() => snoozeCoach(24)}>Snooze 24 hours</Button>
+                  <Button type="button" variant="outline" onClick={() => snoozeCoach(24 * 7)}>Snooze 7 days</Button>
+                  {coachSnoozedUntil && <Button type="button" variant="ghost" onClick={() => setCoachSnoozedUntil(null)}>Clear snooze</Button>}
+                </div>
+                {coachSnoozedUntil && <p className="text-sm text-gray-500">Paused until {new Date(coachSnoozedUntil).toLocaleString()}.</p>}
+              </div>
             </CardContent>
           </Card>
 
@@ -364,6 +493,20 @@ export default function CoachSettingsPage() {
                   onCheckedChange={(checked) => setCoachNotifyWeeklySummary(!!checked)}
                   data-testid="checkbox-weekly-notify"
                 />
+              </div>
+
+              <div className="pt-4 border-t">
+                <Label htmlFor="coach-channel" className="font-medium">Preferred channel</Label>
+                <select
+                  id="coach-channel"
+                  value={coachPreferredChannel}
+                  onChange={(e) => setCoachPreferredChannel(e.target.value as "email" | "push" | "in_app")}
+                  className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="email">Email</option>
+                  <option value="push">Push notification</option>
+                  <option value="in_app">In-app only</option>
+                </select>
               </div>
 
               <div className="pt-4 border-t">

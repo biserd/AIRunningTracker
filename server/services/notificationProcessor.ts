@@ -2,6 +2,7 @@ import { storage } from "../storage";
 import { emailService } from "./email";
 import { sendPushToUser } from "./pushService";
 import type { NotificationOutbox, User } from "@shared/schema";
+import { isInQuietHours, nextQuietHoursEnd } from "./proactiveCoach";
 
 interface ProcessingResult {
   processed: number;
@@ -29,6 +30,17 @@ export async function processNotifications(limit = 50): Promise<ProcessingResult
         const user = await storage.getUser(notification.userId);
         if (!user) {
           await storage.markNotificationFailed(notification.id, "User not found");
+          result.failed++;
+          continue;
+        }
+        if (notification.respectQuietHours && isInQuietHours(user)) {
+          await storage.rescheduleNotification(notification.id, nextQuietHoursEnd(user));
+          console.log(`[NotificationProcessor] Deferred notification ${notification.id} until quiet hours end`);
+          continue;
+        }
+        const isCoachMessage = ["activity_recap", "next_step", "weekly_summary", "plan_reminder", "morning_briefing", "daily_checkin", "missed_workout", "race_week"].includes(notification.type);
+        if (isCoachMessage && (!user.coachEnabled || (user.coachSnoozedUntil && new Date(user.coachSnoozedUntil) > new Date()))) {
+          await storage.markNotificationFailed(notification.id, "Coach paused or snoozed by runner");
           result.failed++;
           continue;
         }
@@ -143,6 +155,19 @@ async function sendNotificationEmail(
           text: notification.body,
         });
         break;
+
+      case "morning_briefing":
+      case "daily_checkin":
+      case "missed_workout":
+      case "race_week":
+      case "next_step":
+        success = await emailService.sendEmail({
+          to: user.email!,
+          subject: notification.title,
+          html: formatCoachBriefEmail(notification, user),
+          text: `${notification.title}\n\n${notification.body}\n\nOpen your coach: https://aitracker.run/dashboard\nManage coaching: https://aitracker.run/coach-settings`,
+        });
+        break;
         
       default:
         success = await emailService.sendEmail({
@@ -188,3 +213,45 @@ function formatPlanReminderEmail(notification: NotificationOutbox, user: User): 
 export const notificationProcessor = {
   processNotifications,
 };
+
+class NotificationDeliveryWorker {
+  private intervalId: NodeJS.Timeout | null = null;
+  private running = false;
+
+  start(): void {
+    if (this.intervalId) return;
+    const tick = async () => {
+      if (this.running) return;
+      this.running = true;
+      try { await processNotifications(50); }
+      catch (error) { console.error("[NotificationProcessor] Worker tick failed:", error); }
+      finally { this.running = false; }
+    };
+    setTimeout(() => void tick(), 30_000);
+    this.intervalId = setInterval(() => void tick(), 60_000);
+    console.log("[NotificationProcessor] Delivery worker started — every minute");
+  }
+
+  stop(): void {
+    if (this.intervalId) clearInterval(this.intervalId);
+    this.intervalId = null;
+  }
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]!));
+}
+
+function formatCoachBriefEmail(notification: NotificationOutbox, user: User): string {
+  const name = escapeHtml(user.firstName || user.username || "Runner");
+  return `
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;padding:28px;color:#263238;">
+      <p style="margin:0 0 8px;color:#FC4C02;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;">RunAnalytics Coach</p>
+      <h1 style="margin:0 0 16px;font-size:26px;line-height:1.2;">${escapeHtml(notification.title)}</h1>
+      <p style="font-size:16px;line-height:1.65;margin:0 0 24px;">Hi ${name} — ${escapeHtml(notification.body)}</p>
+      <a href="https://aitracker.run/dashboard" style="display:inline-block;background:#FC4C02;color:white;text-decoration:none;border-radius:8px;padding:12px 18px;font-weight:700;">Open today’s coaching</a>
+      <p style="margin-top:28px;font-size:12px;color:#777;line-height:1.5;">Training guidance, not medical advice. <a href="https://aitracker.run/coach-settings" style="color:#666;">Change timing, channel, weather, quiet hours, snooze or pause coaching</a>.</p>
+    </div>`;
+}
+
+export const notificationDeliveryWorker = new NotificationDeliveryWorker();

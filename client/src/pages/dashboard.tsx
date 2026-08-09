@@ -31,6 +31,10 @@ function getLocalCalendarDateKey(date: Date = new Date()) {
   return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
 }
 
+function getLocalIsoDateKey(date: Date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const { canAccessAICoachChat, canAccessAdvancedInsights } = useFeatureAccess();
@@ -196,6 +200,20 @@ export default function Dashboard() {
 
   const handleTimeRangeChange = (range: string) => {
     setChartTimeRange(range);
+  };
+
+  const updateTodayAvailability = async (availability: "available" | "limited" | "unavailable") => {
+    if (!user?.id) return;
+    try {
+      await apiRequest(`/api/users/${user.id}/coach-preferences`, "PATCH", {
+        coachDailyAvailability: availability,
+        coachTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+      });
+      await queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user.id}`] });
+      toast({ title: "Coach updated", description: availability === "unavailable" ? "Today will be treated as a no-run day." : availability === "limited" ? "Today's recommendation will stay short." : "Today's plan can use your normal availability." });
+    } catch (error: any) {
+      toast({ title: "Could not update availability", description: error?.message || "Please try again.", variant: "destructive" });
+    }
   };
 
 
@@ -487,6 +505,8 @@ export default function Dashboard() {
             isStravaConnected={!!dashboardData?.user?.stravaConnected}
             recentRuns={dashboardData?.activities?.length || 0}
             latestRunAt={dashboardData?.activities?.[0]?.startDate}
+            availability={dashboardData?.user?.coachDailyAvailabilityDate === getLocalIsoDateKey() ? dashboardData?.user?.coachDailyAvailability : null}
+            onAvailabilityChange={canAccessAICoachChat ? updateTodayAvailability : undefined}
           />
         </div>
 

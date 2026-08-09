@@ -59,7 +59,7 @@ async function generateNarrative(params: {
   const prompt = [
     `Runner${firstName ? ` ${firstName}` : ""} logged ${totalRuns} run${totalRuns !== 1 ? "s" : ""} for ${fmtDist(totalDistanceM)} the week of ${weekStr}${changeText ? `, ${changeText}` : ""}.`,
     planInfo ? `Training context: ${planInfo}.` : "",
-    "Write exactly one encouraging sentence (max 25 words) that celebrates this week and sets a forward-looking tone for next week.",
+    "Write exactly two concise sentences (maximum 55 words total): first name one evidence-based pattern to continue; then one conservative adjustment and next-week priority. Never prescribe making up missed mileage, diagnose injury, or invent context.",
   ]
     .filter(Boolean)
     .join(" ");
@@ -143,6 +143,10 @@ export async function sendWeeklySummaries(refDate?: Date): Promise<WeeklySummary
       AND u.email != ''
       AND u.marketing_opt_out = false
       AND u.strava_webhook_paused_at IS NULL
+      AND COALESCE(u.coach_enabled, true) = true
+      AND (u.coach_snoozed_until IS NULL OR u.coach_snoozed_until <= NOW())
+      AND u.subscription_plan IN ('premium', 'pro')
+      AND u.subscription_status IN ('trialing', 'active')
     GROUP BY u.id, u.email, u.first_name, u.unit_preference, u.strava_connected
     ORDER BY u.id
   `);
@@ -272,7 +276,7 @@ export async function sendWeeklySummaries(refDate?: Date): Promise<WeeklySummary
             adherenceScore: currentWeekData?.adherenceScore ?? null,
             phaseName: currentWeekData?.phaseName ?? null,
           };
-          planInfoLine = `Week ${currentWeekNum} of ${plan.totalWeeks} ${plan.goalType} plan`;
+          planInfoLine = `Week ${currentWeekNum} of ${plan.totalWeeks} ${plan.goalType} plan; ${activePlan.completedDistanceKm.toFixed(1)} of ${activePlan.plannedDistanceKm.toFixed(1)} planned km completed${activePlan.adherenceScore == null ? "" : `; adherence score ${Math.round(activePlan.adherenceScore)}`}`;
         }
       } catch (_) {}
 

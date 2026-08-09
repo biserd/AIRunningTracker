@@ -27,7 +27,7 @@ import { dripCampaignWorker } from "./services/dripCampaignWorker";
 import { sendWeeklySummaries, weeklySummaryWorker } from "./services/weeklySummaryWorker";
 import { accountDormancyWorker, reactivateDormantAccount } from "./services/accountDormancy";
 import { stravaWebhookService } from "./services/stravaWebhook";
-import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, emailWaitlist, users, stravaWebhookLogs, type Activity, type RunningShoe } from "@shared/schema";
+import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, updateCoachPreferencesSchema, emailWaitlist, users, stravaWebhookLogs, notificationOutbox, type Activity, type RunningShoe } from "@shared/schema";
 import { shoeData } from "./shoe-data";
 import { validateAllShoes, getPipelineStats, findDuplicates, getShoeDataWithMetadata, getShoesWithMetadataFromStorage, getEnrichedShoeData, enrichShoeWithAIData } from "./shoe-pipeline";
 import { z } from "zod";
@@ -54,6 +54,8 @@ import { formatRunDistance, formatRunDuration, formatRunPace, runUnitLabels } fr
 import { summarizeTrainingSplit } from "@shared/trainingSplit";
 import { canonicalizeShoeCatalog, normalizedShoeModelKey } from "@shared/shoeCanonicalization";
 import { registerMcpRoutes } from "./mcp/router";
+import { ensureProactiveCoachSchema, isValidTimezone, localDateKey, proactiveCoachWorker } from "./services/proactiveCoach";
+import { notificationDeliveryWorker } from "./services/notificationProcessor";
 
 // Authentication middleware
 const authenticateJWT = async (req: any, res: Response, next: NextFunction) => {
@@ -280,6 +282,7 @@ async function isAllowedCheckoutPriceId(priceId: unknown): Promise<boolean> {
 export async function registerRoutes(app: Express): Promise<Server> {
   registerObjectStorageRoutes(app);
   await registerMcpRoutes(app);
+  await ensureProactiveCoachSchema();
 
   
   // SEO: Page-specific meta data for dynamic rendering
@@ -322,8728 +325,194 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
     "/tools/training-pace-calculator": {
       title: "Training Pace Calculator | Free Running Pace Zones",
-      description: "Calculate broad easy, long-run, steady, threshold and interval pace ranges from a recent race with transparent assumptions.",
-      keywords: "training pace calculator, running pace zones, easy run pace, threshold pace"
-    },
-    "/tools/race-split-calculator": {
-      title: "Race Split Calculator | Mile & Kilometer Pace Chart",
-      description: "Create exact mile or kilometer race splits for even, conservative-start or negative-split pacing strategies.",
-      keywords: "race split calculator, marathon pace chart, mile splits, negative split"
-    },
-    "/tools/heatmap": {
-      title: "Running Heatmap | Visualize Your Training Routes | RunAnalytics",
-      description: "See your most-run routes on an interactive heatmap. Discover training patterns and favorite paths from your Strava activities.",
-      keywords: "running heatmap, training routes, Strava heatmap, route visualization"
-    },
-    "/tools/shoes": {
-      title: "Running Shoe Database | Compare 100+ Running Shoes | RunAnalytics",
-      description: "Browse and compare 100+ running shoes with specs, reviews & AI insights. Find the best shoes for your running needs.",
-      keywords: "running shoes database, compare running shoes, best running shoes 2026"
-    },
-    "/tools/shoe-finder": {
-      title: "Running Shoe Finder | Personalized Shoe Recommendations | RunAnalytics",
-      description: "Find your perfect running shoe based on foot type, running style & goals. AI-powered recommendations from 100+ models.",
-      keywords: "running shoe finder, best running shoes, shoe recommendations"
-    },
-    "/tools/rotation-planner": {
-      title: "Running Shoe Rotation Planner | Build Your Shoe Lineup | RunAnalytics",
-      description: "Plan the perfect running shoe rotation. Get AI recommendations for daily trainers, speed shoes & race day options.",
-      keywords: "shoe rotation, running shoe lineup, multiple running shoes"
-    },
-    "/blog": {
-      title: "Running Blog | Training Tips & AI Coaching Insights | RunAnalytics",
-      description: "Expert running advice, training tips, and AI coaching insights. Learn how to improve your pace, pick training plans, and run smarter.",
-      keywords: "running blog, training tips, running advice, AI running coach"
-    },
-    "/blog/ai-running-coach-complete-guide-2026": {
-      title: "AI Running Coach Complete Guide 2026 | RunAnalytics Blog",
-      description: "Everything you need to know about AI running coaches in 2026. Compare features, benefits, and find the best AI coach for your training.",
-      keywords: "AI running coach, AI training, running coach app, AI fitness"
-    },
-    "/blog/best-strava-analytics-tools-2026": {
-      title: "Best Strava Analytics Tools 2026 | RunAnalytics Blog",
-      description: "Compare the best Strava analytics tools for runners in 2026. Find deeper insights, better visualizations, and smarter training analysis.",
-      keywords: "Strava analytics, Strava tools, running analytics, Strava apps"
-    },
-    "/blog/how-to-improve-running-pace": {
-      title: "How to Improve Your Running Pace | RunAnalytics Blog",
-      description: "Proven strategies to get faster: interval training, tempo runs, and pace improvement techniques for runners of all levels.",
-      keywords: "improve running pace, run faster, speed training, running tips"
-    },
-    "/blog/ai-agent-coach-proactive-coaching": {
-      title: "AI Agent Coach: Proactive Coaching That Knows You | RunAnalytics Blog",
-      description: "Discover how AI Agent Coach provides personalized, proactive coaching based on your training patterns and goals. Premium feature spotlight.",
-      keywords: "AI agent coach, proactive coaching, personalized training, running AI"
-    },
-    "/blog/how-to-pick-a-training-plan": {
-      title: "How to Pick a Training Plan | RunAnalytics Blog",
-      description: "Choose the right training plan for your goals, experience level, and schedule. Expert guidance for 5K to marathon training.",
-      keywords: "training plan, marathon training, 5K plan, running schedule"
-    },
-    "/pricing": {
-      title: "Pricing | Free & Premium Plans | RunAnalytics",
-      description: "Start free with basic analytics. Upgrade to Premium for AI insights, training plans, Coach Chat, and unlimited features.",
-      keywords: "running app pricing, strava analytics cost, AI coach pricing"
-    },
-    "/features": {
-      title: "Features | AI Analytics & Coaching | RunAnalytics",
-      description: "Explore RunAnalytics features: Runner Score, AI insights, race predictions, training plans, shoe tracking, and proactive AI coaching.",
-      keywords: "running app features, AI running features, Strava analytics features"
-    },
-    "/ai-running-coach": {
-      title: "AI Running Coach | Personalized Training Advice | RunAnalytics",
-      description: "Get personalized running advice from an AI coach that knows your training. Ask questions, get insights, and improve your running.",
-      keywords: "AI running coach, running advice, AI training, personalized coaching"
-    },
-    "/ai-running-coaching-guide": {
-      title: "Free AI Running Coaching Ebook | RunAnalytics",
-      description: "Start a 14-day RunAnalytics Premium trial and get the $49 Runner's Guide to AI Coaching free. Learn what AI does well and where it fails.",
-      keywords: "AI running coaching ebook, AI running coach guide, running analytics guide",
-      ogImage: "https://aitracker.run/ebook/ai-coaching-guide-cover.webp"
-    },
-    "/chrome-extension": {
-      title: "RunAnalytics Chrome Extension for Strava | AI Insights on Every Run",
-      description: "Add AI-powered running insights to every Strava activity with the free RunAnalytics Chrome extension. Get run grades, your Runner Score, readiness, and injury-risk signals without leaving Strava.",
-      keywords: "Strava Chrome extension, RunAnalytics extension, Strava AI insights, running analytics chrome extension, Strava run grade, Runner Score extension",
-      ogImage: "https://aitracker.run/public-objects/og/chrome-extension.jpg"
-    },
-    "/ai-agent-coach": {
-      title: "AI Agent Coach | Proactive Training Intelligence | RunAnalytics",
-      description: "Premium AI coaching that proactively analyzes your runs and provides personalized recommendations before you ask. The future of running coaching.",
-      keywords: "AI agent coach, proactive coaching, premium running coach, AI training"
-    },
-    // Additional pages from sitemap
-    "/about": {
-      title: "About RunAnalytics | AI-Powered Running Analytics",
-      description: "Learn about RunAnalytics - the AI-powered platform helping runners improve with personalized insights, training analytics, and smart coaching.",
-      keywords: "about RunAnalytics, running analytics company, AI running platform"
-    },
-    "/auth": {
-      title: "Sign In or Sign Up | RunAnalytics",
-      description: "Sign in to RunAnalytics to access your personalized running insights, or create a free account to get started with AI-powered analytics.",
-      keywords: "login, sign up, create account, running app"
-    },
-    "/faq": {
-      title: "FAQ | Frequently Asked Questions | RunAnalytics",
-      description: "Get answers to common questions about RunAnalytics, Strava integration, AI coaching, subscriptions, and how to get the most from your training data.",
-      keywords: "FAQ, frequently asked questions, help, support, running analytics help"
-    },
-    "/contact": {
-      title: "Contact Us | RunAnalytics Support",
-      description: "Get in touch with the RunAnalytics team. We're here to help with questions about your running analytics, account, or technical support.",
-      keywords: "contact, support, help, customer service, running analytics support"
-    },
-    "/privacy": {
-      title: "Privacy Policy | RunAnalytics",
-      description: "Read the RunAnalytics privacy policy. Learn how we protect your running data, Strava information, and personal details.",
-      keywords: "privacy policy, data protection, GDPR, running data privacy"
-    },
-    "/terms": {
-      title: "Terms of Service | RunAnalytics",
-      description: "Read the RunAnalytics terms of service. Understand your rights and responsibilities when using our running analytics platform.",
-      keywords: "terms of service, terms and conditions, user agreement"
-    },
-    "/developers": {
-      title: "Developer Portal | RunAnalytics API",
-      description: "Build with RunAnalytics. Access our API documentation, integration guides, and developer resources for running analytics.",
-      keywords: "API, developers, integration, running API, developer portal"
-    },
-    "/developers/api": {
-      title: "API Documentation | RunAnalytics Developers",
-      description: "Complete API documentation for RunAnalytics. Learn how to integrate running analytics, access activity data, and build custom solutions.",
-      keywords: "API documentation, REST API, running data API, developer docs"
-    },
-    "/tools/shoes/compare": {
-      title: "Compare Running Shoes | Side-by-Side Comparison | RunAnalytics",
-      description: "Compare running shoes side-by-side. See specs, features, and AI insights to find the best shoes for your running style.",
-      keywords: "compare running shoes, shoe comparison, running shoe specs"
-    }
-  };
-
-  // Crawler detection helper
-  const isCrawler = (userAgent: string): boolean => {
-    const crawlerPatterns = [
-      // Traditional search engines
-      /googlebot/i, /bingbot/i, /yandex/i, /baiduspider/i,
-      /duckduckbot/i, /slurp/i, /applebot/i,
-      /developers\.google\.com/i, /google-inspectiontool/i,
-      // Social / link-preview bots
-      /facebookexternalhit/i, /twitterbot/i, /linkedinbot/i, /pinterest/i,
-      // SEO tools
-      /semrush/i, /ahrefsbot/i, /mj12bot/i, /dotbot/i,
-      /petalbot/i, /rogerbot/i, /dataforseo/i,
-      // AI crawlers (GEO â€” Generative Engine Optimization)
-      /GPTBot/i, /ClaudeBot/i, /PerplexityBot/i, /Applebot-Extended/i,
-      /anthropic-ai/i, /cohere-ai/i, /meta-externalagent/i,
-    ];
-    return crawlerPatterns.some(pattern => pattern.test(userAgent));
-  };
-
-  // SEO: 301 redirects for renamed blog posts (preserve indexed URLs)
-  app.get("/blog/best-strava-analytics-tools-2025", (req, res) => {
-    res.redirect(301, "/blog/best-strava-analytics-tools-2026");
-  });
-
-  // SEO: emit `X-Robots-Tag: noindex` for utility/auth pages so Google drops
-  // them from the index even if discovered via internal links or backlinks.
-  // (These are also excluded from the sitemap above.)
-  const NOINDEX_PATHS = new Set<string>([
-    "/auth",
-    "/auth/magic-link",
-    "/forgot-password",
-    "/reset-password",
-    "/magic-link",
-  ]);
-  app.use((req, res, next) => {
-    if (NOINDEX_PATHS.has(req.path)) {
-      res.setHeader("X-Robots-Tag", "noindex, follow");
-    }
-    next();
-  });
-
-  // SEO: IndexNow key verification file. Bing/Yandex/Seznam fetch this to
-  // confirm we own the key when we submit URLs to api.indexnow.org.
-  // Key is set via INDEXNOW_KEY env var; falls back to a baked-in default
-  // so submissions still work even if the secret hasn't been provisioned.
-  app.get("/:key([a-f0-9]{8,128}).txt", (req, res, next) => {
-    const expected = process.env.INDEXNOW_KEY || "ae4e97b2aac152e8b1c19837d99227fd";
-    if (req.params.key === expected) {
-      res.type("text/plain").send(expected);
-    } else {
-      next();
-    }
-  });
-
-  // SEO: robots.txt
-  app.get("/robots.txt", (req, res) => {
-    const baseUrl = "https://aitracker.run";
-    
-    const robotsTxt = `Content-Signal: ai-train=yes, search=yes, ai-input=yes
-
-User-agent: *
-Allow: /
-Disallow: /api/
-Disallow: /dashboard
-Disallow: /admin
-Disallow: /admin/
-Disallow: /settings
-Disallow: /billing
-Disallow: /activities
-Disallow: /activity/
-Disallow: /performance
-Disallow: /ml-insights
-
-Sitemap: ${baseUrl}/sitemap.xml`;
-
-    res.header("Content-Type", "text/plain");
-    res.send(robotsTxt);
-  });
-
-  // SEO: Sitemap (dynamic with shoe pages and lastmod timestamps)
-  app.get("/sitemap.xml", async (req, res) => {
-    try {
-      const baseUrl = "https://aitracker.run";
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-      
-      const staticPages = [
-        { url: "/", changefreq: "daily", priority: "1.0", lastmod: today },
-        // Utility pages (auth/forgot-password/reset-password) are intentionally
-        // excluded â€” they have no indexable content and just dilute crawl budget.
-        { url: "/about", changefreq: "monthly", priority: "0.7", lastmod: "2026-01-01" },
-        { url: "/features", changefreq: "monthly", priority: "0.8", lastmod: today },
-        { url: "/pricing", changefreq: "weekly", priority: "0.9", lastmod: today },
-        
-        // Blog & Content Marketing â€” derived from blogContent.ts so no post is ever missed
-        { url: "/blog", changefreq: "weekly", priority: "0.9", lastmod: today },
-        { url: "/ai-running-coach", changefreq: "weekly", priority: "0.9", lastmod: today },
-        { url: "/ai-running-coaching-guide", changefreq: "weekly", priority: "0.9", lastmod: today },
-        { url: "/ai-agent-coach", changefreq: "weekly", priority: "0.9", lastmod: today },
-        { url: "/chrome-extension", changefreq: "weekly", priority: "0.8", lastmod: today },
-        
-        // Free Tools
-        { url: "/tools", changefreq: "weekly", priority: "0.9", lastmod: today },
-        { url: "/tools/aerobic-decoupling-calculator", changefreq: "weekly", priority: "0.8", lastmod: today },
-        { url: "/tools/training-split-analyzer", changefreq: "weekly", priority: "0.8", lastmod: today },
-        { url: "/tools/marathon-fueling", changefreq: "weekly", priority: "0.8", lastmod: today },
-        { url: "/tools/race-predictor", changefreq: "weekly", priority: "0.8", lastmod: today },
-        { url: "/tools/cadence-analyzer", changefreq: "weekly", priority: "0.8", lastmod: today },
-        { url: "/tools/training-pace-calculator", changefreq: "weekly", priority: "0.8", lastmod: today },
-        { url: "/tools/race-split-calculator", changefreq: "weekly", priority: "0.8", lastmod: today },
-        { url: "/tools/heatmap", changefreq: "weekly", priority: "0.7", lastmod: today },
-        
-        // Running Shoe Hub
-        { url: "/tools/shoes", changefreq: "weekly", priority: "0.9", lastmod: today },
-        { url: "/tools/shoes/compare", changefreq: "weekly", priority: "0.8", lastmod: today },
-        { url: "/tools/shoe-finder", changefreq: "weekly", priority: "0.8", lastmod: today },
-        { url: "/tools/rotation-planner", changefreq: "weekly", priority: "0.8", lastmod: today },
-        
-        // Developer API
-        { url: "/developers", changefreq: "weekly", priority: "0.8", lastmod: "2026-01-01" },
-        { url: "/developers/api", changefreq: "weekly", priority: "0.8", lastmod: "2026-01-01" },
-        
-        // Other Pages
-        { url: "/faq", changefreq: "monthly", priority: "0.6", lastmod: "2026-01-01" },
-        { url: "/contact", changefreq: "monthly", priority: "0.5", lastmod: "2025-12-01" },
-        { url: "/privacy", changefreq: "yearly", priority: "0.3", lastmod: "2025-11-01" },
-        { url: "/terms", changefreq: "yearly", priority: "0.3", lastmod: "2025-11-01" },
-      ];
-
-      // Fetch all shoes for individual shoe pages
-      const shoes = await storage.getShoes({});
-      const { canonicalShoes } = canonicalizeShoeCatalog(shoes);
-      const shoePages = canonicalShoes.map(shoe => ({
-        url: `/tools/shoes/${shoe.slug}`,
-        changefreq: "monthly",
-        priority: "0.7",
-        lastmod: shoe.createdAt ? new Date(shoe.createdAt).toISOString().split('T')[0] : today
-      }));
-
-      // Fetch all shoe comparisons for comparison pages
-      const comparisons = await storage.getShoeComparisons({});
-      const existingShoeIds = new Set(shoes.map((shoe) => shoe.id));
-      const comparisonPages = comparisons.filter((comparison) =>
-        existingShoeIds.has(comparison.shoe1Id) && existingShoeIds.has(comparison.shoe2Id)
-      ).map(comparison => ({
-        url: `/tools/shoes/compare/${comparison.slug}`,
-        changefreq: "monthly",
-        priority: "0.7",
-        lastmod: comparison.createdAt ? new Date(comparison.createdAt).toISOString().split('T')[0] : today
-      }));
-
-      // Blog pages â€” derived from blogContent.ts so the sitemap stays in sync
-      // automatically whenever a new post is added to the content source.
-      const blogPages = getAllBlogPosts().map(post => ({
-        url: `/blog/${post.slug}`,
-        changefreq: "monthly",
-        priority: "0.9",
-        lastmod: today
-      }));
-
-      const allPages = [...staticPages, ...blogPages, ...shoePages, ...comparisonPages];
-
-      const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${allPages.map(page => `  <url>
-    <loc>${baseUrl}${page.url}</loc>
-    <lastmod>${page.lastmod}</lastmod>
-    <changefreq>${page.changefreq}</changefreq>
-    <priority>${page.priority}</priority>
-  </url>`).join('\n')}
-</urlset>`;
-
-      res.header("Content-Type", "application/xml");
-      res.send(sitemap);
-    } catch (error: any) {
-      console.error('Sitemap generation error:', error);
-      res.status(500).send("Error generating sitemap");
-    }
-  });
-
-  // Dynamic Rendering for SEO: Serve enhanced HTML to crawlers
-  // This middleware intercepts requests to public pages and injects proper meta tags for search engines
-  // Regular users get the SPA experience (handled by Vite's catch-all)
-  const fs = await import('fs');
-  const path = await import('path');
-  
-  // Helper to generate pre-rendered HTML with SEO meta tags.
-  // Served only to crawlers â€” real users get the SPA from Vite's catch-all.
-  // IMPORTANT: do NOT include a window.location redirect here. Googlebot
-  // renders JS and treats it as a redirect â†’ "Page with redirect" / soft 404.
-  const generateSEOHtml = (pageMeta: { title: string; description: string; keywords?: string; ogImage?: string }, url: string): string => {
-    const baseUrl = "https://aitracker.run";
-    // Strip the leading title segment ("Foo | RunAnalytics" â†’ "Foo") for the visible H1.
-    const h1 = pageMeta.title.split("|")[0].trim();
-    const ogImage = pageMeta.ogImage ?? `${baseUrl}/og-image.jpg`;
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5, user-scalable=yes" />
-  <title>${pageMeta.title}</title>
-  <meta name="description" content="${pageMeta.description}" />
-  ${pageMeta.keywords ? `<meta name="keywords" content="${pageMeta.keywords}" />` : ''}
-  <meta name="author" content="RunAnalytics" />
-  <meta name="theme-color" content="#fc4c02" />
-  <link rel="canonical" href="${baseUrl}${url}" />
-
-  <!-- Open Graph -->
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="${baseUrl}${url}" />
-  <meta property="og:title" content="${pageMeta.title}" />
-  <meta property="og:description" content="${pageMeta.description}" />
-  <meta property="og:image" content="${ogImage}" />
-  <meta property="og:site_name" content="RunAnalytics" />
-
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:url" content="${baseUrl}${url}" />
-  <meta name="twitter:title" content="${pageMeta.title}" />
-  <meta name="twitter:description" content="${pageMeta.description}" />
-  <meta name="twitter:image" content="${ogImage}" />
-
-  <!-- Structured Data -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebPage",
-    "name": "${pageMeta.title}",
-    "description": "${pageMeta.description}",
-    "url": "${baseUrl}${url}",
-    "publisher": {
-      "@type": "Organization",
-      "name": "RunAnalytics",
-      "url": "${baseUrl}",
-      "logo": "${baseUrl}/favicon.svg"
-    }
-  }
-  </script>
-
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-</head>
-<body>
-  <header>
-    <nav aria-label="Primary">
-      <a href="${baseUrl}/"><strong>RunAnalytics</strong></a>
-      <ul>
-        <li><a href="${baseUrl}/features">Features</a></li>
-        <li><a href="${baseUrl}/pricing">Pricing</a></li>
-        <li><a href="${baseUrl}/tools">Free Tools</a></li>
-        <li><a href="${baseUrl}/tools/shoes">Running Shoes</a></li>
-        <li><a href="${baseUrl}/blog">Blog</a></li>
-        <li><a href="${baseUrl}/ai-running-coach">AI Coach</a></li>
-        <li><a href="${baseUrl}/faq">FAQ</a></li>
-      </ul>
-    </nav>
-  </header>
-  <main>
-    <article>
-      <h1>${h1}</h1>
-      <p>${pageMeta.description}</p>
-      <section>
-        <h2>About RunAnalytics</h2>
-        <p>RunAnalytics is an AI-powered running analytics platform that integrates with
-        Strava to deliver personalized insights, race predictions, training plan generation,
-        recovery analysis, and a conversational AI running coach. We help runners of every
-        level train smarter and avoid injury.</p>
-      </section>
-      <section>
-        <h2>Explore the platform</h2>
-        <ul>
-          <li><a href="${baseUrl}/tools/race-predictor">Race Time Predictor</a> â€” predict 5K, 10K, half &amp; marathon finish times.</li>
-          <li><a href="${baseUrl}/tools/marathon-fueling">Marathon Fueling Planner</a> â€” build a personalized fueling strategy.</li>
-          <li><a href="${baseUrl}/tools/aerobic-decoupling-calculator">Aerobic Decoupling Calculator</a> â€” measure aerobic efficiency.</li>
-          <li><a href="${baseUrl}/tools/training-split-analyzer">Training Split Analyzer</a> â€” see your easy/hard balance.</li>
-          <li><a href="${baseUrl}/tools/cadence-analyzer">Cadence Analyzer</a> â€” analyze running form stability.</li>
-          <li><a href="${baseUrl}/tools/shoes">Running Shoe Database</a> â€” 280+ shoes with AI insights.</li>
-          <li><a href="${baseUrl}/tools/shoe-finder">Shoe Finder</a> â€” get matched to the right pair.</li>
-          <li><a href="${baseUrl}/tools/rotation-planner">Rotation Planner</a> â€” build a smart shoe rotation.</li>
-
-        </ul>
-      </section>
-    </article>
-  </main>
-  <footer>
-    <nav aria-label="Footer">
-      <a href="${baseUrl}/about">About</a> Â·
-      <a href="${baseUrl}/contact">Contact</a> Â·
-      <a href="${baseUrl}/privacy">Privacy</a> Â·
-      <a href="${baseUrl}/terms">Terms</a> Â·
-      <a href="${baseUrl}/sitemap.xml">Sitemap</a>
-    </nav>
-    <p>&copy; RunAnalytics â€” AI-powered running analytics for Strava athletes.</p>
-  </footer>
-  <noscript>
-    <p>RunAnalytics is best experienced with JavaScript enabled.</p>
-  </noscript>
-</body>
-</html>`;
-  };
-
-  // SSG for homepage - serves to crawlers only for SEO
-  // All other users get the SPA (app uses client-side JWT, not server sessions)
-  app.get("/", (req: any, res, next) => {
-    const userAgent = req.get('user-agent') || '';
-    
-    // Only serve SSG to crawlers (search engines + AI bots) for SEO/GEO benefits
-    const isCrawlerRequest = isCrawler(userAgent);
-    
-    if (isCrawlerRequest) {
-      try {
-        console.log(`[SSG] Serving static-generated homepage to crawler: ${userAgent.substring(0, 50)}`);
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('X-Robots-Tag', 'index, follow');
-        res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
-        const html = renderHomepage();
-        res.send(html);
-        return;
-      } catch (error) {
-        console.error('[SSG] Error serving homepage:', error);
-        next();
-        return;
-      }
-    }
-    
-    // All regular users get the SPA
-    next();
-  });
-
-  // Tool slugs that get full SSR with content (not just meta)
-  const fullSsrToolSlugs = [
-    'race-predictor', 'marathon-fueling', 'aerobic-decoupling-calculator',
-    'training-split-analyzer', 'cadence-analyzer', 'heatmap', 
-    'shoe-finder', 'rotation-planner'
-  ];
-
-  // Middleware to handle crawler requests for SEO pages (static marketing/tool pages)
-  Object.entries(SEO_PAGES).forEach(([route, meta]) => {
-    // Skip homepage - it gets full SSG above
-    if (route === '/') {
-      return;
-    }
-    // Skip blog posts - they get full SSR below
-    if (route.startsWith('/blog/') && route !== '/blog') {
-      return;
-    }
-    // Skip tool pages that get full SSR with content below
-    if (route.startsWith('/tools/') && fullSsrToolSlugs.some(slug => route === `/tools/${slug}`)) {
-      return;
-    }
-    
-    app.get(route, (req: any, res, next) => {
-      const userAgent = req.get('user-agent') || '';
-      
-      // Only serve pre-rendered HTML to crawlers for non-blog pages
-      if (isCrawler(userAgent)) {
-        console.log(`[SEO] Serving pre-rendered HTML for crawler on ${route}: ${userAgent.substring(0, 50)}`);
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('X-Robots-Tag', 'index, follow');
-        res.setHeader('Cache-Control', 'public, max-age=3600');
-
-        // Route-specific renderers return real page content; fall back to the
-        // generic template for utility pages (contact, privacy, terms, etc.).
-        let html: string | null = null;
-        switch (route) {
-          case '/faq':            html = renderFaqPage(); break;
-          case '/blog':           html = renderBlogIndex(); break;
-          case '/pricing':        html = renderPricingPage(); break;
-          case '/features':       html = renderFeaturesPage(); break;
-          case '/about':          html = renderAboutPage(); break;
-          case '/ai-running-coaching-guide': html = renderEbookLandingPage(); break;
-          case '/tools':          html = renderToolsHubPage(); break;
-          case '/developers':     html = renderDevelopersPage(); break;
-          case '/developers/api': html = renderDevelopersApiPage(); break;
-        }
-        res.send(html ?? generateSEOHtml(meta, route));
-      } else {
-        // Let Vite/static serving handle regular users
-        next();
-      }
-    });
-  });
-
-  // SSG for blog posts - serves to crawlers only for SEO, regular users get SPA
-  app.get("/blog/:slug", (req: any, res, next) => {
-    const userAgent = req.get('user-agent') || '';
-
-    // Only serve SSG to crawlers (search engines + AI bots) â€” regular users get the rich SPA
-    if (!isCrawler(userAgent)) {
-      next();
-      return;
-    }
-    
-    const { slug } = req.params;
-    const staticFilePath = path.join(process.cwd(), 'dist', 'prerender', `blog-${slug}.html`);
-    
-    // Try to serve pre-rendered static file first (SSG)
-    if (fs.existsSync(staticFilePath)) {
-      console.log(`[SSG] Serving static blog post to crawler: ${slug}`);
-      res.setHeader('Content-Type', 'text/html');
-      res.setHeader('X-Robots-Tag', 'index, follow');
-      res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hour cache
-      const html = fs.readFileSync(staticFilePath, 'utf-8');
-      res.send(html);
-      return;
-    }
-    
-    // Fallback to SSR if static file doesn't exist
-    const html = renderBlogPost(slug);
-    if (html) {
-      console.log(`[SSR] Fallback: serving server-rendered blog post to crawler: ${slug}`);
-      res.setHeader('Content-Type', 'text/html');
-      res.setHeader('X-Robots-Tag', 'index, follow');
-      res.setHeader('Cache-Control', 'public, max-age=86400');
-      res.send(html);
-    } else {
-      // Blog post not found, let React handle it
-      next();
-    }
-  });
-
-  // SSG for free tools pages - serves to crawlers only for SEO, regular users get SPA
-  // Tool slugs: race-predictor, marathon-fueling, aerobic-decoupling-calculator, training-split-analyzer, cadence-analyzer, heatmap, shoe-finder, rotation-planner
-  const toolRouteMap: Record<string, string> = {
-    'race-predictor': 'race-predictor',
-    'marathon-fueling': 'marathon-fueling',
-    'aerobic-decoupling-calculator': 'aerobic-decoupling-calculator',
-    'training-split-analyzer': 'training-split-analyzer',
-    'cadence-analyzer': 'cadence-analyzer',
-    'training-pace-calculator': 'training-pace-calculator',
-    'race-split-calculator': 'race-split-calculator',
-    'heatmap': 'heatmap',
-    'shoe-finder': 'shoe-finder',
-    'rotation-planner': 'rotation-planner'
-  };
-
-  Object.entries(toolRouteMap).forEach(([routeSlug, contentSlug]) => {
-    app.get(`/tools/${routeSlug}`, (req: any, res, next) => {
-      const userAgent = req.get('user-agent') || '';
-
-      // Only serve SSR to crawlers (search engines + AI bots) â€” regular users get the rich SPA
-      if (!isCrawler(userAgent)) {
-        next();
-        return;
-      }
-      
-      const staticFilePath = path.join(process.cwd(), 'dist', 'prerender', `tools-${contentSlug}.html`);
-      
-      // Try to serve pre-rendered static file first (SSG)
-      if (fs.existsSync(staticFilePath)) {
-        console.log(`[SSG] Serving static tool page to crawler: ${contentSlug}`);
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('X-Robots-Tag', 'index, follow');
-        res.setHeader('Cache-Control', 'public, max-age=3600');
-        res.sendFile(staticFilePath);
-        return;
-      }
-      
-      // Fallback to dynamic SSR if static file doesn't exist
-      const html = renderToolPage(contentSlug);
-      if (html) {
-        console.log(`[SSR] Fallback: serving server-rendered tool page to crawler: ${contentSlug}`);
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('X-Robots-Tag', 'index, follow');
-        res.setHeader('Cache-Control', 'public, max-age=3600');
-        res.send(html);
-      } else {
-        // Tool not found, let React handle it
-        next();
-      }
-    });
-  });
-
-  // SSG for individual shoe pages - serves to crawlers only for SEO, regular users get SPA
-  app.get("/tools/shoes/:slug", async (req: any, res, next) => {
-    const userAgent = req.get('user-agent') || '';
-
-    // Only serve SSG to crawlers (search engines + AI bots) â€” regular users get the rich SPA
-    if (!isCrawler(userAgent)) {
-      next();
-      return;
-    }
-    
-    const { slug } = req.params;
-    const staticFilePath = path.join(process.cwd(), 'dist', 'prerender', `shoes-${slug}.html`);
-    
-    // Validate the current database record before serving any cached SSG file.
-    // This prevents deleted or aliased shoes from continuing to return indexable
-    // 200 responses from an old build artifact.
-    try {
-      const shoe = await storage.getShoeBySlug(slug);
-      
-      if (shoe) {
-        const allShoes = await storage.getShoes({});
-        const sameModelShoes = allShoes.filter((candidate) => normalizedShoeModelKey(candidate) === normalizedShoeModelKey(shoe));
-        const canonicalSlug = canonicalizeShoeCatalog(sameModelShoes).canonicalShoes[0]?.slug;
-        if (canonicalSlug && canonicalSlug !== slug) {
-          return res.redirect(301, `/tools/shoes/${canonicalSlug}`);
-        }
-        if (fs.existsSync(staticFilePath)) {
-          res.setHeader('Content-Type', 'text/html');
-          res.setHeader('X-Robots-Tag', 'index, follow');
-          res.setHeader('Cache-Control', 'public, max-age=3600');
-          return res.send(fs.readFileSync(staticFilePath, 'utf-8'));
-        }
-        console.log(`[SSR] Fallback: serving server-rendered shoe page to crawler: ${slug}`);
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('X-Robots-Tag', 'index, follow');
-        res.setHeader('Cache-Control', 'public, max-age=3600');
-        const similar = await storage.getSimilarShoes(shoe, 3);
-        const html = renderShoePage(slug, {
-          brand: shoe.brand,
-          model: shoe.model,
-          category: shoe.category,
-          weight: shoe.weight,
-          heelToToeDrop: shoe.heelToToeDrop,
-          heelStackHeight: shoe.heelStackHeight,
-          forefootStackHeight: shoe.forefootStackHeight,
-          description: shoe.description,
-          cushioningLevel: shoe.cushioningLevel,
-          stability: shoe.stability,
-          bestFor: shoe.bestFor,
-          price: shoe.price,
-          hasCarbonPlate: shoe.hasCarbonPlate,
-          hasSuperFoam: shoe.hasSuperFoam,
-          imageUrl: shoe.imageUrl,
-          comfortRating: shoe.comfortRating,
-          durabilityRating: shoe.durabilityRating,
-          responsivenessRating: shoe.responsivenessRating
-        }, similar
-          .filter((s): s is typeof s & { slug: string } => typeof s.slug === "string")
-          .map(s => ({ brand: s.brand, model: s.model, slug: s.slug, weight: s.weight, price: s.price })));
-        res.send(html);
-      } else {
-        res.status(404);
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('X-Robots-Tag', 'noindex, follow');
-        res.setHeader('Cache-Control', 'public, max-age=300');
-        return res.send('<!doctype html><html><head><title>Running Shoe Not Found | RunAnalytics</title><meta name="robots" content="noindex, follow"></head><body><main><h1>Running shoe not found</h1><p>This record is unavailable or has moved.</p><a href="/tools/shoes">Browse verified running shoes</a></main></body></html>');
-      }
-    } catch (error) {
-      console.error('[SSR] Error generating shoe page:', error);
-      next();
-    }
-  });
-
-  // SSR for shoe comparison pages - crawlers get bare HTML for SEO, humans get React SPA
-  // Server-side HTML cache for comparison SSR pages â€” avoids repeated DB
-  // round-trips + narrative generation on every Googlebot visit.
-  const comparisonSsrCache = new Map<string, { html: string; ts: number }>();
-  const COMPARISON_SSR_TTL_MS = 60 * 60 * 1000; // 1 hour
-
-  app.get("/tools/shoes/compare/:slug", async (req: any, res, next) => {
-    try {
-      const userAgent = req.headers['user-agent'] || '';
-
-      // Only serve SSR to crawlers (search engines + AI bots) â€” regular users get the rich SPA
-      if (!isCrawler(userAgent)) {
-        return next();
-      }
-
-      const { slug } = req.params;
-
-      // Serve from in-memory cache if fresh
-      const cached = comparisonSsrCache.get(slug);
-      if (cached && Date.now() - cached.ts < COMPARISON_SSR_TTL_MS) {
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('X-Robots-Tag', 'index, follow');
-        res.setHeader('Cache-Control', 'public, max-age=3600');
-        res.setHeader('X-Cache', 'HIT');
-        return res.send(cached.html);
-      }
-
-      const comparison = await storage.getShoeComparisonBySlug(slug);
-      
-      if (comparison) {
-        console.log(`[SSR] Serving server-rendered comparison page to crawler: ${slug}`);
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('X-Robots-Tag', 'index, follow');
-        res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
-        
-        // Fetch both shoes in parallel
-        const [shoe1, shoe2] = await Promise.all([
-          storage.getShoeById(comparison.shoe1Id),
-          storage.getShoeById(comparison.shoe2Id),
-        ]);
-        if (!shoe1 || !shoe2) {
-          res.status(404);
-          res.setHeader('Content-Type', 'text/html');
-          res.setHeader('X-Robots-Tag', 'noindex, follow');
-          res.setHeader('Cache-Control', 'public, max-age=300');
-          return res.send('<!doctype html><html><head><title>Shoe Comparison Not Found | RunAnalytics</title><meta name="robots" content="noindex, follow"></head><body><main><h1>Shoe comparison not found</h1><p>One or more shoe records are unavailable.</p><a href="/tools/shoes/compare">Browse current comparisons</a></main></body></html>');
-        }
-        
-        const html = renderComparisonPage(slug, {
-          title: comparison.title,
-          metaDescription: comparison.metaDescription,
-          verdict: comparison.verdict,
-          shoe1: shoe1 ? {
-            brand: shoe1.brand,
-            model: shoe1.model,
-            weight: shoe1.weight,
-            heelToToeDrop: shoe1.heelToToeDrop,
-            category: shoe1.category,
-            price: shoe1.price,
-            slug: shoe1.slug,
-            heelStackHeight: shoe1.heelStackHeight,
-            forefootStackHeight: shoe1.forefootStackHeight,
-            cushioningLevel: shoe1.cushioningLevel,
-            stability: shoe1.stability,
-            hasCarbonPlate: shoe1.hasCarbonPlate,
-            hasSuperFoam: shoe1.hasSuperFoam,
-            bestFor: shoe1.bestFor,
-          } : null,
-          shoe2: shoe2 ? {
-            brand: shoe2.brand,
-            model: shoe2.model,
-            weight: shoe2.weight,
-            heelToToeDrop: shoe2.heelToToeDrop,
-            category: shoe2.category,
-            price: shoe2.price,
-            slug: shoe2.slug,
-            heelStackHeight: shoe2.heelStackHeight,
-            forefootStackHeight: shoe2.forefootStackHeight,
-            cushioningLevel: shoe2.cushioningLevel,
-            stability: shoe2.stability,
-            hasCarbonPlate: shoe2.hasCarbonPlate,
-            hasSuperFoam: shoe2.hasSuperFoam,
-            bestFor: shoe2.bestFor,
-          } : null
-        });
-        comparisonSsrCache.set(slug, { html, ts: Date.now() });
-        res.send(html);
-      } else {
-        res.status(404);
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('X-Robots-Tag', 'noindex, follow');
-        res.setHeader('Cache-Control', 'public, max-age=300');
-        return res.send('<!doctype html><html><head><title>Shoe Comparison Not Found | RunAnalytics</title><meta name="robots" content="noindex, follow"></head><body><main><h1>Shoe comparison not found</h1><p>This comparison is unavailable or has moved.</p><a href="/tools/shoes/compare">Browse current comparisons</a></main></body></html>');
-      }
-    } catch (error) {
-      console.error('[SSR] Error generating comparison page:', error);
-      next();
-    }
-  });
-
-  // Waitlist for email capture (public endpoint)
-  app.post("/api/waitlist", async (req, res) => {
-    try {
-      const { email } = z.object({ email: z.string().email() }).parse(req.body);
-      
-      // Check if email already exists
-      const existing = await db.select().from(emailWaitlist).where(eq(emailWaitlist.email, email)).limit(1);
-      if (existing.length > 0) {
-        return res.status(409).json({ message: "Email already registered" });
-      }
-      
-      await db.insert(emailWaitlist).values({ email });
-      res.json({ success: true, message: "You're on the list!" });
-    } catch (error: any) {
-      if (error.code === '23505') { // Unique constraint violation
-        return res.status(409).json({ message: "Email already registered" });
-      }
-      console.error('Waitlist error:', error);
-      res.status(500).json({ message: "Failed to join waitlist" });
-    }
-  });
-
-  // Platform stats for landing page (public endpoint)
-  // Uses 5-minute cache since stats don't change frequently and this is on the homepage
-  app.get("/api/platform-stats", async (req, res) => {
-    try {
-      const cacheKey = "platform-stats";
-      const cached = getCachedResponse(cacheKey, CACHE_TTL_LONG);
-      
-      if (cached) {
-        res.setHeader('Cache-Control', 'public, max-age=300'); // 5 min browser cache
-        return res.json(cached);
-      }
-
-      const stats = await storage.getPlatformStats();
-      
-      setCachedResponse(cacheKey, stats);
-      res.setHeader('Cache-Control', 'public, max-age=300'); // 5 min browser cache
-      res.json(stats);
-    } catch (error: any) {
-      console.error('Platform stats error:', error);
-      res.status(500).json({ message: "Failed to get platform stats" });
-    }
-  });
-
-  // =====================
-  // Stripe Payment Routes
-  // =====================
-
-  // Get Stripe publishable key for client
-  app.get("/api/stripe/config", async (req, res) => {
-    try {
-      const publishableKey = await getStripePublishableKey();
-      res.json({ publishableKey });
-    } catch (error: any) {
-      console.error('Stripe config error:', error);
-      res.status(500).json({ message: "Stripe not configured" });
-    }
-  });
-
-  // Get subscription products and prices
-  app.get("/api/stripe/products", async (req, res) => {
-    try {
-      const result = await db.execute(sql`
-        SELECT 
-          p.id as product_id,
-          p.name as product_name,
-          p.description as product_description,
-          p.metadata as product_metadata,
-          pr.id as price_id,
-          pr.unit_amount,
-          pr.currency,
-          pr.recurring,
-          pr.metadata as price_metadata
-        FROM stripe.products p
-        LEFT JOIN stripe.prices pr ON pr.product = p.id AND pr.active = true
-        WHERE p.active = true
-        ORDER BY pr.unit_amount ASC
-      `);
-      
-      // Group by product
-      const productsMap = new Map();
-      for (const row of result.rows as any[]) {
-        if (!productsMap.has(row.product_id)) {
-          productsMap.set(row.product_id, {
-            id: row.product_id,
-            name: row.product_name,
-            description: row.product_description,
-            metadata: row.product_metadata,
-            prices: []
-          });
-        }
-        if (row.price_id) {
-          productsMap.get(row.product_id).prices.push({
-            id: row.price_id,
-            unit_amount: row.unit_amount,
-            currency: row.currency,
-            recurring: row.recurring,
-            metadata: row.price_metadata
-          });
-        }
-      }
-      
-      res.json({ products: Array.from(productsMap.values()) });
-    } catch (error: any) {
-      console.error('Stripe products error:', error);
-      res.status(500).json({ message: "Failed to fetch products" });
-    }
-  });
-
-  // Funnel analytics ingestion (client-emitted events only). Auth is
-  // optional â€” anonymous visitors can still emit pricing/offer events.
-  // Server-authoritative events (trial/paid/cancellation) are rejected here;
-  // they may only be written by checkout + Stripe webhook code paths.
-  app.post("/api/analytics/funnel", async (req: any, res) => {
-    try {
-      const bodySchema = z.object({
-        event: z.string().min(1).max(64),
-        dedupeKey: z.string().min(8).max(512),
-        props: z.record(z.unknown()).optional(),
-      });
-      const parsed = bodySchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({ message: "Invalid analytics payload" });
-      }
-      const { event, dedupeKey, props } = parsed.data;
-
-      if (!isClientFunnelEvent(event)) {
-        return res.status(400).json({ message: "Event not accepted from client" });
-      }
-
-      // Optional auth: attribute to the user when a valid token is present.
-      let userId: number | null = null;
-      const authHeader = req.headers.authorization;
-      const token = authHeader && authHeader.split(' ')[1];
-      if (token) {
-        try {
-          const user = await authService.verifyToken(token);
-          if (user) userId = user.id;
-        } catch {
-          // ignore â€” event stays anonymous
-        }
-      }
-
-      const result = await recordFunnelEvent({
-        event,
-        dedupeKey,
-        userId,
-        props: (props ?? {}) as any,
-      });
-      if (result.errors?.length) {
-        return res.status(400).json({ message: "Invalid event", errors: result.errors });
-      }
-      res.json({ recorded: result.recorded, deduped: result.deduped ?? false });
-    } catch (error: any) {
-      console.error('Funnel analytics error:', error);
-      res.status(500).json({ message: "Failed to record event" });
-    }
-  });
-
-  // Premium/trial bonus: authenticated ebook download. The PDF remains outside
-  // the public static directory so the $49 standalone asset is not exposed by
-  // a guessable URL. Active trial and paid accounts may keep the downloaded file.
-  app.get("/api/ebook/ai-coaching-guide", authenticateJWT, async (req: any, res) => {
-    try {
-      const user = await storage.getUser(req.user.id);
-      if (!user) return res.status(404).json({ message: "User not found" });
-      if (!hasPremiumAccess(user)) {
-        return res.status(403).json({ message: "Start a Premium trial to download the guide" });
-      }
-
-      const ebookPath = path.resolve(
-        process.cwd(),
-        "attached_assets",
-        "ebook",
-        "the-runners-guide-to-ai-coaching.pdf",
-      );
-      if (!fs.existsSync(ebookPath)) {
-        console.error("[Ebook] PDF asset missing:", ebookPath);
-        return res.status(503).json({ message: "The guide is temporarily unavailable" });
-      }
-
-      await recordFunnelEvent({
-        event: "ebook_downloaded",
-        dedupeKey: buildFunnelDedupeKey("ebook_downloaded", [user.id]),
-        userId: user.id,
-        props: { source: "ebook_landing", capability: "ebook_bundle" },
-      });
-
-      res.setHeader("Cache-Control", "private, no-store");
-      res.setHeader("X-Content-Type-Options", "nosniff");
-      return res.download(ebookPath, "the-runners-guide-to-ai-coaching.pdf");
-    } catch (error: any) {
-      console.error("[Ebook] Download failed:", error);
-      return res.status(500).json({ message: "Failed to download the guide" });
-    }
-  });
-
-  // Create checkout session
-  app.post("/api/stripe/create-checkout-session", authenticateJWT, async (req: any, res) => {
-    try {
-      const { priceId, returnTo, source, capability, activityId, benefitKey, pendingResourceId, experimentVariant } = req.body;
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Don't trust client-supplied priceId blindly. Allow only Premium-tagged
-      // prices (env override or metadata in our synced stripe.prices table).
-      const allowed = await isAllowedCheckoutPriceId(priceId);
-      if (!allowed) {
-        console.warn('[checkout] rejected priceId not tagged as premium', { userId, priceId });
-        return res.status(400).json({ message: 'Invalid priceId for checkout' });
-      }
-
-      const stripe = await getUncachableStripeClient();
-
-      // Create or get Stripe customer. Email is optional â€” if missing,
-      // Stripe Checkout collects it and the webhook syncs it back.
-      let customerId = user.stripeCustomerId;
-      if (!customerId) {
-        const customer = await stripe.customers.create({
-          ...(user.email ? { email: user.email } : {}),
-          metadata: { userId: String(userId) }
-        });
-        await storage.updateStripeCustomerId(userId, customer.id);
-        customerId = customer.id;
-      }
-
-      // Decide whether to grant a 14-day free trial. Only first-time
-      // subscribers get the trial â€” anyone who has ever held a Stripe
-      // subscription on this customer (even canceled) does NOT get
-      // another trial. We also re-check Stripe directly to catch users
-      // whose stripeSubscriptionId was cleared in our DB.
-      // Returning subscribers (anyone we've already linked to a Stripe sub)
-      // never get another trial. For users with no Stripe sub on file, we
-      // double-check Stripe directly to catch DB drift; if that lookup
-      // fails transiently, fail OPEN â€” grant the trial â€” so a Stripe
-      // hiccup never silently denies a real new user their 14-day trial.
-      let trialEligible = !user.stripeSubscriptionId;
-      if (trialEligible) {
-        try {
-          const existing = await stripe.subscriptions.list({
-            customer: customerId,
-            status: 'all',
-            limit: 1,
-          });
-          if (existing.data.length > 0) trialEligible = false;
-        } catch (lookupErr) {
-          console.warn('[checkout] trial-eligibility lookup failed; defaulting to GRANT trial for new user', lookupErr);
-          // trialEligible stays true â€” user has no sub in our DB.
-        }
-      }
-
-      // Preserve the user's upgrade intent: a sanitized relative returnTo
-      // path rides along on the success URL so the billing page can send
-      // the user straight back to the feature they were trying to use.
-      const safeReturnTo = sanitizeReturnTo(returnTo);
-
-      // Stripe must return to the environment where checkout started. This is
-      // especially important for Replit/dev testing, and avoids silently
-      // dropping a runner into production after they cancel.
-      const forwardedHost = String(req.get('x-forwarded-host') || req.get('host') || '').split(',')[0].trim();
-      const forwardedProto = String(req.get('x-forwarded-proto') || req.protocol || 'https').split(',')[0].trim();
-      const requestBaseUrl = forwardedHost && /^(https?)$/.test(forwardedProto)
-        ? `${forwardedProto}://${forwardedHost}`
-        : 'https://aitracker.run';
-      const checkoutBaseUrl = requestBaseUrl;
-
-      const safeCapability = typeof capability === 'string' ? capability.slice(0, 80) : 'premium';
-      const safeSource = typeof source === 'string' ? source.slice(0, 80) : 'pricing';
-      const safeActivityId = Number.isInteger(activityId) && activityId > 0 ? activityId : undefined;
-      const safeBenefitKey = isBenefitKey(benefitKey) ? benefitKey : undefined;
-      const safePendingResourceId = typeof pendingResourceId === 'string' ? pendingResourceId.slice(0, 80) : undefined;
-      const safeExperimentVariant = typeof experimentVariant === 'string' ? experimentVariant.slice(0, 80) : undefined;
-      const cancelPath = buildUpgradeUrl({
-        source: safeSource,
-        capability: safeCapability,
-        activityId: safeActivityId,
-        benefitKey: safeBenefitKey,
-        returnTo: safeReturnTo || '/dashboard',
-        pendingResourceId: safePendingResourceId,
-        experimentVariant: safeExperimentVariant,
-      });
-
-      // Create checkout session
-      const appSlug = process.env.APP_SLUG || 'aitracker';
-      const session = await stripe.checkout.sessions.create({
-        customer: customerId,
-        payment_method_types: ['card'],
-        line_items: [{ price: priceId, quantity: 1 }],
-        mode: 'subscription',
-        allow_promotion_codes: true,
-        success_url: `${checkoutBaseUrl}/billing?success=true${safeReturnTo ? `&returnTo=${encodeURIComponent(safeReturnTo)}` : ''}`,
-        cancel_url: `${checkoutBaseUrl}${cancelPath}&canceled=true`,
-        metadata: {
-          userId: String(userId),
-          app: appSlug,
-          source: safeSource,
-          capability: safeCapability,
-          ...(safeActivityId ? { activityId: String(safeActivityId) } : {}),
-          ...(safePendingResourceId ? { pendingResourceId: safePendingResourceId } : {}),
-          ...(safeExperimentVariant ? { experimentVariant: safeExperimentVariant } : {}),
-        },
-        subscription_data: {
-          ...(trialEligible ? { trial_period_days: 14 } : {}),
-          metadata: {
-            app: appSlug,
-            userId: String(userId),
-            source: safeSource,
-            capability: safeCapability,
-            ...(safePendingResourceId ? { pendingResourceId: safePendingResourceId } : {}),
-          }
-        }
-      });
-
-      // Server-authoritative funnel event, idempotent on the session id.
-      let billingPeriod = 'unknown';
-      try {
-        const priceRow = await db.execute(sql`
-          SELECT recurring->>'interval' AS interval FROM stripe.prices WHERE id = ${priceId} LIMIT 1
-        `);
-        billingPeriod = billingPeriodFromInterval((priceRow.rows?.[0] as any)?.interval);
-      } catch {
-        // leave 'unknown' â€” analytics must not block checkout
-      }
-      await recordFunnelEvent({
-        event: 'checkout_session_created',
-        dedupeKey: buildFunnelDedupeKey('checkout_session_created', [session.id]),
-        userId,
-        props: {
-          priceId,
-          billingPeriod,
-          trialEligible,
-          source: typeof source === 'string' ? source.slice(0, 100) : undefined,
-          capability: typeof capability === 'string' ? capability.slice(0, 100) : undefined,
-          checkoutSessionId: session.id,
-        },
-      });
-
-      res.json({ url: session.url });
-    } catch (error: any) {
-      console.error('Checkout session error details:', {
-        message: error.message,
-        type: error.type,
-        code: error.code,
-        statusCode: error.statusCode,
-        raw: error.raw,
-        requestId: error.requestId,
-        stack: error.stack
-      });
-      res.status(500).json({ 
-        message: error.message || "Failed to create checkout session",
-        code: error.code,
-        type: error.type
-      });
-    }
-  });
-
-  // Sync the current user's subscription from Stripe directly. Used by the
-  // /billing?success=true landing page so
-  // the UI shows Premium immediately, even if the webhook is delayed,
-  // filtered, or replayed out of order.
-  app.post("/api/stripe/sync-subscription", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      if (!user) return res.status(404).json({ message: "User not found" });
-      if (!user.stripeCustomerId) {
-        return res.json({ synced: false, reason: 'no_stripe_customer' });
-      }
-
-      const stripe = await getUncachableStripeClient();
-      const subs = await stripe.subscriptions.list({
-        customer: user.stripeCustomerId,
-        status: 'all',
-        limit: 5,
-      });
-
-      // Pick the most relevant subscription. Priority:
-      //   1. Newest active/trialing/past_due (a real paying state)
-      //   2. Newest non-terminal (e.g. incomplete, paused) -- avoids picking
-      //      a stale `incomplete` over a real `active` one
-      //   3. Newest of anything (terminal subs)
-      const TERMINAL = new Set(['canceled', 'incomplete_expired', 'unpaid']);
-      const ACTIVE = new Set(['active', 'trialing', 'past_due']);
-      const sorted = [...subs.data].sort((a, b) => (b.created || 0) - (a.created || 0));
-      const chosen =
-        sorted.find(s => ACTIVE.has(s.status)) ||
-        sorted.find(s => !TERMINAL.has(s.status)) ||
-        sorted[0];
-
-      if (!chosen) {
-        return res.json({ synced: false, reason: 'no_subscriptions' });
-      }
-
-      const resolved = await resolvePlan(chosen);
-      const previousPlan = user.subscriptionPlan || 'free';
-      let planToWrite = resolved.plan;
-      // Same downgrade safety as the webhook handler.
-      if (
-        previousPlan === 'premium' &&
-        planToWrite === 'free' &&
-        !TERMINAL.has(chosen.status)
-      ) {
-        planToWrite = 'premium';
-      }
-
-      await storage.updateStripeSubscriptionId(userId, chosen.id);
-      await storage.updateSubscriptionStatus(userId, chosen.status, planToWrite);
-
-      console.log('[sync-subscription] updated user', {
-        userId,
-        previousPlan,
-        plan: planToWrite,
-        status: chosen.status,
-        source: resolved.source,
-        priceId: resolved.priceId,
-      });
-
-      return res.json({
-        synced: true,
-        subscriptionId: chosen.id,
-        status: chosen.status,
-        plan: planToWrite,
-        source: resolved.source,
-      });
-    } catch (error: any) {
-      console.error('Sync subscription error:', error);
-      res.status(500).json({ message: error.message || 'Failed to sync subscription' });
-    }
-  });
-
-  // Get user subscription status
-  app.get("/api/stripe/subscription", authenticateJWT, async (req: any, res) => {
-    try {
-      const user = await storage.getUser(req.user.id);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      const usageStats = await getUserUsageStats(req.user.id);
-
-      res.json({
-        subscriptionStatus: user.subscriptionStatus || 'free',
-        subscriptionPlan: user.subscriptionPlan || 'free',
-        stripeSubscriptionId: user.stripeSubscriptionId,
-        trialEndsAt: user.trialEndsAt,
-        subscriptionEndsAt: user.subscriptionEndsAt,
-        usage: usageStats,
-      });
-    } catch (error: any) {
-      console.error('Subscription status error:', error);
-      res.status(500).json({ message: "Failed to get subscription status" });
-    }
-  });
-
-  // Create customer portal session
-  app.post("/api/stripe/create-portal-session", authenticateJWT, async (req: any, res) => {
-    try {
-      const user = await storage.getUser(req.user.id);
-      if (!user?.stripeCustomerId) {
-        return res.status(400).json({ message: "No active subscription" });
-      }
-
-      const stripe = await getUncachableStripeClient();
-
-      const session = await stripe.billingPortal.sessions.create({
-        customer: user.stripeCustomerId,
-        return_url: `https://aitracker.run/billing`
-      });
-
-      res.json({ url: session.url });
-    } catch (error: any) {
-      console.error('Portal session error:', error);
-      res.status(500).json({ message: "Failed to create portal session" });
-    }
-  });
-  
-  // Authentication routes
-  app.post("/api/auth/register", async (req, res) => {
-    try {
-      const userData = registerSchema.parse(req.body);
-      const result = await authService.register(userData);
-      
-      // Send welcome email to new user
-      await emailService.sendWelcomeEmail(userData.email, userData.firstName);
-      
-      // Send notification to admin
-      await emailService.sendRegistrationNotification(userData.email);
-      
-      // Schedule first drip email for new user (Segment A - not connected to Strava yet)
-      try {
-        await dripCampaignService.scheduleNextEmailForUser(result.user.id);
-        console.log('New user drip email scheduled');
-      } catch (campaignError) {
-        console.error('Drip campaign scheduling failed:', campaignError);
-      }
-      
-      res.json(result);
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      res.status(400).json({ message: error.message || "Failed to register user" });
-    }
-  });
-
-  app.post("/api/auth/login", async (req, res) => {
-    try {
-      const loginData = loginSchema.parse(req.body);
-      const result = await authService.login(loginData);
-      const reactivation = await reactivateDormantAccount(result.user.id);
-      res.json({ ...result, accountReactivated: reactivation.reactivated });
-    } catch (error: any) {
-      // Surface a machine-readable code so the web client can switch the UI
-      // (e.g. show a "Sign in with Strava" CTA on STRAVA_ONLY accounts
-      // instead of a generic "invalid credentials" toast).
-      if (error instanceof AuthError) {
-        const status = error.code === 'STRAVA_ONLY' ? 409 : 401;
-        return res.status(status).json({ message: error.message, code: error.code });
-      }
-      console.error('Login error:', error);
-      res.status(400).json({ message: error.message || "Failed to login" });
-    }
-  });
-
-  app.get("/api/auth/user", authenticateJWT, async (req: any, res) => {
-    try {
-      // Loading any authenticated app screen counts as a return visit, not
-      // only loading the dashboard.
-      await reactivateDormantAccount(req.user.id);
-      const user = await storage.getUser(req.user.id);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      res.json(user);
-    } catch (error: any) {
-      console.error('Get user error:', error);
-      res.status(500).json({ message: "Failed to get user" });
-    }
-  });
-
-  // Get current user data (for authenticated queries)
-  app.get("/api/user", authenticateJWT, async (req: any, res) => {
-    try {
-      const user = await storage.getUser(req.user.id);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      console.log('[API /api/user] Returning user data:', { id: user.id, email: user.email, unitPreference: user.unitPreference });
-      res.json(user);
-    } catch (error: any) {
-      console.error('Get user error:', error);
-      res.status(500).json({ message: "Failed to get user" });
-    }
-  });
-
-  // Return the one-time Premium Preview. If an eligible free runner predates
-  // the feature, recover it on demand from their latest stored run. The same
-  // exactly-once service is shared by sync and webhook ingestion.
-  app.get("/api/premium-preview", authenticateJWT, async (req: any, res) => {
-    try {
-      let user = await storage.getUser(req.user.id);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      let creationReason: string | undefined;
-      if (user.stravaConnected && !hasPremiumAccess(user)) {
-        const { createPremiumPreviewForUser } = await import("./services/premiumPreview");
-        const result = await createPremiumPreviewForUser(user.id);
-        creationReason = result.created ? "created" : result.reason;
-        if (result.created || result.reason === "already_exists") {
-          user = (await storage.getUser(req.user.id)) || user;
-        }
-      }
-      const preview = (user as any).premiumPreview ?? null;
-      let status: "ready" | "preparing" | "waiting_for_run" | "not_connected" | "not_eligible";
-      if (preview) status = "ready";
-      else if (hasPremiumAccess(user)) status = "not_eligible";
-      else if (!user.stravaConnected) status = "not_connected";
-      else if (user.syncStatus === "running") status = "preparing";
-      else if (creationReason === "no_eligible_run") status = "waiting_for_run";
-      else status = "not_eligible";
-      res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-      res.json({
-        preview,
-        createdAt: (user as any).premiumPreviewCreatedAt ?? null,
-        status,
-        reason: creationReason ?? null,
-      });
-    } catch (error: any) {
-      console.error('Get premium preview error:', error);
-      res.status(500).json({ message: "Failed to get premium preview", status: "failed" });
-    }
-  });
-
-  app.post("/api/premium-preview/retry", authenticateJWT, async (req: any, res) => {
-    try {
-      const { createPremiumPreviewForUser } = await import("./services/premiumPreview");
-      const result = await createPremiumPreviewForUser(req.user.id);
-      const user = await storage.getUser(req.user.id);
-      const preview = (user as any)?.premiumPreview ?? null;
-      const outcome = result.created ? "created" : result.reason;
-      res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-      res.json({
-        preview,
-        createdAt: (user as any)?.premiumPreviewCreatedAt ?? null,
-        status: preview
-          ? "ready"
-          : !user?.stravaConnected
-            ? "not_connected"
-            : outcome === "no_eligible_run"
-              ? "waiting_for_run"
-              : "not_eligible",
-        reason: outcome,
-      });
-    } catch (error: any) {
-      console.error('Retry premium preview error:', error);
-      res.status(500).json({ message: "Failed to prepare premium preview", status: "failed" });
-    }
-  });
-
-  // Get fitness metrics (CTL/ATL/TSB chart data)
-  app.get("/api/fitness/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      // Validate request parameters using Zod
-      const paramsSchema = z.object({
-        userId: z.coerce.number().int().positive(),
-      });
-      
-      const querySchema = z.object({
-        days: z.enum(["30", "90", "180"]).default("90").transform((val) => parseInt(val)),
-      });
-      
-      const { userId } = paramsSchema.parse(req.params);
-      const { days } = querySchema.parse(req.query);
-      
-      // Ensure user can only access their own data
-      if (req.user.id !== userId) {
-        return res.status(403).json({ message: "Unauthorized" });
-      }
-      
-      // Check cache first
-      const cacheKey = `fitness:${userId}:${days}`;
-      const cached = getCachedResponse(cacheKey);
-      if (cached) {
-        return res.json(cached);
-      }
-      
-      // Get all activities for the specified time period
-      const activities = await storage.getActivitiesByUserId(userId, days * 2); // Get more to have historical context
-      const metrics = await fitnessService.calculateFitnessMetrics(activities, days);
-      
-      const response = {
-        metrics,
-        currentForm: metrics.length > 0 ? metrics[metrics.length - 1] : null,
-        interpretation: metrics.length > 0 
-          ? fitnessService.getFormInterpretation(metrics[metrics.length - 1].tsb)
-          : null
-      };
-      
-      // Cache for 5 minutes â€” but never cache an empty result, so new users
-      // whose first sync is still running get fresh data as soon as it lands.
-      if (metrics.length > 0) {
-        setCachedResponse(cacheKey, response);
-      }
-      
-      res.json(response);
-    } catch (error: any) {
-      console.error('Get fitness metrics error:', error);
-      
-      // Handle Zod validation errors
-      if (error.name === 'ZodError') {
-        return res.status(400).json({ 
-          message: "Invalid request parameters", 
-          errors: error.errors 
-        });
-      }
-      
-      res.status(500).json({ message: "Failed to get fitness metrics" });
-    }
-  });
-
-  // Delete user account (GDPR compliance)
-  app.delete("/api/user", authenticateJWT, async (req: any, res) => {
-    try {
-      // Get user email before deletion for confirmation email
-      const user = await storage.getUser(req.user.id);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      const userEmail = user.email;
-      const userId = req.user.id;
-
-      // Revoke Strava OAuth before deleting so the user stops counting against
-      // our app's athlete quota and we stop getting webhook events for them.
-      if (user.stravaConnected && user.stravaAccessToken) {
-        let token = user.stravaAccessToken;
-        let ok = await stravaService.deauthorize(token);
-        if (!ok && user.stravaRefreshToken) {
-          try {
-            const refreshed = await stravaService.refreshAccessToken(user.stravaRefreshToken);
-            token = refreshed.access_token;
-            ok = await stravaService.deauthorize(token);
-          } catch (refreshErr) {
-            console.error(`[API DELETE /api/user] Strava token refresh before deauth failed for user ${userId}:`, refreshErr);
-          }
-        }
-        console.log(`[API DELETE /api/user] Strava deauthorize for user ${userId}: ${ok ? 'success' : 'failed (proceeding with deletion)'}`);
-      }
-
-      // Delete all user data
-      await storage.deleteAccount(userId);
-
-      // Send confirmation email to user (skip if Strava-only user with no email)
-      if (userEmail) {
-        await emailService.sendAccountDeletionConfirmation(userEmail);
-        await emailService.sendAccountDeletionNotification(userEmail, userId);
-      }
-
-      console.log(`[API DELETE /api/user] Account deleted for user ID: ${userId}, email: ${userEmail}`);
-      
-      res.json({ 
-        success: true, 
-        message: "Your account and all associated data have been permanently deleted. A confirmation email has been sent." 
-      });
-    } catch (error: any) {
-      console.error('Delete account error:', error);
-      res.status(500).json({ message: error.message || "Failed to delete account" });
-    }
-  });
-
-  // Delete user account with feedback (new flow)
-  app.post("/api/user/delete-with-feedback", authenticateJWT, async (req: any, res) => {
-    try {
-      const feedbackSchema = z.object({
-        reason: z.enum(["too_expensive", "not_using", "missing_features", "found_alternative", "technical_issues", "privacy_concerns", "other"]),
-        details: z.string().optional(),
-      });
-
-      const parseResult = feedbackSchema.safeParse(req.body);
-      if (!parseResult.success) {
-        return res.status(400).json({ 
-          message: "Invalid feedback data", 
-          errors: parseResult.error.flatten().fieldErrors 
-        });
-      }
-
-      const { reason, details } = parseResult.data;
-
-      const user = await storage.getUser(req.user.id);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      const userEmail = user.email;
-      const userId = req.user.id;
-      const subscriptionPlan = user.subscriptionPlan || "free";
-      
-      // Calculate account age
-      const accountAgeInDays = user.createdAt 
-        ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24))
-        : 0;
-
-      // Store feedback before deletion
-      await storage.createDeletionFeedback({
-        userId,
-        userEmail,
-        reason,
-        details: details || null,
-        wasRetained: false,
-        subscriptionPlan,
-        accountAgeInDays,
-      });
-
-      // Revoke Strava OAuth before deleting so the user stops counting against
-      // our app's athlete quota and we stop getting webhook events for them.
-      if (user.stravaConnected && user.stravaAccessToken) {
-        let token = user.stravaAccessToken;
-        let ok = await stravaService.deauthorize(token);
-        if (!ok && user.stravaRefreshToken) {
-          try {
-            const refreshed = await stravaService.refreshAccessToken(user.stravaRefreshToken);
-            token = refreshed.access_token;
-            ok = await stravaService.deauthorize(token);
-          } catch (refreshErr) {
-            console.error(`[API POST /api/user/delete-with-feedback] Strava token refresh before deauth failed for user ${userId}:`, refreshErr);
-          }
-        }
-        console.log(`[API POST /api/user/delete-with-feedback] Strava deauthorize for user ${userId}: ${ok ? 'success' : 'failed (proceeding with deletion)'}`);
-      }
-
-      // Delete all user data
-      await storage.deleteAccount(userId);
-
-      // Send confirmation + feedback emails (skip if Strava-only user with no email)
-      if (userEmail) {
-        await emailService.sendAccountDeletionConfirmation(userEmail);
-        await emailService.sendAccountDeletionWithFeedback(userEmail, userId, reason, details, subscriptionPlan, accountAgeInDays);
-      }
-
-      console.log(`[API POST /api/user/delete-with-feedback] Account deleted for user ID: ${userId}, email: ${userEmail}, reason: ${reason}`);
-      
-      res.json({ 
-        success: true, 
-        message: "Your account and all associated data have been permanently deleted. A confirmation email has been sent." 
-      });
-    } catch (error: any) {
-      console.error('Delete account with feedback error:', error);
-      res.status(500).json({ message: error.message || "Failed to delete account" });
-    }
-  });
-
-  app.get("/api/logout", (req, res) => {
-    // Clear any server-side session data if needed
-    res.redirect("/");
-  });
-
-  // Password reset endpoints
-  app.post("/api/auth/forgot-password", async (req, res) => {
-    try {
-      const { email } = z.object({ email: z.string().email() }).parse(req.body);
-
-      // If the account was created via Strava OAuth there is no password to
-      // reset â€” send a "sign in with Strava" reminder instead of a useless
-      // password reset link. Otherwise fall through to the regular flow.
-      const stravaOnly = await authService.isStravaOnlyAccount(email);
-      if (stravaOnly) {
-        await emailService.sendStravaLoginReminderEmail(email);
-      } else {
-        const resetToken = await authService.generatePasswordResetToken(email);
-        if (resetToken) {
-          await emailService.sendPasswordResetEmail(email, resetToken);
-        }
-      }
-
-      // Always return success to prevent email enumeration
-      res.json({ message: "If an account exists with that email, a sign-in link has been sent." });
-    } catch (error: any) {
-      console.error('Forgot password error:', error);
-      res.status(400).json({ message: "Invalid email address" });
-    }
-  });
-
-  // â”€â”€â”€ Magic-link sign-in (one-tap, no password) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // Works for both password-based and Strava-only accounts. Tokens expire
-  // in 15 minutes and are signed JWTs (no DB writes needed).
-  app.post("/api/auth/magic-link/request", async (req, res) => {
-    try {
-      const { email, redirect } = z.object({
-        email: z.string().email(),
-        redirect: z.string().max(300).optional(),
-      }).parse(req.body);
-      const safeRedirect = sanitizeReturnTo(redirect);
-      const token = await authService.generateMagicLinkToken(email);
-      if (token) {
-        // Use the actual request origin so the link works in dev / preview
-        // environments too. Falls back to https://aitracker.run inside the
-        // email service if the host header is somehow missing.
-        const host = req.get('host');
-        const proto = req.get('x-forwarded-proto') || req.protocol;
-        const baseUrl = host ? `${proto}://${host}` : 'https://aitracker.run';
-        console.log(`[MagicLink] Sending link to ${email} via ${baseUrl}`);
-        await emailService.sendMagicLinkEmail(email, token, baseUrl, safeRedirect || undefined);
-      } else {
-        console.log(`[MagicLink] No account for ${email} (silently 200ing)`);
-      }
-      // Always return 200 to prevent email enumeration.
-      res.json({ message: "If an account exists with that email, a sign-in link has been sent." });
-    } catch (error: any) {
-      console.error('Magic link request error:', error);
-      res.status(400).json({ message: "Invalid email address" });
-    }
-  });
-
-  app.post("/api/auth/magic-link/verify", async (req, res) => {
-    try {
-      const { token } = z.object({ token: z.string().min(1) }).parse(req.body);
-      const result = await authService.verifyMagicLinkToken(token);
-      const reactivation = await reactivateDormantAccount(result.user.id);
-      res.json({ ...result, accountReactivated: reactivation.reactivated });
-    } catch (error: any) {
-      if (error instanceof AuthError) {
-        return res.status(401).json({ message: error.message, code: error.code });
-      }
-      console.error('Magic link verify error:', error);
-      res.status(400).json({ message: error.message || "Invalid sign-in link" });
-    }
-  });
-
-  app.post("/api/auth/reset-password", async (req, res) => {
-    try {
-      const { token, password } = z.object({ 
-        token: z.string(),
-        password: z.string().min(6)
-      }).parse(req.body);
-      
-      // Reset password using token
-      const success = await authService.resetPassword(token, password);
-      
-      if (!success) {
-        return res.status(400).json({ message: "Invalid or expired reset token" });
-      }
-      
-      res.json({ message: "Password successfully reset. You can now log in with your new password." });
-    } catch (error: any) {
-      console.error('Reset password error:', error);
-      res.status(400).json({ message: error.message || "Failed to reset password" });
-    }
-  });
-
-  // =============================================
-  // Strava OAuth Login (unauthenticated â€” new signup / returning login)
-  // =============================================
-
-  // Step 1: redirect browser to Strava consent page
-  // ?mobile=1 â†’ after OAuth callback, redirect into the native app via the
-  // `aitracker://auth-callback?token=â€¦` deep link (used by the Expo app's
-  // "Continue with Strava" flow). Without it, falls back to the normal
-  // web cookie + redirect to /dashboard.
-  app.get("/api/auth/strava-login", async (req, res) => {
-    const clientId = process.env.STRAVA_CLIENT_ID || process.env.VITE_STRAVA_CLIENT_ID;
-    if (!clientId) {
-      return res.status(500).json({ message: "Strava client ID not configured" });
-    }
-    const origin = `${req.protocol}://${req.get('host')}`;
-    const redirectUri = `${origin}/auth/strava/login/callback`;
-    // Generate a cryptographically secure random state to prevent CSRF.
-    // Encode the mobile flag into the state itself so the callback can
-    // recognise it without trusting a separate cookie (mobile browsers
-    // launched from the app may not share cookies cleanly).
-    const { randomBytes } = await import('crypto');
-    const isMobile = req.query.mobile === '1';
-    const prefix = isMobile ? 'strava_login_m_' : 'strava_login_';
-    const state = `${prefix}${randomBytes(16).toString('hex')}`;
-    res.cookie('strava_oauth_state', state, { maxAge: 300000, httpOnly: true, sameSite: 'lax', path: '/' });
-    const safeRedirect = sanitizeReturnTo(req.query.redirect);
-    if (safeRedirect) {
-      res.cookie('strava_oauth_redirect', encodeURIComponent(safeRedirect), { maxAge: 300000, httpOnly: true, sameSite: 'lax', path: '/' });
-    }
-    const stravaUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&approval_prompt=auto&scope=read,activity:read_all&state=${encodeURIComponent(state)}`;
-    res.redirect(stravaUrl);
-  });
-
-  // Step 2: Strava redirects back here with ?code=...
-  app.get("/auth/strava/login/callback", async (req, res) => {
-    try {
-      const { code, error: stravaError, state } = req.query;
-
-      // Validate state to prevent CSRF (fail-closed: reject if cookie absent or mismatch)
-      const rawCookies = req.headers.cookie || '';
-      const expectedState = rawCookies.split(';')
-        .map(c => c.trim())
-        .find(c => c.startsWith('strava_oauth_state='))
-        ?.split('=').slice(1).join('=');
-      const redirectCookie = rawCookies.split(';')
-        .map(c => c.trim())
-        .find(c => c.startsWith('strava_oauth_redirect='))
-        ?.split('=').slice(1).join('=');
-      const requestedRedirect = sanitizeReturnTo(redirectCookie ? decodeURIComponent(redirectCookie) : undefined);
-      if (!expectedState || !state || state !== expectedState) {
-        return res.redirect("/auth?error=strava_failed");
-      }
-      // Clear the state cookie
-      res.cookie('strava_oauth_state', '', { maxAge: 0, path: '/', sameSite: 'lax' });
-      res.cookie('strava_oauth_redirect', '', { maxAge: 0, path: '/', sameSite: 'lax' });
-
-      // Mobile flag was encoded into the state prefix in step 1 â€” extract it
-      // before the success/error branches so both can redirect appropriately.
-      const isMobile = typeof state === 'string' && state.startsWith('strava_login_m_');
-      const mobileScheme = 'aitracker://auth-callback';
-
-      if (stravaError || !code) {
-        if (isMobile) {
-          return res.redirect(`${mobileScheme}?error=strava_denied`);
-        }
-        return res.redirect("/auth?error=strava_denied");
-      }
-
-      // Exchange code for tokens
-      const tokenData = await stravaService.exchangeCodeForTokens(code as string);
-
-      // Fetch full athlete profile from Strava API (token exchange payload may be partial)
-      const athleteResponse = await fetch('https://www.strava.com/api/v3/athlete', {
-        headers: { Authorization: `Bearer ${tokenData.access_token}` },
-      });
-      const athleteProfile = athleteResponse.ok ? await athleteResponse.json() : tokenData.athlete;
-
-      const athleteId = (athleteProfile.id || tokenData.athlete.id).toString();
-      const firstName = athleteProfile.firstname || tokenData.athlete.firstname || "";
-      const lastName = athleteProfile.lastname || tokenData.athlete.lastname || "";
-
-      // Look for existing user by Strava athlete ID
-      const existingUser = await storage.getUserByStravaAthleteId(athleteId);
-
-      if (existingUser) {
-        // Returning user â€” refresh their tokens and log in
-        await storage.updateUser(existingUser.id, {
-          stravaAccessToken: tokenData.access_token,
-          stravaRefreshToken: tokenData.refresh_token,
-          stravaConnected: true,
-        });
-        await reactivateDormantAccount(existingUser.id);
-        const token = authService.generateToken(existingUser);
-        if (isMobile) {
-          // Hand the JWT back to the native app via custom-scheme deep link.
-          // Custom schemes can't share cookies, so the token rides the URL â€”
-          // it's a 7-day JWT that only the registered Expo app will receive.
-          return res.redirect(`${mobileScheme}?token=${encodeURIComponent(token)}`);
-        }
-        // Pass JWT via short-lived cookie to avoid token in URL (security)
-        res.cookie('_sta', token, { maxAge: 60000, path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
-        return res.redirect(requestedRedirect || '/dashboard?strava_login=success');
-      }
-
-      // New user â€” create account silently, no email or password required.
-      // New Strava signups go through the onboarding wizard and start the
-      // 14-day PAID trial (credit card required) via Stripe checkout.
-      const newUser = await storage.createUser({
-        firstName,
-        lastName,
-        stravaAthleteId: athleteId,
-        stravaAccessToken: tokenData.access_token,
-        stravaRefreshToken: tokenData.refresh_token,
-        stravaConnected: true,
-        subscriptionPlan: 'free',
-      });
-
-      // Enqueue initial Strava sync. New accounts default to 'free', so cap
-      // the very first pull at 20 activities â€” they can upgrade to expand it.
-      try {
-        const initialCap = getInitialSyncCap(
-          newUser.subscriptionPlan ?? null,
-          newUser.subscriptionStatus ?? null,
-          200
-        );
-        jobQueue.addJob(createListActivitiesJob(newUser.id, 1, 200, initialCap));
-        console.log(`[StravaLogin] Queued initial sync for new user ${newUser.id} (cap=${initialCap})`);
-      } catch (syncError) {
-        console.error('[StravaLogin] Failed to queue sync:', syncError);
-      }
-
-      // Trigger drip campaign enrollment
-      try {
-        await dripCampaignService.onStravaConnected(newUser.id);
-      } catch (campaignError) {
-        console.error('[StravaLogin] Drip campaign error:', campaignError);
-      }
-
-      // Notify admin of the new Strava signup (non-blocking)
-      try {
-        await emailService.sendStravaSignupNotification({
-          userId: newUser.id,
-          firstName: newUser.firstName,
-          lastName: newUser.lastName,
-          stravaAthleteId: athleteId,
-        });
-      } catch (notifyError) {
-        console.error('[StravaLogin] Admin notification error:', notifyError);
-      }
-
-      const token = authService.generateToken(newUser);
-      if (isMobile) {
-        // Native sign-up via Strava â€” same deep-link handoff as returning user.
-        return res.redirect(`${mobileScheme}?token=${encodeURIComponent(token)}&new=1`);
-      }
-      // Pass JWT via short-lived cookie to avoid token in URL (security)
-      res.cookie('_sta', token, { maxAge: 60000, path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
-      return res.redirect(requestedRedirect || '/dashboard?welcome=1');
-    } catch (error: any) {
-      console.error('[StravaLogin] Callback error:', error);
-      const isMobile =
-        typeof req.query.state === 'string' && req.query.state.startsWith('strava_login_m_');
-      if (isMobile) {
-        return res.redirect('aitracker://auth-callback?error=strava_failed');
-      }
-      res.redirect("/auth?error=strava_failed");
-    }
-  });
-
-  // Lazy email collection â€” called when user needs email for billing
-  app.post("/api/auth/add-email", authenticateJWT, async (req: any, res) => {
-    try {
-      const { email } = z.object({ email: z.string().email() }).parse(req.body);
-      const userId = req.user.id;
-
-      // Check uniqueness
-      const existing = await storage.getUserByEmail(email);
-      if (existing && existing.id !== userId) {
-        return res.status(409).json({ message: "That email is already registered to another account." });
-      }
-
-      await storage.updateUser(userId, { email });
-      // Invalidate the cached dashboard payload so the saved email shows up immediately
-      deleteCachedByPrefix(`dashboard:${userId}:`);
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error('[AddEmail] Error:', error);
-      res.status(400).json({ message: error.message || "Failed to save email" });
-    }
-  });
-
-  // =============================================
-  // Mobile Auth Endpoints (for iOS/Android apps)
-  // =============================================
-
-  // Mobile login - returns access token and refresh token
-  app.post("/api/mobile/login", async (req, res) => {
-    try {
-      const { email, password, deviceName, deviceId } = z.object({
-        email: z.string().email(),
-        password: z.string().min(6),
-        deviceName: z.string().optional(),
-        deviceId: z.string().optional(),
-      }).parse(req.body);
-      
-      // Verify credentials using existing auth service
-      const result = await authService.login({ email, password });
-      await reactivateDormantAccount(result.user.id);
-      
-      // Get full user data from storage for complete mobile response
-      const fullUser = await storage.getUser(result.user.id);
-      if (!fullUser) {
-        return res.status(401).json({ message: "User not found" });
-      }
-      
-      // Create refresh token for mobile session
-      const refreshTokenData = await storage.createRefreshToken(
-        result.user.id,
-        deviceName,
-        deviceId
-      );
-      
-      res.json({
-        accessToken: result.token,
-        refreshToken: refreshTokenData.rawToken,
-        expiresIn: 900, // 15 minutes in seconds
-        refreshExpiresAt: refreshTokenData.expiresAt.toISOString(),
-        user: {
-          id: fullUser.id,
-          email: fullUser.email,
-          firstName: fullUser.firstName,
-          lastName: fullUser.lastName,
-          username: fullUser.username,
-          unitPreference: fullUser.unitPreference,
-          stravaConnected: fullUser.stravaConnected,
-        }
-      });
-    } catch (error: any) {
-      console.error('Mobile login error:', error);
-      res.status(401).json({ message: error.message || "Invalid credentials" });
-    }
-  });
-
-  // Mobile token refresh - exchange refresh token for new access token
-  app.post("/api/mobile/refresh", async (req, res) => {
-    try {
-      const { refreshToken } = z.object({
-        refreshToken: z.string(),
-      }).parse(req.body);
-      
-      // Validate refresh token
-      const validation = await storage.validateRefreshToken(refreshToken);
-      
-      if (!validation.valid || !validation.userId || !validation.tokenId) {
-        return res.status(401).json({ message: "Invalid or expired refresh token" });
-      }
-      
-      // Get user and generate new access token
-      const user = await storage.getUser(validation.userId);
-      if (!user) {
-        return res.status(401).json({ message: "User not found" });
-      }
-      
-      // Generate new access token
-      const newAccessToken = await authService.generateToken(user);
-      
-      // Update refresh token last used timestamp
-      await storage.updateRefreshTokenLastUsed(validation.tokenId);
-      
-      res.json({
-        accessToken: newAccessToken,
-        expiresIn: 900, // 15 minutes in seconds
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          username: user.username,
-          unitPreference: user.unitPreference,
-          stravaConnected: user.stravaConnected,
-        }
-      });
-    } catch (error: any) {
-      console.error('Mobile refresh error:', error);
-      res.status(401).json({ message: "Failed to refresh token" });
-    }
-  });
-
-  // Mobile logout - revoke refresh token
-  app.post("/api/mobile/logout", async (req, res) => {
-    try {
-      const { refreshToken } = z.object({
-        refreshToken: z.string(),
-      }).parse(req.body);
-      
-      // Validate and get token ID
-      const validation = await storage.validateRefreshToken(refreshToken);
-      
-      if (validation.valid && validation.tokenId) {
-        await storage.revokeRefreshToken(validation.tokenId);
-      }
-      
-      // Always return success (don't reveal if token was valid)
-      res.json({ success: true, message: "Logged out successfully" });
-    } catch (error: any) {
-      console.error('Mobile logout error:', error);
-      res.json({ success: true, message: "Logged out successfully" });
-    }
-  });
-
-  // Get current user profile and settings (mobile-optimized)
-  app.get("/api/me", authenticateJWT, async (req: any, res) => {
-    try {
-      const user = await storage.getUser(req.user.id);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Return user profile without sensitive data
-      res.json({
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        username: user.username,
-        unitPreference: user.unitPreference,
-        stravaConnected: user.stravaConnected,
-        stravaAthleteId: user.stravaAthleteId,
-        subscriptionPlan: user.subscriptionPlan,
-        subscriptionStatus: user.subscriptionStatus,
-        lastSyncAt: user.lastSyncAt,
-        createdAt: user.createdAt,
-      });
-    } catch (error: any) {
-      console.error('Get /api/me error:', error);
-      res.status(500).json({ message: "Failed to get user profile" });
-    }
-  });
-
-  // Get active mobile sessions for current user
-  app.get("/api/mobile/sessions", authenticateJWT, async (req: any, res) => {
-    try {
-      const sessions = await storage.getActiveRefreshTokens(req.user.id);
-      res.json(sessions);
-    } catch (error: any) {
-      console.error('Get sessions error:', error);
-      res.status(500).json({ message: "Failed to get sessions" });
-    }
-  });
-
-  // Revoke all mobile sessions (logout everywhere)
-  app.post("/api/mobile/logout-all", authenticateJWT, async (req: any, res) => {
-    try {
-      await storage.revokeAllUserRefreshTokens(req.user.id);
-      res.json({ success: true, message: "All sessions logged out" });
-    } catch (error: any) {
-      console.error('Logout all error:', error);
-      res.status(500).json({ message: "Failed to logout all sessions" });
-    }
-  });
-
-  // Feedback endpoint
-  app.post("/api/feedback", authenticateJWT, async (req: any, res) => {
-    try {
-      const feedbackData = insertFeedbackSchema.parse(req.body);
-      
-      // Create feedback in database
-      const feedback = await storage.createFeedback(feedbackData);
-      
-      // Send email notification
-      await emailService.sendFeedbackNotification(
-        feedbackData.type,
-        feedbackData.title,
-        feedbackData.description,
-        feedbackData.userEmail || 'Unknown'
-      );
-      
-      res.json({ success: true, message: "Feedback submitted successfully" });
-    } catch (error: any) {
-      console.error('Feedback error:', error);
-      res.status(500).json({ message: "Failed to submit feedback" });
-    }
-  });
-
-  // Goal endpoints
-  app.get("/api/goals/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      const { status } = req.query;
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-      
-      const goals = await storage.getGoalsByUserId(userId, status as string);
-      res.json(goals);
-    } catch (error: any) {
-      console.error('Get goals error:', error);
-      res.status(500).json({ message: "Failed to get goals" });
-    }
-  });
-
-  app.post("/api/goals", authenticateJWT, async (req: any, res) => {
-    try {
-      const goalData = insertGoalSchema.parse(req.body);
-      const goal = await storage.createGoal(goalData);
-      res.json(goal);
-    } catch (error: any) {
-      console.error('Create goal error:', error);
-      res.status(400).json({ message: error.message || "Failed to create goal" });
-    }
-  });
-
-  app.patch("/api/goals/:id/complete", authenticateJWT, async (req: any, res) => {
-    try {
-      const goalId = parseInt(req.params.id);
-      
-      if (isNaN(goalId)) {
-        return res.status(400).json({ message: "Invalid goal ID" });
-      }
-      
-      const goal = await storage.completeGoal(goalId);
-      if (!goal) {
-        return res.status(404).json({ message: "Goal not found" });
-      }
-      
-      res.json(goal);
-    } catch (error: any) {
-      console.error('Complete goal error:', error);
-      res.status(500).json({ message: "Failed to complete goal" });
-    }
-  });
-
-  app.delete("/api/goals/:id", authenticateJWT, async (req: any, res) => {
-    try {
-      const goalId = parseInt(req.params.id);
-      
-      if (isNaN(goalId)) {
-        return res.status(400).json({ message: "Invalid goal ID" });
-      }
-      
-      await storage.deleteGoal(goalId);
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error('Delete goal error:', error);
-      res.status(500).json({ message: "Failed to delete goal" });
-    }
-  });
-
-  // Strava OAuth
-  app.post("/api/strava/connect", authenticateJWT, async (req: any, res) => {
-    try {
-      const { code, userId } = req.body;
-      
-      if (!code || !userId) {
-        return res.status(400).json({ message: "Code and userId are required" });
-      }
-
-      const tokenData = await stravaService.exchangeCodeForTokens(code);
-      
-      await storage.updateUser(userId, {
-        stravaAccessToken: tokenData.access_token,
-        stravaRefreshToken: tokenData.refresh_token,
-        stravaAthleteId: tokenData.athlete.id.toString(),
-        stravaConnected: true,
-      });
-
-      // Trigger drip campaign for Strava connection
-      try {
-        await dripCampaignService.onStravaConnected(userId);
-        console.log('Drip campaign triggered for Strava connection');
-      } catch (campaignError) {
-        console.error('Drip campaign trigger failed:', campaignError);
-      }
-
-      // Auto-sync activities and generate insights after connecting.
-      // Free users get a one-time pull of their last 20 activities; paid/trialing users get 50.
-      try {
-        const connectedUser = await storage.getUser(userId);
-        const initialCap = getInitialSyncCap(
-          connectedUser?.subscriptionPlan ?? null,
-          connectedUser?.subscriptionStatus ?? null,
-          50
-        );
-        await stravaService.syncActivitiesForUser(userId, initialCap);
-        console.log('Auto-sync completed after Strava connection');
-        
-        // Generate AI insights after sync
-        try {
-          await aiService.generateInsights(userId);
-          console.log('AI insights generated after Strava connection');
-        } catch (insightError) {
-          console.error('AI insight generation failed after connection:', insightError);
-        }
-      } catch (syncError) {
-        console.error('Auto-sync failed after Strava connection:', syncError);
-        // Don't fail the connection if sync fails
-      }
-
-      res.json({ success: true, autoSyncCompleted: true });
-    } catch (error) {
-      console.error('Strava connection error:', error);
-      res.status(500).json({ message: "Failed to connect to Strava" });
-    }
-  });
-
-  // Strava Webhook Verification (GET request from Strava to verify subscription)
-  app.get("/api/strava/webhook", async (req, res) => {
-    try {
-      const mode = req.query["hub.mode"] as string;
-      const challenge = req.query["hub.challenge"] as string;
-      const verifyToken = req.query["hub.verify_token"] as string;
-
-      const result = await stravaWebhookService.verifySubscription(mode, challenge, verifyToken);
-      
-      if (result.valid && result.challenge) {
-        console.log("[Strava Webhook] Verification successful");
-        return res.json({ "hub.challenge": result.challenge });
-      }
-      
-      console.log("[Strava Webhook] Verification failed");
-      return res.status(403).json({ error: "Verification failed" });
-    } catch (error) {
-      console.error("[Strava Webhook] Verification error:", error);
-      return res.status(500).json({ error: "Verification error" });
-    }
-  });
-
-  // Strava Webhook Events (POST request when activities happen)
-  app.post("/api/strava/webhook", async (req, res) => {
-    const body = req.body;
-    console.log("[Strava Webhook] Received event:", JSON.stringify(body));
-    res.status(200).send("EVENT_RECEIVED");
-
-    setImmediate(async () => {
-      let logId: number | null = null;
-      try {
-        const [logEntry] = await db.insert(stravaWebhookLogs).values({
-          eventType: body.aspect_type || "unknown",
-          objectType: body.object_type || "unknown",
-          objectId: String(body.object_id || ""),
-          athleteId: String(body.owner_id || ""),
-          subscriptionId: body.subscription_id || null,
-          status: "received",
-          rawPayload: JSON.stringify(body),
-        }).returning({ id: stravaWebhookLogs.id });
-        logId = logEntry.id;
-      } catch (logError) {
-        console.error("[Strava Webhook] Failed to log event to DB:", logError);
-      }
-
-      try {
-        const result = await stravaWebhookService.handleEvent(body);
-        if (logId) {
-          const status = result.startsWith("error:") ? "failed" : result === "email_sent" ? "processed" : "skipped";
-          await db.update(stravaWebhookLogs)
-            .set({ status, errorMessage: result, processedAt: new Date() })
-            .where(eq(stravaWebhookLogs.id, logId));
-        }
-      } catch (error) {
-        console.error("[Strava Webhook] Event processing error:", error);
-        if (logId) {
-          await db.update(stravaWebhookLogs)
-            .set({ status: "failed", errorMessage: String(error), processedAt: new Date() })
-            .where(eq(stravaWebhookLogs.id, logId));
-        }
-      }
-    });
-  });
-
-  app.get("/api/notifications/unsubscribe", async (req, res) => {
-    try {
-      const token = req.query.token as string;
-      if (!token) {
-        return res.status(400).send("<html><body><h2>Invalid unsubscribe link.</h2></body></html>");
-      }
-
-      const userId = stravaWebhookService.verifyUnsubscribeToken(token);
-      if (!userId) {
-        return res.status(400).send("<html><body><h2>Invalid or expired unsubscribe link.</h2></body></html>");
-      }
-
-      await storage.updateUser(userId, { notifyPostRun: false });
-      console.log(`[Notifications] User ${userId} unsubscribed from post-run emails via one-click link`);
-
-      res.send(`
-        <html>
-          <head><title>Unsubscribed | RunAnalytics</title></head>
-          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 80px auto; text-align: center; padding: 20px;">
-            <h1 style="color: #2c3e50;">You've been unsubscribed</h1>
-            <p style="color: #666; font-size: 16px; line-height: 1.6;">You will no longer receive post-run analysis emails from RunAnalytics.</p>
-            <p style="color: #999; font-size: 14px; margin-top: 20px;">You can re-enable these notifications anytime in your <a href="https://aitracker.run/settings" style="color: #FC5200;">account settings</a>.</p>
-          </body>
-        </html>
-      `);
-    } catch (error) {
-      console.error("[Notifications] Unsubscribe error:", error);
-      res.status(500).send("<html><body><h2>Something went wrong. Please try again.</h2></body></html>");
-    }
-  });
-
-  app.get("/api/notifications/unsubscribe-weekly", async (req, res) => {
-    try {
-      const token = req.query.token as string;
-      if (!token) {
-        return res.status(400).send("<html><body><h2>Invalid unsubscribe link.</h2></body></html>");
-      }
-
-      const userId = stravaWebhookService.verifyWeeklyUnsubscribeToken(token);
-      if (!userId) {
-        return res.status(400).send("<html><body><h2>Invalid or expired unsubscribe link.</h2></body></html>");
-      }
-
-      await storage.updateUser(userId, { coachNotifyWeeklySummary: false });
-      console.log(`[Notifications] User ${userId} unsubscribed from weekly summary emails`);
-
-      res.send(`
-        <html>
-          <head><title>Unsubscribed | RunAnalytics</title></head>
-          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 80px auto; text-align: center; padding: 20px;">
-            <h1 style="color: #2c3e50;">You've been unsubscribed</h1>
-            <p style="color: #666; font-size: 16px; line-height: 1.6;">You will no longer receive weekly running summary emails from RunAnalytics.</p>
-            <p style="color: #999; font-size: 14px; margin-top: 20px;">You can re-enable these anytime in your <a href="https://aitracker.run/settings" style="color: #FC5200;">account settings</a>.</p>
-          </body>
-        </html>
-      `);
-    } catch (error) {
-      console.error("[Notifications] Weekly unsubscribe error:", error);
-      res.status(500).send("<html><body><h2>Something went wrong. Please try again.</h2></body></html>");
-    }
-  });
-
-  // Admin: send weekly summary emails to all opted-in users
-  app.post("/api/admin/send-weekly-summaries", authenticateAdmin, async (req: any, res) => {
-    try {
-      let refDate: Date | undefined;
-      if (req.query.date) {
-        const d = new Date(req.query.date as string);
-        if (isNaN(d.getTime())) {
-          return res.status(400).json({ message: "Invalid date parameter" });
-        }
-        refDate = d;
-      }
-      const result = await sendWeeklySummaries(refDate);
-      res.json({ success: true, ...result });
-    } catch (error: any) {
-      console.error("[WeeklySummary] Admin send failed:", error);
-      res.status(500).json({ message: error.message || "Failed to send weekly summaries" });
-    }
-  });
-
-  // Create short-lived SSE nonces for sync
-  const sseNonces = new Map<string, { userId: number; maxActivities: number; expiresAt: number }>();
-  
-  app.post("/api/strava/sync/:userId/start-stream", authenticateJWT, async (req: any, res) => {
-    const userId = parseInt(req.params.userId);
-    let maxActivities = parseInt(req.body?.maxActivities) || 50;
-    
-    if (isNaN(userId) || req.user.id !== userId) {
-      return res.status(403).json({ message: "Access denied" });
-    }
-    
-    // Check subscription for extended activity sync
-    const user = await storage.getUser(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Free users get exactly one Strava sync. After that, block until they upgrade.
-    if (!canSyncFromStrava(user)) {
-      return res.status(402).json({
-        code: 'TRIAL_REQUIRED',
-        message: "You've already used your one free Strava sync. Start a free Premium trial to keep syncing new activities.",
-      });
-    }
-
-    // Free users are capped to 20 activities on their initial (and only) sync.
-    if (!isPaidPlan(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null)) {
-      maxActivities = Math.min(maxActivities, RATE_LIMITS.FREE_ACTIVITY_LIMIT);
-    }
-
-    // Clamp maxActivities to prevent abuse (500 max with queue-based rate limiting)
-    maxActivities = Math.max(1, Math.min(500, maxActivities));
-    
-    // Generate cryptographically random nonce (NOT a JWT)
-    const crypto = await import('crypto');
-    const nonce = crypto.randomBytes(32).toString('hex');
-    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
-    
-    sseNonces.set(nonce, { userId, maxActivities, expiresAt });
-    
-    // Clean up expired nonces
-    for (const [n, data] of Array.from(sseNonces.entries())) {
-      if (data.expiresAt < Date.now()) {
-        sseNonces.delete(n);
-      }
-    }
-    
-    res.json({ sseNonce: nonce });
-  });
-
-  // Sync activities from Strava with SSE progress
-  app.get("/api/strava/sync/:userId/stream", async (req: any, res) => {
-    const userId = parseInt(req.params.userId);
-    const nonce = req.query.nonce as string;
-    
-    if (isNaN(userId)) {
-      return res.status(400).json({ message: "Invalid user ID" });
-    }
-    
-    // Validate single-use nonce (cannot be used for other API calls)
-    const nonceData = sseNonces.get(nonce);
-    if (!nonceData || nonceData.userId !== userId || nonceData.expiresAt < Date.now()) {
-      return res.status(401).json({ message: "Invalid or expired sync session" });
-    }
-    
-    // Consume the single-use nonce immediately
-    sseNonces.delete(nonce);
-    
-    const maxActivities = nonceData.maxActivities;
-
-    // Set headers for SSE
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering for nginx
-    
-    // Send initial connection confirmation
-    res.write(': connected\n\n');
-    
-    // Keep-alive ping every 15 seconds to prevent timeout
-    const keepAliveInterval = setInterval(() => {
-      if (!res.writableEnded) {
-        res.write(': keepalive\n\n');
-      }
-    }, 15000);
-    
-    // Clean up on client disconnect or any connection close
-    const cleanup = () => {
-      clearInterval(keepAliveInterval);
-    };
-    
-    req.on('close', cleanup);
-    res.on('close', cleanup);
-    
-    // Progress callback
-    const onProgress = (current: number, total: number, activityName: string) => {
-      res.write(`data: ${JSON.stringify({ current, total, activityName })}\n\n`);
-    };
-    
-    try {
-      // Start sync with progress callback
-      const result = await stravaService.syncActivitiesForUser(userId, maxActivities, onProgress);
-      
-      // Send completion event
-      res.write(`data: ${JSON.stringify({ 
-        type: 'complete', 
-        syncedCount: result.syncedCount,
-        totalActivities: result.totalActivities 
-      })}\n\n`);
-      
-      // Auto-generate AI insights after sync if there were new activities
-      if (result.syncedCount > 0) {
-        try {
-          res.write(`data: ${JSON.stringify({ type: 'insights', message: 'Generating insights...' })}\n\n`);
-          await aiService.generateInsights(userId);
-          res.write(`data: ${JSON.stringify({ type: 'insights_complete', message: 'Insights generated' })}\n\n`);
-        } catch (insightError) {
-          console.error('AI insight generation failed after sync:', insightError);
-        }
-        
-        // Invalidate cache for user's dashboard and chart data since new data was synced
-        deleteCachedByPrefix(`dashboard:${userId}:`);
-        deleteCachedResponse(`chart:${userId}:30days`);
-        console.log(`Cache invalidated for user ${userId} after SSE sync with ${result.syncedCount} new activities`);
-      }
-      
-      cleanup();
-      res.end();
-    } catch (error: any) {
-      console.error('Sync error:', error);
-      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message || 'Failed to sync activities' })}\n\n`);
-      cleanup();
-      res.end();
-    }
-  });
-
-  // Sync activities from Strava (legacy endpoint)
-  app.post("/api/strava/sync/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      let maxActivities = req.body?.maxActivities || 50; // Default to 50 for dashboard
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-
-      // Ownership check â€” prevent authenticated users from triggering syncs on other accounts.
-      if (req.user?.id !== userId) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      const syncUser = await storage.getUser(userId);
-      if (!syncUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Free users get exactly one Strava sync. After that, block until they upgrade.
-      if (!canSyncFromStrava(syncUser)) {
-        return res.status(402).json({
-          code: 'TRIAL_REQUIRED',
-          message: "You've already used your one free Strava sync. Start a free Premium trial to keep syncing new activities.",
-        });
-      }
-
-      // Free users are capped to 20 activities on their initial (and only) sync.
-      if (!isPaidPlan(syncUser.subscriptionPlan ?? null, syncUser.subscriptionStatus ?? null)) {
-        maxActivities = Math.min(maxActivities, RATE_LIMITS.FREE_ACTIVITY_LIMIT);
-      }
-
-      const result = await stravaService.syncActivitiesForUser(userId, maxActivities);
-      
-      // Auto-generate AI insights after sync if new activities were synced
-      if (result.syncedCount > 0) {
-        try {
-          await aiService.generateInsights(userId);
-          console.log('AI insights generated after sync');
-        } catch (insightError) {
-          console.error('AI insight generation failed after sync:', insightError);
-        }
-        
-        // Invalidate cache for user's dashboard and chart data since new data was synced
-        deleteCachedByPrefix(`dashboard:${userId}:`);
-        deleteCachedResponse(`chart:${userId}:30days`);
-        console.log(`Cache invalidated for user ${userId} after legacy sync with ${result.syncedCount} new activities`);
-      }
-      
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error('Sync error:', error);
-      res.status(500).json({ message: error.message || "Failed to sync activities" });
-    }
-  });
-
-  // Get user dashboard data
-  app.get("/api/dashboard/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-
-      // Security check: ensure user can only access their own dashboard
-      if (req.user.id !== userId) {
-        return res.status(403).json({ message: "Access denied: cannot access another user's dashboard" });
-      }
-
-      // Bind cache and calculations to one calendar clock reading. A response
-      // produced before midnight can never leak into a new dashboard day.
-      const calendarPeriods = getDashboardCalendarPeriods();
-      const cacheKey = `dashboard:${userId}:${calendarPeriods.cachePartition}`;
-      const cachedData = getCachedResponse(cacheKey);
-      if (cachedData) {
-        // Prevent browser caching with 304 responses
-        res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-        res.set('Pragma', 'no-cache');
-        return res.json(cachedData);
-      }
-
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Auto-trigger historical Strava backfill for users who just upgraded
-      // from free â†’ paid. Flag is set in the Stripe webhook; cleared here so
-      // it only runs once per upgrade. Safe to enqueue on the dashboard hit
-      // because the LIST_ACTIVITIES job dedupes existing strava IDs.
-      if (
-        user.needsHistoricalBackfill &&
-        user.stravaConnected &&
-        isPaidPlan(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null)
-      ) {
-        try {
-          await storage.updateUser(user.id, { needsHistoricalBackfill: false });
-          jobQueue.addJob(createListActivitiesJob(user.id, 1, 200, 500));
-          console.log(`[Dashboard] Auto-enqueued historical Strava backfill for user ${user.id}`);
-        } catch (backfillErr) {
-          console.error(`[Dashboard] Failed to enqueue backfill for user ${user.id}:`, backfillErr);
-        }
-      }
-
-      // Get sync state to determine insights status
-      const syncState = await storage.getSyncState(userId);
-
-      // Dashboard widget always shows the most-recent 10 runs. For free
-      // users, webhook-ingested activities are hidden (lockedForFree) â€”
-      // they're surfaced only via the post-run email link â†’ blurred
-      // detail page with upgrade CTA.
-      const dashUserForCap = await storage.getUser(userId);
-      const { isPaidPlan: dashIsPaidPlanFn } = await import("./rateLimits");
-      const dashIsPaidUser = dashIsPaidPlanFn(dashUserForCap?.subscriptionPlan ?? null, dashUserForCap?.subscriptionStatus ?? null);
-      const activities = await storage.getActivitiesByUserId(userId, 10, undefined, { excludeLockedForFree: !dashIsPaidUser });
-      
-      const insights = await storage.getAIInsightsByUserId(userId);
-      
-      // OPTIMIZATION: Only fetch activities from last 3 months instead of all activities
-      // This filters at the DATABASE level for maximum performance
-      const { threeMonthsAgo } = calendarPeriods;
-
-      // Calendar totals must not inherit the activity-list pagination or
-      // entitlement cap. A card labelled "this month" must include every
-      // eligible imported run in that month, even when the list view shows a
-      // smaller recent subset. Locked free-tier webhook rows remain excluded.
-      const recentActivities = await storage.getActivitiesByUserId(userId, 500, threeMonthsAgo, { excludeLockedForFree: !dashIsPaidUser });
-      
-      // Filter to running activities only for stats (exclude walks, weight training, etc.)
-      const runningActivities = recentActivities.filter(a => RUNNING_ACTIVITY_TYPES.includes(a.type));
-      
-      // Calendar labels must describe the actual current period. Invalid,
-      // future-dated, and previous-month rows are excluded from current totals.
-      const partitionedActivities = partitionDashboardActivities(runningActivities, calendarPeriods);
-      const thisMonthActivities = partitionedActivities.thisMonth;
-      // Compare month-to-date with the same elapsed portion of last month,
-      // rather than comparing a partial current month with a complete month.
-      const lastMonthComparisonEnd = getLastMonthComparisonEnd(calendarPeriods);
-      const lastMonthActivities = partitionedActivities.lastMonth.filter((activity) =>
-        new Date(activity.startDate).getTime() <= lastMonthComparisonEnd.getTime()
-      );
-      const thisWeekActivities = partitionedActivities.thisWeek;
-      const lastWeekActivities = partitionedActivities.lastWeek;
-      
-      // Calculate this month stats
-      const totalDistance = thisMonthActivities.reduce((sum, a) => sum + a.distance, 0);
-      const totalTime = thisMonthActivities.reduce((sum, a) => sum + a.movingTime, 0);
-      const avgPace = totalDistance > 0 ? (totalTime / 60) / (totalDistance / 1000) : 0;
-      const totalActivities = thisMonthActivities.length;
-      
-      // Calculate last month stats for comparison
-      const lastMonthDistance = lastMonthActivities.reduce((sum, a) => sum + a.distance, 0);
-      const lastMonthTime = lastMonthActivities.reduce((sum, a) => sum + a.movingTime, 0);
-      const lastMonthAvgPace = lastMonthDistance > 0 ? (lastMonthTime / 60) / (lastMonthDistance / 1000) : 0;
-      const lastMonthActivitiesCount = lastMonthActivities.length;
-      
-      // Calculate this week stats
-      const thisWeekDistance = thisWeekActivities.reduce((sum, a) => sum + a.distance, 0);
-      const thisWeekTime = thisWeekActivities.reduce((sum, a) => sum + a.movingTime, 0);
-      const thisWeekAvgPace = thisWeekDistance > 0 ? (thisWeekTime / 60) / (thisWeekDistance / 1000) : 0;
-      const thisWeekActivitiesCount = thisWeekActivities.length;
-      
-      // Calculate last week stats for comparison
-      const lastWeekDistance = lastWeekActivities.reduce((sum, a) => sum + a.distance, 0);
-      const lastWeekTime = lastWeekActivities.reduce((sum, a) => sum + a.movingTime, 0);
-      const lastWeekAvgPace = lastWeekDistance > 0 ? (lastWeekTime / 60) / (lastWeekDistance / 1000) : 0;
-      const lastWeekActivitiesCount = lastWeekActivities.length;
-      
-      // Calculate percentage changes (monthly comparisons)
-      const monthlyDistanceChange = lastMonthDistance > 0 && totalDistance > 0 ? 
-        ((totalDistance - lastMonthDistance) / lastMonthDistance) * 100 : null;
-      const monthlyPaceChange = lastMonthAvgPace > 0 && avgPace > 0 && lastMonthActivitiesCount >= 3 && totalActivities >= 3 ? 
-        ((avgPace - lastMonthAvgPace) / lastMonthAvgPace) * 100 : null; // Positive means slower, negative means faster
-      const monthlyActivitiesChange = lastMonthActivitiesCount > 0 ? 
-        ((totalActivities - lastMonthActivitiesCount) / lastMonthActivitiesCount) * 100 : null;
-      const monthlyRunningTimeChange = lastMonthTime > 0 && totalTime > 0
-        ? ((totalTime - lastMonthTime) / lastMonthTime) * 100
-        : null;
-      
-      // Calculate percentage changes (weekly comparisons)
-      const weeklyDistanceChange = lastWeekDistance > 0 && thisWeekDistance > 0 ? 
-        ((thisWeekDistance - lastWeekDistance) / lastWeekDistance) * 100 : null;
-      const weeklyPaceChange = lastWeekAvgPace > 0 && thisWeekAvgPace > 0 && lastWeekActivitiesCount >= 2 && thisWeekActivitiesCount >= 2 ? 
-        ((thisWeekAvgPace - lastWeekAvgPace) / lastWeekAvgPace) * 100 : null;
-      const weeklyActivitiesChange = lastWeekActivitiesCount > 0 ? 
-        ((thisWeekActivitiesCount - lastWeekActivitiesCount) / lastWeekActivitiesCount) * 100 : null;
-      const weeklyRunningTimeChange = lastWeekTime > 0 && thisWeekTime > 0
-        ? ((thisWeekTime - lastWeekTime) / lastWeekTime) * 100
-        : null;
-      
-      // Get usage stats for the response
-      const usageStats = await getUserUsageStats(userId);
-      
-      const dashboardData = {
-        user: {
-          name: user.username,
-          email: user.email || null,
-          stravaConnected: user.stravaConnected,
-          stravaHasWriteScope: user.stravaHasWriteScope || false,
-          stravaBrandingEnabled: user.stravaBrandingEnabled || false,
-          stravaBrandingTemplate: user.stravaBrandingTemplate || "ðŸƒ Runner Score: {score} | {insight} â€” Analyzed with RunAnalytics",
-          unitPreference: user.unitPreference || "km",
-          lastSyncAt: user.lastSyncAt,
-          subscriptionPlan: user.subscriptionPlan || 'free',
-          subscriptionStatus: user.subscriptionStatus || 'free',
-          activityHistoryLimitDays: null,
-          coachOnboardingCompleted: user.coachOnboardingCompleted || false,
-          coachGoal: user.coachGoal,
-          coachRaceDate: user.coachRaceDate,
-          coachTargetTime: user.coachTargetTime,
-          coachDaysAvailable: user.coachDaysAvailable,
-          coachWeeklyMileageCap: user.coachWeeklyMileageCap,
-          coachTone: user.coachTone,
-          coachNotifyRecap: user.coachNotifyRecap ?? true,
-          coachNotifyWeeklySummary: user.coachNotifyWeeklySummary ?? true,
-          coachQuietHoursStart: user.coachQuietHoursStart,
-          coachQuietHoursEnd: user.coachQuietHoursEnd,
-          notifyPostRun: user.notifyPostRun ?? true,
-          postRunEmailFrequency: user.postRunEmailFrequency ?? "every_run",
-        },
-        usage: usageStats,
-        stats: {
-          asOf: calendarPeriods.now.toISOString(),
-          monthStart: calendarPeriods.thisMonth.toISOString(),
-          weekStart: calendarPeriods.thisWeek.toISOString(),
-          // Monthly totals (current behavior)
-          monthlyTotalDistance: user.unitPreference === "miles" ? 
-            ((totalDistance / 1000) * 0.621371).toFixed(1) : 
-            (totalDistance / 1000).toFixed(1),
-          monthlyAvgPace: avgPace > 0 ? (() => {
-            const paceToShow = user.unitPreference === "miles" ? avgPace / 0.621371 : avgPace;
-            return `${Math.floor(paceToShow)}:${String(Math.round((paceToShow % 1) * 60)).padStart(2, '0')}`;
-          })() : "0:00",
-          monthlyTotalActivities: totalActivities,
-          monthlyTotalMinutes: Math.round(totalTime / 60),
-          monthlyPreviousActivities: lastMonthActivitiesCount,
-          
-          // Weekly totals
-          weeklyTotalDistance: user.unitPreference === "miles" ? 
-            ((thisWeekDistance / 1000) * 0.621371).toFixed(1) : 
-            (thisWeekDistance / 1000).toFixed(1),
-          weeklyAvgPace: thisWeekAvgPace > 0 ? (() => {
-            const paceToShow = user.unitPreference === "miles" ? thisWeekAvgPace / 0.621371 : thisWeekAvgPace;
-            return `${Math.floor(paceToShow)}:${String(Math.round((paceToShow % 1) * 60)).padStart(2, '0')}`;
-          })() : "0:00",
-          weeklyTotalActivities: thisWeekActivitiesCount,
-          weeklyTotalMinutes: Math.round(thisWeekTime / 60),
-          weeklyPreviousActivities: lastWeekActivitiesCount,
-          
-          // Recovery based on weekly activity
-          recovery: thisWeekActivitiesCount >= 4 ? "Good" : thisWeekActivitiesCount >= 2 ? "Moderate" : thisWeekActivitiesCount === 1 ? "Light" : "No recent runs",
-          unitPreference: user.unitPreference || "km",
-          
-          // Monthly percentage changes
-          monthlyDistanceChange: monthlyDistanceChange !== null ? Math.round(monthlyDistanceChange) : null,
-          monthlyPaceChange: monthlyPaceChange !== null ? Math.round(monthlyPaceChange) : null,
-          monthlyActivitiesChange: monthlyActivitiesChange !== null ? Math.round(monthlyActivitiesChange) : null,
-          monthlyRunningTimeChange: monthlyRunningTimeChange !== null ? Math.round(monthlyRunningTimeChange) : null,
-          
-          // Weekly percentage changes
-          weeklyDistanceChange: weeklyDistanceChange !== null ? Math.round(weeklyDistanceChange) : null,
-          weeklyPaceChange: weeklyPaceChange !== null ? Math.round(weeklyPaceChange) : null,
-          weeklyActivitiesChange: weeklyActivitiesChange !== null ? Math.round(weeklyActivitiesChange) : null,
-          weeklyRunningTimeChange: weeklyRunningTimeChange !== null ? Math.round(weeklyRunningTimeChange) : null,
-          
-          // Backward compatibility (default to monthly)
-          totalDistance: user.unitPreference === "miles" ? 
-            ((totalDistance / 1000) * 0.621371).toFixed(1) : 
-            (totalDistance / 1000).toFixed(1),
-          avgPace: avgPace > 0 ? (() => {
-            const paceToShow = user.unitPreference === "miles" ? avgPace / 0.621371 : avgPace;
-            return `${Math.floor(paceToShow)}:${String(Math.round((paceToShow % 1) * 60)).padStart(2, '0')}`;
-          })() : "0:00",
-          runningTimeMinutes: Math.round(totalTime / 60),
-          totalActivities: totalActivities,
-          distanceChange: monthlyDistanceChange !== null ? Math.round(monthlyDistanceChange) : null,
-          paceChange: monthlyPaceChange !== null ? Math.round(monthlyPaceChange) : null,
-          activitiesChange: monthlyActivitiesChange !== null ? Math.round(monthlyActivitiesChange) : null,
-          runningTimeChange: monthlyRunningTimeChange !== null ? Math.round(monthlyRunningTimeChange) : null,
-        },
-        activities: (() => {
-          return activities.map(activity => {
-            return {
-              id: activity.id,
-              name: activity.name,
-              distance: user.unitPreference === "miles" ? 
-                ((activity.distance / 1000) * 0.621371).toFixed(1) : 
-                (activity.distance / 1000).toFixed(1),
-              pace: activity.distance > 0 ? (() => {
-                const distanceInKm = activity.distance / 1000;
-                const pacePerKm = (activity.movingTime / 60) / distanceInKm;
-                const paceToShow = user.unitPreference === "miles" ? pacePerKm / 0.621371 : pacePerKm;
-                return `${Math.floor(paceToShow)}:${String(Math.round((paceToShow % 1) * 60)).padStart(2, '0')}`;
-              })() : "0:00",
-              duration: `${Math.floor(activity.movingTime / 60)}:${String(activity.movingTime % 60).padStart(2, '0')}`,
-              elevation: `+${Math.round(activity.totalElevationGain)}m`,
-              date: new Date(activity.startDate).toLocaleDateString(),
-              startDate: activity.startDate,
-              // Only show a grade generated from the complete activity
-              // analysis. Page/filter-relative fallback grades were unstable.
-              grade: activity.cachedGrade || null,
-            };
-          });
-        })(),
-        insights: {
-          performance: insights.find(i => i.type === 'performance'),
-          pattern: insights.find(i => i.type === 'pattern'),
-          recovery: insights.find(i => i.type === 'recovery'),
-          motivation: insights.find(i => i.type === 'motivation'),
-          technique: insights.find(i => i.type === 'technique'),
-          recommendations: insights.filter(i => i.type === 'recommendation'),
-        },
-        // Insights status: syncing | generating | ready
-        // - syncing: activities are still being synced from Strava (with progress)
-        // - generating: sync complete but insights not yet generated (just synced, waiting for AI)
-        // - ready: insights exist or no activities to analyze
-        insightsStatus: (() => {
-          if (syncState.syncStatus === 'running') return 'syncing';
-          
-          // If sync completed recently (within 2 minutes) and no insights yet, AI is generating
-          const hasActivities = activities.length > 0;
-          const hasInsights = insights.length > 0;
-          const syncCompletedRecently = syncState.lastSyncAt && 
-            (Date.now() - new Date(syncState.lastSyncAt).getTime()) < 2 * 60 * 1000;
-          if (hasActivities && !hasInsights && syncCompletedRecently) return 'generating';
-          return 'ready';
-        })(),
-        chartData: activities.slice(0, 6).reverse().map((activity, index) => {
-          const distanceInKm = activity.distance / 1000;
-          const distanceConverted = user.unitPreference === "miles" ? distanceInKm * 0.621371 : distanceInKm;
-          const pacePerKm = activity.distance > 0 ? (activity.movingTime / 60) / distanceInKm : 0;
-          const paceConverted = user.unitPreference === "miles" ? pacePerKm / 0.621371 : pacePerKm;
-          
-          return {
-            week: `Week ${index + 1}`,
-            pace: paceConverted,
-            distance: distanceConverted,
-          };
-        }),
-      };
-      
-      // Only cache when there are activities â€” skip caching for brand-new users
-      // so their polling picks up data the moment the sync completes rather
-      // than waiting for the 60-second TTL to expire.
-      if (activities.length > 0) {
-        setCachedResponse(cacheKey, dashboardData);
-      }
-      
-      // Prevent browser caching with 304 responses
-      res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-      res.set('Pragma', 'no-cache');
-      
-      res.json(dashboardData);
-    } catch (error) {
-      console.error('Dashboard error:', error);
-      res.status(500).json({ message: "Failed to fetch dashboard data" });
-    }
-  });
-
-  // Get historical insights for timeline view
-  app.get("/api/insights/history/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-
-      // Security check: ensure user can only access their own insights history
-      if (req.user.id !== userId) {
-        return res.status(403).json({ message: "Access denied: cannot access another user's insights history" });
-      }
-
-      const historicalInsights = await storage.getHistoricalAIInsights(userId, 50);
-      
-      // Group insights by date for timeline display
-      type InsightsGrouped = {
-        performance: any[];
-        pattern: any[];
-        recovery: any[];
-        motivation: any[];
-        technique: any[];
-        recommendation: any[];
-      };
-      
-      const timelineData = historicalInsights.reduce((acc: Record<string, { date: string; insights: InsightsGrouped }>, insight) => {
-        const dateStr = new Date(insight.createdAt || new Date()).toISOString().split('T')[0]; // YYYY-MM-DD format
-        
-        if (!acc[dateStr]) {
-          acc[dateStr] = {
-            date: dateStr,
-            insights: {
-              performance: [],
-              pattern: [],
-              recovery: [],
-              motivation: [],
-              technique: [],
-              recommendation: []
-            }
-          };
-        }
-        
-        acc[dateStr].insights[insight.type as keyof InsightsGrouped].push({
-          id: insight.id,
-          title: insight.title,
-          content: insight.content,
-          confidence: insight.confidence,
-          createdAt: insight.createdAt
-        });
-        
-        return acc;
-      }, {});
-
-      // Convert to array and sort by date (newest first)
-      const timeline = Object.values(timelineData).sort((a: any, b: any) => 
-        new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
-
-      res.json({ timeline });
-    } catch (error) {
-      console.error('Insights history error:', error);
-      res.status(500).json({ message: "Failed to fetch insights history" });
-    }
-  });
-
-  // Get chart data with time range
-  app.get("/api/chart/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      const timeRange = req.query.range as string || "30days";
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-
-      // Security check: ensure user can only access their own chart data
-      if (req.user.id !== userId) {
-        return res.status(403).json({ message: "Access denied: cannot access another user's chart data" });
-      }
-
-      // Check cache first (include timeRange in cache key)
-      const cacheKey = `chart:${userId}:${timeRange}`;
-      const cachedData = getCachedResponse(cacheKey);
-      if (cachedData) {
-        // Prevent browser caching with 304 responses
-        res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-        res.set('Pragma', 'no-cache');
-        return res.json(cachedData);
-      }
-
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Calculate date range
-      const now = new Date();
-      let startDate = new Date();
-      let activityLimit = 6;
-
-      switch (timeRange) {
-        case "7days":
-          startDate.setDate(now.getDate() - 7);
-          activityLimit = 7; // One data point per day
-          break;
-        case "3months":
-          startDate.setMonth(now.getMonth() - 3);
-          activityLimit = 12; // Group by week
-          break;
-        case "6months":
-          startDate.setMonth(now.getMonth() - 6);
-          activityLimit = 26; // Group by week (~6 months = 26 weeks)
-          break;
-        case "year":
-          // This year - from January 1st to now
-          startDate = new Date(now.getFullYear(), 0, 1);
-          activityLimit = 12; // Group by month
-          break;
-        case "1year":
-          // Last 12 months from today
-          startDate.setFullYear(now.getFullYear() - 1);
-          activityLimit = 12; // Group by month
-          break;
-        default: // 30days
-          startDate.setDate(now.getDate() - 30);
-          activityLimit = 6; // Group by week
-      }
-
-      // OPTIMIZATION: Filter at database level using startDate parameter
-      const filteredActivities = await storage.getActivitiesByUserId(userId, 100, startDate);
-      
-      // Filter to running activities only (exclude walks, weight training, etc.)
-      const runOnlyActivities = filteredActivities.filter(a => RUNNING_ACTIVITY_TYPES.includes(a.type));
-
-      // Group activities by week/month
-      const groupedData = new Map();
-      
-      runOnlyActivities.forEach(activity => {
-        const activityDate = new Date(activity.startDate);
-        if (isNaN(activityDate.getTime())) {
-          console.warn(`[Chart] Skipping activity ${activity.id} with invalid startDate: ${activity.startDate}`);
-          return;
-        }
-        let groupKey: string;
-        
-        if (timeRange === "7days") {
-          // Group by day for 7-day view
-          groupKey = activityDate.toISOString().split('T')[0]; // YYYY-MM-DD format
-        } else if (timeRange === "year" || timeRange === "1year") {
-          // Group by month for year views
-          groupKey = `${activityDate.getFullYear()}-${String(activityDate.getMonth() + 1).padStart(2, '0')}`;
-        } else {
-          // Group by week for 30days, 3months, and 6months views
-          const weekStart = new Date(activityDate);
-          weekStart.setDate(activityDate.getDate() - ((activityDate.getDay() + 6) % 7)); // Start of week (Monday)
-          groupKey = weekStart.toISOString().split('T')[0]; // YYYY-MM-DD format
-        }
-        
-        if (!groupedData.has(groupKey)) {
-          groupedData.set(groupKey, {
-            activities: [],
-            totalDistance: 0,
-            totalTime: 0,
-            date: activityDate
-          });
-        }
-        
-        const group = groupedData.get(groupKey);
-        group.activities.push(activity);
-        group.totalDistance += activity.distance;
-        group.totalTime += activity.movingTime;
-      });
-
-      // Convert grouped data to chart format
-      const chartData = Array.from(groupedData.entries())
-        .sort(([a], [b]) => a.localeCompare(b)) // Sort by date
-        .map(([key, group], index) => {
-          const distanceInKm = group.totalDistance / 1000;
-          const distanceConverted = user.unitPreference === "miles" ? distanceInKm * 0.621371 : distanceInKm;
-          
-          // Calculate weighted average pace across all activities in the group
-          let totalPaceWeightedDistance = 0;
-          let totalDistanceForPace = 0;
-          
-          group.activities.forEach((activity: Activity) => {
-            if (activity.distance > 0) {
-              const activityDistanceKm = activity.distance / 1000;
-              const activityPace = (activity.movingTime / 60) / activityDistanceKm; // min/km
-              totalPaceWeightedDistance += activityPace * activityDistanceKm;
-              totalDistanceForPace += activityDistanceKm;
-            }
-          });
-          
-          const averagePace = totalDistanceForPace > 0 ? totalPaceWeightedDistance / totalDistanceForPace : 0;
-          const paceConverted = user.unitPreference === "miles" ? averagePace / 0.621371 : averagePace;
-          
-          let label: string;
-          if (timeRange === "7days") {
-            // Daily labels for 7-day view
-            const date = new Date(key);
-            label = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-          } else if (timeRange === "year" || timeRange === "1year") {
-            // Monthly labels for year views
-            const date = new Date(key + "-01");
-            label = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-          } else {
-            // Weekly labels for 30days, 3months, and 6months views
-            const weekStart = new Date(key);
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekStart.getDate() + 6);
-            label = `${weekStart.getMonth() + 1}/${weekStart.getDate()}-${weekEnd.getMonth() + 1}/${weekEnd.getDate()}`;
-          }
-          
-          return {
-            week: label,
-            pace: paceConverted,
-            distance: distanceConverted,
-            activitiesCount: group.activities.length
-          };
-        })
-        .slice(-activityLimit); // Limit to requested number of periods
-      
-      const responseData = { chartData };
-      
-      // Cache the response â€” but never cache an empty chart. New users hit this
-      // endpoint while their first Strava sync is still running; caching the
-      // empty result would keep serving it after activities land.
-      if (chartData.length > 0) {
-        setCachedResponse(cacheKey, responseData);
-      }
-      
-      // Prevent browser caching with 304 responses
-      res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-      res.set('Pragma', 'no-cache');
-      
-      res.json(responseData);
-    } catch (error) {
-      console.error('Chart data error:', error);
-      res.status(500).json({ message: "Failed to fetch chart data" });
-    }
-  });
-
-  // Generate AI insights (with rate limiting)
-  app.post("/api/ai/insights/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-
-      // Verify the user owns this resource
-      if (req.user.id !== userId) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      // Check rate limit for free users
-      const rateLimit = await checkInsightRateLimit(userId);
-      if (!rateLimit.allowed) {
-        return res.status(429).json({ 
-          message: rateLimit.message,
-          remaining: rateLimit.remaining,
-          limit: rateLimit.limit,
-          resetAt: rateLimit.resetAt
-        });
-      }
-
-      await aiService.generateInsights(userId);
-      
-      // Increment usage count after successful generation
-      await incrementInsightCount(userId);
-      
-      res.json({ success: true, remaining: rateLimit.remaining - 1 });
-    } catch (error: any) {
-      console.error('AI insights error:', error);
-      res.status(500).json({ message: error.message || "Failed to generate insights" });
-    }
-  });
-
-  // Generate AI insights (with rate limiting)
-  app.post("/api/insights/generate/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-
-      // Verify the user owns this resource
-      if (req.user.id !== userId) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      // Check rate limit for free users
-      const rateLimit = await checkInsightRateLimit(userId);
-      if (!rateLimit.allowed) {
-        return res.status(429).json({ 
-          message: rateLimit.message,
-          remaining: rateLimit.remaining,
-          limit: rateLimit.limit,
-          resetAt: rateLimit.resetAt
-        });
-      }
-
-      await aiService.generateInsights(userId);
-      
-      // Increment usage count after successful generation
-      await incrementInsightCount(userId);
-      
-      res.json({ success: true, message: "Insights generated successfully", remaining: rateLimit.remaining - 1 });
-    } catch (error: any) {
-      console.error('Insights generation error:', error);
-      res.status(500).json({ message: error.message || "Failed to generate insights" });
-    }
-  });
-
-  // Get user usage stats
-  app.get("/api/usage/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-
-      if (req.user.id !== userId) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      const usage = await getUserUsageStats(userId);
-      res.json(usage);
-    } catch (error: any) {
-      console.error('Usage stats error:', error);
-      res.status(500).json({ message: error.message || "Failed to get usage stats" });
-    }
-  });
-
-  // ===== AI Running Coach Chat Endpoints =====
-  
-  // Create a new conversation
-  app.post("/api/chat/conversations", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const { title } = req.body;
-      
-      const conversation = await storage.createConversation({
-        userId,
-        title: title || "New Conversation"
-      });
-      
-      res.json(conversation);
-    } catch (error: any) {
-      console.error('Create conversation error:', error);
-      res.status(500).json({ message: error.message || "Failed to create conversation" });
-    }
-  });
-
-  // Get user's conversations
-  app.get("/api/chat/conversations/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-
-      // Verify the user owns this resource
-      if (req.user.id !== userId) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      const conversations = await storage.getConversationsByUserId(userId);
-      res.json(conversations);
-    } catch (error: any) {
-      console.error('Get conversations error:', error);
-      res.status(500).json({ message: error.message || "Failed to get conversations" });
-    }
-  });
-
-  // Get conversation messages
-  app.get("/api/chat/:conversationId/messages", authenticateJWT, async (req: any, res) => {
-    try {
-      const conversationId = parseInt(req.params.conversationId);
-      
-      if (isNaN(conversationId)) {
-        return res.status(400).json({ message: "Invalid conversation ID" });
-      }
-
-      const messages = await storage.getMessagesByConversationId(conversationId);
-      res.json(messages);
-    } catch (error: any) {
-      console.error('Get messages error:', error);
-      res.status(500).json({ message: error.message || "Failed to get messages" });
-    }
-  });
-
-  // Send a chat message with streaming response
-  app.post("/api/chat/:conversationId/messages", authenticateJWT, async (req: any, res) => {
-    try {
-      const conversationId = parseInt(req.params.conversationId);
-      const { message, context } = req.body;
-      
-      if (isNaN(conversationId)) {
-        return res.status(400).json({ message: "Invalid conversation ID" });
-      }
-
-      if (!message || typeof message !== 'string') {
-        return res.status(400).json({ message: "Message is required" });
-      }
-
-      const userId = req.user.id;
-
-      // Save user message
-      const userMessage = await storage.addMessage({
-        conversationId,
-        role: "user",
-        content: message
-      });
-
-      // Set up SSE
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-      res.setHeader('X-Accel-Buffering', 'no');
-      
-      // Send initial connection confirmation
-      res.write(': connected\n\n');
-
-      const chatService = new ChatService();
-      
-      // Stream AI response
-      let fullResponse = '';
-      const onStream = (chunk: string) => {
-        fullResponse += chunk;
-        res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
-      };
-
-      try {
-        const aiResponse = await chatService.chat(userId, conversationId, message, onStream, context);
-        
-        // Save AI message
-        await storage.addMessage({
-          conversationId,
-          role: "assistant",
-          content: aiResponse
-        });
-
-        // Send completion event
-        res.write(`data: ${JSON.stringify({ type: 'complete', messageId: userMessage.id })}\n\n`);
-        res.end();
-      } catch (error: any) {
-        console.error('Chat error:', error);
-        // Detect quota / rate-limit errors and surface a helpful message
-        const isQuotaError = error.status === 429 || /quota|rate.?limit|billing/i.test(error.message || '');
-        const userMessage_err = isQuotaError
-          ? "The AI coach is temporarily unavailable due to high demand. Please try again in a few minutes."
-          : "Sorry, I couldn't generate a response. Please try again.";
-        res.write(`data: ${JSON.stringify({ type: 'error', message: userMessage_err, isQuota: isQuotaError })}\n\n`);
-        res.end();
-      }
-    } catch (error: any) {
-      console.error('Chat message error:', error);
-      
-      // If headers not sent yet, send JSON error
-      if (!res.headersSent) {
-        res.status(500).json({ message: error.message || "Failed to send message" });
-      } else {
-        // If streaming already started, send SSE error
-        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message || 'Failed to send message' })}\n\n`);
-        res.end();
-      }
-    }
-  });
-
-  // Get conversation summaries with message counts
-  app.get("/api/chat/summaries", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const limit = parseInt(req.query.limit as string) || 20;
-      
-      const summaries = await storage.getConversationSummaries(userId, limit);
-      res.json(summaries);
-    } catch (error: any) {
-      console.error('Get conversation summaries error:', error);
-      res.status(500).json({ message: error.message || "Failed to fetch conversation summaries" });
-    }
-  });
-
-  // Update conversation title
-  app.patch("/api/chat/conversations/:conversationId", authenticateJWT, async (req: any, res) => {
-    try {
-      const conversationId = parseInt(req.params.conversationId);
-      const { title } = req.body;
-      
-      if (isNaN(conversationId)) {
-        return res.status(400).json({ message: "Invalid conversation ID" });
-      }
-
-      if (!title || typeof title !== 'string') {
-        return res.status(400).json({ message: "Title is required" });
-      }
-
-      const updated = await storage.updateConversationTitle(conversationId, title);
-      if (!updated) {
-        return res.status(404).json({ message: "Conversation not found" });
-      }
-
-      res.json(updated);
-    } catch (error: any) {
-      console.error('Update conversation title error:', error);
-      res.status(500).json({ message: error.message || "Failed to update conversation title" });
-    }
-  });
-
-  // Delete a conversation
-  app.delete("/api/chat/conversations/:conversationId", authenticateJWT, async (req: any, res) => {
-    try {
-      const conversationId = parseInt(req.params.conversationId);
-      
-      if (isNaN(conversationId)) {
-        return res.status(400).json({ message: "Invalid conversation ID" });
-      }
-
-      await storage.deleteConversation(conversationId);
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error('Delete conversation error:', error);
-      res.status(500).json({ message: error.message || "Failed to delete conversation" });
-    }
-  });
-
-  // Update message feedback (thumbs up/down)
-  app.patch("/api/chat/messages/:messageId/feedback", authenticateJWT, async (req: any, res) => {
-    try {
-      const messageId = parseInt(req.params.messageId);
-      const { feedback } = req.body;
-      const userId = req.user.id;
-      
-      if (isNaN(messageId)) {
-        return res.status(400).json({ message: "Invalid message ID" });
-      }
-
-      // Validate feedback value
-      if (feedback !== null && feedback !== "positive" && feedback !== "negative") {
-        return res.status(400).json({ message: "Feedback must be 'positive', 'negative', or null" });
-      }
-
-      // Verify ownership: check the message belongs to a conversation owned by this user
-      const ownsMessage = await storage.verifyMessageOwnership(messageId, userId);
-      if (!ownsMessage) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      const updated = await storage.updateMessageFeedback(messageId, feedback);
-      if (!updated) {
-        return res.status(404).json({ message: "Message not found" });
-      }
-
-      res.json(updated);
-    } catch (error: any) {
-      console.error('Update message feedback error:', error);
-      res.status(500).json({ message: error.message || "Failed to update message feedback" });
-    }
-  });
-
-  // Logout endpoint
-  app.get("/api/logout", (req, res) => {
-    res.redirect("/");
-  });
-
-  // ============================================================
-  // Chrome extension endpoints
-  // ============================================================
-  // The content script runs on www.strava.com and calls aitracker.run â€”
-  // that's cross-origin, so both routes need explicit CORS headers.
-  // We allow only the Strava origin (where the extension injects) and
-  // the RunAnalytics origin itself (for the popup's direct fetch).
-  const EXTENSION_ALLOWED_ORIGINS = new Set([
-    'https://www.strava.com',
-    'https://aitracker.run',
-  ]);
-
-  function extensionCors(req: any, res: any, next: any) {
-    const origin = req.headers['origin'] || '';
-    if (EXTENSION_ALLOWED_ORIGINS.has(origin)) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-    } else {
-      // Non-browser calls (e.g. curl) still work â€” just no CORS header.
-    }
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-    res.setHeader('Access-Control-Max-Age', '86400');
-    if (req.method === 'OPTIONS') {
-      res.status(204).end();
-      return;
-    }
-    next();
-  }
-
-  // Preflight for both extension routes
-  app.options('/api/brief', extensionCors);
-  app.options('/api/athlete/summary', extensionCors);
-
-  // GET /api/brief?stravaActivityId={id}
-  //   Returns the panel payload the extension injects into a Strava
-  //   activity page. 401 â†’ logged out, 404 â†’ activity not synced yet.
-  app.get("/api/brief", extensionCors, authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const stravaActivityId = String(req.query.stravaActivityId || "").trim();
-      if (!stravaActivityId) {
-        return res.status(400).json({ message: "stravaActivityId is required" });
-      }
-
-      const [user, activity] = await Promise.all([
-        storage.getUser(userId),
-        storage.getActivityByStravaIdAndUser(stravaActivityId, userId),
-      ]);
-      if (!user) return res.status(401).json({ message: "Invalid token" });
-      if (!activity) {
-        return res.status(404).json({ message: "Activity not synced to RunAnalytics yet." });
-      }
-
-      // Extension brief is intentionally free for all signed-in users during the
-      // open-beta period so we can collect feedback. No paid-plan gate here.
-      const unitPreference = user.unitPreference || "miles";
-
-      // Compose the payload from existing services. Each is wrapped in
-      // catch() so a single failure (e.g. not enough history for runner
-      // score) still returns a usable brief.
-      const [runnerScoreData, recovery, injuryRisk, recap, verdict] = await Promise.all([
-        runnerScoreService.calculateRunnerScore(userId).catch(() => null),
-        getRecoveryState(userId).catch(() => null),
-        mlService.analyzeInjuryRisk(userId).catch(() => null),
-        // Prefer the GPT-generated coach recap (webhook-fired, full context)
-        storage.getCoachRecapByActivityId(activity.id).catch(() => null),
-        coachVerdictService.generateVerdict(activity.id, userId, unitPreference).catch(() => null),
-      ]);
-
-      const readinessLabelFromRisk: Record<string, string> = {
-        low: "Go run",
-        moderate: "Easy",
-        high: "Recover",
-        critical: "Rest",
-      };
-      const injuryRiskShortMap: Record<string, string> = {
-        Low: "Low",
-        Medium: "Med",
-        High: "High",
-      };
-      const injuryRiskTagMap: Record<string, string> = {
-        Low: "Clear",
-        Medium: "Monitor",
-        High: "Caution",
-      };
-
-      const readiness = recovery ? Math.round(recovery.freshnessScore) : 70;
-      const readinessLabel = recovery
-        ? readinessLabelFromRisk[recovery.riskLevel] || "Ready"
-        : "Ready";
-
-      const riskLabel = injuryRisk?.riskLevel || "Low";
-      const injuryRiskShort = injuryRiskShortMap[riskLabel] || "Low";
-      const injuryRiskLabel = injuryRiskTagMap[riskLabel] || "Clear";
-
-      // â”€â”€ Format run-specific stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      const useMiles = unitPreference === "miles";
-      const distanceKm = activity.distance / 1000;
-      const distanceMiles = distanceKm * 0.621371;
-      const displayDist = useMiles
-        ? `${distanceMiles.toFixed(2)} mi`
-        : `${distanceKm.toFixed(2)} km`;
-
-      // Time: H:MM:SS or M:SS
-      const totalSec = activity.movingTime;
-      const hrs = Math.floor(totalSec / 3600);
-      const mins = Math.floor((totalSec % 3600) / 60);
-      const secs = totalSec % 60;
-      const timeDisplay = hrs > 0
-        ? `${hrs}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
-        : `${mins}:${String(secs).padStart(2, "0")}`;
-
-      // Pace M:SS /mi or /km
-      const distUnit = useMiles ? distanceMiles : distanceKm;
-      const paceMin = distUnit > 0 ? (totalSec / 60) / distUnit : 0;
-      const paceTotalSec = Math.round(paceMin * 60);
-      const paceWhole = Math.floor(paceTotalSec / 60);
-      const paceSec = paceTotalSec % 60;
-      const paceDisplay = distUnit > 0
-        ? `${paceWhole}:${String(paceSec).padStart(2, "0")} /${useMiles ? "mi" : "km"}`
-        : "";
-
-      // Elevation ft or m
-      const elevM = activity.totalElevationGain;
-      const elevDisplay = useMiles
-        ? `${Math.round(elevM * 3.28084)} ft`
-        : `${Math.round(elevM)} m`;
-
-      // Heart rate
-      const hrDisplay = activity.averageHeartrate
-        ? `${Math.round(activity.averageHeartrate)} bpm`
-        : null;
-
-      // Run type label
-      const workoutTypeMap: Record<number, string> = { 1: "Race", 2: "Long Run", 3: "Workout" };
-      const runType = (workoutTypeMap as any)[activity.workoutType ?? -1] || activity.type || "Run";
-
-      // Summary: prefer GPT coach recap (full context), then computed verdict, then fallback
-      const summary =
-        recap?.coachingCue?.trim() ||
-        verdict?.summary?.trim() ||
-        `${activity.name} â€” ${displayDist} at ${paceDisplay} pace.`;
-
-      // Next steps: prefer recap bullets (AI-written), then verdict next steps
-      const nextSteps: string[] = recap?.recapBullets?.slice(0, 2) ||
-        (verdict as any)?.nextSteps ||
-        [];
-
-      const gradeLabel = verdict?.gradeLabel || "";
-      const grade = verdict?.grade || runnerScoreData?.grade || "";
-      const runnerScore = runnerScoreData ? Math.round(runnerScoreData.totalScore) : null;
-
-      // Never cache â€” each brief contains a fresh short-lived magic-link token.
-      res.setHeader('Cache-Control', 'no-store');
-
-      // Mint a short-lived magic-link so the CTA opens the activity page
-      // with the user already signed in, even if their browser session expired.
-      const activityPath = `/activity/${activity.id}`;
-      const activityUrl = await authService
-        .wrapWithEmailMagicLink(user.email, activityPath, "https://aitracker.run")
-        .catch(() => `https://aitracker.run${activityPath}?utm_source=extension`);
-
-      const isPremium = isPaidPlan(user.subscriptionPlan, user.subscriptionStatus);
-
-      res.json({
-        // Deep-link with auto sign-in
-        activityUrl,
-        // AI analysis
-        summary,
-        grade,
-        gradeLabel,
-        nextSteps,
-        runnerScore: runnerScore ?? 0,
-        // Recovery signals
-        readiness,
-        readinessLabel,
-        injuryRisk: injuryRiskShort,
-        injuryRiskLabel,
-        // Plan info â€” used by extension to show upgrade CTA
-        isPremium,
-      });
-    } catch (error: any) {
-      console.error("[GET /api/brief] error:", error);
-      res.status(500).json({ message: error.message || "Failed to build brief" });
-    }
-  });
-
-  // GET /api/athlete/summary
-  //   Popup payload â€” name, most-recent unlocked run, readiness, injury risk.
-  app.get("/api/athlete/summary", extensionCors, authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      if (!user) return res.status(401).json({ message: "Invalid token" });
-
-      // Extension athlete summary is free for all signed-in users (open beta).
-      const unitPreference = user.unitPreference || "miles";
-
-      const [activities, recovery, injuryRisk] = await Promise.all([
-        storage.getActivitiesByUserId(userId, 10, undefined, { excludeLockedForFree: false }),
-        getRecoveryState(userId).catch(() => null),
-        mlService.analyzeInjuryRisk(userId).catch(() => null),
-      ]);
-
-      const lastRun = (activities || [])
-        .filter((a) => a.type === "Run" || a.type === "TrailRun")
-        .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())[0]
-        || activities?.[0]
-        || null;
-
-      let lastRunPayload: {
-        date: string;
-        distance: string;
-        pace: string;
-        summary: string;
-      } | null = null;
-
-      if (lastRun) {
-        const distanceKm = lastRun.distance / 1000;
-        const distanceMiles = distanceKm * 0.621371;
-        const useMiles = unitPreference === "miles";
-        const distanceDisplay = useMiles
-          ? `${distanceMiles.toFixed(1)} mi`
-          : `${distanceKm.toFixed(1)} km`;
-
-        // Pace = minutes per mile/km, formatted M:SS.
-        const minutesTotal = lastRun.movingTime / 60;
-        const paceMinPerUnit = useMiles
-          ? minutesTotal / distanceMiles
-          : minutesTotal / distanceKm;
-        // Convert to total seconds then split so 59.6s rounds up to the next minute
-        // instead of emitting "M:60".
-        let paceDisplay = "";
-        if (Number.isFinite(paceMinPerUnit) && paceMinPerUnit > 0) {
-          const totalSeconds = Math.round(paceMinPerUnit * 60);
-          const paceWhole = Math.floor(totalSeconds / 60);
-          const paceSeconds = totalSeconds % 60;
-          paceDisplay = `${paceWhole}:${String(paceSeconds).padStart(2, "0")} /${useMiles ? "mi" : "km"}`;
-        }
-
-        const verdict = await coachVerdictService
-          .generateVerdict(lastRun.id, userId, unitPreference)
-          .catch(() => null);
-
-        lastRunPayload = {
-          date: new Date(lastRun.startDate).toISOString(),
-          distance: distanceDisplay,
-          pace: paceDisplay,
-          summary: verdict?.summary?.trim() || lastRun.name || "No summary available.",
-        };
-      }
-
-      const readinessLabelFromRisk: Record<string, string> = {
-        low: "Ready",
-        moderate: "Easy",
-        high: "Recover",
-        critical: "Rest",
-      };
-      const injuryRiskShortMap: Record<string, string> = {
-        Low: "Low",
-        Medium: "Med",
-        High: "High",
-      };
-      const injuryRiskTagMap: Record<string, string> = {
-        Low: "Clear",
-        Medium: "Monitor",
-        High: "Caution",
-      };
-
-      const readiness = recovery ? Math.round(recovery.freshnessScore) : 70;
-      const readinessLabel = recovery
-        ? readinessLabelFromRisk[recovery.riskLevel] || "Ready"
-        : "Ready";
-      const riskLabel = injuryRisk?.riskLevel || "Low";
-
-      res.json({
-        firstName: user.firstName || "",
-        lastRun: lastRunPayload,
-        readiness,
-        readinessLabel,
-        injuryRisk: injuryRiskShortMap[riskLabel] || "Low",
-        injuryRiskLabel: injuryRiskTagMap[riskLabel] || "Clear",
-      });
-    } catch (error: any) {
-      console.error("[GET /api/athlete/summary] error:", error);
-      res.status(500).json({ message: error.message || "Failed to build athlete summary" });
-    }
-  });
-
-  // Runner Score endpoint (authenticated)
-  app.get("/api/runner-score/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-
-      // Verify the user owns this resource
-      if (req.user.id !== userId) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      const runnerScore = await runnerScoreService.calculateRunnerScore(userId);
-      res.json(runnerScore);
-    } catch (error: any) {
-      console.error('Runner score error:', error);
-      res.status(500).json({ message: error.message || "Failed to calculate runner score" });
-    }
-  });
-
-  // Historical Runner Score endpoint (authenticated)
-  app.get("/api/runner-score/:userId/history", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-
-      // Verify the user owns this resource
-      if (req.user.id !== userId) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      const historicalData = await runnerScoreService.calculateHistoricalRunnerScore(userId);
-      res.json(historicalData);
-    } catch (error: any) {
-      console.error('Historical runner score error:', error);
-      res.status(500).json({ message: error.message || "Failed to get historical runner score" });
-    }
-  });
-
-  // Public Runner Score endpoint (for sharing)
-  app.get("/api/runner-score/public/:userId", async (req, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      const runnerScore = await runnerScoreService.calculateRunnerScore(userId);
-      
-      // Add user name for public display
-      const publicScore = {
-        ...runnerScore,
-        userName: user.firstName && user.lastName 
-          ? `${user.firstName} ${user.lastName}` 
-          : user.email?.split('@')[0] || "Runner"
-      };
-      
-      res.json(publicScore);
-    } catch (error: any) {
-      console.error('Public runner score error:', error);
-      res.status(500).json({ message: error.message || "Failed to get runner score" });
-    }
-  });
-
-  app.post("/api/calibration", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user?.id;
-      if (!userId) return res.status(401).json({ message: "Unauthorized" });
-
-      const { goal, struggle, days } = req.body;
-      
-      const validGoals = ["race", "faster", "endurance", "injury_free"];
-      const validStruggles = ["plateau", "burnout", "inconsistency", "guesswork"];
-      const validDays = ["3", "4", "5+"];
-
-      if (!validGoals.includes(goal) || !validStruggles.includes(struggle) || !validDays.includes(days)) {
-        return res.status(400).json({ message: "Invalid calibration answers" });
-      }
-
-      await db.update(users).set({
-        onboardingGoal: goal,
-        onboardingStruggle: struggle,
-        onboardingDays: days,
-        onboardingCompletedAt: new Date(),
-      }).where(eq(users.id, userId));
-
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error("Calibration save error:", error);
-      res.status(500).json({ message: "Failed to save calibration" });
-    }
-  });
-
-  app.get("/api/calibration", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user?.id;
-      if (!userId) return res.status(401).json({ message: "Unauthorized" });
-
-      const user = await storage.getUser(userId);
-      if (!user) return res.status(404).json({ message: "User not found" });
-
-      res.json({
-        goal: user.onboardingGoal || null,
-        struggle: user.onboardingStruggle || null,
-        days: user.onboardingDays || null,
-        completedAt: user.onboardingCompletedAt || null,
-      });
-    } catch (error: any) {
-      console.error("Calibration fetch error:", error);
-      res.status(500).json({ message: "Failed to fetch calibration" });
-    }
-  });
-
-
-  // Update user settings
-  app.patch("/api/users/:userId/settings", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      const { unitPreference } = req.body;
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-
-      // Verify the user owns this resource
-      if (req.user.id !== userId) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      if (unitPreference && !["km", "miles"].includes(unitPreference)) {
-        return res.status(400).json({ message: "Invalid unit preference" });
-      }
-
-      const updatedUser = await storage.updateUser(userId, { unitPreference });
-      
-      if (!updatedUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Invalidate cached dashboard and chart data since they depend on unit preference
-      deleteCachedByPrefix(`dashboard:${userId}:`);
-      deleteCachedResponse(`chart:${userId}:30days`);
-      console.log(`[Settings] Invalidated cache for user ${userId} after unit preference change to ${unitPreference}`);
-
-      res.json({ success: true, user: updatedUser });
-    } catch (error: any) {
-      console.error('Settings update error:', error);
-      res.status(500).json({ message: error.message || "Failed to update settings" });
-    }
-  });
-
-  // Update user branding settings
-  app.patch("/api/users/:userId/branding", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      const { stravaBrandingEnabled, stravaBrandingTemplate } = req.body;
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-
-      // Verify the user owns this resource
-      if (req.user.id !== userId) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      const updatedUser = await storage.updateUser(userId, { 
-        stravaBrandingEnabled,
-        stravaBrandingTemplate
-      });
-      
-      if (!updatedUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Invalidate cached dashboard
-      deleteCachedByPrefix(`dashboard:${userId}:`);
-      console.log(`[Branding] Updated branding settings for user ${userId}: enabled=${stravaBrandingEnabled}`);
-
-      res.json({ success: true, user: updatedUser });
-    } catch (error: any) {
-      console.error('Branding settings update error:', error);
-      res.status(500).json({ message: error.message || "Failed to update branding settings" });
-    }
-  });
-
-  // Update user notification settings
-  app.patch("/api/users/:userId/notifications", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      const { notifyPostRun, postRunEmailFrequency, coachNotifyWeeklySummary } = req.body;
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-
-      if (req.user.id !== userId) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      const updateData: Record<string, any> = {};
-
-      if (typeof notifyPostRun === "boolean") {
-        updateData.notifyPostRun = notifyPostRun;
-      }
-
-      if (postRunEmailFrequency && ["every_run", "weekly"].includes(postRunEmailFrequency)) {
-        updateData.postRunEmailFrequency = postRunEmailFrequency;
-      }
-
-      if (typeof coachNotifyWeeklySummary === "boolean") {
-        updateData.coachNotifyWeeklySummary = coachNotifyWeeklySummary;
-      }
-
-      if (Object.keys(updateData).length === 0) {
-        return res.status(400).json({ message: "No valid notification settings provided" });
-      }
-
-      const updatedUser = await storage.updateUser(userId, updateData);
-      
-      if (!updatedUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      deleteCachedByPrefix(`dashboard:${userId}:`);
-      console.log(`[Notifications] Updated notification settings for user ${userId}:`, updateData);
-
-      res.json({ success: true, user: updatedUser });
-    } catch (error: any) {
-      console.error('Notification settings update error:', error);
-      res.status(500).json({ message: error.message || "Failed to update notification settings" });
-    }
-  });
-
-  // Update AI Coach preferences (Premium feature)
-  app.patch("/api/users/:userId/coach-preferences", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-
-      // Verify the user owns this resource
-      if (req.user.id !== userId) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      // Verify user has Premium subscription
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      if (!canAccessCapability(user, "ai_coach")) {
-        return res.status(403).json({ message: "AI Coach is a Premium feature" });
-      }
-
-      const {
-        coachGoal,
-        coachRaceDate,
-        coachTargetTime,
-        coachDaysAvailable,
-        coachWeeklyMileageCap,
-        coachTone,
-        coachNotifyRecap,
-        coachNotifyWeeklySummary,
-        coachQuietHoursStart,
-        coachQuietHoursEnd,
-        coachOnboardingCompleted
-      } = req.body;
-
-      // Build update object with only provided fields
-      const updates: Record<string, any> = {};
-      
-      if (coachGoal !== undefined) {
-        const validGoals = ["5k", "10k", "half_marathon", "marathon", "general_fitness"];
-        if (!validGoals.includes(coachGoal)) {
-          return res.status(400).json({ message: "Invalid coach goal" });
-        }
-        updates.coachGoal = coachGoal;
-      }
-      
-      if (coachRaceDate !== undefined) {
-        if (coachRaceDate) {
-          const parsed = new Date(coachRaceDate);
-          if (isNaN(parsed.getTime())) {
-            return res.status(400).json({ message: "Invalid race date format" });
-          }
-          updates.coachRaceDate = parsed;
-        } else {
-          updates.coachRaceDate = null;
-        }
-      }
-      
-      if (coachTargetTime !== undefined) {
-        updates.coachTargetTime = coachTargetTime || null;
-      }
-      
-      if (coachDaysAvailable !== undefined) {
-        updates.coachDaysAvailable = coachDaysAvailable;
-      }
-      
-      if (coachWeeklyMileageCap !== undefined) {
-        updates.coachWeeklyMileageCap = coachWeeklyMileageCap;
-      }
-      
-      if (coachTone !== undefined) {
-        const validTones = ["gentle", "direct", "data_nerd"];
-        if (!validTones.includes(coachTone)) {
-          return res.status(400).json({ message: "Invalid coach tone" });
-        }
-        updates.coachTone = coachTone;
-      }
-      
-      if (coachNotifyRecap !== undefined) {
-        updates.coachNotifyRecap = coachNotifyRecap;
-      }
-      
-      if (coachNotifyWeeklySummary !== undefined) {
-        updates.coachNotifyWeeklySummary = coachNotifyWeeklySummary;
-      }
-      
-      if (coachQuietHoursStart !== undefined) {
-        updates.coachQuietHoursStart = coachQuietHoursStart;
-      }
-      
-      if (coachQuietHoursEnd !== undefined) {
-        updates.coachQuietHoursEnd = coachQuietHoursEnd;
-      }
-      
-      if (coachOnboardingCompleted !== undefined) {
-        updates.coachOnboardingCompleted = coachOnboardingCompleted;
-      }
-
-      const updatedUser = await storage.updateUser(userId, updates);
-      
-      if (!updatedUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Invalidate cached dashboard
-      deleteCachedByPrefix(`dashboard:${userId}:`);
-      console.log(`[Coach] Updated coach preferences for user ${userId}`);
-
-      res.json({ success: true, user: updatedUser });
-    } catch (error: any) {
-      console.error('Coach preferences update error:', error);
-      res.status(500).json({ message: error.message || "Failed to update coach preferences" });
-    }
-  });
-
-  // Get coach recaps for user (Premium feature)
-  app.get("/api/users/:userId/coach-recaps", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      const limit = parseInt(req.query.limit as string) || 10;
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-      
-      // Authorization check: user can only fetch their own recaps
-      if (req.user?.id !== userId && !req.user?.isAdmin) {
-        return res.status(403).json({ message: "Not authorized to view this user's recaps" });
-      }
-      
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      if (!canAccessCapability(user, "ai_coach")) {
-        return res.status(403).json({ message: "Premium subscription required for coach recaps" });
-      }
-
-      const recaps = await storage.getCoachRecapsByUserId(userId, limit);
-      res.json({ recaps });
-    } catch (error: any) {
-      console.error('Coach recaps fetch error:', error);
-      res.status(500).json({ message: error.message || "Failed to fetch coach recaps" });
-    }
-  });
-
-  // Get coach recap for specific activity (Premium feature)
-  app.get("/api/activities/:activityId/coach-recap", authenticateJWT, async (req: any, res) => {
-    try {
-      const activityId = parseInt(req.params.activityId);
-      
-      if (isNaN(activityId)) {
-        return res.status(400).json({ message: "Invalid activity ID" });
-      }
-      
-      const activity = await storage.getActivityById(activityId);
-      if (!activity) {
-        return res.status(404).json({ message: "Activity not found" });
-      }
-      
-      // Authorization check: user can only fetch recaps for their own activities
-      if (req.user?.id !== activity.userId && !req.user?.isAdmin) {
-        return res.status(403).json({ message: "Not authorized to view this activity's recap" });
-      }
-      
-      const user = await storage.getUser(activity.userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      if (!canAccessCapability(user, "ai_coach")) {
-        return res.status(403).json({ message: "Premium subscription required for coach recaps" });
-      }
-
-      if (activity.lockedForFree) {
-        return res.status(402).json({ locked: true, message: "Upgrade required." });
-      }
-
-      const recap = await storage.getCoachRecapByActivityId(activityId);
-      res.json({ recap: recap || null });
-    } catch (error: any) {
-      console.error('Coach recap fetch error:', error);
-      res.status(500).json({ message: error.message || "Failed to fetch coach recap" });
-    }
-  });
-
-  // Get coach recaps for a user (Premium feature)
-  app.get("/api/coach-recaps", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user!.id;
-      const limit = parseInt(req.query.limit as string) || 20;
-      
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      if (!canAccessCapability(user, "ai_coach")) {
-        return res.status(403).json({ message: "Premium subscription required for coach recaps" });
-      }
-      
-      const recaps = await storage.getCoachRecapsByUserId(userId, limit);
-      res.json({ recaps });
-    } catch (error: any) {
-      console.error('Coach recaps list error:', error);
-      res.status(500).json({ message: error.message || "Failed to fetch coach recaps" });
-    }
-  });
-
-  // Mark coach recap as viewed (Premium feature)
-  app.patch("/api/coach-recaps/:recapId/viewed", authenticateJWT, async (req: any, res) => {
-    try {
-      const recapId = parseInt(req.params.recapId);
-      
-      if (isNaN(recapId)) {
-        return res.status(400).json({ message: "Invalid recap ID" });
-      }
-      
-      // Get the recap to verify ownership
-      const recaps = await storage.getCoachRecapsByUserId(req.user?.id, 100);
-      const recap = recaps.find(r => r.id === recapId);
-      if (!recap && !req.user?.isAdmin) {
-        return res.status(403).json({ message: "Not authorized to update this recap" });
-      }
-      
-      await storage.markCoachRecapViewed(recapId);
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error('Coach recap mark viewed error:', error);
-      res.status(500).json({ message: error.message || "Failed to mark recap as viewed" });
-    }
-  });
-
-  // Disconnect Strava
-  app.post("/api/strava/disconnect/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-
-      // Only allow a user to disconnect their own Strava account
-      if (req.user!.id !== userId) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-
-      // Note: we intentionally KEEP stravaAthleteId so that if the user
-      // reconnects later, they land back on the same account instead of
-      // creating a duplicate NULL-email user via the Strava login flow.
-      const updatedUser = await storage.updateUser(userId, {
-        stravaConnected: false,
-        stravaAccessToken: null,
-        stravaRefreshToken: null,
-      });
-      
-      if (!updatedUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Clear backend caches for this user
-      deleteCachedByPrefix(`dashboard:${userId}:`);
-      deleteCachedResponse(`chart:${userId}:7days`);
-      deleteCachedResponse(`chart:${userId}:30days`);
-      deleteCachedResponse(`chart:${userId}:90days`);
-      deleteCachedResponse(`fitness:${userId}:30`);
-      deleteCachedResponse(`fitness:${userId}:90`);
-      deleteCachedResponse(`fitness:${userId}:180`);
-      deleteCachedResponse(`fitness:${userId}:365`);
-      console.log(`[CACHE] Cleared caches for user ${userId} after Strava disconnect`);
-
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error('Strava disconnect error:', error);
-      res.status(500).json({ message: error.message || "Failed to disconnect Strava" });
-    }
-  });
-
-  // Strava queue status and rate limiter monitoring (admin only)
-  app.get("/api/strava/queue/status", authenticateAdmin, async (req: any, res) => {
-    try {
-      const userId = req.user!.id;
-      const queueStats = jobQueue.getStats();
-      const rateLimitState = stravaClient.getRateLimitState();
-      const userJobs = jobQueue.getJobsForUser(userId);
-      const metricsSnapshot = metrics.getSnapshot();
-      
-      res.json({
-        queue: queueStats,
-        rateLimit: {
-          shortTermUsage: rateLimitState.shortTermUsage,
-          shortTermLimit: rateLimitState.shortTermLimit,
-          longTermUsage: rateLimitState.longTermUsage,
-          longTermLimit: rateLimitState.longTermLimit,
-          isPaused: rateLimitState.isPaused,
-          pauseUntil: rateLimitState.pauseUntil,
-          lastUpdated: rateLimitState.lastUpdated,
-        },
-        userJobs: {
-          pending: userJobs.pending.length,
-          processing: userJobs.processing.length,
-          completed: userJobs.completed.length,
-          failed: userJobs.failed.length,
-        },
-        metrics: metricsSnapshot,
-      });
-    } catch (error: any) {
-      console.error('Queue status error:', error);
-      res.status(500).json({ message: error.message || "Failed to get queue status" });
-    }
-  });
-
-  // User sync status endpoint - for frontend progress polling
-  app.get("/api/strava/sync-status", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user!.id;
-      const syncState = await storage.getSyncState(userId);
-      
-      if (!syncState) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Also get current queue state for this user
-      const userJobs = jobQueue.getJobsForUser(userId);
-      
-      res.json({
-        syncStatus: syncState.syncStatus,
-        syncProgress: syncState.syncProgress,
-        syncTotal: syncState.syncTotal,
-        syncError: syncState.syncError,
-        lastSyncAt: syncState.lastSyncAt,
-        lastIncrementalSince: syncState.lastIncrementalSince,
-        queueState: {
-          pendingJobs: userJobs.pending.length,
-          processingJobs: userJobs.processing.length,
-          completedJobs: userJobs.completed.length,
-          failedJobs: userJobs.failed.length,
-        },
-      });
-    } catch (error: any) {
-      console.error('Sync status error:', error);
-      res.status(500).json({ message: error.message || "Failed to get sync status" });
-    }
-  });
-
-  // Repair endpoint to requeue activities missing hydration data
-  // Now smarter: checks sync state to decide between full re-list vs just hydrate
-  app.post("/api/strava/queue/repair/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      const limit = parseInt(req.query?.limit as string) || 500;
-      const forceRelist = req.body?.forceRelist === true;
-      
-      if (isNaN(userId) || req.user.id !== userId) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      // Check sync state to decide repair strategy
-      const syncState = await storage.getSyncState(userId);
-      const user = await storage.getUser(userId);
-      
-      if (!user || !user.stravaAccessToken) {
-        return res.status(400).json({ message: "User not connected to Strava" });
-      }
-      
-      // If sync is currently running, don't allow repair
-      if (syncState?.syncStatus === 'running') {
-        return res.status(409).json({ 
-          message: "Sync is currently in progress. Please wait for it to complete.",
-          syncStatus: syncState.syncStatus,
-        });
-      }
-      
-      // If last sync failed or never completed, or forceRelist requested, do a full re-list
-      const needsRelist = forceRelist || 
-        syncState?.syncStatus === 'error' || 
-        !syncState?.lastSyncAt;
-      
-      if (needsRelist) {
-        // Free users get exactly one Strava sync. After that, block re-list until they upgrade.
-        if (!canSyncFromStrava(user)) {
-          return res.status(402).json({
-            code: 'TRIAL_REQUIRED',
-            message: "You've already used your one free Strava sync. Start a free Premium trial to re-sync.",
-          });
-        }
-
-        // Full re-list: queue LIST_ACTIVITIES job to fetch all activities
-        const { createListActivitiesJob } = await import("./services/queue/jobTypes");
-        const maxActivities = isPaidPlan(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null)
-          ? 500
-          : RATE_LIMITS.FREE_ACTIVITY_LIMIT;
-        
-        const job = jobQueue.addJob(createListActivitiesJob(
-          userId,
-          1,       // Start from page 1
-          200,     // Per page
-          maxActivities,
-          undefined, // No 'after' - fetch from beginning
-          1        // Priority
-        ));
-        
-        return res.json({ 
-          success: true, 
-          message: `Started full activity re-sync${syncState?.syncError ? ` (previous error: ${syncState.syncError})` : ''}`,
-          strategy: 'relist',
-          jobId: job.id,
-        });
-      }
-      
-      // Otherwise, just hydrate activities missing streams/laps
-      const activitiesNeedingHydration = await storage.getActivitiesNeedingHydration(userId, limit);
-      
-      if (activitiesNeedingHydration.length === 0) {
-        return res.json({ 
-          success: true, 
-          message: "All activities are fully hydrated", 
-          strategy: 'hydrate',
-          requeued: 0,
-        });
-      }
-      
-      const { createHydrateActivityJob } = await import("./services/queue/jobTypes");
-      
-      for (const activity of activitiesNeedingHydration) {
-        const needsStreams = !activity.streamsData || !activity.streamsData.includes('"status":"not_available"');
-        const needsLaps = !activity.lapsData || !activity.lapsData.includes('"status":"not_available"');
-        
-        if (needsStreams || needsLaps) {
-          jobQueue.addJob(createHydrateActivityJob(
-            userId,
-            activity.id,
-            activity.stravaId,
-            needsStreams,
-            needsLaps,
-            3
-          ));
-        }
-      }
-      
-      res.json({ 
-        success: true, 
-        message: `Requeued ${activitiesNeedingHydration.length} activities for hydration`,
-        strategy: 'hydrate',
-        requeued: activitiesNeedingHydration.length,
-      });
-    } catch (error: any) {
-      console.error('Queue repair error:', error);
-      res.status(500).json({ message: error.message || "Failed to repair queue" });
-    }
-  });
-
-  // Queue-based Strava sync (alternative to direct sync)
-  app.post("/api/strava/queue/sync/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      let maxActivities = parseInt(req.body?.maxActivities) || 500;
-      
-      if (isNaN(userId) || req.user.id !== userId) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-      
-      const user = await storage.getUser(userId);
-      if (!user || !user.stravaAccessToken) {
-        return res.status(400).json({ message: "User not connected to Strava" });
-      }
-
-      // Free users get exactly one Strava sync. After that, block until they upgrade.
-      if (!canSyncFromStrava(user)) {
-        return res.status(402).json({
-          code: 'TRIAL_REQUIRED',
-          message: "You've already used your one free Strava sync. Start a free Premium trial to keep syncing new activities.",
-        });
-      }
-      if (!isPaidPlan(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null)) {
-        maxActivities = Math.min(maxActivities, RATE_LIMITS.FREE_ACTIVITY_LIMIT);
-      }
-
-      // Get most recent activity for incremental sync
-      const mostRecentActivity = await storage.getMostRecentActivityByUserId(userId);
-      let afterTimestamp: number | undefined;
-      
-      if (mostRecentActivity?.startDate) {
-        const recentStartDate = new Date(mostRecentActivity.startDate);
-        afterTimestamp = Math.floor(recentStartDate.getTime() / 1000) - 3600;
-      }
-
-      // Add the initial LIST_ACTIVITIES job to the queue
-      const job = jobQueue.addJob(createListActivitiesJob(
-        userId,
-        1,
-        200,
-        maxActivities,
-        afterTimestamp,
-        1
-      ));
-
-      res.json({ 
-        success: true, 
-        message: "Sync job queued", 
-        jobId: job.id,
-        incremental: !!afterTimestamp,
-      });
-    } catch (error: any) {
-      console.error('Queue sync error:', error);
-      res.status(500).json({ message: error.message || "Failed to queue sync" });
-    }
-  });
-
-  // Get activities suitable for aerobic decoupling analysis
-  app.get("/api/activities/decoupling-suitable", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user!.id;
-      
-      // Get user for unit preference
-      const user = await storage.getUser(userId);
-      const unitPreference = user?.unitPreference || 'km';
-
-      // Fetch recent activities with minimum 45 minutes duration and heart rate data
-      const result = await storage.getActivitiesByUserIdPaginated(userId, {
-        page: 1,
-        pageSize: 20,
-        minDistance: undefined,
-        maxDistance: undefined,
-        startDate: undefined,
-        endDate: undefined,
-      });
-
-      // Filter for decoupling-suitable activities (60+ minutes, has HR data)
-      const suitableActivities = result.activities.filter(activity => 
-        activity.movingTime >= 3600 && // 60 minutes minimum
-        activity.hasHeartrate &&
-        activity.averageHeartrate !== null
-      ).map(activity => {
-        const distanceInKm = activity.distance / 1000;
-        const distanceConverted = unitPreference === 'miles' ? distanceInKm * 0.621371 : distanceInKm;
-        const pacePerKm = activity.distance > 0 ? (activity.movingTime / 60) / distanceInKm : 0;
-        const paceConverted = unitPreference === 'miles' ? pacePerKm / 0.621371 : pacePerKm;
-
-        return {
-          id: activity.id,
-          name: activity.name,
-          distance: distanceConverted,
-          distanceFormatted: distanceConverted.toFixed(2),
-          movingTime: activity.movingTime,
-          durationFormatted: `${Math.floor(activity.movingTime / 60)}:${String(Math.floor(activity.movingTime % 60)).padStart(2, '0')}`,
-          averageHeartrate: activity.averageHeartrate,
-          averageSpeed: activity.averageSpeed,
-          paceFormatted: paceConverted > 0 ? `${Math.floor(paceConverted)}:${String(Math.round((paceConverted % 1) * 60)).padStart(2, '0')}` : "0:00",
-          startDate: activity.startDate,
-          distanceUnit: unitPreference === 'miles' ? 'mi' : 'km',
-        };
-      });
-
-      res.json({ activities: suitableActivities });
-    } catch (error: any) {
-      console.error('Get decoupling-suitable activities error:', error);
-      res.status(500).json({ message: error.message || "Failed to fetch activities" });
-    }
-  });
-
-  // Analyze training split (polarized vs pyramidal)
-  app.get("/api/training-split/analyze", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user!.id;
-      const periodDays = parseInt(req.query.periodDays as string) || 28;
-      
-      // Get user for HR zones and preferences
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Calculate date range
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - periodDays);
-
-      // Fetch activities with HR data in the period
-      const result = await storage.getActivitiesByUserIdPaginated(userId, {
-        page: 1,
-        pageSize: 500, // Get all activities in period
-        minDistance: undefined,
-        maxDistance: undefined,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-      });
-
-      // Filter for activities with HR data
-      const activitiesWithHR = result.activities.filter(activity => 
-        activity.hasHeartrate && 
-        activity.averageHeartrate !== null &&
-        activity.movingTime >= 600 // At least 10 minutes
-      );
-
-      if (activitiesWithHR.length === 0) {
-        return res.status(400).json({ 
-          message: "No activities with heart rate data found in the selected period"
-        });
-      }
-
-      // Estimate HR zones - use default values
-      // TODO: Could enhance by adding maxHeartRate and thresholdHeartRate to user schema
-      const hrMax = 185; // Default max HR estimate
-      const lt1HR = Math.round(hrMax * 0.75); // ~75% HRmax (Zone 1/2 boundary)
-      const lt2HR = Math.round(hrMax * 0.88); // ~88% HRmax (Zone 2/3 boundary)
-
-      // Calculate time in each zone for each activity
-      interface ActivityZones {
-        activityId: number;
-        date: Date;
-        zone1Minutes: number;
-        zone2Minutes: number;
-        zone3Minutes: number;
-      }
-
-      const activityZones: ActivityZones[] = [];
-
-      for (const activity of activitiesWithHR) {
-        const avgHR = activity.averageHeartrate!;
-        const durationMinutes = activity.movingTime / 60;
-
-        // Simple estimation: allocate all time to the zone matching avg HR
-        // In a real implementation, we'd fetch HR streams for detailed analysis
-        let z1 = 0, z2 = 0, z3 = 0;
-        
-        if (avgHR < lt1HR) {
-          z1 = durationMinutes;
-        } else if (avgHR < lt2HR) {
-          z2 = durationMinutes;
-        } else {
-          z3 = durationMinutes;
-        }
-
-        activityZones.push({
-          activityId: activity.id,
-          date: new Date(activity.startDate),
-          zone1Minutes: z1,
-          zone2Minutes: z2,
-          zone3Minutes: z3,
-        });
-      }
-
-      // Aggregate total time in zones
-      const totalZ1 = activityZones.reduce((sum, a) => sum + a.zone1Minutes, 0);
-      const totalZ2 = activityZones.reduce((sum, a) => sum + a.zone2Minutes, 0);
-      const totalZ3 = activityZones.reduce((sum, a) => sum + a.zone3Minutes, 0);
-      const totalMinutes = totalZ1 + totalZ2 + totalZ3;
-
-      if (totalMinutes === 0) {
-        return res.status(400).json({ message: "No valid training data found" });
-      }
-
-      // Calculate percentages
-      const z1Pct = (totalZ1 / totalMinutes) * 100;
-      const z2Pct = (totalZ2 / totalMinutes) * 100;
-      const z3Pct = (totalZ3 / totalMinutes) * 100;
-
-      // Classify distribution
-      let classification = "Mixed";
-      let classificationColor = "bg-gray-500";
-
-      if (z1Pct >= 70 && z3Pct >= 10 && z2Pct <= 20) {
-        classification = "Polarized";
-        classificationColor = "bg-blue-500";
-      } else if (z2Pct >= 25) {
-        classification = "Threshold-Heavy";
-        classificationColor = "bg-orange-500";
-      } else if (z1Pct > z2Pct && z2Pct > z3Pct && z2Pct >= 10 && z2Pct <= 25) {
-        classification = "Pyramidal";
-        classificationColor = "bg-green-500";
-      }
-
-      // Generate weekly breakdown
-      const weeks = Math.ceil(periodDays / 7);
-      const weeklyData = [];
-      
-      for (let i = 0; i < weeks; i++) {
-        const weekStart = new Date(startDate);
-        weekStart.setDate(weekStart.getDate() + (i * 7));
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 7);
-
-        const weekActivities = activityZones.filter(a => 
-          a.date >= weekStart && a.date < weekEnd
-        );
-
-        const weekZ1 = weekActivities.reduce((sum, a) => sum + a.zone1Minutes, 0);
-        const weekZ2 = weekActivities.reduce((sum, a) => sum + a.zone2Minutes, 0);
-        const weekZ3 = weekActivities.reduce((sum, a) => sum + a.zone3Minutes, 0);
-
-        weeklyData.push({
-          week: `Week ${i + 1}`,
-          zone1: Math.round(weekZ1),
-          zone2: Math.round(weekZ2),
-          zone3: Math.round(weekZ3),
-          total: Math.round(weekZ1 + weekZ2 + weekZ3),
-        });
-      }
-
-      // Generate recommendations
-      const recommendations = [];
-      
-      if (classification === "Threshold-Heavy") {
-        const reduceZ2 = Math.round((z2Pct - 20) * totalMinutes / 100);
-        const addZ1 = Math.round(reduceZ2 * 0.7);
-        const addZ3 = Math.round(reduceZ2 * 0.3);
-        
-        recommendations.push({
-          zone: "Zone 1",
-          adjustment: `+${addZ1} min/week`,
-          rationale: "Increase aerobic base to balance intensity"
-        });
-        recommendations.push({
-          zone: "Zone 2",
-          adjustment: `-${reduceZ2} min/week`,
-          rationale: "Reduce threshold work to prevent overtraining"
-        });
-        recommendations.push({
-          zone: "Zone 3",
-          adjustment: `+${addZ3} min/week`,
-          rationale: "Add high-intensity to maintain fitness"
-        });
-      } else if (classification === "Polarized" || classification === "Pyramidal") {
-        recommendations.push({
-          zone: "Current Split",
-          adjustment: "Maintain",
-          rationale: "Your distribution is well-balanced for sustainable progress"
-        });
-        
-        if (z3Pct < 15) {
-          recommendations.push({
-            zone: "Zone 3",
-            adjustment: `+${Math.round((15 - z3Pct) * totalMinutes / 100)} min/week`,
-            rationale: "Consider adding more high-intensity for speed development"
-          });
-        }
-      } else {
-        const targetZ1 = 75;
-        const targetZ2 = 15;
-        const targetZ3 = 10;
-        
-        const z1Delta = Math.round((targetZ1 - z1Pct) * totalMinutes / 100);
-        const z2Delta = Math.round((targetZ2 - z2Pct) * totalMinutes / 100);
-        const z3Delta = Math.round((targetZ3 - z3Pct) * totalMinutes / 100);
-        
-        if (Math.abs(z1Delta) > 30) {
-          recommendations.push({
-            zone: "Zone 1",
-            adjustment: `${z1Delta > 0 ? '+' : ''}${z1Delta} min/week`,
-            rationale: z1Delta > 0 ? "Build aerobic base" : "Reduce easy volume slightly"
-          });
-        }
-        if (Math.abs(z2Delta) > 20) {
-          recommendations.push({
-            zone: "Zone 2",
-            adjustment: `${z2Delta > 0 ? '+' : ''}${z2Delta} min/week`,
-            rationale: z2Delta > 0 ? "Add threshold work" : "Reduce threshold volume"
-          });
-        }
-        if (Math.abs(z3Delta) > 15) {
-          recommendations.push({
-            zone: "Zone 3",
-            adjustment: `${z3Delta > 0 ? '+' : ''}${z3Delta} min/week`,
-            rationale: z3Delta > 0 ? "Increase high-intensity" : "Reduce high-intensity volume"
-          });
-        }
-      }
-
-      const safeSummary = summarizeTrainingSplit(totalZ1, totalZ2, totalZ3, periodDays, user.coachGoal || "general");
-
-      res.json({
-        zone1Percent: safeSummary.zone1Percent,
-        zone2Percent: safeSummary.zone2Percent,
-        zone3Percent: safeSummary.zone3Percent,
-        zone1Minutes: Math.round(totalZ1),
-        zone2Minutes: Math.round(totalZ2),
-        zone3Minutes: Math.round(totalZ3),
-        totalMinutes: Math.round(totalMinutes),
-        periodDays,
-        weeksInPeriod: safeSummary.weeksInPeriod,
-        weeklyAverageMinutes: safeSummary.weeklyAverageMinutes,
-        classification: safeSummary.classification,
-        classificationColor: safeSummary.classificationColor,
-        weeklyData,
-        recommendations: safeSummary.recommendations,
-        hrZones: {
-          lt1HR,
-          lt2HR,
-          hrMax,
-        },
-        activitiesAnalyzed: activitiesWithHR.length,
-      });
-    } catch (error: any) {
-      console.error('Training split analysis error:', error);
-      res.status(500).json({ message: error.message || "Failed to analyze training split" });
-    }
-  });
-
-  // Race Predictor - Calculate race time prediction
-  app.post("/api/race-predictor/calculate", async (req, res) => {
-    try {
-      const { predictRaceTime } = await import("@shared/racePrediction");
-      const result = predictRaceTime(req.body);
-      res.json(result);
-    } catch (error: any) {
-      console.error('Race prediction error:', error);
-      res.status(500).json({ message: error.message || "Failed to calculate race prediction" });
-    }
-  });
-
-  // Race Predictor - Get suitable activities for base effort (recent race efforts)
-  app.get("/api/race-predictor/suitable-activities", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user!.id;
-      
-      // Get user for unit preference
-      const user = await storage.getUser(userId);
-      const unitPreference = user?.unitPreference || 'km';
-
-      // Fetch recent activities (last 90 days)
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - 90);
-
-      const result = await storage.getActivitiesByUserIdPaginated(userId, {
-        page: 1,
-        pageSize: 100,
-        minDistance: 3000, // At least 3km
-        maxDistance: undefined,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-      });
-
-      // Filter for race-effort candidates (fast paces)
-      const suitableActivities = result.activities
-        .filter(activity => activity.movingTime >= 600) // At least 10 minutes
-        .map(activity => {
-          const distanceInKm = activity.distance / 1000;
-          const distanceConverted = unitPreference === 'miles' ? distanceInKm * 0.621371 : distanceInKm;
-          const pacePerKm = activity.distance > 0 ? (activity.movingTime / 60) / distanceInKm : 0;
-          const paceConverted = unitPreference === 'miles' ? pacePerKm / 0.621371 : pacePerKm;
-
-          return {
-            id: activity.id,
-            stravaId: activity.stravaId,
-            name: activity.name,
-            distance: activity.distance, // Keep in meters for calculation
-            distanceFormatted: distanceConverted.toFixed(2),
-            movingTime: activity.movingTime,
-            durationFormatted: `${Math.floor(activity.movingTime / 60)}:${String(Math.floor(activity.movingTime % 60)).padStart(2, '0')}`,
-            averageSpeed: activity.averageSpeed,
-            paceFormatted: paceConverted > 0 ? `${Math.floor(paceConverted)}:${String(Math.round((paceConverted % 1) * 60)).padStart(2, '0')}` : "0:00",
-            startDate: activity.startDate,
-            distanceUnit: unitPreference === 'miles' ? 'mi' : 'km',
-          };
-        })
-        .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()); // Most recent first
-
-      res.json({ activities: suitableActivities });
-    } catch (error: any) {
-      console.error('Get race predictor suitable activities error:', error);
-      res.status(500).json({ message: error.message || "Failed to fetch activities" });
-    }
-  });
-
-  // Cadence Analyzer - Analyze cadence from activity
-  app.post("/api/cadence/analyze", authenticateJWT, async (req: any, res) => {
-    try {
-      const { activityId } = req.body;
-      const userId = req.user!.id;
-
-      if (!activityId) {
-        return res.status(400).json({ message: "Activity ID required" });
-      }
-
-      // Fetch activity
-      const activity = await storage.getActivityById(activityId);
-      if (!activity || activity.userId !== userId) {
-        return res.status(404).json({ message: "Activity not found" });
-      }
-
-      // Check if activity has cadence data
-      if (!activity.averageCadence) {
-        return res.status(400).json({ message: "Activity does not have cadence data" });
-      }
-
-      // Parse streams data
-      let streamsData: any = {};
-      if (activity.streamsData) {
-        try {
-          streamsData = typeof activity.streamsData === 'string' 
-            ? JSON.parse(activity.streamsData) 
-            : activity.streamsData;
-        } catch (e) {
-          console.error('Failed to parse streams data:', e);
-        }
-      }
-
-      // Extract cadence time series
-      const times = streamsData.time?.data || [];
-      // Strava cadence streams may be per-leg RPM while stored activity
-      // summaries are steps/minute. Normalize at the analysis boundary so the
-      // selected-run value and detailed result use the same unit exactly once.
-      const cadences = (streamsData.cadence?.data || []).map((value: number) => normalizeCadenceToSpm(value));
-      const velocities = streamsData.velocity_smooth?.data || [];
-
-      if (cadences.length === 0) {
-        // Trigger on-demand hydration if streams not available
-        const needsStreams = !activity.streamsData || activity.streamsData === 'null';
-        if (needsStreams) {
-          jobQueue.addJob(createHydrateActivityJob(
-            userId,
-            activity.id,
-            activity.stravaId,
-            true, // needsStreams
-            !activity.lapsData, // needsLaps
-            0 // Priority 0 = highest
-          ));
-          return res.status(202).json({ 
-            message: "Fetching detailed activity data from Strava. Please try again in a few seconds.",
-            hydrating: true
-          });
-        }
-        return res.status(400).json({ message: "No cadence stream data available for this activity" });
-      }
-
-      // Sample and analyze
-      const { sampleCadenceData, analyzeCadence } = await import("@shared/cadenceAnalysis");
-      const sampledData = sampleCadenceData(times, cadences, velocities);
-      
-      const analysis = analyzeCadence({
-        dataPoints: sampledData,
-        activityDuration: activity.movingTime,
-        activityName: activity.name,
-        distance: activity.distance
-      });
-
-      res.json(analysis);
-    } catch (error: any) {
-      console.error('Cadence analysis error:', error);
-      res.status(500).json({ message: error.message || "Failed to analyze cadence" });
-    }
-  });
-
-  // Cadence Analyzer - Get suitable activities (45+ min with cadence data)
-  app.get("/api/cadence/suitable-activities", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user!.id;
-      
-      // Get user for unit preference
-      const user = await storage.getUser(userId);
-      const unitPreference = user?.unitPreference || 'km';
-
-      // Fetch recent activities (last 60 days)
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - 60);
-
-      const result = await storage.getActivitiesByUserIdPaginated(userId, {
-        page: 1,
-        pageSize: 100,
-        minDistance: undefined,
-        maxDistance: undefined,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-      });
-
-      // Filter for cadence-suitable activities (45+ min with cadence data)
-      const suitableActivities = result.activities
-        .filter(activity => 
-          activity.movingTime >= 2700 && // At least 45 minutes
-          activity.averageCadence !== null &&
-          activity.averageCadence > 0
-        )
-        .map(activity => {
-          const distanceInKm = activity.distance / 1000;
-          const distanceConverted = unitPreference === 'miles' ? distanceInKm * 0.621371 : distanceInKm;
-
-          return {
-            id: activity.id,
-            name: activity.name,
-            distance: distanceConverted.toFixed(2),
-            movingTime: activity.movingTime,
-            durationFormatted: `${Math.floor(activity.movingTime / 60)}:${String(Math.floor(activity.movingTime % 60)).padStart(2, '0')}`,
-            averageCadence: activity.averageCadence,
-            startDate: activity.startDate,
-            distanceUnit: unitPreference === 'miles' ? 'mi' : 'km',
-          };
-        })
-        .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
-
-      res.json({ activities: suitableActivities });
-    } catch (error: any) {
-      console.error('Get cadence suitable activities error:', error);
-      res.status(500).json({ message: error.message || "Failed to fetch activities" });
-    }
-  });
-
-  // Get activities heatmap data (GitHub-style contribution graph)
-  app.get("/api/activities/heatmap", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user!.id;
-      const range = (req.query.range as string) || "3m"; // "3m" or "6m"
-      
-      const user = await storage.getUser(userId);
-      const unitPreference = user?.unitPreference || 'km';
-      
-      // Calculate date range
-      const endDate = new Date();
-      const startDate = new Date();
-      if (range === "6m") {
-        startDate.setMonth(startDate.getMonth() - 6);
-      } else {
-        startDate.setMonth(startDate.getMonth() - 3);
-      }
-      
-      // Fetch activities within the date range. Free users must NOT see
-      // webhook-ingested locked runs in the heatmap â€” those are paid-only.
-      const { isPaidPlan: heatmapIsPaid } = await import("./rateLimits");
-      const heatmapIsPaidUser = heatmapIsPaid(user?.subscriptionPlan ?? null, user?.subscriptionStatus ?? null);
-      const activities = await storage.getActivitiesByUserId(userId, 1000, startDate, { excludeLockedForFree: !heatmapIsPaidUser });
-      
-      // Aggregate activities by day
-      const dailyData: Map<string, { totalDistanceKm: number; activities: Array<{ id: number; name: string; distanceKm: number; grade?: string }> }> = new Map();
-      
-      for (const activity of activities) {
-        if (!RUNNING_ACTIVITY_TYPES.includes(activity.type)) continue;
-        
-        const activityDate = new Date(activity.startDate);
-        if (activityDate < startDate || activityDate > endDate) continue;
-        
-        const dateKey = activityDate.toISOString().split('T')[0]; // YYYY-MM-DD
-        const distanceKm = activity.distance / 1000;
-        
-        if (!dailyData.has(dateKey)) {
-          dailyData.set(dateKey, { totalDistanceKm: 0, activities: [] });
-        }
-        
-        const dayData = dailyData.get(dateKey)!;
-        dayData.totalDistanceKm += distanceKm;
-        dayData.activities.push({
-          id: activity.id,
-          name: activity.name,
-          distanceKm: distanceKm,
-          grade: activity.cachedGrade || undefined
-        });
-      }
-      
-      // Generate all days in range with empty days filled
-      const result: Array<{ date: string; totalDistanceKm: number; activities: Array<{ id: number; name: string; distanceKm: number; grade?: string }> }> = [];
-      const current = new Date(startDate);
-      
-      while (current <= endDate) {
-        const dateKey = current.toISOString().split('T')[0];
-        const dayData = dailyData.get(dateKey);
-        
-        result.push({
-          date: dateKey,
-          totalDistanceKm: dayData?.totalDistanceKm || 0,
-          activities: dayData?.activities || []
-        });
-        
-        current.setDate(current.getDate() + 1);
-      }
-      
-      // Calculate max distance for color scaling
-      const maxDistance = Math.max(...result.map(d => d.totalDistanceKm), 0);
-      
-      res.json({
-        days: result,
-        maxDistance,
-        rangeStart: startDate.toISOString().split('T')[0],
-        rangeEnd: endDate.toISOString().split('T')[0],
-        unitPreference
-      });
-    } catch (error: any) {
-      console.error('Get activities heatmap error:', error);
-      res.status(500).json({ message: error.message || "Failed to fetch heatmap data" });
-    }
-  });
-
-  // Get all activities for a user with pagination and filtering
-  app.get("/api/activities", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user!.id;
-      const page = parseInt(req.query.page as string) || 1;
-      const pageSize = parseInt(req.query.pageSize as string) || 25;
-      const minDistance = req.query.minDistance ? parseFloat(req.query.minDistance as string) : undefined;
-      const maxDistance = req.query.maxDistance ? parseFloat(req.query.maxDistance as string) : undefined;
-      const startDate = req.query.startDate as string | undefined;
-      const endDate = req.query.endDate as string | undefined;
-
-      // Get user for unit preference
-      const user = await storage.getUser(userId);
-      const unitPreference = user?.unitPreference || 'km';
-
-      // Convert distance filters to meters based on unit preference
-      let minDistanceMeters = minDistance;
-      let maxDistanceMeters = maxDistance;
-      
-      if (minDistance) {
-        minDistanceMeters = unitPreference === 'miles' ? minDistance * 1609.34 : minDistance * 1000;
-      }
-      if (maxDistance) {
-        maxDistanceMeters = unitPreference === 'miles' ? maxDistance * 1609.34 : maxDistance * 1000;
-      }
-
-      // Free users only see their most-recent N activities (the count cap
-      // for the free-tier funnel). We enforce by computing the cutoff date
-      // of the user's Nth-most-recent activity FIRST (independent of any
-      // filters the client supplied) and using it as a floor on startDate.
-      // This prevents free users from bypassing the cap by paging or
-      // distance/date-filtering into older activities.
-      const freeLimit = getFreeActivityLimit(user?.subscriptionPlan ?? null, user?.subscriptionStatus ?? null);
-      let effectiveStartDate = startDate;
-      let freeCapInfo: { capped: true; limit: number } | undefined;
-
-      if (freeLimit !== null) {
-        // Webhook-ingested activities (marked lockedForFree) are excluded
-        // from the visible cap: free users see only their original 10-run
-        // window, and new post-run activities are unlocked behind the
-        // upgrade CTA on the detail page.
-        const newestN = await storage.getActivitiesByUserId(userId, freeLimit, undefined, { excludeLockedForFree: true });
-        if (newestN.length === 0) {
-          return res.json({
-            activities: [],
-            total: 0,
-            page,
-            pageSize,
-            totalPages: 0,
-            freeTier: { capped: true, limit: freeLimit },
-          });
-        }
-        // Activities are returned newest-first; the last entry is the oldest
-        // one inside the allowed window.
-        const cutoff = new Date(newestN[newestN.length - 1].startDate);
-        const cutoffIso = cutoff.toISOString();
-        if (!effectiveStartDate || new Date(effectiveStartDate) < cutoff) {
-          effectiveStartDate = cutoffIso;
-        }
-        freeCapInfo = { capped: true, limit: freeLimit };
-      }
-
-      const result = await storage.getActivitiesByUserIdPaginated(userId, {
-        page,
-        pageSize,
-        minDistance: minDistanceMeters,
-        maxDistance: maxDistanceMeters,
-        startDate: effectiveStartDate,
-        endDate,
-        excludeLockedForFree: freeLimit !== null,
-      });
-
-      if (freeCapInfo) {
-        // Belt-and-suspenders: never report more than the cap to the client.
-        result.total = Math.min(result.total, freeCapInfo.limit);
-        result.totalPages = Math.ceil(result.total / pageSize);
-      }
-
-      // A grade is only trustworthy after the complete verdict pipeline has
-      // analyzed the activity. Do not invent a grade from the current page or
-      // filters; that made the same run change grade as the user browsed.
-      const activitiesWithGrades = (result.activities || []).map((activity: any) => ({
-        ...activity,
-        grade: activity.cachedGrade || null,
-      }));
-
-      res.json({ ...result, activities: activitiesWithGrades });
-    } catch (error: any) {
-      console.error('Get activities error:', error);
-      res.status(500).json({ message: error.message || "Failed to fetch activities" });
-    }
-  });
-
-  // Get activities with polylines for heatmap visualization
-  app.get("/api/activities/routes", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user!.id;
-      const limit = parseInt(req.query.limit as string) || 30;
-      
-      // Free users: webhook-ingested activities (lockedForFree) must not
-      // leak into the heatmap. Filter them out post-fetch since the helper
-      // doesn't support a lock filter yet.
-      const routesUser = await storage.getUser(userId);
-      const { isPaidPlan: routesIsPaid } = await import("./rateLimits");
-      const routesIsPaidUser = routesIsPaid(routesUser?.subscriptionPlan ?? null, routesUser?.subscriptionStatus ?? null);
-      let routes = await storage.getActivitiesWithPolylines(userId, limit);
-      if (!routesIsPaidUser) {
-        routes = routes.filter((r: any) => !r.lockedForFree);
-      }
-      
-      // Filter out activities without polylines and format for frontend
-      // Use detailed polyline if summary polyline is not available
-      const routesWithPolylines = routes
-        .filter(route => route.polyline || route.detailedPolyline)
-        .map(route => ({
-          id: route.id,
-          name: route.name,
-          distance: route.distance,
-          startDate: route.startDate,
-          polyline: route.polyline || route.detailedPolyline,
-        }));
-      
-      res.json({ 
-        routes: routesWithPolylines,
-        count: routesWithPolylines.length 
-      });
-    } catch (error: any) {
-      console.error('Get routes error:', error);
-      res.status(500).json({ message: error.message || "Failed to fetch routes" });
-    }
-  });
-
-  // 2025 Running Wrapped - Year in Review stats
-  app.get("/api/wrapped/2025", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user!.id;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Get all activities for 2025
-      const activities = await storage.getActivitiesByUserId(userId);
-      const runningTypes = ['Run', 'TrailRun', 'VirtualRun'];
-      
-      // Filter to 2025 running activities only
-      const activities2025 = activities.filter(a => {
-        const activityDate = new Date(a.startDate);
-        return activityDate.getFullYear() === 2025 && runningTypes.includes(a.type);
-      });
-
-      if (activities2025.length === 0) {
-        return res.json({
-          hasData: false,
-          message: "No running activities found for 2025"
-        });
-      }
-
-      // Calculate stats
-      const totalDistanceMeters = activities2025.reduce((sum, a) => sum + (a.distance || 0), 0);
-      const totalTimeSeconds = activities2025.reduce((sum, a) => sum + (a.movingTime || 0), 0);
-      const totalRuns = activities2025.length;
-      
-      // Longest run
-      const longestRun = activities2025.reduce((max, a) => 
-        (a.distance || 0) > (max.distance || 0) ? a : max, activities2025[0]);
-      
-      // Fastest pace (lowest min/km for runs over 1km)
-      const runsOver1km = activities2025.filter(a => (a.distance || 0) >= 1000);
-      let fastestPace = null;
-      let fastestPaceActivity = null;
-      if (runsOver1km.length > 0) {
-        fastestPaceActivity = runsOver1km.reduce((fastest, a) => {
-          const paceA = a.movingTime / (a.distance / 1000);
-          const paceFastest = fastest.movingTime / (fastest.distance / 1000);
-          return paceA < paceFastest ? a : fastest;
-        }, runsOver1km[0]);
-        fastestPace = fastestPaceActivity.movingTime / (fastestPaceActivity.distance / 1000);
-      }
-
-      // Most active month
-      const monthCounts: Record<number, number> = {};
-      activities2025.forEach(a => {
-        const month = new Date(a.startDate).getMonth();
-        monthCounts[month] = (monthCounts[month] || 0) + 1;
-      });
-      const mostActiveMonth = Object.entries(monthCounts).reduce((max, [month, count]) => 
-        count > max.count ? { month: parseInt(month), count } : max, { month: 0, count: 0 });
-      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
-                          'July', 'August', 'September', 'October', 'November', 'December'];
-
-      // Favorite day of week
-      const dayCounts: Record<number, number> = {};
-      activities2025.forEach(a => {
-        const day = new Date(a.startDate).getDay();
-        dayCounts[day] = (dayCounts[day] || 0) + 1;
-      });
-      const favoriteDay = Object.entries(dayCounts).reduce((max, [day, count]) => 
-        count > max.count ? { day: parseInt(day), count } : max, { day: 0, count: 0 });
-      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-      // Average distance per run
-      const avgDistanceMeters = totalDistanceMeters / totalRuns;
-
-      // Total elevation gain
-      const totalElevationGain = activities2025.reduce((sum, a) => sum + (a.totalElevationGain || 0), 0);
-
-      // Calculate percentile compared to all platform users (simplified)
-      const platformStats = await storage.getPlatformStats();
-      const avgMilesPerUser = platformStats.totalDistance / 1609.34 / Math.max(platformStats.totalUsers, 1);
-      const userMiles = totalDistanceMeters / 1609.34;
-      const percentile = Math.min(99, Math.round((userMiles / Math.max(avgMilesPerUser * 2, 1)) * 50));
-
-      // Fetch top AI insights for the user
-      const allInsights = await storage.getAIInsightsByUserId(userId);
-      const topInsights = allInsights
-        .filter(i => ['performance', 'recommendation', 'pattern'].includes(i.type))
-        .sort((a, b) => b.confidence - a.confidence)
-        .slice(0, 2)
-        .map(i => ({
-          type: i.type,
-          title: i.title,
-          content: i.content.length > 100 ? i.content.substring(0, 100) + '...' : i.content
-        }));
-
-      // Unit conversions
-      const unitPref = user.unitPreference || 'km';
-      const distanceMultiplier = unitPref === 'miles' ? 0.000621371 : 0.001;
-      const distanceUnit = unitPref === 'miles' ? 'mi' : 'km';
-      const elevationUnit = unitPref === 'miles' ? 'ft' : 'm';
-      const elevationMultiplier = unitPref === 'miles' ? 3.28084 : 1;
-
-      res.json({
-        hasData: true,
-        year: 2025,
-        stats: {
-          totalDistance: Math.round(totalDistanceMeters * distanceMultiplier * 10) / 10,
-          totalDistanceUnit: distanceUnit,
-          totalHours: Math.round(totalTimeSeconds / 3600 * 10) / 10,
-          totalRuns,
-          longestRun: {
-            distance: Math.round((longestRun.distance || 0) * distanceMultiplier * 10) / 10,
-            name: longestRun.name,
-            date: longestRun.startDate
-          },
-          fastestPace: fastestPace ? {
-            paceMinutes: Math.floor(fastestPace / 60),
-            paceSeconds: Math.round(fastestPace % 60),
-            activityName: fastestPaceActivity?.name,
-            date: fastestPaceActivity?.startDate
-          } : null,
-          mostActiveMonth: {
-            name: monthNames[mostActiveMonth.month],
-            runCount: mostActiveMonth.count
-          },
-          favoriteDay: {
-            name: dayNames[favoriteDay.day],
-            runCount: favoriteDay.count
-          },
-          avgDistancePerRun: Math.round(avgDistanceMeters * distanceMultiplier * 10) / 10,
-          totalElevationGain: Math.round(totalElevationGain * elevationMultiplier),
-          elevationUnit,
-          percentile,
-          unitPreference: unitPref
-        },
-        userName: user.firstName || user.username || 'Runner',
-        aiInsights: topInsights
-      });
-    } catch (error: any) {
-      console.error('Wrapped 2025 error:', error);
-      res.status(500).json({ message: error.message || "Failed to generate wrapped stats" });
-    }
-  });
-
-  // Get activity details
-  app.delete("/api/activities/:activityId", authenticateJWT, async (req: any, res) => {
-    try {
-      const activityId = parseInt(req.params.activityId);
-      const userId = req.user!.id;
-
-      if (isNaN(activityId)) {
-        return res.status(400).json({ message: "Invalid activity ID" });
-      }
-
-      const activity = await storage.getActivityById(activityId);
-      if (!activity) {
-        return res.status(404).json({ message: "Activity not found" });
-      }
-
-      if (activity.userId !== userId) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      await storage.deleteActivity(activityId);
-      deleteCachedByPrefix(`dashboard:${userId}:`);
-      deleteCachedByPrefix(`chart:${userId}:`);
-      deleteCachedByPrefix(`fitness:${userId}:`);
-      deleteCachedResponse(`analytics-batch:${userId}`);
-      deleteCachedResponse(`predictions:${userId}`);
-      res.json({ message: "Activity deleted successfully" });
-    } catch (error: any) {
-      console.error('Delete activity error:', error);
-      res.status(500).json({ message: error.message || "Failed to delete activity" });
-    }
-  });
-
-  app.get("/api/activities/:activityId", authenticateJWT, async (req: any, res) => {
-    try {
-      const activityId = parseInt(req.params.activityId);
-      
-      if (isNaN(activityId)) {
-        return res.status(400).json({ message: "Invalid activity ID" });
-      }
-
-      const activity = await storage.getActivityById(activityId);
-      
-      if (!activity) {
-        return res.status(404).json({ message: "Activity not found" });
-      }
-
-      // Ownership check â€” activity detail is private per-user.
-      if (activity.userId !== req.user.id) {
-        return res.status(404).json({ message: "Activity not found" });
-      }
-
-      const user = await storage.getUser(activity.userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Locked-for-free gate: webhook-ingested activities stay invisible in
-      // the list views and render behind a blur + upgrade CTA on the detail
-      // page. Owner's *current* plan wins â€” if they've upgraded since the
-      // email was sent, the stale lockedForFree flag is ignored.
-      const { isPaidPlan: detailIsPaid } = await import("./rateLimits");
-      const ownerIsPaid = detailIsPaid(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null);
-      const isLocked = !!activity.lockedForFree && !ownerIsPaid;
-
-      // When locked, return ONLY preview-safe fields (name, date, totals).
-      // No streams, laps, HR, splits, GPS â€” those are paid-only.
-      if (isLocked) {
-        const units = runUnitLabels(user.unitPreference);
-        return res.json({
-          locked: true,
-          activity: {
-            id: activity.id,
-            name: activity.name,
-            startDate: activity.startDate,
-            type: activity.type,
-            formattedDistance: formatRunDistance(activity.distance, user.unitPreference),
-            formattedDuration: formatRunDuration(activity.movingTime),
-            formattedPace: formatRunPace(activity.movingTime, activity.distance, user.unitPreference),
-            distanceUnit: units.distanceUnit,
-            paceUnit: units.paceUnit,
-            unitPreference: user.unitPreference,
-            locked: true,
-          },
-        });
-      }
-
-      // Format activity data with unit conversions
-      const units = runUnitLabels(user.unitPreference);
-      
-      const {
-        streamsData,
-        lapsData,
-        detailedPolyline,
-        averageHeartrate,
-        maxHeartrate,
-        averageCadence,
-        maxCadence,
-        averageWatts,
-        maxWatts,
-        sufferScore,
-        ...activitySummary
-      } = activity;
-      const mayViewDeepDive = canAccessCapability(user, "activity_deep_dive");
-      const formattedActivity = {
-        ...activitySummary,
-        ...(mayViewDeepDive ? {
-          streamsData,
-          lapsData,
-          detailedPolyline,
-          averageHeartrate,
-          maxHeartrate,
-          averageCadence,
-          maxCadence,
-          averageWatts,
-          maxWatts,
-          sufferScore,
-        } : {}),
-        formattedDistance: formatRunDistance(activity.distance, user.unitPreference),
-        formattedPace: formatRunPace(activity.movingTime, activity.distance, user.unitPreference),
-        formattedDuration: formatRunDuration(activity.movingTime),
-        formattedSpeed: user.unitPreference === "miles" ? 
-          (activity.averageSpeed * 2.23694).toFixed(1) : 
-          (activity.averageSpeed * 3.6).toFixed(1),
-        formattedMaxSpeed: user.unitPreference === "miles" ? 
-          (activity.maxSpeed * 2.23694).toFixed(1) : 
-          (activity.maxSpeed * 3.6).toFixed(1),
-        unitPreference: user.unitPreference,
-        distanceUnit: units.distanceUnit,
-        paceUnit: units.paceUnit,
-        speedUnit: user.unitPreference === "miles" ? "mph" : "km/h",
-        // Include GPS coordinates for mapping
-        startLatitude: activity.startLatitude,
-        startLongitude: activity.startLongitude,
-        endLatitude: activity.endLatitude,
-        endLongitude: activity.endLongitude,
-        locked: isLocked,
-        deepDiveLocked: !mayViewDeepDive,
-      };
-
-      res.json({ activity: formattedActivity, locked: isLocked });
-    } catch (error: any) {
-      console.error('Activity fetch error:', error);
-      res.status(500).json({ message: error.message || "Failed to fetch activity" });
-    }
-  });
-
-  // On-demand activity hydration - fetches streams/laps when needed
-  app.post("/api/activities/:activityId/hydrate", authenticateJWT, async (req: any, res) => {
-    try {
-      const activityId = parseInt(req.params.activityId);
-      
-      if (isNaN(activityId)) {
-        return res.status(400).json({ message: "Invalid activity ID" });
-      }
-      if (!await requireCapability(req, res, "activity_deep_dive")) return;
-
-      const activity = await storage.getActivityById(activityId);
-      if (!activity) {
-        return res.status(404).json({ message: "Activity not found" });
-      }
-
-      // Verify ownership
-      if (activity.userId !== req.user.id) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      // Lock-gate: never hydrate streams/laps for locked free activities.
-      const hydrateOwner = await storage.getUser(activity.userId);
-      const { isPaidPlan: hydrateIsPaid } = await import("./rateLimits");
-      if (activity.lockedForFree && !hydrateIsPaid(hydrateOwner?.subscriptionPlan ?? null, hydrateOwner?.subscriptionStatus ?? null)) {
-        return res.status(402).json({ locked: true, message: "Upgrade required." });
-      }
-
-      // Check if already hydrated
-      if (activity.hydrationStatus === 'complete') {
-        return res.json({ 
-          success: true, 
-          message: "Activity already hydrated",
-          activity 
-        });
-      }
-
-      // Enqueue immediate hydration with highest priority
-      const needsStreams = !activity.streamsData || activity.streamsData === 'null';
-      const needsLaps = !activity.lapsData || activity.lapsData === 'null';
-      
-      if (needsStreams || needsLaps) {
-        jobQueue.addJob(createHydrateActivityJob(
-          activity.userId,
-          activity.id,
-          activity.stravaId,
-          needsStreams,
-          needsLaps,
-          0 // Priority 0 = highest
-        ));
-      }
-
-      res.json({ 
-        success: true, 
-        message: "Hydration queued",
-        needsStreams,
-        needsLaps,
-        queuePosition: jobQueue.getStats().pending
-      });
-    } catch (error: any) {
-      console.error('Activity hydration error:', error);
-      res.status(500).json({ message: error.message || "Failed to hydrate activity" });
-    }
-  });
-
-  // Bulk hydration endpoint - hydrate activities that need streams for specific tools
-  app.post("/api/activities/hydrate-bulk", authenticateJWT, async (req: any, res) => {
-    try {
-      const { activityIds, limit = 50 } = req.body;
-      const userId = req.user.id;
-      
-      // Get activities that need hydration
-      let activities: Activity[];
-      if (activityIds && Array.isArray(activityIds)) {
-        // Hydrate specific activities
-        const allActivities = await Promise.all(
-          activityIds.slice(0, limit).map((id: number) => storage.getActivityById(id))
-        );
-        activities = allActivities.filter((a): a is Activity => a !== null && a.userId === userId && !a.streamsData);
-      } else {
-        // Get activities that need hydration for this user
-        activities = await storage.getActivitiesNeedingHydration(userId, limit);
-      }
-      
-      if (activities.length === 0) {
-        return res.json({ 
-          success: true, 
-          message: "No activities need hydration",
-          queued: 0
-        });
-      }
-      
-      // Queue hydration jobs with high priority
-      let queued = 0;
-      for (const activity of activities) {
-        jobQueue.addJob(createHydrateActivityJob(
-          userId,
-          activity.id,
-          activity.stravaId,
-          true, // needsStreams
-          !activity.lapsData, // needsLaps
-          1 // Priority 1 = high
-        ));
-        queued++;
-      }
-      
-      console.log(`[Bulk Hydration] Queued ${queued} activities for user ${userId}`);
-      
-      res.json({ 
-        success: true, 
-        message: `Queued ${queued} activities for hydration`,
-        queued
-      });
-    } catch (error: any) {
-      console.error('Bulk hydration error:', error);
-      res.status(500).json({ message: error.message || "Failed to queue bulk hydration" });
-    }
-  });
-
-  // Subscription status endpoint - Returns Premium for all users (no payment required)
-  app.get("/api/subscription/status", authenticateJWT, async (req: any, res) => {
-    try {
-      const user = await storage.getUser(req.user.id);
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      res.json({ 
-        status: 'active',
-        plan: 'premium'
-      });
-    } catch (error: any) {
-      console.error('Subscription status error:', error);
-      res.status(500).json({ message: error.message || "Failed to get subscription status" });
-    }
-  });
-
-  // Strava OAuth callback handler
-  app.get("/strava/callback", async (req, res) => {
-    try {
-      const { code, state } = req.query;
-      
-      if (!code || !state) {
-        return res.redirect("/?error=missing_params");
-      }
-
-      // Parse state - may include "_audit" suffix for tracking source
-      const stateStr = state as string;
-      const isFromAudit = stateStr.endsWith('_audit');
-      const userIdStr = isFromAudit ? stateStr.replace('_audit', '') : stateStr;
-      const userId = parseInt(userIdStr);
-      
-      if (isNaN(userId)) {
-        return res.redirect("/?error=invalid_user");
-      }
-
-      const tokenData = await stravaService.exchangeCodeForTokens(code as string);
-      
-      await storage.updateUser(userId, {
-        stravaAccessToken: tokenData.access_token,
-        stravaRefreshToken: tokenData.refresh_token,
-        stravaAthleteId: tokenData.athlete.id.toString(),
-        stravaConnected: true,
-        stravaHasWriteScope: true,
-      });
-
-      // Trigger initial activity sync after Strava connection.
-      // Free users get exactly one sync ever â€” if they've already had it (e.g.
-      // reconnecting Strava), skip; otherwise cap their initial pull at 20.
-      try {
-        const connectedUser = await storage.getUser(userId);
-        if (connectedUser && canSyncFromStrava(connectedUser)) {
-          const cap = getInitialSyncCap(
-            connectedUser.subscriptionPlan ?? null,
-            connectedUser.subscriptionStatus ?? null,
-            200
-          );
-          jobQueue.addJob(createListActivitiesJob(userId, 1, 200, cap));
-          console.log(`[Strava] Queued initial activity sync for user ${userId} (cap=${cap})`);
-        } else {
-          console.log(`[Strava] Skipped resync for free user ${userId} on reconnect (already used one-time sync)`);
-        }
-      } catch (syncError) {
-        console.error('Failed to queue initial sync:', syncError);
-      }
-
-      // Trigger drip campaign transition from segment_a to segment_b
-      try {
-        await dripCampaignService.onStravaConnected(userId);
-        console.log(`[DripCampaign] Strava callback triggered segment transition for user ${userId}`);
-      } catch (campaignError) {
-        console.error('Drip campaign trigger failed in Strava callback:', campaignError);
-      }
-
-      // Always land on the dashboard after Strava connect â€” the audit-report
-      // funnel was retired with the free-tier pivot.
-      res.redirect("/dashboard?connected=true");
-    } catch (error: any) {
-      console.error('Strava callback error:', error);
-      res.redirect("/dashboard?error=connection_failed");
-    }
-  });
-
-  // Manual Strava activity sync endpoint
-  app.post("/api/strava/sync-activities", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user!.id;
-      let { maxActivities = 500 } = req.body;
-
-      const user = await storage.getUser(userId);
-      if (!user || !user.stravaConnected) {
-        return res.status(400).json({ message: "Strava not connected" });
-      }
-
-      // Free users get exactly one Strava sync. After that, block until they upgrade.
-      if (!canSyncFromStrava(user)) {
-        return res.status(402).json({
-          code: 'TRIAL_REQUIRED',
-          message: "You've already used your one free Strava sync. Start a free Premium trial to keep syncing new activities.",
-        });
-      }
-      if (!isPaidPlan(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null)) {
-        maxActivities = Math.min(maxActivities, RATE_LIMITS.FREE_ACTIVITY_LIMIT);
-      }
-
-      const result = await stravaService.syncActivitiesForUser(userId, maxActivities);
-      
-      // Auto-generate AI insights only if new activities were synced
-      if (result.syncedCount > 0) {
-        try {
-          await aiService.generateInsights(userId);
-          console.log('AI insights regenerated after manual sync');
-        } catch (error) {
-          console.error('Error generating AI insights after sync:', error);
-        }
-        
-        // Check and auto-complete goals based on new activities
-        try {
-          const goalsResult = await goalsService.checkAndCompleteGoals(userId);
-          if (goalsResult.completedGoals > 0) {
-            console.log(`Auto-completed ${goalsResult.completedGoals} goals for user ${userId}`);
-          }
-        } catch (error) {
-          console.error('Error checking goals after sync:', error);
-        }
-        
-        // Invalidate cache for user's dashboard and chart data since new data was synced
-        deleteCachedByPrefix(`dashboard:${userId}:`);
-        deleteCachedResponse(`chart:${userId}:30days`);
-        console.log(`Cache invalidated for user ${userId} after syncing ${result.syncedCount} new activities`);
-      }
-      
-      res.json({
-        success: true,
-        syncedCount: result.syncedCount,
-        totalActivities: result.totalActivities,
-        message: `Successfully synced ${result.syncedCount} new activities out of ${result.totalActivities} total activities`
-      });
-    } catch (error: any) {
-      console.error('Manual sync error:', error);
-      res.status(500).json({ message: error.message || "Failed to sync activities" });
-    }
-  });
-
-  // Create a demo user for testing
-  app.post("/api/demo/user", async (req, res) => {
-    try {
-      const user = await storage.createUser({
-        email: "demo@runner.com",
-        username: "demo_runner",
-        password: "demo123",
-      });
-
-      // Add some demo activities for testing
-      const demoActivities = [
-        {
-          userId: user.id,
-          stravaId: "demo_1",
-          name: "Morning Run",
-          distance: 5200, // 5.2km in meters
-          movingTime: 1560, // 26 minutes
-          totalElevationGain: 45,
-          averageSpeed: 3.33, // m/s
-          maxSpeed: 4.5,
-          averageHeartrate: 165,
-          maxHeartrate: 180,
-          startDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-          type: "Run",
-        },
-        {
-          userId: user.id,
-          stravaId: "demo_2", 
-          name: "Easy Recovery Run",
-          distance: 3800, // 3.8km
-          movingTime: 1320, // 22 minutes
-          totalElevationGain: 20,
-          averageSpeed: 2.88, // m/s
-          maxSpeed: 3.2,
-          averageHeartrate: 145,
-          maxHeartrate: 160,
-          startDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000), // 4 days ago
-          type: "Run",
-        },
-        {
-          userId: user.id,
-          stravaId: "demo_3",
-          name: "Tempo Run",
-          distance: 8000, // 8km
-          movingTime: 2400, // 40 minutes
-          totalElevationGain: 80,
-          averageSpeed: 3.33, // m/s
-          maxSpeed: 4.0,
-          averageHeartrate: 175,
-          maxHeartrate: 185,
-          startDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000), // 6 days ago
-          type: "Run",
-        }
-      ];
-
-      for (const activity of demoActivities) {
-        await storage.createActivity(activity);
-      }
-
-      res.json({ user });
-    } catch (error: any) {
-      console.error('Demo user creation error:', error);
-      res.status(500).json({ message: "Failed to create demo user" });
-    }
-  });
-
-  // ML Features - Race Predictions
-  app.get("/api/ml/predictions/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-      if (req.user.id !== userId) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      if (!await requireCapability(req, res, "race_predictions")) return;
-
-      // Check cache first
-      const cacheKey = `predictions:${userId}`;
-      const cachedData = getCachedResponse(cacheKey);
-      if (cachedData) {
-        // Prevent browser caching with 304 responses
-        res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-        res.set('Pragma', 'no-cache');
-        return res.json(cachedData);
-      }
-
-      const predictions = await mlService.predictRacePerformance(userId);
-      const response = { predictions };
-      
-      // Cache the result
-      setCachedResponse(cacheKey, response);
-      
-      res.json(response);
-    } catch (error: any) {
-      console.error('Race prediction error:', error);
-      res.status(500).json({ message: error.message || "Failed to generate race predictions" });
-    }
-  });
-
-  // ML Features - Training Plans
-  app.post("/api/ml/training-plan/:userId", authenticateJWT, async (req: any, res) => {
-    const startTime = Date.now();
-    try {
-      const userId = parseInt(req.params.userId);
-      const { 
-        weeks = 4, 
-        goal = 'general', 
-        daysPerWeek = 4, 
-        targetDistance, 
-        raceDate,
-        fitnessLevel = 'intermediate'
-      } = req.body;
-      
-      console.log(`[Training Plan] Request received for user ${userId}:`, { weeks, goal, daysPerWeek, targetDistance, raceDate, fitnessLevel });
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-      if (req.user.id !== userId) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      if (!await requireCapability(req, res, "training_plans")) return;
-
-      const params = {
-        weeks,
-        goal,
-        daysPerWeek,
-        targetDistance,
-        raceDate,
-        fitnessLevel
-      };
-
-      console.log(`[Training Plan] Calling GPT-5 to generate plan...`);
-      const trainingPlan = await mlService.generateTrainingPlan(userId, params);
-      const generationTime = Date.now() - startTime;
-      console.log(`[Training Plan] GPT-5 generation completed in ${generationTime}ms`);
-      
-      // Save the training plan to database with metadata
-      console.log(`[Training Plan] Saving plan to database...`);
-      await storage.createTrainingPlan({
-        userId,
-        weeks,
-        planData: trainingPlan
-      });
-      console.log(`[Training Plan] Plan saved successfully`);
-      
-      // Invalidate batch analytics cache so it includes the new plan
-      deleteCachedResponse(`analytics-batch:${userId}`);
-      console.log(`[Training Plan] Invalidated batch cache for user ${userId}`);
-      
-      res.json({ trainingPlan });
-    } catch (error: any) {
-      const errorTime = Date.now() - startTime;
-      console.error(`[Training Plan] Generation error after ${errorTime}ms:`, error);
-      res.status(500).json({ message: error.message || "Failed to generate training plan" });
-    }
-  });
-
-  // Get latest training plan
-  app.get("/api/ml/training-plan/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-      if (req.user.id !== userId) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      if (!await requireCapability(req, res, "training_plans")) return;
-
-      const savedPlan = await storage.getLatestTrainingPlan(userId);
-      
-      if (savedPlan) {
-        res.json({ trainingPlan: savedPlan.planData });
-      } else {
-        res.json({ trainingPlan: null });
-      }
-    } catch (error: any) {
-      console.error('Error fetching training plan:', error);
-      res.status(500).json({ message: error.message || "Failed to fetch training plan" });
-    }
-  });
-
-  // Delete training plans
-  app.delete("/api/ml/training-plan/:userId", async (req, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-
-      await storage.deleteTrainingPlans(userId);
-      res.json({ success: true, message: "Training plan deleted" });
-    } catch (error: any) {
-      console.error('Error deleting training plan:', error);
-      res.status(500).json({ message: error.message || "Failed to delete training plan" });
-    }
-  });
-
-  // Goals Progress Tracking
-  app.get("/api/goals/progress/:userId", async (req, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      const activities = await storage.getActivitiesByUserId(userId, 100);
-      
-      // Calculate current month's progress
-      const now = new Date();
-      const currentMonth = now.getMonth();
-      const currentYear = now.getFullYear();
-      
-      const currentMonthActivities = activities.filter(activity => {
-        const activityDate = new Date(activity.startDate);
-        return activityDate.getMonth() === currentMonth && activityDate.getFullYear() === currentYear;
-      });
-
-      // Calculate monthly distance (convert from meters to km)
-      const monthlyDistance = currentMonthActivities.reduce((total, activity) => {
-        return total + ((activity.distance || 0) / 1000); // Convert meters to km
-      }, 0);
-
-      // Calculate best 5K time from recent activities
-      const fiveKActivities = activities.filter(activity => {
-        const distance = (activity.distance || 0) / 1000; // Convert to km
-        return distance >= 4.5 && distance <= 5.5; // 5K range
-      }).sort((a, b) => (a.movingTime || 0) - (b.movingTime || 0));
-
-      const best5K = fiveKActivities[0];
-      
-      // Calculate weekly distance (last 7 days)
-      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const weeklyActivities = activities.filter(activity => {
-        return new Date(activity.startDate) >= oneWeekAgo;
-      });
-      
-      const weeklyDistance = weeklyActivities.reduce((total, activity) => {
-        return total + ((activity.distance || 0) / 1000); // Convert meters to km
-      }, 0);
-
-      // Format distance based on user preference
-      const isMetric = user.unitPreference === 'km' || user.unitPreference === null;
-      
-      const goals = [];
-
-      // Monthly distance goal
-      const monthlyTarget = isMetric ? 150 : 93; // 150km or 93 miles
-      const monthlyProgress = Math.round((monthlyDistance / monthlyTarget) * 100);
-      const daysLeftInMonth = new Date(currentYear, currentMonth + 1, 0).getDate() - now.getDate();
-      
-      goals.push({
-        title: 'Monthly Distance',
-        current: (monthlyDistance / (isMetric ? 1 : 1.60934)).toFixed(1),
-        target: monthlyTarget.toString(),
-        unit: isMetric ? 'km' : 'mi',
-        progress: monthlyProgress,
-        timeLeft: `${daysLeftInMonth} days remaining`,
-        status: monthlyProgress >= 100 ? 'Completed!' : monthlyProgress >= 80 ? 'On track' : monthlyProgress >= 50 ? 'Behind pace' : 'Needs focus'
-      });
-
-      // 5K time goal (if user has 5K activities)
-      if (best5K) {
-        const currentTime = best5K.movingTime || 0;
-        const targetTime = 20 * 60; // 20 minutes in seconds
-        const currentTimeMinutes = Math.floor(currentTime / 60);
-        const currentTimeSeconds = currentTime % 60;
-        const targetProgress = Math.max(0, 100 - ((currentTime - targetTime) / targetTime * 100));
-        
-        goals.push({
-          title: 'Sub-20 5K Goal',
-          current: `${currentTimeMinutes}:${currentTimeSeconds.toString().padStart(2, '0')}`,
-          target: '20:00',
-          unit: 'PB',
-          progress: Math.round(Math.min(100, targetProgress)),
-          timeLeft: currentTime <= targetTime ? 'Achieved!' : `${Math.ceil((currentTime - targetTime) / 60)}min to improve`,
-          status: currentTime <= targetTime ? 'Goal achieved!' : currentTime <= targetTime + 60 ? 'Very close' : 'Keep training'
-        });
-      }
-
-      // Weekly consistency goal
-      const weeklyTarget = isMetric ? 30 : 18.6; // 30km or 18.6 miles per week
-      const weeklyProgress = Math.round((weeklyDistance / weeklyTarget) * 100);
-      
-      goals.push({
-        title: 'Weekly Consistency',
-        current: (weeklyDistance / (isMetric ? 1 : 1.60934)).toFixed(1),
-        target: (weeklyTarget / (isMetric ? 1 : 1.60934)).toFixed(0),
-        unit: isMetric ? 'km/week' : 'mi/week',
-        progress: weeklyProgress,
-        timeLeft: 'This week',
-        status: weeklyProgress >= 100 ? 'Exceeded!' : weeklyProgress >= 80 ? 'Strong week' : 'Build it up'
-      });
-
-      res.json({ goals });
-    } catch (error: any) {
-      console.error('Error calculating goal progress:', error);
-      res.status(500).json({ message: error.message || "Failed to calculate goal progress" });
-    }
-  });
-
-
-
-  // Get activity with performance data
-  app.get("/api/activities/:activityId/performance", authenticateJWT, async (req: any, res) => {
-    try {
-      const activityId = parseInt(req.params.activityId);
-      
-      if (isNaN(activityId)) {
-        return res.status(400).json({ message: "Invalid activity ID" });
-      }
-
-      const activity = await storage.getActivityById(activityId);
-      if (!activity) {
-        return res.status(404).json({ message: "Activity not found" });
-      }
-
-      if (activity.userId !== req.user.id) {
-        return res.status(404).json({ message: "Activity not found" });
-      }
-      if (!await requireCapability(req, res, "activity_deep_dive")) return;
-
-      // Lock-gate: free users can't pull streams/laps for webhook-ingested
-      // activities â€” the detail page renders a blur + upgrade CTA instead.
-      const ownerForLock = await storage.getUser(activity.userId);
-      const { isPaidPlan: perfIsPaid } = await import("./rateLimits");
-      if (activity.lockedForFree && !perfIsPaid(ownerForLock?.subscriptionPlan ?? null, ownerForLock?.subscriptionStatus ?? null)) {
-        return res.status(402).json({ locked: true, message: "Upgrade required to view full activity analysis." });
-      }
-
-      // Parse stored streams and laps data
-      let streams = null;
-      let laps = null;
-      
-      if (activity.streamsData) {
-        try {
-          streams = JSON.parse(activity.streamsData);
-          
-          // Normalize cadence to canonical steps/minute exactly once.
-          if (streams?.cadence?.data) {
-            streams.cadence.data = streams.cadence.data.map((value: number) => normalizeCadenceToSpm(value));
-          }
-        } catch (e) {
-          console.error('Error parsing streams data:', e);
-        }
-      }
-      
-      if (activity.lapsData) {
-        try {
-          laps = JSON.parse(activity.lapsData);
-          
-          // Normalize lap cadence to canonical steps/minute exactly once.
-          if (laps && Array.isArray(laps)) {
-            laps = laps.map(lap => ({
-              ...lap,
-              average_cadence: normalizeCadenceToSpm(lap.average_cadence),
-              max_cadence: normalizeCadenceToSpm(lap.max_cadence)
-            }));
-          }
-        } catch (e) {
-          console.error('Error parsing laps data:', e);
-        }
-      }
-
-      res.json({
-        activity,
-        streams,
-        laps,
-        hasPerformanceData: !!(streams || laps)
-      });
-    } catch (error: any) {
-      console.error('Error fetching activity performance data:', error);
-      res.status(500).json({ message: error.message || "Failed to fetch activity performance data" });
-    }
-  });
-
-  // Get user performance baseline (6-week rolling averages)
-  app.get("/api/performance/baseline/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-
-      if (req.user.id !== userId) {
-        return res.status(403).json({ message: "Unauthorized" });
-      }
-      if (!await requireCapability(req, res, "activity_deep_dive")) return;
-
-      const cacheKey = `baseline:${userId}`;
-      const cached = getCachedResponse(cacheKey);
-      if (cached) {
-        return res.json(cached);
-      }
-
-      const baseline = await effortScoreService.calculateUserBaseline(userId, 42);
-      
-      setCachedResponse(cacheKey, baseline);
-      res.json(baseline);
-    } catch (error: any) {
-      console.error('Error calculating baseline:', error);
-      res.status(500).json({ message: error.message || "Failed to calculate baseline" });
-    }
-  });
-
-  // Get user recovery state (time-aware freshness and injury risk)
-  app.get("/api/performance/recovery/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-
-      if (req.user.id !== userId) {
-        return res.status(403).json({ message: "Unauthorized" });
-      }
-      if (!await requireCapability(req, res, "injury_risk")) return;
-
-      const cacheKey = `recovery:${userId}`;
-      const cached = getCachedResponse(cacheKey, 30);
-      if (cached) {
-        return res.json(cached);
-      }
-
-      const recoveryState = await getRecoveryState(userId);
-      
-      if (!recoveryState) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      setCachedResponse(cacheKey, recoveryState);
-      res.json(recoveryState);
-    } catch (error: any) {
-      console.error('Error getting recovery state:', error);
-      res.status(500).json({ message: error.message || "Failed to get recovery state" });
-    }
-  });
-
-  // Get coach verdict for an activity (Premium tier feature)
-  app.get("/api/activities/:activityId/verdict", authenticateJWT, async (req: any, res) => {
-    try {
-      const activityId = parseInt(req.params.activityId);
-      const userId = req.user.id;
-      
-      if (isNaN(activityId)) {
-        return res.status(400).json({ message: "Invalid activity ID" });
-      }
-
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Lock-gate before any compute: locked free activities show no verdict.
-      const verdictActivity = await storage.getActivityById(activityId);
-      if (!verdictActivity || verdictActivity.userId !== userId) {
-        return res.status(404).json({ message: "Activity not found" });
-      }
-      if (!await requireCapability(req, res, "activity_deep_dive")) return;
-      if (verdictActivity.lockedForFree) {
-        return res.status(402).json({ locked: true, message: "Upgrade required." });
-      }
-
-      // The verdict is part of the Premium Activity Deep Dive capability.
-      const unitPreference = user.unitPreference || 'km';
-      const cacheKey = `verdict:${activityId}:${userId}:${unitPreference}`;
-      const cached = getCachedResponse(cacheKey);
-      if (cached) {
-        return res.json(cached);
-      }
-
-      const verdict = await coachVerdictService.generateVerdict(activityId, userId, unitPreference);
-      
-      if (!verdict) {
-        return res.status(404).json({ message: "Activity not found or not accessible" });
-      }
-
-      // Cache the grade on the activity for dashboard consistency
-      try {
-        await storage.updateActivityGrade(activityId, verdict.grade);
-      } catch (e) {
-        console.error('Failed to cache activity grade:', e);
-      }
-
-      setCachedResponse(cacheKey, verdict);
-      res.json(verdict);
-    } catch (error: any) {
-      console.error('Error generating verdict:', error);
-      res.status(500).json({ message: error.message || "Failed to generate verdict" });
-    }
-  });
-
-  // Get data quality analysis for an activity
-  app.get("/api/activities/:activityId/quality", authenticateJWT, async (req: any, res) => {
-    try {
-      const activityId = parseInt(req.params.activityId);
-      const userId = req.user.id;
-
-      const activity = await storage.getActivityById(activityId);
-      if (!activity || activity.userId !== userId) {
-        return res.status(404).json({ message: "Activity not found" });
-      }
-      if (!await requireCapability(req, res, "activity_deep_dive")) return;
-
-      if (activity.lockedForFree) {
-        return res.status(402).json({ locked: true, message: "Upgrade required." });
-      }
-
-      const cacheKey = `quality:${activityId}`;
-      const cached = getCachedResponse(cacheKey);
-      if (cached) {
-        return res.json(cached);
-      }
-
-      const streams = await storage.getActivityStreams(activityId);
-      if (!streams) {
-        return res.json({
-          score: 0,
-          flags: [],
-          hrQuality: 0,
-          gpsQuality: 0,
-          pauseQuality: 0,
-          totalDataPoints: 0,
-          affectedPercentage: 0
-        });
-      }
-
-      const qualityResult = dataQualityService.analyzeStreamQuality(
-        streams,
-        activity.movingTime || 0,
-        activity.elapsedTime || activity.movingTime || 0
-      );
-
-      setCachedResponse(cacheKey, qualityResult);
-      res.json(qualityResult);
-    } catch (error: any) {
-      console.error('Error analyzing data quality:', error);
-      res.status(500).json({ message: error.message || "Failed to analyze data quality" });
-    }
-  });
-
-  // Get efficiency metrics for an activity
-  app.get("/api/activities/:activityId/efficiency", authenticateJWT, async (req: any, res) => {
-    try {
-      const activityId = parseInt(req.params.activityId);
-      const userId = req.user.id;
-
-      const activity = await storage.getActivityById(activityId);
-      if (!activity || activity.userId !== userId) {
-        return res.status(404).json({ message: "Activity not found" });
-      }
-      if (!await requireCapability(req, res, "activity_deep_dive")) return;
-
-      if (activity.lockedForFree) {
-        return res.status(402).json({ locked: true, message: "Upgrade required." });
-      }
-
-      const cacheKey = `efficiency:${activityId}`;
-      const cached = getCachedResponse(cacheKey);
-      if (cached) {
-        return res.json(cached);
-      }
-
-      const rawStreams = await storage.getActivityStreams(activityId);
-      if (!rawStreams) {
-        return res.json({
-          aerobicDecoupling: null,
-          decouplingLabel: "unknown",
-          paceHrEfficiency: null,
-          pacingStability: 50,
-          pacingLabel: "variable",
-          cadenceDrift: null,
-          firstHalfPace: null,
-          secondHalfPace: null,
-          firstHalfHr: null,
-          secondHalfHr: null,
-          splitVariance: 0
-        });
-      }
-
-      // Normalize streams format - Strava stores as { streamType: { data: [...] } }
-      // but efficiency service expects { streamType: [...] }
-      const normalizedStreams: any = {};
-      for (const key of Object.keys(rawStreams)) {
-        normalizedStreams[key] = rawStreams[key]?.data || rawStreams[key];
-      }
-
-      const efficiencyResult = efficiencyService.calculateEfficiencyMetrics(
-        normalizedStreams,
-        activity.distance || 0
-      );
-
-      setCachedResponse(cacheKey, efficiencyResult);
-      res.json(efficiencyResult);
-    } catch (error: any) {
-      console.error('Error calculating efficiency:', error);
-      res.status(500).json({ message: error.message || "Failed to calculate efficiency" });
-    }
-  });
-
-  // Update user preferences (including activityViewMode)
-  app.patch("/api/user/preferences", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const { activityViewMode } = req.body;
-      
-      const validModes = ['story', 'deep_dive', 'minimal'];
-      if (activityViewMode && !validModes.includes(activityViewMode)) {
-        return res.status(400).json({ message: "Invalid view mode" });
-      }
-
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      const updatedUser = await storage.updateUser(userId, { activityViewMode });
-      res.json(updatedUser);
-    } catch (error: any) {
-      console.error('Error updating preferences:', error);
-      res.status(500).json({ message: error.message || "Failed to update preferences" });
-    }
-  });
-
-  // Batch Analytics Endpoint - Combines all ML and performance calculations
-  app.get("/api/analytics/batch/:userId", authenticateJWT, async (req: any, res) => {
-    const startTime = Date.now();
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-      if (req.user.id !== userId) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      const requestingUser = await storage.getUser(userId);
-      if (!requestingUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      if (!canAccessCapability(requestingUser, "advanced_insights")) {
-        return res.json({
-          predictions: [],
-          injuryRisk: null,
-          trainingPlan: null,
-          vo2Max: null,
-          efficiency: null,
-          hrZones: null,
-          unitPreference: requestingUser.unitPreference || "miles",
-          entitlements: getCapabilityMatrix(requestingUser),
-        });
-      }
-
-      // Check cache first
-      const cacheKey = `analytics-batch:${userId}`;
-      const cachedData = getCachedResponse(cacheKey);
-      if (cachedData) {
-        res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-        res.set('Pragma', 'no-cache');
-        console.log(`[Batch Analytics] Returned cached data in ${Date.now() - startTime}ms`);
-        return res.json(cachedData);
-      }
-
-      console.log(`[Batch Analytics] Starting batch calculation for user ${userId}`);
-
-      // Execute all calculations in parallel (include user for unit preference)
-      const [user, predictions, injuryRisk, trainingPlan, vo2Max, efficiency, hrZones] = await Promise.all([
-        storage.getUser(userId).catch(err => {
-          console.error('[Batch] User error:', err.message);
-          return null;
-        }),
-        mlService.predictRacePerformance(userId).catch(err => {
-          console.error('[Batch] Predictions error:', err.message);
-          return null;
-        }),
-        mlService.analyzeInjuryRisk(userId).catch(err => {
-          console.error('[Batch] Injury risk error:', err.message);
-          return null;
-        }),
-        storage.getLatestTrainingPlan(userId).catch(err => {
-          console.error('[Batch] Training plan error:', err.message);
-          return null;
-        }),
-        performanceService.calculateVO2Max(userId).catch(err => {
-          console.error('[Batch] VO2 Max error:', err.message);
-          return null;
-        }),
-        performanceService.analyzeRunningEfficiency(userId).catch(err => {
-          console.error('[Batch] Efficiency error:', err.message);
-          return null;
-        }),
-        performanceService.calculateHeartRateZones(userId).catch(err => {
-          console.error('[Batch] HR Zones error:', err.message);
-          return null;
-        })
-      ]);
-
-      const response = {
-        predictions: predictions || [],
-        injuryRisk,
-        trainingPlan: trainingPlan?.planData || null,
-        vo2Max,
-        efficiency,
-        hrZones: hrZones ? { heartRateZones: hrZones } : null,
-        unitPreference: user?.unitPreference || 'miles'
-      };
-
-      // Cache the result
-      setCachedResponse(cacheKey, response);
-      
-      const totalTime = Date.now() - startTime;
-      console.log(`[Batch Analytics] Completed all calculations in ${totalTime}ms`);
-      
-      res.json(response);
-    } catch (error: any) {
-      const errorTime = Date.now() - startTime;
-      console.error(`[Batch Analytics] Error after ${errorTime}ms:`, error);
-      res.status(500).json({ message: error.message || "Failed to generate analytics" });
-    }
-  });
-
-  // ML Features - Injury Risk Analysis
-  app.get("/api/ml/injury-risk/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-      if (req.user.id !== userId) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      if (!await requireCapability(req, res, "injury_risk")) return;
-
-      // Check cache first
-      const cacheKey = `injury-risk:${userId}`;
-      const cachedData = getCachedResponse(cacheKey);
-      if (cachedData) {
-        // Prevent browser caching with 304 responses
-        res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-        res.set('Pragma', 'no-cache');
-        return res.json(cachedData);
-      }
-
-      const riskAnalysis = await mlService.analyzeInjuryRisk(userId);
-      
-      // Cache the result
-      setCachedResponse(cacheKey, riskAnalysis);
-      
-      res.json(riskAnalysis);
-    } catch (error: any) {
-      console.error('Injury risk analysis error:', error);
-      res.status(500).json({ message: error.message || "Failed to analyze injury risk" });
-    }
-  });
-
-  // Performance Analytics - VO2 Max
-  app.get("/api/performance/vo2max/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-      if (req.user.id !== userId) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      if (!await requireCapability(req, res, "advanced_insights")) return;
-
-      const vo2MaxData = await performanceService.calculateVO2Max(userId);
-      res.json(vo2MaxData);
-    } catch (error: any) {
-      console.error('VO2 Max calculation error:', error);
-      res.status(500).json({ message: error.message || "Failed to calculate VO2 Max" });
-    }
-  });
-
-  // Performance Analytics - Heart Rate Zones
-  app.get("/api/performance/hr-zones/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      const { maxHR, restingHR } = req.query;
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-      if (req.user.id !== userId) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      if (!await requireCapability(req, res, "advanced_insights")) return;
-
-      // Check cache first (only if no custom HR values provided)
-      const cacheKey = `hr-zones:${userId}`;
-      if (!maxHR && !restingHR) {
-        const cachedData = getCachedResponse(cacheKey);
-        if (cachedData) {
-          // Prevent browser caching with 304 responses
-          res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-          res.set('Pragma', 'no-cache');
-          return res.json(cachedData);
-        }
-      }
-
-      const heartRateZones = await performanceService.calculateHeartRateZones(
-        userId,
-        maxHR ? parseInt(maxHR as string) : undefined,
-        restingHR ? parseInt(restingHR as string) : undefined
-      );
-      
-      const response = { heartRateZones };
-      
-      // Cache the result (only if no custom HR values provided)
-      if (!maxHR && !restingHR) {
-        setCachedResponse(cacheKey, response);
-      }
-      
-      res.json(response);
-    } catch (error: any) {
-      console.error('Heart rate zones calculation error:', error);
-      res.status(500).json({ message: error.message || "Failed to calculate heart rate zones" });
-    }
-  });
-
-  // Performance Analytics - Running Efficiency
-  app.get("/api/performance/efficiency/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-      if (req.user.id !== userId) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      if (!await requireCapability(req, res, "advanced_insights")) return;
-
-      const efficiencyData = await performanceService.analyzeRunningEfficiency(userId);
-      
-      // If no data available, return null (user will see fallback UI)
-      if (!efficiencyData) {
-        return res.json(null);
-      }
-      
-      // Get user's unit preference
-      const user = await storage.getUser(userId);
-      const unitPreference = user?.unitPreference || 'km';
-      
-      res.json({
-        ...efficiencyData,
-        unitPreference
-      });
-    } catch (error: any) {
-      console.error('Running efficiency analysis error:', error);
-      res.status(500).json({ message: error.message || "Failed to analyze running efficiency" });
-    }
-  });
-
-  // Performance Analytics - Complete Metrics
-  app.get("/api/performance/metrics/:userId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-      if (req.user.id !== userId) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      if (!await requireCapability(req, res, "advanced_insights")) return;
-
-      const performanceMetrics = await performanceService.getPerformanceMetrics(userId);
-      res.json(performanceMetrics);
-    } catch (error: any) {
-      console.error('Performance metrics calculation error:', error);
-      res.status(500).json({ message: error.message || "Failed to calculate performance metrics" });
-    }
-  });
-
-  // Admin routes
-  app.get("/api/admin/stats", authenticateAdmin, async (req, res) => {
-    try {
-      const stats = await storage.getAdminStats();
-      res.json(stats);
-    } catch (error: any) {
-      console.error('Admin stats error:', error);
-      res.status(500).json({ message: error.message || "Failed to get admin stats" });
-    }
-  });
-
-  app.get("/api/admin/users", authenticateAdmin, async (req, res) => {
-    try {
-      const page = parseInt(req.query.page as string) || 1;
-      const pageSize = parseInt(req.query.pageSize as string) || 25;
-      const offset = (page - 1) * pageSize;
-      
-      const allUsers = await storage.getAllUsers(1000); // Get all users
-      const total = allUsers.length;
-      const users = allUsers.slice(offset, offset + pageSize);
-      
-      // Remove sensitive data
-      const sanitizedUsers = users.map(user => ({
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        stravaConnected: user.stravaConnected,
-        unitPreference: user.unitPreference,
-        isAdmin: user.isAdmin,
-        createdAt: user.createdAt,
-        lastSyncAt: user.lastSyncAt
-      }));
-      
-      res.json({
-        users: sanitizedUsers,
-        total,
-        page,
-        pageSize
-      });
-    } catch (error: any) {
-      console.error('Admin users error:', error);
-      res.status(500).json({ message: error.message || "Failed to get users" });
-    }
-  });
-
-
-  app.get("/api/admin/analytics", authenticateAdmin, async (req, res) => {
-    try {
-      const analytics = await storage.getUserAnalytics();
-      res.json(analytics);
-    } catch (error: any) {
-      console.error('Admin analytics error:', error);
-      res.status(500).json({ message: error.message || "Failed to get user analytics" });
-    }
-  });
-
-  // Get performance logs with filtering options
-  app.get("/api/admin/performance-logs", authenticateAdmin, async (req, res) => {
-    try {
-      const limit = parseInt(req.query.limit as string) || 100;
-      const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
-      const endpoint = req.query.endpoint as string | undefined;
-      const method = req.query.method as string | undefined;
-      const minStatusCode = req.query.minStatusCode ? parseInt(req.query.minStatusCode as string) : undefined;
-      const maxStatusCode = req.query.maxStatusCode ? parseInt(req.query.maxStatusCode as string) : undefined;
-      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
-      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
-
-      const logs = await storage.getPerformanceLogs({
-        limit,
-        userId,
-        endpoint,
-        method,
-        minStatusCode,
-        maxStatusCode,
-        startDate,
-        endDate,
-      });
-
-      res.json({ logs, count: logs.length });
-    } catch (error: any) {
-      console.error('Performance logs error:', error);
-      res.status(500).json({ message: error.message || "Failed to get performance logs" });
-    }
-  });
-
-  app.get("/api/admin/performance", authenticateAdmin, async (req, res) => {
-    try {
-      const performance = await storage.getSystemPerformance();
-      res.json(performance);
-    } catch (error: any) {
-      console.error('Admin performance error:', error);
-      res.status(500).json({ message: error.message || "Failed to get system performance" });
-    }
-  });
-
-  // Admin: Agent runs statistics
-  app.get("/api/admin/agent-stats", authenticateAdmin, async (req, res) => {
-    try {
-      const agentStats = await storage.getAgentRunStats();
-      res.json(agentStats);
-    } catch (error: any) {
-      console.error('Admin agent stats error:', error);
-      res.status(500).json({ message: error.message || "Failed to get agent stats" });
-    }
-  });
-
-  // ================== RUNNING SHOES API ==================
-
-  // Get all shoes with optional filtering
-  app.get("/api/shoes", async (req, res) => {
-    try {
-      const { brand, category, minPrice, maxPrice, hasCarbonPlate, stability } = req.query;
-      
-      const filters: any = {};
-      if (brand) filters.brand = brand as string;
-      if (category) filters.category = category as string;
-      if (minPrice) filters.minPrice = parseFloat(minPrice as string);
-      if (maxPrice) filters.maxPrice = parseFloat(maxPrice as string);
-      if (hasCarbonPlate !== undefined) filters.hasCarbonPlate = hasCarbonPlate === 'true';
-      if (stability) filters.stability = stability as string;
-
-      const shoes = await storage.getShoes(filters);
-      res.json(shoes);
-    } catch (error: any) {
-      console.error('Get shoes error:', error);
-      res.status(500).json({ message: error.message || "Failed to get shoes" });
-    }
-  });
-
-  // Get unique brands for filtering
-  app.get("/api/shoes/brands", async (req, res) => {
-    try {
-      const shoes = await storage.getShoes({});
-      const brands = [...new Set(shoes.map(s => s.brand))].sort();
-      res.json(brands);
-    } catch (error: any) {
-      console.error('Get shoe brands error:', error);
-      res.status(500).json({ message: error.message || "Failed to get brands" });
-    }
-  });
-
-  // Get personalized shoe recommendations based on user profile
-  app.get("/api/shoes/recommend", async (req, res) => {
-    try {
-      const { weight, height, weeklyMileage, goal, footType } = req.query;
-      
-      const userWeight = weight ? parseInt(weight as string) : 160;
-      const userGoal = (goal as string) || 'general';
-      const userFootType = (footType as string) || 'neutral';
-      
-      const allShoes = await storage.getShoes({});
-      
-      // Filter and score shoes based on user profile
-      const recommendations = allShoes
-        .map(shoe => {
-          let score = 0;
-          
-          // Weight compatibility (higher score if within recommended range)
-          if (shoe.minRunnerWeight && shoe.maxRunnerWeight) {
-            if (userWeight >= shoe.minRunnerWeight && userWeight <= shoe.maxRunnerWeight) {
-              score += 30;
-            } else if (userWeight > shoe.maxRunnerWeight) {
-              // Heavier runners need more cushion/durability
-              if (shoe.cushioningLevel === 'soft' || shoe.durabilityRating >= 4) {
-                score += 15;
-              }
-            }
-          } else {
-            score += 10; // No weight restriction
-          }
-          
-          // Goal matching
-          if (userGoal === 'racing' && shoe.category === 'racing') {
-            score += 25;
-          } else if (userGoal === 'marathon' && (shoe.category === 'long_run' || shoe.category === 'racing')) {
-            score += 25;
-          } else if (userGoal === 'speed' && (shoe.category === 'speed_training' || shoe.category === 'racing')) {
-            score += 25;
-          } else if (userGoal === 'recovery' && shoe.category === 'recovery') {
-            score += 25;
-          } else if (userGoal === 'daily' && shoe.category === 'daily_trainer') {
-            score += 25;
-          } else if (userGoal === 'general') {
-            score += 15;
-          }
-          
-          // Foot type / stability matching
-          if (userFootType === 'neutral' && shoe.stability === 'neutral') {
-            score += 20;
-          } else if (userFootType === 'overpronator' && shoe.stability !== 'neutral') {
-            score += 20;
-          } else if (userFootType === 'supinator' && shoe.stability === 'neutral') {
-            score += 15;
-          }
-          
-          // Quality ratings bonus
-          score += shoe.comfortRating * 2;
-          score += shoe.durabilityRating * 1.5;
-          score += shoe.responsivenessRating * 1.5;
-          
-          return { shoe, score };
-        })
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 10)
-        .map(r => ({ ...r.shoe, matchScore: Math.round(r.score) }));
-      
-      res.json(recommendations);
-    } catch (error: any) {
-      console.error('Shoe recommendations error:', error);
-      res.status(500).json({ message: error.message || "Failed to get recommendations" });
-    }
-  });
-
-  // Get shoe rotation recommendation based on user profile
-  app.get("/api/shoes/rotation", async (req, res) => {
-    try {
-      const { weight, weeklyMileage } = req.query;
-      const userWeight = weight ? parseInt(weight as string) : 160;
-      const mileage = weeklyMileage ? parseInt(weeklyMileage as string) : 30;
-      
-      const allShoes = await storage.getShoes({});
-      
-      // Helper function to find best shoe for category
-      const findBestForCategory = (category: string, preference: 'cushion' | 'responsive' | 'balanced') => {
-        return allShoes
-          .filter(s => s.category === category)
-          .filter(s => {
-            // For heavier runners, prefer more durable/cushioned options
-            if (userWeight > 180) {
-              return s.durabilityRating >= 3.5 || s.cushioningLevel === 'soft';
-            }
-            return true;
-          })
-          .sort((a, b) => {
-            if (preference === 'cushion') {
-              return b.comfortRating - a.comfortRating;
-            } else if (preference === 'responsive') {
-              return b.responsivenessRating - a.responsivenessRating;
-            }
-            return (b.comfortRating + b.responsivenessRating + b.durabilityRating) - 
-                   (a.comfortRating + a.responsivenessRating + a.durabilityRating);
-          })[0];
-      };
-      
-      const rotation: { role: string; shoe: RunningShoe | null; usage: string; description: string }[] = [
-        {
-          role: "Daily Trainer",
-          shoe: findBestForCategory('daily_trainer', 'balanced'),
-          usage: "60-70% of runs",
-          description: "Your go-to shoe for most training runs. Versatile and durable."
-        },
-        {
-          role: "Long Run",
-          shoe: findBestForCategory('long_run', 'cushion') || findBestForCategory('recovery', 'cushion'),
-          usage: "Weekly long runs",
-          description: "Extra cushioning for those longer efforts when your legs need protection."
-        },
-        {
-          role: "Speed Work",
-          shoe: findBestForCategory('speed_training', 'responsive'),
-          usage: "Tempo runs & intervals",
-          description: "Lighter and more responsive for faster workouts and track sessions."
-        },
-        {
-          role: "Race Day",
-          shoe: findBestForCategory('racing', 'responsive'),
-          usage: "Races & time trials",
-          description: "Maximum performance for when it counts. Save these for race day."
-        },
-        {
-          role: "Recovery",
-          shoe: findBestForCategory('recovery', 'cushion'),
-          usage: "Easy/recovery days",
-          description: "Ultra-cushioned for recovery runs when your legs need a break."
-        }
-      ];
-      
-      // Filter out null shoes
-      const validRotation = rotation.filter(r => r.shoe !== null);
-      
-      res.json({
-        rotation: validRotation,
-        userProfile: { weight: userWeight, weeklyMileage: mileage },
-        tip: userWeight > 200 
-          ? "As a heavier runner, prioritize cushioning and durability in your rotation."
-          : userWeight < 140
-          ? "As a lighter runner, you can benefit from responsive, lighter shoes."
-          : "Focus on a balanced rotation that covers all your training needs."
-      });
-    } catch (error: any) {
-      console.error('Shoe rotation error:', error);
-      res.status(500).json({ message: error.message || "Failed to get rotation" });
-    }
-  });
-
-  // Get multiple shoes by slugs (for comparison page)
-  app.get("/api/shoes/compare", async (req, res) => {
-    try {
-      const { slugs } = req.query;
-      
-      if (!slugs || typeof slugs !== 'string') {
-        return res.status(400).json({ message: "slugs query parameter is required" });
-      }
-      
-      const slugList = slugs.split(',').map(s => s.trim()).filter(s => s.length > 0);
-      
-      if (slugList.length === 0) {
-        return res.status(400).json({ message: "No valid slugs provided" });
-      }
-      
-      if (slugList.length > 10) {
-        return res.status(400).json({ message: "Maximum 10 shoes can be compared at once" });
-      }
-      
-      // Fetch all shoes by their slugs
-      const shoes = await Promise.all(
-        slugList.map(slug => storage.getShoeBySlug(slug))
-      );
-      
-      // Filter out nulls (invalid slugs)
-      const validShoes = shoes.filter((shoe): shoe is RunningShoe => shoe !== null);
-      
-      res.json({
-        shoes: validShoes,
-        requestedCount: slugList.length,
-        foundCount: validShoes.length
-      });
-    } catch (error: any) {
-      console.error('Shoe comparison error:', error);
-      res.status(500).json({ message: error.message || "Failed to get shoes for comparison" });
-    }
-  });
-
-  // Get a single shoe by slug (for SEO-friendly URLs)
-  app.get("/api/shoes/by-slug/:slug", async (req, res) => {
-    try {
-      const { slug } = req.params;
-      const shoe = await storage.getShoeBySlug(slug);
-      
-      if (!shoe) {
-        return res.status(404).json({ message: "Shoe not found" });
-      }
-
-      const allShoes = await storage.getShoes({});
-      const sameModelShoes = allShoes.filter((candidate) => normalizedShoeModelKey(candidate) === normalizedShoeModelKey(shoe));
-      const { canonicalShoes } = canonicalizeShoeCatalog(sameModelShoes);
-      const canonicalSlug = canonicalShoes[0]?.slug || shoe.slug;
-      
-      // Get related shoes in the same series for comparison charts
-      let seriesShoes: RunningShoe[] = [];
-      if (shoe.seriesName) {
-        const allSeriesShoes = await storage.getShoesBySeries(shoe.brand, shoe.seriesName);
-        // Sort by version number (or release year as fallback)
-        seriesShoes = allSeriesShoes.sort((a, b) => {
-          if (a.versionNumber && b.versionNumber) {
-            return a.versionNumber - b.versionNumber;
-          }
-          return (a.releaseYear || 0) - (b.releaseYear || 0);
-        });
-      }
-      
-      res.json({
-        shoe,
-        canonicalSlug,
-        seriesShoes,
-        hasSeriesData: seriesShoes.length > 1
-      });
-    } catch (error: any) {
-      console.error('Get shoe by slug error:', error);
-      res.status(500).json({ message: error.message || "Failed to get shoe" });
-    }
-  });
-
-  app.get("/api/shoes/by-slug/:slug/similar", async (req, res) => {
-    try {
-      const { slug } = req.params;
-      const shoe = await storage.getShoeBySlug(slug);
-      if (!shoe) {
-        return res.status(404).json({ message: "Shoe not found" });
-      }
-      const similar = await storage.getSimilarShoes(shoe, 3);
-      res.json(similar);
-    } catch (error: any) {
-      console.error('Get similar shoes error:', error);
-      res.status(500).json({ message: error.message || "Failed to get similar shoes" });
-    }
-  });
-
-  // Shoe Comparison endpoints (pre-generated comparisons for SEO)
-  app.get("/api/shoes/comparisons", async (req, res) => {
-    try {
-      const { type, limit } = req.query;
-      const comparisons = await storage.getShoeComparisons({
-        type: type as string | undefined,
-        limit: limit ? parseInt(limit as string) : undefined
-      });
-      
-      // Fetch shoe details for each comparison
-      const comparisonsWithShoes = await Promise.all(
-        comparisons.map(async (comparison) => {
-          const [shoe1, shoe2] = await Promise.all([
-            storage.getShoeById(comparison.shoe1Id),
-            storage.getShoeById(comparison.shoe2Id)
-          ]);
-          return { ...comparison, shoe1, shoe2 };
-        })
-      );
-      
-      res.json(comparisonsWithShoes);
-    } catch (error: any) {
-      console.error('Get shoe comparisons error:', error);
-      res.status(500).json({ message: error.message || "Failed to get comparisons" });
-    }
-  });
-
-  app.get("/api/shoes/comparisons/by-slug/:slug", async (req, res) => {
-    try {
-      const { slug } = req.params;
-      const comparison = await storage.getShoeComparisonBySlug(slug);
-      
-      if (!comparison) {
-        return res.status(404).json({ message: "Comparison not found" });
-      }
-      
-      // Increment view count
-      await storage.incrementComparisonViewCount(comparison.id);
-      
-      // Fetch full shoe details
-      const [shoe1, shoe2] = await Promise.all([
-        storage.getShoeById(comparison.shoe1Id),
-        storage.getShoeById(comparison.shoe2Id)
-      ]);
-      
-      res.json({ ...comparison, shoe1, shoe2 });
-    } catch (error: any) {
-      console.error('Get comparison by slug error:', error);
-      res.status(500).json({ message: error.message || "Failed to get comparison" });
-    }
-  });
-
-  app.get("/api/shoes/comparisons/for-shoe/:shoeId", async (req, res) => {
-    try {
-      const shoeId = parseInt(req.params.shoeId);
-      const comparisons = await storage.getShoeComparisonsByShoeId(shoeId);
-      
-      // Fetch shoe details for each comparison
-      const comparisonsWithShoes = await Promise.all(
-        comparisons.map(async (comparison) => {
-          const [shoe1, shoe2] = await Promise.all([
-            storage.getShoeById(comparison.shoe1Id),
-            storage.getShoeById(comparison.shoe2Id)
-          ]);
-          return { ...comparison, shoe1, shoe2 };
-        })
-      );
-      
-      res.json(comparisonsWithShoes);
-    } catch (error: any) {
-      console.error('Get comparisons for shoe error:', error);
-      res.status(500).json({ message: error.message || "Failed to get comparisons" });
-    }
-  });
-
-  // Get a single shoe by ID (must be after specific routes like /recommend and /rotation)
-  app.get("/api/shoes/:id", async (req, res) => {
-    try {
-      const shoeId = parseInt(req.params.id);
-      const shoe = await storage.getShoeById(shoeId);
-      
-      if (!shoe) {
-        return res.status(404).json({ message: "Shoe not found" });
-      }
-      
-      res.json(shoe);
-    } catch (error: any) {
-      console.error('Get shoe error:', error);
-      res.status(500).json({ message: error.message || "Failed to get shoe" });
-    }
-  });
-
-  // Seed shoes database (admin only for security)
-  app.post("/api/shoes/seed", authenticateAdmin, async (req: any, res) => {
-    try {
-      const force = req.query.force === 'true';
-      
-      // Check if shoes already exist
-      const existingShoes = await storage.getShoes({});
-      
-      if (existingShoes.length > 0 && !force) {
-        return res.json({ 
-          message: `Database already has ${existingShoes.length} shoes. Use ?force=true to reseed.`,
-          count: existingShoes.length 
-        });
-      }
-
-      // If force, clear existing shoes first
-      if (force && existingShoes.length > 0) {
-        await storage.clearAllShoes();
-      }
-
-      // Seed the database with enriched shoe data (including AI fields)
-      const enrichedShoes = getEnrichedShoeData();
-      let seededCount = 0;
-      for (const shoe of enrichedShoes) {
-        await storage.createShoe(shoe);
-        seededCount++;
-      }
-
-      res.json({ 
-        message: `Successfully seeded ${seededCount} shoes with AI data${force ? ' (force reseed)' : ''}`,
-        count: seededCount 
-      });
-    } catch (error: any) {
-      console.error('Seed shoes error:', error);
-      res.status(500).json({ message: error.message || "Failed to seed shoes" });
-    }
-  });
-
-  // Generate shoe comparisons (admin only)
-  app.post("/api/shoes/comparisons/generate", authenticateAdmin, async (req: any, res) => {
-    try {
-      const { generateAllComparisons } = await import("./services/shoeComparisonGenerator");
-      const result = await generateAllComparisons();
-      
-      res.json({
-        message: "Successfully generated shoe comparisons",
-        ...result
-      });
-    } catch (error: any) {
-      console.error('Generate comparisons error:', error);
-      res.status(500).json({ message: error.message || "Failed to generate comparisons" });
-    }
-  });
-
-  // Get pipeline stats from database (admin only)
-  app.get("/api/shoes/pipeline/stats", authenticateAdmin, async (req: any, res) => {
-    try {
-      // Fetch shoes from database (live data)
-      const dbShoes = await storage.getShoes({});
-      const shoes = getShoesWithMetadataFromStorage(dbShoes as any);
-      const stats = getPipelineStats(shoes);
-      const duplicates = findDuplicates(shoes);
-      
-      res.json({
-        stats,
-        duplicates,
-        databaseCount: dbShoes.length,
-        seedDataCount: shoeData.length
-      });
-    } catch (error: any) {
-      console.error('Pipeline stats error:', error);
-      res.status(500).json({ message: error.message || "Failed to get pipeline stats" });
-    }
-  });
-
-  // Validate all shoe data from database (admin only)
-  app.get("/api/shoes/pipeline/validate", authenticateAdmin, async (req: any, res) => {
-    try {
-      // Fetch shoes from database for validation
-      const dbShoes = await storage.getShoes({});
-      const shoes = getShoesWithMetadataFromStorage(dbShoes as any);
-      
-      const valid: typeof shoes = [];
-      const invalid: { shoe: typeof shoes[0]; errors: string[] }[] = [];
-      
-      const { validateShoeData } = await import("./shoe-pipeline");
-      
-      shoes.forEach(shoe => {
-        const validation = validateShoeData(shoe);
-        if (validation.valid) {
-          valid.push(shoe);
-        } else {
-          invalid.push({ shoe, errors: validation.errors });
-        }
-      });
-      
-      res.json({
-        totalShoes: valid.length + invalid.length,
-        validShoes: valid.length,
-        invalidShoes: invalid.length,
-        stats: getPipelineStats(shoes),
-        errors: invalid.map(i => ({
-          brand: i.shoe.brand,
-          model: i.shoe.model,
-          errors: i.errors
-        }))
-      });
-    } catch (error: any) {
-      console.error('Pipeline validation error:', error);
-      res.status(500).json({ message: error.message || "Failed to validate shoes" });
-    }
-  });
-
-  // ============== WAITLIST LAUNCH EMAIL BLAST ==============
-  // Get count of pending launch emails
-  app.get("/api/admin/launch-emails/pending", authenticateAdmin, async (req: any, res) => {
-    try {
-      const pendingEmails = await db.select()
-        .from(emailWaitlist)
-        .where(isNull(emailWaitlist.launchEmailSentAt));
-      
-      res.json({
-        count: pendingEmails.length,
-        emails: pendingEmails.map(e => e.email)
-      });
-    } catch (error: any) {
-      console.error('Pending launch emails error:', error);
-      res.status(500).json({ message: error.message || "Failed to get pending emails" });
-    }
-  });
-
-  // Send launch announcement emails to all waitlist subscribers who haven't received it
-  app.post("/api/admin/send-launch-emails", authenticateAdmin, async (req: any, res) => {
-    try {
-      const pendingEmails = await db.select()
-        .from(emailWaitlist)
-        .where(isNull(emailWaitlist.launchEmailSentAt));
-
-      const results = {
-        sent: 0,
-        failed: 0,
-        errors: [] as string[]
-      };
-
-      for (const subscriber of pendingEmails) {
-        try {
-          const success = await emailService.sendLaunchAnnouncementEmail(subscriber.email);
-          if (success) {
-            // Mark as sent
-            await db.update(emailWaitlist)
-              .set({ launchEmailSentAt: new Date() })
-              .where(eq(emailWaitlist.id, subscriber.id));
-            results.sent++;
-            console.log(`ðŸ“§ Launch email sent to ${subscriber.email}`);
-          } else {
-            results.failed++;
-            results.errors.push(`${subscriber.email}: Send failed`);
-          }
-        } catch (err: any) {
-          results.failed++;
-          results.errors.push(`${subscriber.email}: ${err.message}`);
-        }
-      }
-
-      console.log(`[Launch Emails] Sent: ${results.sent}, Failed: ${results.failed}`);
-      res.json({
-        success: true,
-        totalPending: pendingEmails.length,
-        ...results
-      });
-    } catch (error: any) {
-      console.error('Launch email error:', error);
-      res.status(500).json({ message: error.message || "Failed to send launch emails" });
-    }
-  });
-
-  // Year End Recap - Get stats for a specific year
-  app.get("/api/year-recap/:userId/stats", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      const year = parseInt(req.query.year as string) || new Date().getFullYear();
-
-      if (req.user.id !== userId) {
-        return res.status(403).json({ message: "Unauthorized" });
-      }
-
-      // Fetch ALL user activities (no limit) for accurate year recap
-      const activities = await storage.getActivitiesByUserId(userId, 10000);
-      const stats = calculateYearlyStats(activities, year);
-
-      // Enhance location with reverse geocoding if available
-      if (stats.mostRunLocation) {
-        const locationName = await reverseGeocode(
-          stats.mostRunLocation.latitude,
-          stats.mostRunLocation.longitude
-        );
-        stats.mostRunLocation.name = locationName;
-        stats.mostRunLocation.description = `You ran here ${stats.mostRunLocation.runCount} times in ${year}`;
-      }
-
-      // Calculate favorite day of the week
-      const yearActivities = activities.filter(a => {
-        const activityYear = new Date(a.startDate).getFullYear();
-        return activityYear === year && RUNNING_ACTIVITY_TYPES.includes(a.type);
-      });
-      
-      const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-      const dayCounts: Record<string, number> = {};
-      yearActivities.forEach(a => {
-        const day = dayNames[new Date(a.startDate).getDay()];
-        dayCounts[day] = (dayCounts[day] || 0) + 1;
-      });
-      const favoriteDayEntry = Object.entries(dayCounts).reduce((a, b) => b[1] > a[1] ? b : a, ["", 0]);
-      const favoriteDay = favoriteDayEntry[0] ? { day: favoriteDayEntry[0], count: favoriteDayEntry[1] } : undefined;
-
-      // Get AI insights for the infographic - use content (the actual insight), not title (category name)
-      const aiInsightsList = await storage.getAIInsightsByUserId(userId, undefined, 5);
-      const aiInsights = aiInsightsList
-        .filter(i => i.content && i.content.length > 10)
-        .map(i => i.content)
-        .slice(0, 2);
-
-      // Calculate percentile (simple estimation based on distance)
-      const percentile = Math.min(99, Math.max(1, Math.round(
-        50 + (stats.totalDistanceMiles / 500) * 30
-      )));
-
-      res.json({
-        ...stats,
-        favoriteDay,
-        aiInsights,
-        percentile,
-      });
-    } catch (error: any) {
-      console.error("Year recap stats error:", error);
-      res.status(500).json({ message: error.message || "Failed to get year recap stats" });
-    }
-  });
-
-  // ============================================================
-  // Training Plan V2 Routes (Normalized Schema)
-  // ============================================================
-  
-  // Import plan generator lazily to avoid circular dependencies
-  const { planGeneratorService } = await import("./services/planGenerator");
-  const { athleteProfileService } = await import("./services/athleteProfile");
-  
-  // Get or compute athlete profile
-  app.get("/api/training/profile", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const maxAgeHours = parseInt(req.query.maxAgeHours) || 24;
-      
-      const profile = await athleteProfileService.getOrComputeProfile(userId, maxAgeHours);
-      res.json(profile);
-    } catch (error: any) {
-      console.error("Get athlete profile error:", error);
-      res.status(500).json({ message: error.message || "Failed to get athlete profile" });
-    }
-  });
-  
-  // Force recompute athlete profile
-  app.post("/api/training/profile/refresh", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const profile = await athleteProfileService.computeProfile(userId);
-      res.json(profile);
-    } catch (error: any) {
-      console.error("Refresh athlete profile error:", error);
-      res.status(500).json({ message: error.message || "Failed to refresh athlete profile" });
-    }
-  });
-  
-  app.post("/api/training/plans/check-conflicts", authenticateJWT, async (req: any, res) => {
-    try {
-      const { detectConflicts, analyzeMultiGoalPlan } = await import("./services/multiGoalEngine");
-      const { athleteProfileService: aps } = await import("./services/athleteProfile");
-      const goals = req.body.goals || [];
-      if (goals.length < 2) {
-        return res.json({ conflicts: [], canDualPeak: true, recommendedMode: "single" });
-      }
-      const conflicts = detectConflicts(goals);
-      const profile = await aps.getOrComputeProfile(req.user.id);
-      const analysis = analyzeMultiGoalPlan({ userId: req.user.id, goalType: goals[0].goalType, goals }, profile);
-      res.json({
-        conflicts: analysis.conflicts,
-        canDualPeak: analysis.canDualPeak,
-        recommendedMode: analysis.recommendedMode,
-        totalWeeks: analysis.totalWeeks,
-        phaseTimeline: analysis.phaseTimeline,
-      });
-    } catch (error: any) {
-      console.error("Check conflicts error:", error);
-      res.status(500).json({ message: error.message || "Failed to check conflicts" });
-    }
-  });
-  
-  // Generate training plan (instant version with background enrichment)
-  app.post("/api/training/plans/generate", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      
-      // Get user's unit preference (fallback to "km" to match frontend behavior when null)
-      const user = await storage.getUser(userId);
-      const unitPreference = user?.unitPreference || "km";
-      
-      const request = {
-        userId,
-        unitPreference,
-        ...req.body,
-      };
-      
-      // Use instant generation - returns immediately, enrichment happens in background
-      const result = await planGeneratorService.generatePlanInstant(request);
-      
-      if (!result.success) {
-        return res.status(400).json({ message: result.error });
-      }
-      
-      // Return with enrichment info
-      res.json({
-        success: true,
-        plan: result.plan,
-        planId: result.planId,
-        totalWeeks: result.totalWeeks,
-        enrichmentStatus: result.enrichmentStatus,
-      });
-    } catch (error: any) {
-      console.error("Generate training plan error:", error);
-      res.status(500).json({ message: error.message || "Failed to generate training plan" });
-    }
-  });
-  
-  // SSE endpoint for enrichment progress
-  // Note: SSE can't send Authorization headers, so we accept token from query param
-  app.get("/api/training/plans/:planId/enrichment-stream", async (req: any, res) => {
-    try {
-      // Check both header and query param for token (SSE needs query param)
-      const authHeader = req.headers.authorization;
-      const queryToken = req.query.token as string | undefined;
-      const token = (authHeader && authHeader.split(' ')[1]) || queryToken;
-      
-      if (!token) {
-        return res.status(401).json({ message: "Access token required" });
-      }
-      
-      const user = await authService.verifyToken(token);
-      if (!user) {
-        return res.status(401).json({ message: "Invalid token" });
-      }
-      
-      const userId = user.id;
-      const planId = parseInt(req.params.planId);
-      
-      // Verify ownership
-      const plan = await storage.getTrainingPlanById(planId);
-      if (!plan || plan.userId !== userId) {
-        return res.status(404).json({ message: "Training plan not found" });
-      }
-      
-      // Set SSE headers
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-      res.flushHeaders();
-      
-      // Send initial status
-      res.write(`data: ${JSON.stringify({
-        planId,
-        enrichedWeeks: plan.enrichedWeeks || 0,
-        totalWeeks: plan.totalWeeks,
-        status: plan.enrichmentStatus || 'pending'
-      })}\n\n`);
-      
-      // If already complete, close connection
-      if (plan.enrichmentStatus === 'complete' || plan.enrichmentStatus === 'failed' || plan.enrichmentStatus === 'partial') {
-        res.write(`data: ${JSON.stringify({ done: true, status: plan.enrichmentStatus })}\n\n`);
-        res.end();
-        return;
-      }
-      
-      // Subscribe to enrichment updates
-      const { subscribeToEnrichment } = await import("./services/planGenerator");
-      const unsubscribe = subscribeToEnrichment(planId, (event) => {
-        res.write(`data: ${JSON.stringify(event)}\n\n`);
-        
-        // Close on completion
-        if (event.status === 'complete' || event.status === 'failed' || event.status === 'partial') {
-          res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
-          setTimeout(() => {
-            unsubscribe();
-            res.end();
-          }, 100);
-        }
-      });
-      
-      // Handle client disconnect
-      req.on('close', () => {
-        unsubscribe();
-      });
-      
-    } catch (error: any) {
-      console.error("Enrichment stream error:", error);
-      res.status(500).json({ message: error.message || "Failed to stream enrichment status" });
-    }
-  });
-  
-  // Get enrichment status (polling alternative)
-  app.get("/api/training/plans/:planId/enrichment-status", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const planId = parseInt(req.params.planId);
-      
-      const plan = await storage.getTrainingPlanById(planId);
-      if (!plan || plan.userId !== userId) {
-        return res.status(404).json({ message: "Training plan not found" });
-      }
-      
-      res.json({
-        planId,
-        enrichmentStatus: plan.enrichmentStatus || 'pending',
-        enrichedWeeks: plan.enrichedWeeks || 0,
-        totalWeeks: plan.totalWeeks,
-        enrichmentError: plan.enrichmentError,
-      });
-    } catch (error: any) {
-      console.error("Get enrichment status error:", error);
-      res.status(500).json({ message: error.message || "Failed to get enrichment status" });
-    }
-  });
-  
-  // Get user's training plans
-  app.get("/api/training/plans", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      
-      const plans = await storage.getTrainingPlansByUserId(userId);
-      res.json(plans);
-    } catch (error: any) {
-      console.error("Get training plans error:", error);
-      res.status(500).json({ message: error.message || "Failed to get training plans" });
-    }
-  });
-  
-  // Get a specific training plan with weeks and days
-  app.get("/api/training/plans/:planId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const planId = parseInt(req.params.planId);
-      
-      const plan = await storage.getTrainingPlanById(planId);
-      if (!plan || plan.userId !== userId) {
-        return res.status(404).json({ message: "Training plan not found" });
-      }
-      
-      const [weeks, goals] = await Promise.all([
-        storage.getPlanWeeks(planId),
-        storage.getPlanGoals(planId),
-      ]);
-      const weeksWithDays = await Promise.all(
-        weeks.map(async (week: any) => {
-          const days = await storage.getPlanDays(week.id);
-          return { ...week, days };
-        })
-      );
-      
-      res.json({ ...plan, weeks: weeksWithDays, goals });
-    } catch (error: any) {
-      console.error("Get training plan error:", error);
-      res.status(500).json({ message: error.message || "Failed to get training plan" });
-    }
-  });
-  
-  // Update plan status (archive, complete, etc.)
-  app.patch("/api/training/plans/:planId/status", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const planId = parseInt(req.params.planId);
-      const { status } = req.body;
-      
-      const plan = await storage.getTrainingPlanById(planId);
-      if (!plan || plan.userId !== userId) {
-        return res.status(404).json({ message: "Training plan not found" });
-      }
-      
-      const updated = await storage.updateTrainingPlan(planId, { status });
-      res.json(updated);
-    } catch (error: any) {
-      console.error("Update training plan status error:", error);
-      res.status(500).json({ message: error.message || "Failed to update training plan status" });
-    }
-  });
-  
-  // Update training plan settings
-  app.patch("/api/training/plans/:planId/settings", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const planId = parseInt(req.params.planId);
-      
-      const plan = await storage.getTrainingPlanById(planId);
-      if (!plan || plan.userId !== userId) {
-        return res.status(404).json({ message: "Training plan not found" });
-      }
-      
-      const allowedFields = ["targetTime", "raceDate", "terrainType", "preferredDays", "daysPerWeek"];
-      const updates: Record<string, any> = {};
-      for (const field of allowedFields) {
-        if (req.body[field] !== undefined) {
-          if (field === "raceDate" && req.body[field]) {
-            updates[field] = new Date(req.body[field]);
-          } else {
-            updates[field] = req.body[field];
-          }
-        }
-      }
-      
-      const updated = await storage.updateTrainingPlan(planId, updates);
-      res.json(updated);
-    } catch (error: any) {
-      console.error("Update training plan settings error:", error);
-      res.status(500).json({ message: error.message || "Failed to update training plan settings" });
-    }
-  });
-
-  // Delete a training plan
-  app.delete("/api/training/plans/:planId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const planId = parseInt(req.params.planId);
-      
-      const plan = await storage.getTrainingPlanById(planId);
-      if (!plan || plan.userId !== userId) {
-        return res.status(404).json({ message: "Training plan not found" });
-      }
-      
-      await storage.deleteTrainingPlanById(planId);
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error("Delete training plan error:", error);
-      res.status(500).json({ message: error.message || "Failed to delete training plan" });
-    }
-  });
-  
-  // Get current week's workouts
-  app.get("/api/training/plans/:planId/current-week", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const planId = parseInt(req.params.planId);
-      
-      const plan = await storage.getTrainingPlanById(planId);
-      if (!plan || plan.userId !== userId) {
-        return res.status(404).json({ message: "Training plan not found" });
-      }
-      
-      // Find current week based on date
-      const now = new Date();
-      const weeks = await storage.getPlanWeeks(planId);
-      const currentWeek = weeks.find((w: any) => {
-        const start = new Date(w.weekStartDate);
-        const end = new Date(w.weekEndDate);
-        return now >= start && now <= end;
-      });
-      
-      if (!currentWeek) {
-        return res.status(404).json({ message: "No current week found" });
-      }
-      
-      const days = await storage.getPlanDays(currentWeek.id);
-      res.json({ ...currentWeek, days });
-    } catch (error: any) {
-      console.error("Get current week error:", error);
-      res.status(500).json({ message: error.message || "Failed to get current week" });
-    }
-  });
-  
-  // Mark workout as completed/skipped
-  app.patch("/api/training/days/:dayId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const dayId = parseInt(req.params.dayId);
-      
-      const day = await storage.getPlanDayById(dayId);
-      if (!day) {
-        return res.status(404).json({ message: "Workout day not found" });
-      }
-      
-      // Verify ownership
-      const plan = await storage.getTrainingPlanById(day.planId);
-      if (!plan || plan.userId !== userId) {
-        return res.status(404).json({ message: "Workout not found" });
-      }
-      
-      const updates = req.body;
-      const updated = await storage.updatePlanDay(dayId, updates);
-      res.json(updated);
-    } catch (error: any) {
-      console.error("Update workout day error:", error);
-      res.status(500).json({ message: error.message || "Failed to update workout" });
-    }
-  });
-  
-  // Link an activity to a planned workout
-  app.post("/api/training/days/:dayId/link-activity", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const dayId = parseInt(req.params.dayId);
-      const { activityId } = req.body;
-      
-      const day = await storage.getPlanDayById(dayId);
-      if (!day) {
-        return res.status(404).json({ message: "Workout day not found" });
-      }
-      
-      // Verify ownership
-      const plan = await storage.getTrainingPlanById(day.planId);
-      if (!plan || plan.userId !== userId) {
-        return res.status(404).json({ message: "Workout not found" });
-      }
-      
-      // Get activity data
-      const activity = await storage.getActivityByStravaId(activityId.toString());
-      if (!activity || activity.userId !== userId) {
-        return res.status(404).json({ message: "Activity not found" });
-      }
-      
-      // Update day with activity data
-      const updated = await storage.updatePlanDay(dayId, {
-        linkedActivityId: activity.id,
-        status: "completed",
-        actualDistanceKm: activity.distance ? activity.distance / 1000 : undefined,
-        actualDurationMins: activity.movingTime ? Math.round(activity.movingTime / 60) : undefined,
-        actualPace: activity.averageSpeed ? 
-          `${Math.floor(1000 / activity.averageSpeed / 60)}:${String(Math.floor((1000 / activity.averageSpeed) % 60)).padStart(2, '0')}` : 
-          undefined,
-      });
-      
-      res.json(updated);
-    } catch (error: any) {
-      console.error("Link activity error:", error);
-      res.status(500).json({ message: error.message || "Failed to link activity" });
-    }
-  });
-  
-  // Adapt training plan based on adherence
-  app.post("/api/training/plans/:planId/adapt", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const planId = parseInt(req.params.planId);
-      const { reason } = req.body;
-      
-      const plan = await storage.getTrainingPlanById(planId);
-      if (!plan || plan.userId !== userId) {
-        return res.status(404).json({ message: "Training plan not found" });
-      }
-      
-      const result = await planGeneratorService.adaptPlan(planId, reason);
-      
-      if (!result.success) {
-        return res.status(400).json({ message: result.error });
-      }
-      
-      res.json(result);
-    } catch (error: any) {
-      console.error("Adapt training plan error:", error);
-      res.status(500).json({ message: error.message || "Failed to adapt training plan" });
-    }
-  });
-  
-  // Get adherence statistics for a plan
-  app.get("/api/training/plans/:planId/adherence", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const planId = parseInt(req.params.planId);
-      
-      const plan = await storage.getTrainingPlanById(planId);
-      if (!plan || plan.userId !== userId) {
-        return res.status(404).json({ message: "Training plan not found" });
-      }
-      
-      const stats = await planGeneratorService.getAdherenceStats(planId);
-      res.json(stats);
-    } catch (error: any) {
-      console.error("Get adherence stats error:", error);
-      res.status(500).json({ message: error.message || "Failed to get adherence stats" });
-    }
-  });
-  
-  // Auto-link activities to plan days with adherence summary
-  app.post("/api/training/plans/:planId/auto-link", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const planId = parseInt(req.params.planId);
-      
-      const plan = await storage.getTrainingPlanById(planId);
-      if (!plan || plan.userId !== userId) {
-        return res.status(404).json({ message: "Training plan not found" });
-      }
-      
-      const results = await autoLinkActivitiesForPlan(planId, userId);
-      
-      // Calculate adherence summary for last 7 days
-      const weeks = await storage.getPlanWeeks(planId);
-      const now = new Date();
-      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      
-      let plannedLast7Days = 0;
-      let completedLast7Days = 0;
-      let plannedDistanceKm = 0;
-      let completedDistanceKm = 0;
-      const missedKeyWorkouts: string[] = [];
-      
-      for (const week of weeks) {
-        const days = await storage.getPlanDays(week.id);
-        for (const day of days) {
-          const dayDate = new Date(day.date);
-          if (dayDate >= sevenDaysAgo && dayDate <= now) {
-            if (day.workoutType !== "rest") {
-              plannedLast7Days++;
-              plannedDistanceKm += day.plannedDistanceKm || 0;
-              
-              if (day.status === "completed" || day.linkedActivityId) {
-                completedLast7Days++;
-                completedDistanceKm += day.actualDistanceKm || day.plannedDistanceKm || 0;
-              } else if (dayDate < now) {
-                // Past workout not completed - check if it was a key workout
-                const keyTypes = ["tempo", "intervals", "long_run", "hills", "fartlek", "progression"];
-                if (day.workoutType && keyTypes.includes(day.workoutType)) {
-                  const dayName = dayDate.toLocaleDateString("en-US", { weekday: "short" });
-                  missedKeyWorkouts.push(`${day.workoutType.replace("_", " ")} (${dayName})`);
-                }
-              }
-            }
-          }
-        }
-      }
-      
-      const adherenceRate = plannedLast7Days > 0 
-        ? Math.round((completedLast7Days / plannedLast7Days) * 100) 
-        : 100;
-      
-      // Generate summary message
-      let summary = `Synced ${results.length} activities. Last 7 days: ${completedLast7Days}/${plannedLast7Days} workouts (${adherenceRate}%).`;
-      
-      // Add callout for missed key workouts
-      let callout: string | null = null;
-      if (missedKeyWorkouts.length > 0) {
-        callout = `Missed key workout${missedKeyWorkouts.length > 1 ? "s" : ""}: ${missedKeyWorkouts.join(", ")}. Feeling tired? Consider using the recovery button.`;
-      } else if (adherenceRate >= 90) {
-        callout = "Excellent adherence! You're crushing it.";
-      } else if (adherenceRate < 50) {
-        callout = "Training consistency has been low. Consider adjusting your plan.";
-      }
-      
-      res.json({
-        success: true,
-        linkedCount: results.length,
-        links: results.map(r => ({
-          dayId: r.dayId,
-          activityId: r.activityId,
-          status: r.status,
-          matchScore: r.matchScore,
-        })),
-        adherenceSummary: {
-          last7Days: {
-            planned: plannedLast7Days,
-            completed: completedLast7Days,
-            adherenceRate,
-            plannedDistanceKm: Math.round(plannedDistanceKm * 10) / 10,
-            completedDistanceKm: Math.round(completedDistanceKm * 10) / 10,
-          },
-          missedKeyWorkouts,
-          summary,
-          callout,
-        },
-      });
-    } catch (error: any) {
-      console.error("Auto-link activities error:", error);
-      res.status(500).json({ message: error.message || "Failed to auto-link activities" });
-    }
-  });
-  
-  // Adjust training plan - deterministic coach-like adjustments
-  app.post("/api/training/plans/:planId/adjust", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const planId = parseInt(req.params.planId);
-      const { feeling, skipSync } = req.body; // "tired" or "strong", optionally skip pre-sync
-      
-      if (!feeling || !["tired", "strong"].includes(feeling)) {
-        return res.status(400).json({ message: "Invalid feeling. Use 'tired' or 'strong'" });
-      }
-      
-      const plan = await storage.getTrainingPlanById(planId);
-      if (!plan || plan.userId !== userId) {
-        return res.status(404).json({ message: "Training plan not found" });
-      }
-      
-      // Mini-sync check: if last sync was > 24 hours ago, run auto-link first
-      const user = await storage.getUser(userId);
-      let syncPerformed = false;
-      const SYNC_THRESHOLD_HOURS = 24;
-      
-      if (!skipSync && user?.stravaAccessToken) {
-        const lastSync = user.lastSyncAt ? new Date(user.lastSyncAt) : null;
-        const hoursSinceSync = lastSync ? (Date.now() - lastSync.getTime()) / (1000 * 60 * 60) : Infinity;
-        
-        if (hoursSinceSync > SYNC_THRESHOLD_HOURS) {
-          // Auto-link activities to ground adjustments in recent training
-          try {
-            await autoLinkActivitiesForPlan(planId, userId);
-            syncPerformed = true;
-            console.log(`[Adjust] Pre-adjustment sync completed for plan ${planId}`);
-          } catch (syncErr) {
-            console.warn(`[Adjust] Pre-sync failed, continuing with adjustment:`, syncErr);
-          }
-        }
-      }
-      
-      const weeks = await storage.getPlanWeeks(planId);
-      const now = new Date();
-      
-      // Find the next week(s) to adjust (next 7-14 days from now)
-      const nextWeeks = weeks.filter((w: any) => {
-        const weekStart = new Date(w.weekStartDate);
-        const weekEnd = new Date(w.weekEndDate);
-        // Week starts in the future or is current week
-        return weekEnd >= now;
-      }).slice(0, 2); // Only adjust next 1-2 weeks
-      
-      if (nextWeeks.length === 0) {
-        return res.json({
-          success: true,
-          feeling,
-          adaptedWeeks: 0,
-          changes: ["No future weeks to adjust"],
-          coachNote: "Your plan is complete - no adjustments needed!"
-        });
-      }
-      
-      const changes: string[] = [];
-      const adjustedDayIds: number[] = [];
-      
-      for (const week of nextWeeks) {
-        const days = await storage.getPlanDays(week.id);
-        const originalWeekDistance = week.plannedDistanceKm || 0;
-        let newWeekDistance = originalWeekDistance;
-        
-        if (feeling === "tired") {
-          // TIRED: Reduce volume 10-20%, soften quality workouts, shorten long run
-          const volumeReduction = 0.85; // 15% reduction
-          newWeekDistance = originalWeekDistance * volumeReduction;
-          
-          let qualitySoftened = false;
-          
-          for (const day of days) {
-            if (day.workoutType === "rest") continue;
-            
-            const originalDistance = day.plannedDistanceKm;
-            const originalType = day.workoutType;
-            let updates: any = {};
-            
-            // Soften ONE quality workout per week
-            if (!qualitySoftened && ["intervals", "tempo", "hills", "fartlek"].includes(day.workoutType)) {
-              updates.originalWorkoutType = day.workoutType;
-              updates.originalDistanceKm = day.plannedDistanceKm;
-              updates.workoutType = "easy";
-              updates.intensity = "low";
-              updates.title = "Easy Run (adjusted)";
-              updates.description = `Originally ${day.workoutType}. Converted to easy run to allow recovery.`;
-              if (day.plannedDistanceKm) {
-                updates.plannedDistanceKm = Math.round(day.plannedDistanceKm * 0.9 * 10) / 10;
-              }
-              updates.wasAdjusted = true;
-              qualitySoftened = true;
-              changes.push(`Week ${week.weekNumber}: ${originalType} â†’ easy run`);
-            }
-            // Shorten long run by 10-20%
-            else if (day.workoutType === "long_run" && day.plannedDistanceKm) {
-              updates.originalDistanceKm = day.plannedDistanceKm;
-              updates.plannedDistanceKm = Math.round(day.plannedDistanceKm * 0.85 * 10) / 10;
-              updates.wasAdjusted = true;
-              changes.push(`Week ${week.weekNumber}: Long run ${originalDistance?.toFixed(1)}km â†’ ${updates.plannedDistanceKm}km`);
-            }
-            // Reduce easy/recovery runs slightly
-            else if (["easy", "recovery"].includes(day.workoutType) && day.plannedDistanceKm) {
-              updates.originalDistanceKm = day.plannedDistanceKm;
-              updates.plannedDistanceKm = Math.round(day.plannedDistanceKm * 0.9 * 10) / 10;
-              updates.wasAdjusted = true;
-            }
-            
-            if (Object.keys(updates).length > 0) {
-              await storage.updatePlanDay(day.id, updates);
-              adjustedDayIds.push(day.id);
-            }
-          }
-          
-          // Update week with adjustment metadata
-          await storage.updatePlanWeek(week.id, {
-            plannedDistanceKm: Math.round(newWeekDistance * 10) / 10,
-            wasAdjusted: true,
-            adjustmentReason: "tired",
-            adjustedAt: new Date(),
-            coachNotes: `Recovery adjustment: You indicated fatigue, so we reduced volume by ~15% and converted a quality session to an easy run. Listen to your body - consistent easy running beats pushing through fatigue.`
-          });
-          
-        } else if (feeling === "strong") {
-          // STRONG: Modest increase 5-10% (cap at 15%), progress existing quality session slightly
-          const volumeIncrease = 1.08; // 8% increase (conservative)
-          newWeekDistance = Math.min(originalWeekDistance * 1.15, originalWeekDistance * volumeIncrease);
-          
-          let qualityProgressed = false;
-          
-          for (const day of days) {
-            if (day.workoutType === "rest") continue;
-            
-            let updates: any = {};
-            
-            // Slightly progress ONE quality workout
-            if (!qualityProgressed && ["intervals", "tempo"].includes(day.workoutType)) {
-              updates.originalDistanceKm = day.plannedDistanceKm;
-              if (day.plannedDistanceKm) {
-                updates.plannedDistanceKm = Math.round(day.plannedDistanceKm * 1.1 * 10) / 10;
-              }
-              updates.wasAdjusted = true;
-              qualityProgressed = true;
-              changes.push(`Week ${week.weekNumber}: ${day.workoutType} slightly extended`);
-            }
-            // Modest long run increase (+1-2km max)
-            else if (day.workoutType === "long_run" && day.plannedDistanceKm) {
-              const increase = Math.min(1.5, day.plannedDistanceKm * 0.08); // 8% or 1.5km max
-              updates.originalDistanceKm = day.plannedDistanceKm;
-              updates.plannedDistanceKm = Math.round((day.plannedDistanceKm + increase) * 10) / 10;
-              updates.wasAdjusted = true;
-              changes.push(`Week ${week.weekNumber}: Long run +${increase.toFixed(1)}km`);
-            }
-            
-            if (Object.keys(updates).length > 0) {
-              await storage.updatePlanDay(day.id, updates);
-              adjustedDayIds.push(day.id);
-            }
-          }
-          
-          // Update week with adjustment metadata
-          await storage.updatePlanWeek(week.id, {
-            plannedDistanceKm: Math.round(newWeekDistance * 10) / 10,
-            wasAdjusted: true,
-            adjustmentReason: "strong",
-            adjustedAt: new Date(),
-            coachNotes: `Progressive adjustment: You're feeling strong! We've slightly increased your quality session and long run to build on this momentum. Stay consistent and keep listening to your body.`
-          });
-        }
-      }
-      
-      const coachNote = feeling === "tired"
-        ? `Recovery Mode: Next week eased by ~15%. We converted a hard workout to easy running and shortened your long run. This helps you recover while maintaining fitness.`
-        : `Building Momentum: Next week progressed by ~8%. Your tempo/interval session is slightly longer and your long run increased modestly. Great work - keep it rolling!`;
-      
-      res.json({
-        success: true,
-        feeling,
-        adaptedWeeks: nextWeeks.length,
-        adjustedDays: adjustedDayIds.length,
-        changes,
-        coachNote,
-        syncPerformed,
-      });
-    } catch (error: any) {
-      console.error("Adjust training plan error:", error);
-      res.status(500).json({ message: error.message || "Failed to adjust training plan" });
-    }
-  });
-
-  // Delete training plan (cascade delete weeks and days)
-  app.delete("/api/training/plans/:planId", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const planId = parseInt(req.params.planId);
-      
-      const plan = await storage.getTrainingPlanById(planId);
-      if (!plan || plan.userId !== userId) {
-        return res.status(404).json({ message: "Training plan not found" });
-      }
-      
-      // Delete plan - days and weeks will cascade if properly set up
-      await storage.deleteTrainingPlans(userId);
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error("Delete training plan error:", error);
-      res.status(500).json({ message: error.message || "Failed to delete training plan" });
-    }
-  });
-
-  // ===== ROUTE MATCHING & COMPARISON ENDPOINTS (Premium) =====
-  
-  // Get route comparison data for an activity
-  app.get("/api/activities/:activityId/comparison", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const activityId = parseInt(req.params.activityId);
-      
-      if (!await requireCapability(req, res, "activity_comparison")) return;
-      const comparisonActivity = await storage.getActivityById(activityId);
-      if (!comparisonActivity || comparisonActivity.userId !== userId) {
-        return res.status(404).json({ message: "Activity not found" });
-      }
-      
-      // Import services dynamically to avoid circular deps
-      const { getOrComputeComparison, getWhatChanged } = await import('./services/comparableRunsService');
-      const { assignRouteToActivity, getActivityRoute } = await import('./services/routeClusteringService');
-      
-      // Ensure activity has a route assigned
-      await assignRouteToActivity(activityId);
-      
-      // Get comparison data
-      const comparison = await getOrComputeComparison(userId, activityId);
-      if (!comparison) {
-        return res.json({ 
-          hasComparison: false,
-          message: "Not enough comparable runs found"
-        });
-      }
-      
-      // Get what changed analysis
-      const whatChanged = await getWhatChanged(activityId, comparison);
-      
-      // Get route info
-      const routeInfo = await getActivityRoute(activityId);
-      
-      res.json({
-        hasComparison: true,
-        isPremium: true,
-        comparableRuns: comparison.comparableRuns.slice(0, 10),
-        baseline: comparison.baseline,
-        deltas: comparison.deltas,
-        whatChanged,
-        routeMatch: comparison.routeMatch ? {
-          routeId: comparison.routeMatch.routeId,
-          lastRunOnRoute: comparison.routeMatch.lastRunOnRoute,
-          routeHistory: comparison.routeMatch.routeHistory.slice(0, 10)
-        } : null,
-        route: routeInfo ? {
-          id: routeInfo.route.id,
-          name: routeInfo.route.name,
-          runCount: routeInfo.route.runCount,
-          avgDistance: routeInfo.route.avgDistance,
-          avgElevationGain: routeInfo.route.avgElevationGain
-        } : null
-      });
-    } catch (error: any) {
-      console.error("Get activity comparison error:", error);
-      res.status(500).json({ message: error.message || "Failed to get comparison data" });
-    }
-  });
-  
-  // Get route history for an activity
-  app.get("/api/activities/:activityId/route-history", authenticateJWT, async (req: any, res) => {
-    try {
-      const activityId = parseInt(req.params.activityId);
-
-      // Ownership + lock gate: route-history exposes per-activity metadata
-      // (distance/duration/HR), so it must enforce the same rules as the
-      // detail endpoint â€” otherwise free users could enumerate locked rows
-      // or other users' data via this endpoint.
-      const rhActivity = await storage.getActivityById(activityId);
-      if (!rhActivity || rhActivity.userId !== req.user.id) {
-        return res.status(404).json({ message: "Activity not found" });
-      }
-      if (!await requireCapability(req, res, "activity_deep_dive")) return;
-      const rhOwner = await storage.getUser(rhActivity.userId);
-      const { isPaidPlan: rhIsPaid } = await import("./rateLimits");
-      if (rhActivity.lockedForFree && !rhIsPaid(rhOwner?.subscriptionPlan ?? null, rhOwner?.subscriptionStatus ?? null)) {
-        return res.status(402).json({ locked: true, message: "Upgrade required." });
-      }
-
-      const { getActivityRoute } = await import('./services/routeClusteringService');
-      const routeInfo = await getActivityRoute(activityId);
-      
-      if (!routeInfo) {
-        return res.json({ hasRoute: false });
-      }
-      
-      res.json({
-        hasRoute: true,
-        route: {
-          id: routeInfo.route.id,
-          name: routeInfo.route.name,
-          runCount: routeInfo.route.runCount
-        },
-        history: routeInfo.history.slice(0, 20)
-      });
-    } catch (error: any) {
-      console.error("Get route history error:", error);
-      res.status(500).json({ message: error.message || "Failed to get route history" });
-    }
-  });
-  
-  // Manually trigger route assignment for an activity
-  app.post("/api/activities/:activityId/assign-route", authenticateJWT, async (req: any, res) => {
-    try {
-      const activityId = parseInt(req.params.activityId);
-      
-      const { assignRouteToActivity } = await import('./services/routeClusteringService');
-      const success = await assignRouteToActivity(activityId);
-      
-      res.json({ success });
-    } catch (error: any) {
-      console.error("Assign route error:", error);
-      res.status(500).json({ message: error.message || "Failed to assign route" });
-    }
-  });
-
-  // ============= NOTIFICATION ENDPOINTS =============
-  
-  // Admin: Process pending notifications (trigger email delivery)
-  app.post("/api/admin/notifications/process", authenticateAdmin, async (req: any, res) => {
-    try {
-      const { processNotifications } = await import('./services/notificationProcessor');
-      const limit = parseInt(req.query?.limit as string) || 50;
-      const result = await processNotifications(limit);
-      res.json(result);
-    } catch (error: any) {
-      console.error("Notification processing error:", error);
-      res.status(500).json({ message: error.message || "Failed to process notifications" });
-    }
-  });
-
-  // Get user's in-app notifications
-  app.get("/api/notifications", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user!.id;
-      const limit = parseInt(req.query?.limit as string) || 20;
-      const notifications = await storage.getNotificationsByUserId(userId, limit);
-      const unreadCount = await storage.getUnreadNotificationsCount(userId);
-      res.json({ notifications, unreadCount });
-    } catch (error: any) {
-      console.error("Get notifications error:", error);
-      res.status(500).json({ message: error.message || "Failed to get notifications" });
-    }
-  });
-
-  // ============================================
-  // Push notifications (web push)
-  // ============================================
-  app.get("/api/push/vapid-public-key", async (_req, res) => {
-    try {
-      const { getPublicVapidKey } = await import("./services/pushService");
-      const publicKey = await getPublicVapidKey();
-      res.json({ publicKey });
-    } catch (error: any) {
-      console.error("Get VAPID key error:", error);
-      res.status(500).json({ message: error.message || "Failed to load VAPID key" });
-    }
-  });
-
-  app.post("/api/push/subscribe", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user!.id;
-      const { platform, endpoint, p256dh, auth, nativeToken, userAgent } = req.body || {};
-
-      if (!platform || !["web", "ios", "android"].includes(platform)) {
-        return res.status(400).json({ message: "Invalid platform" });
-      }
-      if (platform === "web" && (!endpoint || !p256dh || !auth)) {
-        return res.status(400).json({ message: "Missing web push fields (endpoint, p256dh, auth)" });
-      }
-      if (platform !== "web" && !nativeToken) {
-        return res.status(400).json({ message: "Missing nativeToken for native platform" });
-      }
-
-      const sub = await storage.upsertPushSubscription({
-        userId,
-        platform,
-        endpoint: endpoint || null,
-        p256dh: p256dh || null,
-        auth: auth || null,
-        nativeToken: nativeToken || null,
-        userAgent: userAgent || req.headers["user-agent"] || null,
-        enabled: true,
-      });
-      res.json({ ok: true, id: sub.id });
-    } catch (error: any) {
-      console.error("Push subscribe error:", error);
-      res.status(500).json({ message: error.message || "Failed to subscribe" });
-    }
-  });
-
-  app.post("/api/push/unsubscribe", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user!.id;
-      const { endpoint, nativeToken } = req.body || {};
-      if (endpoint) {
-        await storage.deletePushSubscriptionByEndpointForUser(userId, endpoint);
-      }
-      if (nativeToken) {
-        await storage.deletePushSubscriptionByNativeTokenForUser(userId, nativeToken);
-      }
-      res.json({ ok: true });
-    } catch (error: any) {
-      console.error("Push unsubscribe error:", error);
-      res.status(500).json({ message: error.message || "Failed to unsubscribe" });
-    }
-  });
-
-  app.post("/api/push/test", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user!.id;
-      const { sendPushToUser } = await import("./services/pushService");
-      const result = await sendPushToUser(userId, {
-        title: "ðŸƒ Test push",
-        body: "If you see this, push notifications are working!",
-        url: "/dashboard",
-        tag: "test-push",
-      });
-      res.json(result);
-    } catch (error: any) {
-      console.error("Push test error:", error);
-      res.status(500).json({ message: error.message || "Test push failed" });
-    }
-  });
-
-  // Get unread notification count (for badge)
-  app.get("/api/notifications/unread-count", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user!.id;
-      const count = await storage.getUnreadNotificationsCount(userId);
-      res.json({ count });
-    } catch (error: any) {
-      console.error("Get unread count error:", error);
-      res.status(500).json({ message: error.message || "Failed to get unread count" });
-    }
-  });
-
-  // Mark single notification as read
-  app.post("/api/notifications/:notificationId/read", authenticateJWT, async (req: any, res) => {
-    try {
-      const notificationId = parseInt(req.params.notificationId);
-      const userId = req.user!.id;
-      
-      const success = await storage.markNotificationReadForUser(notificationId, userId);
-      if (!success) {
-        return res.status(404).json({ message: "Notification not found" });
-      }
-      
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error("Mark notification read error:", error);
-      res.status(500).json({ message: error.message || "Failed to mark notification as read" });
-    }
-  });
-
-  // Mark all notifications as read
-  app.post("/api/notifications/read-all", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = req.user!.id;
-      await storage.markAllNotificationsRead(userId);
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error("Mark all notifications read error:", error);
-      res.status(500).json({ message: error.message || "Failed to mark notifications as read" });
-    }
-  });
-
-  // ============= DRIP CAMPAIGN ENDPOINTS =============
-
-  // Track email click (public endpoint with token validation)
-  app.get("/api/track/click", async (req: any, res) => {
-    try {
-      const { userId, campaign, step, redirect, source } = req.query;
-      
-      if (userId && campaign && step) {
-        await storage.createEmailClick({
-          userId: parseInt(userId),
-          campaign,
-          step,
-          source: source || null,
-          ctaKey: null,
-        });
-      }
-      
-      // Redirect to the target URL or dashboard
-      const targetUrl = redirect || '/dashboard';
-      res.redirect(302, targetUrl);
-    } catch (error) {
-      console.error("Track click error:", error);
-      res.redirect(302, '/dashboard');
-    }
-  });
-
-  // Admin: Get campaign analytics
-  app.get("/api/admin/campaigns/analytics", authenticateAdmin, async (req: any, res) => {
-    try {
-      const analytics = await storage.getCampaignAnalytics();
-      res.json(analytics);
-    } catch (error: any) {
-      console.error("Campaign analytics error:", error);
-      res.status(500).json({ message: error.message || "Failed to get analytics" });
-    }
-  });
-
-  // Admin: Get drip campaign worker status
-  app.get("/api/admin/campaigns/worker-status", authenticateAdmin, async (req: any, res) => {
-    try {
-      const status = dripCampaignWorker.getStatus();
-      res.json(status);
-    } catch (error: any) {
-      console.error("Worker status error:", error);
-      res.status(500).json({ message: error.message || "Failed to get worker status" });
-    }
-  });
-
-  // Admin: Trigger manual drip campaign worker run
-  app.post("/api/admin/campaigns/process", authenticateAdmin, async (req: any, res) => {
-    try {
-      await dripCampaignWorker.runNow();
-      res.json({ success: true, message: "Worker run triggered" });
-    } catch (error: any) {
-      console.error("Worker trigger error:", error);
-      res.status(500).json({ message: error.message || "Failed to trigger worker" });
-    }
-  });
-
-  // Admin: Toggle drip campaigns ON/OFF
-  app.post("/api/admin/campaigns/toggle", authenticateAdmin, async (req: any, res) => {
-    try {
-      const { enabled } = req.body;
-      
-      if (typeof enabled !== 'boolean') {
-        return res.status(400).json({ message: "enabled must be a boolean" });
-      }
-      
-      await dripCampaignWorker.setCampaignsEnabled(enabled);
-      
-      res.json({ 
-        success: true, 
-        campaignsEnabled: dripCampaignWorker.isCampaignsEnabled(),
-        message: `Drip campaigns ${enabled ? 'ENABLED' : 'DISABLED'}`
-      });
-    } catch (error: any) {
-      console.error("Campaign toggle error:", error);
-      res.status(500).json({ message: error.message || "Failed to toggle campaigns" });
-    }
-  });
-
-  // Admin: Get segment stats for campaigns (reads from user_campaigns table)
-  app.get("/api/admin/campaigns/segment-stats", authenticateAdmin, async (req: any, res) => {
-    try {
-      // Get actual enrollment counts from user_campaigns table
-      const segmentStats = await storage.getSegmentStatsFromCampaigns();
-      
-      // Get user counts using proper count queries (no limit)
-      const userCounts = await storage.getUserCountsBySubscription();
-      
-      res.json({
-        segment_a: segmentStats.segment_a || 0,
-        segment_b: segmentStats.segment_b || 0,
-        segment_c: segmentStats.segment_c || 0,
-        paid: userCounts.paid,
-        total: userCounts.total,
-      });
-    } catch (error: any) {
-      console.error("Segment stats error:", error);
-      res.status(500).json({ message: error.message || "Failed to get segment stats" });
-    }
-  });
-
-  // Admin: Get pending email jobs
-  app.get("/api/admin/campaigns/pending-jobs", authenticateAdmin, async (req: any, res) => {
-    try {
-      const limit = parseInt(req.query?.limit as string) || 50;
-      const jobs = await storage.getPendingEmailJobs(limit);
-      res.json({ jobs, count: jobs.length });
-    } catch (error: any) {
-      console.error("Pending jobs error:", error);
-      res.status(500).json({ message: error.message || "Failed to get pending jobs" });
-    }
-  });
-
-  // Admin: Enroll missing users into drip campaigns
-  app.post("/api/admin/campaigns/enroll-missing", authenticateAdmin, async (req: any, res) => {
-    try {
-      const result = await dripCampaignService.enrollMissingUsers();
-      res.json({ 
-        success: true, 
-        enrolled: result.enrolled, 
-        skipped: result.skipped,
-        message: `Enrolled ${result.enrolled} users, skipped ${result.skipped} already enrolled`
-      });
-    } catch (error: any) {
-      console.error("Enroll missing users error:", error);
-      res.status(500).json({ message: error.message || "Failed to enroll users" });
-    }
-  });
-
-  // Admin: Get welcome email campaign stats
-  app.get("/api/admin/welcome-campaign/stats", authenticateAdmin, async (req: any, res) => {
-    try {
-      const stats = await storage.getWelcomeCampaignStats();
-      res.json(stats);
-    } catch (error: any) {
-      console.error("Welcome campaign stats error:", error);
-      res.status(500).json({ message: error.message || "Failed to get stats" });
-    }
-  });
-
-  // Admin: Send test welcome email to current admin
-  app.post("/api/admin/welcome-campaign/test", authenticateAdmin, async (req: any, res) => {
-    try {
-      const adminUser = await storage.getUser(req.user.id);
-      if (!adminUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      const success = await emailService.sendFoundersWelcomeEmail(adminUser.email);
-      res.json({ 
-        success, 
-        message: success ? `Test email sent to ${adminUser.email}` : "Failed to send email" 
-      });
-    } catch (error: any) {
-      console.error("Test welcome email error:", error);
-      res.status(500).json({ message: error.message || "Failed to send test email" });
-    }
-  });
-
-  // Admin: Send welcome emails to all users (rate-limited batch)
-  app.post("/api/admin/welcome-campaign/send-all", authenticateAdmin, async (req: any, res) => {
-    try {
-      // Get all users who haven't received the welcome email yet
-      const users = await storage.getUsersWithoutWelcomeEmail();
-      
-      if (users.length === 0) {
-        return res.json({ 
-          success: true, 
-          sent: 0, 
-          failed: 0, 
-          total: 0,
-          message: "No users need the welcome email" 
-        });
-      }
-      
-      let sent = 0;
-      let failed = 0;
-      const batchSize = 5;
-      const delayMs = 1500; // 1.5 seconds between batches
-      
-      for (let i = 0; i < users.length; i += batchSize) {
-        const batch = users.slice(i, i + batchSize);
-        
-        // Process batch in parallel
-        const results = await Promise.all(
-          batch.map(async (user: { id: number; email: string | null }) => {
-            if (!user.email) return false; // Skip Strava-only users with no email
-            try {
-              const success = await emailService.sendFoundersWelcomeEmail(user.email);
-              if (success) {
-                await storage.updateUser(user.id, { welcomeEmailSentAt: new Date() });
-                return true;
-              }
-              return false;
-            } catch (err) {
-              console.error(`Failed to send welcome email to ${user.email}:`, err);
-              return false;
-            }
-          })
-        );
-        
-        sent += results.filter((r: boolean) => r).length;
-        failed += results.filter((r: boolean) => !r).length;
-        
-        // Delay between batches (except for last batch)
-        if (i + batchSize < users.length) {
-          await new Promise(resolve => setTimeout(resolve, delayMs));
-        }
-      }
-      
-      res.json({ 
-        success: true, 
-        sent, 
-        failed, 
-        total: users.length,
-        message: `Sent ${sent} welcome emails, ${failed} failed` 
-      });
-    } catch (error: any) {
-      console.error("Bulk welcome email error:", error);
-      res.status(500).json({ message: error.message || "Failed to send emails" });
-    }
-  });
-
-  // Admin: Send product update email (test or all)
-  app.post("/api/admin/send-product-update", authenticateAdmin, async (req: any, res) => {
-    try {
-      const isTest = req.query.test === "true";
-      const adminUser = req.user;
-
-      const { subject, html: htmlBody, text: textBody } = emailService.productUpdateNewsletter();
-
-      if (isTest) {
-        const success = await emailService.sendEmail({
-          to: adminUser.email,
-          subject: `[TEST] ${subject}`,
-          html: htmlBody,
-          text: textBody,
-        });
-        return res.json({
-          success,
-          sent: success ? 1 : 0,
-          failed: success ? 0 : 1,
-          total: 1,
-          message: success ? `Test email sent to ${adminUser.email}` : "Failed to send test email",
-        });
-      }
-
-      const allUsers = await storage.getAllUsers(10000);
-      const recipients = allUsers.filter((u: any) => !u.marketingOptOut && u.email);
-
-      let sent = 0;
-      let failed = 0;
-      // Resend's default limit is 2 requests/second. Send 2 per batch with a
-      // ~1.1s gap (~1.8 req/s) to stay safely under it; sendEmail also retries
-      // with backoff on any 429 so transient spikes don't drop messages.
-      const batchSize = 2;
-      const delayMs = 1100;
-
-      for (let i = 0; i < recipients.length; i += batchSize) {
-        const batch = recipients.slice(i, i + batchSize);
-        const results = await Promise.all(
-          batch.map(async (user: any) => {
-            try {
-              const success = await emailService.sendEmail({
-                to: user.email,
-                subject,
-                html: htmlBody,
-                text: textBody,
-              });
-              return success;
-            } catch (err) {
-              console.error(`Failed to send product update to ${user.email}:`, err);
-              return false;
-            }
-          })
-        );
-        sent += results.filter(Boolean).length;
-        failed += results.filter((r: boolean) => !r).length;
-        if (i + batchSize < recipients.length) {
-          await new Promise(resolve => setTimeout(resolve, delayMs));
-        }
-      }
-
-      console.log(`[ProductUpdate] Sent: ${sent}, Failed: ${failed}, Total: ${recipients.length}`);
-      res.json({
-        success: true,
-        sent,
-        failed,
-        total: recipients.length,
-        message: `Sent ${sent} product update emails, ${failed} failed`,
-      });
-    } catch (error: any) {
-      console.error("Product update email error:", error);
-      res.status(500).json({ message: error.message || "Failed to send product update emails" });
-    }
-  });
-
-  // User: Opt out of marketing emails
-  app.post("/api/users/:userId/marketing-optout", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (req.user.id !== userId) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-      
-      await storage.updateUser(userId, { marketingOptOut: true });
-      await dripCampaignService.exitCampaignForUser(userId, "user_optout");
-      
-      res.json({ success: true, message: "Successfully unsubscribed from marketing emails" });
-    } catch (error: any) {
-      console.error("Marketing optout error:", error);
-      res.status(500).json({ message: error.message || "Failed to opt out" });
-    }
-  });
-
-  // Update user's last seen timestamp on dashboard load
-  app.post("/api/users/:userId/heartbeat", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      if (req.user.id !== userId) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-      
-      const result = await reactivateDormantAccount(userId);
-      res.json({ success: true, reactivated: result.reactivated });
-    } catch (error: any) {
-      // Silent failure for heartbeat
-      res.json({ success: false });
-    }
-  });
-
-  // Record user activation event
-  app.post("/api/users/:userId/activation", authenticateJWT, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      const { activationType } = req.body;
-      
-      if (req.user.id !== userId) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-      
-      await dripCampaignService.recordActivation(userId, activationType || "dashboard_view");
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error("Activation recording error:", error);
-      res.status(500).json({ message: error.message || "Failed to record activation" });
-    }
-  });
-
-  // Start the drip campaign worker (async, loads settings from DB)
-  dripCampaignWorker.start().catch(err => 
-    console.error("[DripWorker] Failed to start:", err)
-  );
-
-  // Start the weekly summary worker (fires every Monday UTC)
-  weeklySummaryWorker.start();
-
-  // Pause free Strava processing after 30 days without an app visit.
-  accountDormancyWorker.start();
-
-  const httpServer = createServer(app);
-  return httpServer;
-}
+      description: "Calculate broad easy, long-run, steady, threshold and int×^µïÛh‘éì¶»§q«^tØYÙNˆ\œ›Ü‹›Y\ÜØYÙH‘˜Z[YÈÙ][œ™XYÛÝ[ˆJNÃBˆCBˆJNÃBƒBˆËÈX\šÈÚ[™ÛH›ÝYšXØ][Ûˆ\È™XYBˆ\œÜÝ
+‹Ø\KÛ›ÝYšXØ][ÛœËÎ››ÝYšXØ][Û’YÜ™XY‹]][XØ]R•Õ\Þ[˜È
+™\Nˆ[žK™\ÊHOˆÃBˆžHÃBˆÛÛœÝ›ÝYšXØ][Û’YH\œÙR[
+™\Kœ\˜[\Ë››ÝYšXØ][Û’Y
+NÃBˆÛÛœÝ\Ù\’YH™\K\Ù\ˆKšYÃBˆBˆÛÛœÝÝXØÙ\ÜÈH]ØZ]ÝÜ˜YÙK›X\šÓ›ÝYšXØ][Û”™XY›Ü•\Ù\Š›ÝYšXØ][Û’Y\Ù\’Y
+NÃBˆYˆ
+\ÝXØÙ\ÜÊHÃBˆ™]\›ˆ™\ËœÝ]\Ê
+KšœÛÛŠÈY\ÜØYÙNˆ“›ÝYšXØ][Ûˆ›Ý›Ý[™ˆJNÃBˆCBˆBˆ™\ËšœÛÛŠÈÝXØÙ\ÜÎˆYHJNÃBˆHØ]Ú
+\œ›ÜŽˆ[žJHÃBˆÛÛœÛÛK™\œ›ÜŠ“X\šÈ›ÝYšXØ][Ûˆ™XY\œ›ÜŽˆ‹\œ›ÜŠNÃBˆ™\ËœÝ]\ÊL
+KšœÛÛŠÈY\ÜØYÙNˆ\œ›Ü‹›Y\ÜØYÙH‘˜Z[YÈX\šÈ›ÝYšXØ][Ûˆ\È™XYˆJNÃBˆCBˆJNÃBƒBˆËÈX\šÈ[›ÝYšXØ][ÛœÈ\È™XYBˆ\œÜÝ
+‹Ø\KÛ›ÝYšXØ][ÛœËÜ™XYX[‹]][XØ]R•Õ\Þ[˜È
+™\Nˆ[žK™\ÊHOˆÃBˆžHÃBˆÛÛœÝ\Ù\’YH™\K\Ù\ˆKšYÃBˆ]ØZ]ÝÜ˜YÙK›X\šÐ[›ÝYšXØ][ÛœÔ™XY
+\Ù\’Y
+NÃBˆ™\ËšœÛÛŠÈÝXØÙ\ÜÎˆYHJNÃBˆHØ]Ú
+\œ›ÜŽˆ[žJHÃBˆÛÛœÛÛK™\œ›ÜŠ“X\šÈ[›ÝYšXØ][ÛœÈ™XY\œ›ÜŽˆ‹\œ›ÜŠNÃBˆ™\ËœÝ]\ÊL
+KšœÛÛŠÈY\ÜØYÙNˆ\œ›Ü‹›Y\ÜØYÙH‘˜Z[YÈX\šÈ›ÝYšXØ][ÛœÈ\È™XYˆJNÃBˆCBˆJNÃBƒBˆËÈOOOOOOOOOOOOH’TÐSTRQÓˆS‘ÒS•ÈOOOOOOOOOOOOCBƒBˆËÈ˜XÚÈ[XZ[ÛXÚÈ
+X›XÈ[™Ú[Ú]ÚÙ[ˆ˜[Y][ÛŠCBˆ\™Ù]
+‹Ø\KÝ˜XÚËØÛXÚÈ‹\Þ[˜È
+™\Nˆ[žK™\ÊHOˆÃBˆžHÃBˆÛÛœÝÈ\Ù\’YØ[\ZYÛ‹Ý\™Y\™XÝÛÝ\˜ÙHHH™\Kœ]Y\žNÃBˆBˆYˆ
+\Ù\’Y	‰ˆØ[\ZYÛˆ	‰ˆÝ\
+HÃBˆ]ØZ]ÝÜ˜YÙK˜Ü™X]Q[XZ[ÛXÚÊÃBˆ\Ù\’Yˆ\œÙR[
+\Ù\’Y
+KBˆØ[\ZYÛ‹BˆÝ\BˆÛÝ\˜ÙNˆÛÝ\˜ÙH[BˆÝRÙ^Nˆ[BˆJNÃBˆCBˆBˆËÈ™Y\™XÝÈH\™Ù]T“Üˆ\Ú›Ø\™BˆÛÛœÝ\™Ù]\›H™Y\™XÝ	ËÙ\Ú›Ø\™	ÎÃBˆ™\Ëœ™Y\™XÝ
+Ì‹\™Ù]\›
+NÃBˆHØ]Ú
+\œ›ÜŠHÃBˆÛÛœÛÛK™\œ›ÜŠ•˜XÚÈÛXÚÈ\œ›ÜŽˆ‹\œ›ÜŠNÃBˆ™\Ëœ™Y\™XÝ
+Ì‹	ËÙ\Ú›Ø\™	ÊNÃBˆCBˆJNÃBƒBˆËÈYZ[ŽˆÙ]Ø[\ZYÛˆ[˜[]XÜÃBˆ\™Ù]
+‹Ø\KØYZ[‹ØØ[\ZYÛœËØ[˜[]XÜÈ‹]][XØ]PYZ[‹\Þ[˜È
+™\Nˆ[žK™\ÊHOˆÃBˆžHÃBˆÛÛœÝ[˜[]XÜÈH]ØZ]ÝÜ˜YÙK™Ù]Ø[\ZYÛ[˜[]XÜÊ
+NÃBˆ™\ËšœÛÛŠ[˜[]XÜÊNÃBˆHØ]Ú
+\œ›ÜŽˆ[žJHÃBˆÛÛœÛÛK™\œ›ÜŠØ[\ZYÛˆ[˜[]XÜÈ\œ›ÜŽˆ‹\œ›ÜŠNÃBˆ™\ËœÝ]\ÊL
+KšœÛÛŠÈY\ÜØYÙNˆ\œ›Ü‹›Y\ÜØYÙH‘˜Z[YÈÙ][˜[]XÜÈˆJNÃBˆCBˆJNÃBƒBˆËÈYZ[ŽˆÙ]š\Ø[\ZYÛˆÛÜšÙ\ˆÝ]\ÃBˆ\™Ù]
+‹Ø\KØYZ[‹ØØ[\ZYÛœËÝÛÜšÙ\‹\Ý]\È‹]][XØ]PYZ[‹\Þ[˜È
+™\Nˆ[žK™\ÊHOˆÃBˆžHÃBˆÛÛœÝÝ]\ÈHš\Ø[\ZYÛ•ÛÜšÙ\‹™Ù]Ý]\Ê
+NÃBˆ™\ËšœÛÛŠÝ]\ÊNÃBˆHØ]Ú
+\œ›ÜŽˆ[žJHÃBˆÛÛœÛÛK™\œ›ÜŠ•ÛÜšÙ\ˆÝ]\È\œ›ÜŽˆ‹\œ›ÜŠNÃBˆ™\ËœÝ]\ÊL
+KšœÛÛŠÈY\ÜØYÙNˆ\œ›Ü‹›Y\ÜØYÙH‘˜Z[YÈÙ]ÛÜšÙ\ˆÝ]\ÈˆJNÃBˆCBˆJNÃBƒBˆËÈYZ[ŽˆšYÙÙ\ˆX[X[š\Ø[\ZYÛˆÛÜšÙ\ˆ[ƒBˆ\œÜÝ
+‹Ø\KØYZ[‹ØØ[\ZYÛœËÜ›ØÙ\ÜÈ‹]][XØ]PYZ[‹\Þ[˜È
+™\Nˆ[žK™\ÊHOˆÃBˆžHÃBˆ]ØZ]š\Ø[\ZYÛ•ÛÜšÙ\‹œ[“›ÝÊ
+NÃBˆ™\ËšœÛÛŠÈÝXØÙ\ÜÎˆYKY\ÜØYÙNˆ•ÛÜšÙ\ˆ[ˆšYÙÙ\™YˆJNÃBˆHØ]Ú
+\œ›ÜŽˆ[žJHÃBˆÛÛœÛÛK™\œ›ÜŠ•ÛÜšÙ\ˆšYÙÙ\ˆ\œ›ÜŽˆ‹\œ›ÜŠNÃBˆ™\ËœÝ]\ÊL
+KšœÛÛŠÈY\ÜØYÙNˆ\œ›Ü‹›Y\ÜØYÙH‘˜Z[YÈšYÙÙ\ˆÛÜšÙ\ˆˆJNÃBˆCBˆJNÃBƒBˆËÈYZ[ŽˆÙÙÛHš\Ø[\ZYÛœÈÓ‹ÓÑ‘ƒBˆ\œÜÝ
+‹Ø\KØYZ[‹ØØ[\ZYÛœËÝÙÙÛH‹]][XØ]PYZ[‹\Þ[˜È
+™\Nˆ[žK™\ÊHOˆÃBˆžHÃBˆÛÛœÝÈ[˜X›YHH™\K˜›ÙNÃBˆBˆYˆ
+\[Ùˆ[˜X›YOOH	Ø›ÛÛX[‰ÊHÃBˆ™]\›ˆ™\ËœÝ]\Ê
+KšœÛÛŠÈY\ÜØYÙNˆ™[˜X›Y]\Ý™HH›ÛÛX[ˆˆJNÃBˆCBˆBˆ]ØZ]š\Ø[\ZYÛ•ÛÜšÙ\‹œÙ]Ø[\ZYÛœÑ[˜X›Y
+[˜X›Y
+NÃBˆBˆ™\ËšœÛÛŠÈBˆÝXØÙ\ÜÎˆYKBˆØ[\ZYÛœÑ[˜X›Yˆš\Ø[\ZYÛ•ÛÜšÙ\‹š\ÐØ[\ZYÛœÑ[˜X›Y
+
+KBˆY\ÜØYÙNˆš\Ø[\ZYÛœÈ	Ù[˜X›YÈ	ÑSP“Q	Èˆ	ÑTÐP“Q	ßXBˆJNÃBˆHØ]Ú
+\œ›ÜŽˆ[žJHÃBˆÛÛœÛÛK™\œ›ÜŠØ[\ZYÛˆÙÙÛH\œ›ÜŽˆ‹\œ›ÜŠNÃBˆ™\ËœÝ]\ÊL
+KšœÛÛŠÈY\ÜØYÙNˆ\œ›Ü‹›Y\ÜØYÙH‘˜Z[YÈÙÙÛHØ[\ZYÛœÈˆJNÃBˆCBˆJNÃBƒBˆËÈYZ[ŽˆÙ]ÙYÛY[Ý]È›ÜˆØ[\ZYÛœÈ
+™XYÈœ›ÛH\Ù\—ØØ[\ZYÛœÈX›JCBˆ\™Ù]
+‹Ø\KØYZ[‹ØØ[\ZYÛœËÜÙYÛY[\Ý]È‹]][XØ]PYZ[‹\Þ[˜È
+™\Nˆ[žK™\ÊHOˆÃBˆžHÃBˆËÈÙ]XÝX[[œ›ÛY[ÛÝ[Èœ›ÛH\Ù\—ØØ[\ZYÛœÈX›CBˆÛÛœÝÙYÛY[Ý]ÈH]ØZ]ÝÜ˜YÙK™Ù]ÙYÛY[Ý]Ñœ›ÛPØ[\ZYÛœÊ
+NÃBˆBˆËÈÙ]\Ù\ˆÛÝ[È\Ú[™È›Ü\ˆÛÝ[]Y\šY\È
+›È[Z]
+CBˆÛÛœÝ\Ù\ÛÝ[ÈH]ØZ]ÝÜ˜YÙK™Ù]\Ù\ÛÝ[ÐžTÝXœØÜš\[ÛŠ
+NÃBˆBˆ™\ËšœÛÛŠÃBˆÙYÛY[ØNˆÙYÛY[Ý]ËœÙYÛY[ØHBˆÙYÛY[ØŽˆÙYÛY[Ý]ËœÙYÛY[ØˆBˆÙYÛY[ØÎˆÙYÛY[Ý]ËœÙYÛY[ØÈBˆZYˆ\Ù\ÛÝ[ËœZYBˆÝ[ˆ\Ù\ÛÝ[ËÝ[BˆJNÃBˆHØ]Ú
+\œ›ÜŽˆ[žJHÃBˆÛÛœÛÛK™\œ›ÜŠ”ÙYÛY[Ý]È\œ›ÜŽˆ‹\œ›ÜŠNÃBˆ™\ËœÝ]\ÊL
+KšœÛÛŠÈY\ÜØYÙNˆ\œ›Ü‹›Y\ÜØYÙH‘˜Z[YÈÙ]ÙYÛY[Ý]ÈˆJNÃBˆCBˆJNÃBƒBˆËÈYZ[ŽˆÙ][™[™È[XZ[›ØœÃBˆ\™Ù]
+‹Ø\KØYZ[‹ØØ[\ZYÛœËÜ[™[™ËZ›ØœÈ‹]][XØ]PYZ[‹\Þ[˜È
+™\Nˆ[žK™\ÊHOˆÃBˆžHÃBˆÛÛœÝ[Z]H\œÙR[
+™\Kœ]Y\žOË›[Z]\ÈÝš[™ÊHLÃBˆÛÛœÝ›ØœÈH]ØZ]ÝÜ˜YÙK™Ù][™[™Ñ[XZ[›ØœÊ[Z]
+NÃBˆ™\ËšœÛÛŠÈ›ØœËÛÝ[ˆ›ØœË›[™ÝJNÃBˆHØ]Ú
+\œ›ÜŽˆ[žJHÃBˆÛÛœÛÛK™\œ›ÜŠ”[™[™È›ØœÈ\œ›ÜŽˆ‹\œ›ÜŠNÃBˆ™\ËœÝ]\ÊL
+KšœÛÛŠÈY\ÜØYÙNˆ\œ›Ü‹›Y\ÜØYÙH‘˜Z[YÈÙ][™[™È›ØœÈˆJNÃBˆCBˆJNÃBƒBˆËÈYZ[Žˆ[œ›ÛZ\ÜÚ[™È\Ù\œÈ[Èš\Ø[\ZYÛœÃBˆ\œÜÝ
+‹Ø\KØYZ[‹ØØ[\ZYÛœËÙ[œ›Û[Z\ÜÚ[™È‹]][XØ]PYZ[‹\Þ[˜È
+™\Nˆ[žK™\ÊHOˆÃBˆžHÃBˆÛÛœÝ™\Ý[H]ØZ]š\Ø[\ZYÛ”Ù\šXÙK™[œ›ÛZ\ÜÚ[™Õ\Ù\œÊ
+NÃBˆ™\ËšœÛÛŠÈBˆÝXØÙ\ÜÎˆYKBˆ[œ›ÛYˆ™\Ý[™[œ›ÛYBˆÚÚ\Yˆ™\Ý[œÚÚ\YBˆY\ÜØYÙNˆ[œ›ÛY	Ü™\Ý[™[œ›ÛYH\Ù\œËÚÚ\Y	Ü™\Ý[œÚÚ\YH[™XYH[œ›ÛYBˆJNÃBˆHØ]Ú
+\œ›ÜŽˆ[žJHÃBˆÛÛœÛÛK™\œ›ÜŠ‘[œ›ÛZ\ÜÚ[™È\Ù\œÈ\œ›ÜŽˆ‹\œ›ÜŠNÃBˆ™\ËœÝ]\ÊL
+KšœÛÛŠÈY\ÜØYÙNˆ\œ›Ü‹›Y\ÜØYÙH‘˜Z[YÈ[œ›Û\Ù\œÈˆJNÃBˆCBˆJNÃBƒBˆËÈYZ[ŽˆÙ]Ù[ÛÛYH[XZ[Ø[\ZYÛˆÝ]ÃBˆ\™Ù]
+‹Ø\KØYZ[‹ÝÙ[ÛÛYKXØ[\ZYÛ‹ÜÝ]È‹]][XØ]PYZ[‹\Þ[˜È
+™\Nˆ[žK™\ÊHOˆÃBˆžHÃBˆÛÛœÝÝ]ÈH]ØZ]ÝÜ˜YÙK™Ù]Ù[ÛÛYPØ[\ZYÛ”Ý]Ê
+NÃBˆ™\ËšœÛÛŠÝ]ÊNÃBˆHØ]Ú
+\œ›ÜŽˆ[žJHÃBˆÛÛœÛÛK™\œ›ÜŠ•Ù[ÛÛYHØ[\ZYÛˆÝ]È\œ›ÜŽˆ‹\œ›ÜŠNÃBˆ™\ËœÝ]\ÊL
+KšœÛÛŠÈY\ÜØYÙNˆ\œ›Ü‹›Y\ÜØYÙH‘˜Z[YÈÙ]Ý]ÈˆJNÃBˆCBˆJNÃBƒBˆËÈYZ[ŽˆÙ[™\ÝÙ[ÛÛYH[XZ[ÈÝ\œ™[YZ[ƒBˆ\œÜÝ
+‹Ø\KØYZ[‹ÝÙ[ÛÛYKXØ[\ZYÛ‹Ý\Ý‹]][XØ]PYZ[‹\Þ[˜È
+™\Nˆ[žK™\ÊHOˆÃBˆžHÃBˆÛÛœÝYZ[•\Ù\ˆH]ØZ]ÝÜ˜YÙK™Ù]\Ù\Š™\K\Ù\‹šY
+NÃBˆYˆ
+XYZ[•\Ù\ŠHÃBˆ™]\›ˆ™\ËœÝ]\Ê
+KšœÛÛŠÈY\ÜØYÙNˆ•\Ù\ˆ›Ý›Ý[™ˆJNÃBˆCBˆBˆÛÛœÝÝXØÙ\ÜÈH]ØZ][XZ[Ù\šXÙKœÙ[™›Ý[™\œÕÙ[ÛÛYQ[XZ[
+YZ[•\Ù\‹™[XZ[
+NÃBˆ™\ËšœÛÛŠÈBˆÝXØÙ\ÜËBˆY\ÜØYÙNˆÝXØÙ\ÜÈÈ\Ý[XZ[Ù[È	ØYZ[•\Ù\‹™[XZ[Xˆ‘˜Z[YÈÙ[™[XZ[ˆBˆJNÃBˆHØ]Ú
+\œ›ÜŽˆ[žJHÃBˆÛÛœÛÛK™\œ›ÜŠ•\ÝÙ[ÛÛYH[XZ[\œ›ÜŽˆ‹\œ›ÜŠNÃBˆ™\ËœÝ]\ÊL
+KšœÛÛŠÈY\ÜØYÙNˆ\œ›Ü‹›Y\ÜØYÙH‘˜Z[YÈÙ[™\Ý[XZ[ˆJNÃBˆCBˆJNÃBƒBˆËÈYZ[ŽˆÙ[™Ù[ÛÛYH[XZ[ÈÈ[\Ù\œÈ
+˜]K[[Z]Y˜]Ú
+CBˆ\œÜÝ
+‹Ø\KØYZ[‹ÝÙ[ÛÛYKXØ[\ZYÛ‹ÜÙ[™X[‹]][XØ]PYZ[‹\Þ[˜È
+™\Nˆ[žK™\ÊHOˆÃBˆžHÃBˆËÈÙ][\Ù\œÈÚÈ]™[‰Ý™XÙZ]™YHÙ[ÛÛYH[XZ[Y]BˆÛÛœÝ\Ù\œÈH]ØZ]ÝÜ˜YÙK™Ù]\Ù\œÕÚ]Ý]Ù[ÛÛYQ[XZ[
+
+NÃBˆBˆYˆ
+\Ù\œË›[™ÝOOH
+HÃBˆ™]\›ˆ™\ËšœÛÛŠÈBˆÝXØÙ\ÜÎˆYKBˆÙ[ˆBˆ˜Z[YˆBˆÝ[ˆBˆY\ÜØYÙNˆ“›È\Ù\œÈ™YYHÙ[ÛÛYH[XZ[ˆBˆJNÃBˆCBˆBˆ]Ù[HÃBˆ]˜Z[YHÃBˆÛÛœÝ˜]ÚÚ^™HHNÃBˆÛÛœÝ[^S\ÈHMLÈËÈKHÙXÛÛ™È™]ÙY[ˆ˜]Ú\ÃBˆBˆ›Üˆ
+]HHÈH\Ù\œË›[™ÝÈH
+ÏH˜]ÚÚ^™JHÃBˆÛÛœÝ˜]ÚH\Ù\œËœÛXÙJKH
+È˜]ÚÚ^™JNÃBˆBˆËÈ›ØÙ\ÜÈ˜]Ú[ˆ\˜[[BˆÛÛœÝ™\Ý[ÈH]ØZ]›ÛZ\ÙK˜[
+Bˆ˜]Ú›X\
+\Þ[˜È
+\Ù\ŽˆÈYˆ[X™\ŽÈ[XZ[ˆÝš[™È[JHOˆÃBˆYˆ
+]\Ù\‹™[XZ[
+H™]\›ˆ˜[ÙNÈËÈÚÚ\Ý˜]˜K[Û›H\Ù\œÈÚ]›È[XZ[BˆžHÃBˆÛÛœÝÝXØÙ\ÜÈH]ØZ][XZ[Ù\šXÙKœÙ[™›Ý[™\œÕÙ[ÛÛYQ[XZ[
+\Ù\‹™[XZ[
+NÃBˆYˆ
+ÝXØÙ\ÜÊHÃBˆ]ØZ]ÝÜ˜YÙK\]U\Ù\Š\Ù\‹šYÈÙ[ÛÛYQ[XZ[Ù[]ˆ™]È]J
+HJNÃBˆ™]\›ˆYNÃBˆCBˆ™]\›ˆ˜[ÙNÃBˆHØ]Ú
+\œŠHÃBˆÛÛœÛÛK™\œ›ÜŠ˜Z[YÈÙ[™Ù[ÛÛYH[XZ[È	Ý\Ù\‹™[XZ[N˜\œŠNÃBˆ™]\›ˆ˜[ÙNÃBˆCBˆJCBˆ
+NÃBˆBˆÙ[
+ÏH™\Ý[Ë™š[\Š
+Žˆ›ÛÛX[ŠHOˆŠK›[™ÝÃBˆ˜Z[Y
+ÏH™\Ý[Ë™š[\Š
+Žˆ›ÛÛX[ŠHOˆ\ŠK›[™ÝÃBˆBˆËÈ[^H™]ÙY[ˆ˜]Ú\È
+^Ù\›Üˆ\Ý˜]Ú
+CBˆYˆ
+H
+È˜]ÚÚ^™H\Ù\œË›[™Ý
+HÃBˆ]ØZ]™]È›ÛZ\ÙJ™\ÛÛ™HOˆÙ][Y[Ý]
+™\ÛÛ™K[^S\ÊJNÃBˆCBˆCBˆBˆ™\ËšœÛÛŠÈBˆÝXØÙ\ÜÎˆYKBˆÙ[Bˆ˜Z[YBˆÝ[ˆ\Ù\œË›[™ÝBˆY\ÜØYÙNˆÙ[	ÜÙ[HÙ[ÛÛYH[XZ[Ë	Ù˜Z[YH˜Z[YBˆJNÃBˆHØ]Ú
+\œ›ÜŽˆ[žJHÃBˆÛÛœÛÛK™\œ›ÜŠ[ÈÙ[ÛÛYH[XZ[\œ›ÜŽˆ‹\œ›ÜŠNÃBˆ™\ËœÝ]\ÊL
+KšœÛÛŠÈY\ÜØYÙNˆ\œ›Ü‹›Y\ÜØYÙH‘˜Z[YÈÙ[™[XZ[ÈˆJNÃBˆCBˆJNÃBƒBˆËÈYZ[ŽˆÙ[™›ÙXÝ\]H[XZ[
+\ÝÜˆ[
+CBˆ\œÜÝ
+‹Ø\KØYZ[‹ÜÙ[™\›ÙXÝ]\]H‹]][XØ]PYZ[‹\Þ[˜È
+™\Nˆ[žK™\ÊHOˆÃBˆžHÃBˆÛÛœÝ\Õ\ÝH™\Kœ]Y\žK\ÝOOHYHŽÃBˆÛÛœÝYZ[•\Ù\ˆH™\K\Ù\ŽÃBƒBˆÛÛœÝÈÝXš™XÝ[ˆ[›ÙK^ˆ^›ÙHHH[XZ[Ù\šXÙKœ›ÙXÝ\]S™]ÜÛ]\Š
+NÃBƒBˆYˆ
+\Õ\Ý
+HÃBˆÛÛœÝÝXØÙ\ÜÈH]ØZ][XZ[Ù\šXÙKœÙ[™[XZ[
+ÃBˆÎˆYZ[•\Ù\‹™[XZ[BˆÝXš™XÝˆÕTÕH	ÜÝXš™XÝXBˆ[ˆ[›ÙKBˆ^ˆ^›ÙKBˆJNÃBˆ™]\›ˆ™\ËšœÛÛŠÃBˆÝXØÙ\ÜËBˆÙ[ˆÝXØÙ\ÜÈÈHˆBˆ˜Z[YˆÝXØÙ\ÜÈÈˆKBˆÝ[ˆKBˆY\ÜØYÙNˆÝXØÙ\ÜÈÈ\Ý[XZ[Ù[È	ØYZ[•\Ù\‹™[XZ[Xˆ‘˜Z[YÈÙ[™\Ý[XZ[‹BˆJNÃBˆCBƒBˆÛÛœÝ[\Ù\œÈH]ØZ]ÝÜ˜YÙK™Ù][\Ù\œÊL
+NÃBˆÛÛœÝ™XÚ\Y[ÈH[\Ù\œË™š[\Š
+Nˆ[žJHOˆ]K›X\šÙ][™ÓÜÝ]	‰ˆK™[XZ[
+NÃBƒBˆ]Ù[HÃBˆ]˜Z[YHÃBˆËÈ™\Ù[™	ÜÈY˜][[Z]\Èˆ™\]Y\ÝËÜÙXÛÛ™ˆÙ[™ˆ\ˆ˜]ÚÚ]CBˆËÈŒKŒ\ÈØ\
+ŒKŽ™\KÜÊHÈÝ^HØY™[H[™\ˆ]ÈÙ[™[XZ[[ÛÈ™]šY\ÃBˆËÈÚ]˜XÚÛÙ™ˆÛˆ[žHŽHÛÈ˜[œÚY[ÜZÙ\ÈÛ‰Ý›ÜY\ÜØYÙ\ËƒBˆÛÛœÝ˜]ÚÚ^™HHŽÃBˆÛÛœÝ[^S\ÈHLLÃBƒBˆ›Üˆ
+]HHÈH™XÚ\Y[Ë›[™ÝÈH
+ÏH˜]ÚÚ^™JHÃBˆÛÛœÝ˜]ÚH™XÚ\Y[ËœÛXÙJKH
+È˜]ÚÚ^™JNÃBˆÛÛœÝ™\Ý[ÈH]ØZ]›ÛZ\ÙK˜[
+Bˆ˜]Ú›X\
+\Þ[˜È
+\Ù\Žˆ[žJHOˆÃBˆžHÃBˆÛÛœÝÝXØÙ\ÜÈH]ØZ][XZ[Ù\šXÙKœÙ[™[XZ[
+ÃBˆÎˆ\Ù\‹™[XZ[BˆÝXš™XÝBˆ[ˆ[›ÙKBˆ^ˆ^›ÙKBˆJNÃBˆ™]\›ˆÝXØÙ\ÜÎÃBˆHØ]Ú
+\œŠHÃBˆÛÛœÛÛK™\œ›ÜŠ˜Z[YÈÙ[™›ÙXÝ\]HÈ	Ý\Ù\‹™[XZ[N˜\œŠNÃBˆ™]\›ˆ˜[ÙNÃBˆCBˆJCBˆ
+NÃBˆÙ[
+ÏH™\Ý[Ë™š[\Š›ÛÛX[ŠK›[™ÝÃBˆ˜Z[Y
+ÏH™\Ý[Ë™š[\Š
+Žˆ›ÛÛX[ŠHOˆ\ŠK›[™ÝÃBˆYˆ
+H
+È˜]ÚÚ^™H™XÚ\Y[Ë›[™Ý
+HÃBˆ]ØZ]™]È›ÛZ\ÙJ™\ÛÛ™HOˆÙ][Y[Ý]
+™\ÛÛ™K[^S\ÊJNÃBˆCBˆCBƒBˆÛÛœÛÛK›ÙÊÔ›ÙXÝ\]WHÙ[ˆ	ÜÙ[K˜Z[Yˆ	Ù˜Z[YKÝ[ˆ	Ü™XÚ\Y[Ë›[™ÝX
+NÃBˆ™\ËšœÛÛŠÃBˆÝXØÙ\ÜÎˆYKBˆÙ[Bˆ˜Z[YBˆÝ[ˆ™XÚ\Y[Ë›[™ÝBˆY\ÜØYÙNˆÙ[	ÜÙ[H›ÙXÝ\]H[XZ[Ë	Ù˜Z[YH˜Z[YBˆJNÃBˆHØ]Ú
+\œ›ÜŽˆ[žJHÃBˆÛÛœÛÛK™\œ›ÜŠ”›ÙXÝ\]H[XZ[\œ›ÜŽˆ‹\œ›ÜŠNÃBˆ™\ËœÝ]\ÊL
+KšœÛÛŠÈY\ÜØYÙNˆ\œ›Ü‹›Y\ÜØYÙH‘˜Z[YÈÙ[™›ÙXÝ\]H[XZ[ÈˆJNÃBˆCBˆJNÃBƒBˆËÈ\Ù\ŽˆÜÝ]ÙˆX\šÙ][™È[XZ[ÃBˆ\œÜÝ
+‹Ø\KÝ\Ù\œËÎ\Ù\’YÛX\šÙ][™Ë[ÜÝ]‹]][XØ]R•Õ\Þ[˜È
+™\Nˆ[žK™\ÊHOˆÃBˆžHÃBˆÛÛœÝ\Ù\’YH\œÙR[
+™\Kœ\˜[\Ë\Ù\’Y
+NÃBˆBˆYˆ
+™\K\Ù\‹šYOOH\Ù\’Y
+HÃBˆ™]\›ˆ™\ËœÝ]\ÊÊKšœÛÛŠÈY\ÜØYÙNˆXØÙ\ÜÈ[šYYˆJNÃBˆCBˆBˆ]ØZ]ÝÜ˜YÙK\]U\Ù\Š\Ù\’YÈX\šÙ][™ÓÜÝ]ˆYHJNÃBˆ]ØZ]š\Ø[\ZYÛ”Ù\šXÙK™^]Ø[\ZYÛ‘›Ü•\Ù\Š\Ù\’Y\Ù\—ÛÜÝ]ŠNÃBˆBˆ™\ËšœÛÛŠÈÝXØÙ\ÜÎˆYKY\ÜØYÙNˆ”ÝXØÙ\ÜÙ[H[œÝXœØÜšX™Yœ›ÛHX\šÙ][™È[XZ[ÈˆJNÃBˆHØ]Ú
+\œ›ÜŽˆ[žJHÃBˆÛÛœÛÛK™\œ›ÜŠ“X\šÙ][™ÈÜÝ]\œ›ÜŽˆ‹\œ›ÜŠNÃBˆ™\ËœÝ]\ÊL
+KšœÛÛŠÈY\ÜØYÙNˆ\œ›Ü‹›Y\ÜØYÙH‘˜Z[YÈÜÝ]ˆJNÃBˆCBˆJNÃBƒBˆËÈ\]H\Ù\‰ÜÈ\ÝÙY[ˆ[Y\Ý[\Ûˆ\Ú›Ø\™ØYBˆ\œÜÝ
+‹Ø\KÝ\Ù\œËÎ\Ù\’YÚX\™X]‹]][XØ]R•Õ\Þ[˜È
+™\Nˆ[žK™\ÊHOˆÃBˆžHÃBˆÛÛœÝ\Ù\’YH\œÙR[
+™\Kœ\˜[\Ë\Ù\’Y
+NÃBˆBˆYˆ
+™\K\Ù\‹šYOOH\Ù\’Y
+HÃBˆ™]\›ˆ™\ËœÝ]\ÊÊKšœÛÛŠÈY\ÜØYÙNˆXØÙ\ÜÈ[šYYˆJNÃBˆCBˆBˆÛÛœÝ™\Ý[H]ØZ]™XXÝ]˜]QÜ›X[XØÛÝ[
+\Ù\’Y
+NÃBˆ™\ËšœÛÛŠÈÝXØÙ\ÜÎˆYK™XXÝ]˜]Yˆ™\Ý[œ™XXÝ]˜]YJNÃBˆHØ]Ú
+\œ›ÜŽˆ[žJHÃBˆËÈÚ[[˜Z[\™H›ÜˆX\™X]Bˆ™\ËšœÛÛŠÈÝXØÙ\ÜÎˆ˜[ÙHJNÃBˆCBˆJNÃBƒBˆËÈ™XÛÜ™\Ù\ˆXÝ]˜][Ûˆ]™[Bˆ\œÜÝ
+‹Ø\KÝ\Ù\œËÎ\Ù\’YØXÝ]˜][Ûˆ‹]][XØ]R•Õ\Þ[˜È
+™\Nˆ[žK™\ÊHOˆÃBˆžHÃBˆÛÛœÝ\Ù\’YH\œÙR[
+™\Kœ\˜[\Ë\Ù\’Y
+NÃBˆÛÛœÝÈXÝ]˜][Û•\HHH™\K˜›ÙNÃBˆBˆYˆ
+™\K\Ù\‹šYOOH\Ù\’Y
+HÃBˆ™]\›ˆ™\ËœÝ]\ÊÊKšœÛÛŠÈY\ÜØYÙNˆXØÙ\ÜÈ[šYYˆJNÃBˆCBˆBˆ]ØZ]š\Ø[\ZYÛ”Ù\šXÙKœ™XÛÜ™XÝ]˜][ÛŠ\Ù\’YXÝ]˜][Û•\H™\Ú›Ø\™ÝšY]ÈŠNÃBˆ™\ËšœÛÛŠÈÝXØÙ\ÜÎˆYHJNÃBˆHØ]Ú
+\œ›ÜŽˆ[žJHÃBˆÛÛœÛÛK™\œ›ÜŠXÝ]˜][Ûˆ™XÛÜ™[™È\œ›ÜŽˆ‹\œ›ÜŠNÃBˆ™\ËœÝ]\ÊL
+KšœÛÛŠÈY\ÜØYÙNˆ\œ›Ü‹›Y\ÜØYÙH‘˜Z[YÈ™XÛÜ™XÝ]˜][ÛˆˆJNÃBˆCBˆJNÃBƒBˆËÈÝ\Hš\Ø[\ZYÛˆÛÜšÙ\ˆ
+\Þ[˜ËØYÈÙ][™ÜÈœ›ÛHŠCBˆš\Ø[\ZYÛ•ÛÜšÙ\‹œÝ\
+
+K˜Ø]Ú
+\œˆOˆBˆÛÛœÛÛK™\œ›ÜŠ–Ñš\ÛÜšÙ\—H˜Z[YÈÝ\ˆ‹\œŠCBˆ
+NÃBƒBˆËÈÝ\HÙYZÛHÝ[[X\žHÛÜšÙ\ˆ
+š\™\È]™\žH[Û™^HUÊCBˆÙYZÛTÝ[[X\žUÛÜšÙ\‹œÝ\
+
+NÂ‚ˆËÈ[›™\‹[ØØ[[Ü›š[™ÈœšYYš[™ÜËÙX]\ˆY\ÝY[ËZ\ÜÙY]ÛÜšÛÝ][™ˆËÈ˜XÙK]ÙYZÈÝZY[˜ÙKˆ[]™\žHÝ[ÛÙ\È›ÝYÚHY[\Ý[Ý]›Þ‚ˆ›ØXÝ]™PÛØXÚÛÜšÙ\‹œÝ\
+
+NÂˆ›ÝYšXØ][Û‘[]™\žUÛÜšÙ\‹œÝ\
+
+NÂƒBˆËÈ]\ÙHœ™YHÝ˜]˜H›ØÙ\ÜÚ[™ÈY\ˆÌ^\ÈÚ]Ý][ˆ\š\Ú]ƒBˆXØÛÝ[Ü›X[˜ÞUÛÜšÙ\‹œÝ\
+
+NÃBƒBˆÛÛœÝÙ\™\ˆHÜ™X]TÙ\™\Š\
+NÃBˆ™]\›ˆÙ\™\ŽÃBŸCB

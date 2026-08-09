@@ -6,7 +6,7 @@ process.env.MCP_TOKEN_HASH_SECRET ||= "test-only-secret-with-at-least-thirty-two
 
 test("registered MCP surface contains only explicitly read-only tools", async () => {
   const { MCP_TOOL_DESCRIPTORS } = await import("../tools");
-  assert.equal(MCP_TOOL_DESCRIPTORS.length, 13);
+  assert.equal(MCP_TOOL_DESCRIPTORS.length, 15);
   assert.ok(MCP_TOOL_DESCRIPTORS.every((tool) => tool.readOnly === true));
   const forbidden = /(create|update|delete|remove|write|sync|send|email|subscribe|checkout|process|import|sql|route)/i;
   assert.ok(MCP_TOOL_DESCRIPTORS.every((tool) => !forbidden.test(tool.name)));
@@ -14,6 +14,33 @@ test("registered MCP surface contains only explicitly read-only tools", async ()
     MCP_TOOL_DESCRIPTORS.filter((tool) => tool.visibility === "public").map((tool) => tool.name),
     ["search_running_shoes", "get_running_shoe", "list_runanalytics_tools"],
   );
+});
+
+test("aggregate coach tools require the complete read scope bundle", async () => {
+  const { createPrivateMcpServer } = await import("../tools");
+  const full = createPrivateMcpServer({
+    userId: 17,
+    clientId: "coach-client",
+    scopes: ["mcp:profile.read", "mcp:activities.read", "mcp:analytics.read", "mcp:goals.read", "mcp:plans.read"],
+    resource: "https://aitracker.run/mcp",
+    tokenId: 1,
+  });
+  const fullTools = (full as any)._registeredTools as Record<string, unknown>;
+  assert.ok(fullTools.get_runner_coach_snapshot);
+  assert.ok(fullTools.get_post_run_brief);
+  await full.close();
+
+  const partial = createPrivateMcpServer({
+    userId: 17,
+    clientId: "partial-client",
+    scopes: ["mcp:activities.read", "mcp:analytics.read"],
+    resource: "https://aitracker.run/mcp",
+    tokenId: 2,
+  });
+  const partialTools = (partial as any)._registeredTools as Record<string, unknown>;
+  assert.equal(partialTools.get_runner_coach_snapshot, undefined);
+  assert.equal(partialTools.get_post_run_brief, undefined);
+  await partial.close();
 });
 
 test("scope-specific server registration does not expose ungranted tools", async () => {

@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Activity, RefreshCw, Brain, User, Settings, LogOut, Bell } from "lucide-react";
+import { Activity, RefreshCw, Brain, User, Settings, LogOut, Bell, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { StravaConnectButton } from "@/components/StravaConnect";
@@ -70,6 +70,13 @@ export default function Header({
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
     },
   });
+
+  const feedbackMutation = useMutation({
+    mutationFn: async ({ notificationId, rating }: { notificationId: number; rating: "helpful" | "not_helpful" }) =>
+      apiRequest(`/api/coach/messages/${notificationId}/feedback`, "POST", { rating }),
+  });
+
+  const isCoachMessage = (type: string) => ["activity_recap", "next_step", "weekly_summary", "plan_reminder", "morning_briefing", "daily_checkin", "missed_workout", "race_week"].includes(type);
 
   const handleNotificationClick = (notification: NotificationOutbox) => {
     if (!notification.readAt) {
@@ -189,6 +196,23 @@ export default function Header({
                               <p className="text-xs text-gray-400 mt-1">
                                 {notification.createdAt ? new Date(notification.createdAt).toLocaleDateString() : ''}
                               </p>
+                              {isCoachMessage(notification.type) && (
+                                <div className="mt-2 flex items-center gap-1" aria-label="Was this coaching useful?">
+                                  <button
+                                    type="button"
+                                    className="rounded p-1 text-gray-400 hover:bg-green-50 hover:text-green-700"
+                                    aria-label="Helpful"
+                                    onClick={(event) => { event.preventDefault(); event.stopPropagation(); feedbackMutation.mutate({ notificationId: notification.id, rating: "helpful" }); }}
+                                  ><ThumbsUp className="h-3.5 w-3.5" /></button>
+                                  <button
+                                    type="button"
+                                    className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-700"
+                                    aria-label="Not helpful"
+                                    onClick={(event) => { event.preventDefault(); event.stopPropagation(); feedbackMutation.mutate({ notificationId: notification.id, rating: "not_helpful" }); }}
+                                  ><ThumbsDown className="h-3.5 w-3.5" /></button>
+                                  <span className="text-[11px] text-gray-400">Was this useful?</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>

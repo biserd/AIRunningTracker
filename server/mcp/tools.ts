@@ -16,6 +16,8 @@ import {
   readRunnerActivity,
   readRunnerProfile,
   readRunnerScore,
+  readRunnerCoachSnapshot,
+  readPostRunBrief,
   readRunnerTrainingPlan,
   searchPublicShoes,
 } from "./adapters";
@@ -33,6 +35,7 @@ export interface McpToolDescriptor {
   name: string;
   visibility: "private" | "public";
   scope?: McpScope;
+  scopes?: readonly McpScope[];
   readOnly: true;
 }
 
@@ -44,6 +47,8 @@ export const MCP_TOOL_DESCRIPTORS: readonly McpToolDescriptor[] = Object.freeze(
   { name: "get_fitness_metrics", visibility: "private", scope: "mcp:analytics.read", readOnly: true },
   { name: "get_recovery_status", visibility: "private", scope: "mcp:analytics.read", readOnly: true },
   { name: "get_runner_score", visibility: "private", scope: "mcp:analytics.read", readOnly: true },
+  { name: "get_runner_coach_snapshot", visibility: "private", scopes: ["mcp:profile.read", "mcp:activities.read", "mcp:analytics.read", "mcp:goals.read", "mcp:plans.read"], readOnly: true },
+  { name: "get_post_run_brief", visibility: "private", scopes: ["mcp:profile.read", "mcp:activities.read", "mcp:analytics.read", "mcp:plans.read"], readOnly: true },
   { name: "list_goals", visibility: "private", scope: "mcp:goals.read", readOnly: true },
   { name: "list_training_plans", visibility: "private", scope: "mcp:plans.read", readOnly: true },
   { name: "get_training_plan", visibility: "private", scope: "mcp:plans.read", readOnly: true },
@@ -85,14 +90,16 @@ function errorResult(error: unknown) {
 function privateHandler<TArgs, TResult extends Record<string, unknown>>(
   principal: McpPrincipal,
   toolName: string,
-  requiredScope: McpScope,
+  requiredScope: McpScope | readonly McpScope[],
   handler: (args: TArgs) => Promise<TResult>,
 ) {
   return async (args: TArgs) => {
     const started = Date.now();
-    if (!principal.scopes.includes(requiredScope)) {
+    const requiredScopes = Array.isArray(requiredScope) ? requiredScope : [requiredScope];
+    const missingScopes = requiredScopes.filter((scope) => !principal.scopes.includes(scope));
+    if (missingScopes.length > 0) {
       await recordMcpAudit({ eventType: "tool_called", userId: principal.userId, clientId: principal.clientId, toolName, success: false, errorCode: "insufficient_scope", durationMs: 0 });
-      return errorResult(new McpToolError("insufficient_scope", `Tool requires ${requiredScope}`));
+      return errorResult(new McpToolError("insufficient_scope", `Tool requires ${missingScopes.join(", ")}`));
     }
     try {
       const result = await withTimeout(handler(args));
@@ -194,6 +201,24 @@ export function createPrivateMcpServer(principal: McpPrincipal): McpServer {
       annotations: READ_ONLY_ANNOTATIONS,
     }, privateHandler(principal, "get_runner_score", "mcp:analytics.read", async () => readRunnerScore(principal.userId)));
   }
+
+  const coachSnapshotScopes: readonly McpScope[] = ["mcp:profile.read", "mcp:activities.read", "mcp:analytics.read", "mcp:goals.read", "mcp:plans.read"];
+  if (coachSnapshotScopes.every(has)) server.registerTool("get_runner_coach_snapshot", {
+    title: "Get runner coach snapshot",
+    description: "Read one bounded, analysis-ready snapshot of the authorized runner's profile, recent runs, trends, recovery, score, active goals, and current plan week.",
+    inputSchema: z.object({ days: z.number().int().min(7).max(90).optional() }).strict(),
+    outputSchema: z.record(z.unknown()),
+    annotations: READ_ONLY_ANNOTATIONS,
+  }, privateHandler(principal, "get_runner_coach_snapshot", coachSnapshotScopes, (args) => readRunnerCoachSnapshot(principal.userId, args.days)));
+
+  const postRunScopes: readonly McpScope[] = ["mcp:profile.read", "mcp:activities.read", "mcp:analytics.read", "mcp:plans.read"];
+  if (postRunScopes.every(has)) server.registerTool("get_post_run_brief", {
+    title: "Get post-run brief",
+    description: "Read a bounded activity analysis package with the authorized runner's recovery, 28-day trend, active plan summary, and explicit confidence gaps.",
+    inputSchema: z.object({ activityId: z.number().int().positive() }).strict(),
+    outputSchema: z.record(z.unknown()),
+    annotations: READ_ONLY_ANNOTATIONS,
+  }, privateHandler(principal, "get_post_run_brief", postRunScopes, (args) => readPostRunBrief(principal.userId, args.activityId)));
 
   if (has("mcp:goals.read")) server.registerTool("list_goals", {
     title: "List goals",

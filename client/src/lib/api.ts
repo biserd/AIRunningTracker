@@ -24,6 +24,16 @@ export interface DashboardData {
     coachNotifyWeeklySummary?: boolean;
     coachQuietHoursStart?: number | null;
     coachQuietHoursEnd?: number | null;
+    coachEnabled?: boolean;
+    coachTimezone?: string;
+    coachDailyBriefingEnabled?: boolean;
+    coachDailyBriefingHour?: number;
+    coachWeatherEnabled?: boolean;
+    coachWeatherLocation?: { label: string; latitude: number; longitude: number } | null;
+    coachPreferredChannel?: "email" | "push" | "in_app";
+    coachSnoozedUntil?: string | null;
+    coachDailyAvailability?: "available" | "limited" | "unavailable" | null;
+    coachDailyAvailabilityDate?: string | null;
     notifyPostRun?: boolean;
     postRunEmailFrequency?: string;
   };

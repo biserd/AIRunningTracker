@@ -46,6 +46,8 @@ The authorization endpoint is `/mcp/oauth/authorize`, the token endpoint is `/mc
 
 The anonymous public endpoint exposes only `search_running_shoes`, `get_running_shoe`, and `list_runanalytics_tools`.
 
+Two analysis-ready coaching tools reduce agent latency without expanding access. `get_runner_coach_snapshot` requires all five private read scopes because it composes profile, activities, analytics, goals, and the current plan week. `get_post_run_brief` requires profile, activities, analytics, and plans. Both remain bounded, ownership-scoped, and read-only; they are not registered when any required scope is absent.
+
 No MCP resources or prompts are registered. No tool creates, edits, deletes, enriches, imports, syncs, sends email, starts background processing, changes billing, executes SQL, or invokes an arbitrary application route. Private tool inputs contain no user ID; the user is always derived from the validated OAuth token subject. Foreign and missing object IDs produce the same `not_found` response.
 
 ## Bounds and operational behavior

@@ -1,0 +1,14 @@
+interface:
+  display_name: "RunAnalytics Coach"
+  short_description: "Proactive, evidence-aware coaching for runners"
+  brand_color: "#FC4C02"
+  default_prompt: "Use $runanalytics-coach to review my training and give me one clear next action."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "RunAnalytics"
+      description: "Authorized read-only runner activities, analytics, goals, and plans"
+      transport: "streamable_http"
+      url: "https://aitracker.run/mcp"
+policy:
+  allow_implicit_invocation: true
