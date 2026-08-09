@@ -90,7 +90,7 @@ export const users = pgTable("users", {
   coachDailyBriefingHour: integer("coach_daily_briefing_hour").default(7),
   coachWeatherEnabled: boolean("coach_weather_enabled").default(false),
   coachWeatherLocation: jsonb("coach_weather_location"), // { latitude, longitude }
-  coachPreferredChannel: text("coach_preferred_channel").default("email"),
+  coachPreferredChannel: text("coach_preferred_channel", { enum: ["email", "push", "in_app"] }).default("email"),
   coachSnoozedUntil: timestamp("coach_snoozed_until"),
   coachDailyAvailability: text("coach_daily_availability"),
   coachDailyAvailabilityDate: text("coach_daily_availability_date"),
@@ -576,7 +576,7 @@ export const notificationOutbox = pgTable("notification_outbox", {
   userId: integer("user_id").notNull(),
   // Notification type
   type: text("type", { 
-    enum: ["activity_recap", "next_step", "weekly_summary", "plan_reminder", "trial_reminder", "trial_expired"] 
+    enum: ["activity_recap", "next_step", "weekly_summary", "plan_reminder", "trial_reminder", "trial_expired", "morning_briefing", "daily_checkin", "missed_workout", "race_week"] 
   }).notNull(),
   channel: text("channel", { 
     enum: ["in_app", "email", "push"] 
