@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 
 process.env.DATABASE_URL ||= "postgresql://test:test@127.0.0.1:1/test";
 process.env.MCP_TOKEN_HASH_SECRET ||= "test-only-secret-with-at-least-thirty-two-characters";
@@ -41,6 +43,30 @@ test("aggregate coach tools require the complete read scope bundle", async () =>
   assert.equal(partialTools.get_runner_coach_snapshot, undefined);
   assert.equal(partialTools.get_post_run_brief, undefined);
   await partial.close();
+});
+
+test("every private tool schema can be serialized for MCP discovery", async () => {
+  const { createPrivateMcpServer } = await import("../tools");
+  const server = createPrivateMcpServer({
+    userId: 17,
+    clientId: "schema-test-client",
+    scopes: ["mcp:profile.read", "mcp:activities.read", "mcp:analytics.read", "mcp:goals.read", "mcp:plans.read"],
+    resource: "https://aitracker.run/mcp",
+    tokenId: 3,
+  });
+  const client = new Client({ name: "schema-test", version: "1.0.0" });
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
+
+  const result = await client.listTools();
+  assert.equal(result.tools.length, 12);
+  for (const tool of result.tools) {
+    assert.equal(tool.inputSchema.type, "object", `${tool.name} input schema must be an object`);
+    assert.equal(tool.outputSchema?.type, "object", `${tool.name} output schema must be an object`);
+  }
+
+  await client.close();
+  await server.close();
 });
 
 test("scope-specific server registration does not expose ungranted tools", async () => {

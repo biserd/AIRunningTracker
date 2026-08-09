@@ -31,6 +31,52 @@ const READ_ONLY_ANNOTATIONS = Object.freeze({
 
 const TOOL_TIMEOUT_MS = 8_000;
 
+// MCP structured output must always have a JSON object at the top level.
+// A top-level z.record() is not accepted by the SDK's object-schema normalizer.
+const recoveryStatusOutputSchema = z.object({
+  generatedAt: z.string(),
+  lastRun: z.record(z.unknown()).nullable(),
+  daysSinceLastRun: z.number().nullable(),
+  acuteLoadKm: z.number(),
+  chronicWeeklyLoadKm: z.number(),
+  acuteChronicRatio: z.number().nullable(),
+  riskLevel: z.string(),
+  limitation: z.string(),
+});
+
+const trainingPlanOutputSchema = z.object({
+  planId: z.number(),
+  weeks: z.array(z.record(z.unknown())),
+  goals: z.array(z.record(z.unknown())),
+  weeksTruncated: z.boolean(),
+}).passthrough();
+
+const coachSnapshotOutputSchema = z.object({
+  generatedAt: z.string(),
+  periodDays: z.number(),
+  profile: z.record(z.unknown()),
+  recentActivities: z.array(z.record(z.unknown())),
+  recentActivitiesTruncatedByPlan: z.boolean(),
+  trends: z.record(z.unknown()),
+  recovery: recoveryStatusOutputSchema,
+  runnerScore: z.record(z.unknown()),
+  activeGoals: z.array(z.record(z.unknown())),
+  activePlan: z.record(z.unknown()).nullable(),
+  limitations: z.array(z.string()),
+});
+
+const postRunBriefOutputSchema = z.object({
+  generatedAt: z.string(),
+  activity: z.record(z.unknown()),
+  runner: z.record(z.unknown()),
+  recovery: recoveryStatusOutputSchema,
+  recentTrend: z.record(z.unknown()),
+  activePlan: z.record(z.unknown()).nullable(),
+  confidence: z.enum(["high", "medium", "low"]),
+  missingSignals: z.array(z.string()),
+  limitation: z.string(),
+});
+
 export interface McpToolDescriptor {
   name: string;
   visibility: "private" | "public";
@@ -189,7 +235,7 @@ export function createPrivateMcpServer(principal: McpPrincipal): McpServer {
       title: "Get recovery status",
       description: "Read a request-scoped training-load and recovery snapshot. Does not update the runner's recovery cache.",
       inputSchema: z.object({}).strict(),
-      outputSchema: z.record(z.unknown()),
+      outputSchema: recoveryStatusOutputSchema,
       annotations: READ_ONLY_ANNOTATIONS,
     }, privateHandler(principal, "get_recovery_status", "mcp:analytics.read", async () => readRecoveryStatus(principal.userId)));
 
@@ -207,7 +253,7 @@ export function createPrivateMcpServer(principal: McpPrincipal): McpServer {
     title: "Get runner coach snapshot",
     description: "Read one bounded, analysis-ready snapshot of the authorized runner's profile, recent runs, trends, recovery, score, active goals, and current plan week.",
     inputSchema: z.object({ days: z.number().int().min(7).max(90).optional() }).strict(),
-    outputSchema: z.record(z.unknown()),
+    outputSchema: coachSnapshotOutputSchema,
     annotations: READ_ONLY_ANNOTATIONS,
   }, privateHandler(principal, "get_runner_coach_snapshot", coachSnapshotScopes, (args) => readRunnerCoachSnapshot(principal.userId, args.days)));
 
@@ -216,7 +262,7 @@ export function createPrivateMcpServer(principal: McpPrincipal): McpServer {
     title: "Get post-run brief",
     description: "Read a bounded activity analysis package with the authorized runner's recovery, 28-day trend, active plan summary, and explicit confidence gaps.",
     inputSchema: z.object({ activityId: z.number().int().positive() }).strict(),
-    outputSchema: z.record(z.unknown()),
+    outputSchema: postRunBriefOutputSchema,
     annotations: READ_ONLY_ANNOTATIONS,
   }, privateHandler(principal, "get_post_run_brief", postRunScopes, (args) => readPostRunBrief(principal.userId, args.activityId)));
 
@@ -241,7 +287,7 @@ export function createPrivateMcpServer(principal: McpPrincipal): McpServer {
       title: "Get training plan",
       description: "Read one training plan owned by the authorized runner, capped at 32 weeks and seven days per week.",
       inputSchema: z.object({ planId: z.number().int().positive() }).strict(),
-      outputSchema: z.record(z.unknown()),
+      outputSchema: trainingPlanOutputSchema,
       annotations: READ_ONLY_ANNOTATIONS,
     }, privateHandler(principal, "get_training_plan", "mcp:plans.read", (args) => readRunnerTrainingPlan(principal.userId, args.planId)));
   }
