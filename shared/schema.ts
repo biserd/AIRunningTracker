@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, real, timestamp, json, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, real, timestamp, json, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -82,25 +82,18 @@ export const users = pgTable("users", {
   lastPostRunEmailAt: timestamp("last_post_run_email_at"),
   coachQuietHoursStart: integer("coach_quiet_hours_start"), // 0-23 hour
   coachQuietHoursEnd: integer("coach_quiet_hours_end"), // 0-23 hour
+  lastCoachSyncAt: timestamp("last_coach_sync_at"),
+  // Proactive coach settings
   coachEnabled: boolean("coach_enabled").default(true),
   coachTimezone: text("coach_timezone").default("UTC"),
   coachDailyBriefingEnabled: boolean("coach_daily_briefing_enabled").default(true),
   coachDailyBriefingHour: integer("coach_daily_briefing_hour").default(7),
   coachWeatherEnabled: boolean("coach_weather_enabled").default(false),
-  coachWeatherLocation: jsonb("coach_weather_location").$type<{
-    label: string;
-    latitude: number;
-    longitude: number;
-  }>(),
-  coachPreferredChannel: text("coach_preferred_channel", {
-    enum: ["email", "push", "in_app"]
-  }).default("email"),
+  coachWeatherLocation: jsonb("coach_weather_location"), // { latitude, longitude }
+  coachPreferredChannel: text("coach_preferred_channel").default("email"),
   coachSnoozedUntil: timestamp("coach_snoozed_until"),
-  coachDailyAvailability: text("coach_daily_availability", {
-    enum: ["available", "limited", "unavailable"]
-  }),
+  coachDailyAvailability: text("coach_daily_availability"),
   coachDailyAvailabilityDate: text("coach_daily_availability_date"),
-  lastCoachSyncAt: timestamp("last_coach_sync_at"),
   // Recovery state caching (24hr TTL, invalidated on sync)
   cachedRecoveryState: jsonb("cached_recovery_state"),
   recoveryCalculatedAt: timestamp("recovery_calculated_at"),
@@ -290,4 +283,1066 @@ export const trainingPlans = pgTable("training_plans_v2", {
   currentWeek: integer("current_week").default(1),
   // Coach notes
   coachNotes: text("coach_notes"),
-  generationPrompt: te×]ùÞÚ$z{-®éÜj×'Ev÷&¶÷WD66†U66†VÖÒ7&VFT–ç6W'E66†VÖ‡v÷&¶÷WD66†R’æöÖ—B‡°Ð¢–C¢G'VRÀÐ¢7&VFVDC¢G'VRÀÐ¢Æ7EW6VDC¢G'VRÀÐ¢†—D6÷VçC¢G'VRÀÐ§Ò“°Ð Ð¢òò&÷WFRæB6ö×&—6öâ66†VÖ0Ð¦W‡÷'B6öç7B–ç6W'E&÷WFU66†VÖÒ7&VFT–ç6W'E66†VÖ‡&÷WFW2’æöÖ—B‡°Ð¢–C¢G'VRÀÐ¢7&VFVDC¢G'VRÀÐ¢'Vä6÷VçC¢G'VRÀÐ§Ò“°Ð Ð¦W‡÷'B6öç7B–ç6W'D7F—f—G•&÷WFTÖ66†VÖÒ7&VFT–ç6W'E66†VÖ†7F—f—G•&÷WFTÖ’æöÖ—B‡°Ð¢–C¢G'VRÀÐ¢7&VFVDC¢G'VRÀÐ§Ò“°Ð Ð¦W‡÷'B6öç7B–ç6W'D7F—f—G”fVGW&W566†VÖÒ7&VFT–ç6W'E66†VÖ†7F—f—G”fVGW&W2’æöÖ—B‡°Ð¢–C¢G'VRÀÐ¢6ö×WFVDC¢G'VRÀÐ§Ò“°Ð Ð¦W‡÷'B6öç7B–ç6W'E6–Ö–Æ%'Vç466†U66†VÖÒ7&VFT–ç6W'E66†VÖ‡6–Ö–Æ%'Vç466†R’æöÖ—B‡°Ð¢–C¢G'VRÀÐ¢6ö×WFVDC¢G'VRÀÐ§Ò“°Ð Ð¢òò’6ö6‚vVçB66†VÖ0Ð¦W‡÷'B6öç7B–ç6W'D6ö6…&V666†VÖÒ7&VFT–ç6W'E66†VÖ†6ö6…&V62’æöÖ—B‡°Ð¢–C¢G'VRÀÐ¢7&VFVDC¢G'VRÀÐ¢æ÷F–f–6F–öå6VçC¢G'VRÀÐ¢f–WvVDC¢G'VRÀÐ§Ò“°Ð Ð¦W‡÷'B6öç7B–ç6W'DvVçE'Vå66†VÖÒ7&VFT–ç6W'E66†VÖ†vVçE'Vç2’æöÖ—B‡°Ð¢–C¢G'VRÀÐ¢7&VFVDC¢G'VRÀÐ¢&WG'”6÷VçC¢G'VRÀÐ§Ò“°Ð Ð¦W‡÷'B6öç7B–ç6W'Dæ÷F–f–6F–öä÷WF&÷…66†VÖÒ7&VFT–ç6W'E66†VÖ†æ÷F–f–6F–öä÷WF&÷‚’æöÖ—B‡°¢–C¢G'VRÀÐ¢7&VFVDC¢G'VRÀÐ¢7FGW3¢G'VRÀÐ¢6VçDC¢G'VRÀÐ¢&WG'”6÷VçC¢G'VRÀ¢&ö6W76–æu7F'FVDC¢G'VRÀ§Ò“° Ð¢òòW6‚7V'67&—F–öç2Òf÷"vV"W6‚…t’âæF—fRÖö&–ÆRW6‚v–ÆÂ&RFFVBv—F‚F†RW‡òàÐ¦W‡÷'B6öç7BW6…7V'67&—F–öç2ÒuF&ÆR‚'W6…÷7V'67&—F–öç2"Â°Ð¢–C¢6W&–Â‚&–B"’ç&–Ö'”¶W’‚’ÀÐ¢W6W$–C¢–çFVvW"‚'W6W%ö–B"’ææ÷DçVÆÂ‚’ÀÐ¢ÆFf÷&Ó¢FW‡B‚'ÆFf÷&Ò"Â²VçVÓ¢²'vV""Â&–÷2"Â&æG&ö–B%ÒÒ’ææ÷DçVÆÂ‚’æFVfVÇB‚'vV""’ÀÐ¢òòvV"W6‚f–VÆG0Ð¢VæGö–çC¢FW‡B‚&VæGö–çB"’ÀÐ¢#SfFƒ¢FW‡B‚'#SfF‚"’ÀÐ¢WFƒ¢FW‡B‚&WF‚"’ÀÐ¢òòæF—fRW6‚Fö¶Vâ‡&W6W'fVBf÷"gWGW&RW‡òç2ôd4Ò–çFVw&F–öâÐ¢æF—fUFö¶Vã¢FW‡B‚&æF—fU÷Fö¶Vâ"’ÀÐ¢òòÖWFFFÐ¢W6W$vVçC¢FW‡B‚'W6W%övVçB"’ÀÐ¢Væ&ÆVC¢&ööÆVâ‚&Væ&ÆVB"’æFVfVÇB‡G'VR’ÀÐ¢Æ7EW6VDC¢F–ÖW7F×‚&Æ7E÷W6VEöB"’ÀÐ¢7&VFVDC¢F–ÖW7F×‚&7&VFVEöB"’æFVfVÇDæ÷r‚’ÀÐ§ÒÂ‡F&ÆR’Óâ‡°Ð¢W6W$–D–Gƒ¢–æFW‚‚'W6…÷7V'67&—F–öç5÷W6W%ö–Eö–G‚"’æöâ‡F&ÆRçW6W$–B’ÀÐ¢VæGö–çD–Gƒ¢–æFW‚‚'W6…÷7V'67&—F–öç5öVæGö–çEö–G‚"’æöâ‡F&ÆRæVæGö–çB’ÀÐ¢æF—fUFö¶Vä–Gƒ¢–æFW‚‚'W6…÷7V'67&—F–öç5öæF—fU÷Fö¶Våö–G‚"’æöâ‡F&ÆRææF—fUFö¶Vâ’ÀÐ§Ò’“°Ð Ð¦W‡÷'B6öç7B–ç6W'EW6…7V'67&—F–öå66†VÖÒ7&VFT–ç6W'E66†VÖ‡W6…7V'67&—F–öç2’æöÖ—B‡°Ð¢–C¢G'VRÀÐ¢7&VFVDC¢G'VRÀÐ¢Æ7EW6VDC¢G'VRÀÐ§Ò“°Ð Ð¦W‡÷'BG—R–ç6W'EW6…7V'67&—F–öâÒ¢æ–æfW#ÇG—Vöb–ç6W'EW6…7V'67&—F–öå66†VÖã°Ð¦W‡÷'BG—RW6…7V'67&—F–öâÒG—VöbW6…7V'67&—F–öç2âF–æfW%6VÆV7C°Ð Ð¢òò6ö6‚&VfW&Væ6W2WFFR66†VÖ†f÷"W6W"6WGF–æw2Ð¦W‡÷'B6öç7BWFFT6ö6…&VfW&Væ6W566†VÖÒ¢æö&¦V7B‡°¢6ö6„vöÃ¢¢æVçVÒ„tôÅõE•U2’æ÷F–öæÂ‚’ÀÐ¢6ö6…&6TFFS¢¢ç7G&–ær‚’æFFWF–ÖR‚’æ÷F–öæÂ‚’æçVÆÆ&ÆR‚’ÀÐ¢6ö6…F&vWEF–ÖS¢¢ç7G&–ær‚’æ÷F–öæÂ‚’æçVÆÆ&ÆR‚’ÀÐ¢6ö6„F—4f–Æ&ÆS¢¢æ'&’‡¢ç7G&–ær‚’’æ÷F–öæÂ‚’ÀÐ¢6ö6…vVV¶Ç”Ö–ÆVvT6¢¢æçVÖ&W"‚’ç÷6—F—fR‚’æ÷F–öæÂ‚’æçVÆÆ&ÆR‚’ÀÐ¢6ö6…FöæS¢¢æVçVÒ…²&vVçFÆR"Â&F—&V7B"Â&FFöæW&B%Ò’æ÷F–öæÂ‚’ÀÐ¢6ö6„æ÷F–g•&V6¢¢æ&ööÆVâ‚’æ÷F–öæÂ‚’ÀÐ¢6ö6„æ÷F–g•vVV¶Ç•7VÖÖ'“¢¢æ&ööÆVâ‚’æ÷F–öæÂ‚’ÀÐ¢6ö6…V–WD†÷W'57F'C¢¢æçVÖ&W"‚’æÖ–âƒ’æÖ‚ƒ#2’æ÷F–öæÂ‚’æçVÆÆ&ÆR‚’ÀÐ¢6ö6…V–WD†÷W'4VæC¢¢æçVÖ&W"‚’æÖ–âƒ’æÖ‚ƒ#2’æ÷F–öæÂ‚’æçVÆÆ&ÆR‚’À¢6ö6„Væ&ÆVC¢¢æ&ööÆVâ‚’æ÷F–öæÂ‚’À¢6ö6…F–ÖW¦öæS¢¢ç7G&–ær‚’æÖ–âƒ’æÖ‚ƒ’æ÷F–öæÂ‚’À¢6ö6„F–Ç”'&–Vf–ætVæ&ÆVC¢¢æ&ööÆVâ‚’æ÷F–öæÂ‚’À¢6ö6„F–Ç”'&–Vf–æt†÷W#¢¢æçVÖ&W"‚’æ–çB‚’æÖ–âƒ’æÖ‚ƒ#2’æ÷F–öæÂ‚’À¢6ö6…vVF†W$Væ&ÆVC¢¢æ&ööÆVâ‚’æ÷F–öæÂ‚’À¢6ö6…vVF†W$Æö6F–öã¢¢æö&¦V7B‡°¢Æ&VÃ¢¢ç7G&–ær‚’æÖ–âƒ’æÖ‚ƒ#’À¢ÆF—GVFS¢¢æçVÖ&W"‚’æÖ–â‚Ó“’æÖ‚ƒ“’À¢Æöæv—GVFS¢¢æçVÖ&W"‚’æÖ–â‚Óƒ’æÖ‚ƒƒ’À¢Ò’æ÷F–öæÂ‚’æçVÆÆ&ÆR‚’À¢6ö6…&VfW'&VD6†ææVÃ¢¢æVçVÒ…²&VÖ–Â"Â'W6‚"Â&–åö%Ò’æ÷F–öæÂ‚’À¢6ö6…6æö÷¦VEVçF–Ã¢¢ç7G&–ær‚’æFFWF–ÖR‚’æ÷F–öæÂ‚’æçVÆÆ&ÆR‚’À¢6ö6„F–Ç”f–Æ&–Æ—G“¢¢æVçVÒ…²&f–Æ&ÆR"Â&Æ–Ö—FVB"Â'Væf–Æ&ÆR%Ò’æ÷F–öæÂ‚’æçVÆÆ&ÆR‚’À¢6ö6„öæ&ö&F–æt6ö×ÆWFVC¢¢æ&ööÆVâ‚’æ÷F–öæÂ‚’À§Ò“° Ð¢òòFVÆWF–öâfVVF&6²F&ÆRÒG&6·2v‡’W6W'2FVÆWFRF†V—"66÷VçG0Ð¦W‡÷'B6öç7BFVÆWF–öäfVVF&6²ÒuF&ÆR‚&FVÆWF–öåöfVVF&6²"Â°Ð¢–C¢6W&–Â‚&–B"’ç&–Ö'”¶W’‚’ÀÐ¢W6W$–C¢–çFVvW"‚'W6W%ö–B"’ÂòòçVÆÆ&ÆR6–æ6RW6W"v–ÆÂ&RFVÆWFV@Ð¢W6W$VÖ–Ã¢FW‡B‚'W6W%öVÖ–Â"’ÂòòçVÆÆ&ÆRf÷"7G&fÖöæÇ’W6W'2v—F‚æòVÖ–ÀÐ¢&V6öã¢FW‡B‚'&V6öâ"Â² Ð¢VçVÓ¢²'FöõöW‡Vç6—fR"Â&æ÷E÷W6–ær"Â&Ö—76–æuöfVGW&W2"Â&f÷VæEöÇFW&æF—fR"Â'FV6†æ–6Åö—77VW2"Â'&—f7•ö6öæ6W&ç2"Â&÷F†W"%Ò Ð¢Ò’ææ÷DçVÆÂ‚’ÀÐ¢FWF–Ç3¢FW‡B‚&FWF–Ç2"’Âòò÷F–öæÂFF—F–öæÂFWF–Ç0Ð¢v5&WF–æVC¢&ööÆVâ‚'v5÷&WF–æVB"’æFVfVÇB†fÇ6R’ÂòòF–BF†W’7F’gFW"6VV–ær&WFVçF–öâöffW#ðÐ¢7V'67&—F–öåÆã¢FW‡B‚'7V'67&—F–öå÷Æâ"’Âòòv†BÆâvW&RF†W’öãðÐ¢66÷VçDvT–äF—3¢–çFVvW"‚&66÷VçEövUö–åöF—2"’Âòò†÷rÆöærvW&RF†W’W6W#ðÐ¢7&VFVDC¢F–ÖW7F×‚&7&VFVEöB"’æFVfVÇDæ÷r‚’ÀÐ§Ò“°Ð Ð¦W‡÷'B6öç7B–ç6W'DFVÆWF–öäfVVF&6µ66†VÖÒ7&VFT–ç6W'E66†VÖ†FVÆWF–öäfVVF&6²’æöÖ—B‡°Ð¢–C¢G'VRÀÐ¢7&VFVDC¢G'VRÀÐ§Ò“°Ð Ð¢òòÓÓÓÓÓÓÓÓÓÓÓÓÓÒE$•4Õ”tâ5•5DTÒÓÓÓÓÓÓÓÓÓÓÓÓÓÐÐ Ð¢òòW6W"6×–vç2ÒG&6·2v†–6‚6×–vâW6W"—2–âæBF†V—"&öw&W70Ð¦W‡÷'B6öç7BW6W$6×–vç2ÒuF&ÆR‚'W6W%ö6×–vç2"Â°Ð¢–C¢6W&–Â‚&–B"’ç&–Ö'”¶W’‚’ÀÐ¢W6W$–C¢–çFVvW"‚'W6W%ö–B"’ææ÷DçVÆÂ‚’ÀÐ¢6×–vã¢FW‡B‚&6×–vâ"Â² Ð¢VçVÓ¢²'6VvÖVçEö"Â'6VvÖVçEö""Â'6VvÖVçEö2"Â'6VvÖVçEöB%Ò Ð¢Ò’ææ÷DçVÆÂ‚’ÀÐ¢7FFS¢FW‡B‚'7FFR"Â² Ð¢VçVÓ¢²&7F—fR"Â&6ö×ÆWFVB"Â&W†—FVB"Â&6æ6VÆÆVB%Ò Ð¢Ò’æFVfVÇB‚&7F—fR"’ÀÐ¢7W'&VçE7FW¢–çFVvW"‚&7W'&VçE÷7FW"’æFVfVÇBƒ’ÂòòÓÂ#Ó"Â#ÓÂ##Ó"ÂWF2àÐ¢VçFW&VDC¢F–ÖW7F×‚&VçFW&VEöB"’æFVfVÇDæ÷r‚’ÀÐ¢W†—FVDC¢F–ÖW7F×‚&W†—FVEöB"’ÀÐ¢W†—E&V6öã¢FW‡B‚&W†—E÷&V6öâ"’Âòò&6öçfW'FVB"Â'7V'67&–&VB"Â'Vç7V'67&–&VB"Â&6ö×ÆWFVB"Â'6VvÖVçEö6†ævR Ð¢Æ7DVÖ–Å6VçDC¢F–ÖW7F×‚&Æ7EöVÖ–Å÷6VçEöB"’ÀÐ¢WFFVDC¢F–ÖW7F×‚'WFFVEöB"’æFVfVÇDæ÷r‚’ÀÐ§ÒÂ‡F&ÆR’Óâ‡°Ð¢W6W$–D–Gƒ¢–æFW‚‚'W6W%ö6×–vç5÷W6W%ö–Eö–G‚"’æöâ‡F&ÆRçW6W$–B’ÀÐ¢6×–vä–Gƒ¢–æFW‚‚'W6W%ö6×–vç5ö6×–våö–G‚"’æöâ‡F&ÆRæ6×–vâ’ÀÐ¢7FFT–Gƒ¢–æFW‚‚'W6W%ö6×–vç5÷7FFUö–G‚"’æöâ‡F&ÆRç7FFR’ÀÐ¢W6W$6×–våVæ—VT–Gƒ¢–æFW‚‚'W6W%ö6×–vç5÷W6W%ö6×–vå÷Væ—VUö–G‚"’æöâ‡F&ÆRçW6W$–BÂF&ÆRæ6×–vâ’ÀÐ§Ò’“°Ð Ð¢òòVÖ–Â¦ö'2Ò66†VGVÆVBVÖ–Ç2v—F‚FVGWÆ–6F–öàÐ¦W‡÷'B6öç7BVÖ–Ä¦ö'2ÒuF&ÆR‚&VÖ–Åö¦ö'2"Â°Ð¢–C¢6W&–Â‚&–B"’ç&–Ö'”¶W’‚’ÀÐ¢W6W$–C¢–çFVvW"‚'W6W%ö–B"’ææ÷DçVÆÂ‚’ÀÐ¢¦ö%G—S¢FW‡B‚&¦ö%÷G—R"Â² Ð¢VçVÓ¢²&G&—"Â'G&ç67F–öæÂ"Â&7F—f—G•÷&VG’%Ò Ð¢Ò’ææ÷DçVÆÂ‚’ÀÐ¢6×–vã¢FW‡B‚&6×–vâ"’Âòò6VvÖVçEöÂ6VvÖVçEö"ÂWF2àÐ¢7FW¢FW‡B‚'7FW"’ÂòòÂ"Â#Â#"ÂWF2àÐ¢66†VGVÆVDC¢F–ÖW7F×‚'66†VGVÆVEöB"’ææ÷DçVÆÂ‚’ÀÐ¢7FGW3¢FW‡B‚'7FGW2"Â² Ð¢VçVÓ¢²'VæF–ær"Â'6VçB"Â&6æ6VÆÆVB"Â&f–ÆVB%Ò Ð¢Ò’æFVfVÇB‚'VæF–ær"’ÀÐ¢FVGWT¶W“¢FW‡B‚&FVGWUö¶W’"’ææ÷DçVÆÂ‚’ÂòòW6W%ö–B²6×–vâ²7FW Ð¢ÖWFFF¢§6öâ‚&ÖWFFF"’âGG—SÇ°Ð¢7FW&Ãó¢7G&–æs°Ð¢7F—f—G”–Có¢çVÖ&W#°Ð¢6ö×&Tó¢çVÖ&W#°Ð¢6ö×&T#ó¢çVÖ&W#°Ð¢7V&¦V7Có¢7G&–æs°Ð¢&Wf–WuFW‡Có¢7G&–æs°Ð¢Óâ‚’ÀÐ¢6VçDC¢F–ÖW7F×‚'6VçEöB"’ÀÐ¢W'&÷$ÖW76vS¢FW‡B‚&W'&÷%öÖW76vR"’ÀÐ¢&WG'”6÷VçC¢–çFVvW"‚'&WG'•ö6÷VçB"’æFVfVÇBƒ’ÀÐ¢7&VFVDC¢F–ÖW7F×‚&7&VFVEöB"’æFVfVÇDæ÷r‚’ÀÐ§ÒÂ‡F&ÆR’Óâ‡°Ð¢W6W$–D–Gƒ¢–æFW‚‚&VÖ–Åö¦ö'5÷W6W%ö–Eö–G‚"’æöâ‡F&ÆRçW6W$–B’ÀÐ¢7FGW4–Gƒ¢–æFW‚‚&VÖ–Åö¦ö'5÷7FGW5ö–G‚"’æöâ‡F&ÆRç7FGW2’ÀÐ¢66†VGVÆVDD–Gƒ¢–æFW‚‚&VÖ–Åö¦ö'5÷66†VGVÆVEöEö–G‚"’æöâ‡F&ÆRç66†VGVÆVDB’ÀÐ¢FVGWT¶W”–Gƒ¢–æFW‚‚&VÖ–Åö¦ö'5öFVGWUö¶W•ö–G‚"’æöâ‡F&ÆRæFVGWT¶W’’ÀÐ§Ò’“°Ð Ð¢òòVÖ–Â6Æ–6²G&6¶–ærÒf÷"6×–vâæÇ—F–70Ð¦W‡÷'B6öç7BVÖ–Ä6Æ–6·2ÒuF&ÆR‚&VÖ–Åö6Æ–6·2"Â°Ð¢–C¢6W&–Â‚&–B"’ç&–Ö'”¶W’‚’ÀÐ¢W6W$–C¢–çFVvW"‚'W6W%ö–B"’ææ÷DçVÆÂ‚’ÀÐ¢6×–vã¢FW‡B‚&6×–vâ"’ÀÐ¢7FW¢FW‡B‚'7FW"’ÀÐ¢7F¶W“¢FW‡B‚&7Fö¶W’"’Âòò&6öææV7E÷7G&f"Â'f–Wu÷6æ6†÷B"Â'Ww&FR"ÂWF2àÐ¢6Æ–6¶VDC¢F–ÖW7F×‚&6Æ–6¶VEöB"’æFVfVÇDæ÷r‚’ÀÐ¢6÷W&6S¢FW‡B‚'6÷W&6R"’Âòòg&öÒU$Â&Ò÷6÷W&6SÔ#Ð§ÒÂ‡F&ÆR’Óâ‡°Ð¢W6W$–D–Gƒ¢–æFW‚‚&VÖ–Åö6Æ–6·5÷W6W%ö–Eö–G‚"’æöâ‡F&ÆRçW6W$–B’ÀÐ¢6×–vå7FW–Gƒ¢–æFW‚‚&VÖ–Åö6Æ–6·5ö6×–vå÷7FWö–G‚"’æöâ‡F&ÆRæ6×–vâÂF&ÆRç7FW’ÀÐ§Ò’“°Ð Ð¦W‡÷'B6öç7B–ç6W'EW6W$6×–vå66†VÖÒ7&VFT–ç6W'E66†VÖ‡W6W$6×–vç2’æöÖ—B‡°Ð¢–C¢G'VRÀÐ¢VçFW&VDC¢G'VRÀÐ¢WFFVDC¢G'VRÀÐ§Ò“°Ð Ð¦W‡÷'B6öç7B–ç6W'DVÖ–Ä¦ö%66†VÖÒ7&VFT–ç6W'E66†VÖ†VÖ–Ä¦ö'2’æöÖ—B‡°Ð¢–C¢G'VRÀÐ¢7&VFVDC¢G'VRÀÐ¢7FGW3¢G'VRÀÐ¢6VçDC¢G'VRÀÐ¢&WG'”6÷VçC¢G'VRÀÐ§Ò“°Ð Ð¦W‡÷'B6öç7B–ç6W'DVÖ–Ä6Æ–6µ66†VÖÒ7&VFT–ç6W'E66†VÖ†VÖ–Ä6Æ–6·2’æöÖ—B‡°Ð¢–C¢G'VRÀÐ¢6Æ–6¶VDC¢G'VRÀÐ§Ò“°Ð Ð¢òò7—7FVÒ6WGF–æw2ÒvÆö&Â¶W’×fÇVR6öæf–wW&F–öàÐ¦W‡÷'B6öç7B7—7FVÕ6WGF–æw2ÒuF&ÆR‚'7—7FVÕ÷6WGF–æw2"Â°Ð¢¶W“¢FW‡B‚&¶W’"’ç&–Ö'”¶W’‚’ÀÐ¢fÇVS¢FW‡B‚'fÇVR"’ææ÷DçVÆÂ‚’ÀÐ¢WFFVDC¢F–ÖW7F×‚'WFFVEöB"’æFVfVÇDæ÷r‚’ÀÐ§Ò“°Ð Ð¦W‡÷'B6öç7B–ç6W'E7—7FVÕ6WGF–æu66†VÖÒ7&VFT–ç6W'E66†VÖ‡7—7FVÕ6WGF–æw2’æöÖ—B‡°Ð¢WFFVDC¢G'VRÀÐ§Ò“°Ð Ð¦W‡÷'B6öç7B7G&fvV&†öö´Æöw2ÒuF&ÆR‚'7G&f÷vV&†ööµöÆöw2"Â°Ð¢–C¢6W&–Â‚&–B"’ç&–Ö'”¶W’‚’ÀÐ¢WfVçD–C¢FW‡B‚&WfVçEö–B"’ÀÐ¢WfVçEG—S¢FW‡B‚&WfVçE÷G—R"’ææ÷DçVÆÂ‚’ÀÐ¢ö&¦V7EG—S¢FW‡B‚&ö&¦V7E÷G—R"’ææ÷DçVÆÂ‚’ÀÐ¢ö&¦V7D–C¢FW‡B‚&ö&¦V7Eö–B"’ææ÷DçVÆÂ‚’ÀÐ¢F†ÆWFT–C¢FW‡B‚&F†ÆWFUö–B"’ææ÷DçVÆÂ‚’ÀÐ¢7V'67&—F–öä–C¢–çFVvW"‚'7V'67&—F–öåö–B"’ÀÐ¢7FGW3¢FW‡B‚'7FGW2"’ææ÷DçVÆÂ‚’æFVfVÇB‚'&V6V—fVB"’ÀÐ¢W'&÷$ÖW76vS¢FW‡B‚&W'&÷%öÖW76vR"’ÀÐ¢&u–ÆöC¢FW‡B‚'&u÷–ÆöB"’ÀÐ¢&V6V—fVDC¢F–ÖW7F×‚'&V6V—fVEöB"’æFVfVÇDæ÷r‚’ÀÐ¢&ö6W76VDC¢F–ÖW7F×‚'&ö6W76VEöB"’ÀÐ§ÒÂ‡F&ÆR’Óâ‡°Ð¢F†ÆWFT–Gƒ¢–æFW‚‚'7G&f÷v…öÆöw5öF†ÆWFUö–G‚"’æöâ‡F&ÆRæF†ÆWFT–B’ÀÐ¢7FGW4–Gƒ¢–æFW‚‚'7G&f÷v…öÆöw5÷7FGW5ö–G‚"’æöâ‡F&ÆRç7FGW2’ÀÐ¢&V6V—fVD–Gƒ¢–æFW‚‚'7G&f÷v…öÆöw5÷&V6V—fVEö–G‚"’æöâ‡F&ÆRç&V6V—fVDB’ÀÐ§Ò’“°Ð Ð¦W‡÷'B6öç7B–ç6W'E7G&fvV&†öö´Æöu66†VÖÒ7&VFT–ç6W'E66†VÖ‡7G&fvV&†öö´Æöw2’æöÖ—B‡°Ð¢–C¢G'VRÀÐ¢&V6V—fVDC¢G'VRÀÐ¢&ö6W76VDC¢G'VRÀÐ§Ò“°Ð Ð¢òòÆöv–â66†VÖf÷"WF†VçF–6F–öàÐ¦W‡÷'B6öç7BÆöv–å66†VÖÒ¢æö&¦V7B‡°Ð¢VÖ–Ã¢¢ç7G&–ær‚’æVÖ–Â‚$–çfÆ–BVÖ–ÂFG&W72"’ÀÐ¢77v÷&C¢¢ç7G&–ær‚’æÖ–âƒbÂ%77v÷&B×W7B&RBÆV7Bb6†&7FW'2"’ÀÐ§Ò“°Ð Ð¢òò&Vv—7G&F–öâ66†VÖÐ¦W‡÷'B6öç7B&Vv—7FW%66†VÖÒ¢æö&¦V7B‡°Ð¢VÖ–Ã¢¢ç7G&–ær‚’æVÖ–Â‚$–çfÆ–BVÖ–ÂFG&W72"’ÀÐ¢77v÷&C¢¢ç7G&–ær‚’æÖ–âƒbÂ%77v÷&B×W7B&RBÆV7Bb6†&7FW'2"’ÀÐ¢f—'7DæÖS¢¢ç7G&–ær‚’æÖ–âƒÂ$f—'7BæÖR—2&WV—&VB"’ÀÐ¢Æ7DæÖS¢¢ç7G&–ær‚’æÖ–âƒÂ$Æ7BæÖR—2&WV—&VB"’ÀÐ§Ò“°Ð Ð¦W‡÷'BG—R–ç6W'EW6W"Ò¢æ–æfW#ÇG—Vöb–ç6W'EW6W%66†VÖã°Ð¦W‡÷'BG—RW6W"ÒG—VöbW6W'2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'D7F—f—G’Ò¢æ–æfW#ÇG—Vöb–ç6W'D7F—f—G•66†VÖã°Ð¦W‡÷'BG—R7F—f—G’ÒG—Vöb7F—f—F–W2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'D”–ç6–v‡BÒ¢æ–æfW#ÇG—Vöb–ç6W'D”–ç6–v‡E66†VÖã°Ð¦W‡÷'BG—R”–ç6–v‡BÒG—Vöb”–ç6–v‡G2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'EG&–æ–æuÆâÒ¢æ–æfW#ÇG—Vöb–ç6W'EG&–æ–æuÆå66†VÖã°Ð¦W‡÷'BG—RG&–æ–æuÆâÒG—VöbG&–æ–æuÆç2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'DVÖ–Åv—FÆ—7BÒ¢æ–æfW#ÇG—Vöb–ç6W'DVÖ–Åv—FÆ—7E66†VÖã°Ð¦W‡÷'BG—RVÖ–Åv—FÆ—7BÒG—VöbVÖ–Åv—FÆ—7BâF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'DfVVF&6²Ò¢æ–æfW#ÇG—Vöb–ç6W'DfVVF&6µ66†VÖã°Ð¦W‡÷'BG—RfVVF&6²ÒG—VöbfVVF&6²âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'DvöÂÒ¢æ–æfW#ÇG—Vöb–ç6W'DvöÅ66†VÖã°Ð¦W‡÷'BG—RvöÂÒG—VöbvöÇ2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'EW&f÷&Öæ6TÆörÒ¢æ–æfW#ÇG—Vöb–ç6W'EW&f÷&Öæ6TÆöu66†VÖã°Ð¦W‡÷'BG—RW&f÷&Öæ6TÆörÒG—VöbW&f÷&Öæ6TÆöw2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'D”6öçfW'6F–öâÒ¢æ–æfW#ÇG—Vöb–ç6W'D”6öçfW'6F–öå66†VÖã°Ð¦W‡÷'BG—R”6öçfW'6F–öâÒG—Vöb”6öçfW'6F–öç2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'D”ÖW76vRÒ¢æ–æfW#ÇG—Vöb–ç6W'D”ÖW76vU66†VÖã°Ð¦W‡÷'BG—R”ÖW76vRÒG—Vöb”ÖW76vW2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'E'Vææ–æu6†öRÒ¢æ–æfW#ÇG—Vöb–ç6W'E'Vææ–æu6†öU66†VÖã°Ð¦W‡÷'BG—R'Vææ–æu6†öRÒG—Vöb'Vææ–æu6†öW2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'E6†öT6ö×&—6öâÒ¢æ–æfW#ÇG—Vöb–ç6W'E6†öT6ö×&—6öå66†VÖã°Ð¦W‡÷'BG—R6†öT6ö×&—6öâÒG—Vöb6†öT6ö×&—6öç2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'D”¶W’Ò¢æ–æfW#ÇG—Vöb–ç6W'D”¶W•66†VÖã°Ð¦W‡÷'BG—R”¶W’ÒG—Vöb”¶W—2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'E&Vg&W6…Fö¶VâÒ¢æ–æfW#ÇG—Vöb–ç6W'E&Vg&W6…Fö¶Vå66†VÖã°Ð¦W‡÷'BG—R&Vg&W6…Fö¶VâÒG—Vöb&Vg&W6…Fö¶Vç2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'DF†ÆWFU&öf–ÆRÒ¢æ–æfW#ÇG—Vöb–ç6W'DF†ÆWFU&öf–ÆU66†VÖã°Ð¦W‡÷'BG—RF†ÆWFU&öf–ÆRÒG—VöbF†ÆWFU&öf–ÆW2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'EÆåvVV²Ò¢æ–æfW#ÇG—Vöb–ç6W'EÆåvVVµ66†VÖã°Ð¦W‡÷'BG—RÆåvVV²ÒG—VöbÆåvVV·2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'EÆäF’Ò¢æ–æfW#ÇG—Vöb–ç6W'EÆäF•66†VÖã°Ð¦W‡÷'BG—RÆäF’ÒG—VöbÆäF—2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'Ev÷&¶÷WD66†RÒ¢æ–æfW#ÇG—Vöb–ç6W'Ev÷&¶÷WD66†U66†VÖã°Ð¦W‡÷'BG—Rv÷&¶÷WD66†RÒG—Vöbv÷&¶÷WD66†RâF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'E&÷WFRÒ¢æ–æfW#ÇG—Vöb–ç6W'E&÷WFU66†VÖã°Ð¦W‡÷'BG—R&÷WFRÒG—Vöb&÷WFW2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'D7F—f—G•&÷WFTÖÒ¢æ–æfW#ÇG—Vöb–ç6W'D7F—f—G•&÷WFTÖ66†VÖã°Ð¦W‡÷'BG—R7F—f—G•&÷WFTÖÒG—Vöb7F—f—G•&÷WFTÖâF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'D7F—f—G”fVGW&W2Ò¢æ–æfW#ÇG—Vöb–ç6W'D7F—f—G”fVGW&W566†VÖã°Ð¦W‡÷'BG—R7F—f—G”fVGW&W2ÒG—Vöb7F—f—G”fVGW&W2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'E6–Ö–Æ%'Vç466†RÒ¢æ–æfW#ÇG—Vöb–ç6W'E6–Ö–Æ%'Vç466†U66†VÖã°Ð¦W‡÷'BG—R6–Ö–Æ%'Vç466†RÒG—Vöb6–Ö–Æ%'Vç466†RâF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'D6ö6…&V6Ò¢æ–æfW#ÇG—Vöb–ç6W'D6ö6…&V666†VÖã°Ð¦W‡÷'BG—R6ö6…&V6ÒG—Vöb6ö6…&V62âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'DvVçE'VâÒ¢æ–æfW#ÇG—Vöb–ç6W'DvVçE'Vå66†VÖã°Ð¦W‡÷'BG—RvVçE'VâÒG—VöbvVçE'Vç2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'Dæ÷F–f–6F–öä÷WF&÷‚Ò¢æ–æfW#ÇG—Vöb–ç6W'Dæ÷F–f–6F–öä÷WF&÷…66†VÖã°¦W‡÷'BG—Ræ÷F–f–6F–öä÷WF&÷‚ÒG—Vöbæ÷F–f–6F–öä÷WF&÷‚âF–æfW%6VÆV7C°¦W‡÷'BG—R6ö6„ÖW76vTfVVF&6²ÒG—Vöb6ö6„ÖW76vTfVVF&6²âF–æfW%6VÆV7C°¦W‡÷'BG—RWFFT6ö6…&VfW&Væ6W2Ò¢æ–æfW#ÇG—VöbWFFT6ö6…&VfW&Væ6W566†VÖã°¦W‡÷'BG—RÆöv–äFFÒ¢æ–æfW#ÇG—VöbÆöv–å66†VÖã°Ð¦W‡÷'BG—R&Vv—7FW$FFÒ¢æ–æfW#ÇG—Vöb&Vv—7FW%66†VÖã°Ð¦W‡÷'BG—R–ç6W'DFVÆWF–öäfVVF&6²Ò¢æ–æfW#ÇG—Vöb–ç6W'DFVÆWF–öäfVVF&6µ66†VÖã°Ð¦W‡÷'BG—RFVÆWF–öäfVVF&6²ÒG—VöbFVÆWF–öäfVVF&6²âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'EW6W$6×–vâÒ¢æ–æfW#ÇG—Vöb–ç6W'EW6W$6×–vå66†VÖã°Ð¦W‡÷'BG—RW6W$6×–vâÒG—VöbW6W$6×–vç2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'DVÖ–Ä¦ö"Ò¢æ–æfW#ÇG—Vöb–ç6W'DVÖ–Ä¦ö%66†VÖã°Ð¦W‡÷'BG—RVÖ–Ä¦ö"ÒG—VöbVÖ–Ä¦ö'2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'DVÖ–Ä6Æ–6²Ò¢æ–æfW#ÇG—Vöb–ç6W'DVÖ–Ä6Æ–6µ66†VÖã°Ð¦W‡÷'BG—RVÖ–Ä6Æ–6²ÒG—VöbVÖ–Ä6Æ–6·2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'E7—7FVÕ6WGF–ærÒ¢æ–æfW#ÇG—Vöb–ç6W'E7—7FVÕ6WGF–æu66†VÖã°Ð¦W‡÷'BG—R7—7FVÕ6WGF–ærÒG—Vöb7—7FVÕ6WGF–æw2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'E7G&fvV&†öö´ÆörÒ¢æ–æfW#ÇG—Vöb–ç6W'E7G&fvV&†öö´Æöu66†VÖã°Ð¦W‡÷'BG—R7G&fvV&†öö´ÆörÒG—Vöb7G&fvV&†öö´Æöw2âF–æfW%6VÆV7C°Ð¦W‡÷'BG—R–ç6W'EÆävöÂÒ¢æ–æfW#ÇG—Vöb–ç6W'EÆävöÅ66†VÖã°Ð¦W‡÷'BG—RÆävöÂÒG—VöbÆävöÇ2âF–æfW%6VÆV7C°Ð
+  generationPrompt: text("generation_prompt"),
+  // AI enrichment tracking
+  enrichmentStatus: text("enrichment_status", {
+    enum: ["pending", "enriching", "complete", "partial", "failed"]
+  }).default("pending"),
+  enrichedWeeks: integer("enriched_weeks").default(0),
+  enrichmentError: text("enrichment_error"),
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("training_plans_v2_user_id_idx").on(table.userId),
+  statusIdx: index("training_plans_v2_status_idx").on(table.status),
+}));
+
+// Plan weeks
+export const planWeeks = pgTable("plan_weeks", {
+  id: serial("id").primaryKey(),
+  planId: integer("plan_id").notNull(),
+  weekNumber: integer("week_number").notNull(),
+  weekStartDate: timestamp("week_start_date").notNull(),
+  weekEndDate: timestamp("week_end_date").notNull(),
+  // Planned totals
+  plannedDistanceKm: real("planned_distance_km").notNull(),
+  plannedDurationMins: integer("planned_duration_mins"),
+  weekType: text("week_type", { 
+    enum: [...PHASE_TYPES] 
+  }).notNull(),
+  phaseName: text("phase_name"),
+  plannedVertGainM: integer("planned_vert_gain_m"),
+  plannedLongRunDurationMins: integer("planned_long_run_duration_mins"),
+  goalSplit: json("goal_split").$type<Record<string, number>>(),
+  whyThisWeek: text("why_this_week"),
+  // Completed metrics
+  completedDistanceKm: real("completed_distance_km").default(0),
+  completedDurationMins: integer("completed_duration_mins").default(0),
+  adherenceScore: real("adherence_score"),
+  // Coach notes
+  coachNotes: text("coach_notes"),
+  wasAdjusted: boolean("was_adjusted").default(false),
+  adjustmentReason: text("adjustment_reason", {
+    enum: ["tired", "strong", "manual"]
+  }),
+  adjustedAt: timestamp("adjusted_at"),
+  enriched: boolean("enriched").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  planIdIdx: index("plan_weeks_plan_id_idx").on(table.planId),
+  weekStartIdx: index("plan_weeks_week_start_idx").on(table.weekStartDate),
+}));
+
+// Plan days - individual workouts
+export const planDays = pgTable("plan_days", {
+  id: serial("id").primaryKey(),
+  weekId: integer("week_id").notNull(),
+  planId: integer("plan_id").notNull(),
+  date: timestamp("date").notNull(),
+  dayOfWeek: text("day_of_week").notNull(),
+  // Workout details
+  workoutType: text("workout_type", { 
+    enum: ["easy", "tempo", "intervals", "long_run", "recovery", "rest", "cross_training", "race", "fartlek", "hills", "progression", "back_to_back_long", "fueling_practice"] 
+  }).notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  // Planned metrics
+  plannedDistanceKm: real("planned_distance_km"),
+  plannedDurationMins: integer("planned_duration_mins"),
+  targetPace: text("target_pace"),
+  targetHrZone: text("target_hr_zone"),
+  intensity: text("intensity", { enum: ["low", "moderate", "high"] }).default("low"),
+  plannedVertGainM: integer("planned_vert_gain_m"),
+  isBackToBackLongRun: boolean("is_back_to_back_long_run").default(false),
+  fuelingPractice: boolean("fueling_practice").default(false),
+  goalContribution: json("goal_contribution").$type<Record<string, number>>(),
+  // Structure for intervals/tempo
+  workoutStructure: json("workout_structure").$type<{ warmup?: string; main?: string; cooldown?: string; intervals?: { reps: number; distance: string; pace: string; rest: string }[] }>(),
+  // Completion status
+  status: text("status", { 
+    enum: ["pending", "completed", "partial", "missed", "skipped"] 
+  }).default("pending"),
+  linkedActivityId: integer("linked_activity_id"),
+  // Actual metrics
+  actualDistanceKm: real("actual_distance_km"),
+  actualDurationMins: integer("actual_duration_mins"),
+  actualPace: text("actual_pace"),
+  // User feedback
+  userNotes: text("user_notes"),
+  perceivedEffort: integer("perceived_effort"),
+  // Adjustment tracking
+  wasAdjusted: boolean("was_adjusted").default(false),
+  originalWorkoutType: text("original_workout_type"),
+  originalDistanceKm: real("original_distance_km"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  weekIdIdx: index("plan_days_week_id_idx").on(table.weekId),
+  planIdIdx: index("plan_days_plan_id_idx").on(table.planId),
+  dateIdx: index("plan_days_date_idx").on(table.date),
+  linkedActivityIdx: index("plan_days_linked_activity_idx").on(table.linkedActivityId),
+}));
+
+// Plan goals - for multi-goal plan support
+export const planGoals = pgTable("plan_goals", {
+  id: serial("id").primaryKey(),
+  planId: integer("plan_id").notNull(),
+  goalType: text("goal_type", { enum: [...GOAL_TYPES] }).notNull(),
+  raceDate: timestamp("race_date"),
+  targetTime: text("target_time"),
+  priority: text("priority", { enum: ["primary", "secondary"] }).notNull().default("primary"),
+  terrainType: text("terrain_type", { enum: [...TERRAIN_TYPES] }).default("road"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  planIdIdx: index("plan_goals_plan_id_idx").on(table.planId),
+}));
+
+// Workout cache - stores AI-generated workout content by fingerprint
+export const workoutCache = pgTable("workout_cache", {
+  id: serial("id").primaryKey(),
+  fingerprint: text("fingerprint").notNull().unique(),
+  goalType: text("goal_type").notNull(),
+  workoutType: text("workout_type").notNull(),
+  qualityLevel: integer("quality_level").notNull(),
+  weekType: text("week_type").notNull(),
+  distanceBucket: integer("distance_bucket").notNull(),
+  vdotBucket: integer("vdot_bucket"),
+  title: text("title").notNull(),
+  descriptionTemplate: text("description_template").notNull(),
+  mainSetTemplate: text("main_set_template").notNull(),
+  intervalsTemplate: json("intervals_template").$type<{ reps: number; distance: string; paceMultiplier: number; rest: string }[]>(),
+  intensity: text("intensity", { enum: ["moderate", "high"] }).notNull(),
+  hitCount: integer("hit_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastUsedAt: timestamp("last_used_at").defaultNow(),
+}, (table) => ({
+  fingerprintIdx: index("workout_cache_fingerprint_idx").on(table.fingerprint),
+  goalTypeIdx: index("workout_cache_goal_type_idx").on(table.goalType, table.workoutType),
+}));
+
+export const feedback = pgTable("feedback", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  userEmail: text("user_email"),
+  type: text("type", { enum: ["bug", "feature"] }).notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  status: text("status", { enum: ["new", "in_progress", "resolved", "closed"] }).default("new"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const goals = pgTable("goals", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  type: text("type").notNull(), // 'speed', 'endurance', 'distance', 'hills', etc.
+  targetValue: text("target_value"), // What they're aiming for (e.g., "Complete 3 speed workouts")
+  currentProgress: real("current_progress").default(0), // Current progress toward goal
+  status: text("status", { enum: ["active", "completed"] }).default("active"),
+  source: text("source", { enum: ["recommendation", "manual"] }).default("recommendation"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const performanceLogs = pgTable("performance_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"), // Nullable for unauthenticated requests
+  endpoint: text("endpoint").notNull(), // e.g., "/api/dashboard/2"
+  method: text("method").notNull(), // GET, POST, PUT, DELETE, etc.
+  statusCode: integer("status_code").notNull(), // 200, 400, 500, etc.
+  elapsedTime: integer("elapsed_time").notNull(), // milliseconds
+  userAgent: text("user_agent"), // Browser/client user agent string
+  errorMessage: text("error_message"), // Error message if request failed
+  errorDetails: text("error_details"), // Stack trace or additional error context
+  requestBody: text("request_body"), // Request body (POST/PUT data), truncated if >5KB
+  responseBody: text("response_body"), // Response body, truncated if >5KB
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export const aiConversations = pgTable("ai_conversations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  title: text("title"), // Auto-generated from first message or user-provided
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("ai_conversations_user_id_idx").on(table.userId),
+  updatedAtIdx: index("ai_conversations_updated_at_idx").on(table.updatedAt),
+}));
+
+export const aiMessages = pgTable("ai_messages", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull(),
+  role: text("role", { enum: ["user", "assistant"] }).notNull(),
+  content: text("content").notNull(),
+  feedback: text("feedback", { enum: ["positive", "negative"] }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  conversationIdIdx: index("ai_messages_conversation_id_idx").on(table.conversationId),
+  createdAtIdx: index("ai_messages_created_at_idx").on(table.createdAt),
+}));
+
+// ============== AI COACH AGENT TABLES ==============
+
+// Coach recaps - post-activity coaching outputs
+export const coachRecaps = pgTable("coach_recaps", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  activityId: integer("activity_id").notNull(),
+  stravaActivityId: text("strava_activity_id").notNull(),
+  // Coaching outputs
+  recapBullets: json("recap_bullets").$type<string[]>().notNull(), // 3-6 bullet summary
+  coachingCue: text("coaching_cue").notNull(), // Single focus item for next run
+  nextStep: text("next_step", { 
+    enum: ["rest", "easy", "workout", "long_run", "recovery"] 
+  }).notNull(),
+  nextStepRationale: text("next_step_rationale").notNull(), // Why this next step
+  confidenceFlags: json("confidence_flags").$type<string[]>(), // e.g., ["low_confidence_no_hr", "missing_pace_data"]
+  // Activity context snapshot
+  activityName: text("activity_name").notNull(),
+  activityDate: timestamp("activity_date").notNull(),
+  distanceKm: real("distance_km").notNull(),
+  durationMins: integer("duration_mins").notNull(),
+  // Coach tone used
+  coachTone: text("coach_tone", { 
+    enum: ["gentle", "direct", "data_nerd"] 
+  }).notNull(),
+  // Adherence matching
+  linkedPlanDayId: integer("linked_plan_day_id"),
+  adherenceNote: text("adherence_note"), // e.g., "planned easy, did tempo"
+  // Versioning for audit
+  promptVersion: text("prompt_version").notNull(),
+  modelVersion: text("model_version").notNull(),
+  // Status
+  notificationSent: boolean("notification_sent").default(false),
+  viewedAt: timestamp("viewed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("coach_recaps_user_id_idx").on(table.userId),
+  activityIdIdx: index("coach_recaps_activity_id_idx").on(table.activityId),
+  userActivityIdx: index("coach_recaps_user_activity_idx").on(table.userId, table.activityId),
+  createdAtIdx: index("coach_recaps_created_at_idx").on(table.createdAt),
+}));
+
+// Agent runs - audit log for every coach interaction
+export const agentRuns = pgTable("agent_runs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  runType: text("run_type", { 
+    enum: ["activity_recap", "weekly_summary", "plan_adjustment", "manual_chat"] 
+  }).notNull(),
+  // Trigger info
+  triggeredBy: text("triggered_by", { 
+    enum: ["sync", "app_open", "scheduled", "manual"] 
+  }).notNull(),
+  activityId: integer("activity_id"), // For activity-triggered runs
+  // Deduplication key
+  dedupeKey: text("dedupe_key").notNull().unique(), // e.g., "recap:user_123:activity_456:v1.0"
+  // Pipeline stages
+  status: text("status", { 
+    enum: ["pending", "running", "completed", "failed", "skipped"] 
+  }).default("pending"),
+  stagesCompleted: json("stages_completed").$type<string[]>(), // ["fetch", "metrics", "coaching", "persist", "notify"]
+  // Inputs snapshot (for debugging)
+  inputSnapshot: json("input_snapshot").$type<Record<string, unknown>>(),
+  // Outputs
+  outputRecapId: integer("output_recap_id"),
+  outputNotificationIds: json("output_notification_ids").$type<number[]>(),
+  // Versioning
+  promptVersion: text("prompt_version"),
+  metricsVersion: text("metrics_version"),
+  // Performance
+  durationMs: integer("duration_ms"),
+  tokensUsed: integer("tokens_used"),
+  // Error handling
+  errorMessage: text("error_message"),
+  retryCount: integer("retry_count").default(0),
+  // Timestamps
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("agent_runs_user_id_idx").on(table.userId),
+  dedupeKeyIdx: index("agent_runs_dedupe_key_idx").on(table.dedupeKey),
+  statusIdx: index("agent_runs_status_idx").on(table.status),
+  createdAtIdx: index("agent_runs_created_at_idx").on(table.createdAt),
+}));
+
+// Notification outbox - reliable delivery pattern
+export const notificationOutbox = pgTable("notification_outbox", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  // Notification type
+  type: text("type", { 
+    enum: ["activity_recap", "next_step", "weekly_summary", "plan_reminder", "trial_reminder", "trial_expired"] 
+  }).notNull(),
+  channel: text("channel", { 
+    enum: ["in_app", "email", "push"] 
+  }).notNull(),
+  // Content
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  data: json("data").$type<Record<string, unknown>>(), // Additional data for rendering
+  // Scheduling
+  scheduledFor: timestamp("scheduled_for").defaultNow(),
+  // Delivery status
+  status: text("status", { 
+    enum: ["pending", "sent", "failed", "cancelled"] 
+  }).default("pending"),
+  sentAt: timestamp("sent_at"),
+  errorMessage: text("error_message"),
+  retryCount: integer("retry_count").default(0),
+  // Deduplication
+  dedupeKey: text("dedupe_key"), // e.g., "recap:user_123:activity_456"
+  // User preferences check
+  respectQuietHours: boolean("respect_quiet_hours").default(true),
+  // Read tracking for in-app notifications
+  readAt: timestamp("read_at"),
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("notification_outbox_user_id_idx").on(table.userId),
+  statusIdx: index("notification_outbox_status_idx").on(table.status),
+  scheduledForIdx: index("notification_outbox_scheduled_for_idx").on(table.scheduledFor),
+  dedupeKeyIdx: index("notification_outbox_dedupe_key_idx").on(table.dedupeKey),
+}));
+
+export const runningShoes = pgTable("running_shoes", {
+  id: serial("id").primaryKey(),
+  brand: text("brand").notNull(), // Nike, Brooks, Hoka, Asics, New Balance, Saucony, On, Altra
+  model: text("model").notNull(), // Pegasus 41, Glycerin 21, Bondi 8, etc.
+  slug: text("slug").unique(), // URL-friendly identifier: nike-pegasus-41
+  seriesName: text("series_name"), // Shoe family: "Pegasus", "Bondi", "Ghost"
+  versionNumber: integer("version_number"), // Iteration: 41, 21, 8
+  category: text("category", { 
+    enum: ["daily_trainer", "racing", "long_run", "recovery", "speed_training", "trail"] 
+  }).notNull(),
+  weight: real("weight").notNull(), // weight in ounces
+  heelStackHeight: real("heel_stack_height").notNull(), // heel stack in mm
+  forefootStackHeight: real("forefoot_stack_height").notNull(), // forefoot stack in mm
+  heelToToeDrop: real("heel_to_toe_drop").notNull(), // drop in mm
+  cushioningLevel: text("cushioning_level", { 
+    enum: ["soft", "medium", "firm"] 
+  }).notNull(),
+  stability: text("stability", { 
+    enum: ["neutral", "mild_stability", "motion_control"] 
+  }).notNull(),
+  hasCarbonPlate: boolean("has_carbon_plate").default(false),
+  hasSuperFoam: boolean("has_super_foam").default(false), // ZoomX, PEBA, FF Turbo, etc.
+  price: real("price").notNull(), // MSRP in USD
+  bestFor: text("best_for").array().notNull(), // ["speed_work", "racing", "long_runs", "easy_runs", "tempo"]
+  minRunnerWeight: integer("min_runner_weight"), // min recommended weight in lbs
+  maxRunnerWeight: integer("max_runner_weight"), // max recommended weight in lbs
+  durabilityRating: real("durability_rating").notNull(), // 1-5 scale
+  responsivenessRating: real("responsiveness_rating").notNull(), // 1-5 scale
+  comfortRating: real("comfort_rating").notNull(), // 1-5 scale
+  releaseYear: integer("release_year").notNull(),
+  imageUrl: text("image_url"),
+  description: text("description"),
+  // AI-generated content for SEO and user insights
+  aiResilienceScore: real("ai_resilience_score"), // 1-100 score based on durability + materials
+  aiMileageEstimate: text("ai_mileage_estimate"), // e.g., "300-400 miles"
+  aiTargetUsage: text("ai_target_usage"), // e.g., "Daily training and easy runs"
+  aiNarrative: text("ai_narrative"), // Detailed AI-written description for SEO
+  aiFaq: text("ai_faq"), // JSON string of FAQ Q&A pairs for schema markup
+  // Data sourcing metadata for tracking data freshness and accuracy
+  sourceUrl: text("source_url"), // URL of the source (manufacturer website, RunRepeat, etc.)
+  dataSource: text("data_source", {
+    enum: ["manufacturer", "runrepeat", "doctors_of_running", "running_warehouse", "user_submitted", "curated"]
+  }).default("curated"), // Where the data came from
+  lastVerified: timestamp("last_verified"), // When the data was last verified against sources
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  brandIdx: index("running_shoes_brand_idx").on(table.brand),
+  categoryIdx: index("running_shoes_category_idx").on(table.category),
+  slugIdx: index("running_shoes_slug_idx").on(table.slug),
+  seriesIdx: index("running_shoes_series_idx").on(table.seriesName),
+}));
+
+export const shoeComparisons = pgTable("shoe_comparisons", {
+  id: serial("id").primaryKey(),
+  slug: text("slug").unique().notNull(), // URL-friendly: "nike-alphafly-3-vs-saucony-endorphin-pro-4"
+  shoe1Id: integer("shoe1_id").notNull().references(() => runningShoes.id),
+  shoe2Id: integer("shoe2_id").notNull().references(() => runningShoes.id),
+  comparisonType: text("comparison_type", {
+    enum: ["evolution", "category_rival", "popular"]
+  }).notNull(),
+  title: text("title").notNull(), // "Nike Alphafly 3 vs Saucony Endorphin Pro 4"
+  metaDescription: text("meta_description"), // SEO meta description
+  verdict: text("verdict"), // AI-generated verdict text
+  verdictWinner: text("verdict_winner"), // "shoe1", "shoe2", "tie", or null
+  verdictReason: text("verdict_reason"), // Brief reason for the verdict
+  keyDifferences: text("key_differences"), // JSON array of key differences
+  bestFor: text("best_for"), // JSON object: { shoe1: "speedwork", shoe2: "daily training" }
+  viewCount: integer("view_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  slugIdx: index("shoe_comparisons_slug_idx").on(table.slug),
+  shoe1Idx: index("shoe_comparisons_shoe1_idx").on(table.shoe1Id),
+  shoe2Idx: index("shoe_comparisons_shoe2_idx").on(table.shoe2Id),
+  typeIdx: index("shoe_comparisons_type_idx").on(table.comparisonType),
+}));
+
+export const apiKeys = pgTable("api_keys", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  keyHash: text("key_hash").notNull(), // bcrypt hash of the API key
+  keyHint: text("key_hint").notNull(), // last 4 chars for identification (e.g., "...a1b2")
+  name: text("name").notNull(),
+  scopes: text("scopes").array().notNull(), // ["activities", "insights", "training_plans", "goals"]
+  isActive: boolean("is_active").default(true),
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("api_keys_user_id_idx").on(table.userId),
+}));
+
+// Premium conversion funnel events. One row per logical funnel step,
+// idempotent on dedupe_key so webhook replays / client retries can never
+// double-count. Event names + required properties live in shared/funnelEvents.ts.
+export const funnelEvents = pgTable("funnel_events", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  event: text("event").notNull(),
+  source: text("source"),
+  capability: text("capability"),
+  activityId: integer("activity_id"),
+  billingPeriod: text("billing_period"),
+  experimentVariant: text("experiment_variant"),
+  properties: jsonb("properties"),
+  dedupeKey: text("dedupe_key").notNull().unique(),
+  occurredAt: timestamp("occurred_at").defaultNow().notNull(),
+}, (table) => ({
+  eventIdx: index("funnel_events_event_idx").on(table.event),
+  userIdIdx: index("funnel_events_user_id_idx").on(table.userId),
+  occurredAtIdx: index("funnel_events_occurred_at_idx").on(table.occurredAt),
+}));
+
+export const insertFunnelEventSchema = createInsertSchema(funnelEvents).omit({
+  id: true,
+  occurredAt: true,
+});
+
+// Dedicated OAuth 2.1 state for the read-only MCP server. These records are
+// deliberately separate from web sessions, API keys, password-reset tokens,
+// email magic links, Strava credentials, and Stripe identifiers.
+export const mcpOauthClients = pgTable("mcp_oauth_clients", {
+  clientId: text("client_id").primaryKey(),
+  clientName: text("client_name").notNull(),
+  redirectUris: jsonb("redirect_uris").$type<string[]>().notNull(),
+  tokenEndpointAuthMethod: text("token_endpoint_auth_method").notNull().default("none"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  disabledAt: timestamp("disabled_at"),
+});
+
+export const mcpOauthRequests = pgTable("mcp_oauth_requests", {
+  requestHash: text("request_hash").primaryKey(),
+  clientId: text("client_id").notNull(),
+  redirectUri: text("redirect_uri").notNull(),
+  scopes: text("scopes").array().notNull(),
+  state: text("state").notNull(),
+  resource: text("resource").notNull(),
+  codeChallenge: text("code_challenge").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  consumedAt: timestamp("consumed_at"),
+}, (table) => ({
+  clientIdx: index("mcp_oauth_requests_client_idx").on(table.clientId),
+  expiryIdx: index("mcp_oauth_requests_expiry_idx").on(table.expiresAt),
+}));
+
+export const mcpOauthAuthorizationCodes = pgTable("mcp_oauth_authorization_codes", {
+  codeHash: text("code_hash").primaryKey(),
+  userId: integer("user_id").notNull(),
+  clientId: text("client_id").notNull(),
+  redirectUri: text("redirect_uri").notNull(),
+  scopes: text("scopes").array().notNull(),
+  resource: text("resource").notNull(),
+  codeChallenge: text("code_challenge").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  consumedAt: timestamp("consumed_at"),
+}, (table) => ({
+  userIdx: index("mcp_oauth_codes_user_idx").on(table.userId),
+  clientIdx: index("mcp_oauth_codes_client_idx").on(table.clientId),
+  expiryIdx: index("mcp_oauth_codes_expiry_idx").on(table.expiresAt),
+}));
+
+export const mcpOauthTokens = pgTable("mcp_oauth_tokens", {
+  id: serial("id").primaryKey(),
+  accessTokenHash: text("access_token_hash").notNull().unique(),
+  refreshTokenHash: text("refresh_token_hash").notNull().unique(),
+  userId: integer("user_id").notNull(),
+  clientId: text("client_id").notNull(),
+  scopes: text("scopes").array().notNull(),
+  resource: text("resource").notNull(),
+  accessExpiresAt: timestamp("access_expires_at").notNull(),
+  refreshExpiresAt: timestamp("refresh_expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  lastUsedAt: timestamp("last_used_at"),
+  revokedAt: timestamp("revoked_at"),
+}, (table) => ({
+  accessIdx: index("mcp_oauth_tokens_access_idx").on(table.accessTokenHash),
+  refreshIdx: index("mcp_oauth_tokens_refresh_idx").on(table.refreshTokenHash),
+  userClientIdx: index("mcp_oauth_tokens_user_client_idx").on(table.userId, table.clientId),
+}));
+
+export const mcpAuditEvents = pgTable("mcp_audit_events", {
+  id: serial("id").primaryKey(),
+  eventType: text("event_type").notNull(),
+  userId: integer("user_id"),
+  clientId: text("client_id"),
+  toolName: text("tool_name"),
+  success: boolean("success").notNull(),
+  errorCode: text("error_code"),
+  durationMs: integer("duration_ms"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  createdIdx: index("mcp_audit_events_created_idx").on(table.createdAt),
+  userIdx: index("mcp_audit_events_user_idx").on(table.userId),
+  clientIdx: index("mcp_audit_events_client_idx").on(table.clientId),
+}));
+
+// One atomic bucket per subject keeps rate limiting consistent across Replit
+// autoscale instances without requiring a separate worker or in-memory state.
+export const mcpRateLimits = pgTable("mcp_rate_limits", {
+  key: text("key").primaryKey(),
+  windowStartedAt: timestamp("window_started_at").notNull(),
+  count: integer("count").notNull().default(0),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+export type InsertFunnelEvent = z.infer<typeof insertFunnelEventSchema>;
+export type FunnelEvent = typeof funnelEvents.$inferSelect;
+
+export const refreshTokens = pgTable("refresh_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  tokenHash: text("token_hash").notNull(), // bcrypt hash of the refresh token
+  deviceName: text("device_name"), // e.g., "iPhone 15 Pro", "iPad Air"
+  deviceId: text("device_id"), // unique device identifier
+  expiresAt: timestamp("expires_at").notNull(),
+  isRevoked: boolean("is_revoked").default(false),
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("refresh_tokens_user_id_idx").on(table.userId),
+  tokenHashIdx: index("refresh_tokens_token_hash_idx").on(table.tokenHash),
+}));
+
+// Route clustering and comparison tables
+export const routes = pgTable("routes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  routeKey: text("route_key").notNull(), // Hash of start/end cells + path cells
+  name: text("name"), // Auto-generated or user-provided name
+  startGeohash: text("start_geohash").notNull(), // Geohash of start point
+  endGeohash: text("end_geohash").notNull(), // Geohash of end point
+  pathCells: text("path_cells").array(), // Array of geohash cells along the route
+  representativePolyline: text("representative_polyline"), // Best polyline for display
+  avgDistance: real("avg_distance"), // Average distance of runs on this route (meters)
+  avgElevationGain: real("avg_elevation_gain"), // Average elevation gain (meters)
+  runCount: integer("run_count").default(0), // Number of activities on this route
+  lastRunAt: timestamp("last_run_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("routes_user_id_idx").on(table.userId),
+  routeKeyIdx: index("routes_route_key_idx").on(table.routeKey),
+}));
+
+export const activityRouteMap = pgTable("activity_route_map", {
+  id: serial("id").primaryKey(),
+  activityId: integer("activity_id").notNull(),
+  routeId: integer("route_id").notNull(),
+  matchConfidence: real("match_confidence").default(1.0), // 0-1 confidence in route match
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  activityIdIdx: index("activity_route_map_activity_id_idx").on(table.activityId),
+  routeIdIdx: index("activity_route_map_route_id_idx").on(table.routeId),
+}));
+
+export const activityFeatures = pgTable("activity_features", {
+  id: serial("id").primaryKey(),
+  activityId: integer("activity_id").notNull().unique(),
+  userId: integer("user_id").notNull(),
+  // Efficiency metrics
+  aerobicDecoupling: real("aerobic_decoupling"), // HR drift percentage
+  paceAtHrEfficiency: real("pace_at_hr_efficiency"), // Pace per HR unit
+  pacingStability: real("pacing_stability"), // 0-100 score
+  cadenceVariability: real("cadence_variability"), // CV of cadence
+  powerVariability: real("power_variability"), // CV of power
+  // Quality metrics
+  qualityScore: real("quality_score"), // 0-100 overall data quality
+  qualityFlags: json("quality_flags").$type<string[]>(), // Array of quality issues
+  // Classification
+  runType: text("run_type"), // easy, tempo, interval, long_run, race, recovery
+  effortBucket: text("effort_bucket"), // low, moderate, high, max
+  // Computed at
+  computedAt: timestamp("computed_at").defaultNow(),
+}, (table) => ({
+  activityIdIdx: index("activity_features_activity_id_idx").on(table.activityId),
+  userIdIdx: index("activity_features_user_id_idx").on(table.userId),
+}));
+
+export const similarRunsCache = pgTable("similar_runs_cache", {
+  id: serial("id").primaryKey(),
+  activityId: integer("activity_id").notNull().unique(),
+  userId: integer("user_id").notNull(),
+  similarActivityIds: json("similar_activity_ids").$type<number[]>().notNull(), // Top N similar activity IDs
+  similarityScores: json("similarity_scores").$type<number[]>().notNull(), // Corresponding scores
+  // Baseline metrics (median of comparable set)
+  baselinePace: real("baseline_pace"), // m/s
+  baselineHr: real("baseline_hr"),
+  baselineDrift: real("baseline_drift"),
+  baselinePacingStability: real("baseline_pacing_stability"),
+  // Deltas vs baseline
+  paceVsBaseline: real("pace_vs_baseline"), // % difference
+  hrVsBaseline: real("hr_vs_baseline"),
+  driftVsBaseline: real("drift_vs_baseline"),
+  pacingVsBaseline: real("pacing_vs_baseline"),
+  // Cache metadata
+  computedAt: timestamp("computed_at").defaultNow(),
+  expiresAt: timestamp("expires_at"),
+}, (table) => ({
+  activityIdIdx: index("similar_runs_cache_activity_id_idx").on(table.activityId),
+  userIdIdx: index("similar_runs_cache_user_id_idx").on(table.userId),
+}));
+
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  stravaConnected: true,
+  createdAt: true,
+});
+
+export const insertActivitySchema = createInsertSchema(activities).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertAIInsightSchema = createInsertSchema(aiInsights).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTrainingPlanSchema = createInsertSchema(trainingPlans).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertEmailWaitlistSchema = createInsertSchema(emailWaitlist).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertFeedbackSchema = createInsertSchema(feedback).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+});
+
+export const insertGoalSchema = createInsertSchema(goals).omit({
+  id: true,
+  createdAt: true,
+  completedAt: true,
+  currentProgress: true,
+});
+
+export const insertPerformanceLogSchema = createInsertSchema(performanceLogs).omit({
+  id: true,
+  timestamp: true,
+});
+
+export const insertAIConversationSchema = createInsertSchema(aiConversations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAIMessageSchema = createInsertSchema(aiMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertRunningShoeSchema = createInsertSchema(runningShoes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertShoeComparisonSchema = createInsertSchema(shoeComparisons).omit({
+  id: true,
+  createdAt: true,
+  viewCount: true,
+});
+
+export const insertApiKeySchema = createInsertSchema(apiKeys).omit({
+  id: true,
+  createdAt: true,
+  lastUsedAt: true,
+  isActive: true,
+});
+
+export const insertRefreshTokenSchema = createInsertSchema(refreshTokens).omit({
+  id: true,
+  createdAt: true,
+  lastUsedAt: true,
+  isRevoked: true,
+});
+
+// New training plan system schemas
+export const insertAthleteProfileSchema = createInsertSchema(athleteProfiles).omit({
+  id: true,
+  createdAt: true,
+  lastComputedAt: true,
+});
+
+export const insertPlanWeekSchema = createInsertSchema(planWeeks).omit({
+  id: true,
+  createdAt: true,
+  completedDistanceKm: true,
+  completedDurationMins: true,
+  adherenceScore: true,
+  wasAdjusted: true,
+  adjustedAt: true,
+});
+
+export const insertPlanDaySchema = createInsertSchema(planDays).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+  linkedActivityId: true,
+  actualDistanceKm: true,
+  actualDurationMins: true,
+  actualPace: true,
+});
+
+export const insertPlanGoalSchema = createInsertSchema(planGoals).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertWorkoutCacheSchema = createInsertSchema(workoutCache).omit({
+  id: true,
+  createdAt: true,
+  lastUsedAt: true,
+  hitCount: true,
+});
+
+// Route and comparison schemas
+export const insertRouteSchema = createInsertSchema(routes).omit({
+  id: true,
+  createdAt: true,
+  runCount: true,
+});
+
+export const insertActivityRouteMapSchema = createInsertSchema(activityRouteMap).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertActivityFeaturesSchema = createInsertSchema(activityFeatures).omit({
+  id: true,
+  computedAt: true,
+});
+
+export const insertSimilarRunsCacheSchema = createInsertSchema(similarRunsCache).omit({
+  id: true,
+  computedAt: true,
+});
+
+// AI Coach Agent schemas
+export const insertCoachRecapSchema = createInsertSchema(coachRecaps).omit({
+  id: true,
+  createdAt: true,
+  notificationSent: true,
+  viewedAt: true,
+});
+
+export const insertAgentRunSchema = createInsertSchema(agentRuns).omit({
+  id: true,
+  createdAt: true,
+  retryCount: true,
+});
+
+export const insertNotificationOutboxSchema = createInsertSchema(notificationOutbox).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+  sentAt: true,
+  retryCount: true,
+});
+
+// Push subscriptions - for web push (PWA). Native mobile push will be added with the Expo app.
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  platform: text("platform", { enum: ["web", "ios", "android"] }).notNull().default("web"),
+  // Web push fields
+  endpoint: text("endpoint"),
+  p256dh: text("p256dh"),
+  auth: text("auth"),
+  // Native push token (reserved for future Expo APNs/FCM integration)
+  nativeToken: text("native_token"),
+  // Metadata
+  userAgent: text("user_agent"),
+  enabled: boolean("enabled").default(true),
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("push_subscriptions_user_id_idx").on(table.userId),
+  endpointIdx: index("push_subscriptions_endpoint_idx").on(table.endpoint),
+  nativeTokenIdx: index("push_subscriptions_native_token_idx").on(table.nativeToken),
+}));
+
+export const insertPushSubscriptionSchema = createInsertSchema(pushSubscriptions).omit({
+  id: true,
+  createdAt: true,
+  lastUsedAt: true,
+});
+
+export type InsertPushSubscription = z.infer<typeof insertPushSubscriptionSchema>;
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+
+// Coach preferences update schema (for user settings)
+export const updateCoachPreferencesSchema = z.object({
+  coachGoal: z.enum(GOAL_TYPES).optional(),
+  coachRaceDate: z.string().datetime().optional().nullable(),
+  coachTargetTime: z.string().optional().nullable(),
+  coachDaysAvailable: z.array(z.string()).optional(),
+  coachWeeklyMileageCap: z.number().positive().optional().nullable(),
+  coachTone: z.enum(["gentle", "direct", "data_nerd"]).optional(),
+  coachNotifyRecap: z.boolean().optional(),
+  coachNotifyWeeklySummary: z.boolean().optional(),
+  coachQuietHoursStart: z.number().min(0).max(23).optional().nullable(),
+  coachQuietHoursEnd: z.number().min(0).max(23).optional().nullable(),
+  coachOnboardingCompleted: z.boolean().optional(),
+});
+
+// Deletion feedback table - tracks why users delete their accounts
+export const deletionFeedback = pgTable("deletion_feedback", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"), // Nullable since user will be deleted
+  userEmail: text("user_email"), // Nullable for Strava-only users with no email
+  reason: text("reason", { 
+    enum: ["too_expensive", "not_using", "missing_features", "found_alternative", "technical_issues", "privacy_concerns", "other"] 
+  }).notNull(),
+  details: text("details"), // Optional additional details
+  wasRetained: boolean("was_retained").default(false), // Did they stay after seeing retention offer?
+  subscriptionPlan: text("subscription_plan"), // What plan were they on?
+  accountAgeInDays: integer("account_age_in_days"), // How long were they a user?
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertDeletionFeedbackSchema = createInsertSchema(deletionFeedback).omit({
+  id: true,
+  createdAt: true,
+});
+
+// ============== DRIP CAMPAIGN SYSTEM ==============
+
+// User campaigns - tracks which campaign a user is in and their progress
+export const userCampaigns = pgTable("user_campaigns", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  campaign: text("campaign", { 
+    enum: ["segment_a", "segment_b", "segment_c", "segment_d"] 
+  }).notNull(),
+  state: text("state", { 
+    enum: ["active", "completed", "exited", "cancelled"] 
+  }).default("active"),
+  currentStep: integer("current_step").default(1), // A1=1, A2=2, B1=1, B2=2, etc.
+  enteredAt: timestamp("entered_at").defaultNow(),
+  exitedAt: timestamp("exited_at"),
+  exitReason: text("exit_reason"), // "converted", "subscribed", "unsubscribed", "completed", "segment_change"
+  lastEmailSentAt: timestamp("last_email_sent_at"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("user_campaigns_user_id_idx").on(table.userId),
+  campaignIdx: index("user_campaigns_campaign_idx").on(table.campaign),
+  stateIdx: index("user_campaigns_state_idx").on(table.state),
+  userCampaignUniqueIdx: index("user_campaigns_user_campaign_unique_idx").on(table.userId, table.campaign),
+}));
+
+// Email jobs - scheduled emails with deduplication
+export const emailJobs = pgTable("email_jobs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  jobType: text("job_type", { 
+    enum: ["drip", "transactional", "activity_ready"] 
+  }).notNull(),
+  campaign: text("campaign"), // segment_a, segment_b, etc.
+  step: text("step"), // A1, A2, B1, B2, etc.
+  scheduledAt: timestamp("scheduled_at").notNull(),
+  status: text("status", { 
+    enum: ["pending", "sent", "cancelled", "failed"] 
+  }).default("pending"),
+  dedupeKey: text("dedupe_key").notNull(), // user_id + campaign + step
+  metadata: json("metadata").$type<{
+    ctaUrl?: string;
+    activityId?: number;
+    compareA1?: number;
+    compareA2?: number;
+    subject?: string;
+    previewText?: string;
+  }>(),
+  sentAt: timestamp("sent_at"),
+  errorMessage: text("error_message"),
+  retryCount: integer("retry_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("email_jobs_user_id_idx").on(table.userId),
+  statusIdx: index("email_jobs_status_idx").on(table.status),
+  scheduledAtIdx: index("email_jobs_scheduled_at_idx").on(table.scheduledAt),
+  dedupeKeyIdx: index("email_jobs_dedupe_key_idx").on(table.dedupeKey),
+}));
+
+// Email click tracking - for campaign analytics
+export const emailClicks = pgTable("email_clicks", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  campaign: text("campaign"),
+  step: text("step"),
+  ctaKey: text("cta_key"), // "connect_strava", "view_snapshot", "upgrade", etc.
+  clickedAt: timestamp("clicked_at").defaultNow(),
+  source: text("source"), // From URL param ?source=B1
+}, (table) => ({
+  userIdIdx: index("email_clicks_user_id_idx").on(table.userId),
+  campaignStepIdx: index("email_clicks_campaign_step_idx").on(table.campaign, table.step),
+}));
+
+export const insertUserCampaignSchema = createInsertSchema(userCampaigns).omit({
+  id: true,
+  enteredAt: true,
+  updatedAt: true,
+});
+
+export const insertEmailJobSchema = createInsertSchema(emailJobs).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+  sentAt: true,
+  retryCount: true,
+});
+
+export const insertEmailClickSchema = createInsertSchema(emailClicks).omit({
+  id: true,
+  clickedAt: true,
+});
+
+// System settings - global key-value configuration
+export const systemSettings = pgTable("system_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSystemSettingSchema = createInsertSchema(systemSettings).omit({
+  updatedAt: true,
+});
+
+export const stravaWebhookLogs = pgTable("strava_webhook_logs", {
+  id: serial("id").primaryKey(),
+  eventId: text("event_id"),
+  eventType: text("event_type").notNull(),
+  objectType: text("object_type").notNull(),
+  objectId: text("object_id").notNull(),
+  athleteId: text("athlete_id").notNull(),
+  subscriptionId: integer("subscription_id"),
+  status: text("status").notNull().default("received"),
+  errorMessage: text("error_message"),
+  rawPayload: text("raw_payload"),
+  receivedAt: timestamp("received_at").defaultNow(),
+  processedAt: timestamp("processed_at"),
+}, (table) => ({
+  athleteIdx: index("strava_wh_logs_athlete_idx").on(table.athleteId),
+  statusIdx: index("strava_wh_logs_status_idx").on(table.status),
+  receivedIdx: index("strava_wh_logs_received_idx").on(table.receivedAt),
+}));
+
+export const insertStravaWebhookLogSchema = createInsertSchema(stravaWebhookLogs).omit({
+  id: true,
+  receivedAt: true,
+  processedAt: true,
+});
+
+// Login schema for authentication
+export const loginSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+// Registration schema
+export const registerSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+});
+
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type User = typeof users.$inferSelect;
+export type InsertActivity = z.infer<typeof insertActivitySchema>;
+export type Activity = typeof activities.$inferSelect;
+export type InsertAIInsight = z.infer<typeof insertAIInsightSchema>;
+export type AIInsight = typeof aiInsights.$inferSelect;
+export type InsertTrainingPlan = z.infer<typeof insertTrainingPlanSchema>;
+export type TrainingPlan = typeof trainingPlans.$inferSelect;
+export type InsertEmailWaitlist = z.infer<typeof insertEmailWaitlistSchema>;
+export type EmailWaitlist = typeof emailWaitlist.$inferSelect;
+export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
+export type Feedback = typeof feedback.$inferSelect;
+export type InsertGoal = z.infer<typeof insertGoalSchema>;
+export type Goal = typeof goals.$inferSelect;
+export type InsertPerformanceLog = z.infer<typeof insertPerformanceLogSchema>;
+export type PerformanceLog = typeof performanceLogs.$inferSelect;
+export type InsertAIConversation = z.infer<typeof insertAIConversationSchema>;
+export type AIConversation = typeof aiConversations.$inferSelect;
+export type InsertAIMessage = z.infer<typeof insertAIMessageSchema>;
+export type AIMessage = typeof aiMessages.$inferSelect;
+export type InsertRunningShoe = z.infer<typeof insertRunningShoeSchema>;
+export type RunningShoe = typeof runningShoes.$inferSelect;
+export type InsertShoeComparison = z.infer<typeof insertShoeComparisonSchema>;
+export type ShoeComparison = typeof shoeComparisons.$inferSelect;
+export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type InsertRefreshToken = z.infer<typeof insertRefreshTokenSchema>;
+export type RefreshToken = typeof refreshTokens.$inferSelect;
+export type InsertAthleteProfile = z.infer<typeof insertAthleteProfileSchema>;
+export type AthleteProfile = typeof athleteProfiles.$inferSelect;
+export type InsertPlanWeek = z.infer<typeof insertPlanWeekSchema>;
+export type PlanWeek = typeof planWeeks.$inferSelect;
+export type InsertPlanDay = z.infer<typeof insertPlanDaySchema>;
+export type PlanDay = typeof planDays.$inferSelect;
+export type InsertWorkoutCache = z.infer<typeof insertWorkoutCacheSchema>;
+export type WorkoutCache = typeof workoutCache.$inferSelect;
+export type InsertRoute = z.infer<typeof insertRouteSchema>;
+export type Route = typeof routes.$inferSelect;
+export type InsertActivityRouteMap = z.infer<typeof insertActivityRouteMapSchema>;
+export type ActivityRouteMap = typeof activityRouteMap.$inferSelect;
+export type InsertActivityFeatures = z.infer<typeof insertActivityFeaturesSchema>;
+export type ActivityFeatures = typeof activityFeatures.$inferSelect;
+export type InsertSimilarRunsCache = z.infer<typeof insertSimilarRunsCacheSchema>;
+export type SimilarRunsCache = typeof similarRunsCache.$inferSelect;
+export type InsertCoachRecap = z.infer<typeof insertCoachRecapSchema>;
+export type CoachRecap = typeof coachRecaps.$inferSelect;
+export type InsertAgentRun = z.infer<typeof insertAgentRunSchema>;
+export type AgentRun = typeof agentRuns.$inferSelect;
+export type InsertNotificationOutbox = z.infer<typeof insertNotificationOutboxSchema>;
+export type NotificationOutbox = typeof notificationOutbox.$inferSelect;
+export type UpdateCoachPreferences = z.infer<typeof updateCoachPreferencesSchema>;
+export type LoginData = z.infer<typeof loginSchema>;
+export type RegisterData = z.infer<typeof registerSchema>;
+export type InsertDeletionFeedback = z.infer<typeof insertDeletionFeedbackSchema>;
+export type DeletionFeedback = typeof deletionFeedback.$inferSelect;
+export type InsertUserCampaign = z.infer<typeof insertUserCampaignSchema>;
+export type UserCampaign = typeof userCampaigns.$inferSelect;
+export type InsertEmailJob = z.infer<typeof insertEmailJobSchema>;
+export type EmailJob = typeof emailJobs.$inferSelect;
+export type InsertEmailClick = z.infer<typeof insertEmailClickSchema>;
+export type EmailClick = typeof emailClicks.$inferSelect;
+export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
+export type SystemSetting = typeof systemSettings.$inferSelect;
+export type InsertStravaWebhookLog = z.infer<typeof insertStravaWebhookLogSchema>;
+export type StravaWebhookLog = typeof stravaWebhookLogs.$inferSelect;
+export type InsertPlanGoal = z.infer<typeof insertPlanGoalSchema>;
+export type PlanGoal = typeof planGoals.$inferSelect;
