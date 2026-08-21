@@ -181,9 +181,6 @@ async function verifyPremiumPriceConfig(): Promise<void> {
 
 (async () => {
   try {
-    // Initialize Stripe before routes
-    await initStripe();
-    
     const server = await registerRoutes(app);
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -215,6 +212,11 @@ async function verifyPremiumPriceConfig(): Promise<void> {
     }, () => {
       log(`serving on port ${port}`);
       console.log(`🚀 RunAnalytics app is ready at http://localhost:${port}`);
+
+      // Stripe setup performs database migrations and external API calls. Keep
+      // it off the readiness path so autoscale promotion can probe the app even
+      // when Stripe is slow or temporarily unavailable.
+      void initStripe();
     });
   } catch (error) {
     console.error('Failed to start server:', error);
