@@ -1,16 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-process.env.DATABASE_URL ||= "postgresql://test:test@127.0.0.1:1/test";
+import { analyzeRunStreams } from "./stravaStreamAnalysis";
 
-const { StravaWebhookService } = await import("./stravaWebhook");
-const service = new StravaWebhookService();
-const analyze = (streams: any, isKm = true) =>
-  (service as any).analyzeRunStreams(streams, isKm) as {
-    splitLabel: string;
-    terrainAffected: boolean;
-    summaryLines: string[];
-  } | null;
+const analyze = (streams: any, isKm = true) => analyzeRunStreams(streams, isKm);
 
 function makeStreams(options: {
   secondHalfPaceSeconds?: number;

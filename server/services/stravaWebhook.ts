@@ -3,6 +3,7 @@ import { emailService } from "./email";
 import { stravaService } from "./strava";
 import OpenAI from "openai";
 import crypto from "crypto";
+import { analyzeRunStreams, type StreamAnalysis } from "./stravaStreamAnalysis";
 
 interface StravaWebhookEvent {
   object_type: "activity" | "athlete";
@@ -23,23 +24,6 @@ interface TrainingContext {
   totalRunsLast30Days: number;
   weeklyContextLine: string;            // e.g. "3 runs · 28.4 km this week"
   loadComparison: string | null;        // this week's volume vs the prior 3-week average
-}
-
-// Derived analysis from the detailed Strava streams (GPS/HR/cadence). These are
-// things the runner CANNOT see in the summary stats table, so they give the AI
-// something substantive to say instead of restating pace/distance/HR.
-interface StreamAnalysis {
-  splitLabel: string;            // negative, terrain-affected positive, faded positive, or even
-  splitDeltaSec: number;         // sec/unit, second half minus first half (positive = slower late)
-  decouplingPct: number | null;  // aerobic decoupling (Pa:HR drift) %, null if no HR
-  fastestSplitPace: string | null;
-  avgCadence: number | null;     // steps per minute
-  terrainAffected: boolean;
-  firstHalfElevationGainM: number | null;
-  secondHalfElevationGainM: number | null;
-  firstHalfElevationChangeM: number | null;
-  secondHalfElevationChangeM: number | null;
-  summaryLines: string[];        // pre-formatted, human-readable lines for the prompt
 }
 
 const VERIFY_TOKEN = process.env.STRAVA_VERIFY_TOKEN || "runanalytics_webhook_verify_2024";
@@ -481,7 +465,7 @@ export class StravaWebhookService {
 
       // Derive substantive insights from the detailed streams (splits, decoupling,
       // fastest segment, cadence) — the things the runner can't read off the table.
-      const streamAnalysis = this.analyzeRunStreams(streams, isKm);
+      const streamAnalysis = analyzeRunStreams(streams, isKm);
 
       const aiResult = await this.generatePersonalizedEmail(
         user, activity, distanceKm, distanceLabel, runType, effortScore,
@@ -699,191 +683,6 @@ Respond with ONLY valid JSON, no markdown, no commentary.`;
       subject: `Your ${distanceLabel} Analysis: ${hook.charAt(0).toUpperCase() + hook.slice(1)}`,
       coachVerdictBody: verdict,
       nextRunTip,
-    };
-  }
-
-  // Compute substantive, non-obvious insights from the detailed Strava streams.
-  // key_by_type=true means streams arrive as { distance: { data: [...] }, ... }.
-  // Everything here is best-effort and must never throw into the email path.
-  private analyzeRunStreams(streams: any, isKm: boolean): StreamAnalysis | null {
-    try {
-      if (!streams) return null;
-      const dist: number[] = streams.distance?.data || [];      // cumulative meters
-      const time: number[] = streams.time?.data || [];           // seconds (elapsed)
-      const hr: number[] = streams.heartrate?.data || [];
-      const cad: number[] = streams.cadence?.data || [];
-       const altitude: number[] = streams.altitude?.data || [];
-      const n = dist.length;
-      if (n < 20 || time.length !== n) return null;
-
-      const unit = isKm ? "km" : "mi";
-      const unitMeters = isKm ? 1000 : 1609.34;
-      const summaryLines: string[] = [];
-
-      // First half vs second half pacing (split by distance)
-      const totalDist = dist[n - 1] - dist[0];
-      const half = dist[0] + totalDist / 2;
-      let splitIdx = dist.findIndex(d => d >= half);
-      if (splitIdx <= 0 || splitIdx >= n - 1) splitIdx = Math.floor(n / 2);
-      const t1 = time[splitIdx] - time[0];
-      const d1 = dist[splitIdx] - dist[0];
-      const t2 = time[n - 1] - time[splitIdx];
-      const d2 = dist[n - 1] - dist[splitIdx];
-       const terrain = this.analyzeTerrain(altitude, splitIdx, n);
-       const terrainAffected = terrain !== null &&
-         terrain.secondHalfElevationGainM - terrain.firstHalfElevationGainM >= 20 &&
-         terrain.secondHalfElevationChangeM >= 15;
-
-      let splitLabel = "Even pacing";
-      let splitDeltaSec = 0;
-      if (d1 > 0 && d2 > 0 && t1 > 0 && t2 > 0) {
-        const pace1 = (t1 / d1) * unitMeters; // sec per unit
-        const pace2 = (t2 / d2) * unitMeters;
-        splitDeltaSec = Math.round(pace2 - pace1);
-        const absS = Math.abs(splitDeltaSec);
-        if (splitDeltaSec <= -8) {
-          splitLabel = "Negative split (finished faster)";
-          summaryLines.push(`Pacing: negative split — the second half was about ${absS}s/${unit} faster than the first. Strong, controlled effort.`);
-        } else if (splitDeltaSec >= 8) {
-           if (terrainAffected) {
-             splitLabel = "Positive split (terrain-affected)";
-             summaryLines.push(`Pacing: the second half was about ${absS}s/${unit} slower, but the return was materially more uphill. This is primarily terrain-affected pacing, not evidence by itself of fading or poor fueling.`);
-           } else {
-             splitLabel = "Positive split (faded late)";
-             summaryLines.push(`Pacing: faded about ${absS}s/${unit} in the second half. Likely went out too hot, or fatigue/fueling caught up.`);
-           }
-        } else {
-          splitLabel = "Even pacing";
-          summaryLines.push(`Pacing: very even — within ${absS}s/${unit} between the first and second half.`);
-        }
-
-       if (terrain) {
-         const firstChange = Math.round(terrain.firstHalfElevationChangeM);
-         const secondChange = Math.round(terrain.secondHalfElevationChangeM);
-         summaryLines.push(
-           `Terrain: first half gained ${Math.round(terrain.firstHalfElevationGainM)}m with a ${firstChange >= 0 ? "+" : ""}${firstChange}m net change; second half gained ${Math.round(terrain.secondHalfElevationGainM)}m with a ${secondChange >= 0 ? "+" : ""}${secondChange}m net change.` +
-           (terrainAffected ? " The uphill return can explain the slower late pace." : "")
-         );
-       }
-      }
-
-      // Aerobic decoupling (Pa:HR drift): how much pace-per-heartbeat degraded in the back half
-      let decouplingPct: number | null = null;
-      if (hr.length === n && d1 > 0 && d2 > 0 && t1 > 0 && t2 > 0) {
-        const avg = (arr: number[], a: number, b: number) => {
-          let s = 0, c = 0;
-          for (let i = a; i < b; i++) { if (Number.isFinite(arr[i]) && arr[i] > 0) { s += arr[i]; c++; } }
-          return c ? s / c : 0;
-        };
-        const hr1 = avg(hr, 0, splitIdx);
-        const hr2 = avg(hr, splitIdx, n);
-        const sp1 = d1 / t1; // m/s
-        const sp2 = d2 / t2;
-        if (hr1 > 0 && hr2 > 0) {
-          const ratio1 = sp1 / hr1;
-          const ratio2 = sp2 / hr2;
-          decouplingPct = Math.round(((ratio1 - ratio2) / ratio1) * 1000) / 10;
-           if (decouplingPct > 5) {
-             summaryLines.push(`Aerobic decoupling: ${decouplingPct}% — heart rate drifted up relative to pace (above the ~5% durability threshold).${terrainAffected ? " Because the second half was materially uphill, terrain may contribute to this drift; do not treat it as standalone proof of poor durability." : " The effort was beyond a comfortable aerobic zone, or aerobic durability is the current limiter."}`);
-          } else if (decouplingPct >= 0) {
-            summaryLines.push(`Aerobic decoupling: ${decouplingPct}% — well coupled (under 5%). Good aerobic durability; HR held steady against pace.`);
-          } else {
-            summaryLines.push(`Aerobic decoupling: ${decouplingPct}% — pace-per-heartbeat actually improved late (warmed into it nicely).`);
-          }
-        }
-      }
-
-      // Fastest single km / mile. Two-pointer window over cumulative distance,
-      // interpolating the time at the exact unit boundary so the split reflects a
-      // true single-unit pace rather than an over-long (and thus too-slow) window.
-      let fastestSplitPace: string | null = null;
-      if (totalDist >= unitMeters) {
-        let best = Infinity;
-        let j = 1;
-        for (let i = 0; i < n; i++) {
-          if (j <= i) j = i + 1;
-          const target = dist[i] + unitMeters;
-          while (j < n && dist[j] < target) j++;
-          if (j >= n) break;
-          const dPrev = dist[j - 1];
-          const denom = dist[j] - dPrev;
-          const frac = denom > 0 ? (target - dPrev) / denom : 0;
-          const tAtTarget = time[j - 1] + frac * (time[j] - time[j - 1]);
-          const dt = tAtTarget - time[i];
-          if (dt > 0 && dt < best) best = dt;
-        }
-        if (best !== Infinity) {
-          const totalSec = Math.round(best);
-          const m = Math.floor(totalSec / 60);
-          const s = totalSec % 60;
-          fastestSplitPace = `${m}:${String(s).padStart(2, "0")} /${unit}`;
-          summaryLines.push(`Fastest ${unit}: ${fastestSplitPace}.`);
-        }
-      }
-
-      // Average cadence (Strava reports per-leg RPM; double for steps/min)
-      let avgCadence: number | null = null;
-      if (cad.length) {
-        const valid = cad.filter(c => Number.isFinite(c) && c > 0);
-        if (valid.length) {
-          avgCadence = Math.round((valid.reduce((a, b) => a + b, 0) / valid.length) * 2);
-          summaryLines.push(`Average cadence: ${avgCadence} spm.`);
-        }
-      }
-
-      if (!summaryLines.length) return null;
-       return {
-         splitLabel,
-         splitDeltaSec,
-         decouplingPct,
-         fastestSplitPace,
-         avgCadence,
-         terrainAffected,
-         firstHalfElevationGainM: terrain?.firstHalfElevationGainM ?? null,
-         secondHalfElevationGainM: terrain?.secondHalfElevationGainM ?? null,
-         firstHalfElevationChangeM: terrain?.firstHalfElevationChangeM ?? null,
-         secondHalfElevationChangeM: terrain?.secondHalfElevationChangeM ?? null,
-         summaryLines,
-       };
-    } catch (err) {
-      console.warn("[Strava Webhook] Stream analysis failed:", err);
-      return null;
-    }
-  }
-
-  private analyzeTerrain(
-    altitude: number[],
-    splitIdx: number,
-    pointCount: number,
-  ): {
-    firstHalfElevationGainM: number;
-    secondHalfElevationGainM: number;
-    firstHalfElevationChangeM: number;
-    secondHalfElevationChangeM: number;
-  } | null {
-    if (altitude.length !== pointCount || splitIdx <= 0 || splitIdx >= pointCount - 1) return null;
-    const finite = altitude.every(value => Number.isFinite(value));
-    if (!finite) return null;
-
-    const segment = (start: number, end: number) => {
-      let gain = 0;
-      for (let i = start + 1; i <= end; i++) {
-        const delta = altitude[i] - altitude[i - 1];
-        // Ignore sub-metre GPS/barometric noise when estimating climbing.
-        if (delta > 1) gain += delta;
-      }
-      return {
-        gain,
-        change: altitude[end] - altitude[start],
-      };
-    };
-    const first = segment(0, splitIdx);
-    const second = segment(splitIdx, pointCount - 1);
-    return {
-      firstHalfElevationGainM: first.gain,
-      secondHalfElevationGainM: second.gain,
-      firstHalfElevationChangeM: first.change,
-      secondHalfElevationChangeM: second.change,
     };
   }
 
