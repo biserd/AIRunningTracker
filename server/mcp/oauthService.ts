@@ -7,9 +7,13 @@ import {
   mcpOauthClients,
   mcpOauthRequests,
   mcpOauthTokens,
+  coachAgentPilotUsers,
+  users,
 } from "@shared/schema";
+import { canAccessCapability } from "@shared/entitlements";
 import {
   MCP_RESOURCE,
+  MCP_SCOPE_NAMES,
   type McpScope,
   OAuthRequestError,
   isBoundTokenActive,
@@ -52,6 +56,17 @@ async function requireActiveClient(clientId: string): Promise<void> {
     isNull(mcpOauthClients.disabledAt),
   )).limit(1);
   if (!client) throw new OAuthRequestError("invalid_client", "OAuth client is unavailable", 401);
+}
+
+async function isCoachGrantEligible(userId: number, clientId: string): Promise<boolean> {
+  if (!process.env.HERMES_MCP_CLIENT_ID || clientId !== process.env.HERMES_MCP_CLIENT_ID) return true;
+  if (process.env.COACH_MULTI_RUNNER_PILOT_ENABLED !== "true") return false;
+  const [row] = await db.select({ runner: users, enabled: coachAgentPilotUsers.enabled })
+    .from(users)
+    .innerJoin(coachAgentPilotUsers, eq(coachAgentPilotUsers.userId, users.id))
+    .where(and(eq(users.id, userId), eq(coachAgentPilotUsers.enabled, true)))
+    .limit(1);
+  return Boolean(row?.enabled && canAccessCapability(row.runner, "ai_coach"));
 }
 
 export async function ensureMcpSchema(): Promise<void> {
@@ -163,7 +178,7 @@ async function issueToken(input: { userId: number; clientId: string; scopes: Mcp
   const accessToken = randomSecret("ra_mcp_at_");
   const refreshToken = randomSecret("ra_mcp_rt_");
   const now = Date.now();
-  await db.insert(mcpOauthTokens).values({
+  const [inserted] = await db.insert(mcpOauthTokens).values({
     accessTokenHash: hashMcpSecret(accessToken),
     refreshTokenHash: hashMcpSecret(refreshToken),
     userId: input.userId,
@@ -172,8 +187,10 @@ async function issueToken(input: { userId: number; clientId: string; scopes: Mcp
     resource: input.resource,
     accessExpiresAt: new Date(now + ACCESS_TOKEN_TTL_MS),
     refreshExpiresAt: new Date(now + REFRESH_TOKEN_TTL_MS),
-  });
+  }).returning({ id: mcpOauthTokens.id });
+  if (!inserted) throw new OAuthRequestError("temporarily_unavailable", "MCP grant could not be created", 503);
   return {
+    tokenId: inserted.id,
     access_token: accessToken,
     refresh_token: refreshToken,
     token_type: "Bearer",
@@ -209,7 +226,8 @@ export async function exchangeAuthorizationCode(input: {
   if (consumed.length !== 1) throw new OAuthRequestError("invalid_grant", "Authorization code was already used");
   const token = await issueToken({ userId: code.userId, clientId: code.clientId, scopes: code.scopes as McpScope[], resource: code.resource });
   await recordMcpAudit({ eventType: "token_issued", userId: code.userId, clientId: code.clientId, success: true });
-  return token;
+  const { tokenId: _tokenId, ...response } = token;
+  return response;
 }
 
 export async function refreshAccessToken(input: {
@@ -227,6 +245,9 @@ export async function refreshAccessToken(input: {
     throw new OAuthRequestError("invalid_grant", "Refresh token is invalid, expired, or bound to another client");
   }
   await requireActiveClient(input.clientId);
+  if (!await isCoachGrantEligible(existing.userId, input.clientId)) {
+    throw new OAuthRequestError("invalid_grant", "Coach connection is no longer eligible", 401);
+  }
   const scopes = input.requestedScopes || (existing.scopes as McpScope[]);
   if (!isScopeSubset(scopes, existing.scopes)) throw new OAuthRequestError("invalid_scope", "Refresh cannot add scopes");
   const revoked = await db.update(mcpOauthTokens)
@@ -236,7 +257,52 @@ export async function refreshAccessToken(input: {
   if (revoked.length !== 1) throw new OAuthRequestError("invalid_grant", "Refresh token was already rotated");
   const token = await issueToken({ userId: existing.userId, clientId: existing.clientId, scopes, resource: existing.resource });
   await recordMcpAudit({ eventType: "token_refreshed", userId: existing.userId, clientId: existing.clientId, success: true });
-  return token;
+  const { tokenId: _tokenId, ...response } = token;
+  return response;
+}
+
+/**
+ * Creates the dedicated read-only grant used by the trusted Hermes service
+ * after a runner has completed the one-time channel-link consent flow. This is
+ * intentionally not exposed as an HTTP OAuth grant type.
+ */
+export async function issueCoachAgentRunnerGrant(userId: number) {
+  if (!Number.isSafeInteger(userId) || userId <= 0) {
+    throw new OAuthRequestError("invalid_request", "Runner identity is invalid");
+  }
+  const clientId = process.env.HERMES_MCP_CLIENT_ID;
+  if (!clientId) throw new OAuthRequestError("temporarily_unavailable", "Coach MCP client is not configured", 503);
+  await requireActiveClient(clientId);
+  if (!await isCoachGrantEligible(userId, clientId)) {
+    throw new OAuthRequestError("access_denied", "Runner is not eligible for the coach pilot", 403);
+  }
+  const token = await issueToken({
+    userId,
+    clientId,
+    scopes: [...MCP_SCOPE_NAMES],
+    resource: MCP_RESOURCE,
+  });
+  await recordMcpAudit({ eventType: "coach_binding_token_issued", userId, clientId, success: true });
+  return { ...token, client_id: clientId };
+}
+
+/** Revokes every live token generation for this runner/client, including
+ * refresh-rotated descendants whose database ID no longer matches the binding. */
+export async function revokeAllCoachAgentRunnerGrants(userId: number): Promise<number> {
+  const clientId = process.env.HERMES_MCP_CLIENT_ID;
+  if (!clientId || !Number.isSafeInteger(userId) || userId <= 0) return 0;
+  const revoked = await db.update(mcpOauthTokens)
+    .set({ revokedAt: new Date() })
+    .where(and(
+      eq(mcpOauthTokens.userId, userId),
+      eq(mcpOauthTokens.clientId, clientId),
+      isNull(mcpOauthTokens.revokedAt),
+    ))
+    .returning({ id: mcpOauthTokens.id });
+  if (revoked.length > 0) {
+    await recordMcpAudit({ eventType: "coach_binding_tokens_revoked", userId, clientId, success: true });
+  }
+  return revoked.length;
 }
 
 export async function validateAccessToken(rawToken: string): Promise<McpPrincipal> {
@@ -254,6 +320,9 @@ export async function validateAccessToken(rawToken: string): Promise<McpPrincipa
     isNull(mcpOauthClients.disabledAt),
   )).limit(1);
   if (!client) throw new OAuthRequestError("invalid_token", "Bearer token is invalid or expired", 401);
+  if (!await isCoachGrantEligible(token.userId, token.clientId)) {
+    throw new OAuthRequestError("invalid_token", "Bearer token is invalid or expired", 401);
+  }
   return {
     userId: token.userId,
     clientId: token.clientId,

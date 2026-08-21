@@ -1,4 +1,5 @@
-import { pgTable, text, serial, integer, boolean, real, timestamp, json, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, real, timestamp, json, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -788,6 +789,60 @@ export const mcpOauthTokens = pgTable("mcp_oauth_tokens", {
   refreshIdx: index("mcp_oauth_tokens_refresh_idx").on(table.refreshTokenHash),
   userClientIdx: index("mcp_oauth_tokens_user_client_idx").on(table.userId, table.clientId),
 }));
+
+// Controlled multi-runner coach pilot. Telegram identifiers are HMAC-hashed;
+// the application never stores raw channel/user IDs or MCP bearer tokens.
+export const coachAgentPilotUsers = pgTable("coach_agent_pilot_users", {
+  userId: integer("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  enabled: boolean("enabled").notNull().default(true),
+  addedAt: timestamp("added_at").defaultNow().notNull(),
+});
+
+export const coachChannelLinkTokens = pgTable("coach_channel_link_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  channel: text("channel").notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  consumedAt: timestamp("consumed_at"),
+  revokedAt: timestamp("revoked_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("coach_channel_link_tokens_user_idx").on(table.userId),
+  expiryIdx: index("coach_channel_link_tokens_expiry_idx").on(table.expiresAt),
+}));
+
+export const coachChannelBindings = pgTable("coach_channel_bindings", {
+  id: serial("id").primaryKey(),
+  bindingId: text("binding_id").notNull().unique(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  channel: text("channel").notNull(),
+  providerUserHash: text("provider_user_hash").notNull(),
+  providerChatHash: text("provider_chat_hash").notNull(),
+  mcpTokenId: integer("mcp_token_id").references(() => mcpOauthTokens.id, { onDelete: "set null" }),
+  status: text("status").notNull().default("provisioning"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  linkedAt: timestamp("linked_at"),
+  revokedAt: timestamp("revoked_at"),
+}, (table) => ({
+  userIdx: index("coach_channel_bindings_user_idx").on(table.userId),
+  providerUserIdx: index("coach_channel_bindings_provider_user_idx").on(table.providerUserHash),
+  providerChatIdx: index("coach_channel_bindings_provider_chat_idx").on(table.providerChatHash),
+  activeUserChannelUnique: uniqueIndex("coach_channel_bindings_active_user_channel_uidx")
+    .on(table.userId, table.channel)
+    .where(sql`${table.revokedAt} IS NULL`),
+  activeProviderUserUnique: uniqueIndex("coach_channel_bindings_active_provider_user_uidx")
+    .on(table.channel, table.providerUserHash)
+    .where(sql`${table.revokedAt} IS NULL`),
+  activeProviderChatUnique: uniqueIndex("coach_channel_bindings_active_provider_chat_uidx")
+    .on(table.channel, table.providerChatHash)
+    .where(sql`${table.revokedAt} IS NULL`),
+}));
+
+export const coachAgentCallbackEvents = pgTable("coach_agent_callback_events", {
+  deliveryId: text("delivery_id").primaryKey(),
+  receivedAt: timestamp("received_at").defaultNow().notNull(),
+});
 
 export const mcpAuditEvents = pgTable("mcp_audit_events", {
   id: serial("id").primaryKey(),

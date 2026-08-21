@@ -57,6 +57,13 @@ import { summarizeTrainingSplit } from "@shared/trainingSplit";
 import { canonicalizeShoeCatalog, normalizedShoeModelKey } from "@shared/shoeCanonicalization";
 import { registerMcpRoutes } from "./mcp/router";
 import { toClientUser } from "./services/clientUser";
+import {
+  CoachChannelError,
+  completeTelegramBinding,
+  createTelegramLink,
+  disconnectTelegram,
+  getCoachChannelStatus,
+} from "./services/coachChannelBindings";
 
 // Authentication middleware
 const authenticateJWT = async (req: any, res: Response, next: NextFunction) => {
@@ -4278,6 +4285,67 @@ ${allPages.map(page => `  <url>
     } catch (error: any) {
       console.error('Notification settings update error:', error);
       res.status(500).json({ message: error.message || "Failed to update notification settings" });
+    }
+  });
+
+  // Runner-owned coach channel controls. Eligibility comes from the signed-in
+  // account and the server-side pilot table; no caller-provided user ID is used.
+  app.get("/api/coach/channels", authenticateJWT, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      res.json(await getCoachChannelStatus(user));
+    } catch {
+      res.status(500).json({ code: "status_failed", message: "Could not load coach connection status" });
+    }
+  });
+
+  app.post("/api/coach/channels/telegram/link", authenticateJWT, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      res.setHeader("Cache-Control", "no-store");
+      res.status(201).json(await createTelegramLink(user));
+    } catch (error) {
+      if (error instanceof CoachChannelError) {
+        return res.status(error.status).json({ code: error.code, message: error.message });
+      }
+      res.status(500).json({ code: "link_failed", message: "Could not create a Telegram link" });
+    }
+  });
+
+  app.delete("/api/coach/channels/telegram", authenticateJWT, async (req: any, res) => {
+    try {
+      res.json(await disconnectTelegram(req.user.id));
+    } catch {
+      res.status(500).json({ code: "disconnect_failed", message: "Could not disconnect Telegram" });
+    }
+  });
+
+  // Hermes service callback. It is unauthenticated by runner session on
+  // purpose, but requires a timestamp-bound HMAC and single-use delivery ID.
+  app.post("/api/integrations/hermes/telegram-binding", async (req: any, res) => {
+    try {
+      if (!Buffer.isBuffer(req.rawBody)) {
+        throw new CoachChannelError("invalid_payload", "Raw callback body is required", 400);
+      }
+      const header = (name: string) => {
+        const value = req.headers[name.toLowerCase()];
+        return Array.isArray(value) ? value[0] : value;
+      };
+      const result = await completeTelegramBinding({
+        rawBody: req.rawBody,
+        timestampHeader: header("x-hermes-timestamp"),
+        signatureHeader: header("x-hermes-signature"),
+        deliveryId: header("x-hermes-delivery"),
+      });
+      res.setHeader("Cache-Control", "no-store");
+      res.json(result);
+    } catch (error) {
+      if (error instanceof CoachChannelError) {
+        return res.status(error.status).json({ code: error.code, message: error.message });
+      }
+      res.status(503).json({ code: "binding_failed", message: "Telegram binding could not be completed" });
     }
   });
 

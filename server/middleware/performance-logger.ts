@@ -24,6 +24,7 @@ const SENSITIVE_ENDPOINTS = [
   '/api/goals',
   '/api/notifications',
   '/api/coach',
+  '/api/integrations/hermes',
   '/api/users',
   // MCP requests can contain OAuth codes/tokens or private runner responses.
   // Keep bodies out of the generic performance log; the MCP subsystem emits

@@ -23,7 +23,11 @@ import {
   ArrowLeft,
   CloudSun,
   Clock,
-  PauseCircle
+  PauseCircle,
+  Send,
+  Unplug,
+  ShieldCheck,
+  CheckCircle2
 } from "lucide-react";
 import type { DashboardData } from "@/lib/api";
 
@@ -51,6 +55,15 @@ const TONES = [
   { id: "data_nerd", label: "Data Nerd", icon: "📊" },
 ];
 
+type CoachChannelStatus = {
+  pilotEligible: boolean;
+  telegram: {
+    connected: boolean;
+    status: "not_connected" | "provisioning" | "active" | "provisioning_failed" | "revoked";
+    linkedAt: string | null;
+  };
+};
+
 export default function CoachSettingsPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { isPremium, isLoading: subLoading } = useSubscription();
@@ -61,6 +74,14 @@ export default function CoachSettingsPage() {
     queryKey: [`/api/dashboard/${user?.id}`],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!user?.id,
+  });
+
+  const { data: channelStatus, isLoading: channelStatusLoading } = useQuery<CoachChannelStatus>({
+    queryKey: ["/api/coach/channels"],
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: Boolean(user?.id && isPremium),
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const [coachGoal, setCoachGoal] = useState("general_fitness");
@@ -126,6 +147,31 @@ export default function CoachSettingsPage() {
         variant: "destructive",
       });
     },
+  });
+
+  const connectTelegramMutation = useMutation({
+    mutationFn: () => apiRequest("/api/coach/channels/telegram/link", "POST", {}),
+    onSuccess: (result: { deepLink: string }) => {
+      window.location.assign(result.deepLink);
+    },
+    onError: (error: any) => toast({
+      title: "Telegram could not be connected",
+      description: error.message || "Please try again.",
+      variant: "destructive",
+    }),
+  });
+
+  const disconnectTelegramMutation = useMutation({
+    mutationFn: () => apiRequest("/api/coach/channels/telegram", "DELETE"),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/coach/channels"] });
+      toast({ title: "Telegram disconnected", description: "The coach can no longer use this account's running data." });
+    },
+    onError: (error: any) => toast({
+      title: "Could not disconnect Telegram",
+      description: error.message || "Please try again.",
+      variant: "destructive",
+    }),
   });
 
   const handleDayToggle = (dayId: string) => {
@@ -295,6 +341,75 @@ export default function CoachSettingsPage() {
                       data-testid="input-target-time"
                     />
                   </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Send className="h-5 w-5 text-[#229ED9]" />
+                Telegram coach
+                {channelStatus?.telegram.connected && (
+                  <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Connected
+                  </span>
+                )}
+              </CardTitle>
+              <CardDescription>
+                Get post-run analysis and proactive coaching in a private Telegram conversation.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-3 rounded-lg border border-blue-100 bg-blue-50/60 p-4">
+                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" />
+                <div className="text-sm text-blue-950">
+                  <p className="font-medium">Your running data stays tied to your account.</p>
+                  <p className="mt-1 text-blue-800">The coach receives a read-only connection for you—not access to another runner, billing, Strava credentials, or account controls. Disconnect anytime.</p>
+                </div>
+              </div>
+
+              {channelStatusLoading ? (
+                <div className="flex items-center gap-2 text-sm text-gray-500"><Loader2 className="h-4 w-4 animate-spin" /> Checking connection…</div>
+              ) : channelStatus?.telegram.connected ? (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-medium text-gray-900">Telegram is connected</p>
+                    <p className="text-sm text-gray-500">
+                      {channelStatus.telegram.linkedAt
+                        ? `Connected ${new Date(channelStatus.telegram.linkedAt).toLocaleDateString()}`
+                        : "Your private coach connection is active."}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => disconnectTelegramMutation.mutate()}
+                    disabled={disconnectTelegramMutation.isPending}
+                    className="gap-2"
+                  >
+                    {disconnectTelegramMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unplug className="h-4 w-4" />}
+                    Disconnect
+                  </Button>
+                </div>
+              ) : !channelStatus?.pilotEligible ? (
+                <p className="text-sm text-gray-600">The Telegram coach is currently available to invited test runners. Your existing AI Coach features are unchanged.</p>
+              ) : (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-medium text-gray-900">Ready to connect</p>
+                    <p className="text-sm text-gray-500">The secure Telegram link expires after 10 minutes and can be used only once.</p>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => connectTelegramMutation.mutate()}
+                    disabled={connectTelegramMutation.isPending}
+                    className="gap-2 bg-[#229ED9] hover:bg-[#1d8fc4]"
+                  >
+                    {connectTelegramMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    Connect Telegram
+                  </Button>
                 </div>
               )}
             </CardContent>

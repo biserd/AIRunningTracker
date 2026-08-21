@@ -27,8 +27,13 @@ Weather is off by default. The browser requests coarse geolocation only after th
 
 The bundled skill is at `integrations/hermes/skills/runanalytics-coach`. It supports implicit invocation and depends on the production read-only MCP endpoint. The short profile identity is at `integrations/hermes/profiles/runanalytics-coach/SOUL.md`; keep this always loaded and let the full skill load only for coaching work.
 
-The legacy handoff is deliberately limited to one runner until first-party
-Telegram identity bindings are available. Set all three values:
+The controlled multi-runner Telegram pilot is documented in
+[`COACH_CHANNEL_PILOT.md`](./COACH_CHANNEL_PILOT.md). It uses an explicit
+database allowlist, single-use runner consent, hashed Telegram identities,
+opaque routing IDs and dedicated read-only MCP grants.
+
+The legacy fallback remains deliberately limited to one runner and is used
+only when `COACH_MULTI_RUNNER_PILOT_ENABLED` is not `true`. It requires:
 
 - `COACH_AGENT_WEBHOOK_URL`: the trusted Hermes webhook endpoint.
 - `COACH_AGENT_WEBHOOK_SECRET`: a unique 32+ character HMAC secret shared only with that endpoint.

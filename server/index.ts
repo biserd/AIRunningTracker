@@ -53,7 +53,15 @@ app.post(
   }
 );
 
-app.use(express.json());
+app.use(express.json({
+  // Hermes binding callbacks are authenticated over the exact received bytes.
+  // Keep the raw body only for this narrow endpoint; never log it.
+  verify: (req: any, _res, buffer) => {
+    if (req.originalUrl?.startsWith('/api/integrations/hermes/')) {
+      req.rawBody = Buffer.from(buffer);
+    }
+  },
+}));
 app.use(express.urlencoded({ extended: false }));
 
 // Performance logging middleware - captures all API requests

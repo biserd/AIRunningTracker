@@ -48,7 +48,26 @@ export function assertProductionSecurityConfiguration(): void {
   requireApplicationSecret("JWT_SECRET");
   requireApplicationSecret("UNSUBSCRIBE_TOKEN_SECRET");
 
-  if (process.env.COACH_AGENT_WEBHOOK_URL) {
+  const multiRunnerPilot = process.env.COACH_MULTI_RUNNER_PILOT_ENABLED === "true";
+  if (multiRunnerPilot) {
+    requireApplicationSecret("COACH_AGENT_WEBHOOK_SECRET");
+    requireApplicationSecret("COACH_BINDING_CALLBACK_SECRET");
+    requireApplicationSecret("CHANNEL_IDENTITY_HASH_SECRET");
+    requireApplicationSecret("MCP_TOKEN_HASH_SECRET");
+    const requiredValues = ["COACH_AGENT_WEBHOOK_URL", "HERMES_MCP_CLIENT_ID", "TELEGRAM_BOT_USERNAME"] as const;
+    for (const name of requiredValues) {
+      if (!process.env[name]?.trim()) throw new Error(`[SecurityConfig] ${name} is required for the multi-runner coach pilot.`);
+    }
+    let webhookUrl: URL;
+    try {
+      webhookUrl = new URL(process.env.COACH_AGENT_WEBHOOK_URL!);
+    } catch {
+      throw new Error("[SecurityConfig] COACH_AGENT_WEBHOOK_URL must be an absolute HTTPS URL.");
+    }
+    if (webhookUrl.protocol !== "https:") {
+      throw new Error("[SecurityConfig] COACH_AGENT_WEBHOOK_URL must use HTTPS in production.");
+    }
+  } else if (process.env.COACH_AGENT_WEBHOOK_URL) {
     requireApplicationSecret("COACH_AGENT_WEBHOOK_SECRET");
     const pilotUserId = Number(process.env.COACH_AGENT_PILOT_USER_ID);
     if (!Number.isSafeInteger(pilotUserId) || pilotUserId <= 0) {
