@@ -181,7 +181,8 @@ ${upcomingWorkouts.map((d: any) =>
     }
   ): Promise<string> {
     // Get conversation history
-    const messages = await storage.getMessagesByConversationId(conversationId);
+    const messages = await storage.getMessagesByConversationId(conversationId, userId);
+    if (!messages) throw new Error("Conversation not found");
     
     // Assemble user context
     let userContext = await this.assembleUserContext(userId);

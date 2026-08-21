@@ -4,6 +4,7 @@ import { db } from "../db";
 import { storage } from "../storage";
 import { canAccessCapability } from "@shared/entitlements";
 import type { User } from "@shared/schema";
+import { isStrongApplicationSecret } from "../config/security";
 
 const HOUR_MS = 60 * 60 * 1000;
 const WORKER_INTERVAL_MS = HOUR_MS;
@@ -241,13 +242,41 @@ export async function runMorningBriefings(now = new Date()) {
   return { queued, skipped };
 }
 
-export async function emitSignedCoachEvent(event: { activityId: number }): Promise<boolean> {
+export async function emitSignedCoachEvent(event: { activityId: number; userId: number; occurredAt?: Date }): Promise<boolean> {
   const url = process.env.COACH_AGENT_WEBHOOK_URL;
   const secret = process.env.COACH_AGENT_WEBHOOK_SECRET;
   if (!url || !secret) return false;
-  // Hermes filters on event_type and passes the numeric activityId to its MCP tool.
-  const body = JSON.stringify({ event_type: "activity.ready", activityId: Number(event.activityId) });
-  const signature = crypto.createHmac("sha256", secret).update(body).digest("hex");
+  if (!isStrongApplicationSecret(secret)) {
+    console.warn("[CoachWebhook] Delivery disabled because COACH_AGENT_WEBHOOK_SECRET is too weak.");
+    return false;
+  }
+
+  // Until per-runner Telegram/Hermes bindings exist, this legacy webhook is
+  // deliberately restricted to one explicitly configured pilot runner. This
+  // prevents a shared Hermes instance from receiving events for every paid
+  // account and selecting a tenant token heuristically.
+  const pilotUserId = Number(process.env.COACH_AGENT_PILOT_USER_ID);
+  if (!Number.isSafeInteger(pilotUserId) || pilotUserId <= 0 || pilotUserId !== event.userId) return false;
+
+  const occurredAt = event.occurredAt || new Date();
+  const timestamp = String(Math.floor(occurredAt.getTime() / 1000));
+  const eventId = crypto
+    .createHmac("sha256", secret)
+    .update(`activity.ready:${event.userId}:${event.activityId}`)
+    .digest("hex");
+  const body = JSON.stringify({
+    event_id: eventId,
+    event_type: "activity.ready",
+    occurred_at: occurredAt.toISOString(),
+    activityId: Number(event.activityId),
+  });
+  const replaySafeSignature = crypto
+    .createHmac("sha256", secret)
+    .update(`${timestamp}.${body}`)
+    .digest("hex");
+  // Keep the original raw-body signature during the pilot migration while
+  // requiring new receivers to verify timestamp + delivery ID for anti-replay.
+  const legacySignature = crypto.createHmac("sha256", secret).update(body).digest("hex");
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), EVENT_TIMEOUT_MS);
   try {
@@ -255,7 +284,10 @@ export async function emitSignedCoachEvent(event: { activityId: number }): Promi
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "X-Hub-Signature-256": `sha256=${signature}`,
+        "X-Hub-Signature-256": `sha256=${legacySignature}`,
+        "X-RunAnalytics-Signature": `v1=${replaySafeSignature}`,
+        "X-RunAnalytics-Timestamp": timestamp,
+        "X-RunAnalytics-Delivery": eventId,
       },
       body,
       signal: controller.signal,

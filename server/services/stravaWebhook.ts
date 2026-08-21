@@ -3,6 +3,7 @@ import { emailService } from "./email";
 import { stravaService } from "./strava";
 import OpenAI from "openai";
 import crypto from "crypto";
+import { getUnsubscribeTokenSecret } from "../config/security";
 import { analyzeRunStreams, type StreamAnalysis } from "./stravaStreamAnalysis";
 
 interface StravaWebhookEvent {
@@ -27,7 +28,9 @@ interface TrainingContext {
 }
 
 const VERIFY_TOKEN = process.env.STRAVA_VERIFY_TOKEN || "runanalytics_webhook_verify_2024";
-const UNSUBSCRIBE_SECRET = process.env.JWT_SECRET || "runanalytics_unsub_secret_2024";
+// Unsubscribe links have their own key so rotating web sessions does not
+// invalidate email preferences, and a leaked unsubscribe key cannot mint JWTs.
+const UNSUBSCRIBE_SECRET = getUnsubscribeTokenSecret();
 
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY || "default_key" 
@@ -297,6 +300,7 @@ export class StravaWebhookService {
         const { emitSignedCoachEvent } = await import("./proactiveCoach");
         void emitSignedCoachEvent({
           activityId: activityDbId,
+          userId: user.id,
         });
       }
 

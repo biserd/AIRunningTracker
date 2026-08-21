@@ -5,18 +5,35 @@ import { storage } from "../storage";
  * Sensitive endpoints where we should NOT log request/response bodies
  */
 const SENSITIVE_ENDPOINTS = [
-  '/api/auth/login',
-  '/api/auth/register',
-  '/api/auth/reset-password',
-  '/api/auth/confirm-reset',
+  '/api/auth',
+  '/api/mobile',
   '/api/user/password',
   '/api/stripe',
   '/api/payment',
+  '/api/chat',
+  '/api/brief',
+  '/api/athlete/summary',
+  '/api/dashboard',
+  '/api/activities',
+  '/api/analytics',
+  '/api/performance',
+  '/api/fitness',
+  '/api/ml',
+  '/api/runner-score',
+  '/api/training',
+  '/api/goals',
+  '/api/notifications',
+  '/api/coach',
+  '/api/users',
   // MCP requests can contain OAuth codes/tokens or private runner responses.
   // Keep bodies out of the generic performance log; the MCP subsystem emits
   // metadata-only audit rows instead.
   '/mcp'
 ];
+
+export function isSensitiveEndpoint(endpoint: string): boolean {
+  return SENSITIVE_ENDPOINTS.some((sensitive) => endpoint.startsWith(sensitive));
+}
 
 /**
  * Sensitive field names to redact from logs
@@ -63,12 +80,21 @@ function redactSensitiveFields(data: any): any {
 /**
  * Helper function to truncate data if it exceeds max size
  */
-function truncateData(data: any, maxBytes: number = 5120): string | null {
+export function truncateData(data: any, maxBytes: number = 5120): string | null {
   if (!data) return null;
   
   try {
-    // Redact sensitive fields before logging
-    const redacted = redactSensitiveFields(data);
+    // Express passes JSON responses to res.send as strings. Parse structured
+    // JSON before redaction so nested tokens cannot bypass field-name checks.
+    let structured = data;
+    if (typeof data === 'string') {
+      try {
+        structured = JSON.parse(data);
+      } catch {
+        structured = data;
+      }
+    }
+    const redacted = redactSensitiveFields(structured);
     const jsonString = typeof redacted === 'string' ? redacted : JSON.stringify(redacted);
     
     if (jsonString.length > maxBytes) {
@@ -102,19 +128,17 @@ export function performanceLogger(req: Request, res: Response, next: NextFunctio
     const userAgent = req.headers['user-agent'] || null;
 
     // Check if this is a sensitive endpoint where we should NOT log bodies
-    const isSensitiveEndpoint = SENSITIVE_ENDPOINTS.some(sensitive => 
-      endpoint.startsWith(sensitive)
-    );
+    const suppressBodies = isSensitiveEndpoint(endpoint);
 
     // Capture request body (for POST, PUT, PATCH requests) - skip for sensitive endpoints
     const requestBody = (
-      !isSensitiveEndpoint && 
+      !suppressBodies &&
       ['POST', 'PUT', 'PATCH'].includes(method) && 
       req.body
     ) ? truncateData(req.body) : null;
 
     // Capture response body - skip for sensitive endpoints
-    const responseBody = (!isSensitiveEndpoint && data) ? truncateData(data) : null;
+    const responseBody = (!suppressBodies && data) ? truncateData(data) : null;
 
     // Extract error message and details if this is an error response
     let errorMessage: string | null = null;

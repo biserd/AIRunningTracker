@@ -27,14 +27,25 @@ Weather is off by default. The browser requests coarse geolocation only after th
 
 The bundled skill is at `integrations/hermes/skills/runanalytics-coach`. It supports implicit invocation and depends on the production read-only MCP endpoint. The short profile identity is at `integrations/hermes/profiles/runanalytics-coach/SOUL.md`; keep this always loaded and let the full skill load only for coaching work.
 
-Set both secrets to enable the optional post-run handoff:
+The legacy handoff is deliberately limited to one runner until first-party
+Telegram identity bindings are available. Set all three values:
 
 - `COACH_AGENT_WEBHOOK_URL`: the trusted Hermes webhook endpoint.
-- `COACH_AGENT_WEBHOOK_SECRET`: a high-entropy HMAC secret shared with that endpoint.
+- `COACH_AGENT_WEBHOOK_SECRET`: a unique 32+ character HMAC secret shared only with that endpoint.
+- `COACH_AGENT_PILOT_USER_ID`: the numeric RunAnalytics user ID of the single approved pilot runner.
 
-The event body contains only event, runner, and activity identifiers plus a timestamp. Headers include `x-runanalytics-delivery`, `x-runanalytics-timestamp`, and `x-runanalytics-signature: sha256=<hex>`. The receiver must reject stale timestamps, verify HMAC over `<timestamp>.<raw-body>` with constant-time comparison, deduplicate the delivery ID, then retrieve `get_post_run_brief` through the runner-bound OAuth connection. No activity metrics or tokens are sent in the webhook.
+The event body contains an opaque stable event ID, event type, occurrence time,
+and activity ID. It does not contain a user ID, activity metrics, or tokens.
+Headers include `x-runanalytics-delivery`, `x-runanalytics-timestamp`, and
+`x-runanalytics-signature: v1=<hex>`. The receiver must reject timestamps more
+than five minutes old, verify HMAC-SHA256 over `<timestamp>.<raw-body>` with a
+constant-time comparison, and atomically deduplicate the delivery ID before
+calling `get_post_run_brief` through the pilot runner's OAuth connection.
+`x-hub-signature-256` remains temporarily available for the existing receiver,
+but it does not provide replay protection and should not be used by new code.
 
-If either environment value is absent, native RunAnalytics coaching continues and no external request is attempted.
+If any value is absent, invalid, or the event belongs to another runner, native
+RunAnalytics coaching continues and no external request is attempted.
 
 ## Operations and measurement
 

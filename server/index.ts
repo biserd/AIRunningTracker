@@ -1,10 +1,14 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { performanceLogger } from "./middleware/performance-logger";
+import { isSensitiveEndpoint, performanceLogger } from "./middleware/performance-logger";
 import { runMigrations } from 'stripe-replit-sync';
 import { getStripeSync } from './stripeClient';
 import { WebhookHandlers } from './webhookHandlers';
+import { assertProductionSecurityConfiguration } from './config/security';
+
+// Refuse to serve production traffic with known/default authentication keys.
+assertProductionSecurityConfiguration();
 
 const app = express();
 
@@ -70,7 +74,7 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
+      if (capturedJsonResponse && !isSensitiveEndpoint(path)) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
 

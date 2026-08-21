@@ -35,9 +35,11 @@ export async function generateCoachRecap(
     return null;
   }
 
-  const activity = await storage.getActivityById(activityId);
+  const activity = await storage.getActivityByIdForUser(activityId, userId);
   if (!activity) {
-    console.log(`[Coach] Activity ${activityId} not found`);
+    // Deliberately do not distinguish a missing activity from one owned by a
+    // different runner.
+    console.log(`[Coach] Activity ${activityId} not found for runner`);
     return null;
   }
 
@@ -69,7 +71,9 @@ export async function generateCoachRecap(
   const recap = await storage.createCoachRecap({
     userId,
     activityId,
-    stravaActivityId: stravaId,
+    // Derive the external identifier from the owned row rather than trusting
+    // the queued payload.
+    stravaActivityId: activity.stravaId,
     recapBullets: recapContent.recapBullets,
     coachingCue: recapContent.coachingCue,
     nextStep: recapContent.nextStep,
@@ -94,7 +98,7 @@ export async function generateCoachRecap(
     status: "completed",
     activityId,
     dedupeKey,
-    inputSnapshot: { activityId, stravaId, distanceKm, durationMins },
+    inputSnapshot: { activityId, stravaId: activity.stravaId, distanceKm, durationMins },
     outputRecapId: recap.id,
     promptVersion: "v1.0",
     stagesCompleted: ["fetch", "metrics", "coaching", "persist"],

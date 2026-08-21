@@ -56,6 +56,7 @@ import { formatRunDistance, formatRunDuration, formatRunPace, runUnitLabels } fr
 import { summarizeTrainingSplit } from "@shared/trainingSplit";
 import { canonicalizeShoeCatalog, normalizedShoeModelKey } from "@shared/shoeCanonicalization";
 import { registerMcpRoutes } from "./mcp/router";
+import { toClientUser } from "./services/clientUser";
 
 // Authentication middleware
 const authenticateJWT = async (req: any, res: Response, next: NextFunction) => {
@@ -1645,7 +1646,7 @@ ${allPages.map(page => `  <url>
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      res.json(user);
+      res.json(toClientUser(user));
     } catch (error: any) {
       console.error('Get user error:', error);
       res.status(500).json({ message: "Failed to get user" });
@@ -1660,7 +1661,7 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
       console.log('[API /api/user] Returning user data:', { id: user.id, email: user.email, unitPreference: user.unitPreference });
-      res.json(user);
+      res.json(toClientUser(user));
     } catch (error: any) {
       console.error('Get user error:', error);
       res.status(500).json({ message: "Failed to get user" });
@@ -3559,7 +3560,8 @@ ${allPages.map(page => `  <url>
         return res.status(400).json({ message: "Invalid conversation ID" });
       }
 
-      const messages = await storage.getMessagesByConversationId(conversationId);
+      const messages = await storage.getMessagesByConversationId(conversationId, req.user.id);
+      if (!messages) return res.status(404).json({ message: "Conversation not found" });
       res.json(messages);
     } catch (error: any) {
       console.error('Get messages error:', error);
@@ -3583,12 +3585,14 @@ ${allPages.map(page => `  <url>
 
       const userId = req.user.id;
 
-      // Save user message
+      // The storage method enforces ownership before writing, so a caller
+      // cannot attach content to another runner's conversation.
       const userMessage = await storage.addMessage({
         conversationId,
         role: "user",
         content: message
-      });
+      }, userId);
+      if (!userMessage) return res.status(404).json({ message: "Conversation not found" });
 
       // Set up SSE
       res.setHeader('Content-Type', 'text/event-stream');
@@ -3612,11 +3616,12 @@ ${allPages.map(page => `  <url>
         const aiResponse = await chatService.chat(userId, conversationId, message, onStream, context);
         
         // Save AI message
-        await storage.addMessage({
+        const savedAssistantMessage = await storage.addMessage({
           conversationId,
           role: "assistant",
           content: aiResponse
-        });
+        }, userId);
+        if (!savedAssistantMessage) throw new Error("Conversation is no longer available");
 
         // Send completion event
         res.write(`data: ${JSON.stringify({ type: 'complete', messageId: userMessage.id })}\n\n`);
@@ -3673,7 +3678,7 @@ ${allPages.map(page => `  <url>
         return res.status(400).json({ message: "Title is required" });
       }
 
-      const updated = await storage.updateConversationTitle(conversationId, title);
+      const updated = await storage.updateConversationTitle(conversationId, req.user.id, title);
       if (!updated) {
         return res.status(404).json({ message: "Conversation not found" });
       }
@@ -3694,7 +3699,8 @@ ${allPages.map(page => `  <url>
         return res.status(400).json({ message: "Invalid conversation ID" });
       }
 
-      await storage.deleteConversation(conversationId);
+      const deleted = await storage.deleteConversation(conversationId, req.user.id);
+      if (!deleted) return res.status(404).json({ message: "Conversation not found" });
       res.json({ success: true });
     } catch (error: any) {
       console.error('Delete conversation error:', error);
@@ -4185,7 +4191,7 @@ ${allPages.map(page => `  <url>
       deleteCachedResponse(`chart:${userId}:30days`);
       console.log(`[Settings] Invalidated cache for user ${userId} after unit preference change to ${unitPreference}`);
 
-      res.json({ success: true, user: updatedUser });
+      res.json({ success: true, user: toClientUser(updatedUser) });
     } catch (error: any) {
       console.error('Settings update error:', error);
       res.status(500).json({ message: error.message || "Failed to update settings" });
@@ -4220,7 +4226,7 @@ ${allPages.map(page => `  <url>
       deleteCachedByPrefix(`dashboard:${userId}:`);
       console.log(`[Branding] Updated branding settings for user ${userId}: enabled=${stravaBrandingEnabled}`);
 
-      res.json({ success: true, user: updatedUser });
+      res.json({ success: true, user: toClientUser(updatedUser) });
     } catch (error: any) {
       console.error('Branding settings update error:', error);
       res.status(500).json({ message: error.message || "Failed to update branding settings" });
@@ -4268,7 +4274,7 @@ ${allPages.map(page => `  <url>
       deleteCachedByPrefix(`dashboard:${userId}:`);
       console.log(`[Notifications] Updated notification settings for user ${userId}:`, updateData);
 
-      res.json({ success: true, user: updatedUser });
+      res.json({ success: true, user: toClientUser(updatedUser) });
     } catch (error: any) {
       console.error('Notification settings update error:', error);
       res.status(500).json({ message: error.message || "Failed to update notification settings" });
@@ -4485,7 +4491,7 @@ ${allPages.map(page => `  <url>
       deleteCachedByPrefix(`dashboard:${userId}:`);
       console.log(`[Coach] Updated coach preferences for user ${userId}`);
 
-      res.json({ success: true, user: updatedUser });
+      res.json({ success: true, user: toClientUser(updatedUser) });
     } catch (error: any) {
       console.error('Coach preferences update error:', error);
       res.status(500).json({ message: error.message || "Failed to update coach preferences" });
@@ -6776,7 +6782,8 @@ ${allPages.map(page => `  <url>
       }
 
       const updatedUser = await storage.updateUser(userId, { activityViewMode });
-      res.json(updatedUser);
+      if (!updatedUser) return res.status(404).json({ message: "User not found" });
+      res.json(toClientUser(updatedUser));
     } catch (error: any) {
       console.error('Error updating preferences:', error);
       res.status(500).json({ message: error.message || "Failed to update preferences" });

@@ -2,8 +2,9 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { storage } from '../storage';
 import type { RegisterData, LoginData, User } from '@shared/schema';
+import { getJwtSecret } from '../config/security';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = getJwtSecret();
 const SALT_ROUNDS = 10;
 
 export interface AuthUser {

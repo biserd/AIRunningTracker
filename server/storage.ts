@@ -47,6 +47,7 @@ export interface IStorage {
     totalPages: number;
   }>;
   getActivityById(activityId: number): Promise<Activity | undefined>;
+  getActivityByIdForUser(activityId: number, userId: number): Promise<Activity | undefined>;
   deleteActivity(activityId: number): Promise<void>;
   getActivityStreams(activityId: number): Promise<any | null>;
   getActivityByStravaId(stravaId: string): Promise<Activity | undefined>;
@@ -128,7 +129,7 @@ export interface IStorage {
   
   // AI Chat methods
   createConversation(conversation: InsertAIConversation): Promise<AIConversation>;
-  getConversation(conversationId: number): Promise<AIConversation | undefined>;
+  getConversation(conversationId: number, userId: number): Promise<AIConversation | undefined>;
   getConversationsByUserId(userId: number, limit?: number): Promise<AIConversation[]>;
   getConversationSummaries(userId: number, limit?: number): Promise<Array<{
     id: number;
@@ -138,11 +139,11 @@ export interface IStorage {
     lastMessageAt: Date;
     createdAt: Date;
   }>>;
-  updateConversationTimestamp(conversationId: number): Promise<void>;
-  updateConversationTitle(conversationId: number, title: string): Promise<AIConversation | undefined>;
-  deleteConversation(conversationId: number): Promise<void>;
-  addMessage(message: InsertAIMessage): Promise<AIMessage>;
-  getMessagesByConversationId(conversationId: number, limit?: number): Promise<AIMessage[]>;
+  updateConversationTimestamp(conversationId: number, userId: number): Promise<void>;
+  updateConversationTitle(conversationId: number, userId: number, title: string): Promise<AIConversation | undefined>;
+  deleteConversation(conversationId: number, userId: number): Promise<boolean>;
+  addMessage(message: InsertAIMessage, userId: number): Promise<AIMessage | undefined>;
+  getMessagesByConversationId(conversationId: number, userId: number, limit?: number): Promise<AIMessage[] | undefined>;
   updateMessageFeedback(messageId: number, feedback: "positive" | "negative" | null): Promise<AIMessage | undefined>;
   verifyMessageOwnership(messageId: number, userId: number): Promise<boolean>;
   
@@ -659,6 +660,18 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(activities)
       .where(eq(activities.id, activityId));
+    return activity || undefined;
+  }
+
+  async getActivityByIdForUser(activityId: number, userId: number): Promise<Activity | undefined> {
+    const idCondition = activityId > 2147483647
+      ? eq(activities.stravaId, String(activityId))
+      : eq(activities.id, activityId);
+    const [activity] = await db
+      .select()
+      .from(activities)
+      .where(and(idCondition, eq(activities.userId, userId)))
+      .limit(1);
     return activity || undefined;
   }
 
@@ -1272,11 +1285,12 @@ export class DatabaseStorage implements IStorage {
     return newConversation;
   }
 
-  async getConversation(conversationId: number): Promise<AIConversation | undefined> {
+  async getConversation(conversationId: number, userId: number): Promise<AIConversation | undefined> {
     const [conversation] = await db
       .select()
       .from(aiConversations)
-      .where(eq(aiConversations.id, conversationId));
+      .where(and(eq(aiConversations.id, conversationId), eq(aiConversations.userId, userId)))
+      .limit(1);
     return conversation || undefined;
   }
 
@@ -1325,39 +1339,59 @@ export class DatabaseStorage implements IStorage {
     return summaries;
   }
 
-  async updateConversationTimestamp(conversationId: number): Promise<void> {
+  async updateConversationTimestamp(conversationId: number, userId: number): Promise<void> {
     await db
       .update(aiConversations)
       .set({ updatedAt: new Date() })
-      .where(eq(aiConversations.id, conversationId));
+      .where(and(eq(aiConversations.id, conversationId), eq(aiConversations.userId, userId)));
   }
 
-  async updateConversationTitle(conversationId: number, title: string): Promise<AIConversation | undefined> {
+  async updateConversationTitle(conversationId: number, userId: number, title: string): Promise<AIConversation | undefined> {
     const [updated] = await db
       .update(aiConversations)
       .set({ title, updatedAt: new Date() })
-      .where(eq(aiConversations.id, conversationId))
+      .where(and(eq(aiConversations.id, conversationId), eq(aiConversations.userId, userId)))
       .returning();
     return updated || undefined;
   }
 
-  async deleteConversation(conversationId: number): Promise<void> {
-    // Delete messages first (foreign key constraint)
-    await db.delete(aiMessages).where(eq(aiMessages.conversationId, conversationId));
-    // Then delete conversation
-    await db.delete(aiConversations).where(eq(aiConversations.id, conversationId));
+  async deleteConversation(conversationId: number, userId: number): Promise<boolean> {
+    return db.transaction(async (tx) => {
+      const [owned] = await tx
+        .select({ id: aiConversations.id })
+        .from(aiConversations)
+        .where(and(eq(aiConversations.id, conversationId), eq(aiConversations.userId, userId)))
+        .limit(1);
+      if (!owned) return false;
+      await tx.delete(aiMessages).where(eq(aiMessages.conversationId, owned.id));
+      await tx.delete(aiConversations).where(and(
+        eq(aiConversations.id, owned.id),
+        eq(aiConversations.userId, userId),
+      ));
+      return true;
+    });
   }
 
-  async addMessage(message: InsertAIMessage): Promise<AIMessage> {
-    const [newMessage] = await db
-      .insert(aiMessages)
-      .values(message)
-      .returning();
-    return newMessage;
+  async addMessage(message: InsertAIMessage, userId: number): Promise<AIMessage | undefined> {
+    return db.transaction(async (tx) => {
+      const [owned] = await tx
+        .select({ id: aiConversations.id })
+        .from(aiConversations)
+        .where(and(eq(aiConversations.id, message.conversationId), eq(aiConversations.userId, userId)))
+        .limit(1);
+      if (!owned) return undefined;
+      const [newMessage] = await tx
+        .insert(aiMessages)
+        .values({ ...message, conversationId: owned.id })
+        .returning();
+      return newMessage;
+    });
   }
 
-  async getMessagesByConversationId(conversationId: number, limit = 50): Promise<AIMessage[]> {
-    return await db
+  async getMessagesByConversationId(conversationId: number, userId: number, limit = 50): Promise<AIMessage[] | undefined> {
+    const owned = await this.getConversation(conversationId, userId);
+    if (!owned) return undefined;
+    return db
       .select()
       .from(aiMessages)
       .where(eq(aiMessages.conversationId, conversationId))
