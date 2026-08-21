@@ -241,20 +241,34 @@ export async function runMorningBriefings(now = new Date()) {
   return { queued, skipped };
 }
 
-export async function emitSignedCoachEvent(event: { eventId: string; type: "activity.ready"; userId: number; activityId: number }): Promise<boolean> {
+export async function emitSignedCoachEvent(event: { activityId: number }): Promise<boolean> {
   const url = process.env.COACH_AGENT_WEBHOOK_URL;
   const secret = process.env.COACH_AGENT_WEBHOOK_SECRET;
   if (!url || !secret) return false;
-  const body = JSON.stringify({ id: event.eventId, type: event.type, userId: event.userId, activityId: event.activityId, occurredAt: new Date().toISOString() });
-  const timestamp = String(Math.floor(Date.now() / 1000));
-  const signature = crypto.createHmac("sha256", secret).update(`${timestamp}.${body}`).digest("hex");
+  // Hermes filters on event_type and passes the numeric activityId to its MCP tool.
+  const body = JSON.stringify({ event_type: "activity.ready", activityId: Number(event.activityId) });
+  const signature = crypto.createHmac("sha256", secret).update(body).digest("hex");
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), EVENT_TIMEOUT_MS);
   try {
-    const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json", "x-runanalytics-timestamp": timestamp, "x-runanalytics-signature": `sha256=${signature}`, "x-runanalytics-delivery": event.eventId }, body, signal: controller.signal });
-    return response.ok || response.status === 409;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "X-Hub-Signature-256": `sha256=${signature}`,
+      },
+      body,
+      signal: controller.signal,
+    });
+    const delivered = response.ok || response.status === 409;
+    if (delivered) {
+      console.log(`[CoachWebhook] activity.ready delivered for activityId=${event.activityId}`);
+    } else {
+      console.warn(`[CoachWebhook] Delivery returned ${response.status} for activityId=${event.activityId}`);
+    }
+    return delivered;
   } catch (error) {
-    console.warn("[ProactiveCoach] Signed event delivery failed:", (error as Error).message);
+    console.warn("[CoachWebhook] Delivery failed:", (error as Error).message);
     return false;
   } finally {
     clearTimeout(timer);

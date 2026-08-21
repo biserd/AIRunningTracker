@@ -291,15 +291,11 @@ export class StravaWebhookService {
         }
       }
 
-      // Optional Hermes/agent handoff. The signed payload carries identifiers
-      // only; the agent must use the runner-scoped OAuth MCP connection to read
-      // the analysis-ready brief. Replays are identified by the stable event ID.
+      // Optional Hermes/agent handoff. Keep the existing eligibility gate:
+      // paid, coach-enabled, onboarded runners only.
       if (userIsPaid && user.coachEnabled !== false && user.coachOnboardingCompleted && activityDbId) {
         const { emitSignedCoachEvent } = await import("./proactiveCoach");
         void emitSignedCoachEvent({
-          eventId: `strava:${event.subscription_id}:${event.object_id}:${event.event_time}`,
-          type: "activity.ready",
-          userId: user.id,
           activityId: activityDbId,
         });
       }
