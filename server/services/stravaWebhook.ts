@@ -29,11 +29,16 @@ interface TrainingContext {
 // things the runner CANNOT see in the summary stats table, so they give the AI
 // something substantive to say instead of restating pace/distance/HR.
 interface StreamAnalysis {
-  splitLabel: string;            // "Negative split", "Positive split (faded)", "Even pacing"
+  splitLabel: string;            // negative, terrain-affected positive, faded positive, or even
   splitDeltaSec: number;         // sec/unit, second half minus first half (positive = slower late)
   decouplingPct: number | null;  // aerobic decoupling (Pa:HR drift) %, null if no HR
   fastestSplitPace: string | null;
   avgCadence: number | null;     // steps per minute
+  terrainAffected: boolean;
+  firstHalfElevationGainM: number | null;
+  secondHalfElevationGainM: number | null;
+  firstHalfElevationChangeM: number | null;
+  secondHalfElevationChangeM: number | null;
   summaryLines: string[];        // pre-formatted, human-readable lines for the prompt
 }
 
@@ -58,7 +63,7 @@ const STRUGGLE_LABELS: Record<string, string> = {
   guesswork: "not knowing if training is on track",
 };
 
-class StravaWebhookService {
+export class StravaWebhookService {
   generateUnsubscribeToken(userId: number): string {
     const payload = `unsub:${userId}`;
     const signature = crypto.createHmac("sha256", UNSUBSCRIBE_SECRET).update(payload).digest("hex").slice(0, 16);
@@ -573,8 +578,11 @@ class StravaWebhookService {
       const streakNote = ctx.runStreak >= 3 ? `${ctx.runStreak}-day running streak` : null;
 
       // Stream-derived analysis block — the substance the runner can't see in the table
-      const streamBlock = streamAnalysis && streamAnalysis.summaryLines.length
-        ? `\nRun analysis (computed from GPS + HR streams — the runner CANNOT see these in the stats table, so this is your richest material):\n${streamAnalysis.summaryLines.map(l => `- ${l}`).join("\n")}\n`
+       const terrainInstruction = streamAnalysis?.terrainAffected
+         ? "\nTERRAIN INTERPRETATION RULE: The slower second half is materially explained by a more uphill route profile. Do not call this a fade, poor fueling, or going out too fast unless separate heart-rate evidence clearly supports that conclusion. Explain the terrain effect first.\n"
+         : "";
+       const streamBlock = streamAnalysis && streamAnalysis.summaryLines.length
+         ? `\nRun analysis (computed from GPS + HR + elevation streams — the runner CANNOT see these in the stats table, so this is your richest material):\n${streamAnalysis.summaryLines.map(l => `- ${l}`).join("\n")}\n${terrainInstruction}`
         : "";
       const loadLine = ctx.loadComparison ? `\n- Weekly load: ${ctx.loadComparison}` : "";
 
@@ -612,7 +620,7 @@ Respond with ONLY valid JSON, no markdown, no commentary.`;
       const response = await openai.chat.completions.create({
         model: "gpt-5.4-mini",
         messages: [
-          { role: "system", content: "You are an expert running coach who reads the data carefully and surfaces specific, non-obvious insights. Respond with valid JSON only. Never restate raw stats the athlete can already see in their table. Never use em dashes, 'Grey Zone', or 'Junk Mileage'." },
+           { role: "system", content: "You are an expert running coach who reads the data carefully and surfaces specific, non-obvious insights. Respond with valid JSON only. Never restate raw stats the athlete can already see in their table. Never use em dashes, 'Grey Zone', or 'Junk Mileage'. When terrain data says the second half was materially more uphill, do not describe the slower pace as a fade or fueling failure without separate supporting evidence." },
           { role: "user", content: prompt }
         ],
         max_completion_tokens: 1200,
@@ -704,6 +712,7 @@ Respond with ONLY valid JSON, no markdown, no commentary.`;
       const time: number[] = streams.time?.data || [];           // seconds (elapsed)
       const hr: number[] = streams.heartrate?.data || [];
       const cad: number[] = streams.cadence?.data || [];
+       const altitude: number[] = streams.altitude?.data || [];
       const n = dist.length;
       if (n < 20 || time.length !== n) return null;
 
@@ -720,6 +729,10 @@ Respond with ONLY valid JSON, no markdown, no commentary.`;
       const d1 = dist[splitIdx] - dist[0];
       const t2 = time[n - 1] - time[splitIdx];
       const d2 = dist[n - 1] - dist[splitIdx];
+       const terrain = this.analyzeTerrain(altitude, splitIdx, n);
+       const terrainAffected = terrain !== null &&
+         terrain.secondHalfElevationGainM - terrain.firstHalfElevationGainM >= 20 &&
+         terrain.secondHalfElevationChangeM >= 15;
 
       let splitLabel = "Even pacing";
       let splitDeltaSec = 0;
@@ -732,12 +745,26 @@ Respond with ONLY valid JSON, no markdown, no commentary.`;
           splitLabel = "Negative split (finished faster)";
           summaryLines.push(`Pacing: negative split — the second half was about ${absS}s/${unit} faster than the first. Strong, controlled effort.`);
         } else if (splitDeltaSec >= 8) {
-          splitLabel = "Positive split (faded late)";
-          summaryLines.push(`Pacing: faded about ${absS}s/${unit} in the second half. Likely went out too hot, or fatigue/fueling caught up.`);
+           if (terrainAffected) {
+             splitLabel = "Positive split (terrain-affected)";
+             summaryLines.push(`Pacing: the second half was about ${absS}s/${unit} slower, but the return was materially more uphill. This is primarily terrain-affected pacing, not evidence by itself of fading or poor fueling.`);
+           } else {
+             splitLabel = "Positive split (faded late)";
+             summaryLines.push(`Pacing: faded about ${absS}s/${unit} in the second half. Likely went out too hot, or fatigue/fueling caught up.`);
+           }
         } else {
           splitLabel = "Even pacing";
           summaryLines.push(`Pacing: very even — within ${absS}s/${unit} between the first and second half.`);
         }
+
+       if (terrain) {
+         const firstChange = Math.round(terrain.firstHalfElevationChangeM);
+         const secondChange = Math.round(terrain.secondHalfElevationChangeM);
+         summaryLines.push(
+           `Terrain: first half gained ${Math.round(terrain.firstHalfElevationGainM)}m with a ${firstChange >= 0 ? "+" : ""}${firstChange}m net change; second half gained ${Math.round(terrain.secondHalfElevationGainM)}m with a ${secondChange >= 0 ? "+" : ""}${secondChange}m net change.` +
+           (terrainAffected ? " The uphill return can explain the slower late pace." : "")
+         );
+       }
       }
 
       // Aerobic decoupling (Pa:HR drift): how much pace-per-heartbeat degraded in the back half
@@ -756,8 +783,8 @@ Respond with ONLY valid JSON, no markdown, no commentary.`;
           const ratio1 = sp1 / hr1;
           const ratio2 = sp2 / hr2;
           decouplingPct = Math.round(((ratio1 - ratio2) / ratio1) * 1000) / 10;
-          if (decouplingPct > 5) {
-            summaryLines.push(`Aerobic decoupling: ${decouplingPct}% — heart rate drifted up relative to pace (above the ~5% durability threshold). The effort was beyond a comfortable aerobic zone, or aerobic durability is the current limiter.`);
+           if (decouplingPct > 5) {
+             summaryLines.push(`Aerobic decoupling: ${decouplingPct}% — heart rate drifted up relative to pace (above the ~5% durability threshold).${terrainAffected ? " Because the second half was materially uphill, terrain may contribute to this drift; do not treat it as standalone proof of poor durability." : " The effort was beyond a comfortable aerobic zone, or aerobic durability is the current limiter."}`);
           } else if (decouplingPct >= 0) {
             summaryLines.push(`Aerobic decoupling: ${decouplingPct}% — well coupled (under 5%). Good aerobic durability; HR held steady against pace.`);
           } else {
@@ -805,11 +832,59 @@ Respond with ONLY valid JSON, no markdown, no commentary.`;
       }
 
       if (!summaryLines.length) return null;
-      return { splitLabel, splitDeltaSec, decouplingPct, fastestSplitPace, avgCadence, summaryLines };
+       return {
+         splitLabel,
+         splitDeltaSec,
+         decouplingPct,
+         fastestSplitPace,
+         avgCadence,
+         terrainAffected,
+         firstHalfElevationGainM: terrain?.firstHalfElevationGainM ?? null,
+         secondHalfElevationGainM: terrain?.secondHalfElevationGainM ?? null,
+         firstHalfElevationChangeM: terrain?.firstHalfElevationChangeM ?? null,
+         secondHalfElevationChangeM: terrain?.secondHalfElevationChangeM ?? null,
+         summaryLines,
+       };
     } catch (err) {
       console.warn("[Strava Webhook] Stream analysis failed:", err);
       return null;
     }
+  }
+
+  private analyzeTerrain(
+    altitude: number[],
+    splitIdx: number,
+    pointCount: number,
+  ): {
+    firstHalfElevationGainM: number;
+    secondHalfElevationGainM: number;
+    firstHalfElevationChangeM: number;
+    secondHalfElevationChangeM: number;
+  } | null {
+    if (altitude.length !== pointCount || splitIdx <= 0 || splitIdx >= pointCount - 1) return null;
+    const finite = altitude.every(value => Number.isFinite(value));
+    if (!finite) return null;
+
+    const segment = (start: number, end: number) => {
+      let gain = 0;
+      for (let i = start + 1; i <= end; i++) {
+        const delta = altitude[i] - altitude[i - 1];
+        // Ignore sub-metre GPS/barometric noise when estimating climbing.
+        if (delta > 1) gain += delta;
+      }
+      return {
+        gain,
+        change: altitude[end] - altitude[start],
+      };
+    };
+    const first = segment(0, splitIdx);
+    const second = segment(splitIdx, pointCount - 1);
+    return {
+      firstHalfElevationGainM: first.gain,
+      secondHalfElevationGainM: second.gain,
+      firstHalfElevationChangeM: first.change,
+      secondHalfElevationChangeM: second.change,
+    };
   }
 
   private calculateEffortScore(activity: any): number {
