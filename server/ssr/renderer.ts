@@ -1303,6 +1303,124 @@ export function renderPricingPage(): string {
 </html>`;
 }
 
+export function renderProactiveRunningCoachPage(): string {
+  const url = '/proactive-running-coach';
+  const meta: PageMeta = {
+    title: "Proactive Running Coach on Telegram | RunAnalytics",
+    description: "Get concise, runner-specific post-run coaching in Telegram. Review the private, read-only RunAnalytics experience and join staged early access.",
+    keywords: "Telegram running coach, proactive running coach, WhatsApp running coach, Strava Telegram coach"
+  };
+  const structuredData = JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "name": "RunAnalytics Proactive Running Coach",
+        "applicationCategory": "HealthApplication",
+        "operatingSystem": "Web, Telegram",
+        "description": meta.description,
+        "offers": {
+          "@type": "Offer",
+          "price": "7.99",
+          "priceCurrency": "USD",
+          "description": "Included with RunAnalytics Premium after a 14-day trial"
+        }
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Is the proactive running coach available on Telegram?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Telegram access is being enabled in stages for invited Premium and trial runners." }
+          },
+          {
+            "@type": "Question",
+            "name": "Is WhatsApp available?",
+            "acceptedAnswer": { "@type": "Answer", "text": "WhatsApp is the next planned messaging channel and is not yet generally available." }
+          },
+          {
+            "@type": "Question",
+            "name": "Can the coach change my RunAnalytics or Strava data?",
+            "acceptedAnswer": { "@type": "Answer", "text": "No. The messaging coach has a runner-scoped, read-only connection and cannot edit activities, plans, goals, accounts, or subscriptions." }
+          }
+        ]
+      }
+    ]
+  }, null, 2);
+  const head = generateHtmlHead(meta, url, structuredData);
+  return `${head}
+<body>
+  <div id="root">
+    <header class="ssr-header">
+      <p class="ssr-meta">Staged early access &bull; Telegram first &bull; WhatsApp planned</p>
+      <h1>A Proactive Running Coach in Your Messages</h1>
+      <p style="opacity:0.9;margin-top:10px;">Run, sync, and receive one useful next step without hunting through another dashboard.</p>
+    </header>
+    <main class="ssr-container">
+      <article class="ssr-content">
+        <section>
+          <h2>What works in Telegram early access</h2>
+          <p>RunAnalytics connects your Strava training history to a runner-specific coaching conversation. After an eligible activity syncs, the coach can deliver a concise post-run verdict, explain the evidence behind it, and answer a natural follow-up using your authorized training context.</p>
+          <ul>
+            <li><strong>Post-run guidance:</strong> the pattern that mattered and one executable next action</li>
+            <li><strong>Your own context:</strong> authorized activities, trends, recovery signals, goals, and training-plan summaries</li>
+            <li><strong>Natural follow-up:</strong> ask how the run fits the week without copying metrics into a generic chatbot</li>
+          </ul>
+          <p><strong>Availability:</strong> Telegram access is being enabled in stages for invited Premium and trial runners. Starting a trial does not guarantee immediate channel access.</p>
+        </section>
+        <section>
+          <h2>Telegram now; WhatsApp planned next</h2>
+          <p>Telegram is the first messaging channel in controlled early access. WhatsApp is shown as the next planned channel, but it is not described as live before its connection, tenant-isolation, revocation, and delivery controls are production-ready.</p>
+        </section>
+        <section>
+          <h2>How the private connection works</h2>
+          <ol>
+            <li><strong>Connect in AI Coach Settings.</strong> RunAnalytics creates a short-lived, single-use Telegram link for the signed-in runner.</li>
+            <li><strong>Open the bot privately.</strong> Group, channel, and supergroup connections are rejected.</li>
+            <li><strong>Run and receive context.</strong> The coach uses a dedicated, read-only connection scoped to that runner.</li>
+            <li><strong>Disconnect whenever you want.</strong> Disconnecting revokes the channel binding and its MCP access.</li>
+          </ol>
+        </section>
+        <section>
+          <h2>A private coach, not a shared chatbot</h2>
+          <p>The model does not choose a runner by name, Telegram ID, or a user ID supplied in a prompt. RunAnalytics derives the runner from the secure connection and enforces ownership for every private read.</p>
+          <p>The messaging coach cannot:</p>
+          <ul>
+            <li>Read another runner's profile, activities, goals, analytics, or plans</li>
+            <li>Change activities, training plans, goals, preferences, or account details</li>
+            <li>Start a Strava sync, send email, or alter a subscription</li>
+            <li>Access Stripe, Strava, session, magic-link, or internal provider credentials</li>
+          </ul>
+        </section>
+        <section>
+          <h2>What proactive coaching is planned to become</h2>
+          <p>The beta roadmap focuses on timely, low-volume messages: a weather heads-up before tomorrow's run, a day-before long-run or race-week check-in, and a conservative schedule adjustment when life interrupts the plan. These capabilities are planned and are not presented as generally available today.</p>
+        </section>
+        <section>
+          <h2>Frequently asked questions</h2>
+          <h3>Is Telegram available to every runner today?</h3>
+          <p>No. It is rolling out to invited Premium and trial runners in stages. Enabled runners see Connect Telegram in AI Coach Settings.</p>
+          <h3>Is WhatsApp live?</h3>
+          <p>No. WhatsApp is the next planned messaging channel.</p>
+          <h3>Can the coach modify my data?</h3>
+          <p>No. Its RunAnalytics connection is deliberately read-only.</p>
+          <h3>Is this medical advice?</h3>
+          <p>No. The coach summarizes training patterns and encourages conservative decisions, but it does not diagnose injury or replace a qualified coach or clinician.</p>
+        </section>
+        <div class="ssr-cta">
+          <h2>Start with your own training data</h2>
+          <p>Try RunAnalytics Premium for 14 days, connect Strava, and look for staged Telegram access in AI Coach Settings. Premium is $7.99/month after the trial.</p>
+          <a href="/pricing?source=proactive_coach_landing&amp;capability=ai_coach&amp;benefitKey=coach_chat">Start 14 days free &rarr;</a>
+        </div>
+        <p style="margin-top:24px;text-align:center;"><a href="/blog/ai-agent-coach-proactive-coaching">Read how proactive AI coaching works</a> &bull; <a href="/ai-agent-coach">Explore AI Agent Coach</a></p>
+      </article>
+    </main>
+  </div>
+</body>
+</html>`;
+}
+
 export function renderFeaturesPage(): string {
   const url = '/features';
   const meta: PageMeta = {

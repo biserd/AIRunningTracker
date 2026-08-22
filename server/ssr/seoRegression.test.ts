@@ -10,6 +10,7 @@ import {
   renderFeaturesPage,
   renderFaqPage,
   renderPricingPage,
+  renderProactiveRunningCoachPage,
   renderToolPage,
   renderToolsHubPage,
   getAllToolSlugs,
@@ -43,6 +44,7 @@ function assertSeoDocument(html: string, expectedPath: string) {
 test("static public SSR pages have one self-canonical and one H1", () => {
   const pages: Array<[string, string]> = [
     ["/pricing", renderPricingPage()],
+    ["/proactive-running-coach", renderProactiveRunningCoachPage()],
     ["/features", renderFeaturesPage()],
     ["/about", renderAboutPage()],
     ["/ai-running-coaching-guide", renderEbookLandingPage()],
@@ -54,6 +56,14 @@ test("static public SSR pages have one self-canonical and one H1", () => {
   ];
   pages.forEach(([path, html]) => assertSeoDocument(html, path));
   pages.forEach(([path, html]) => assertExternalLinksAreProtected(html, path));
+});
+
+test("proactive coach landing page states channel availability honestly", () => {
+  const html = renderProactiveRunningCoachPage();
+  assert.match(html, /Telegram access is being enabled in stages/);
+  assert.match(html, /WhatsApp is the next planned messaging channel/);
+  assert.match(html, /read-only/);
+  assert.match(html, /Starting a trial does not guarantee immediate channel access/);
 });
 
 test("every SSR tool has correct metadata", () => {

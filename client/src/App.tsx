@@ -63,6 +63,7 @@ const AICoachLanding = lazy(() => import("@/pages/ai-running-coach"));
 const AICoachingGuidePage = lazy(() => import("@/pages/ai-coaching-guide"));
 const ChromeExtensionLanding = lazy(() => import("@/pages/chrome-extension"));
 const AIAgentCoachLanding = lazy(() => import("@/pages/ai-agent-coach"));
+const ProactiveRunningCoachLanding = lazy(() => import("@/pages/proactive-running-coach"));
 const AIAgentCoachBlogPost = lazy(() => import("@/pages/blog/ai-agent-coach-proactive-coaching"));
 const UltraMarathonTrainingPlanBlogPost = lazy(() => import("@/pages/blog/ultra-marathon-training-plan-100-miler-guide"));
 const EditorialArticlePage = lazy(() => import("@/pages/blog/editorial-article"));
@@ -206,6 +207,7 @@ function Router() {
         <Route path="/ai-running-coach" component={AICoachLanding} />
         <Route path="/ai-running-coaching-guide" component={AICoachingGuidePage} />
         <Route path="/ai-agent-coach" component={AIAgentCoachLanding} />
+        <Route path="/proactive-running-coach" component={ProactiveRunningCoachLanding} />
         
         {/* Developer Routes */}
         <Route path="/developers" component={DevelopersPage} />

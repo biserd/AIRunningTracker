@@ -38,7 +38,7 @@ import { resolvePlan } from "./webhookHandlers";
 import { db } from "./db";
 import { sql, eq, isNull } from "drizzle-orm";
 import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getActivityHistoryLimit, getFreeActivityLimit, RATE_LIMITS, canSyncFromStrava, getInitialSyncCap, isPaidPlan } from "./rateLimits";
-import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage, renderToolPage, getAllToolSlugs, renderFaqPage, renderBlogIndex, renderPricingPage, renderFeaturesPage, renderAboutPage, renderEbookLandingPage, renderDevelopersPage, renderDevelopersApiPage, renderToolsHubPage } from "./ssr/renderer";
+import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage, renderToolPage, getAllToolSlugs, renderFaqPage, renderBlogIndex, renderPricingPage, renderFeaturesPage, renderAboutPage, renderEbookLandingPage, renderDevelopersPage, renderDevelopersApiPage, renderToolsHubPage, renderProactiveRunningCoachPage } from "./ssr/renderer";
 import { getAllBlogPosts } from "./ssr/blogContent";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import {
@@ -423,6 +423,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       description: "Premium AI coaching that proactively analyzes your runs and provides personalized recommendations before you ask. The future of running coaching.",
       keywords: "AI agent coach, proactive coaching, premium running coach, AI training"
     },
+    "/proactive-running-coach": {
+      title: "Proactive Running Coach on Telegram | RunAnalytics",
+      description: "Get concise, runner-specific post-run coaching in Telegram. Review the private, read-only RunAnalytics experience and join staged early access.",
+      keywords: "Telegram running coach, proactive running coach, WhatsApp running coach, Strava Telegram coach"
+    },
     // Additional pages from sitemap
     "/about": {
       title: "About RunAnalytics | AI-Powered Running Analytics",
@@ -569,6 +574,7 @@ Sitemap: ${baseUrl}/sitemap.xml`;
         { url: "/ai-running-coach", changefreq: "weekly", priority: "0.9", lastmod: today },
         { url: "/ai-running-coaching-guide", changefreq: "weekly", priority: "0.9", lastmod: today },
         { url: "/ai-agent-coach", changefreq: "weekly", priority: "0.9", lastmod: today },
+        { url: "/proactive-running-coach", changefreq: "weekly", priority: "0.9", lastmod: today },
         { url: "/chrome-extension", changefreq: "weekly", priority: "0.8", lastmod: today },
         
         // Free Tools
@@ -842,6 +848,7 @@ ${allPages.map(page => `  <url>
           case '/features':       html = renderFeaturesPage(); break;
           case '/about':          html = renderAboutPage(); break;
           case '/ai-running-coaching-guide': html = renderEbookLandingPage(); break;
+          case '/proactive-running-coach': html = renderProactiveRunningCoachPage(); break;
           case '/tools':          html = renderToolsHubPage(); break;
           case '/developers':     html = renderDevelopersPage(); break;
           case '/developers/api': html = renderDevelopersApiPage(); break;
