@@ -36,7 +36,7 @@ export function requireApplicationSecret(name: string): string {
 }
 
 export function getJwtSecret(): string {
-  return requireApplicationSecret("JWT_SECRET");
+  return requireApplicationSecret("JWT_SIGNING_SECRET");
 }
 
 export function getUnsubscribeTokenSecret(): string {
@@ -45,7 +45,7 @@ export function getUnsubscribeTokenSecret(): string {
 
 export function assertProductionSecurityConfiguration(): void {
   if (process.env.NODE_ENV !== "production") return;
-  requireApplicationSecret("JWT_SECRET");
+  requireApplicationSecret("JWT_SIGNING_SECRET");
   requireApplicationSecret("UNSUBSCRIBE_TOKEN_SECRET");
 
   const multiRunnerPilot = process.env.COACH_MULTI_RUNNER_PILOT_ENABLED === "true";
