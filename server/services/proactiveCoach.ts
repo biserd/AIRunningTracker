@@ -244,10 +244,10 @@ export async function runMorningBriefings(now = new Date()) {
 
 export async function emitSignedCoachEvent(event: { activityId: number; userId: number; occurredAt?: Date }): Promise<boolean> {
   const url = process.env.COACH_AGENT_WEBHOOK_URL;
-  const secret = process.env.COACH_AGENT_WEBHOOK_SECRET;
+  const secret = process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2;
   if (!url || !secret) return false;
   if (!isStrongApplicationSecret(secret)) {
-    console.warn("[CoachWebhook] Delivery disabled because COACH_AGENT_WEBHOOK_SECRET is too weak.");
+    console.warn("[CoachWebhook] Delivery disabled because COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2 is too weak.");
     return false;
   }
 

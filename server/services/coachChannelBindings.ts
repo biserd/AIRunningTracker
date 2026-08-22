@@ -294,7 +294,7 @@ export async function completeTelegramBinding(input: {
 
 async function deliverSignedCoachEvent(bindingId: string, payload: Record<string, unknown>, eventId: string): Promise<boolean> {
   const url = process.env.COACH_AGENT_WEBHOOK_URL;
-  const secret = process.env.COACH_AGENT_WEBHOOK_SECRET;
+  const secret = process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2;
   if (!url || !isStrongApplicationSecret(secret)) return false;
   const timestamp = String(Math.floor(Date.now() / 1000));
   const body = JSON.stringify({ event_id: eventId, occurred_at: new Date().toISOString(), binding_id: bindingId, ...payload });
@@ -334,7 +334,7 @@ export async function emitBoundCoachActivityEvent(userId: number, activityId: nu
     isNull(coachChannelBindings.revokedAt),
   )).limit(1);
   if (!binding) return false;
-  const secret = process.env.COACH_AGENT_WEBHOOK_SECRET;
+  const secret = process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2;
   if (!isStrongApplicationSecret(secret)) return false;
   const eventId = crypto.createHmac("sha256", secret).update(`activity.ready:${binding.bindingId}:${activityId}`).digest("hex");
   return deliverSignedCoachEvent(binding.bindingId, { event_type: "activity.ready", activityId }, eventId);
@@ -357,7 +357,7 @@ export async function disconnectTelegram(userId: number) {
   });
   for (const binding of revoked) {
     await revokeAllCoachAgentRunnerGrants(userId);
-    const secret = process.env.COACH_AGENT_WEBHOOK_SECRET;
+    const secret = process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2;
     if (isStrongApplicationSecret(secret)) {
       const eventId = crypto.createHmac("sha256", secret).update(`binding.revoked:${binding.bindingId}`).digest("hex");
       await deliverSignedCoachEvent(binding.bindingId, { event_type: "binding.revoked" }, eventId);

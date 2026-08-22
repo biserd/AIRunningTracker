@@ -29,7 +29,7 @@ COACH_MULTI_RUNNER_PILOT_ENABLED=true
 TELEGRAM_BOT_USERNAME=<bot username without @>
 HERMES_MCP_CLIENT_ID=<the fixed active OAuth client ID stored in mcp_oauth_clients>
 COACH_AGENT_WEBHOOK_URL=https://<hermes-host>/<private-event-route>
-COACH_AGENT_WEBHOOK_SECRET=<independent random secret, 32+ characters>
+COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2=<independent random secret, 32+ characters>
 COACH_BINDING_CALLBACK_SECRET=<independent random secret, 32+ characters>
 CHANNEL_IDENTITY_HASH_SECRET=<independent random secret, 32+ characters>
 MCP_TOKEN_HASH_SECRET=<existing MCP token hashing secret, 32+ characters>
@@ -80,7 +80,7 @@ access/refresh grant once. Hermes stores these in its credential store keyed by
 
 ## Incoming RunAnalytics events
 
-RunAnalytics signs events with `COACH_AGENT_WEBHOOK_SECRET` in
+RunAnalytics signs events with `COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2` in
 `X-RunAnalytics-Signature` over `<timestamp>.<exact raw body>`. Hermes must
 reject stale timestamps and reused `X-RunAnalytics-Delivery` IDs. Events include
 `binding_id` and never include a RunAnalytics user ID or MCP token.

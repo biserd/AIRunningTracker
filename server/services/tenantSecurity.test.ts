@@ -34,7 +34,7 @@ test("production signing secrets must use independent values", async () => {
     "JWT_SIGNING_SECRET",
     "EMAIL_UNSUBSCRIBE_SIGNING_SECRET_V2",
     "COACH_AGENT_WEBHOOK_URL",
-    "COACH_AGENT_WEBHOOK_SECRET",
+    "COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2",
     "COACH_AGENT_PILOT_USER_ID",
     "COACH_MULTI_RUNNER_PILOT_ENABLED",
   ] as const;
@@ -45,7 +45,7 @@ test("production signing secrets must use independent values", async () => {
     process.env.JWT_SIGNING_SECRET = shared;
     process.env.EMAIL_UNSUBSCRIBE_SIGNING_SECRET_V2 = shared;
     delete process.env.COACH_AGENT_WEBHOOK_URL;
-    delete process.env.COACH_AGENT_WEBHOOK_SECRET;
+    delete process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2;
     delete process.env.COACH_AGENT_PILOT_USER_ID;
     process.env.COACH_MULTI_RUNNER_PILOT_ENABLED = "false";
     assert.throws(

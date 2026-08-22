@@ -36,7 +36,7 @@ The legacy fallback remains deliberately limited to one runner and is used
 only when `COACH_MULTI_RUNNER_PILOT_ENABLED` is not `true`. It requires:
 
 - `COACH_AGENT_WEBHOOK_URL`: the trusted Hermes webhook endpoint.
-- `COACH_AGENT_WEBHOOK_SECRET`: a unique 32+ character HMAC secret shared only with that endpoint.
+- `COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2`: a unique 32+ character HMAC secret shared only with that endpoint.
 - `COACH_AGENT_PILOT_USER_ID`: the numeric RunAnalytics user ID of the single approved pilot runner.
 
 The event body contains an opaque stable event ID, event type, occurrence time,

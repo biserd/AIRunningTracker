@@ -22,13 +22,13 @@ test("invalid timezones are rejected before preferences are stored", async () =>
 test("Hermes webhook includes a stable delivery ID and timestamp-bound HMAC", async () => {
   const { emitSignedCoachEvent } = await import("./proactiveCoach");
   const originalUrl = process.env.COACH_AGENT_WEBHOOK_URL;
-  const originalSecret = process.env.COACH_AGENT_WEBHOOK_SECRET;
+  const originalSecret = process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2;
   const originalPilotUserId = process.env.COACH_AGENT_PILOT_USER_ID;
   const originalFetch = globalThis.fetch;
   const requests: Array<{ url: string; init?: RequestInit }> = [];
 
   process.env.COACH_AGENT_WEBHOOK_URL = "https://hermes.example.test/webhooks/runanalytics-post-run";
-  process.env.COACH_AGENT_WEBHOOK_SECRET = "test-hermes-secret-with-at-least-32-characters";
+  process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2 = "test-hermes-secret-with-at-least-32-characters";
   process.env.COACH_AGENT_PILOT_USER_ID = "17";
   globalThis.fetch = (async (url, init) => {
     requests.push({ url: String(url), init });
@@ -50,7 +50,7 @@ test("Hermes webhook includes a stable delivery ID and timestamp-bound HMAC", as
 
     const headers = new Headers(request.init?.headers);
     const expected = crypto
-      .createHmac("sha256", process.env.COACH_AGENT_WEBHOOK_SECRET!)
+      .createHmac("sha256", process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2!)
       .update(String(request.init?.body))
       .digest("hex");
     assert.equal(headers.get("X-Hub-Signature-256"), `sha256=${expected}`);
@@ -58,7 +58,7 @@ test("Hermes webhook includes a stable delivery ID and timestamp-bound HMAC", as
     assert.equal(headers.get("x-runanalytics-timestamp"), "1787320800");
     assert.equal(headers.get("x-runanalytics-delivery"), body.event_id);
     const replaySafe = crypto
-      .createHmac("sha256", process.env.COACH_AGENT_WEBHOOK_SECRET!)
+      .createHmac("sha256", process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2!)
       .update(`${headers.get("x-runanalytics-timestamp")}.${request.init?.body}`)
       .digest("hex");
     assert.equal(headers.get("x-runanalytics-signature"), `v1=${replaySafe}`);
@@ -66,8 +66,8 @@ test("Hermes webhook includes a stable delivery ID and timestamp-bound HMAC", as
     globalThis.fetch = originalFetch;
     if (originalUrl === undefined) delete process.env.COACH_AGENT_WEBHOOK_URL;
     else process.env.COACH_AGENT_WEBHOOK_URL = originalUrl;
-    if (originalSecret === undefined) delete process.env.COACH_AGENT_WEBHOOK_SECRET;
-    else process.env.COACH_AGENT_WEBHOOK_SECRET = originalSecret;
+    if (originalSecret === undefined) delete process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2;
+    else process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2 = originalSecret;
     if (originalPilotUserId === undefined) delete process.env.COACH_AGENT_PILOT_USER_ID;
     else process.env.COACH_AGENT_PILOT_USER_ID = originalPilotUserId;
   }
@@ -76,13 +76,13 @@ test("Hermes webhook includes a stable delivery ID and timestamp-bound HMAC", as
 test("Hermes webhook is skipped when settings are absent", async () => {
   const { emitSignedCoachEvent } = await import("./proactiveCoach");
   const originalUrl = process.env.COACH_AGENT_WEBHOOK_URL;
-  const originalSecret = process.env.COACH_AGENT_WEBHOOK_SECRET;
+  const originalSecret = process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2;
   const originalPilotUserId = process.env.COACH_AGENT_PILOT_USER_ID;
   const originalFetch = globalThis.fetch;
   let fetchCalled = false;
 
   delete process.env.COACH_AGENT_WEBHOOK_URL;
-  delete process.env.COACH_AGENT_WEBHOOK_SECRET;
+  delete process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2;
   globalThis.fetch = (async () => {
     fetchCalled = true;
     return new Response(null, { status: 204 });
@@ -95,8 +95,8 @@ test("Hermes webhook is skipped when settings are absent", async () => {
     globalThis.fetch = originalFetch;
     if (originalUrl === undefined) delete process.env.COACH_AGENT_WEBHOOK_URL;
     else process.env.COACH_AGENT_WEBHOOK_URL = originalUrl;
-    if (originalSecret === undefined) delete process.env.COACH_AGENT_WEBHOOK_SECRET;
-    else process.env.COACH_AGENT_WEBHOOK_SECRET = originalSecret;
+    if (originalSecret === undefined) delete process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2;
+    else process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2 = originalSecret;
     if (originalPilotUserId === undefined) delete process.env.COACH_AGENT_PILOT_USER_ID;
     else process.env.COACH_AGENT_PILOT_USER_ID = originalPilotUserId;
   }
@@ -105,12 +105,12 @@ test("Hermes webhook is skipped when settings are absent", async () => {
 test("Hermes webhook rejects a runner outside the configured pilot", async () => {
   const { emitSignedCoachEvent } = await import("./proactiveCoach");
   const originalUrl = process.env.COACH_AGENT_WEBHOOK_URL;
-  const originalSecret = process.env.COACH_AGENT_WEBHOOK_SECRET;
+  const originalSecret = process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2;
   const originalPilotUserId = process.env.COACH_AGENT_PILOT_USER_ID;
   const originalFetch = globalThis.fetch;
   let fetchCalled = false;
   process.env.COACH_AGENT_WEBHOOK_URL = "https://hermes.example.test/webhook";
-  process.env.COACH_AGENT_WEBHOOK_SECRET = "test-hermes-secret-with-at-least-32-characters";
+  process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2 = "test-hermes-secret-with-at-least-32-characters";
   process.env.COACH_AGENT_PILOT_USER_ID = "17";
   globalThis.fetch = (async () => {
     fetchCalled = true;
@@ -123,8 +123,8 @@ test("Hermes webhook rejects a runner outside the configured pilot", async () =>
     globalThis.fetch = originalFetch;
     if (originalUrl === undefined) delete process.env.COACH_AGENT_WEBHOOK_URL;
     else process.env.COACH_AGENT_WEBHOOK_URL = originalUrl;
-    if (originalSecret === undefined) delete process.env.COACH_AGENT_WEBHOOK_SECRET;
-    else process.env.COACH_AGENT_WEBHOOK_SECRET = originalSecret;
+    if (originalSecret === undefined) delete process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2;
+    else process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2 = originalSecret;
     if (originalPilotUserId === undefined) delete process.env.COACH_AGENT_PILOT_USER_ID;
     else process.env.COACH_AGENT_PILOT_USER_ID = originalPilotUserId;
   }

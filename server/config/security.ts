@@ -61,7 +61,7 @@ export function assertProductionSecurityConfiguration(): void {
   const requiredSecrets = ["JWT_SIGNING_SECRET", "EMAIL_UNSUBSCRIBE_SIGNING_SECRET_V2"];
   if (multiRunnerPilot) {
     requiredSecrets.push(
-      "COACH_AGENT_WEBHOOK_SECRET",
+      "COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2",
       "COACH_BINDING_CALLBACK_SECRET",
       "CHANNEL_IDENTITY_HASH_SECRET",
       "MCP_TOKEN_HASH_SECRET",
@@ -80,7 +80,7 @@ export function assertProductionSecurityConfiguration(): void {
       throw new Error("[SecurityConfig] COACH_AGENT_WEBHOOK_URL must use HTTPS in production.");
     }
   } else if (process.env.COACH_AGENT_WEBHOOK_URL) {
-    requiredSecrets.push("COACH_AGENT_WEBHOOK_SECRET");
+    requiredSecrets.push("COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2");
     const pilotUserId = Number(process.env.COACH_AGENT_PILOT_USER_ID);
     if (!Number.isSafeInteger(pilotUserId) || pilotUserId <= 0) {
       throw new Error("[SecurityConfig] COACH_AGENT_PILOT_USER_ID is required while the single-runner Hermes webhook is enabled.");
