@@ -1,6 +1,6 @@
 -- Run once against production during the P0 security deployment.
 -- Preconditions:
---   1. New independent JWT_SIGNING_SECRET, EMAIL_UNSUBSCRIBE_SIGNING_SECRET, and
+--   1. New independent JWT_SIGNING_SECRET, EMAIL_UNSUBSCRIBE_SIGNING_SECRET_V2, and
 --      COACH_AGENT_WEBHOOK_SECRET values have been saved in Replit Secrets.
 --   2. The new application version is ready to deploy immediately.
 --
