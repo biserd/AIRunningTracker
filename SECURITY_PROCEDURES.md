@@ -130,7 +130,7 @@ Per Strava's API Agreement, any security breach involving Strava data must be re
 ### Authentication key requirements
 
 - Production startup fails unless `JWT_SIGNING_SECRET` and
-  `UNSUBSCRIBE_TOKEN_SECRET` are independent values of at least 32 characters.
+  `EMAIL_UNSUBSCRIBE_SIGNING_SECRET` are independent values of at least 32 characters.
 - `COACH_AGENT_WEBHOOK_SECRET` must also be an independent 32+ character value
   whenever the optional Hermes webhook is enabled.
 - Never reuse `SESSION_SECRET`, provider credentials, MCP hashing keys, or

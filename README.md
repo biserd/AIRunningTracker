@@ -114,7 +114,7 @@ DATABASE_URL=your_postgresql_connection_string
 
 # Authentication
 JWT_SIGNING_SECRET=generate_a_unique_random_secret_of_at_least_32_characters
-UNSUBSCRIBE_TOKEN_SECRET=generate_a_different_random_secret_of_at_least_32_characters
+EMAIL_UNSUBSCRIBE_SIGNING_SECRET=generate_a_different_random_secret_of_at_least_32_characters
 
 # OpenAI (for AI insights)
 OPENAI_API_KEY=your_openai_api_key

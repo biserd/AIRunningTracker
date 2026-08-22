@@ -52,13 +52,13 @@ export function getJwtSecret(): string {
 }
 
 export function getUnsubscribeTokenSecret(): string {
-  return requireApplicationSecret("UNSUBSCRIBE_TOKEN_SECRET");
+  return requireApplicationSecret("EMAIL_UNSUBSCRIBE_SIGNING_SECRET");
 }
 
 export function assertProductionSecurityConfiguration(): void {
   if (process.env.NODE_ENV !== "production") return;
   const multiRunnerPilot = process.env.COACH_MULTI_RUNNER_PILOT_ENABLED === "true";
-  const requiredSecrets = ["JWT_SIGNING_SECRET", "UNSUBSCRIBE_TOKEN_SECRET"];
+  const requiredSecrets = ["JWT_SIGNING_SECRET", "EMAIL_UNSUBSCRIBE_SIGNING_SECRET"];
   if (multiRunnerPilot) {
     requiredSecrets.push(
       "COACH_AGENT_WEBHOOK_SECRET",

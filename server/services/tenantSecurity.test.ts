@@ -32,7 +32,7 @@ test("production signing secrets must use independent values", async () => {
   const names = [
     "NODE_ENV",
     "JWT_SIGNING_SECRET",
-    "UNSUBSCRIBE_TOKEN_SECRET",
+    "EMAIL_UNSUBSCRIBE_SIGNING_SECRET",
     "COACH_AGENT_WEBHOOK_URL",
     "COACH_AGENT_WEBHOOK_SECRET",
     "COACH_AGENT_PILOT_USER_ID",
@@ -43,7 +43,7 @@ test("production signing secrets must use independent values", async () => {
   try {
     process.env.NODE_ENV = "production";
     process.env.JWT_SIGNING_SECRET = shared;
-    process.env.UNSUBSCRIBE_TOKEN_SECRET = shared;
+    process.env.EMAIL_UNSUBSCRIBE_SIGNING_SECRET = shared;
     delete process.env.COACH_AGENT_WEBHOOK_URL;
     delete process.env.COACH_AGENT_WEBHOOK_SECRET;
     delete process.env.COACH_AGENT_PILOT_USER_ID;
@@ -53,7 +53,7 @@ test("production signing secrets must use independent values", async () => {
       /must use independent values/,
     );
 
-    process.env.UNSUBSCRIBE_TOKEN_SECRET = "different-test-secret-with-at-least-thirty-two-characters";
+    process.env.EMAIL_UNSUBSCRIBE_SIGNING_SECRET = "different-test-secret-with-at-least-thirty-two-characters";
     assert.doesNotThrow(() => assertProductionSecurityConfiguration());
   } finally {
     for (const name of names) {
