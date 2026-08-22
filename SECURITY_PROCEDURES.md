@@ -129,13 +129,13 @@ Per Strava's API Agreement, any security breach involving Strava data must be re
 
 ### Authentication key requirements
 
-- Production startup fails unless `JWT_SECRET` and
+- Production startup fails unless `JWT_SIGNING_SECRET` and
   `UNSUBSCRIBE_TOKEN_SECRET` are independent values of at least 32 characters.
 - `COACH_AGENT_WEBHOOK_SECRET` must also be an independent 32+ character value
   whenever the optional Hermes webhook is enabled.
 - Never reuse `SESSION_SECRET`, provider credentials, MCP hashing keys, or
   Telegram webhook secrets for these purposes.
-- A `JWT_SECRET` rotation invalidates every web and magic-link session. During
+- A `JWT_SIGNING_SECRET` rotation invalidates every web and magic-link session. During
   the fallback-key remediation, also run
   `migrations/manual/20260821_p0_security_rotation.sql` to revoke existing MCP
   grants and unfinished OAuth requests.

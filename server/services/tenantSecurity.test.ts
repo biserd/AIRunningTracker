@@ -27,6 +27,43 @@ test("production application secrets fail closed", async () => {
   }
 });
 
+test("production signing secrets must use independent values", async () => {
+  const { assertProductionSecurityConfiguration } = await import("../config/security");
+  const names = [
+    "NODE_ENV",
+    "JWT_SIGNING_SECRET",
+    "UNSUBSCRIBE_TOKEN_SECRET",
+    "COACH_AGENT_WEBHOOK_URL",
+    "COACH_AGENT_WEBHOOK_SECRET",
+    "COACH_AGENT_PILOT_USER_ID",
+    "COACH_MULTI_RUNNER_PILOT_ENABLED",
+  ] as const;
+  const originals = new Map(names.map((name) => [name, process.env[name]]));
+  const shared = "shared-test-secret-with-at-least-thirty-two-characters";
+  try {
+    process.env.NODE_ENV = "production";
+    process.env.JWT_SIGNING_SECRET = shared;
+    process.env.UNSUBSCRIBE_TOKEN_SECRET = shared;
+    delete process.env.COACH_AGENT_WEBHOOK_URL;
+    delete process.env.COACH_AGENT_WEBHOOK_SECRET;
+    delete process.env.COACH_AGENT_PILOT_USER_ID;
+    process.env.COACH_MULTI_RUNNER_PILOT_ENABLED = "false";
+    assert.throws(
+      () => assertProductionSecurityConfiguration(),
+      /must use independent values/,
+    );
+
+    process.env.UNSUBSCRIBE_TOKEN_SECRET = "different-test-secret-with-at-least-thirty-two-characters";
+    assert.doesNotThrow(() => assertProductionSecurityConfiguration());
+  } finally {
+    for (const name of names) {
+      const original = originals.get(name);
+      if (original === undefined) delete process.env[name];
+      else process.env[name] = original;
+    }
+  }
+});
+
 test("client user serializer excludes authentication and provider credentials", async () => {
   const { toClientUser } = await import("./clientUser");
   const serialized = JSON.stringify(toClientUser({

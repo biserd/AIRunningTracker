@@ -54,6 +54,9 @@ RESEND_FROM_EMAIL = "RunAnalytics <hello@aitracker.run>"
 APP_SLUG = "aitracker"
 ALLOWED_PRICE_IDS = "price_1SbtcfRwvWaTf8xfSEO4iKnc,price_1SbtcfRwvWaTf8xfwcVnrRf8"
 
+[userenv.production]
+COACH_AGENT_PILOT_USER_ID = "105"
+
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 20000

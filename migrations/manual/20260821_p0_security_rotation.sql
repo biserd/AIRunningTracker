@@ -1,10 +1,10 @@
 -- Run once against production during the P0 security deployment.
 -- Preconditions:
---   1. New independent JWT_SECRET, UNSUBSCRIBE_TOKEN_SECRET, and
+--   1. New independent JWT_SIGNING_SECRET, UNSUBSCRIBE_TOKEN_SECRET, and
 --      COACH_AGENT_WEBHOOK_SECRET values have been saved in Replit Secrets.
 --   2. The new application version is ready to deploy immediately.
 --
--- JWTs are stateless, so rotating JWT_SECRET invalidates web and magic-link
+-- JWTs are stateless, so rotating JWT_SIGNING_SECRET invalidates web and magic-link
 -- sessions without a database update. The statements below revoke every MCP
 -- grant and invalidate unfinished OAuth requests/codes that could have been
 -- authorized by a fallback-era web session.

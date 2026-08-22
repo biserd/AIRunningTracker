@@ -35,7 +35,7 @@ CHANNEL_IDENTITY_HASH_SECRET=<independent random secret, 32+ characters>
 MCP_TOKEN_HASH_SECRET=<existing MCP token hashing secret, 32+ characters>
 ```
 
-Do not reuse `JWT_SECRET`, Telegram bot tokens, MCP access/refresh tokens, or
+Do not reuse `JWT_SIGNING_SECRET`, Telegram bot tokens, MCP access/refresh tokens, or
 any Stripe/Strava secret for these values. Keep the existing
 `COACH_AGENT_PILOT_USER_ID` only if a rollback to the legacy single-runner
 delivery path is required.
