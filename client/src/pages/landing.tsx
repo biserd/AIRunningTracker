@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp, Trophy, Users, TrendingDown, Calculator, ArrowRight, MessageCircle, Activity, Map, Footprints, RotateCcw, Gift, Sparkles, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Bot, Star } from "lucide-react";
+import { CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp, Trophy, Users, TrendingDown, Calculator, ArrowRight, MessageCircle, Activity, Map, Footprints, RotateCcw, Gift, Sparkles, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Bot, Star, Send, CloudSun } from "lucide-react";
 import { SiStrava } from "react-icons/si";
 import { VERSION } from "@shared/version";
 import Footer from "@/components/Footer";
@@ -10,6 +10,7 @@ import PublicHeader from "@/components/PublicHeader";
 import { SEO } from "@/components/SEO";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { useQuery } from "@tanstack/react-query";
+import { trackFunnelEvent } from "@/lib/analytics";
 
 export default function LandingPage() {
   const [showAllFeatures, setShowAllFeatures] = useState(false);
@@ -304,6 +305,93 @@ export default function LandingPage() {
                   <span>Smart coaching • Personalized • Cancel anytime</span>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Proactive messaging coach */}
+      <section className="bg-slate-950 px-4 py-12 text-white sm:px-6 sm:py-16 md:py-20">
+        <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+          <div className="px-1 sm:px-4">
+            <div className="mb-5 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-2 rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-sky-200">
+                <Send className="h-3.5 w-3.5" /> Telegram early access
+              </span>
+              <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-200">
+                WhatsApp coming next
+              </span>
+            </div>
+
+            <h2 className="max-w-2xl text-3xl font-black leading-tight sm:text-4xl md:text-5xl">
+              Your next useful coaching message can find you.
+            </h2>
+            <p className="mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
+              Run as usual and let Strava sync. The proactive coach turns the pattern that mattered into a concise message, explains the evidence, and gives you one practical next action in a private chat.
+            </p>
+
+            <div className="mt-7 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <MessageCircle className="mb-3 h-5 w-5 text-sky-300" />
+                <p className="font-bold">Post-run verdicts</p>
+                <p className="mt-1 text-sm leading-6 text-slate-400">The decision first, then the runner-specific evidence.</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <CloudSun className="mb-3 h-5 w-5 text-amber-300" />
+                <p className="font-bold">Timely check-ins</p>
+                <p className="mt-1 text-sm leading-6 text-slate-400">Weather and day-before nudges are part of the planned rollout.</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <Shield className="mb-3 h-5 w-5 text-emerald-300" />
+                <p className="font-bold">Private by design</p>
+                <p className="mt-1 text-sm leading-6 text-slate-400">Read-only access is scoped to the connected runner.</p>
+              </div>
+            </div>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link href="/proactive-running-coach" className="w-full sm:w-auto">
+                <Button
+                  className="h-12 w-full bg-[#229ED9] px-7 font-bold text-white hover:bg-[#1d8fc4] sm:w-auto"
+                  data-testid="homepage-proactive-coach-link"
+                  onClick={() => trackFunnelEvent("offer_clicked", {
+                    source: "homepage_proactive_coach",
+                    capability: "ai_coach",
+                    experimentVariant: "messaging_coach_v1",
+                  })}
+                >
+                  See the messaging coach <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+              <p className="text-xs leading-5 text-slate-400 sm:max-w-xs">
+                Telegram is being enabled in stages. Starting a trial does not guarantee immediate access.
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-sky-300/20 bg-gradient-to-b from-[#229ED9] to-[#1679a8] p-3 shadow-2xl shadow-sky-950/50 sm:p-5">
+            <div className="rounded-[1.35rem] bg-[#e5f2ec] p-4 text-slate-900 sm:p-6" aria-label="Example proactive Telegram coaching message">
+              <div className="mb-5 flex items-center gap-3 border-b border-slate-900/10 pb-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#229ED9] text-white">
+                  <Bot className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-bold">RunAnalytics Coach</p>
+                  <p className="text-xs text-slate-500">runner-scoped · read-only</p>
+                </div>
+              </div>
+              <div className="rounded-2xl rounded-tl-sm bg-white p-5 shadow-sm">
+                <p className="font-bold">Good long run. Keep tomorrow easy.</p>
+                <p className="mt-3 text-sm leading-6 text-slate-600">
+                  Pace stayed controlled through 14 km while heart-rate drift increased late. That looks like accumulated fatigue, not a reason to add more work.
+                </p>
+                <div className="mt-4 border-l-2 border-[#229ED9] pl-3 text-sm leading-6">
+                  <strong>Do this:</strong> Rest, or run 25–35 minutes conversationally if your legs feel normal.
+                </div>
+              </div>
+              <div className="ml-auto mt-4 max-w-[85%] rounded-2xl rounded-tr-sm bg-[#d7f7c8] p-4 text-sm shadow-sm">
+                Why not the intervals on my plan?
+              </div>
+              <p className="mt-4 text-center text-xs text-slate-500">Example message · training guidance, not medical advice</p>
             </div>
           </div>
         </div>

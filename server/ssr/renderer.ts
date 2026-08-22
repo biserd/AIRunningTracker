@@ -259,7 +259,7 @@ function generateEditorialUpdateForBlog(slug: string): string {
       title: "What should trigger proactive coaching",
       intro: "A useful proactive message identifies the evidence, states what is unknown and gives one proportionate action.",
       rows: [["Return after inactivity", "Recommend an easy return without claiming readiness."], ["Sudden volume increase", "Flag the load change without diagnosing injury risk."], ["Missed planned run", "Ask why before moving or stacking training."], ["Race preparation gap", "Explain the evidence and offer a safer goal or timeline."]],
-      link: "/ai-agent-coach", label: "See the Premium Preview workflow",
+      link: "/proactive-running-coach", label: "See the proactive Telegram coach",
     },
     "ultra-marathon-training-plan-100-miler-guide": {
       title: "Scope and readiness",
@@ -305,6 +305,7 @@ function generateRelatedToolsForBlog(title: string, category: string): string {
   if (/coach|ai|insight|chat|agent/.test(haystack)) {
     push("/ai-running-coach", "AI Running Coach", "ask questions about your training and get instant analysis");
     push("/ai-agent-coach", "AI Agent Coach", "proactive post-activity coaching for Premium members");
+    push("/proactive-running-coach", "Proactive Telegram Coach", "see how private runner-scoped coaching can reach you after a run");
   }
   if (/shoe|footwear|carbon|drop|stack|cushion/.test(haystack)) {
     push("/tools/shoes", "Running Shoe Database", "browse sourced shoe specifications and editorial insights");
@@ -898,8 +899,30 @@ export function renderHomepage(): string {
         <a href="${content.aiCoach.cta.href}" class="ssg-cta" style="background: linear-gradient(135deg, #3b82f6, #06b6d4);">${escapeHtml(content.aiCoach.cta.text)}</a>
       </div>
     </section>
-    
+
     <section class="ssg-section ssg-section-alt">
+      <h2>Your next useful coaching message can find you</h2>
+      <p class="ssg-section-subtitle">Run as usual and let Strava sync. RunAnalytics can turn the pattern that mattered into a concise, runner-specific coaching message in a private chat.</p>
+      <div class="ssg-grid">
+        <article class="ssg-card">
+          <h3>Telegram early access</h3>
+          <p>Post-run verdicts and natural follow-up in a private Telegram conversation. Access is being enabled in stages.</p>
+        </article>
+        <article class="ssg-card">
+          <h3>Private by design</h3>
+          <p>Read-only access is scoped to the connected runner. The coach cannot change activities, plans, accounts, or subscriptions.</p>
+        </article>
+        <article class="ssg-card">
+          <h3>WhatsApp coming next</h3>
+          <p>WhatsApp and weather-aware, day-before messaging are planned capabilities and are not presented as generally available today.</p>
+        </article>
+      </div>
+      <div style="text-align:center;margin-top:24px;">
+        <a href="/proactive-running-coach" class="ssg-cta" style="background:linear-gradient(135deg,#229ED9,#1679a8);">See the proactive messaging coach</a>
+      </div>
+    </section>
+
+    <section class="ssg-section">
       <h2>${escapeHtml(content.runnerScore.title)}</h2>
       <p class="ssg-section-subtitle"><strong>${escapeHtml(content.runnerScore.subtitle)}</strong> ${escapeHtml(content.runnerScore.description)}</p>
       <ul class="ssg-features-list" style="max-width: 600px; margin: 0 auto;">
@@ -1275,6 +1298,7 @@ export function renderPricingPage(): string {
             <li>Compare runs (overlay two runs, split-by-split diffs)</li>
             <li>Form stability analysis (cadence and power stability over time)</li>
           </ul>
+          <p><a href="/proactive-running-coach"><strong>See how private Telegram coaching works</strong></a> — staged early access is available for selected Premium and trial runners; WhatsApp is coming next.</p>
         </section>
         <section>
           <h2>Frequently Asked Questions about Pricing</h2>

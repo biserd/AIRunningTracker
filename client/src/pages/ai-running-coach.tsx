@@ -618,13 +618,13 @@ export default function AICoachLanding() {
             Related Resources
           </h3>
           <div className="grid md:grid-cols-3 gap-6">
-            <Link href="/blog/ai-running-coach-complete-guide-2025">
+            <Link href="/proactive-running-coach" data-testid="related-proactive-running-coach">
               <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full dark:border-slate-700">
                 <CardHeader>
-                  <Brain className="text-purple-600 mb-3" size={32} />
-                  <CardTitle className="text-lg dark:text-white">Complete AI Coach Guide</CardTitle>
+                  <Smartphone className="text-[#229ED9] mb-3" size={32} />
+                  <CardTitle className="text-lg dark:text-white">Proactive Coach on Telegram</CardTitle>
                   <CardDescription className="dark:text-gray-400">
-                    In-depth guide covering everything about AI running coaches
+                    See how private, runner-scoped coaching can reach you after a run
                   </CardDescription>
                 </CardHeader>
               </Card>

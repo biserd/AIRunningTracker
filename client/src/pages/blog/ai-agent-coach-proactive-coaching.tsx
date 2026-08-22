@@ -541,10 +541,10 @@ export default function AIAgentCoachBlogPost() {
               Transform passive data into active coaching. Get personalized feedback after every run with AI Agent Coach.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/ai-agent-coach">
+              <Link href="/proactive-running-coach" data-testid="cta-proactive-messaging-coach">
                 <Button size="lg" className="w-full sm:w-auto bg-charcoal dark:bg-white text-white dark:text-charcoal hover:bg-gray-800 dark:hover:bg-gray-100 font-semibold px-8 h-12 shadow-md" data-testid="cta-learn-more">
                   <Zap className="mr-2 h-5 w-5" />
-                  Learn More
+                  See the Telegram Coach
                 </Button>
               </Link>
               <Link href="/auth">

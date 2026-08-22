@@ -1,7 +1,7 @@
 import Footer from "@/components/Footer";
 import PublicHeader from "@/components/PublicHeader";
 import AppHeader from "@/components/AppHeader";
-import { Check, Crown, Trophy, MapPin, Sparkles, ArrowLeft } from "lucide-react";
+import { Check, Crown, Trophy, MapPin, Sparkles, ArrowLeft, MessageCircle, ArrowRight } from "lucide-react";
 import { Link, useLocation, useSearch } from "wouter";
 import { parseUpgradeIntent, capabilityLabel } from "@shared/upgradeIntent";
 import { Button } from "@/components/ui/button";
@@ -395,6 +395,23 @@ export default function PricingPage() {
               )}
             </div>
           </div>
+
+          <Link href="/proactive-running-coach" data-testid="pricing-proactive-coach-link">
+            <div className="mx-auto -mt-8 mb-14 flex max-w-2xl cursor-pointer flex-col gap-4 rounded-2xl border border-sky-200 bg-gradient-to-r from-sky-50 to-emerald-50 p-5 transition hover:border-sky-300 hover:shadow-md sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#229ED9] text-white">
+                  <MessageCircle className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-bold text-slate-900">Want the coach to come to you?</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">Explore private Telegram coaching in staged early access. WhatsApp is coming next.</p>
+                </div>
+              </div>
+              <span className="inline-flex shrink-0 items-center gap-2 font-bold text-[#167ca9]">
+                See how it works <ArrowRight className="h-4 w-4" />
+              </span>
+            </div>
+          </Link>
 
           <div className="flex flex-wrap justify-center gap-6 mb-12" data-testid="credibility-badges">
             <div className="flex items-center gap-2 bg-white/80 backdrop-blur px-4 py-2 rounded-full shadow-sm">

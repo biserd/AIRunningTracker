@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { queryClient, apiRequest, getQueryFn } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -369,6 +369,14 @@ export default function CoachSettingsPage() {
                   <p className="mt-1 text-blue-800">The coach receives a read-only connection for you—not access to another runner, billing, Strava credentials, or account controls. Disconnect anytime.</p>
                 </div>
               </div>
+
+              <Link
+                href="/proactive-running-coach"
+                className="inline-flex items-center gap-1 text-sm font-semibold text-[#167ca9] hover:underline"
+                data-testid="coach-settings-proactive-coach-link"
+              >
+                See how private messaging coaching works <ArrowLeft className="h-3.5 w-3.5 rotate-180" />
+              </Link>
 
               {channelStatusLoading ? (
                 <div className="flex items-center gap-2 text-sm text-gray-500"><Loader2 className="h-4 w-4 animate-spin" /> Checking connection…</div>

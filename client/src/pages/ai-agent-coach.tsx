@@ -104,6 +104,21 @@ export default function AIAgentCoachLanding() {
               <span>No Action Required</span>
             </div>
           </div>
+
+          <Link href="/proactive-running-coach" data-testid="link-proactive-messaging-coach">
+            <div className="mx-auto mt-8 flex max-w-2xl cursor-pointer items-center justify-between gap-4 rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 text-left transition hover:border-sky-300 hover:shadow-md dark:border-sky-900 dark:bg-sky-950/40">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#229ED9] text-white">
+                  <MessageCircle size={19} />
+                </div>
+                <div>
+                  <p className="font-bold text-slate-900 dark:text-white">Prefer coaching in the chat you already check?</p>
+                  <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">See staged Telegram access, privacy boundaries, and the WhatsApp roadmap.</p>
+                </div>
+              </div>
+              <ArrowRight className="h-5 w-5 shrink-0 text-[#229ED9]" />
+            </div>
+          </Link>
         </section>
 
         <section className="py-16 bg-white dark:bg-slate-800 rounded-3xl shadow-xl mb-16 px-8" data-testid="section-how-it-works">
