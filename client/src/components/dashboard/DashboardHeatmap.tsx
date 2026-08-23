@@ -23,7 +23,7 @@ export default function DashboardHeatmap() {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
-  const { data, isLoading } = useQuery<{ routes: ActivityRoute[]; count: number }>({
+  const { data, isLoading } = useQuery<{ routes: ActivityRoute[]; count: number; visibleActivityCount?: number | null }>({
     queryKey: ["/api/activities/routes", user?.id],
     enabled: !!user && isAuthenticated,
   });
@@ -140,7 +140,9 @@ export default function DashboardHeatmap() {
               style={{ zIndex: 0 }}
             />
             <div className="absolute bottom-2 left-2 bg-white/90 dark:bg-gray-800/90 px-2 py-1 rounded text-xs text-gray-600 dark:text-gray-300 z-[1000]">
-              {routeCount} mapped activity tracks
+              {data?.visibleActivityCount != null
+                ? `${routeCount} of ${data.visibleActivityCount} visible activities mapped`
+                : `${routeCount} activities mapped`}
             </div>
           </div>
         )}

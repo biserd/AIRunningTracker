@@ -82,7 +82,7 @@ assert.deepEqual(
 const payload = buildPremiumPreviewPayload(makeRun(), "miles", new Date("2026-08-03T12:00:00Z"));
 assert.equal(payload.kind, "premium_preview");
 assert.equal(payload.version, PREMIUM_PREVIEW_VERSION);
-assert.equal(PREMIUM_PREVIEW_VERSION, 4, "copy changes must refresh previously stored previews");
+assert.equal(PREMIUM_PREVIEW_VERSION, 5, "comparison previews must refresh previously stored previews");
 assert.equal(payload.findings.length, 2, "exactly two findings");
 assert.ok(payload.nextAction.length > 0, "one next action present");
 for (const f of payload.findings) {
@@ -96,6 +96,21 @@ assert.equal(payload.sourceData.averageCadence, 172, "already-normalized cadence
 assert.equal(payload.unitPreference, "miles");
 assert.ok(payload.findings.some((finding) => finding.includes("/mi")));
 assert.ok(!payload.findings.some((finding) => finding.includes("/km")));
+
+const comparisonPayload = buildPremiumPreviewPayload(
+  makeRun({ id: 101, distance: 10000, movingTime: 3600, averageHeartrate: 160, averageCadence: 170 }),
+  "miles",
+  new Date("2026-08-03T12:00:00Z"),
+  [
+    makeRun({ id: 102, distance: 9500, movingTime: 3300, averageHeartrate: 152, averageCadence: 166, startDate: new Date("2026-07-20T07:00:00Z") }),
+    makeRun({ id: 103, distance: 10500, movingTime: 3700, averageHeartrate: 154, averageCadence: 168, startDate: new Date("2026-07-27T07:00:00Z") }),
+    makeRun({ id: 104, distance: 3000, movingTime: 900, averageHeartrate: 170, averageCadence: 180 }),
+  ],
+);
+assert.equal(comparisonPayload.comparison?.sampleSize, 2, "only distance-similar runs form the benchmark");
+assert.ok(comparisonPayload.findings[0].includes("Compared with 2 similar runs"));
+assert.ok(comparisonPayload.findings[0].includes("heart rate"));
+assert.ok(comparisonPayload.nextAction.includes("benchmark"));
 
 const historicalCadencePayload = buildPremiumPreviewPayload(makeRun({ averageCadence: 86 }), "km");
 assert.equal(historicalCadencePayload.sourceData.averageCadence, 172, "historical single-leg cadence is normalized once");

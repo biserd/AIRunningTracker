@@ -12,8 +12,18 @@ import { TrackedUpgradeLink } from "@/components/TrackedUpgradeLink";
 interface PremiumPreviewTeaserData {
   preview: {
     kind: "premium_preview";
+    unitPreference?: "km" | "miles";
     findings: [string, string];
     nextAction: string;
+    comparison?: {
+      sampleSize: number;
+      baselinePaceSecondsPerUnit: number | null;
+      paceDeltaSecondsPerUnit: number | null;
+      baselineHeartRate: number | null;
+      heartRateDelta: number | null;
+      baselineCadence: number | null;
+      cadenceDelta: number | null;
+    } | null;
     sourceData: {
       activityId: number;
       name: string;
@@ -23,6 +33,12 @@ interface PremiumPreviewTeaserData {
   createdAt?: string | null;
   status?: "ready" | "preparing" | "waiting_for_run" | "not_connected" | "not_eligible" | "failed";
   reason?: string | null;
+}
+
+function formatPace(seconds: number | null | undefined, unitPreference: "km" | "miles" | undefined): string | null {
+  if (seconds === null || seconds === undefined) return null;
+  const rounded = Math.max(0, Math.round(seconds));
+  return `${Math.floor(rounded / 60)}:${String(rounded % 60).padStart(2, "0")}/${unitPreference === "km" ? "km" : "mi"}`;
 }
 
 function PreviewShell({ children, testId }: { children: React.ReactNode; testId: string }) {
@@ -160,14 +176,22 @@ export default function PremiumPreviewTeaser() {
     benefitKey: "premium_preview",
     returnTo: `/activity/${activityId}`,
   });
+  const comparison = preview.comparison;
+  const baselinePace = formatPace(comparison?.baselinePaceSecondsPerUnit, preview.unitPreference);
 
   return (
     <PreviewShell testId="premium-preview-teaser">
       <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-amber-700">
         <Sparkles className="h-4 w-4" /> PREMIUM PREVIEW · LAST RUN → NEXT RUN
       </div>
-      <h2 className="text-2xl font-bold text-gray-900 mt-3">What this run can teach you</h2>
-      <p className="text-sm text-gray-700 mt-1">See what changed, why it matters, and what to try next run.</p>
+      <h2 className="text-2xl font-bold text-gray-900 mt-3">
+        {comparison ? `${preview.sourceData.name}: compared with ${comparison.sampleSize} similar runs` : `${preview.sourceData.name}: your first personal benchmark`}
+      </h2>
+      <p className="text-sm text-gray-700 mt-1">
+        {comparison
+          ? "A real comparison from your imported history—not a population average."
+          : "This run establishes the baseline that future comparable runs will be measured against."}
+      </p>
       <p className="text-xs text-gray-500 mt-2">
         {preview.sourceData.name}{activityDate ? ` · ${activityDate}` : ""}
       </p>
@@ -180,6 +204,14 @@ export default function PremiumPreviewTeaser() {
           </div>
         ))}
       </div>
+      {comparison && (
+        <div className="mt-3 grid grid-cols-2 gap-2 rounded-lg border border-amber-200 bg-amber-100/60 p-3 sm:grid-cols-4" data-testid="premium-preview-benchmark">
+          <div><p className="text-[10px] font-semibold uppercase text-amber-700">Benchmark</p><p className="text-sm font-bold text-gray-900">{comparison.sampleSize} similar runs</p></div>
+          {baselinePace && <div><p className="text-[10px] font-semibold uppercase text-amber-700">Usual pace</p><p className="text-sm font-bold text-gray-900">{baselinePace}</p></div>}
+          {comparison.baselineHeartRate !== null && <div><p className="text-[10px] font-semibold uppercase text-amber-700">Usual HR</p><p className="text-sm font-bold text-gray-900">{comparison.baselineHeartRate} bpm</p></div>}
+          {comparison.baselineCadence !== null && <div><p className="text-[10px] font-semibold uppercase text-amber-700">Usual cadence</p><p className="text-sm font-bold text-gray-900">{comparison.baselineCadence} spm</p></div>}
+        </div>
+      )}
       <div className="flex items-start gap-3 rounded-lg bg-white p-4 shadow-sm border-l-4 border-amber-400 mt-3">
         <Flag className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
         <div>
@@ -199,10 +231,10 @@ export default function PremiumPreviewTeaser() {
           </Link>
         </Button>
         <TrackedUpgradeLink href={upgradeUrl}>
-          <Button className="bg-amber-500 hover:bg-amber-600 text-white">Start my 14-day coaching trial</Button>
+          <Button className="bg-amber-500 hover:bg-amber-600 text-white">Unlock my complete run analysis</Button>
         </TrackedUpgradeLink>
       </div>
-      <p className="text-xs text-gray-500 mt-3">Get this analysis after every run · $0 today · Cancel anytime</p>
+      <p className="text-xs text-gray-500 mt-3">14 days free · Card required · $0 today · Then $7.99/month · Cancel anytime</p>
     </PreviewShell>
   );
 }

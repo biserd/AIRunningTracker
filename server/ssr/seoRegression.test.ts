@@ -59,6 +59,13 @@ test("static public SSR pages have one self-canonical and one H1", () => {
   pages.forEach(([path, html]) => assertExternalLinksAreProtected(html, path));
 });
 
+test("pricing discloses the card requirement consistently", () => {
+  const html = renderPricingPage();
+  assert.match(html, /payment card is required/i);
+  assert.match(html, /\$0 today/i);
+  assert.doesNotMatch(html, /trial with no credit card required/i);
+});
+
 test("proactive coach landing page states channel availability honestly", () => {
   const html = renderProactiveRunningCoachPage();
   assert.match(html, /Telegram is available to Premium and trial runners/);

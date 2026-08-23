@@ -219,14 +219,14 @@ export default function PricingPage() {
       />
       <PublicHeader />
 
-      <section className="py-16 px-6">
+      <section className="px-4 py-8 sm:px-6 sm:py-16">
         <div className="max-w-4xl mx-auto">
           {upgradeIntent && (
             <div
               className="max-w-2xl mx-auto mb-10 rounded-xl border-2 border-yellow-200 bg-gradient-to-r from-yellow-50 to-amber-50 p-5"
               data-testid="upgrade-intent-banner"
             >
-              <div className="flex items-start gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
                 <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center flex-shrink-0">
                   <Sparkles className="h-5 w-5 text-yellow-600" />
                 </div>
@@ -240,7 +240,7 @@ export default function PricingPage() {
                     </p>
                   )}
                   <p className="text-xs text-gray-500 mt-2">
-                    Start your free trial and we'll take you right back to where you left off.
+                    Start the trial and we'll return you to this exact feature after secure checkout.
                   </p>
                   {!isPremium && (
                     <div className="mt-4">
@@ -254,12 +254,12 @@ export default function PricingPage() {
                         {checkout.isPending ? 'Processing...' : 'Start 14 days free — $0 today'}
                       </Button>
                       <p className="text-xs text-gray-500 mt-2">
-                        {billingCycle === 'monthly' ? 'Then $7.99/month' : 'Then $79.99/year'} · Cancel anytime
+                        Card required · $0 today · {billingCycle === 'monthly' ? 'Then $7.99/month' : 'Then $79.99/year'} · Cancel anytime
                       </p>
                     </div>
                   )}
                 </div>
-                <Button asChild variant="ghost" size="sm" className="text-gray-600 flex-shrink-0" data-testid="upgrade-intent-back">
+                <Button asChild variant="ghost" size="sm" className="self-start text-gray-600 sm:flex-shrink-0" data-testid="upgrade-intent-back">
                   <Link href={upgradeIntent.returnTo}>
                     <ArrowLeft className="h-4 w-4 mr-1" /> Back
                   </Link>
@@ -280,7 +280,7 @@ export default function PricingPage() {
           </h1>
 
           <p className="text-xl text-gray-600 mb-8 text-center max-w-2xl mx-auto">
-            One plan. Everything included. Try it free for 14 days.
+            One plan for run comparisons, adaptive training, and proactive coaching.
           </p>
 
           <div className="flex flex-col items-center mb-12">
@@ -316,7 +316,7 @@ export default function PricingPage() {
               </button>
             </div>
             <p className="text-sm text-gray-500 mt-3">
-              Cancel anytime · No charge during the 14-day trial
+              Card required · $0 today · Cancel before the trial ends to avoid a charge
             </p>
           </div>
 
@@ -392,6 +392,11 @@ export default function PricingPage() {
                 >
                   {checkout.isPending ? 'Processing...' : 'Start 14 days free — $0 today'}
                 </Button>
+              )}
+              {!isPremium && (
+                <p className="mt-3 text-center text-xs leading-5 text-gray-400">
+                  Card required. Then {billingCycle === 'monthly' ? '$7.99/month' : '$79.99/year'} unless cancelled.
+                </p>
               )}
             </div>
           </div>

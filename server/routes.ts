@@ -5595,7 +5595,7 @@ ${allPages.map(page => `  <url>
   app.get("/api/activities/routes", authenticateJWT, async (req: any, res) => {
     try {
       const userId = req.user!.id;
-      const limit = parseInt(req.query.limit as string) || 30;
+      const requestedLimit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 30));
       
       // Free users: webhook-ingested activities (lockedForFree) must not
       // leak into the heatmap. Filter them out post-fetch since the helper
@@ -5603,15 +5603,30 @@ ${allPages.map(page => `  <url>
       const routesUser = await storage.getUser(userId);
       const { isPaidPlan: routesIsPaid } = await import("./rateLimits");
       const routesIsPaidUser = routesIsPaid(routesUser?.subscriptionPlan ?? null, routesUser?.subscriptionStatus ?? null);
-      let routes = await storage.getActivitiesWithPolylines(userId, limit);
+      const freeRouteLimit = getFreeActivityLimit(routesUser?.subscriptionPlan ?? null, routesUser?.subscriptionStatus ?? null);
+      let visibleActivityCount: number | null = null;
+      let routes = await storage.getActivitiesWithPolylines(userId, routesIsPaidUser ? requestedLimit : 100);
       if (!routesIsPaidUser) {
-        routes = routes.filter((r: any) => !r.lockedForFree);
+        // The map must use the exact same newest-N activity window as the
+        // free activity list. Filtering only locked webhook rows allowed old
+        // initial-sync routes to appear on the map and made its count exceed
+        // the visible activity count.
+        const visibleActivities = await storage.getActivitiesByUserId(
+          userId,
+          freeRouteLimit ?? 0,
+          undefined,
+          { excludeLockedForFree: true },
+        );
+        const visibleIds = new Set(visibleActivities.map((activity) => activity.id));
+        visibleActivityCount = visibleIds.size;
+        routes = routes.filter((route: any) => visibleIds.has(route.id) && !route.lockedForFree);
       }
       
       // Filter out activities without polylines and format for frontend
       // Use detailed polyline if summary polyline is not available
       const routesWithPolylines = routes
         .filter(route => route.polyline || route.detailedPolyline)
+        .slice(0, requestedLimit)
         .map(route => ({
           id: route.id,
           name: route.name,
@@ -5622,7 +5637,8 @@ ${allPages.map(page => `  <url>
       
       res.json({ 
         routes: routesWithPolylines,
-        count: routesWithPolylines.length 
+        count: routesWithPolylines.length,
+        visibleActivityCount,
       });
     } catch (error: any) {
       console.error('Get routes error:', error);

@@ -485,8 +485,8 @@ export default function Dashboard() {
 
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-charcoal sm:text-3xl">Your running today</h1>
-          <p className="mt-1 text-sm text-gray-500">One next step, your latest evidence, and this week’s progress.</p>
+          <h1 className="text-2xl font-bold text-charcoal sm:text-3xl">{isFree ? "Your latest run, clearly explained" : "Your running today"}</h1>
+          <p className="mt-1 text-sm text-gray-500">{isFree ? "A personal comparison, one next step, and your recent progress." : "One next step, your latest evidence, and this week’s progress."}</p>
         </div>
 
         {!(dashboardData?.user?.stravaConnected && (dashboardData?.activities?.length || 0) > 0) && (
@@ -499,6 +499,9 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Lead free runners with proof of value before general guidance. */}
+        <PremiumPreviewTeaser />
+
         <div className="mb-6">
           <TodayRunDecision
             recoveryData={recoveryData}
@@ -509,9 +512,6 @@ export default function Dashboard() {
             onAvailabilityChange={canAccessAICoachChat ? updateTodayAvailability : undefined}
           />
         </div>
-
-        {/* One-time Premium Preview teaser — free users with a stored preview */}
-        <PremiumPreviewTeaser />
 
         {/* Strava Sync Actions */}
         <div className="mb-6 flex flex-wrap gap-4">
@@ -526,7 +526,7 @@ export default function Dashboard() {
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
               <div>
                 <p className="font-medium text-charcoal">Strava connected</p>
-                <p>Automatic Strava updates are on. Free dashboard history remains limited.</p>
+                <p>Your free preview uses your initial activity window. Start a trial to keep importing and analyzing new runs.</p>
                 {dashboardData?.user?.lastSyncAt && (
                   <p className="mt-0.5 text-xs text-gray-500">Last update: {new Date(dashboardData.user.lastSyncAt).toLocaleString()}</p>
                 )}

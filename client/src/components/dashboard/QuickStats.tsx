@@ -82,6 +82,15 @@ export default function QuickStats({ stats }: QuickStatsProps) {
     }
     
     if (change === 0) return null;
+
+    if (Math.abs(change) >= 200) {
+      return (
+        <div className="mt-4 text-sm text-gray-500" data-testid="small-base-comparison">
+          {change > 0 ? "Higher" : "Lower"} than {period}
+          <span className="block text-xs">Previous period had limited data</span>
+        </div>
+      );
+    }
     
     const isPositive = change > 0;
     const isGoodChange = positiveIsGood ? isPositive : !isPositive;

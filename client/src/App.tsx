@@ -1,5 +1,5 @@
-import { lazy, Suspense } from "react";
-import { Switch, Route } from "wouter";
+import { lazy, Suspense, useEffect } from "react";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -291,6 +291,16 @@ function Router() {
   );
 }
 
+function RouteScrollManager() {
+  const [location] = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [location]);
+
+  return null;
+}
+
 function App() {
   // Check for maintenance mode via environment variable
   const isMaintenanceMode = import.meta.env.VITE_MAINTENANCE_MODE === 'true';
@@ -309,6 +319,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <ExternalLinkPolicy />
+        <RouteScrollManager />
         <Toaster />
         <Router />
         <PWAInstallPrompt />

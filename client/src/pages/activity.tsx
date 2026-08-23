@@ -135,6 +135,15 @@ interface PremiumPreviewData {
   kind: "premium_preview";
   findings: [string, string];
   nextAction: string;
+  comparison?: {
+    sampleSize: number;
+    baselinePaceSecondsPerUnit: number | null;
+    paceDeltaSecondsPerUnit: number | null;
+    baselineHeartRate: number | null;
+    heartRateDelta: number | null;
+    baselineCadence: number | null;
+    cadenceDelta: number | null;
+  } | null;
   sourceData: {
     activityId: number;
     name: string;
@@ -181,9 +190,9 @@ function PremiumAnalysisUpsell({ activityId }: { activityId: number }) {
                 Premium analysis
               </span>
             </div>
-            <h2 className="text-xl font-bold text-gray-900">Continue your analysis with Premium</h2>
+            <h2 className="text-xl font-bold text-gray-900">Your Deep Dive is ready to unlock</h2>
             <p className="text-sm text-gray-600 mt-2 max-w-2xl">
-              Your run summary stays available. Premium adds the signals that explain this run and what to do next.
+              Continue from your preview into the evidence that explains where effort changed and what to try next.
             </p>
             <div className="grid sm:grid-cols-2 gap-2 mt-5">
               {premiumFeatures.map(({ icon: Icon, label }) => (
@@ -202,11 +211,11 @@ function PremiumAnalysisUpsell({ activityId }: { activityId: number }) {
               >
               <Link href={pricingUrl} onClick={trackOfferClick}>
                 <Sparkles className="h-4 w-4 mr-2" />
-                Continue your analysis with Premium
+                Unlock this run for 14 days free
               </Link>
             </Button>
             <p className="text-xs text-gray-500 text-center mt-2">
-              Start 14 days free · $0 today · then $7.99/month · cancel anytime
+              Card required · $0 today · then $7.99/month · cancel anytime
             </p>
           </div>
         </div>
@@ -258,6 +267,10 @@ function PremiumPreviewCard({ preview, createdAt, unitPreference }: { preview: P
     src.averageCadence ? { label: `${Math.round(src.averageCadence)} spm`, sub: "Cadence" } : null,
     src.totalElevationGain ? { label: `${Math.round(useMiles ? src.totalElevationGain * 3.28084 : src.totalElevationGain)} ${useMiles ? "ft" : "m"}`, sub: "Climb" } : null,
   ].filter(Boolean) as { label: string; sub: string }[];
+  const comparison = preview.comparison;
+  const comparisonPace = comparison?.baselinePaceSecondsPerUnit == null
+    ? null
+    : `${Math.floor(comparison.baselinePaceSecondsPerUnit / 60)}:${String(comparison.baselinePaceSecondsPerUnit % 60).padStart(2, "0")}${units.paceUnit}`;
 
   return (
     <Card className="border-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-amber-50 mb-6" data-testid="premium-preview-card">
@@ -269,7 +282,7 @@ function PremiumPreviewCard({ preview, createdAt, unitPreference }: { preview: P
           </span>
         </div>
         <CardTitle className="text-lg text-gray-900 mt-2">
-          Your last run → your next run
+          {comparison ? `Compared with ${comparison.sampleSize} similar runs` : "Your first personal benchmark"}
         </CardTitle>
         <p className="text-xs text-gray-500">
           Two evidence-backed findings and one practical action from {src.name}.
@@ -302,6 +315,14 @@ function PremiumPreviewCard({ preview, createdAt, unitPreference }: { preview: P
             ))}
           </div>
         </div>
+        {comparison && (
+          <div className="grid grid-cols-2 gap-2 rounded-lg border border-yellow-200 bg-yellow-100/60 p-3 sm:grid-cols-4" data-testid="premium-preview-comparison">
+            <div><p className="text-[10px] font-semibold uppercase text-yellow-700">Benchmark</p><p className="text-sm font-bold text-gray-900">{comparison.sampleSize} similar runs</p></div>
+            {comparisonPace && <div><p className="text-[10px] font-semibold uppercase text-yellow-700">Usual pace</p><p className="text-sm font-bold text-gray-900">{comparisonPace}</p></div>}
+            {comparison.baselineHeartRate !== null && <div><p className="text-[10px] font-semibold uppercase text-yellow-700">Usual HR</p><p className="text-sm font-bold text-gray-900">{comparison.baselineHeartRate} bpm</p></div>}
+            {comparison.baselineCadence !== null && <div><p className="text-[10px] font-semibold uppercase text-yellow-700">Usual cadence</p><p className="text-sm font-bold text-gray-900">{comparison.baselineCadence} spm</p></div>}
+          </div>
+        )}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
           <p className="text-xs text-gray-500 flex items-center gap-1">
             <Lock className="h-3 w-3" /> Splits, decoupling, and race predictions stay locked
@@ -323,11 +344,11 @@ function PremiumPreviewCard({ preview, createdAt, unitPreference }: { preview: P
                 }, { dedupeParts: [preview.sourceData.activityId, Date.now()] })
               }
             >
-              <Sparkles className="h-4 w-4 mr-1" /> Get this analysis after every run
+              <Sparkles className="h-4 w-4 mr-1" /> Unlock my complete run analysis
             </Link>
           </Button>
         </div>
-        <p className="text-xs text-gray-500">Start 14 days free · $0 today · Cancel anytime</p>
+        <p className="text-xs text-gray-500">14 days free · Card required · $0 today · Then $7.99/month · Cancel anytime</p>
       </CardContent>
     </Card>
   );
@@ -772,7 +793,7 @@ export default function ActivityPage() {
                       Start 14-day Premium trial
                     </Link>
                   </Button>
-                  <p className="text-xs text-gray-500 mt-3">Cancel anytime. No charge during trial.</p>
+                  <p className="text-xs text-gray-500 mt-3">Card required · $0 today · Cancel before the trial ends to avoid a charge.</p>
                 </CardContent>
               </Card>
             </div>
@@ -1031,7 +1052,7 @@ export default function ActivityPage() {
         {/* Deep Dive Mode: Scrollable Sections */}
         {viewMode === 'deep_dive' && (
           <div className="space-y-6">
-            {hasLockedDeepDive && !premiumPreview && <PremiumAnalysisUpsell activityId={Number(activityId)} />}
+            {hasLockedDeepDive && <PremiumAnalysisUpsell activityId={Number(activityId)} />}
 
             {/* Section 1: Performance Metrics - Drift, Pacing, Baseline */}
             {featureAccess.activity.performanceMetrics && efficiencyData ? (

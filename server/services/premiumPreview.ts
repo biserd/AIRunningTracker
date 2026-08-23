@@ -16,7 +16,7 @@ import { normalizeCadenceToSpm } from "@shared/cadenceNormalization";
 // Safe payload limits — the preview is stored on the users row and returned
 // verbatim to the client, so it must stay small and free of bulky fields
 // (streams, polylines, laps).
-export const PREMIUM_PREVIEW_VERSION = 4;
+export const PREMIUM_PREVIEW_VERSION = 5;
 export const PREVIEW_TEXT_MAX = 240;
 export const PREVIEW_NAME_MAX = 120;
 export const PREVIEW_PAYLOAD_MAX_BYTES = 4096;
@@ -43,6 +43,15 @@ export interface PremiumPreviewPayload {
   activityId: number;
   findings: [string, string];
   nextAction: string;
+  comparison: {
+    sampleSize: number;
+    baselinePaceSecondsPerUnit: number | null;
+    paceDeltaSecondsPerUnit: number | null;
+    baselineHeartRate: number | null;
+    heartRateDelta: number | null;
+    baselineCadence: number | null;
+    cadenceDelta: number | null;
+  } | null;
   sourceData: PremiumPreviewSourceData;
 }
 
@@ -124,6 +133,45 @@ function formatElevation(elevationMeters: number, unitPreference: PreviewUnitPre
     : `${Math.round(elevationMeters)} m`;
 }
 
+function average(values: number[]): number | null {
+  if (values.length === 0) return null;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function paceSecondsPerUnit(activity: Activity, unitPreference: PreviewUnitPreference): number | null {
+  const distanceKm = Number(activity.distance ?? 0) / 1000;
+  const movingTime = Number(activity.movingTime ?? 0);
+  if (distanceKm <= 0 || movingTime <= 0) return null;
+  const secondsPerKm = movingTime / distanceKm;
+  return unitPreference === "miles" ? secondsPerKm * 1.609344 : secondsPerKm;
+}
+
+function formatPaceSeconds(seconds: number, unitPreference: PreviewUnitPreference): string {
+  const rounded = Math.max(0, Math.round(seconds));
+  const min = Math.floor(rounded / 60);
+  const sec = rounded % 60;
+  return `${min}:${String(sec).padStart(2, "0")}/${unitPreference === "miles" ? "mi" : "km"}`;
+}
+
+function selectSimilarRuns(activity: Activity, activities: Activity[]): Activity[] {
+  const targetDistance = Number(activity.distance ?? 0);
+  if (targetDistance <= 0) return [];
+
+  return activities
+    .filter((candidate) => candidate.id !== activity.id && isEligiblePreviewRun(candidate))
+    .filter((candidate) => {
+      const ratio = Number(candidate.distance ?? 0) / targetDistance;
+      return ratio >= 0.7 && ratio <= 1.3;
+    })
+    .sort((a, b) => {
+      const aDistanceDelta = Math.abs(Number(a.distance ?? 0) - targetDistance);
+      const bDistanceDelta = Math.abs(Number(b.distance ?? 0) - targetDistance);
+      if (aDistanceDelta !== bDistanceDelta) return aDistanceDelta - bDistanceDelta;
+      return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+    })
+    .slice(0, 5);
+}
+
 /**
  * Build the preview payload from a single activity's summary data (never
  * streams/laps/polylines). Deterministic — no AI call — so the very first
@@ -133,6 +181,7 @@ export function buildPremiumPreviewPayload(
   activity: Activity,
   unitPreference: PreviewUnitPreference = "miles",
   now: Date = new Date(),
+  comparisonActivities: Activity[] = [],
 ): PremiumPreviewPayload {
   const distanceKm = (activity.distance ?? 0) / 1000;
   const movingTime = activity.movingTime ?? 0;
@@ -141,21 +190,64 @@ export function buildPremiumPreviewPayload(
   const distanceDisplay = formatDistance(distanceKm, unitPreference);
 
   const candidates: string[] = [];
+  const similarRuns = selectSimilarRuns(activity, comparisonActivities);
+  const currentPace = paceSecondsPerUnit(activity, unitPreference);
+  const baselinePace = average(similarRuns
+    .map((run) => paceSecondsPerUnit(run, unitPreference))
+    .filter((value): value is number => value !== null));
+  const baselineHeartRate = average(similarRuns
+    .map((run) => Number(run.averageHeartrate ?? 0))
+    .filter((value) => value > 0));
+  const baselineCadence = average(similarRuns
+    .map((run) => normalizeCadenceToSpm(run.averageCadence))
+    .filter((value) => value > 0));
+  const currentHeartRate = Number(activity.averageHeartrate ?? 0) || null;
+  const currentCadence = normalizeCadenceToSpm(activity.averageCadence) || null;
+  const paceDelta = currentPace !== null && baselinePace !== null ? Math.round(currentPace - baselinePace) : null;
+  const heartRateDelta = currentHeartRate !== null && baselineHeartRate !== null
+    ? Math.round(currentHeartRate - baselineHeartRate)
+    : null;
+  const cadenceDelta = currentCadence !== null && baselineCadence !== null
+    ? Math.round(currentCadence - baselineCadence)
+    : null;
+
+  if (similarRuns.length >= 2 && currentPace !== null && baselinePace !== null) {
+    const unit = unitPreference === "miles" ? "mi" : "km";
+    const paceComparison = Math.abs(paceDelta ?? 0) <= 5
+      ? `matched your ${formatPaceSeconds(baselinePace, unitPreference)} baseline`
+      : `was ${Math.abs(paceDelta!)} sec/${unit} ${paceDelta! < 0 ? "faster" : "slower"} than your ${formatPaceSeconds(baselinePace, unitPreference)} baseline`;
+    const effortComparison = heartRateDelta === null
+      ? ""
+      : Math.abs(heartRateDelta) <= 2
+        ? ", with a similar average heart rate"
+        : `, while average heart rate was ${Math.abs(heartRateDelta)} bpm ${heartRateDelta > 0 ? "higher" : "lower"}`;
+    candidates.push(
+      `Compared with ${similarRuns.length} similar runs, your ${paceDisplay} pace ${paceComparison}${effortComparison}.`,
+    );
+  }
 
   // Effort / efficiency finding (HR-based) when heart rate exists.
-  if (activity.averageHeartrate) {
+  if (activity.averageHeartrate && candidates.length === 0) {
     const hr = Math.round(activity.averageHeartrate);
     candidates.push(
-      `You averaged ${hr} bpm at ${paceDisplay}. Premium compares that effort with your own similar runs so the result is personal to you.`,
+      `You averaged ${hr} bpm at ${paceDisplay}. This becomes your personal benchmark until more similar runs are available.`,
     );
   }
 
   // Cadence is stored as steps/minute in current ingestion, but historical
   // rows may still contain Strava's single-leg value. Normalize defensively.
-  const normalizedCadence = normalizeCadenceToSpm(activity.averageCadence);
+  const normalizedCadence = currentCadence;
   if (normalizedCadence) {
     const spm = Math.round(normalizedCadence);
-    candidates.push(`You averaged ${spm} steps per minute. The useful signal is how that cadence changes at similar paces, especially late in a run.`);
+    if (similarRuns.length >= 2 && baselineCadence !== null && cadenceDelta !== null) {
+      candidates.push(
+        Math.abs(cadenceDelta) <= 1
+          ? `Your ${spm} spm cadence matched your ${Math.round(baselineCadence)} spm baseline across ${similarRuns.length} similar runs.`
+          : `Your ${spm} spm cadence was ${Math.abs(cadenceDelta)} spm ${cadenceDelta > 0 ? "higher" : "lower"} than your ${Math.round(baselineCadence)} spm baseline across ${similarRuns.length} similar runs.`,
+      );
+    } else {
+      candidates.push(`You averaged ${spm} steps per minute. This is now a concrete cadence baseline for your next comparable run.`);
+    }
   }
 
   // Elevation finding when meaningful climb exists.
@@ -179,7 +271,11 @@ export function buildPremiumPreviewPayload(
   ];
 
   const safeNextAction = cap(
-    "Next run: start controlled, keep the middle steady, and finish only if it still feels comfortable. Premium compares both halves with this run and shows what changed.",
+    heartRateDelta !== null && baselineHeartRate !== null && heartRateDelta >= 5
+      ? `Next similar run: start controlled and see whether average heart rate stays closer to your ${Math.round(baselineHeartRate)} bpm benchmark at about ${baselinePace ? formatPaceSeconds(baselinePace, unitPreference) : paceDisplay}.`
+      : heartRateDelta !== null && baselineHeartRate !== null && heartRateDelta <= -5
+        ? `Repeat a similar controlled run. If pace stays near ${baselinePace ? formatPaceSeconds(baselinePace, unitPreference) : paceDisplay} with heart rate around ${Math.round(baselineHeartRate)} bpm or lower, that strengthens the efficiency signal.`
+        : `Next similar run: start controlled and use ${baselinePace ? formatPaceSeconds(baselinePace, unitPreference) : paceDisplay} as the reference pace. Adjust for how you feel rather than forcing the benchmark.`,
     PREVIEW_TEXT_MAX,
   );
 
@@ -191,6 +287,15 @@ export function buildPremiumPreviewPayload(
     activityId: activity.id,
     findings,
     nextAction: safeNextAction,
+    comparison: similarRuns.length >= 2 ? {
+      sampleSize: similarRuns.length,
+      baselinePaceSecondsPerUnit: baselinePace === null ? null : Math.round(baselinePace),
+      paceDeltaSecondsPerUnit: paceDelta,
+      baselineHeartRate: baselineHeartRate === null ? null : Math.round(baselineHeartRate),
+      heartRateDelta,
+      baselineCadence: baselineCadence === null ? null : Math.round(baselineCadence),
+      cadenceDelta,
+    } : null,
     sourceData: {
       activityId: activity.id,
       stravaId: activity.stravaId ?? null,
@@ -260,6 +365,7 @@ export async function createPremiumPreviewCore(deps: CreatePreviewDeps): Promise
     run,
     unitPreference,
     deps.now ? deps.now() : new Date(),
+    activities,
   );
   const written = previewNeedsUnitRefresh
     ? await deps.replaceIfStale?.(payload)

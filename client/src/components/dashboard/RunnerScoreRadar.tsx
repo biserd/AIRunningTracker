@@ -46,7 +46,7 @@ const ComponentBars = ({ data }: { data: RunnerScoreData['components'] }) => {
               style={{ width: `${(score.value / score.max) * 100}%` }}
             />
           </div>
-          <span className="text-xs font-medium text-gray-700 w-8 text-right">{score.value}</span>
+          <span className="w-10 text-right text-xs font-medium text-gray-700">{score.value}/25</span>
         </div>
       ))}
     </div>
@@ -92,20 +92,12 @@ export default function RunnerScoreRadar() {
     }
   };
 
-  const getGradeColor = (grade: string) => {
-    if (grade.startsWith('A')) return "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg";
-    if (grade.startsWith('B')) return "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg";
-    if (grade.startsWith('C')) return "bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg";
-    if (grade.startsWith('D')) return "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg";
-    return "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg";
-  };
-
   const getScoreColor = (score: number) => {
     if (score >= 90) return "text-green-600";
     if (score >= 80) return "text-blue-600";
     if (score >= 70) return "text-yellow-600";
     if (score >= 60) return "text-orange-600";
-    return "text-red-600";
+    return "text-amber-700";
   };
 
   if (isLoading) {
@@ -145,6 +137,20 @@ export default function RunnerScoreRadar() {
     );
   }
 
+  const scoreStatus = scoreData.totalScore >= 80
+    ? "Strong training base"
+    : scoreData.totalScore >= 65
+      ? "Building momentum"
+      : "Building consistency";
+  const componentEntries = Object.entries(scoreData.components) as Array<[keyof RunnerScoreData["components"], number]>;
+  const [weakestComponent] = componentEntries.reduce((weakest, current) => current[1] < weakest[1] ? current : weakest);
+  const guidance: Record<keyof RunnerScoreData["components"], string> = {
+    consistency: "Your clearest opportunity is repeating manageable weeks rather than chasing one big session.",
+    performance: "Your recent pace and efficiency are the main area holding this score back; compare like-for-like runs before changing training.",
+    volume: "Your recent weekly volume is the main limiter. Build gradually and keep recovery days easy.",
+    improvement: "Recent improvement is the main limiter. Stable training can be useful even when pace is not rising yet.",
+  };
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -176,10 +182,21 @@ export default function RunnerScoreRadar() {
           <span className={`text-4xl font-bold ${getScoreColor(scoreData.totalScore)}`}>
             {scoreData.totalScore}
           </span>
-          <Badge className={`text-sm px-2.5 py-0.5 font-semibold ${getGradeColor(scoreData.grade)}`}>
-            {scoreData.grade}
+          <span className="text-sm font-medium text-gray-500">/100</span>
+          <Badge variant="outline" className="border-blue-200 bg-blue-50 px-2.5 py-0.5 text-sm font-semibold text-blue-700">
+            {scoreStatus}
           </Badge>
           <span className="text-xs text-gray-500 ml-auto">Based on your last 30 days</span>
+        </div>
+        <div className="rounded-lg border border-gray-100 bg-gray-50 p-3" data-testid="runner-score-explanation">
+          <p className="text-sm font-medium text-charcoal">
+            {scoreData.trends.monthlyChange > 0
+              ? `Up ${scoreData.trends.monthlyChange} points from the previous period.`
+              : scoreData.trends.monthlyChange < 0
+                ? `Down ${Math.abs(scoreData.trends.monthlyChange)} points from the previous period.`
+                : "Stable versus the previous period."}
+          </p>
+          <p className="mt-1 text-xs leading-5 text-gray-600">{guidance[weakestComponent]}</p>
         </div>
         
         {/* Component bars */}

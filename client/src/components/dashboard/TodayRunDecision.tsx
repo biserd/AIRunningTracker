@@ -33,9 +33,9 @@ export default function TodayRunDecision({ recoveryData, isStravaConnected, rece
 
   return (
     <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-white" data-testid="card-today-run-decision">
-      <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between">
+      <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
         <div className="flex gap-3">
-          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100">
+          <div className="mt-0.5 hidden h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 sm:flex">
             <Icon className="h-5 w-5 text-blue-700" />
           </div>
           <div>
@@ -45,7 +45,7 @@ export default function TodayRunDecision({ recoveryData, isStravaConnected, rece
                 Recent running only
               </Badge>
             </div>
-            <h2 className="text-xl font-bold text-charcoal">{decision.title}</h2>
+            <h2 className="text-lg font-bold text-charcoal sm:text-xl">{decision.title}</h2>
             <p className="mt-1 max-w-2xl text-sm text-gray-600">{decision.action}</p>
           </div>
         </div>

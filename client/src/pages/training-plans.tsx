@@ -335,7 +335,7 @@ export default function TrainingPlans() {
               data-testid="button-create-plan"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Create New Plan
+              {canAccessTrainingPlans ? "Create New Plan" : "Preview New Plan"}
             </Button>
           )}
         </div>
@@ -391,10 +391,10 @@ export default function TrainingPlans() {
                     Create Training Plan
                   </CardTitle>
                   <CardDescription>
-                    {wizardStep === "goal" && "Step 1: Set your goal"}
+                    {wizardStep === "goal" && (canAccessTrainingPlans ? "Step 1: Set your goal" : "Step 1: Set your goal — Week 1 preview is free")}
                     {wizardStep === "preferences" && "Step 2: Customize preferences"}
                     {wizardStep === "generating" && "Generating your plan..."}
-                    {wizardStep === "preview" && "Step 3: Review and save"}
+                    {wizardStep === "preview" && "Step 3: Preview your first week"}
                   </CardDescription>
                 </div>
                 <Button 
@@ -414,7 +414,13 @@ export default function TrainingPlans() {
               </div>
             </CardHeader>
             
-            <CardContent>
+              <CardContent>
+              {wizardStep === "goal" && !canAccessTrainingPlans && (
+                <div className="mb-5 rounded-lg border border-blue-200 bg-blue-50 p-4" data-testid="training-plan-trial-disclosure">
+                  <p className="font-semibold text-gray-900">Preview your recommended first week before starting a trial.</p>
+                  <p className="mt-1 text-sm leading-6 text-gray-600">Your goal and schedule create a free Week 1 preview. A 14-day Premium trial is required only to build every week and adapt the plan over time.</p>
+                </div>
+              )}
               {/* Step 1: Goal */}
               {wizardStep === "goal" && (
                 <div className="space-y-6">
@@ -802,7 +808,7 @@ export default function TrainingPlans() {
                       data-testid="button-generate"
                     >
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Generate Plan
+                      {canAccessTrainingPlans ? "Generate Plan" : "Preview my first week"}
                     </Button>
                   </>
                 )}
@@ -818,7 +824,7 @@ export default function TrainingPlans() {
                           <Crown className="w-4 h-4 mr-2" /> Unlock my training plan
                         </Button>
                       </TrackedUpgradeLink>
-                      <p className="text-xs text-gray-500 mt-2">Start 14 days free · $0 today · Cancel anytime</p>
+                      <p className="text-xs text-gray-500 mt-2">14 days free · Card required · $0 today · Then $7.99/month · Cancel anytime</p>
                     </div>
                   </>
                 )}
@@ -927,7 +933,9 @@ export default function TrainingPlans() {
                   <Footprints className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">No training plans yet</h3>
                   <p className="text-gray-500 dark:text-gray-400 mb-4">
-                    Create your first AI-powered training plan to reach your running goals.
+                    {canAccessTrainingPlans
+                      ? "Create your first personalized training plan from your recent running history."
+                      : "Set your goal and running days to preview Week 1 free. Start a trial only when you are ready to build the complete adaptive plan."}
                   </p>
                   <Button 
                     onClick={() => setShowWizard(true)}
@@ -935,7 +943,7 @@ export default function TrainingPlans() {
                     data-testid="button-create-first-plan"
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Create Your First Plan
+                    {canAccessTrainingPlans ? "Create Your First Plan" : "Preview My First Week"}
                   </Button>
                 </CardContent>
               </Card>

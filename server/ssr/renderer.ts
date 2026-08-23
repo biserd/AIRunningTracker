@@ -1304,7 +1304,7 @@ export function renderPricingPage(): string {
           <h2>Frequently Asked Questions about Pricing</h2>
           <details>
             <summary><strong>Is there a free trial?</strong></summary>
-            <p>Yes — all new accounts receive a 14-day Premium trial with no credit card required. You get full access to every feature. Cancel before the trial ends and you won't be charged.</p>
+            <p>Yes — eligible new accounts can start a 14-day Premium trial. A payment card is required, you pay $0 today, and you can cancel before the trial ends to avoid a charge.</p>
           </details>
           <details>
             <summary><strong>Can I cancel anytime?</strong></summary>
@@ -1317,7 +1317,7 @@ export function renderPricingPage(): string {
         </section>
         <div class="ssr-cta">
           <h3>Start your free 14-day trial</h3>
-          <p>No credit card required. Full Premium access from day one.</p>
+          <p>Card required. $0 today. Full Premium access during the trial; cancel before it ends to avoid a charge.</p>
           <a href="/auth">Get Started Free &rarr;</a>
         </div>
       </article>

@@ -53,6 +53,12 @@ interface ActivitiesResponse {
   freeTier?: { capped: true; limit: number };
 }
 
+interface ActivitiesDashboardResponse {
+  user?: {
+    unitPreference?: "km" | "miles";
+  };
+}
+
 export default function ActivitiesPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -115,7 +121,7 @@ export default function ActivitiesPage() {
     },
   });
 
-  const { data: dashboardData } = useQuery({
+  const { data: dashboardData } = useQuery<ActivitiesDashboardResponse>({
     queryKey: [`/api/dashboard/${user?.id}`],
     enabled: !!user,
   });
@@ -197,7 +203,11 @@ export default function ActivitiesPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">All Activities</h1>
           <p className="text-gray-600">
-            {response?.total ? `${response.total} total activities` : 'Complete history of your running activities'}
+            {freeCap
+              ? `${response?.total || 0} recent activities visible on Free`
+              : response?.total
+                ? `${response.total} total activities`
+                : 'Complete history of your running activities'}
           </p>
         </div>
 
@@ -227,12 +237,12 @@ export default function ActivitiesPage() {
             <CardContent className="py-5 pr-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
                 <p className="font-semibold text-gray-900">
-                  You're seeing your last {freeCap.limit} runs
+                  Free includes up to your latest {freeCap.limit} runs
                 </p>
                 <p className="text-sm text-gray-600">
                   Upgrade to Premium to unlock your full Strava history, AI
                   insights, training plans, and the Coach Chat. Start a 14-day
-                  free trial — no charge today.
+                  free trial. Card required; you pay $0 today.
                 </p>
               </div>
               <Button

@@ -9,7 +9,7 @@
 import type { Capability } from "./entitlements";
 
 export const BENEFIT_COPY = {
-  premium_preview: "Keep getting personalized findings and a recommended next step after every run.",
+  premium_preview: "See how this run compared with similar efforts, where the signal changed, and what to try next.",
   activity_history: "Unlock the full breakdown of this run, including splits, route map, coach verdict, and next-run guidance.",
   activity_metrics: "See drift, pacing stability, and baseline comparison for this run.",
   activity_timeline: "Replay this run with interactive pace, heart-rate, and elevation charts.",

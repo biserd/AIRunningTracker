@@ -86,6 +86,106 @@ interface RecoveryState {
   recoveryMessage: string;
 }
 
+interface FreePremiumPreviewResponse {
+  preview: {
+    findings: [string, string];
+    nextAction: string;
+    sourceData: { activityId: number; name: string };
+    comparison?: { sampleSize: number } | null;
+  } | null;
+  status?: string;
+}
+
+function useFreePremiumPreview(enabled: boolean) {
+  return useQuery<FreePremiumPreviewResponse>({
+    queryKey: ["/api/premium-preview"],
+    queryFn: async () => {
+      const response = await fetch("/api/premium-preview", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("auth_token")}` },
+      });
+      if (!response.ok) throw new Error("Failed to load preview");
+      return response.json();
+    },
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
+function FreeInsightsPreview() {
+  const { data } = useFreePremiumPreview(true);
+  const preview = data?.preview;
+  const upgradeUrl = buildUpgradeUrl({
+    source: "coach_insights_preview",
+    capability: "advanced_insights",
+    benefitKey: "advanced_insights",
+    returnTo: "/coach-insights",
+  });
+
+  return (
+    <div className="space-y-6" data-testid="free-insights-preview">
+      <Card className="border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50">
+        <CardHeader>
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-700">
+            <Sparkles className="h-4 w-4" /> Your analysis preview
+          </div>
+          <CardTitle className="text-2xl">
+            {preview
+              ? `${preview.sourceData.name}${preview.comparison ? ` vs ${preview.comparison.sampleSize} similar runs` : " establishes your first benchmark"}`
+              : "See the patterns behind your training"}
+          </CardTitle>
+          <p className="text-sm text-gray-600">
+            {preview
+              ? "This sample uses your imported running history. Premium connects it with race outlook, training load, and form trends."
+              : "Your next eligible run will become a personalized sample before you decide whether to start a trial."}
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {preview?.findings.map((finding, index) => (
+            <div key={index} className="rounded-lg border border-amber-100 bg-white p-4 text-sm text-gray-800 shadow-sm">
+              {finding}
+            </div>
+          ))}
+          {preview && (
+            <div className="rounded-lg border-l-4 border-amber-400 bg-white p-4">
+              <p className="text-xs font-bold uppercase text-amber-700">Next-run action</p>
+              <p className="mt-1 text-sm text-gray-800">{preview.nextAction}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div>
+        <h2 className="text-xl font-bold text-charcoal">What the complete analysis answers</h2>
+        <div className="mt-3 grid gap-3 md:grid-cols-3">
+          {[
+            { icon: Target, title: "Race outlook", copy: "A finish-time range, confidence level, and the recent evidence behind it." },
+            { icon: Gauge, title: "Training load", copy: "Whether this week is unusual versus your own recent baseline—not a medical diagnosis." },
+            { icon: Shield, title: "Form stability", copy: "How cadence and pace consistency change across comparable efforts." },
+          ].map(({ icon: Icon, title, copy }) => (
+            <Card key={title}>
+              <CardContent className="p-5">
+                <Icon className="h-5 w-5 text-strava-orange" />
+                <h3 className="mt-3 font-semibold text-charcoal">{title}</h3>
+                <p className="mt-1 text-sm leading-6 text-gray-600">{copy}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-gray-200 bg-white p-5 sm:flex sm:items-center sm:justify-between sm:gap-5">
+        <div>
+          <p className="font-semibold text-charcoal">Unlock the complete picture for 14 days</p>
+          <p className="mt-1 text-sm text-gray-600">Card required · $0 today · Then $7.99/month · Cancel anytime</p>
+        </div>
+        <TrackedUpgradeLink href={upgradeUrl}>
+          <Button className="mt-4 bg-strava-orange text-white hover:bg-orange-600 sm:mt-0">Unlock my training analysis</Button>
+        </TrackedUpgradeLink>
+      </div>
+    </div>
+  );
+}
+
 function RecoveryStatusCard({ recovery, isLoading }: { recovery: RecoveryState | null; isLoading: boolean }) {
   if (isLoading) {
     return (
@@ -197,6 +297,8 @@ function InsightsTab({ user, batchData, isDataLoading, recoveryData, isRecoveryL
   const injuryRisk = batchData?.injuryRisk;
   const efficiency = batchData?.efficiency;
   const hasEngineEvidence = canAccessAdvancedInsights && Boolean(topPrediction || vo2Max?.current);
+
+  if (!canAccessAdvancedInsights) return <FreeInsightsPreview />;
 
   return (
     <>
@@ -435,6 +537,8 @@ function InsightsTab({ user, batchData, isDataLoading, recoveryData, isRecoveryL
 function AIAgentCoachTab({ user, canAccessAICoachChat }: { user: User; canAccessAICoachChat: boolean }) {
   const isPremium = canAccessAICoachChat;
   const hasOnboarded = !!user.coachGoal;
+  const { data: previewData } = useFreePremiumPreview(!isPremium);
+  const preview = previewData?.preview;
 
   const { data: recapsData, isLoading: recapsLoading } = useQuery<{ recaps: CoachRecap[] }>({
     queryKey: ['/api/coach-recaps'],
@@ -445,18 +549,32 @@ function AIAgentCoachTab({ user, canAccessAICoachChat }: { user: User; canAccess
 
   if (!isPremium) {
     return (
-      <div className="text-center py-16">
+      <div className="mx-auto max-w-3xl py-8 sm:py-12">
+        <div className="text-center">
         <div className="w-20 h-20 mx-auto bg-gradient-to-r from-amber-400 to-orange-500 rounded-full flex items-center justify-center mb-6">
           <Bot className="text-white" size={36} />
         </div>
         <h2 className="text-2xl font-bold text-charcoal mb-3">AI Agent Coach</h2>
-        <p className="text-gray-600 max-w-md mx-auto mb-6">
-          Get personalized coaching feedback after every run. AI Agent Coach analyzes your activities and delivers proactive insights, recommendations, and training cues.
+        <p className="text-gray-600 max-w-xl mx-auto mb-6">
+          Run as usual. After Strava syncs, your coach can send one concise finding and one useful next step in Telegram.
         </p>
         <Badge className="mb-6 bg-amber-100 text-amber-700 border-amber-300">
           Premium Feature
         </Badge>
-        <div className="flex justify-center gap-4">
+        </div>
+        <div className="mx-auto mb-7 max-w-xl rounded-2xl border border-blue-100 bg-blue-50 p-5 text-left shadow-sm" data-testid="agent-coach-message-preview">
+          <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-blue-700">
+            <MessageSquare className="h-4 w-4" /> {preview ? `Example from ${preview.sourceData.name}` : "Example message format"}
+          </div>
+          <p className="text-sm leading-6 text-gray-800">
+            {preview?.findings[0] || "Your latest run is compared with your own recent training, not a generic pace table."}
+          </p>
+          <p className="mt-3 border-t border-blue-100 pt-3 text-sm font-medium leading-6 text-gray-900">
+            Next step: {preview?.nextAction || "Your coach sends one proportionate action after the evidence is ready."}
+          </p>
+          <p className="mt-3 text-xs text-gray-500">Telegram available now · Runner-controlled opt-in · Disconnect anytime</p>
+        </div>
+        <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <TrackedUpgradeLink href={buildUpgradeUrl({
             source: "coach_insights",
             capability: "ai_coach",
@@ -465,7 +583,7 @@ function AIAgentCoachTab({ user, canAccessAICoachChat }: { user: User; canAccess
           })}>
             <Button className="bg-strava-orange text-white hover:bg-orange-600" data-testid="btn-upgrade-premium">
               <Sparkles className="mr-2 h-4 w-4" />
-              Unlock AI Agent Coach
+              Start 14 days free
             </Button>
           </TrackedUpgradeLink>
           <Button asChild variant="outline" data-testid="btn-learn-more">
@@ -474,6 +592,7 @@ function AIAgentCoachTab({ user, canAccessAICoachChat }: { user: User; canAccess
             </Link>
           </Button>
         </div>
+        <p className="mt-3 text-center text-xs text-gray-500">Card required · $0 today · Then $7.99/month · Cancel anytime</p>
       </div>
     );
   }
