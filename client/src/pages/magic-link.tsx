@@ -17,7 +17,7 @@ export default function MagicLinkPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
-    // Optional deep-link destination (e.g. /activity/123) — only same-origin
+    // Optional deep-link destination (e.g. /activity/123): only same-origin
     // paths are accepted to prevent open-redirect abuse. Anything that isn't
     // a single-leading-slash path falls back to /dashboard.
     const safeRedirect = sanitizeReturnTo(params.get("redirect")) || "/dashboard";
@@ -70,7 +70,7 @@ export default function MagicLinkPage() {
   return (
     <>
       <Helmet>
-        <title>Signing you in — RunAnalytics</title>
+        <title>Signing you in: RunAnalytics</title>
         <meta name="robots" content="noindex" />
       </Helmet>
 
@@ -112,7 +112,7 @@ export default function MagicLinkPage() {
                   </div>
                   <CardTitle>This link has expired</CardTitle>
                   <CardDescription>
-                    Sign-in links in emails are valid for 7 days. This one is past that window — just sign in directly or request a fresh link.
+                    Sign-in links in emails are valid for 7 days. This one is past that window: just sign in directly or request a fresh link.
                   </CardDescription>
                 </>
               )}

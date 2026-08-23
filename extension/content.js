@@ -1,4 +1,4 @@
-// content.js — injects the RunAnalytics panel into Strava activity pages.
+// content.js: injects the RunAnalytics panel into Strava activity pages.
 
 const API_BASE = 'https://aitracker.run/api';
 const PANEL_ID = 'runanalytics-panel';
@@ -109,7 +109,7 @@ function buildLockedPanel() {
       <div class="ra-divider"></div>
       <p class="ra-locked-title">Get AI analysis for every run</p>
       <p class="ra-locked-sub">Connect your free RunAnalytics account to see pace grades, injury risk, readiness scores, and an AI coach summary for each activity.</p>
-      <a href="${url}" target="_blank" rel="noopener" class="ra-cta">Connect free — 14 day trial →</a>
+      <a href="${url}" target="_blank" rel="noopener" class="ra-cta">Connect free: 14 day trial →</a>
       <div class="ra-footer-link"><a href="https://aitracker.run" target="_blank" rel="noopener">aitracker.run</a></div>
     </div>`;
 }
@@ -149,7 +149,7 @@ function buildErrorPanel() {
         <span class="ra-logo">⚡ RunAnalytics</span>
       </div>
       <div class="ra-divider"></div>
-      <p class="ra-locked-sub">Brief unavailable — <a href="https://aitracker.run/dashboard" target="_blank" rel="noopener" style="color:#FC4C02;">open RunAnalytics</a></p>
+      <p class="ra-locked-sub">Brief unavailable: <a href="https://aitracker.run/dashboard" target="_blank" rel="noopener" style="color:#FC4C02;">open RunAnalytics</a></p>
     </div>`;
 }
 

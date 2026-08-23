@@ -7,7 +7,7 @@
  * not a real Stripe trialing customer) must be demoted to plain free so
  * the dashboard renders the 20-run cap and the Premium upgrade nudge.
  *
- * Real Stripe customers in `trialing` status are left untouched —
+ * Real Stripe customers in `trialing` status are left untouched:
  * the filter `stripeSubscriptionId IS NULL` guarantees we never touch them.
  *
  * Usage:  npx tsx scripts/demote-fake-trials.ts

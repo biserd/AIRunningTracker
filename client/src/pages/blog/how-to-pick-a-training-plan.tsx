@@ -152,7 +152,7 @@ export default function HowToPickTrainingPlan() {
               </div>
             </div>
             <p className="text-xl text-gray-700 dark:text-gray-300 leading-relaxed">
-              Choosing the right training plan can make or break your running goals. Whether you're preparing for your first 5K or chasing a marathon PR, this guide covers everything you need to know about picking a training plan that actually works for <strong>you</strong>—not some hypothetical "average" runner.
+              Choosing the right training plan can make or break your running goals. Whether you're preparing for your first 5K or chasing a marathon PR, this guide covers everything you need to know about picking a training plan that actually works for <strong>you</strong>, not some hypothetical "average" runner.
             </p>
           </div>
 
@@ -182,7 +182,7 @@ export default function HowToPickTrainingPlan() {
               Why Your Training Plan Choice Matters
             </h2>
             <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-              A training plan is more than just a schedule of runs—it's your roadmap to race day success. The right plan builds your fitness progressively, keeps you healthy, and peaks your performance exactly when you need it. The wrong plan? It can lead to injury, burnout, or showing up to race day undertrained.
+              A training plan is more than just a schedule of runs; it's your roadmap to race day success. The right plan builds your fitness progressively, keeps you healthy, and peaks your performance exactly when you need it. The wrong plan? It can lead to injury, burnout, or showing up to race day undertrained.
             </p>
 
             <div className="grid md:grid-cols-3 gap-6 mb-6">
@@ -218,7 +218,7 @@ export default function HowToPickTrainingPlan() {
               <CardContent className="pt-6">
                 <p className="text-gray-800 dark:text-gray-200 font-semibold mb-2">The Bottom Line:</p>
                 <p className="text-gray-700 dark:text-gray-300">
-                  A well-designed training plan doesn't just tell you what to do—it understands <em>where you are now</em> and builds you up safely to <em>where you want to be</em>. That's why personalization isn't a luxury; it's essential.
+                  A well-designed training plan doesn't just tell you what to do; it understands <em>where you are now</em> and builds you up safely to <em>where you want to be</em>. That's why personalization isn't a luxury; it's essential.
                 </p>
               </CardContent>
             </Card>
@@ -271,7 +271,7 @@ export default function HowToPickTrainingPlan() {
                     <div>
                       <h3 className="font-bold text-lg mb-2 dark:text-white">Mistake #3: No Recovery Weeks Built In</h3>
                       <p className="text-gray-700 dark:text-gray-300">
-                        Plans without scheduled recovery weeks every 3-4 weeks accumulate fatigue until your body forces a break—usually through injury or illness.
+                        Plans without scheduled recovery weeks every 3-4 weeks accumulate fatigue until your body forces a break, usually through injury or illness.
                       </p>
                     </div>
                   </div>
@@ -328,7 +328,7 @@ export default function HowToPickTrainingPlan() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-gray-700 dark:text-gray-300">
-                  Weekly mileage should increase gradually—ideally 10-15% max. Look for plans that build volume in blocks, not straight-line increases every week.
+                  Weekly mileage should increase gradually, ideally 10-15% max. Look for plans that build volume in blocks, not straight-line increases every week.
                 </CardContent>
               </Card>
 
@@ -388,7 +388,7 @@ export default function HowToPickTrainingPlan() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-gray-700 dark:text-gray-300">
-                  Vague instructions like "run easy" aren't enough. Quality plans provide target paces based on your current fitness—not arbitrary numbers.
+                  Vague instructions like "run easy" aren't enough. Quality plans provide target paces based on your current fitness, not arbitrary numbers.
                 </CardContent>
               </Card>
             </div>
@@ -421,7 +421,7 @@ export default function HowToPickTrainingPlan() {
             </h2>
             
             <p className="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
-              Most free training plans you find online are designed for a hypothetical "average" runner. But you're not average—you have specific strengths, weaknesses, and constraints that generic plans can't address.
+              Most free training plans you find online are designed for a hypothetical "average" runner. But you're not average; you have specific strengths, weaknesses, and constraints that generic plans can't address.
             </p>
 
             {/* Comparison Image */}
@@ -503,7 +503,7 @@ export default function HowToPickTrainingPlan() {
             </h2>
             
             <p className="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
-              Traditional training plans are static—they don't change based on how training is going. AI-powered plans bring the intelligence of a personal coach, analyzing your data and adjusting your training in real-time.
+              Traditional training plans are static; they don't change based on how training is going. AI-powered plans bring the intelligence of a personal coach, analyzing your data and adjusting your training in real-time.
             </p>
 
             <div className="space-y-6 mb-8">
@@ -591,7 +591,7 @@ export default function HowToPickTrainingPlan() {
                     <div>
                       <h4 className="font-bold mb-1">Strava-Powered Personalization</h4>
                       <p className="text-white/90 text-sm">
-                        Your plan is built from your actual running history—not guesswork about your fitness level.
+                        Your plan is built from your actual running history, not guesswork about your fitness level.
                       </p>
                     </div>
                   </div>
@@ -609,7 +609,7 @@ export default function HowToPickTrainingPlan() {
                     <div>
                       <h4 className="font-bold mb-1">Automatic Activity Linking</h4>
                       <p className="text-white/90 text-sm">
-                        Your Strava runs automatically match to planned workouts—no manual logging required.
+                        Your Strava runs automatically match to planned workouts; no manual logging required.
                       </p>
                     </div>
                   </div>
@@ -654,7 +654,7 @@ export default function HowToPickTrainingPlan() {
                 <div>
                   <h4 className="font-bold text-lg dark:text-white">Get Your Custom Plan</h4>
                   <p className="text-gray-700 dark:text-gray-300">
-                    AI generates a periodized plan with proper build phases, recovery weeks, and taper—all validated by coaching guardrails.
+                    AI generates a periodized plan with proper build phases, recovery weeks, and taper, all validated by coaching guardrails.
                   </p>
                 </div>
               </div>
@@ -682,7 +682,7 @@ export default function HowToPickTrainingPlan() {
               <CardContent className="py-8 text-center">
                 <h3 className="text-2xl font-bold mb-4">Ready to Train Smarter?</h3>
                 <p className="text-white/90 mb-6 max-w-2xl mx-auto">
-                  Stop guessing with generic plans. Get a personalized training program built from your actual running data — try it free for 14 days.
+                  Stop guessing with generic plans. Get a personalized training program built from your actual running data: try it free for 14 days.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link href="/auth">

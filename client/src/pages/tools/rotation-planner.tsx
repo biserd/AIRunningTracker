@@ -77,7 +77,7 @@ export default function RotationPlannerPage() {
   return (
     <>
       <SEO
-        title="Running Shoe Rotation Planner — Build Your 2026 Multi-Shoe Setup"
+        title="Running Shoe Rotation Planner: Build Your 2026 Multi-Shoe Setup"
         description="Get a personalized daily trainer, race shoe, and recovery shoe rotation based on your weekly mileage, weight, and goals. Extends shoe life and reduces injury risk."
         keywords="shoe rotation, running shoe lineup, multiple running shoes, shoe rotation planner"
         url="https://aitracker.run/tools/rotation-planner"
@@ -376,7 +376,7 @@ export default function RotationPlannerPage() {
                     <h3 className="font-semibold text-charcoal">Side-by-Side Compare</h3>
                   </div>
                   <p className="text-sm text-gray-600">
-                    Compare two shoes spec-for-spec — weight, drop, cushioning, and price.
+                    Compare two shoes spec-for-spec: weight, drop, cushioning, and price.
                   </p>
                   <div className="flex items-center gap-1 mt-3 text-strava-orange text-sm font-medium">
                     <span>Compare shoes</span>

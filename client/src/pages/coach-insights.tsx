@@ -159,7 +159,7 @@ function FreeInsightsPreview() {
         <div className="mt-3 grid gap-3 md:grid-cols-3">
           {[
             { icon: Target, title: "Race outlook", copy: "A finish-time range, confidence level, and the recent evidence behind it." },
-            { icon: Gauge, title: "Training load", copy: "Whether this week is unusual versus your own recent baseline—not a medical diagnosis." },
+            { icon: Gauge, title: "Training load", copy: "Whether this week is unusual versus your own recent baseline, not a medical diagnosis." },
             { icon: Shield, title: "Form stability", copy: "How cadence and pace consistency change across comparable efforts." },
           ].map(({ icon: Icon, title, copy }) => (
             <Card key={title}>

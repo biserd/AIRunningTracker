@@ -44,7 +44,7 @@ const panels: Record<Variant, { title: string; intro: string; columns: string[];
     links: [{ href: "/training-plans", label: "Preview training-plan setup" }, { href: "/blog/ai-running-coach-vs-training-plan", label: "Compare static plans and AI coaching" }],
   },
   "ai-guide": {
-    title: "What an AI running coach knows—and what it does not",
+    title: "What an AI running coach knows and what it does not",
     intro: "Useful coaching starts by separating recorded evidence from missing human context.",
     columns: ["Can use when available", "Cannot safely infer", "Runner should provide"],
     rows: [

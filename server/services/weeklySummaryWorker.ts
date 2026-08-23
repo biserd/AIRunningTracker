@@ -120,8 +120,8 @@ export async function sendWeeklySummaries(refDate?: Date): Promise<WeeklySummary
   const runTypesArray = RUNNING_ACTIVITY_TYPES;
 
   // Fetch opted-in users with eligibility signals:
-  //   strava_connected — must be true
-  //   recent_run_count — number of running activities in last 90 days (must be > 0)
+  //   strava_connected: must be true
+  //   recent_run_count: number of running activities in last 90 days (must be > 0)
   const cutoff90 = new Date(ref);
   cutoff90.setUTCDate(cutoff90.getUTCDate() - 90);
 
@@ -202,7 +202,7 @@ export async function sendWeeklySummaries(refDate?: Date): Promise<WeeklySummary
       const weekActs = allActivities.filter(a => inRange(a, weekStart, weekEnd));
       const priorActs = allActivities.filter(a => inRange(a, priorStart, priorEnd));
 
-      // Nothing to summarise — skip silently rather than sending "0 runs" email
+      // Nothing to summarise: skip silently rather than sending "0 runs" email
       if (weekActs.length === 0) {
         console.log(`[WeeklySummary] SKIP user=${u.id} (${u.email}): 0 runs last week`);
         skipped++;
@@ -229,7 +229,7 @@ export async function sendWeeklySummaries(refDate?: Date): Promise<WeeklySummary
           ? weekActs.reduce((best, a) => (a.distance > best.distance ? a : best))
           : null;
 
-      // Build activity magic link for top run — use the DB integer id, NOT
+      // Build activity magic link for top run: use the DB integer id, NOT
       // the Strava id, because the route handler looks up by activities.id
       // (serial/int4) and passing a large Strava id causes a PG overflow error.
       let topRunActivityUrl: string | null = null;
@@ -361,7 +361,7 @@ class WeeklySummaryWorker {
     // First check 60 s after boot (avoids startup storms)
     setTimeout(() => this.check(), 60_000);
     this.intervalId = setInterval(() => this.check(), WORKER_INTERVAL_MS);
-    console.log("[WeeklySummary] Worker started — checks every hour, sends on Monday UTC");
+    console.log("[WeeklySummary] Worker started: checks every hour, sends on Monday UTC");
   }
 
   stop(): void {
@@ -383,7 +383,7 @@ class WeeklySummaryWorker {
         return; // Already sent today
       }
 
-      console.log("[WeeklySummary] Monday detected — sending weekly summaries");
+      console.log("[WeeklySummary] Monday detected: sending weekly summaries");
       const result = await sendWeeklySummaries(now);
       await storage.setSystemSetting(SENT_KEY, todayStr);
       console.log(`[WeeklySummary] Auto-send done: ${result.sent} sent, ${result.skipped} skipped, ${result.errors} errors`);

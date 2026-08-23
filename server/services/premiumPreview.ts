@@ -1,9 +1,9 @@
 /**
- * Premium Preview — one deliberate, personalized preview created after a new
+ * Premium Preview: one deliberate, personalized preview created after a new
  * runner's first successful Strava sync (trial-conversion Phase 2).
  *
  * The preview shows exactly two findings, one next action, and the source
- * data it was derived from — without revealing the complete Premium analysis.
+ * data it was derived from without revealing the complete Premium analysis.
  * It is created exactly once per user via a compare-and-set update.
  */
 import { db } from "../db";
@@ -13,7 +13,7 @@ import { storage } from "../storage";
 import { hasPremiumAccess } from "@shared/entitlements";
 import { normalizeCadenceToSpm } from "@shared/cadenceNormalization";
 
-// Safe payload limits — the preview is stored on the users row and returned
+// Safe payload limits: the preview is stored on the users row and returned
 // verbatim to the client, so it must stay small and free of bulky fields
 // (streams, polylines, laps).
 export const PREMIUM_PREVIEW_VERSION = 5;
@@ -174,7 +174,7 @@ function selectSimilarRuns(activity: Activity, activities: Activity[]): Activity
 
 /**
  * Build the preview payload from a single activity's summary data (never
- * streams/laps/polylines). Deterministic — no AI call — so the very first
+ * streams/laps/polylines). Deterministic: no AI call: so the very first
  * impression a new runner gets is trustworthy and repeatable.
  */
 export function buildPremiumPreviewPayload(
@@ -253,13 +253,13 @@ export function buildPremiumPreviewPayload(
   // Elevation finding when meaningful climb exists.
   if ((activity.totalElevationGain ?? 0) >= 30) {
     candidates.push(
-      `This run packed ${formatElevation(activity.totalElevationGain!, unitPreference)} of climbing into ${distanceDisplay} — hilly runs like this quietly build strength but also raise recovery cost.`,
+      `This run packed ${formatElevation(activity.totalElevationGain!, unitPreference)} of climbing into ${distanceDisplay}: hilly runs like this quietly build strength but also raise recovery cost.`,
     );
   }
 
-  // Pacing/volume finding — always available as a fallback.
+  // Pacing/volume finding: always available as a fallback.
   candidates.push(
-    `You held ${paceDisplay} across ${distanceDisplay} — consistent enough that a full split-by-split analysis would show exactly where you gained and lost time.`,
+    `You held ${paceDisplay} across ${distanceDisplay}: consistent enough that a full split-by-split analysis would show exactly where you gained and lost time.`,
   );
   candidates.push(
     `This ${distanceDisplay}, ${Math.round(movingTime / 60)}-minute run gives Premium a useful baseline for comparisons with your future runs.`,
@@ -379,7 +379,7 @@ export async function createPremiumPreviewCore(deps: CreatePreviewDeps): Promise
 
 /**
  * Production entry point: create the one-time Premium Preview for a user
- * after their first successful Strava sync. Safe to call repeatedly — the
+ * after their first successful Strava sync. Safe to call repeatedly: the
  * DB-level compare-and-set (`premium_preview IS NULL`) makes it exactly-once.
  */
 export async function createPremiumPreviewForUser(userId: number): Promise<CreatePreviewResult> {

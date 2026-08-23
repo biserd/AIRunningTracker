@@ -82,7 +82,7 @@ export function analyzeRunStreams(streams: any, isKm: boolean): StreamAnalysis |
       const absS = Math.abs(splitDeltaSec);
       if (splitDeltaSec <= -8) {
         splitLabel = "Negative split (finished faster)";
-        summaryLines.push(`Pacing: negative split — the second half was about ${absS}s/${unit} faster than the first. Strong, controlled effort.`);
+        summaryLines.push(`Pacing: negative split: the second half was about ${absS}s/${unit} faster than the first. Strong, controlled effort.`);
       } else if (splitDeltaSec >= 8) {
         if (terrainAffected) {
           splitLabel = "Positive split (terrain-affected)";
@@ -93,7 +93,7 @@ export function analyzeRunStreams(streams: any, isKm: boolean): StreamAnalysis |
         }
       } else {
         splitLabel = "Even pacing";
-        summaryLines.push(`Pacing: very even — within ${absS}s/${unit} between the first and second half.`);
+        summaryLines.push(`Pacing: very even, within ${absS}s/${unit} between the first and second half.`);
       }
     }
 
@@ -128,11 +128,11 @@ export function analyzeRunStreams(streams: any, isKm: boolean): StreamAnalysis |
         const ratio2 = sp2 / hr2;
         decouplingPct = Math.round(((ratio1 - ratio2) / ratio1) * 1000) / 10;
         if (decouplingPct > 5) {
-          summaryLines.push(`Aerobic decoupling: ${decouplingPct}% — heart rate drifted up relative to pace (above the ~5% durability threshold).${terrainAffected ? " Because the second half was materially uphill, terrain may contribute to this drift; do not treat it as standalone proof of poor durability." : " The effort was beyond a comfortable aerobic zone, or aerobic durability is the current limiter."}`);
+          summaryLines.push(`Aerobic decoupling: ${decouplingPct}%: heart rate drifted up relative to pace (above the ~5% durability threshold).${terrainAffected ? " Because the second half was materially uphill, terrain may contribute to this drift; do not treat it as standalone proof of poor durability." : " The effort was beyond a comfortable aerobic zone, or aerobic durability is the current limiter."}`);
         } else if (decouplingPct >= 0) {
-          summaryLines.push(`Aerobic decoupling: ${decouplingPct}% — well coupled (under 5%). Good aerobic durability; HR held steady against pace.`);
+          summaryLines.push(`Aerobic decoupling: ${decouplingPct}%: well coupled (under 5%). Good aerobic durability; HR held steady against pace.`);
         } else {
-          summaryLines.push(`Aerobic decoupling: ${decouplingPct}% — pace-per-heartbeat actually improved late (warmed into it nicely).`);
+          summaryLines.push(`Aerobic decoupling: ${decouplingPct}%: pace-per-heartbeat actually improved late (warmed into it nicely).`);
         }
       }
     }

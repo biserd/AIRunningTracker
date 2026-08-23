@@ -233,7 +233,7 @@ function generateEditorialUpdateForBlog(slug: string): string {
   const updates: Record<string, { title: string; intro: string; rows: Array<[string, string]>; link: string; label: string }> = {
     "best-strava-analytics-tools-2026": {
       title: "How this comparison was evaluated",
-      intro: "Products are compared by current use case, price visibility, data depth, setup friction and disclosed limitations—not by unsupported claims that one product is best for everyone.",
+      intro: "Products are compared by current use case, price visibility, data depth, setup friction and disclosed limitations, not by unsupported claims that one product is best for everyone.",
       rows: [["Post-run explanation", "Verify whether the product explains why a metric changed."], ["Long-term exploration", "Check filters, comparable periods and export options."], ["Free use", "Confirm what works before connecting an account or paying."], ["Adaptive next step", "Check whether the runner's context survives signup and checkout."]],
       link: "/tools", label: "Try the current free tools",
     },
@@ -245,7 +245,7 @@ function generateEditorialUpdateForBlog(slug: string): string {
     },
     "how-to-pick-a-training-plan": {
       title: "Choose the least aggressive plan that fits",
-      intro: "Plan selection should begin with current consistency, available days and goal-date feasibility—not the finish time a runner hopes to achieve.",
+      intro: "Plan selection should begin with current consistency, available days and goal-date feasibility, not the finish time a runner hopes to achieve.",
       rows: [["New or returning", "Begin near current weekly volume with mostly easy running."], ["Consistent intermediate", "Protect recovery around one or two purposeful sessions."], ["Race focused", "Add event-specific work only on a stable baseline."], ["Changing schedule", "Use adaptation without stacking missed workouts."]],
       link: "/blog/ai-running-coach-vs-training-plan", label: "Compare static plans and AI coaching",
     },
@@ -321,7 +321,7 @@ function generateRelatedToolsForBlog(title: string, category: string): string {
   return `<section class="ssr-related">
         <h2>Related tools &amp; resources</h2>
         <ul>
-          ${links.slice(0, 6).map(l => `<li><a href="${l.href}"><strong>${l.label}</strong></a> — ${l.blurb}.</li>`).join('\n          ')}
+          ${links.slice(0, 6).map(l => `<li><a href="${l.href}"><strong>${l.label}</strong></a>: ${l.blurb}.</li>`).join('\n          ')}
         </ul>
       </section>`;
 }
@@ -417,7 +417,7 @@ export function renderShoePage(slug: string, shoe: ShoeData, similarShoes?: { br
         ${similarShoes && similarShoes.length > 0 ? `
         <section>
           <h2>Similar Shoes</h2>
-          <ul>${similarShoes.map(s => `<li><a href="/tools/shoes/${s.slug}">${escapeHtml(s.brand)} ${escapeHtml(s.model)}</a>${s.weight || s.price ? ` — ${s.weight ? s.weight + ' oz' : ''}${s.weight && s.price ? ', ' : ''}${s.price ? '$' + s.price : ''}` : ''}</li>`).join('')}</ul>
+          <ul>${similarShoes.map(s => `<li><a href="/tools/shoes/${s.slug}">${escapeHtml(s.brand)} ${escapeHtml(s.model)}</a>${s.weight || s.price ? `: ${s.weight ? s.weight + ' oz' : ''}${s.weight && s.price ? ', ' : ''}${s.price ? '$' + s.price : ''}` : ''}</li>`).join('')}</ul>
         </section>` : ''}
         
         <div class="ssr-cta">
@@ -463,7 +463,7 @@ interface ComparisonData {
 // ---------------------------------------------------------------------------
 // Spec-driven editorial copy generator for shoe comparison pages.
 //
-// Each comparison page used to be a thin spec table — Google flagged ~17 of
+// Each comparison page used to be a thin spec table: Google flagged ~17 of
 // them as "Crawled - currently not indexed" because they looked templated.
 // This generator builds unique 2-paragraph editorial copy + an FAQ from the
 // actual spec deltas of each pair. Because every pair has different weights,
@@ -474,7 +474,7 @@ function fmtCategory(cat: string): string {
 }
 
 function fmtOz(n: number | null | undefined): string {
-  return n != null ? `${n} oz` : "—";
+  return n != null ? `${n} oz` : "Not available";
 }
 
 function describeStack(s: ComparisonShoe): string {
@@ -485,7 +485,7 @@ function describeStack(s: ComparisonShoe): string {
 }
 
 function generateComparisonNarrative(s1: ComparisonShoe, s2: ComparisonShoe): string {
-  // Names interpolated into HTML — must be escaped because brand/model come
+  // Names interpolated into HTML: must be escaped because brand/model come
   // from a user-editable database table.
   const n1 = escapeHtml(`${s1.brand} ${s1.model}`);
   const n2 = escapeHtml(`${s2.brand} ${s2.model}`);
@@ -503,11 +503,11 @@ function generateComparisonNarrative(s1: ComparisonShoe, s2: ComparisonShoe): st
     );
   } else if (sameCategory) {
     framing.push(
-      `The ${n1} and the ${n2} sit in the same ${cat1} bucket, so the question isn't <em>what</em> you'd use them for — it's which one matches your stride, your weekly mileage, and your budget.`
+      `The ${n1} and the ${n2} sit in the same ${cat1} bucket, so the question isn't <em>what</em> you'd use them for: it's which one matches your stride, your weekly mileage, and your budget.`
     );
   } else {
     framing.push(
-      `The ${n1} (${cat1}) and the ${n2} (${cat2}) live in different parts of a runner's rotation. This comparison is most useful if you're deciding which slot to fill next — a versatile workhorse, a race-day weapon, or a recovery cruiser.`
+      `The ${n1} (${cat1}) and the ${n2} (${cat2}) live in different parts of a runner's rotation. This comparison is most useful if you're deciding which slot to fill next: a versatile workhorse, a race-day weapon, or a recovery cruiser.`
     );
   }
 
@@ -522,7 +522,7 @@ function generateComparisonNarrative(s1: ComparisonShoe, s2: ComparisonShoe): st
   }
   if (s1.heelToToeDrop != null && s2.heelToToeDrop != null && s1.heelToToeDrop !== s2.heelToToeDrop) {
     deltas.push(
-      `the drop differs (${s1.heelToToeDrop}mm on the ${n1}, ${s2.heelToToeDrop}mm on the ${n2}) — higher-drop shoes tend to feel friendlier to heel strikers and tight calves, while lower drops favor a midfoot landing`
+      `the drop differs (${s1.heelToToeDrop}mm on the ${n1}, ${s2.heelToToeDrop}mm on the ${n2}): higher-drop shoes tend to feel friendlier to heel strikers and tight calves, while lower drops favor a midfoot landing`
     );
   }
   const stack1 = s1.heelStackHeight ?? null;
@@ -555,7 +555,7 @@ function generateComparisonNarrative(s1: ComparisonShoe, s2: ComparisonShoe): st
 
   let p2: string;
   if (deltas.length === 0) {
-    p2 = `On paper the two shoes are remarkably close — same category, similar weight, similar drop. The buying decision comes down to fit, brand history, and which one feels better on a short test run.`;
+    p2 = `On paper the two shoes are remarkably close: same category, similar weight, similar drop. The buying decision comes down to fit, brand history, and which one feels better on a short test run.`;
   } else if (deltas.length === 1) {
     p2 = `The headline difference: ${deltas[0]}. Everything else (fit, outsole geometry, upper) is close enough that it comes down to personal preference.`;
   } else {
@@ -597,7 +597,7 @@ function generateComparisonFaq(s1: ComparisonShoe, s2: ComparisonShoe): { q: str
     if (s1.hasCarbonPlate && s2.hasCarbonPlate) {
       faq.push({
         q: `Are these carbon-plated racing shoes?`,
-        a: `Yes — both the ${n1} and the ${n2} use a carbon plate, so they're built primarily for race day and key workouts rather than daily mileage.`,
+        a: `Yes: both the ${n1} and the ${n2} use a carbon plate, so they're built primarily for race day and key workouts rather than daily mileage.`,
       });
     } else {
       const plated = s1.hasCarbonPlate ? n1 : n2;
@@ -610,7 +610,7 @@ function generateComparisonFaq(s1: ComparisonShoe, s2: ComparisonShoe): { q: str
   }
   faq.push({
     q: `Can I rotate both shoes in the same training block?`,
-    a: `Yes — many runners pair complementary shoes like these to spread load across different muscles and tendons. Use our <a href="/tools/rotation-planner">rotation planner</a> to build a mileage split that fits your schedule.`,
+    a: `Yes: many runners pair complementary shoes like these to spread load across different muscles and tendons. Use our <a href="/tools/rotation-planner">rotation planner</a> to build a mileage split that fits your schedule.`,
   });
   return faq.slice(0, 5);
 }
@@ -624,7 +624,7 @@ function generateFaqStructuredData(faq: { q: string; a: string }[]): string {
       "name": item.q,
       "acceptedAnswer": {
         "@type": "Answer",
-        // Strip HTML for the schema text — keep prose only.
+        // Strip HTML for the schema text: keep prose only.
         "text": item.a.replace(/<[^>]+>/g, ""),
       },
     })),
@@ -648,7 +648,7 @@ export function renderComparisonPage(slug: string, comparison: ComparisonData): 
   };
 
   const structuredData = generateStructuredData(meta, url, 'WebPage');
-  // Spec-driven editorial copy — unique per pair, helps Google index the page
+  // Spec-driven editorial copy: unique per pair, helps Google index the page
   // instead of treating it as boilerplate.
   const narrativeHtml =
     comparison.shoe1 && comparison.shoe2
@@ -661,7 +661,7 @@ export function renderComparisonPage(slug: string, comparison: ComparisonData): 
   const faqJsonLd = faq.length > 0 ? generateFaqStructuredData(faq) : "";
   const head = generateHtmlHead(meta, url, structuredData);
 
-  // Per-shoe deep links back to the shoe detail pages — gives Google clear
+  // Per-shoe deep links back to the shoe detail pages: gives Google clear
   // outbound internal links from each comparison.
   const shoeLink = (s: ComparisonShoe | null): string => {
     if (!s) return "";
@@ -747,8 +747,8 @@ export function renderComparisonPage(slug: string, comparison: ComparisonData): 
         <section>
           <h2>Read the full reviews</h2>
           <ul>
-            ${comparison.shoe1 ? `<li>${shoeLink(comparison.shoe1)} — full specs, AI insights, and verdict.</li>` : ''}
-            ${comparison.shoe2 ? `<li>${shoeLink(comparison.shoe2)} — full specs, AI insights, and verdict.</li>` : ''}
+            ${comparison.shoe1 ? `<li>${shoeLink(comparison.shoe1)}: full specs, AI insights, and verdict.</li>` : ''}
+            ${comparison.shoe2 ? `<li>${shoeLink(comparison.shoe2)}: full specs, AI insights, and verdict.</li>` : ''}
             <li><a href="/tools/shoes">Browse the full running shoe database</a></li>
             <li><a href="/tools/shoes/compare">See more shoe comparisons</a></li>
           </ul>
@@ -1130,14 +1130,14 @@ export function renderFaqPage(): string {
   const faqItems = [
     { q: "What is RunAnalytics?", a: "RunAnalytics is an AI-powered running analytics platform that integrates with Strava to provide personalized insights, performance tracking, and training recommendations. We use advanced machine learning algorithms to analyze your running data and help you improve your performance." },
     { q: "Do I need a Strava account?", a: "While you can create an account without Strava, connecting your Strava account unlocks the full potential of our platform. Strava integration provides access to your historical running data, which enables more accurate AI insights and personalized recommendations." },
-    { q: "Is RunAnalytics free to use?", a: "RunAnalytics offers a 14-day free trial with full access to all Premium features — AI coaching, race predictions, training plans, and advanced analytics. After the trial, Premium is $7.99/month or $79.99/year. You can cancel anytime before the trial ends and you won't be charged." },
+    { q: "Is RunAnalytics free to use?", a: "RunAnalytics offers a 14-day free trial with full access to all Premium features: AI coaching, race predictions, training plans, and advanced analytics. After the trial, Premium is $7.99/month or $79.99/year. You can cancel anytime before the trial ends and you won't be charged." },
     { q: "What kind of insights do you provide?", a: "Our AI analyzes your running data to provide insights on performance trends, pace analysis, training load, recovery recommendations, race predictions, injury risk assessment, and personalized training plans. Each insight is tailored to your specific running patterns and goals." },
     { q: "How accurate are the race time predictions?", a: "Race predictions are modeled estimates based on the activity data available. Weather, terrain, pacing, distance from the input effort and data quality can materially change the result; the displayed range is not a calibrated probability interval." },
     { q: "What is the Runner Score?", a: "The Runner Score is our comprehensive fitness metric that evaluates multiple aspects of your running performance including endurance, speed, consistency, and efficiency. It's displayed on a radar chart with scores from 0-100 across different categories." },
-    { q: "What do CTL, ATL, and TSB mean?", a: "CTL (Chronic Training Load) is your Fitness — a 42-day rolling average showing your long-term training buildup. ATL (Acute Training Load) is your Fatigue — a 7-day rolling average showing your recent training stress. TSB (Training Stress Balance) is your Form — calculated as CTL minus ATL, showing your race readiness." },
+    { q: "What do CTL, ATL, and TSB mean?", a: "CTL (Chronic Training Load) is your Fitness: a 42-day rolling average showing your long-term training buildup. ATL (Acute Training Load) is your Fatigue: a 7-day rolling average showing your recent training stress. TSB (Training Stress Balance) is your Form: calculated as CTL minus ATL, showing your race readiness." },
     { q: "How do you calculate VO2 Max?", a: "We use Jack Daniels' formula combined with your recent running performance data to estimate VO2 Max. This calculation considers your best recent race times or time trial performances across different distances to provide an accurate fitness assessment." },
     { q: "What is AI Agent Coach?", a: "AI Agent Coach is a Premium feature that proactively analyzes every run after it syncs from Strava. Instead of waiting for you to check dashboards, it delivers personalized coaching recaps, observations, and next-step recommendations automatically." },
-    { q: "How is AI Agent Coach different from the AI Coach Chat?", a: "AI Coach Chat is reactive — you ask questions and get answers. AI Agent Coach is proactive — it analyzes your runs automatically and delivers coaching insights without you asking. Think of it as having a coach who reviews every run and leaves you notes." },
+    { q: "How is AI Agent Coach different from the AI Coach Chat?", a: "AI Coach Chat is reactive: you ask questions and get answers. AI Agent Coach is proactive: it analyzes your runs automatically and delivers coaching insights without you asking. Think of it as having a coach who reviews every run and leaves you notes." },
     { q: "Is my running data secure?", a: "Absolutely. We use enterprise-grade security measures including data encryption, secure authentication, and trusted cloud infrastructure. Your data is never shared with third parties without your explicit consent." },
     { q: "What happens if I delete my account?", a: "When you delete your account, all your personal data, analytics, and insights are permanently removed from our systems within 30 days. Your original Strava data remains unaffected in your Strava account." },
   ];
@@ -1218,7 +1218,7 @@ ${listSchema}
   <div id="root">
     <header class="ssr-header">
       <h1>Running Blog</h1>
-      <p style="opacity:0.9;margin-top:10px;">Training tips, AI coaching insights, and running science — from the RunAnalytics team.</p>
+      <p style="opacity:0.9;margin-top:10px;">Training tips, AI coaching insights, and running science: from the RunAnalytics team.</p>
     </header>
     <main class="ssr-container">
       <article class="ssr-content">
@@ -1270,7 +1270,7 @@ export function renderPricingPage(): string {
           </ul>
         </section>
         <section>
-          <h2>Premium — $7.99/month or $79.99/year</h2>
+          <h2>Premium: $7.99/month or $79.99/year</h2>
           <p>Everything in Free, plus the full AI coaching suite:</p>
           <h3>Activity Analysis</h3>
           <ul>
@@ -1288,8 +1288,8 @@ export function renderPricingPage(): string {
             <li>Race predictions for all standard distances</li>
             <li>Injury risk analysis</li>
             <li>Fitness / fatigue / form charts (CTL, ATL, TSB)</li>
-            <li>AI Coach Chat — conversational coaching across your training</li>
-            <li>AI Agent Coach — proactive post-run recaps sent automatically</li>
+            <li>AI Coach Chat: conversational coaching across your training</li>
+            <li>AI Agent Coach: proactive post-run recaps sent automatically</li>
           </ul>
           <h3>Benchmarking &amp; Comparisons</h3>
           <ul>
@@ -1298,13 +1298,13 @@ export function renderPricingPage(): string {
             <li>Compare runs (overlay two runs, split-by-split diffs)</li>
             <li>Form stability analysis (cadence and power stability over time)</li>
           </ul>
-          <p><a href="/proactive-running-coach"><strong>See how private Telegram coaching works</strong></a> — available to Premium and trial runners; WhatsApp is coming next.</p>
+          <p><a href="/proactive-running-coach"><strong>See how private Telegram coaching works</strong></a>: available to Premium and trial runners; WhatsApp is coming next.</p>
         </section>
         <section>
           <h2>Frequently Asked Questions about Pricing</h2>
           <details>
             <summary><strong>Is there a free trial?</strong></summary>
-            <p>Yes — eligible new accounts can start a 14-day Premium trial. A payment card is required, you pay $0 today, and you can cancel before the trial ends to avoid a charge.</p>
+            <p>Yes: eligible new accounts can start a 14-day Premium trial. A payment card is required, you pay $0 today, and you can cancel before the trial ends to avoid a charge.</p>
           </details>
           <details>
             <summary><strong>Can I cancel anytime?</strong></summary>
@@ -1312,7 +1312,7 @@ export function renderPricingPage(): string {
           </details>
           <details>
             <summary><strong>Is there an annual discount?</strong></summary>
-            <p>Yes. The annual plan is $79.99/year — equivalent to $6.67/month, saving you about 17% compared to the monthly plan.</p>
+            <p>Yes. The annual plan is $79.99/year: equivalent to $6.67/month, saving you about 17% compared to the monthly plan.</p>
           </details>
         </section>
         <div class="ssr-cta">
@@ -1474,8 +1474,8 @@ export function renderFeaturesPage(): string {
           </ul>
         </section>
         <section>
-          <h2>AI Agent Coach — Proactive Coaching</h2>
-          <p>AI Agent Coach proactively analyzes every run after it syncs from Strava and sends you personalized coaching recaps — without you having to ask. Think of it as a dedicated running coach who reviews every workout and leaves you detailed notes.</p>
+          <h2>AI Agent Coach: Proactive Coaching</h2>
+          <p>AI Agent Coach proactively analyzes every run after it syncs from Strava and sends you personalized coaching recaps without you having to ask. Think of it as a dedicated running coach who reviews every workout and leaves you detailed notes.</p>
           <ul>
             <li>Post-activity coaching recaps delivered automatically</li>
             <li>Personalized next-step recommendations (rest, easy run, workout, long run)</li>
@@ -1485,7 +1485,7 @@ export function renderFeaturesPage(): string {
         </section>
         <section>
           <h2>AI Coach Chat</h2>
-          <p>Have a real conversation with an AI coach that knows your full training history. Ask anything — from "why do I feel tired?" to "am I ready for my upcoming race?" — and get contextual, data-driven answers.</p>
+          <p>Have a real conversation with an AI coach that knows your full training history. Ask anything, from "why do I feel tired?" to "am I ready for my upcoming race?", and get contextual, data-driven answers.</p>
         </section>
         <section>
           <h2>Personalized Training Plans</h2>
@@ -1508,11 +1508,11 @@ export function renderFeaturesPage(): string {
         <section>
           <h2>Free Running Tools</h2>
           <ul>
-            <li><a href="/tools/race-predictor">Race Time Predictor</a> — predict 5K to marathon finish times from a recent effort</li>
-            <li><a href="/tools/marathon-fueling">Marathon Fueling Planner</a> — turn practiced intake targets into a race schedule</li>
-            <li><a href="/tools/aerobic-decoupling-calculator">Aerobic Decoupling Calculator</a> — measure aerobic efficiency on long runs</li>
-            <li><a href="/tools/training-split-analyzer">Training Split Analyzer</a> — analyze your easy/hard intensity balance</li>
-            <li><a href="/tools/cadence-analyzer">Cadence Analyzer</a> — review cadence stability and late-run change</li>
+            <li><a href="/tools/race-predictor">Race Time Predictor</a>: predict 5K to marathon finish times from a recent effort</li>
+            <li><a href="/tools/marathon-fueling">Marathon Fueling Planner</a>: turn practiced intake targets into a race schedule</li>
+            <li><a href="/tools/aerobic-decoupling-calculator">Aerobic Decoupling Calculator</a>: measure aerobic efficiency on long runs</li>
+            <li><a href="/tools/training-split-analyzer">Training Split Analyzer</a>: analyze your easy/hard intensity balance</li>
+            <li><a href="/tools/cadence-analyzer">Cadence Analyzer</a>: review cadence stability and late-run change</li>
           </ul>
         </section>
         <div class="ssr-cta">
@@ -1558,24 +1558,24 @@ ${orgSchema}
       <article class="ssr-content">
         <section>
           <h2>Our Mission</h2>
-          <p>RunAnalytics exists to make elite-level running coaching accessible to every runner. We believe that the insights previously available only to professional athletes — detailed performance analysis, personalized training plans, injury risk signals, and proactive coaching — should be available to anyone who laces up their shoes.</p>
+          <p>RunAnalytics exists to make elite-level running coaching accessible to every runner. We believe that the insights previously available only to professional athletes: detailed performance analysis, personalized training plans, injury risk signals, and proactive coaching: should be available to anyone who laces up their shoes.</p>
         </section>
         <section>
           <h2>What We Do</h2>
           <p>RunAnalytics is an AI-powered running analytics platform that connects to your Strava account to deliver personalized insights, AI-generated training plans, race predictions, and proactive coaching. We analyze every run you complete and turn raw GPS and heart rate data into actionable guidance you can apply to your next workout.</p>
           <ul>
-            <li>AI Coach Chat — ask questions about your training any time</li>
-            <li>AI Agent Coach — proactive post-run coaching recaps sent automatically</li>
+            <li>AI Coach Chat: ask questions about your training any time</li>
+            <li>AI Agent Coach: proactive post-run coaching recaps sent automatically</li>
             <li>Race time predictions for 5K to ultramarathon distances</li>
             <li>Personalized training plans with true periodization</li>
-            <li>Runner Score — a comprehensive fitness performance index</li>
-            <li>Running Shoe Hub — compare 280+ shoes with AI insights</li>
+            <li>Runner Score: a comprehensive fitness performance index</li>
+            <li>Running Shoe Hub: compare 280+ shoes with AI insights</li>
             <li>Free tools: race predictor, marathon fueling planner, aerobic decoupling calculator, and more</li>
           </ul>
         </section>
         <section>
           <h2>Why Choose RunAnalytics</h2>
-          <p>Unlike generic fitness apps, RunAnalytics is built specifically for runners. Every feature — from the aerobic decoupling calculator to the shoe rotation planner — is designed around the real needs of runners training for events from parkrun 5Ks to 100-mile ultramarathons.</p>
+          <p>Unlike generic fitness apps, RunAnalytics is built specifically for runners. Every feature: from the aerobic decoupling calculator to the shoe rotation planner: is designed around the real needs of runners training for events from parkrun 5Ks to 100-mile ultramarathons.</p>
           <p>We integrate deeply with Strava so you never have to log your workouts manually. Our AI processes your full training history to give you advice that is always grounded in your actual data, not generic templates.</p>
         </section>
         <div class="ssr-cta">
@@ -1754,20 +1754,20 @@ export function renderDevelopersApiPage(): string {
           <h2>Key Endpoints</h2>
           <h3>Activities</h3>
           <ul>
-            <li><code>GET /api/activities</code> — List your synced running activities with pagination</li>
-            <li><code>GET /api/activities/:id</code> — Get detailed data for a specific activity</li>
+            <li><code>GET /api/activities</code>: List your synced running activities with pagination</li>
+            <li><code>GET /api/activities/:id</code>: Get detailed data for a specific activity</li>
           </ul>
           <h3>AI Insights</h3>
           <ul>
-            <li><code>GET /api/insights</code> — Get AI-generated insights for your recent activities</li>
+            <li><code>GET /api/insights</code>: Get AI-generated insights for your recent activities</li>
           </ul>
           <h3>Training Plans</h3>
           <ul>
-            <li><code>GET /api/training-plans</code> — Get your current AI-generated training plan</li>
+            <li><code>GET /api/training-plans</code>: Get your current AI-generated training plan</li>
           </ul>
           <h3>Runner Profile</h3>
           <ul>
-            <li><code>GET /api/runner-score</code> — Get your current Runner Score and component metrics</li>
+            <li><code>GET /api/runner-score</code>: Get your current Runner Score and component metrics</li>
           </ul>
         </section>
         <section>
@@ -1816,7 +1816,7 @@ export function renderMcpDocsPage(): string {
   return `${head}
 <body><div id="root"><header class="ssr-header"><h1>RunAnalytics MCP Documentation</h1><p class="ssr-meta">Production endpoints, OAuth scopes, tools, limits, and security boundaries.</p></header>
 <main class="ssr-container"><article class="ssr-content">
-<section><h2>Endpoints</h2><p><strong>Private:</strong> <code>https://aitracker.run/mcp</code> — OAuth plus active Premium or trial access.</p><p><strong>Public:</strong> <code>https://aitracker.run/mcp/public</code> — public shoe and tool catalog only.</p></section>
+<section><h2>Endpoints</h2><p><strong>Private:</strong> <code>https://aitracker.run/mcp</code>: OAuth plus active Premium or trial access.</p><p><strong>Public:</strong> <code>https://aitracker.run/mcp/public</code>: public shoe and tool catalog only.</p></section>
 <section><h2>OAuth discovery</h2><ul><li><code>/.well-known/oauth-authorization-server</code></li><li><code>/.well-known/oauth-protected-resource/mcp</code></li><li><code>/mcp/oauth/register</code></li><li><code>/mcp/oauth/authorize</code></li><li><code>/mcp/oauth/token</code></li><li><code>/mcp/oauth/revoke</code></li></ul><p>Clients use authorization code with PKCE S256 and exact registered redirect URIs. Web-session and magic-link tokens are not accepted as MCP bearer tokens.</p></section>
 <section><h2>Private scopes</h2><ul><li><code>mcp:profile.read</code></li><li><code>mcp:activities.read</code></li><li><code>mcp:analytics.read</code></li><li><code>mcp:goals.read</code></li><li><code>mcp:plans.read</code></li></ul></section>
 <section><h2>Public running-shoe tools</h2><ul><li><code>search_running_shoes</code></li><li><code>get_running_shoe</code></li><li><code>list_running_shoe_filters</code></li><li><code>compare_running_shoes</code></li><li><code>list_runanalytics_tools</code></li></ul></section>
@@ -1835,7 +1835,7 @@ export function renderToolsHubPage(): string {
   const listSchema = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "ItemList",
-    "name": "Free Running Tools — RunAnalytics",
+    "name": "Free Running Tools: RunAnalytics",
     "description": meta.description,
     "url": `${BASE_URL}${url}`,
     "itemListElement": [
@@ -1869,28 +1869,28 @@ ${listSchema}
         <section>
           <h2>Performance Calculators</h2>
           <ul>
-            <li><a href="/tools/race-predictor"><strong>Race Time Predictor</strong></a> — predict your 5K, 10K, half marathon, and marathon finish times from a recent effort using the Riegel formula. Import your Strava data for personalized predictions.</li>
-            <li><a href="/tools/marathon-fueling"><strong>Marathon Fueling Planner</strong></a> — turn a practiced carbohydrate target and product serving size into a simple race schedule. Sodium and fluid remain individualized.</li>
-            <li><a href="/tools/aerobic-decoupling-calculator"><strong>Aerobic Decoupling Calculator</strong></a> — compare pace-to-heart-rate efficiency across two halves of a suitable steady run.</li>
-            <li><a href="/tools/training-pace-calculator"><strong>Training Pace Calculator</strong></a> — turn a recent race into broad workout pace ranges with a usefulness rating.</li>
-            <li><a href="/tools/race-split-calculator"><strong>Race Split Calculator</strong></a> — create exact mile or kilometer checkpoints for three modest pacing strategies.</li>
+            <li><a href="/tools/race-predictor"><strong>Race Time Predictor</strong></a>: predict your 5K, 10K, half marathon, and marathon finish times from a recent effort using the Riegel formula. Import your Strava data for personalized predictions.</li>
+            <li><a href="/tools/marathon-fueling"><strong>Marathon Fueling Planner</strong></a>: turn a practiced carbohydrate target and product serving size into a simple race schedule. Sodium and fluid remain individualized.</li>
+            <li><a href="/tools/aerobic-decoupling-calculator"><strong>Aerobic Decoupling Calculator</strong></a>: compare pace-to-heart-rate efficiency across two halves of a suitable steady run.</li>
+            <li><a href="/tools/training-pace-calculator"><strong>Training Pace Calculator</strong></a>: turn a recent race into broad workout pace ranges with a usefulness rating.</li>
+            <li><a href="/tools/race-split-calculator"><strong>Race Split Calculator</strong></a>: create exact mile or kilometer checkpoints for three modest pacing strategies.</li>
           </ul>
         </section>
         <section>
           <h2>Training Analysis</h2>
           <ul>
-            <li><a href="/tools/training-split-analyzer"><strong>Training Split Analyzer</strong></a> — analyze whether your recent intensity distribution is polarized, pyramidal, or threshold-heavy.</li>
-            <li><a href="/tools/cadence-analyzer"><strong>Running Cadence Analyzer</strong></a> — review cadence stability and late-run change while keeping pace, terrain and device quality in context.</li>
-            <li><a href="/tools/heatmap"><strong>Running Heatmap</strong></a> — visualize your most-run routes on an interactive map. Discover training patterns and favourite paths from all your Strava activities.</li>
+            <li><a href="/tools/training-split-analyzer"><strong>Training Split Analyzer</strong></a>: analyze whether your recent intensity distribution is polarized, pyramidal, or threshold-heavy.</li>
+            <li><a href="/tools/cadence-analyzer"><strong>Running Cadence Analyzer</strong></a>: review cadence stability and late-run change while keeping pace, terrain and device quality in context.</li>
+            <li><a href="/tools/heatmap"><strong>Running Heatmap</strong></a>: visualize your most-run routes on an interactive map. Discover training patterns and favourite paths from all your Strava activities.</li>
           </ul>
         </section>
         <section>
           <h2>Running Shoe Hub</h2>
           <ul>
-            <li><a href="/tools/shoes"><strong>Running Shoe Database</strong></a> — browse detailed specs, source and verification dates, and clearly labeled editorial insights.</li>
-            <li><a href="/tools/shoe-finder"><strong>Running Shoe Finder</strong></a> — answer a few questions about your running style and get AI-matched shoe recommendations from our full database.</li>
-            <li><a href="/tools/rotation-planner"><strong>Shoe Rotation Planner</strong></a> — build a smart multi-shoe rotation optimized for your training volume, race goals, and surface preferences.</li>
-            <li><a href="/tools/shoes/compare"><strong>Shoe Comparison Tool</strong></a> — compare any two running shoes side-by-side with specs, pros/cons, and an AI verdict.</li>
+            <li><a href="/tools/shoes"><strong>Running Shoe Database</strong></a>: browse detailed specs, source and verification dates, and clearly labeled editorial insights.</li>
+            <li><a href="/tools/shoe-finder"><strong>Running Shoe Finder</strong></a>: answer a few questions about your running style and get AI-matched shoe recommendations from our full database.</li>
+            <li><a href="/tools/rotation-planner"><strong>Shoe Rotation Planner</strong></a>: build a smart multi-shoe rotation optimized for your training volume, race goals, and surface preferences.</li>
+            <li><a href="/tools/shoes/compare"><strong>Shoe Comparison Tool</strong></a>: compare any two running shoes side-by-side with specs, pros/cons, and an AI verdict.</li>
           </ul>
         </section>
         <div class="ssr-cta">

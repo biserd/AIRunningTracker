@@ -249,7 +249,7 @@ class NotificationDeliveryWorker {
     };
     setTimeout(() => void tick(), 30_000);
     this.intervalId = setInterval(() => void tick(), 60_000);
-    console.log("[NotificationProcessor] Delivery worker started — every minute");
+    console.log("[NotificationProcessor] Delivery worker started: every minute");
   }
 
   stop(): void {
@@ -268,7 +268,7 @@ function formatCoachBriefEmail(notification: NotificationOutbox, user: User): st
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;padding:28px;color:#263238;">
       <p style="margin:0 0 8px;color:#FC4C02;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;">RunAnalytics Coach</p>
       <h1 style="margin:0 0 16px;font-size:26px;line-height:1.2;">${escapeHtml(notification.title)}</h1>
-      <p style="font-size:16px;line-height:1.65;margin:0 0 24px;">Hi ${name} — ${escapeHtml(notification.body)}</p>
+      <p style="font-size:16px;line-height:1.65;margin:0 0 24px;">Hi ${name}: ${escapeHtml(notification.body)}</p>
       <a href="https://aitracker.run/dashboard" style="display:inline-block;background:#FC4C02;color:white;text-decoration:none;border-radius:8px;padding:12px 18px;font-weight:700;">Open today’s coaching</a>
       <p style="margin-top:28px;font-size:12px;color:#777;line-height:1.5;">Training guidance, not medical advice. <a href="https://aitracker.run/coach-settings" style="color:#666;">Change timing, channel, weather, quiet hours, snooze or pause coaching</a>.</p>
     </div>`;

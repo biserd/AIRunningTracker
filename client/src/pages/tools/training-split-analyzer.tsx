@@ -178,7 +178,7 @@ export default function TrainingSplitAnalyzer() {
   return (
     <>
       <SEO
-        title="Training Split Analyzer — Polarized vs Pyramidal vs Threshold"
+        title="Training Split Analyzer: Polarized vs Pyramidal vs Threshold"
         description="Analyze your training intensity distribution to see whether you run a polarized, pyramidal, or threshold model. Includes a breakdown of each zone's contribution."
         keywords="training split analyzer, polarized training, pyramidal training, running zones, training intensity distribution"
         url="https://aitracker.run/tools/training-split-analyzer"
@@ -674,7 +674,7 @@ export default function TrainingSplitAnalyzer() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Sign up for RunAnalytics to get comprehensive training analysis, AI-powered insights, personalized training plans, and race predictions—all completely free!
+                Sign up for RunAnalytics to get comprehensive training analysis, AI-powered insights, personalized training plans, and race predictions, all completely free!
               </p>
               <Link href={isAuthenticated ? "/dashboard" : "/register"}>
                 <Button className="w-full sm:w-auto" data-testid="link-get-started">

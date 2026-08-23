@@ -1648,7 +1648,7 @@ export default function TrainingPlanDetail() {
                 Plan Settings
               </DialogTitle>
               <DialogDescription>
-                Update your training plan preferences. Note: changing these settings won't regenerate workouts — they update your plan metadata.
+                Update your training plan preferences. Note: changing these settings won't regenerate workouts: they update your plan metadata.
               </DialogDescription>
             </DialogHeader>
             
@@ -1767,7 +1767,7 @@ export default function TrainingPlanDetail() {
               <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
                 <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
                   {goalTypeLabels[plan?.goalType || ""] || plan?.goalType}
-                  {plan?.targetTime && ` — ${plan.targetTime}`}
+                  {plan?.targetTime && `: ${plan.targetTime}`}
                 </p>
                 <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
                   {plan?.totalWeeks} weeks · Created {plan?.createdAt ? format(parseISO(plan.createdAt), "MMM d, yyyy") : ""}

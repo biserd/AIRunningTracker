@@ -29,7 +29,7 @@ export default function AuthPage() {
   const { toast } = useToast();
   const requestedRedirect = sanitizeReturnTo(new URLSearchParams(window.location.search).get("redirect"));
 
-  // Handle Strava OAuth error redirects — e.g., user denied Strava access
+  // Handle Strava OAuth error redirects: e.g., user denied Strava access
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const stravaError = params.get("error");
@@ -107,7 +107,7 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Header — single line, no redundant subtitle */}
+        {/* Header: single line, no redundant subtitle */}
         <div className="text-center mb-6">
           <Link href="/">
             <div className="flex items-center justify-center space-x-3">
@@ -127,7 +127,7 @@ export default function AuthPage() {
           </CardHeader>
           <CardContent className="space-y-4">
 
-            {/* SIGN IN — two paths only: Strava OAuth or magic-link email */}
+            {/* SIGN IN: two paths only: Strava OAuth or magic-link email */}
             {mode === "signin" && !magicLinkSentTo && (
               <>
                 <Button
@@ -180,7 +180,7 @@ export default function AuthPage() {
               </>
             )}
 
-            {/* Magic-link sent confirmation — replaces the form once submitted */}
+            {/* Magic-link sent confirmation: replaces the form once submitted */}
             {mode === "signin" && magicLinkSentTo && (
               <div className="space-y-4 text-center" data-testid="magic-link-sent">
                 <div className="mx-auto w-14 h-14 rounded-full bg-green-50 flex items-center justify-center">
@@ -207,7 +207,7 @@ export default function AuthPage() {
               </div>
             )}
 
-            {/* SIGN UP — keep the existing email/password registration form.
+            {/* SIGN UP: keep the existing email/password registration form.
                 Passwordless signup is a future backend change. */}
             {mode === "signup" && (
               <>

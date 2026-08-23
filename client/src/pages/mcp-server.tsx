@@ -33,7 +33,7 @@ export default function McpServerLandingPage() {
             <div className="inline-flex items-center gap-2 rounded-full border border-orange-300/30 bg-orange-400/10 px-4 py-2 text-sm font-semibold text-orange-200"><LockKeyhole className="h-4 w-4" /> Standards-based · OAuth · Read-only</div>
             <div className="mt-7 grid items-center gap-12 lg:grid-cols-[1.15fr_.85fr]">
               <div>
-                <h1 className="text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">Let your AI coach understand your running—without giving it control.</h1>
+                <h1 className="text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">Let your AI coach understand your running without giving it control.</h1>
                 <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">RunAnalytics MCP gives an authorized client a narrow view of your own training data. It cannot edit activities, change plans, start a Strava sync, send email, or touch billing.</p>
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                   <Button asChild size="lg" className="bg-strava-orange text-white hover:bg-orange-600"><Link href={upgradeUrl}>Start 14 days free <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>

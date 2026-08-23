@@ -26,11 +26,11 @@ const CHROME_STORE_URL =
 const structuredData = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  name: "RunAnalytics for Strava — Chrome Extension",
+  name: "RunAnalytics for Strava: Chrome Extension",
   operatingSystem: "Chrome",
   applicationCategory: "BrowserApplication",
   description:
-    "Free Chrome extension that adds AI-powered RunAnalytics insights directly to every Strava activity page — run grade, Runner Score, readiness, and injury risk, with no extra clicks.",
+    "Free Chrome extension that adds AI-powered RunAnalytics insights directly to every Strava activity page: run grade, Runner Score, readiness, and injury risk, with no extra clicks.",
   url: "https://aitracker.run/chrome-extension",
   downloadUrl: CHROME_STORE_URL,
   offers: {
@@ -50,7 +50,7 @@ const features = [
     icon: Gauge,
     title: "Run Grade on Every Activity",
     description:
-      "See an instant A–F grade for each Strava run, scored against your own history — right on the activity page.",
+      "See an instant A–F grade for each Strava run, scored against your own history: right on the activity page.",
   },
   {
     icon: TrendingUp,
@@ -95,7 +95,7 @@ const steps = [
     icon: Lock,
     title: "Sign in once",
     description:
-      "Log in at aitracker.run and connect Strava. Your auth token syncs to the extension automatically — no separate extension login.",
+      "Log in at aitracker.run and connect Strava. Your auth token syncs to the extension automatically: no separate extension login.",
   },
   {
     icon: MousePointerClick,
@@ -135,7 +135,7 @@ export default function ChromeExtensionLanding() {
           <p className="text-xl sm:text-2xl text-gray-700 dark:text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
             The free RunAnalytics Chrome extension drops your run grade, Runner
             Score, readiness, and injury-risk signals straight onto every Strava
-            activity page — no extra clicks, no new tab.
+            activity page: no extra clicks, no new tab.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
@@ -145,7 +145,7 @@ export default function ChromeExtensionLanding() {
                 className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-600 text-white px-8 py-6 text-lg"
                 data-testid="hero-cta-install"
               >
-                <Chrome className="mr-2" size={20} /> Add to Chrome — Free
+                <Chrome className="mr-2" size={20} /> Add to Chrome: Free
               </Button>
             </a>
             <Link href="/auth">
@@ -253,7 +253,7 @@ export default function ChromeExtensionLanding() {
                     {[
                       "Built for the way you already use Strava",
                       "Free to install and free to use",
-                      "Private and secure — only your auth token syncs",
+                      "Private and secure: only your auth token syncs",
                       "Powered by the full RunAnalytics AI engine",
                     ].map((item) => (
                       <li key={item} className="flex items-start gap-3">
@@ -307,7 +307,7 @@ export default function ChromeExtensionLanding() {
               className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-600 text-white px-8 py-6 text-lg"
               data-testid="final-cta-install"
             >
-              <Chrome className="mr-2" size={20} /> Add to Chrome — It's Free
+              <Chrome className="mr-2" size={20} /> Add to Chrome: It's Free
             </Button>
           </a>
         </section>

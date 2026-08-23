@@ -530,12 +530,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const staticPages = [
         { url: "/", changefreq: "daily", priority: "1.0", lastmod: today },
         // Utility pages (auth/forgot-password/reset-password) are intentionally
-        // excluded — they have no indexable content and just dilute crawl budget.
+        // excluded: they have no indexable content and just dilute crawl budget.
         { url: "/about", changefreq: "monthly", priority: "0.7", lastmod: "2026-01-01" },
         { url: "/features", changefreq: "monthly", priority: "0.8", lastmod: today },
         { url: "/pricing", changefreq: "weekly", priority: "0.9", lastmod: today },
         
-        // Blog & Content Marketing — derived from blogContent.ts so no post is ever missed
+        // Blog & Content Marketing: derived from blogContent.ts so no post is ever missed
         { url: "/blog", changefreq: "weekly", priority: "0.9", lastmod: today },
         { url: "/ai-running-coach", changefreq: "weekly", priority: "0.9", lastmod: today },
         { url: "/ai-running-coaching-guide", changefreq: "weekly", priority: "0.9", lastmod: today },
@@ -595,7 +595,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastmod: comparison.createdAt ? new Date(comparison.createdAt).toISOString().split('T')[0] : today
       }));
 
-      // Blog pages — derived from blogContent.ts so the sitemap stays in sync
+      // Blog pages: derived from blogContent.ts so the sitemap stays in sync
       // automatically whenever a new post is added to the content source.
       const blogPages = getAllBlogPosts().map(post => ({
         url: `/blog/${post.slug}`,
@@ -631,7 +631,7 @@ ${allPages.map(page => `  <url>
   const path = await import('path');
   
   // Helper to generate pre-rendered HTML with SEO meta tags.
-  // Served only to crawlers — real users get the SPA from Vite's catch-all.
+  // Served only to crawlers: real users get the SPA from Vite's catch-all.
   // IMPORTANT: do NOT include a window.location redirect here. Googlebot
   // renders JS and treats it as a redirect → "Page with redirect" / soft 404.
   const generateSEOHtml = (pageMeta: { title: string; description: string; keywords?: string; ogImage?: string }, url: string): string => {
@@ -716,14 +716,14 @@ ${allPages.map(page => `  <url>
       <section>
         <h2>Explore the platform</h2>
         <ul>
-          <li><a href="${baseUrl}/tools/race-predictor">Race Time Predictor</a> — predict 5K, 10K, half &amp; marathon finish times.</li>
-          <li><a href="${baseUrl}/tools/marathon-fueling">Marathon Fueling Planner</a> — build a personalized fueling strategy.</li>
-          <li><a href="${baseUrl}/tools/aerobic-decoupling-calculator">Aerobic Decoupling Calculator</a> — measure aerobic efficiency.</li>
-          <li><a href="${baseUrl}/tools/training-split-analyzer">Training Split Analyzer</a> — see your easy/hard balance.</li>
-          <li><a href="${baseUrl}/tools/cadence-analyzer">Cadence Analyzer</a> — analyze running form stability.</li>
-          <li><a href="${baseUrl}/tools/shoes">Running Shoe Database</a> — 280+ shoes with AI insights.</li>
-          <li><a href="${baseUrl}/tools/shoe-finder">Shoe Finder</a> — get matched to the right pair.</li>
-          <li><a href="${baseUrl}/tools/rotation-planner">Rotation Planner</a> — build a smart shoe rotation.</li>
+          <li><a href="${baseUrl}/tools/race-predictor">Race Time Predictor</a>: predict 5K, 10K, half &amp; marathon finish times.</li>
+          <li><a href="${baseUrl}/tools/marathon-fueling">Marathon Fueling Planner</a>: build a personalized fueling strategy.</li>
+          <li><a href="${baseUrl}/tools/aerobic-decoupling-calculator">Aerobic Decoupling Calculator</a>: measure aerobic efficiency.</li>
+          <li><a href="${baseUrl}/tools/training-split-analyzer">Training Split Analyzer</a>: see your easy/hard balance.</li>
+          <li><a href="${baseUrl}/tools/cadence-analyzer">Cadence Analyzer</a>: analyze running form stability.</li>
+          <li><a href="${baseUrl}/tools/shoes">Running Shoe Database</a>: 280+ shoes with AI insights.</li>
+          <li><a href="${baseUrl}/tools/shoe-finder">Shoe Finder</a>: get matched to the right pair.</li>
+          <li><a href="${baseUrl}/tools/rotation-planner">Rotation Planner</a>: build a smart shoe rotation.</li>
 
         </ul>
       </section>
@@ -737,7 +737,7 @@ ${allPages.map(page => `  <url>
       <a href="${baseUrl}/terms">Terms</a> ·
       <a href="${baseUrl}/sitemap.xml">Sitemap</a>
     </nav>
-    <p>&copy; RunAnalytics — AI-powered running analytics for Strava athletes.</p>
+    <p>&copy; RunAnalytics: AI-powered running analytics for Strava athletes.</p>
   </footer>
   <noscript>
     <p>RunAnalytics is best experienced with JavaScript enabled.</p>
@@ -835,7 +835,7 @@ ${allPages.map(page => `  <url>
   app.get("/blog/:slug", (req: any, res, next) => {
     const userAgent = req.get('user-agent') || '';
 
-    // Only serve SSG to crawlers (search engines + AI bots) — regular users get the rich SPA
+    // Only serve SSG to crawlers (search engines + AI bots): regular users get the rich SPA
     if (!isCrawler(userAgent)) {
       next();
       return;
@@ -888,7 +888,7 @@ ${allPages.map(page => `  <url>
     app.get(`/tools/${routeSlug}`, (req: any, res, next) => {
       const userAgent = req.get('user-agent') || '';
 
-      // Only serve SSR to crawlers (search engines + AI bots) — regular users get the rich SPA
+      // Only serve SSR to crawlers (search engines + AI bots): regular users get the rich SPA
       if (!isCrawler(userAgent)) {
         next();
         return;
@@ -925,7 +925,7 @@ ${allPages.map(page => `  <url>
   app.get("/tools/shoes/:slug", async (req: any, res, next) => {
     const userAgent = req.get('user-agent') || '';
 
-    // Only serve SSG to crawlers (search engines + AI bots) — regular users get the rich SPA
+    // Only serve SSG to crawlers (search engines + AI bots): regular users get the rich SPA
     if (!isCrawler(userAgent)) {
       next();
       return;
@@ -995,7 +995,7 @@ ${allPages.map(page => `  <url>
   });
 
   // SSR for shoe comparison pages - crawlers get bare HTML for SEO, humans get React SPA
-  // Server-side HTML cache for comparison SSR pages — avoids repeated DB
+  // Server-side HTML cache for comparison SSR pages: avoids repeated DB
   // round-trips + narrative generation on every Googlebot visit.
   const comparisonSsrCache = new Map<string, { html: string; ts: number }>();
   const COMPARISON_SSR_TTL_MS = 60 * 60 * 1000; // 1 hour
@@ -1004,7 +1004,7 @@ ${allPages.map(page => `  <url>
     try {
       const userAgent = req.headers['user-agent'] || '';
 
-      // Only serve SSR to crawlers (search engines + AI bots) — regular users get the rich SPA
+      // Only serve SSR to crawlers (search engines + AI bots): regular users get the rich SPA
       if (!isCrawler(userAgent)) {
         return next();
       }
@@ -1205,7 +1205,7 @@ ${allPages.map(page => `  <url>
   });
 
   // Funnel analytics ingestion (client-emitted events only). Auth is
-  // optional — anonymous visitors can still emit pricing/offer events.
+  // optional: anonymous visitors can still emit pricing/offer events.
   // Server-authoritative events (trial/paid/cancellation) are rejected here;
   // they may only be written by checkout + Stripe webhook code paths.
   app.post("/api/analytics/funnel", async (req: any, res) => {
@@ -1234,7 +1234,7 @@ ${allPages.map(page => `  <url>
           const user = await authService.verifyToken(token);
           if (user) userId = user.id;
         } catch {
-          // ignore — event stays anonymous
+          // ignore: event stays anonymous
         }
       }
 
@@ -1322,7 +1322,7 @@ ${allPages.map(page => `  <url>
 
       const stripe = await getUncachableStripeClient();
 
-      // Create or get Stripe customer. Email is optional — if missing,
+      // Create or get Stripe customer. Email is optional: if missing,
       // Stripe Checkout collects it and the webhook syncs it back.
       let customerId = user.stripeCustomerId;
       if (!customerId) {
@@ -1335,14 +1335,14 @@ ${allPages.map(page => `  <url>
       }
 
       // Decide whether to grant a 14-day free trial. Only first-time
-      // subscribers get the trial — anyone who has ever held a Stripe
+      // subscribers get the trial: anyone who has ever held a Stripe
       // subscription on this customer (even canceled) does NOT get
       // another trial. We also re-check Stripe directly to catch users
       // whose stripeSubscriptionId was cleared in our DB.
       // Returning subscribers (anyone we've already linked to a Stripe sub)
       // never get another trial. For users with no Stripe sub on file, we
       // double-check Stripe directly to catch DB drift; if that lookup
-      // fails transiently, fail OPEN — grant the trial — so a Stripe
+      // fails transiently, fail OPEN: grant the trial: so a Stripe
       // hiccup never silently denies a real new user their 14-day trial.
       let trialEligible = !user.stripeSubscriptionId;
       if (trialEligible) {
@@ -1355,7 +1355,7 @@ ${allPages.map(page => `  <url>
           if (existing.data.length > 0) trialEligible = false;
         } catch (lookupErr) {
           console.warn('[checkout] trial-eligibility lookup failed; defaulting to GRANT trial for new user', lookupErr);
-          // trialEligible stays true — user has no sub in our DB.
+          // trialEligible stays true: user has no sub in our DB.
         }
       }
 
@@ -1429,7 +1429,7 @@ ${allPages.map(page => `  <url>
         `);
         resolvedBillingPeriod = billingPeriodFromInterval((priceRow.rows?.[0] as any)?.interval);
       } catch {
-        // leave 'unknown' — analytics must not block checkout
+        // leave 'unknown': analytics must not block checkout
       }
       await recordFunnelEvent({
         event: 'checkout_session_created',
@@ -1765,7 +1765,7 @@ ${allPages.map(page => `  <url>
           : null
       };
       
-      // Cache for 5 minutes — but never cache an empty result, so new users
+      // Cache for 5 minutes, but never cache an empty result, so new users
       // whose first sync is still running get fresh data as soon as it lands.
       if (metrics.length > 0) {
         setCachedResponse(cacheKey, response);
@@ -1929,7 +1929,7 @@ ${allPages.map(page => `  <url>
       const { email } = z.object({ email: z.string().email() }).parse(req.body);
 
       // If the account was created via Strava OAuth there is no password to
-      // reset — send a "sign in with Strava" reminder instead of a useless
+      // reset: send a "sign in with Strava" reminder instead of a useless
       // password reset link. Otherwise fall through to the regular flow.
       const stravaOnly = await authService.isStravaOnlyAccount(email);
       if (stravaOnly) {
@@ -2017,7 +2017,7 @@ ${allPages.map(page => `  <url>
   });
 
   // =============================================
-  // Strava OAuth Login (unauthenticated — new signup / returning login)
+  // Strava OAuth Login (unauthenticated: new signup / returning login)
   // =============================================
 
   // Step 1: redirect browser to Strava consent page
@@ -2072,7 +2072,7 @@ ${allPages.map(page => `  <url>
       res.cookie('strava_oauth_state', '', { maxAge: 0, path: '/', sameSite: 'lax' });
       res.cookie('strava_oauth_redirect', '', { maxAge: 0, path: '/', sameSite: 'lax' });
 
-      // Mobile flag was encoded into the state prefix in step 1 — extract it
+      // Mobile flag was encoded into the state prefix in step 1: extract it
       // before the success/error branches so both can redirect appropriately.
       const isMobile = typeof state === 'string' && state.startsWith('strava_login_m_');
       const mobileScheme = 'aitracker://auth-callback';
@@ -2101,7 +2101,7 @@ ${allPages.map(page => `  <url>
       const existingUser = await storage.getUserByStravaAthleteId(athleteId);
 
       if (existingUser) {
-        // Returning user — refresh their tokens and log in
+        // Returning user: refresh their tokens and log in
         await storage.updateUser(existingUser.id, {
           stravaAccessToken: tokenData.access_token,
           stravaRefreshToken: tokenData.refresh_token,
@@ -2111,7 +2111,7 @@ ${allPages.map(page => `  <url>
         const token = authService.generateToken(existingUser);
         if (isMobile) {
           // Hand the JWT back to the native app via custom-scheme deep link.
-          // Custom schemes can't share cookies, so the token rides the URL —
+          // Custom schemes can't share cookies, so the token rides the URL:
           // it's a 7-day JWT that only the registered Expo app will receive.
           return res.redirect(`${mobileScheme}?token=${encodeURIComponent(token)}`);
         }
@@ -2120,7 +2120,7 @@ ${allPages.map(page => `  <url>
         return res.redirect(requestedRedirect || '/dashboard?strava_login=success');
       }
 
-      // New user — create account silently, no email or password required.
+      // New user: create account silently, no email or password required.
       // New Strava signups go through the onboarding wizard and start the
       // 14-day PAID trial (credit card required) via Stripe checkout.
       const newUser = await storage.createUser({
@@ -2134,7 +2134,7 @@ ${allPages.map(page => `  <url>
       });
 
       // Enqueue initial Strava sync. New accounts default to 'free', so cap
-      // the very first pull at 20 activities — they can upgrade to expand it.
+      // the very first pull at 20 activities: they can upgrade to expand it.
       try {
         const initialCap = getInitialSyncCap(
           newUser.subscriptionPlan ?? null,
@@ -2168,7 +2168,7 @@ ${allPages.map(page => `  <url>
 
       const token = authService.generateToken(newUser);
       if (isMobile) {
-        // Native sign-up via Strava — same deep-link handoff as returning user.
+        // Native sign-up via Strava: same deep-link handoff as returning user.
         return res.redirect(`${mobileScheme}?token=${encodeURIComponent(token)}&new=1`);
       }
       // Pass JWT via short-lived cookie to avoid token in URL (security)
@@ -2185,7 +2185,7 @@ ${allPages.map(page => `  <url>
     }
   });
 
-  // Lazy email collection — called when user needs email for billing
+  // Lazy email collection: called when user needs email for billing
   app.post("/api/auth/add-email", authenticateJWT, async (req: any, res) => {
     try {
       const { email } = z.object({ email: z.string().email() }).parse(req.body);
@@ -2813,7 +2813,7 @@ ${allPages.map(page => `  <url>
         return res.status(400).json({ message: "Invalid user ID" });
       }
 
-      // Ownership check — prevent authenticated users from triggering syncs on other accounts.
+      // Ownership check: prevent authenticated users from triggering syncs on other accounts.
       if (req.user?.id !== userId) {
         return res.status(403).json({ message: "Access denied" });
       }
@@ -2913,7 +2913,7 @@ ${allPages.map(page => `  <url>
       const syncState = await storage.getSyncState(userId);
 
       // Dashboard widget always shows the most-recent 10 runs. For free
-      // users, webhook-ingested activities are hidden (lockedForFree) —
+      // users, webhook-ingested activities are hidden (lockedForFree):
       // they're surfaced only via the post-run email link → blurred
       // detail page with upgrade CTA.
       const dashUserForCap = await storage.getUser(userId);
@@ -3005,7 +3005,7 @@ ${allPages.map(page => `  <url>
           stravaConnected: user.stravaConnected,
           stravaHasWriteScope: user.stravaHasWriteScope || false,
           stravaBrandingEnabled: user.stravaBrandingEnabled || false,
-          stravaBrandingTemplate: user.stravaBrandingTemplate || "🏃 Runner Score: {score} | {insight} — Analyzed with RunAnalytics",
+          stravaBrandingTemplate: user.stravaBrandingTemplate || "🏃 Runner Score: {score} | {insight}: Analyzed with RunAnalytics",
           unitPreference: user.unitPreference || "km",
           lastSyncAt: user.lastSyncAt,
           subscriptionPlan: user.subscriptionPlan || 'free',
@@ -3146,7 +3146,7 @@ ${allPages.map(page => `  <url>
         }),
       };
       
-      // Only cache when there are activities — skip caching for brand-new users
+      // Only cache when there are activities: skip caching for brand-new users
       // so their polling picks up data the moment the sync completes rather
       // than waiting for the 60-second TTL to expire.
       if (activities.length > 0) {
@@ -3389,7 +3389,7 @@ ${allPages.map(page => `  <url>
       
       const responseData = { chartData };
       
-      // Cache the response — but never cache an empty chart. New users hit this
+      // Cache the response, but never cache an empty chart. New users hit this
       // endpoint while their first Strava sync is still running; caching the
       // empty result would keep serving it after activities land.
       if (chartData.length > 0) {
@@ -3743,7 +3743,7 @@ ${allPages.map(page => `  <url>
   // ============================================================
   // Chrome extension endpoints
   // ============================================================
-  // The content script runs on www.strava.com and calls aitracker.run —
+  // The content script runs on www.strava.com and calls aitracker.run:
   // that's cross-origin, so both routes need explicit CORS headers.
   // We allow only the Strava origin (where the extension injects) and
   // the RunAnalytics origin itself (for the popup's direct fetch).
@@ -3757,7 +3757,7 @@ ${allPages.map(page => `  <url>
     if (EXTENSION_ALLOWED_ORIGINS.has(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
     } else {
-      // Non-browser calls (e.g. curl) still work — just no CORS header.
+      // Non-browser calls (e.g. curl) still work: just no CORS header.
     }
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
@@ -3881,7 +3881,7 @@ ${allPages.map(page => `  <url>
       const summary =
         recap?.coachingCue?.trim() ||
         verdict?.summary?.trim() ||
-        `${activity.name} — ${displayDist} at ${paceDisplay} pace.`;
+        `${activity.name}: ${displayDist} at ${paceDisplay} pace.`;
 
       // Next steps: prefer recap bullets (AI-written), then verdict next steps
       const nextSteps: string[] = recap?.recapBullets?.slice(0, 2) ||
@@ -3892,7 +3892,7 @@ ${allPages.map(page => `  <url>
       const grade = verdict?.grade || runnerScoreData?.grade || "";
       const runnerScore = runnerScoreData ? Math.round(runnerScoreData.totalScore) : null;
 
-      // Never cache — each brief contains a fresh short-lived magic-link token.
+      // Never cache: each brief contains a fresh short-lived magic-link token.
       res.setHeader('Cache-Control', 'no-store');
 
       // Mint a short-lived magic-link so the CTA opens the activity page
@@ -3918,7 +3918,7 @@ ${allPages.map(page => `  <url>
         readinessLabel,
         injuryRisk: injuryRiskShort,
         injuryRiskLabel,
-        // Plan info — used by extension to show upgrade CTA
+        // Plan info: used by extension to show upgrade CTA
         isPremium,
       });
     } catch (error: any) {
@@ -3928,7 +3928,7 @@ ${allPages.map(page => `  <url>
   });
 
   // GET /api/athlete/summary
-  //   Popup payload — name, most-recent unlocked run, readiness, injury risk.
+  //   Popup payload: name, most-recent unlocked run, readiness, injury risk.
   app.get("/api/athlete/summary", extensionCors, authenticateJWT, async (req: any, res) => {
     try {
       const userId = req.user.id;
@@ -5457,7 +5457,7 @@ ${allPages.map(page => `  <url>
       }
       
       // Fetch activities within the date range. Free users must NOT see
-      // webhook-ingested locked runs in the heatmap — those are paid-only.
+      // webhook-ingested locked runs in the heatmap: those are paid-only.
       const { isPaidPlan: heatmapIsPaid } = await import("./rateLimits");
       const heatmapIsPaidUser = heatmapIsPaid(user?.subscriptionPlan ?? null, user?.subscriptionStatus ?? null);
       const activities = await storage.getActivitiesByUserId(userId, 1000, startDate, { excludeLockedForFree: !heatmapIsPaidUser });
@@ -5858,7 +5858,7 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "Activity not found" });
       }
 
-      // Ownership check — activity detail is private per-user.
+      // Ownership check: activity detail is private per-user.
       if (activity.userId !== req.user.id) {
         return res.status(404).json({ message: "Activity not found" });
       }
@@ -5870,14 +5870,14 @@ ${allPages.map(page => `  <url>
 
       // Locked-for-free gate: webhook-ingested activities stay invisible in
       // the list views and render behind a blur + upgrade CTA on the detail
-      // page. Owner's *current* plan wins — if they've upgraded since the
+      // page. Owner's *current* plan wins: if they've upgraded since the
       // email was sent, the stale lockedForFree flag is ignored.
       const { isPaidPlan: detailIsPaid } = await import("./rateLimits");
       const ownerIsPaid = detailIsPaid(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null);
       const isLocked = !!activity.lockedForFree && !ownerIsPaid;
 
       // When locked, return ONLY preview-safe fields (name, date, totals).
-      // No streams, laps, HR, splits, GPS — those are paid-only.
+      // No streams, laps, HR, splits, GPS: those are paid-only.
       if (isLocked) {
         const units = runUnitLabels(user.unitPreference);
         return res.json({
@@ -6125,7 +6125,7 @@ ${allPages.map(page => `  <url>
       });
 
       // Trigger initial activity sync after Strava connection.
-      // Free users get exactly one sync ever — if they've already had it (e.g.
+      // Free users get exactly one sync ever: if they've already had it (e.g.
       // reconnecting Strava), skip; otherwise cap their initial pull at 20.
       try {
         const connectedUser = await storage.getUser(userId);
@@ -6152,7 +6152,7 @@ ${allPages.map(page => `  <url>
         console.error('Drip campaign trigger failed in Strava callback:', campaignError);
       }
 
-      // Always land on the dashboard after Strava connect — the audit-report
+      // Always land on the dashboard after Strava connect: the audit-report
       // funnel was retired with the free-tier pivot.
       res.redirect("/dashboard?connected=true");
     } catch (error: any) {
@@ -6557,7 +6557,7 @@ ${allPages.map(page => `  <url>
       if (!await requireCapability(req, res, "activity_deep_dive")) return;
 
       // Lock-gate: free users can't pull streams/laps for webhook-ingested
-      // activities — the detail page renders a blur + upgrade CTA instead.
+      // activities: the detail page renders a blur + upgrade CTA instead.
       const ownerForLock = await storage.getUser(activity.userId);
       const { isPaidPlan: perfIsPaid } = await import("./rateLimits");
       if (activity.lockedForFree && !perfIsPaid(ownerForLock?.subscriptionPlan ?? null, ownerForLock?.subscriptionStatus ?? null)) {
@@ -8662,7 +8662,7 @@ ${allPages.map(page => `  <url>
 
       // Ownership + lock gate: route-history exposes per-activity metadata
       // (distance/duration/HR), so it must enforce the same rules as the
-      // detail endpoint — otherwise free users could enumerate locked rows
+      // detail endpoint: otherwise free users could enumerate locked rows
       // or other users' data via this endpoint.
       const rhActivity = await storage.getActivityById(activityId);
       if (!rhActivity || rhActivity.userId !== req.user.id) {

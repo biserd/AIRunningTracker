@@ -43,7 +43,7 @@ export default function RaceSplitCalculator() {
   const copyPlan = async () => {
     if (!result) return;
     const label = unit === "miles" ? "mi" : "km";
-    const text = [`Race split plan — ${strategy} — goal ${formatDuration(totalSeconds)}`, ...result.rows.map((row) => `${row.distance.toFixed(row.splitDistance < 1 ? 2 : 0)} ${label}: ${formatDuration(row.splitSeconds)} split / ${formatDuration(row.cumulativeSeconds)} elapsed`)].join("\n");
+    const text = [`Race split plan: ${strategy}: goal ${formatDuration(totalSeconds)}`, ...result.rows.map((row) => `${row.distance.toFixed(row.splitDistance < 1 ? 2 : 0)} ${label}: ${formatDuration(row.splitSeconds)} split / ${formatDuration(row.cumulativeSeconds)} elapsed`)].join("\n");
     try { await navigator.clipboard.writeText(text); setMessage("Split plan copied."); } catch { setMessage("Copy is unavailable in this browser. Select the table to copy it manually."); }
   };
 
@@ -55,7 +55,7 @@ export default function RaceSplitCalculator() {
       <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
         <div className="mb-8 max-w-3xl"><Badge className="mb-4 bg-strava-orange">Free calculator</Badge><h1 className="text-3xl font-bold text-charcoal dark:text-white sm:text-5xl">Race Split Calculator</h1><p className="mt-4 text-lg text-slate-600 dark:text-slate-300">Build an exact mile or kilometer pacing chart that preserves your goal finish time.</p></div>
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><Flag className="h-5 w-5 text-strava-orange" />Goal and strategy</CardTitle><CardDescription>Choose a modest strategy—the calculator does not create extreme pacing swings.</CardDescription></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Flag className="h-5 w-5 text-strava-orange" />Goal and strategy</CardTitle><CardDescription>Choose a modest strategy; the calculator does not create extreme pacing swings.</CardDescription></CardHeader>
           <CardContent className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <div><Label htmlFor="split-distance">Race distance</Label><select id="split-distance" className="mt-2 h-10 w-full rounded-md border border-input bg-background px-3" value={distanceMeters} onChange={(e) => setDistanceMeters(Number(e.target.value))}>{DISTANCES.map((distance) => <option key={distance.meters} value={distance.meters}>{distance.label}</option>)}</select></div>

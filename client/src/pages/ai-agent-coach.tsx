@@ -69,7 +69,7 @@ export default function AIAgentCoachLanding() {
           </h1>
           
           <p className="text-xl sm:text-2xl text-gray-700 dark:text-gray-300 mb-4 max-w-3xl mx-auto leading-relaxed">
-            AI Agent Coach proactively analyzes every run and delivers personalized coaching—without you asking.
+            AI Agent Coach proactively analyzes every run and delivers personalized coaching without you asking.
           </p>
           
           <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
@@ -148,7 +148,7 @@ export default function AIAgentCoachLanding() {
               </div>
               <h3 className="text-xl font-bold text-charcoal dark:text-white mb-2">AI Analyzes</h3>
               <p className="text-gray-600 dark:text-gray-300">
-                AI Agent Coach automatically analyzes your activity—pace, heart rate, effort, and patterns.
+                AI Agent Coach automatically analyzes your activity: pace, heart rate, effort, and patterns.
               </p>
             </div>
 
@@ -185,15 +185,15 @@ export default function AIAgentCoachLanding() {
                 <ul className="space-y-3 mb-6">
                   <li className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>Excellent pacing consistency—splits varied by only 8 seconds/km</span>
+                    <span>Excellent pacing consistency. Splits varied by only 8 seconds/km.</span>
                   </li>
                   <li className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>Heart rate stayed in Zone 2 for 85% of the run—great aerobic development</span>
+                    <span>Heart rate stayed in Zone 2 for 85% of the run, supporting aerobic development.</span>
                   </li>
                   <li className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
                     <TrendingUp className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                    <span>Cadence dropped 5% in final 2km—focus on maintaining rhythm when tired</span>
+                    <span>Cadence dropped 5% in the final 2 km. Focus on maintaining rhythm when tired.</span>
                   </li>
                 </ul>
                 
@@ -230,7 +230,7 @@ export default function AIAgentCoachLanding() {
                 <CardTitle className="text-lg dark:text-white">Your Goal</CardTitle>
               </CardHeader>
               <CardContent className="text-gray-600 dark:text-gray-300 text-sm">
-                Race PR, general fitness, injury recovery, or just staying active—coaching adapts to your objective.
+                Whether you are targeting a race PR, building general fitness, recovering from injury, or staying active, coaching adapts to your objective.
               </CardContent>
             </Card>
 
@@ -266,7 +266,7 @@ export default function AIAgentCoachLanding() {
                 <CardTitle className="text-lg dark:text-white">Coaching Tone</CardTitle>
               </CardHeader>
               <CardContent className="text-gray-600 dark:text-gray-300 text-sm">
-                Gentle, balanced, or direct—choose the communication style that motivates you best.
+                Choose a gentle, balanced, or direct communication style based on what motivates you best.
               </CardContent>
             </Card>
           </div>
@@ -314,7 +314,7 @@ export default function AIAgentCoachLanding() {
                   </div>
                 </div>
                 <p className="text-gray-700 dark:text-gray-300 italic">
-                  "The proactive coaching is a game-changer. I don't have to remember to check my stats—the insights come to me."
+                  "The proactive coaching is a game-changer. I don't have to remember to check my stats; the insights come to me."
                 </p>
               </CardContent>
             </Card>

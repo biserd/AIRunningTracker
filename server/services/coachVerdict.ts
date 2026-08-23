@@ -147,11 +147,11 @@ export class CoachVerdictService {
     // Build a specific summary from what we actually know about this run
     const summaryParts: string[] = [];
     if (hasPR) {
-      summaryParts.push(`You set a personal record on this run — a standout effort.`);
+      summaryParts.push(`You set a personal record on this run: a standout effort.`);
     } else if (intensity === 'very_hard' || intensity === 'hard') {
-      summaryParts.push(`A high-intensity ${displayDistance.toFixed(1)}${distanceUnit} effort — make sure to recover well before your next hard session.`);
+      summaryParts.push(`A high-intensity ${displayDistance.toFixed(1)}${distanceUnit} effort: make sure to recover well before your next hard session.`);
     } else if (intensity === 'recovery' || intensity === 'easy') {
-      summaryParts.push(`A well-paced easy run — exactly the kind of session that lets your body absorb training.`);
+      summaryParts.push(`A well-paced easy run: exactly the kind of session that lets your body absorb training.`);
     } else {
       summaryParts.push(`A solid ${displayDistance.toFixed(1)}${distanceUnit} run at a moderate effort level.`);
     }
@@ -213,30 +213,30 @@ export class CoachVerdictService {
 
     // ── Lead sentence: what made this run notable ──────────────────
     if (hasPR) {
-      parts.push(`You set a personal record on this run — a standout effort.`);
+      parts.push(`You set a personal record on this run: a standout effort.`);
     } else if (consistency === 'much_harder') {
-      parts.push(`This was a high-intensity effort — significantly above your usual training load.`);
+      parts.push(`This was a high-intensity effort: significantly above your usual training load.`);
     } else if (consistency === 'recovery' || consistency === 'easier') {
-      parts.push(`A well-judged easy run — exactly the kind of session that lets your body absorb training.`);
+      parts.push(`A well-judged easy run: exactly the kind of session that lets your body absorb training.`);
     } else if (paceVsAvg >= 8 && hasHR && hrVsAvg <= 0) {
-      parts.push(`Strong aerobic performance: you ran ${paceVsAvg}% faster than your recent average with a lower heart rate — a sign of real fitness gains.`);
+      parts.push(`Strong aerobic performance: you ran ${paceVsAvg}% faster than your recent average with a lower heart rate: a sign of real fitness gains.`);
     } else if (paceVsAvg >= 5) {
-      parts.push(`Your pace was ${paceVsAvg}% faster than your recent average — a noticeably sharper effort.`);
+      parts.push(`Your pace was ${paceVsAvg}% faster than your recent average: a noticeably sharper effort.`);
     } else if (paceVsAvg <= -8) {
-      parts.push(`You ran ${Math.abs(paceVsAvg)}% slower than your recent average — either a deliberate easy day or an off day.`);
+      parts.push(`You ran ${Math.abs(paceVsAvg)}% slower than your recent average: either a deliberate easy day or an off day.`);
     } else if (distVsAvg >= 25) {
-      parts.push(`You pushed your distance ${distVsAvg}% beyond your typical run — good work extending your range.`);
+      parts.push(`You pushed your distance ${distVsAvg}% beyond your typical run: good work extending your range.`);
     } else {
-      // Neutral — at least say something specific
+      // Neutral: at least say something specific
       parts.push(`A consistent effort that sits right in line with your recent training.`);
     }
 
     // ── Second sentence: HR efficiency or load insight ─────────────
     if (hasHR) {
       if (hrVsAvg <= -8 && paceVsAvg >= 0) {
-        parts.push(`Your heart rate was ${Math.abs(hrVsAvg)}% lower than usual for this pace — a clear aerobic efficiency win.`);
+        parts.push(`Your heart rate was ${Math.abs(hrVsAvg)}% lower than usual for this pace: a clear aerobic efficiency win.`);
       } else if (hrVsAvg >= 12 && consistency !== 'much_harder') {
-        parts.push(`Heart rate ran ${hrVsAvg}% higher than normal — watch for signs of fatigue or dehydration.`);
+        parts.push(`Heart rate ran ${hrVsAvg}% higher than normal: watch for signs of fatigue or dehydration.`);
       } else if (consistency === 'much_harder') {
         parts.push(`With this kind of effort, prioritise 48 hours of easy running before your next hard session.`);
       }

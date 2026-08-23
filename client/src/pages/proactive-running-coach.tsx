@@ -81,7 +81,7 @@ const currentCapabilities = [
   {
     icon: TrendingUp,
     title: "A useful post-run verdict",
-    copy: "Get the pattern that mattered, the evidence behind it, and one next action—not a dump of every metric.",
+    copy: "Get the pattern that mattered, the evidence behind it, and one next action, not a dump of every metric.",
   },
   {
     icon: Brain,
@@ -91,14 +91,14 @@ const currentCapabilities = [
   {
     icon: MessageCircle,
     title: "Follow up naturally",
-    copy: "Ask why your effort drifted, whether tomorrow should stay easy, or how the run fits the week—without finding another dashboard.",
+    copy: "Ask why your effort drifted, whether tomorrow should stay easy, or how the run fits the week, without finding another dashboard.",
   },
 ];
 
 const roadmapCapabilities = [
   { icon: CloudRain, text: "A heads-up when tomorrow's weather changes the safest time or effort" },
   { icon: Route, text: "A day-before check-in for long runs, workouts, and race-week logistics" },
-  { icon: TimerReset, text: "A sensible adjustment when life interrupts the plan—without stacking missed intensity" },
+  { icon: TimerReset, text: "A sensible adjustment when life interrupts the plan, without stacking missed intensity" },
 ];
 
 const faqs = [
@@ -156,7 +156,7 @@ function CoachMessagePreview() {
           <div className="ml-auto w-fit rounded-full bg-white/70 px-3 py-1 text-[11px] font-medium text-slate-500">Today · 8:06 AM</div>
           <div className="max-w-[92%] rounded-2xl rounded-tl-sm bg-white p-4 text-slate-800 shadow-sm">
             <p className="mb-2 font-bold text-slate-950">Good long run. Keep tomorrow easy.</p>
-            <p>Your 18.2 km stayed controlled through 14 km. Pace held steady while heart-rate drift increased late, which points to normal accumulated fatigue—not a reason to add more work.</p>
+            <p>Your 18.2 km stayed controlled through 14 km. Pace held steady while heart-rate drift increased late, which points to normal accumulated fatigue, not a reason to add more work.</p>
             <div className="my-3 border-l-2 border-[#2AABEE] pl-3 text-slate-600">
               <p><strong>Do this:</strong> Rest, or run 25–35 minutes conversationally if your legs feel normal.</p>
             </div>
@@ -218,7 +218,7 @@ export default function ProactiveRunningCoachLanding() {
                 A running coach that messages <span className="text-[#FC4C02]">before the lesson gets lost.</span>
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl">
-                Run as usual. When Strava syncs, RunAnalytics can deliver a concise, data-aware coaching message in the chat you already check—then answer the natural follow-up.
+                Run as usual. When Strava syncs, RunAnalytics can deliver a concise, data-aware coaching message in the chat you already check, then answer your natural follow-up.
               </p>
 
               <div className="mt-7 flex flex-wrap gap-3">
@@ -327,7 +327,7 @@ export default function ProactiveRunningCoachLanding() {
           <div className="grid gap-10 lg:grid-cols-[.85fr_1.15fr] lg:items-start">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.15em] text-amber-900"><Moon className="h-4 w-4" /> Beta roadmap</div>
-              <h2 className="mt-5 text-3xl font-black tracking-tight sm:text-5xl">Proactive should mean timely—not noisy.</h2>
+              <h2 className="mt-5 text-3xl font-black tracking-tight sm:text-5xl">Proactive should mean timely, not noisy.</h2>
               <p className="mt-5 text-lg leading-8 text-slate-600">The next phase is about contacting you only when timing materially changes the recommendation. These capabilities are planned, not presented as live today.</p>
             </div>
             <div className="space-y-4">

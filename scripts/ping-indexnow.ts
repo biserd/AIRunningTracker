@@ -1,5 +1,5 @@
 /**
- * Submit URLs to IndexNow (Bing, Yandex, Seznam, Naver — and Google reads
+ * Submit URLs to IndexNow (Bing, Yandex, Seznam, Naver, and Google reads
  * Bing's index too). Free protocol, no rate limit beyond ~10k URLs/request.
  *
  * Usage:
@@ -36,7 +36,7 @@ function getBlogUrls(): string[] {
 }
 
 async function submitBatch(urls: string[]): Promise<void> {
-  // IndexNow accepts up to 10,000 URLs per request — chunk to be safe.
+  // IndexNow accepts up to 10,000 URLs per request: chunk to be safe.
   const CHUNK = 1000;
   for (let i = 0; i < urls.length; i += CHUNK) {
     const chunk = urls.slice(i, i + CHUNK);
@@ -52,7 +52,7 @@ async function submitBatch(urls: string[]): Promise<void> {
       body: JSON.stringify(body),
     });
     const text = await res.text();
-    console.log(`[indexnow] chunk ${i / CHUNK + 1}: ${chunk.length} URLs → ${res.status} ${res.statusText}${text ? " — " + text.slice(0, 200) : ""}`);
+    console.log(`[indexnow] chunk ${i / CHUNK + 1}: ${chunk.length} URLs → ${res.status} ${res.statusText}${text ? ": " + text.slice(0, 200) : ""}`);
     if (res.status >= 400) {
       throw new Error(`IndexNow rejected the submission (HTTP ${res.status})`);
     }
@@ -79,7 +79,7 @@ async function main() {
     process.exit(0);
   }
 
-  // Verify the key file is reachable before submitting — IndexNow rejects
+  // Verify the key file is reachable before submitting: IndexNow rejects
   // the whole batch if it can't fetch the key.
   const keyCheck = await fetch(KEY_LOCATION);
   const keyBody = (await keyCheck.text()).trim();

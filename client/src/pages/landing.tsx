@@ -86,7 +86,7 @@ export default function LandingPage() {
           <div className="flex justify-center mb-4">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 border border-orange-200">
               <Star className="h-3 w-3 fill-orange-500 text-orange-500" />
-              New — sign up in one tap with Strava
+              New: sign up in one tap with Strava
             </span>
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-charcoal mb-4 sm:mb-6 leading-tight">
@@ -151,7 +151,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Secondary path for returning users — primary Strava CTA is in the header */}
+          {/* Secondary path for returning users: primary Strava CTA is in the header */}
           <div className="flex flex-col items-center gap-3 mb-6 sm:mb-8 px-4">
             <p className="text-sm text-gray-600">
               Already have an account?{" "}

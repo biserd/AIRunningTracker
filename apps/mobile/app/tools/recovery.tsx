@@ -95,7 +95,7 @@ function RecoveryContent({ r }: { r: RecoveryState }) {
             { label: "Freshness", value: `${Math.round(r.freshnessScore)}`, sub: "/100" },
             {
               label: "Risk",
-              value: r.riskLevel ? r.riskLevel.charAt(0).toUpperCase() + r.riskLevel.slice(1).toLowerCase() : "—",
+              value: r.riskLevel ? r.riskLevel.charAt(0).toUpperCase() + r.riskLevel.slice(1).toLowerCase() : "Not available",
               color:
                 r.riskLevel === "low"
                   ? colors.successText
@@ -118,9 +118,9 @@ function RecoveryContent({ r }: { r: RecoveryState }) {
             value={r.acuteChronicRatio.toFixed(2)}
             hint={
               r.acuteChronicRatio > 1.5
-                ? "High — overreaching"
+                ? "High: overreaching"
                 : r.acuteChronicRatio < 0.8
-                  ? "Low — detraining risk"
+                  ? "Low: detraining risk"
                   : "Sweet spot"
             }
             isLast

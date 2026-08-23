@@ -69,7 +69,7 @@ export default function TrainingPaceCalculator() {
         <div className="mb-8 max-w-3xl">
           <Badge className="mb-4 bg-strava-orange">Free calculator</Badge>
           <h1 className="text-3xl font-bold text-charcoal dark:text-white sm:text-5xl">Training Pace Calculator</h1>
-          <p className="mt-4 text-lg text-slate-600 dark:text-slate-300">Turn a recent race into practical pace ranges—with an explicit usefulness rating and no false precision.</p>
+          <p className="mt-4 text-lg text-slate-600 dark:text-slate-300">Turn a recent race into practical pace ranges, with an explicit usefulness rating and no false precision.</p>
         </div>
 
         <Alert className="mb-8 border-blue-200 bg-blue-50"><Info className="h-4 w-4 text-blue-700" /><AlertDescription>Use a recent race or hard, evenly paced effort. The calculator cannot account for soreness, illness, heat or hills.</AlertDescription></Alert>

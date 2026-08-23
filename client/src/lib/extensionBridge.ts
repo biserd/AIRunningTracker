@@ -34,7 +34,7 @@ export function notifyExtensionAuth(token: string, user: ExtensionUser): void {
       },
     );
   } catch {
-    // Extension not installed — safe to ignore
+    // Extension not installed: safe to ignore
   }
 }
 

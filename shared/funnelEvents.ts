@@ -1,5 +1,5 @@
 /**
- * Premium conversion funnel — canonical event catalog.
+ * Premium conversion funnel: canonical event catalog.
  *
  * Every step from a Premium offer impression to a paid conversion is
  * recorded as exactly one row in the funnel_events table, keyed by a
@@ -8,7 +8,7 @@
  * Client-emitted events describe UI surfaces (offer, preview, pricing,
  * checkout intent). Server-emitted events are authoritative for money
  * states (checkout session, trial, cancellation, conversion) and may
- * only be written by the server — the ingestion endpoint rejects them.
+ * only be written by the server: the ingestion endpoint rejects them.
  */
 
 export type FunnelEventSide = "client" | "server";

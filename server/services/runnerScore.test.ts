@@ -214,7 +214,7 @@ async function main(): Promise<void> {
       const current = priv.calculateScoreComponents(running, refDate);
 
       // "Historical" snapshot at the same cutoff: activities up to refDate,
-      // computed with the same reference — must produce identical components.
+      // computed with the same reference: must produce identical components.
       const upToCutoff = running.filter(a => a.startDate.getTime() <= refDate.getTime());
       const historical = priv.calculateScoreComponents(upToCutoff, refDate);
 

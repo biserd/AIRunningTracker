@@ -115,7 +115,7 @@ export default function ProfileScreen() {
               <Text style={{ fontSize: 17, fontWeight: "600", color: colors.ink, letterSpacing: -0.2 }}>
                 {user?.firstName || user?.username || "Runner"}
               </Text>
-              <Text style={{ fontSize: 13, color: colors.ink2, marginTop: 2 }}>{user?.email || "—"}</Text>
+              <Text style={{ fontSize: 13, color: colors.ink2, marginTop: 2 }}>{user?.email || "Not available"}</Text>
             </View>
           </View>
         </Group>

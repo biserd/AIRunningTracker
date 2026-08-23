@@ -93,7 +93,7 @@ export class StravaService {
   /**
    * Revoke a user's Strava OAuth grant so they no longer count against our
    * per-app athlete quota and we stop receiving webhook events for them.
-   * Best-effort: never throw — account deletion must still proceed.
+   * Best-effort: never throw: account deletion must still proceed.
    */
   async deauthorize(accessToken: string): Promise<boolean> {
     try {

@@ -31,7 +31,7 @@ export default function AICoachLanding() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <SEO
         title="AI Running Coach - Personalized Training Powered by AI | RunAnalytics"
-        description="Get an AI-powered running coach that analyzes your Strava data and provides personalized training advice, race predictions, and performance insights. 14-day free trial — available 24/7 with expert guidance based on your actual running history."
+        description="Get an AI-powered running coach that analyzes your Strava data and provides personalized training advice, race predictions, and performance insights. 14-day free trial: available 24/7 with expert guidance based on your actual running history."
         keywords="AI running coach, AI fitness coach, personalized running training, virtual running coach, Strava AI coach, running performance analysis"
         url="https://aitracker.run/ai-running-coach"
         type="website"
@@ -49,7 +49,7 @@ export default function AICoachLanding() {
             Your Personal AI <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">Running Coach</span>
           </h1>
           <p className="text-xl sm:text-2xl text-gray-700 dark:text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-            Get expert training advice, personalized insights, and race predictions powered by AI. Available 24/7 — try it free for 14 days.
+            Get expert training advice, personalized insights, and race predictions powered by AI. Available 24/7: try it free for 14 days.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
@@ -180,7 +180,7 @@ export default function AICoachLanding() {
                 <CardTitle className="text-xl dark:text-white">14-Day Free Trial</CardTitle>
               </CardHeader>
               <CardContent className="text-gray-700 dark:text-gray-300">
-                Professional running coaches charge $100-300/month. Try every Premium feature free for 14 days — AI coaching, race predictions, training plans, and more. Cancel anytime.
+                Professional running coaches charge $100-300/month. Try every Premium feature free for 14 days: AI coaching, race predictions, training plans, and more. Cancel anytime.
               </CardContent>
             </Card>
 
@@ -362,7 +362,7 @@ export default function AICoachLanding() {
                         <br/>
                         <strong>Option 2:</strong> Complete rest day or gentle cross-training (swimming, cycling)
                         <br/><br/>
-                        Since you have a tempo run scheduled for tomorrow, I'd lean toward Option 2. Your body needs recovery to perform well in that workout. Heavy legs are your body's signal—listen to it!
+                        Since you have a tempo run scheduled for tomorrow, I'd lean toward Option 2. Your body needs recovery to perform well in that workout. Heavy legs are your body's signal; listen to it!
                       </p>
                     </div>
                   </div>
@@ -560,7 +560,7 @@ export default function AICoachLanding() {
                 <CardTitle className="text-lg dark:text-white">How is this different from Strava's features?</CardTitle>
               </CardHeader>
               <CardContent className="text-gray-700 dark:text-gray-300">
-                While Strava excels at tracking and social features, RunAnalytics provides deep performance analysis, AI-powered coaching conversations, race predictions, injury risk detection, and comprehensive training insights that Strava doesn't offer. At $79.99/year after a 14-day free trial — the same price as Strava Summit — you get far deeper analytics and personalized AI coaching.
+                While Strava excels at tracking and social features, RunAnalytics provides deep performance analysis, AI-powered coaching conversations, race predictions, injury risk detection, and comprehensive training insights that Strava doesn't offer. At $79.99/year after a 14-day free trial: the same price as Strava Summit: you get far deeper analytics and personalized AI coaching.
               </CardContent>
             </Card>
 
@@ -584,7 +584,7 @@ export default function AICoachLanding() {
                 Start Training Smarter Today
               </h2>
               <p className="text-xl mb-8 max-w-2xl mx-auto opacity-95">
-                Join thousands of runners who are achieving their goals with personalized AI coaching. Try it free for 14 days — takes just 2 minutes to set up.
+                Join thousands of runners who are achieving their goals with personalized AI coaching. Try it free for 14 days: takes just 2 minutes to set up.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
                 <Link href="/auth">

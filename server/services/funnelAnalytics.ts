@@ -7,7 +7,7 @@
  * webhook replays, client retries, and double renders can never create
  * duplicate rows.
  *
- * Never throws — analytics must not break checkout or webhook processing.
+ * Never throws: analytics must not break checkout or webhook processing.
  */
 
 import { db } from "../db";
@@ -20,7 +20,7 @@ import {
 
 export interface RecordFunnelEventInput {
   event: FunnelEventName | string;
-  /** Idempotency key — same key never records twice. */
+  /** Idempotency key: same key never records twice. */
   dedupeKey: string;
   userId?: number | null;
   props?: FunnelEventProps;

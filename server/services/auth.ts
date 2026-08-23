@@ -66,7 +66,7 @@ export class AuthService {
       throw new AuthError('INVALID_CREDENTIALS', 'Invalid email or password');
     }
 
-    // Verify password — Strava-only accounts have no password
+    // Verify password: Strava-only accounts have no password
     if (!user.password) {
       throw new AuthError(
         'STRAVA_ONLY',
@@ -191,7 +191,7 @@ export class AuthService {
   /**
    * Generate a short-lived JWT (15 min) for on-demand web magic links
    * (e.g. "Email me a sign-in link" in Settings). The short TTL is
-   * intentional — the user just requested it and is watching their inbox.
+   * intentional: the user just requested it and is watching their inbox.
    */
   async generateMagicLinkToken(email: string): Promise<string | null> {
     const user = await storage.getUserByEmail(email);
@@ -270,8 +270,8 @@ export class AuthService {
    * Verify a magic-link token (either the 15-min web or 7-day email
    * variant) and mint a normal session JWT on success.
    * Throws AuthError with code:
-   *   EXPIRED_TOKEN  — valid JWT but past its expiry (show "link expired" UI)
-   *   INVALID_TOKEN  — malformed, wrong purpose, or account gone
+   *   EXPIRED_TOKEN : valid JWT but past its expiry (show "link expired" UI)
+   *   INVALID_TOKEN : malformed, wrong purpose, or account gone
    */
   async verifyMagicLinkToken(token: string): Promise<{ user: AuthUser; token: string }> {
     let decoded: any;

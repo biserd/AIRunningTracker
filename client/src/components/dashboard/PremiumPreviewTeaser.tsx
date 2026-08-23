@@ -189,7 +189,7 @@ export default function PremiumPreviewTeaser() {
       </h2>
       <p className="text-sm text-gray-700 mt-1">
         {comparison
-          ? "A real comparison from your imported history—not a population average."
+          ? "A real comparison from your imported history, not a population average."
           : "This run establishes the baseline that future comparable runs will be measured against."}
       </p>
       <p className="text-xs text-gray-500 mt-2">

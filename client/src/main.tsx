@@ -4,7 +4,7 @@ import "./index.css";
 
 createRoot(document.getElementById("root")!).render(<App />);
 
-// Register PWA service worker (production only — avoids interfering with Vite HMR).
+// Register PWA service worker (production only: avoids interfering with Vite HMR).
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch((err) => {

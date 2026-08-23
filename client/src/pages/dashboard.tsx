@@ -12,6 +12,7 @@ import TrainingRecommendations from "@/components/dashboard/TrainingRecommendati
 import RunnerScoreRadar from "@/components/dashboard/RunnerScoreRadar";
 import ProgressChecklist from "@/components/dashboard/ProgressChecklist";
 import PremiumPreviewTeaser from "@/components/dashboard/PremiumPreviewTeaser";
+import { TelegramTrialOffer } from "@/components/TelegramTrialOffer";
 import TodayRunDecision from "@/components/dashboard/TodayRunDecision";
 import ThisWeekPlan from "@/components/dashboard/ThisWeekPlan";
 import { SyncProgress } from "@/components/SyncProgress";
@@ -110,7 +111,7 @@ export default function Dashboard() {
     setTimeout(() => {
       toast({
         title: "Welcome to RunAnalytics!",
-        description: "Your activities are syncing from Strava — they'll appear on your dashboard in a few seconds.",
+        description: "Your activities are syncing from Strava: they'll appear on your dashboard in a few seconds.",
         duration: 8000,
       });
       localStorage.setItem(seenKey, 'true');
@@ -121,7 +122,7 @@ export default function Dashboard() {
   }, [user?.id, toast]);
 
   // NOTE: All hooks must be declared before any conditional return. Early
-  // returns for authLoading / !user live just above the render section below —
+  // returns for authLoading / !user live just above the render section below:
   // putting them here (before the hooks that follow) changes the hook count
   // between renders and crashes React the moment auth or data state shifts.
 
@@ -134,7 +135,7 @@ export default function Dashboard() {
     refetchInterval: (query) => {
       const data = query.state.data;
       if (!data) return false;
-      // New user: Strava connected but sync not yet finished — poll every 3s until activities land
+      // New user: Strava connected but sync not yet finished: poll every 3s until activities land
       if (data?.user?.stravaConnected && !data?.user?.lastSyncAt) return 3000;
       // Also poll when sync is actively running
       if (data?.insightsStatus === 'syncing') return 3000;
@@ -158,8 +159,8 @@ export default function Dashboard() {
   }, [dashboardCalendarDate]);
 
   // When activities first land (0 → N), every other query on the page was
-  // fetched while the account was still empty and — with the app-wide
-  // staleTime of Infinity — will never refetch on its own. Invalidate the
+  // fetched while the account was still empty and, with the app-wide
+  // staleTime of Infinity: will never refetch on its own. Invalidate the
   // whole cache (except the dashboard query that just delivered the fresh
   // data) so all sub-components repopulate immediately.
   const activitiesCount = dashboardData?.activities?.length ?? 0;
@@ -386,7 +387,7 @@ export default function Dashboard() {
 
 
 
-  // Early returns — safe here because every hook above has already run.
+  // Early returns: safe here because every hook above has already run.
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -501,6 +502,12 @@ export default function Dashboard() {
 
         {/* Lead free runners with proof of value before general guidance. */}
         <PremiumPreviewTeaser />
+
+        {isFree && (
+          <div className="mb-6">
+            <TelegramTrialOffer source="dashboard_telegram_offer" />
+          </div>
+        )}
 
         <div className="mb-6">
           <TodayRunDecision

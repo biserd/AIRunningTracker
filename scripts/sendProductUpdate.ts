@@ -19,7 +19,7 @@ const textBody = `Hi everyone,
 
 It's Biser from RunAnalytics with a quick product update.
 
-Over the last few weeks, we've cleared up a number of small bugs and improved several existing features — including marathon pace prediction.
+Over the last few weeks, we've cleared up a number of small bugs and improved several existing features: including marathon pace prediction.
 
 We're excited to share four newly released updates:
 
@@ -44,7 +44,7 @@ const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'S
 
 <p>It's Biser from RunAnalytics with a quick product update.</p>
 
-<p>Over the last few weeks, we've cleared up a number of small bugs and improved several existing features — including marathon pace prediction.</p>
+<p>Over the last few weeks, we've cleared up a number of small bugs and improved several existing features: including marathon pace prediction.</p>
 
 <p>We're excited to share four newly released updates:</p>
 

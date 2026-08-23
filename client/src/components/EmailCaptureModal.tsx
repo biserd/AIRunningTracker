@@ -46,7 +46,7 @@ export default function EmailCaptureModal({ open, userId }: Props) {
           <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mx-auto">
             <Mail className="h-6 w-6 text-orange-600" />
           </div>
-          <DialogTitle className="text-xl">One last thing — add your email</DialogTitle>
+          <DialogTitle className="text-xl">One last thing: add your email</DialogTitle>
           <DialogDescription className="text-center text-sm text-muted-foreground">
             We need your email to send your weekly AI run debrief, important account updates, and coaching insights.
           </DialogDescription>

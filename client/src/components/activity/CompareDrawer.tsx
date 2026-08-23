@@ -408,7 +408,7 @@ export default function CompareDrawer({ activityId, onClose, embedded = false }:
                         {run.averageHeartrate ? (
                           <span className="text-sm text-gray-600">{Math.round(run.averageHeartrate)}</span>
                         ) : (
-                          <span className="text-xs text-gray-300">—</span>
+                          <span className="text-xs text-gray-300">Not available</span>
                         )}
                       </div>
                       <div className="col-span-2 text-right self-center">

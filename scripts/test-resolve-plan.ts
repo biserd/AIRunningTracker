@@ -1,4 +1,4 @@
-// Lightweight standalone tests for resolvePlan() — no test framework needed.
+// Lightweight standalone tests for resolvePlan(): no test framework needed.
 // Run with: npx tsx scripts/test-resolve-plan.ts
 //
 // Covers the contract from replit.md "Stripe Subscription Resolver":
@@ -10,7 +10,7 @@
 //   - unknown status with no signal => 'free' (downgrade-safety lives in
 //     the webhook handler, not the resolver)
 
-// Set env BEFORE the module loads — webhookHandlers.ts builds its
+// Set env BEFORE the module loads: webhookHandlers.ts builds its
 // ENV_PRICE_TO_PLAN map at module-load time.
 process.env.STRIPE_PRICE_PREMIUM_MONTHLY = 'price_ENV_MONTHLY';
 process.env.STRIPE_PRICE_PREMIUM_ANNUAL = 'price_ENV_ANNUAL';

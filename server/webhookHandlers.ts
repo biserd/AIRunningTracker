@@ -423,7 +423,7 @@ export class WebhookHandlers {
         };
         const prev = event.data?.previous_attributes || {};
 
-        // trial_started / trial_converted / subscription_activated — classified
+        // trial_started / trial_converted / subscription_activated: classified
         // by the shared transition table (covers created→trialing/active and
         // updated→active from ANY non-active status, e.g. incomplete or
         // past_due recoveries). Idempotent on the subscription id.

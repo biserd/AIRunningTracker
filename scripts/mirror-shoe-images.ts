@@ -8,7 +8,7 @@
  * Behavior:
  *   - Loads every running_shoes row whose image_url is set AND whose
  *     image_url does NOT already start with "/public-objects/" (so the
- *     script is idempotent — re-runs skip already-mirrored shoes).
+ *     script is idempotent: re-runs skip already-mirrored shoes).
  *   - Restrict to a specific release year via --year=2026 (default: 2026).
  *     Use --year=all to mirror every year.
  *   - Downloads each external image with browser-like headers, validates
@@ -163,7 +163,7 @@ async function mirror() {
       ok++;
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
-      console.log(`✗ ${name} — ${reason}`);
+      console.log(`✗ ${name}: ${reason}`);
       failed.push({ name, reason });
     }
   }

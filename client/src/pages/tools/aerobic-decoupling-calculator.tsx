@@ -182,7 +182,7 @@ export default function AerobicDecouplingCalculator() {
   return (
     <>
       <SEO
-        title="Aerobic Decoupling Calculator — Test Your Aerobic Fitness (2026)"
+        title="Aerobic Decoupling Calculator: Test Your Aerobic Fitness (2026)"
         description="Calculate how your pace-to-heart-rate ratio drifts mid-run to measure aerobic fitness. Paste your run data and get a decoupling percentage with training guidance."
         keywords="aerobic decoupling, running endurance test, cardiac drift calculator, Pa:HR ratio, aerobic fitness test"
         url="https://aitracker.run/tools/aerobic-decoupling-calculator"

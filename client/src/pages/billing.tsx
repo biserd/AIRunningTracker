@@ -30,7 +30,7 @@ export default function BillingPage() {
       toast({
         title: "Subscription Activated!",
         description: returnTo
-          ? "Premium is active — taking you back to what you were doing."
+          ? "Premium is active: taking you back to what you were doing."
           : "Thank you for subscribing. Your account has been upgraded.",
       });
       // Sync immediately from Stripe so the UI flips to Premium even if the

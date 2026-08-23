@@ -228,7 +228,7 @@ export default function RacePredictor() {
   return (
     <>
       <SEO
-        title="Race Time Predictor — Any Distance Using Riegel Formula (2026)"
+        title="Race Time Predictor: Any Distance Using Riegel Formula (2026)"
         description="Predict your finish time for any race distance from a recent result. Uses the Riegel formula plus training variables for accuracy across 5K to ultra."
         keywords="race predictor, ai race predictor, marathon time predictor, half marathon predictor, 10k race predictor, 5k race predictor, strava race predictor, vdot calculator"
         url="https://aitracker.run/tools/race-predictor"

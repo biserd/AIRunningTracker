@@ -73,7 +73,7 @@ const DECOUPLING_LABEL: Record<string, string> = {
   good: "Good aerobic shape",
   moderate: "Some aerobic drift",
   concerning: "High cardiac drift",
-  unknown: "—",
+  unknown: "Not available",
 };
 
 const PACING_LABEL: Record<string, string> = {
@@ -406,13 +406,13 @@ export default function ActivityDetailScreen() {
                   value={
                     activity.averageHeartrate
                       ? `${Math.round(activity.averageHeartrate)} bpm`
-                      : "—"
+                      : "Not available"
                   }
                 />
                 <SmallStat
                   label="Max HR"
                   value={
-                    activity.maxHeartrate ? `${Math.round(activity.maxHeartrate)} bpm` : "—"
+                    activity.maxHeartrate ? `${Math.round(activity.maxHeartrate)} bpm` : "Not available"
                   }
                 />
                 <SmallStat
@@ -420,7 +420,7 @@ export default function ActivityDetailScreen() {
                   value={
                     activity.averageCadence
                       ? `${Math.round(activity.averageCadence * 2)} spm`
-                      : "—"
+                      : "Not available"
                   }
                 />
               </View>
@@ -437,7 +437,7 @@ export default function ActivityDetailScreen() {
                   value={
                     efficiency.data.aerobicDecoupling != null
                       ? `${efficiency.data.aerobicDecoupling.toFixed(1)}%`
-                      : "—"
+                      : "Not available"
                   }
                 />
                 <SmallStat
@@ -449,7 +449,7 @@ export default function ActivityDetailScreen() {
                   value={
                     efficiency.data.cadenceDrift != null
                       ? `${efficiency.data.cadenceDrift.toFixed(1)}%`
-                      : "—"
+                      : "Not available"
                   }
                 />
               </View>

@@ -193,13 +193,13 @@ export default function UltraMarathonTrainingPlanBlogPost() {
               Why an Ultra Marathon Training Plan is Different
             </h2>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              Marathon training revolves around speed, lactate threshold, and race-pace workouts. A 100-mile ultra marathon training plan demands something fundamentally different. The focus shifts from how fast you can run to how long you can keep moving—through fatigue, darkness, nausea, blisters, and self-doubt.
+              Marathon training revolves around speed, lactate threshold, and race-pace workouts. A 100-mile ultra marathon training plan demands something fundamentally different. The focus shifts from how fast you can run to how long you can keep moving, through fatigue, darkness, nausea, blisters, and self-doubt.
             </p>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
               Ultra training emphasizes time on feet over pace, resilience over speed, and fueling under fatigue over negative splits. You'll need to practice running (and hiking) through the night, managing your nutrition for 20-30+ hours of continuous effort, and making decisions when your brain is foggy from sleep deprivation.
             </p>
             <p className="text-gray-700 dark:text-gray-300">
-              <strong>A 100-miler isn't a long marathon—it's an entirely different sport.</strong> Your ultra marathon training plan must reflect that reality from day one, or you'll find yourself unprepared when the real challenges begin around mile 60.
+              <strong>A 100-miler isn't a long marathon; it's an entirely different sport.</strong> Your ultra marathon training plan must reflect that reality from day one, or you'll find yourself unprepared when the real challenges begin around mile 60.
             </p>
           </section>
 
@@ -252,7 +252,7 @@ export default function UltraMarathonTrainingPlanBlogPost() {
             </div>
 
             <p className="text-gray-700 dark:text-gray-300">
-              The recommended progression is <strong>50K → 50-mile → 100-mile</strong>. Each step teaches you something the previous distance couldn't—and those lessons are what keep you moving when things get hard at mile 70.
+              The recommended progression is <strong>50K → 50-mile → 100-mile</strong>. Each step teaches you something the previous distance could not, and those lessons help keep you moving when things get hard at mile 70.
             </p>
           </section>
 
@@ -314,7 +314,7 @@ export default function UltraMarathonTrainingPlanBlogPost() {
                     <h3 className="font-bold text-charcoal dark:text-white text-lg">Base Phase (6-8 weeks)</h3>
                   </div>
                   <p className="text-gray-600 dark:text-gray-300 text-sm mb-2">
-                    Build your aerobic foundation with easy-effort running. Long runs of 2-3 hours at conversational pace. The goal is consistent volume without intensity—teaching your body to burn fat efficiently and strengthening tendons and ligaments for the demands ahead.
+                    Build your aerobic foundation with easy-effort running. Long runs of 2-3 hours at conversational pace. The goal is consistent volume without intensity, teaching your body to burn fat efficiently and strengthening tendons and ligaments for the demands ahead.
                   </p>
                 </CardContent>
               </Card>
@@ -350,7 +350,7 @@ export default function UltraMarathonTrainingPlanBlogPost() {
                     <h3 className="font-bold text-charcoal dark:text-white text-lg">Peak (2-3 weeks)</h3>
                   </div>
                   <p className="text-gray-600 dark:text-gray-300 text-sm mb-2">
-                    Highest volume weeks with your longest runs of 5-7 hours (50-60 km). The most demanding back-to-back weekends happen here. This is where you prove to yourself that you can handle the distance—but don't overdo it. You can't build more fitness this close to race day.
+                    Highest volume weeks with your longest runs of 5-7 hours (50-60 km). The most demanding back-to-back weekends happen here. This is where you prove to yourself that you can handle the distance, but do not overdo it. You cannot build more fitness this close to race day.
                   </p>
                 </CardContent>
               </Card>
@@ -362,7 +362,7 @@ export default function UltraMarathonTrainingPlanBlogPost() {
                     <h3 className="font-bold text-charcoal dark:text-white text-lg">Taper (4-5 weeks)</h3>
                   </div>
                   <p className="text-gray-600 dark:text-gray-300 text-sm mb-2">
-                    Reduce volume by approximately 20% each week while maintaining some moderate intensity. A 100-mile taper is significantly longer than a marathon taper—your body needs extra time to fully absorb months of heavy training and arrive at the start line fresh.
+                    Reduce volume by approximately 20% each week while maintaining some moderate intensity. A 100-mile taper is significantly longer than a marathon taper; your body needs extra time to fully absorb months of heavy training and arrive at the start line fresh.
                   </p>
                 </CardContent>
               </Card>
@@ -374,7 +374,7 @@ export default function UltraMarathonTrainingPlanBlogPost() {
                     <h3 className="font-bold text-charcoal dark:text-white text-lg">Recovery (2-3 weeks post-race)</h3>
                   </div>
                   <p className="text-gray-600 dark:text-gray-300 text-sm mb-2">
-                    Take 1-2 weeks completely off from running. Easy walking and gentle movement only. Return to easy running gradually. Full physiological recovery from a 100-miler takes 4-8 weeks—don't rush back regardless of how you feel.
+                    Take 1-2 weeks completely off from running. Easy walking and gentle movement only. Return to easy running gradually. Full physiological recovery from a 100-miler takes 4-8 weeks; don't rush back regardless of how you feel.
                   </p>
                 </CardContent>
               </Card>
@@ -386,7 +386,7 @@ export default function UltraMarathonTrainingPlanBlogPost() {
               Back-to-Back Long Runs: The Ultra Secret Weapon
             </h2>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              Back-to-back (B2B) long runs are the single most important element of your ultra marathon training plan. They simulate the fatigue of running 20-30 hours by teaching your body to perform on pre-fatigued legs—something a single long run can never replicate.
+              Back-to-back (B2B) long runs are the single most important element of your ultra marathon training plan. They simulate the fatigue of running 20-30 hours by teaching your body to perform on pre-fatigued legs, something a single long run can never replicate.
             </p>
             <p className="text-gray-700 dark:text-gray-300 mb-6">
               Here's how to structure them effectively:
@@ -412,7 +412,7 @@ export default function UltraMarathonTrainingPlanBlogPost() {
                   <Footprints className="h-5 w-5 text-teal-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <h4 className="font-semibold text-charcoal dark:text-white">Sunday: Secondary long run (60-70% of Saturday)</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">Start on tired legs. This is where the magic happens—your body learns to keep going when everything says stop.</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Start on tired legs. This is where the magic happens; your body learns to keep going when everything says stop.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-4 bg-white dark:bg-slate-700 rounded-lg">
@@ -465,7 +465,7 @@ export default function UltraMarathonTrainingPlanBlogPost() {
             </div>
 
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              <strong>Don't neglect downhill training.</strong> In a 100-miler, your quads will take enormous punishment on descents. Eccentric loading from downhill running causes "quad destruction"—the deep muscle damage that makes stairs impossible the next day. Train your quads to handle this by progressively increasing downhill volume.
+              <strong>Don't neglect downhill training.</strong> In a 100-miler, your quads will take enormous punishment on descents. Eccentric loading from downhill running causes "quad destruction"; the deep muscle damage that makes stairs impossible the next day. Train your quads to handle this by progressively increasing downhill volume.
             </p>
             <p className="text-gray-700 dark:text-gray-300">
               If your race allows trekking poles, practice with them extensively. Power hiking at 4-5 km/h with poles on steep climbs is more efficient than trying to run everything, and poles save your legs for the flats and descents.
@@ -507,13 +507,13 @@ export default function UltraMarathonTrainingPlanBlogPost() {
             </div>
 
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              Start practicing fueling in Build 1. Test everything you plan to eat on race day—gels, chews, real food like sandwiches, potatoes, and broth. Simulate aid station eating by stopping briefly during long runs. Practice eating at night when your stomach is most vulnerable.
+              Start practicing fueling in Build 1. Test everything you plan to eat on race day: gels, chews, real food like sandwiches, potatoes, and broth. Simulate aid station eating by stopping briefly during long runs. Practice eating at night when your stomach is most vulnerable.
             </p>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
               Record everything in a fueling log. Track what you ate, when, and how your stomach responded. By race day, you should know exactly what works for your body at every stage of fatigue.
             </p>
             <p className="text-gray-700 dark:text-gray-300">
-              <strong>The golden rule of ultra fueling:</strong> Eat before you're hungry, drink before you're thirsty. By the time you feel hunger or thirst, you're already behind—and catching up after mile 50 is nearly impossible.
+              <strong>The golden rule of ultra fueling:</strong> Eat before you are hungry and drink before you are thirsty. By the time you feel hunger or thirst, you are already behind, and catching up after mile 50 is nearly impossible.
             </p>
           </section>
 
@@ -573,7 +573,7 @@ export default function UltraMarathonTrainingPlanBlogPost() {
               Tapering for Your 100 Mile Race
             </h2>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              A 100-mile taper is 4-5 weeks—significantly longer than a marathon taper. Your body needs this extended recovery period to fully absorb the massive training load of the preceding months.
+              A 100-mile taper is 4-5 weeks, significantly longer than a marathon taper. Your body needs this extended recovery period to fully absorb the massive training load of the preceding months.
             </p>
 
             <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-6 mb-6">
@@ -623,10 +623,10 @@ export default function UltraMarathonTrainingPlanBlogPost() {
             </div>
 
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              Maintain 1-2 moderate-effort sessions per week during the taper to keep your legs sharp. Your final long run should be 3-4 weeks before race day. Race week should be very easy—short jogs and walking only.
+              Maintain 1-2 moderate-effort sessions per week during the taper to keep your legs sharp. Your final long run should be 3-4 weeks before race day. Race week should be very easy; short jogs and walking only.
             </p>
             <p className="text-gray-700 dark:text-gray-300">
-              <strong>Trust the process.</strong> You'll feel restless, sluggish, and doubt your fitness during the taper. This is normal. The fitness is already in your legs—you just need to let your body absorb it.
+              <strong>Trust the process.</strong> You'll feel restless, sluggish, and doubt your fitness during the taper. This is normal. The fitness is already in your legs; you just need to let your body absorb it.
             </p>
           </section>
 
@@ -643,7 +643,7 @@ export default function UltraMarathonTrainingPlanBlogPost() {
                 <CardContent className="pt-6">
                   <h3 className="font-bold text-charcoal dark:text-white mb-2">Miles 0-30: Bank Patience</h3>
                   <p className="text-gray-600 dark:text-gray-300 text-sm">
-                    Start slower than you think you should. Walk uphills from the very first climb—this isn't a sign of weakness, it's a strategy. Eat and drink on a strict schedule regardless of how you feel. Your only job in this phase is to not make mistakes.
+                    Start slower than you think you should. Walk uphills from the very first climb; this isn't a sign of weakness, it's a strategy. Eat and drink on a strict schedule regardless of how you feel. Your only job in this phase is to not make mistakes.
                   </p>
                 </CardContent>
               </Card>
@@ -652,7 +652,7 @@ export default function UltraMarathonTrainingPlanBlogPost() {
                 <CardContent className="pt-6">
                   <h3 className="font-bold text-charcoal dark:text-white mb-2">Miles 30-60: The Real Race Begins</h3>
                   <p className="text-gray-600 dark:text-gray-300 text-sm">
-                    This is where your training starts to matter. Maintain your fueling schedule even as your appetite fades. Keep effort conversational. When you pass runners who went out too fast, don't speed up—stay disciplined. Trust your back-to-back training.
+                    This is where your training starts to matter. Maintain your fueling schedule even as your appetite fades. Keep effort conversational. When you pass runners who went out too fast, don't speed up; stay disciplined. Trust your back-to-back training.
                   </p>
                 </CardContent>
               </Card>
@@ -661,7 +661,7 @@ export default function UltraMarathonTrainingPlanBlogPost() {
                 <CardContent className="pt-6">
                   <h3 className="font-bold text-charcoal dark:text-white mb-2">Miles 60-80: The Dark Place</h3>
                   <p className="text-gray-600 dark:text-gray-300 text-sm">
-                    Nausea, blisters, chafing, muscle cramps, and profound doubt are all normal. This is the phase where most runners drop. Keep moving—even if it's a walk. Think only about the next aid station. Don't make any decisions about dropping when you're in this phase.
+                    Nausea, blisters, chafing, muscle cramps, and profound doubt are all normal. This is the phase where most runners drop. Keep moving, even if it's a walk. Think only about the next aid station. Don't make any decisions about dropping when you're in this phase.
                   </p>
                 </CardContent>
               </Card>
@@ -682,7 +682,7 @@ export default function UltraMarathonTrainingPlanBlogPost() {
               AI-Powered Ultra Marathon Training Plans
             </h2>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              Building a 24-30 week ultra marathon training plan manually is complex. You need to balance volume progression, recovery timing, back-to-back scheduling, vertical targets, and fueling practice—all while adapting to how your body responds week by week.
+              Building a 24-30 week ultra marathon training plan manually is complex. You need to balance volume progression, recovery timing, back-to-back scheduling, vertical targets, and fueling practice, all while adapting to how your body responds week by week.
             </p>
             <p className="text-gray-700 dark:text-gray-300 mb-6">
               This is where AI-powered training platforms like RunAnalytics transform your preparation:
@@ -756,7 +756,7 @@ export default function UltraMarathonTrainingPlanBlogPost() {
                   </div>
                   <h3 className="font-bold text-charcoal dark:text-white mb-2">Adaptive Coaching</h3>
                   <p className="text-gray-600 dark:text-gray-300 text-sm">
-                    Your plan adapts based on actual training data—adjusting volume, intensity, and recovery when your body needs it, with clear explanations for every phase change.
+                    Your plan adapts based on actual training data, adjusting volume, intensity, and recovery when your body needs it, with clear explanations for every phase change.
                   </p>
                 </CardContent>
               </Card>
@@ -774,7 +774,7 @@ export default function UltraMarathonTrainingPlanBlogPost() {
               Ready to Start Your Ultra Marathon Training Plan?
             </h2>
             <p className="text-white/90 text-lg mb-6 max-w-2xl mx-auto">
-              Build an AI-powered, personalized ultra marathon training plan with true periodization, back-to-back long runs, vertical gain targets, and fueling strategies—all adapted to your fitness level and race goals.
+              Build an AI-powered, personalized ultra marathon training plan with true periodization, back-to-back long runs, vertical gain targets, and fueling strategies, all adapted to your fitness level and race goals.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/training-plans">

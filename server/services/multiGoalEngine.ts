@@ -133,7 +133,7 @@ export function detectConflicts(goals: GoalConfig[]): ConflictWarning[] {
       type: "too_close",
       severity: "error",
       message: `Only ${gap} weeks between races. Need at least ${firstTaper + firstPeak + 2} weeks to taper for ${GOAL_LABELS[first.goalType]} and recover before ${GOAL_LABELS[second.goalType]}.`,
-      recommendation: `Consider making the first race a training race (B-race) — run it at moderate effort without a full taper.`
+      recommendation: `Consider making the first race a training race (B-race): run it at moderate effort without a full taper.`
     });
   }
 

@@ -52,7 +52,7 @@ export function SEO({
       updateMeta('keywords', keywords);
     }
 
-    // Open Graph — allow overriding the OG title/description independently
+    // Open Graph: allow overriding the OG title/description independently
     // of the <title>/meta description so social cards can use punchier copy.
     const ogTitleResolved = ogTitle ?? resolvedTitle;
     const ogDescriptionResolved = ogDescription ?? resolvedDescription;

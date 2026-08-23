@@ -436,7 +436,7 @@ function generateWeekCoachNotes(
     case "base":
       if (weekNumber === 1) {
         return {
-          coachNotes: `Week 1: Foundation Building - This opening week establishes your training rhythm. Focus on finding your easy pace and getting comfortable with the schedule. Don't push too hard—consistency matters more than intensity right now.`,
+          coachNotes: `Week 1: Foundation Building - This opening week establishes your training rhythm. Focus on finding your easy pace and getting comfortable with the schedule. Don't push too hard; consistency matters more than intensity right now.`,
           whyThisWeek: "First week establishes rhythm and aerobic foundation at conservative effort."
         };
       }
@@ -467,13 +467,13 @@ function generateWeekCoachNotes(
     
     case "peak":
       return {
-        coachNotes: `Week ${weekNumber}: Peak Training - This is your highest training load week. You've built up to this—embrace the challenge. After this week, you'll begin tapering for race day. Push yourself but stay smart.${ultra ? " Biggest long run and highest vert week—trust the fatigue, taper will absorb it." : ""}`,
+        coachNotes: `Week ${weekNumber}: Peak Training - This is your highest training load week. You've built up to this; embrace the challenge. After this week, you'll begin tapering for race day. Push yourself but stay smart.${ultra ? " Biggest long run and highest vert week; trust the fatigue, taper will absorb it." : ""}`,
         whyThisWeek: "Peak training load week; highest volume before taper begins."
       };
     
     case "recovery":
       return {
-        coachNotes: `Week ${weekNumber}: Recovery Week - A planned lower-volume week to let your body absorb recent training adaptations. Keep the effort easy—this is where fitness gains actually happen. Don't skip this!`,
+        coachNotes: `Week ${weekNumber}: Recovery Week - A planned lower-volume week to let your body absorb recent training adaptations. Keep the effort easy; this is where fitness gains actually happen. Don't skip this!`,
         whyThisWeek: "Cutback week to absorb training stress; protects against fatigue accumulation."
       };
     

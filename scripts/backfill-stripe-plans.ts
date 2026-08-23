@@ -269,7 +269,7 @@ async function sendAdminSummary(opts: {
   try {
     const ok = await emailService.sendEmail({
       to: ADMIN_EMAIL,
-      subject: `[RunAnalytics] Stripe plan backfill ${opts.mode} — ${opts.changed}/${opts.totalCandidates} changes, ${failures.length} skipped`,
+      subject: `[RunAnalytics] Stripe plan backfill ${opts.mode}: ${opts.changed}/${opts.totalCandidates} changes, ${failures.length} skipped`,
       html,
       text,
     });

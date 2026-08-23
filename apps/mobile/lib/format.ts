@@ -18,7 +18,7 @@ export function formatPace(
   metersPerSecond: number | null | undefined,
   unit: "km" | "miles" = "km",
 ): string {
-  if (!metersPerSecond || metersPerSecond <= 0) return "—";
+  if (!metersPerSecond || metersPerSecond <= 0) return "Not available";
   const secondsPerKm = 1000 / metersPerSecond;
   const secondsPerUnit = unit === "miles" ? secondsPerKm / 0.621371 : secondsPerKm;
   const m = Math.floor(secondsPerUnit / 60);
@@ -37,7 +37,7 @@ export function formatTimeOnly(iso: string): string {
 }
 
 export function formatElevation(meters: number | null | undefined, unit: "km" | "miles" = "km"): string {
-  if (meters == null) return "—";
+  if (meters == null) return "Not available";
   if (unit === "miles") return `${Math.round(meters * 3.28084)} ft`;
   return `${Math.round(meters)} m`;
 }

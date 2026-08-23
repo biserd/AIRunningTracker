@@ -1,4 +1,4 @@
-// popup.js — RunAnalytics extension popup.
+// popup.js: RunAnalytics extension popup.
 
 const API_BASE = 'https://aitracker.run/api';
 const FETCH_TIMEOUT_MS = 8000;
@@ -89,7 +89,7 @@ function renderLoggedIn(data) {
     <div class="popup-card">
       <div class="popup-card-meta">Last run${dateStr ? ' · ' + escapeHtml(dateStr) : ''}</div>
       <div class="popup-card-stats">
-        <span class="popup-card-distance">${escapeHtml(data.lastRun?.distance || '—')}</span>
+        <span class="popup-card-distance">${escapeHtml(data.lastRun?.distance || 'Not available')}</span>
         <span class="popup-card-pace">${escapeHtml(data.lastRun?.pace || '')}</span>
       </div>
       <p class="popup-card-summary">${escapeHtml(data.lastRun?.summary || 'No summary available.')}</p>
@@ -106,7 +106,7 @@ function renderLoggedIn(data) {
       </div>
       <div class="popup-pill">
         <span class="popup-pill-label">Injury Risk</span>
-        <span class="popup-pill-value" style="color:${riskColor};">${escapeHtml(data.injuryRisk || '—')}</span>
+        <span class="popup-pill-value" style="color:${riskColor};">${escapeHtml(data.injuryRisk || 'Not available')}</span>
         <span class="popup-pill-tag" style="color:${riskColor};">
           <span class="popup-dot" style="background:${riskColor};"></span>
           ${escapeHtml(data.injuryRiskLabel || '')}

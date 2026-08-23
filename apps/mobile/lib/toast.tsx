@@ -41,7 +41,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       Animated.timing(translateY, { toValue: -12, duration: 180, useNativeDriver: true }),
     ]).start(({ finished }) => {
       // If a new toast was shown mid-dismiss, the animation was interrupted
-      // (finished=false). Don't clear state in that case — the new toast owns it.
+      // (finished=false). Don't clear state in that case: the new toast owns it.
       if (finished) setToast(null);
     });
   }, [opacity, translateY]);

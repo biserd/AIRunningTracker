@@ -86,7 +86,7 @@ export default function PushNotificationToggle() {
         </div>
         <div className="text-sm text-muted-foreground mt-1">
           {status.subscribed
-            ? "On — we'll ping this device when your post-run recap is ready."
+            ? "On: we'll ping this device when your post-run recap is ready."
             : "Get a notification on this device after each run is analyzed."}
         </div>
         {status.permission === "denied" && (

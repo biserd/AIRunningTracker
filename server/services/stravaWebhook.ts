@@ -157,7 +157,7 @@ export class StravaWebhookService {
       if (frequency === "weekly" && user.lastPostRunEmailAt) {
         const daysSinceLastEmail = (Date.now() - new Date(user.lastPostRunEmailAt).getTime()) / (1000 * 60 * 60 * 24);
         if (daysSinceLastEmail < 7) {
-          console.log(`[Strava Webhook] User ${user.id} set to weekly emails, last sent ${daysSinceLastEmail.toFixed(1)} days ago — storing without email`);
+          console.log(`[Strava Webhook] User ${user.id} set to weekly emails, last sent ${daysSinceLastEmail.toFixed(1)} days ago: storing without email`);
           emailSkipReason = "weekly_throttle";
         }
       }
@@ -204,7 +204,7 @@ export class StravaWebhookService {
       }
 
       // Tiny activities (warmups, accidental starts, treadmill blips) get stored
-      // for history but never trigger an email — so there's no point spending a
+      // for history but never trigger an email: so there's no point spending a
       // Strava streams call or AI analysis on a run that won't be emailed.
       const minDistanceMeters = (user.unitPreference ?? "miles") === "km" ? 1000 : 1609.34;
       const meetsDistanceThreshold = (activity.distance ?? 0) >= minDistanceMeters;
@@ -272,7 +272,7 @@ export class StravaWebhookService {
           console.log(`[Strava Webhook] Stored activity ${stravaId} for user ${user.id}`);
         } catch (storeErr) {
           console.error(`[Strava Webhook] Failed to store activity ${stravaId}:`, storeErr);
-          // Non-fatal — email can still go out with whatever context the DB has
+          // Non-fatal: email can still go out with whatever context the DB has
         }
       } else {
         console.log(`[Strava Webhook] Activity ${stravaId} already in DB for user ${user.id}, skipping insert`);
@@ -311,7 +311,7 @@ export class StravaWebhookService {
       // Threshold gate computed above (willEmail). We already stored the activity
       // so history stays accurate even when we skip the email.
       if (!meetsDistanceThreshold) {
-        console.log(`[Strava Webhook] Activity ${event.object_id} too short (${activity.distance}m < ${minDistanceMeters}m) — stored but skipping email`);
+        console.log(`[Strava Webhook] Activity ${event.object_id} too short (${activity.distance}m < ${minDistanceMeters}m): stored but skipping email`);
         return `stored_no_email:below_min_distance(${Math.round(activity.distance ?? 0)}m)`;
       }
       if (emailSkipReason) {
@@ -383,7 +383,7 @@ export class StravaWebhookService {
       if (priorWeeklyAvgKm >= 1) {
         const ratio = thisWeekTotalKm / priorWeeklyAvgKm;
         const pct = Math.round((ratio - 1) * 100);
-        if (ratio >= 1.3) loadComparison = `This week's volume is about ${pct}% above the prior 3-week average — ramping quickly, so recovery matters.`;
+        if (ratio >= 1.3) loadComparison = `This week's volume is about ${pct}% above the prior 3-week average: ramping quickly, so recovery matters.`;
         else if (ratio <= 0.6) loadComparison = `This week's volume is well below the recent norm (a lighter or recovery week).`;
         else loadComparison = `This week's volume is roughly in line with the recent 3-week average.`;
       }
@@ -449,7 +449,7 @@ export class StravaWebhookService {
 
       // Wrap the activity / dashboard link in a one-tap magic-link sign-in so
       // free users (who get these emails as a retention magnet) don't have to
-      // remember a password — they go straight from inbox to the activity
+      // remember a password: they go straight from inbox to the activity
       // (or dashboard) already logged in. Token is short-lived (15 min) and
       // purpose-scoped; falls back to a plain link if generation fails.
       const redirectPath = activityDbId ? `/activity/${activityDbId}` : `/dashboard`;
@@ -468,7 +468,7 @@ export class StravaWebhookService {
       }
 
       // Derive substantive insights from the detailed streams (splits, decoupling,
-      // fastest segment, cadence) — the things the runner can't read off the table.
+      // fastest segment, cadence): the things the runner can't read off the table.
       const streamAnalysis = analyzeRunStreams(streams, isKm);
 
       const aiResult = await this.generatePersonalizedEmail(
@@ -541,7 +541,7 @@ export class StravaWebhookService {
         : `${(ctx.kmThisWeek * 0.621371).toFixed(1)} mi`;
 
       // Format pace trend (convert to the runner's unit so we never mix km and mi)
-      // Use M:SS format — how runners actually talk about pace differences
+      // Use M:SS format: how runners actually talk about pace differences
       const fmtPaceDiff = (totalSec: number): string => {
         const m = Math.floor(totalSec / 60);
         const s = totalSec % 60;
@@ -565,18 +565,18 @@ export class StravaWebhookService {
       // Format streak
       const streakNote = ctx.runStreak >= 3 ? `${ctx.runStreak}-day running streak` : null;
 
-      // Stream-derived analysis block — the substance the runner can't see in the table
+      // Stream-derived analysis block: the substance the runner can't see in the table
        const terrainInstruction = streamAnalysis?.terrainAffected
          ? "\nTERRAIN INTERPRETATION RULE: The slower second half is materially explained by a more uphill route profile. Do not call this a fade, poor fueling, or going out too fast unless separate heart-rate evidence clearly supports that conclusion. Explain the terrain effect first.\n"
          : "";
        const streamBlock = streamAnalysis && streamAnalysis.summaryLines.length
-         ? `\nRun analysis (computed from GPS + HR + elevation streams — the runner CANNOT see these in the stats table, so this is your richest material):\n${streamAnalysis.summaryLines.map(l => `- ${l}`).join("\n")}\n${terrainInstruction}`
+         ? `\nRun analysis (computed from GPS + HR + elevation streams: the runner CANNOT see these in the stats table, so this is your richest material):\n${streamAnalysis.summaryLines.map(l => `- ${l}`).join("\n")}\n${terrainInstruction}`
         : "";
       const loadLine = ctx.loadComparison ? `\n- Weekly load: ${ctx.loadComparison}` : "";
 
       const prompt = `You are the Running Coach for RunAnalytics. Write a sharp, personalized post-run email for ${firstName}.
 
-CRITICAL: The runner is already looking at a stats table showing pace, distance, duration, average HR, elevation, efficiency, and effort score. Restating any of those numbers is worthless. Your entire job is to tell them something they CANNOT see by reading that table — a pattern, a comparison, or what the numbers mean for their training.
+CRITICAL: The runner is already looking at a stats table showing pace, distance, duration, average HR, elevation, efficiency, and effort score. Restating any of those numbers is worthless. Your entire job is to tell them something they CANNOT see by reading that table: a pattern, a comparison, or what the numbers mean for their training.
 
 Today's run type: ${runType}
 Distance: ${distanceDisplay} (${distanceLabel})
@@ -599,7 +599,7 @@ Generate a JSON response with exactly these 3 fields:
 
 1. "subject": Under 65 chars. Hook them with the single most interesting finding (a split pattern, HR drift, fastest segment, pace-vs-norm, or load trend), not a generic "Great run!". Use the label "${distanceLabel}" where it reads naturally.
 
-2. "coachVerdictBody": 2-3 sentences, max ~55 words. LEAD with the most insightful, non-obvious thing in the data above — strongly prefer the run analysis (split behaviour, aerobic decoupling, fastest split) or how today compares to their recent norm / weekly load. State the actual numbers from that analysis and explain what they mean, then connect it to their goal if relevant. Coach-to-athlete: warm but direct. Do NOT restate the stats table. No generic praise. No em dashes. No "Grey Zone" or "Junk Mileage".
+2. "coachVerdictBody": 2-3 sentences, max ~55 words. LEAD with the most insightful, non-obvious thing in the data above: strongly prefer the run analysis (split behaviour, aerobic decoupling, fastest split) or how today compares to their recent norm / weekly load. State the actual numbers from that analysis and explain what they mean, then connect it to their goal if relevant. Coach-to-athlete: warm but direct. Do NOT restate the stats table. No generic praise. No em dashes. No "Grey Zone" or "Junk Mileage".
 
 3. "nextRunTip": One concrete, specific sentence on what to do next, justified by today's analysis (decoupling / effort / split behaviour) and their weekly load. Not a vague "take it easy".
 
@@ -651,7 +651,7 @@ Respond with ONLY valid JSON, no markdown, no commentary.`;
       const paceDiffFmt = absM > 0 ? `${absM}:${absS.toString().padStart(2, '0')}/km` : `0:${absS.toString().padStart(2, '0')}/km`;
       hook = `${paceDiffFmt} faster than your recent average`;
       verdict = `You ran ${paceDiffFmt} faster than your recent average for this distance. Your fitness is building. Make sure your next run is easy enough to absorb this effort.`;
-      nextRunTip = "Follow this up with an easy run — your body needs the recovery to lock in these gains.";
+      nextRunTip = "Follow this up with an easy run: your body needs the recovery to lock in these gains.";
     } else if (ctx.paceVsRecentSec !== null && ctx.paceVsRecentSec > 15) {
       hook = "slower than usual, which is not always a bad thing";
       verdict = `Your pace was a bit slower than your recent average today. That can be deliberate recovery, or a signal to check your sleep and nutrition. Either way, consistency is what builds fitness.`;
@@ -662,8 +662,8 @@ Respond with ONLY valid JSON, no markdown, no commentary.`;
       nextRunTip = "Prioritize keeping your next 1-2 runs at a conversational pace.";
     } else if (effortScore >= 80) {
       hook = "big effort today";
-      verdict = `You put out a high-effort session. Your body is going to need proper recovery to absorb this one. Easy running for the next day or two is not optional — it is part of the training.`;
-      nextRunTip = "Make your next run genuinely easy — effort score like today needs 24-48 hours of recovery.";
+      verdict = `You put out a high-effort session. Your body is going to need proper recovery to absorb this one. Easy running for the next day or two is not optional: it is part of the training.`;
+      nextRunTip = "Make your next run genuinely easy: effort score like today needs 24-48 hours of recovery.";
     } else if (activity.pr_count && activity.pr_count > 0) {
       hook = `${activity.pr_count} new PR${activity.pr_count > 1 ? "s" : ""}`;
       verdict = `You set ${activity.pr_count} PR${activity.pr_count > 1 ? "s" : ""} today. That is real progress showing up in the data. The question now is whether you recover well enough to keep that trajectory going.`;
@@ -673,14 +673,14 @@ Respond with ONLY valid JSON, no markdown, no commentary.`;
         ? `${ctx.kmThisWeek.toFixed(1)} km`
         : `${(ctx.kmThisWeek * 0.621371).toFixed(1)} mi`;
       hook = `run ${ctx.runsThisWeek} of the week is in the books`;
-      verdict = `You have been consistent this week — ${ctx.runsThisWeek} runs and ${wkDisplay} logged. Consistency is the most underrated part of training. Keep it up.`;
+      verdict = `You have been consistent this week: ${ctx.runsThisWeek} runs and ${wkDisplay} logged. Consistency is the most underrated part of training. Keep it up.`;
       nextRunTip = "You are building a solid week. Make sure at least one more run this week is fully easy.";
     }
 
     // Goal-aware closing nudge
     const goalLabel = GOAL_LABELS[user.onboardingGoal || ""] || null;
     if (goalLabel && verdict === "Every run is a data point. Let's make the next one count.") {
-      verdict = `You are ${goalLabel} and today is another step in that direction. Consistency over perfection — keep showing up.`;
+      verdict = `You are ${goalLabel} and today is another step in that direction. Consistency over perfection: keep showing up.`;
     }
 
     return {

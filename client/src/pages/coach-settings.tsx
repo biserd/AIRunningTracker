@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { queryClient, apiRequest, getQueryFn } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -30,6 +30,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 import type { DashboardData } from "@/lib/api";
+import { TelegramTrialOffer } from "@/components/TelegramTrialOffer";
 
 const DAYS_OF_WEEK = [
   { id: "monday", label: "Mon" },
@@ -70,6 +71,8 @@ export default function CoachSettingsPage() {
   const { isPremium, isLoading: subLoading } = useSubscription();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const searchString = useSearch();
+  const telegramAutoConnectStarted = useRef(false);
 
   const { data: dashboardData, isLoading: dataLoading } = useQuery<DashboardData>({
     queryKey: [`/api/dashboard/${user?.id}`],
@@ -175,6 +178,24 @@ export default function CoachSettingsPage() {
     }),
   });
 
+  useEffect(() => {
+    const shouldConnectTelegram = new URLSearchParams(searchString).get("connect") === "telegram";
+    if (!shouldConnectTelegram || !isPremium || channelStatusLoading || !channelStatus) return;
+
+    const url = new URL(window.location.href);
+    url.searchParams.delete("connect");
+
+    if (channelStatus.telegram.connected) {
+      window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+      return;
+    }
+
+    if (!channelStatus.available || telegramAutoConnectStarted.current) return;
+    telegramAutoConnectStarted.current = true;
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    connectTelegramMutation.mutate();
+  }, [channelStatus, channelStatusLoading, isPremium, searchString]);
+
   const handleDayToggle = (dayId: string) => {
     setCoachDaysAvailable((prev) =>
       prev.includes(dayId)
@@ -274,17 +295,7 @@ export default function CoachSettingsPage() {
           </div>
 
           <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Premium coaching is paused</CardTitle>
-                <CardDescription>Start a trial or reactivate Premium to connect Telegram and use personalized coaching.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild className="bg-strava-orange hover:bg-strava-orange/90">
-                  <Link href="/pricing?source=coach_settings&capability=ai_coach&benefitKey=coach_chat">Start 14 days free</Link>
-                </Button>
-              </CardContent>
-            </Card>
+            <TelegramTrialOffer source="coach_settings_telegram_offer" compact />
 
             {(channelStatusLoading || hasTelegramBinding) && (
               <Card>
@@ -426,7 +437,7 @@ export default function CoachSettingsPage() {
                 <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" />
                 <div className="text-sm text-blue-950">
                   <p className="font-medium">Your running data stays tied to your account.</p>
-                  <p className="mt-1 text-blue-800">The coach receives a read-only connection for you—not access to another runner, billing, Strava credentials, or account controls. Disconnect anytime.</p>
+                  <p className="mt-1 text-blue-800">The coach receives a read-only connection for you, not access to another runner, billing, Strava credentials, or account controls. Disconnect anytime.</p>
                 </div>
               </div>
 
@@ -500,7 +511,7 @@ export default function CoachSettingsPage() {
                 Proactive Coach
               </CardTitle>
               <CardDescription>
-                A short, useful briefing at the right time—not another stream of notifications.
+                A short, useful briefing at the right time, not another stream of notifications.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">

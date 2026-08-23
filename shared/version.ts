@@ -16,7 +16,7 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     version: "2.8.0",
     date: "2025-12-18",
     title: "AI Agent Coach - Your Proactive Running Coach",
-    description: "Introducing AI Agent Coach, a Premium-exclusive feature that transforms passive analytics into active coaching. After every Strava sync, AI Agent Coach automatically analyzes your run and delivers personalized coaching recaps with observations, next-step recommendations, and performance grades—without you asking.",
+    description: "Introducing AI Agent Coach, a Premium-exclusive feature that transforms passive analytics into active coaching. After every Strava sync, AI Agent Coach automatically analyzes your run and delivers personalized coaching recaps with observations, next-step recommendations, and performance grades, without you asking.",
     changes: [
       {
         type: "feature",

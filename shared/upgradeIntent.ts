@@ -24,6 +24,7 @@ export const BENEFIT_COPY = {
   injury_risk: "Understand training-load risk factors and receive practical recovery recommendations.",
   training_plan: "Turn your goal, recent mileage, and available running days into a complete adaptive plan.",
   ai_coach: "Get proactive post-run recaps and personalized coaching after every run.",
+  telegram_coach: "Get private post-run analysis, proactive check-ins, and weather-aware running guidance in Telegram.",
   ebook_bundle: "Start your 14-day Premium trial and receive The Runner's Guide to AI Coaching free - a $49 standalone value.",
   mcp_access: "Connect an authorized AI client to your runner-scoped profile, activities, analytics, goals, and plans through read-only MCP tools.",
 } as const;
@@ -63,6 +64,7 @@ const ALLOWED_RETURN_PATHS = [
   /^\/training-plans(?:\/\d+)?(?:[/?#]|$)/,
   /^\/billing(?:[/?#]|$)/,
   /^\/settings(?:[/?#]|$)/,
+  /^\/coach\/settings(?:[/?#]|$)/,
   /^\/ai-running-coaching-guide(?:[/?#]|$)/,
   /^\/mcp\/consent(?:[/?#]|$)/,
   /^\/mcp-server(?:[/?#]|$)/,

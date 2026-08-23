@@ -138,7 +138,7 @@ Requirements:
 - Mention the shoe type ("${cat}"), key specs (weight ${shoe.weight} oz, ${shoe.heelToToeDrop}mm drop, ${shoe.heelStackHeight}/${shoe.forefootStackHeight}mm stack), and the cushioning feel ("${cushion}").
 - Mention the carbon plate / super foam ONLY if present (carbon plate: ${shoe.hasCarbonPlate}, super foam: ${shoe.hasSuperFoam}).
 - Tell the runner who it's best for (${shoe.bestFor.join(', ')}) and what kind of run it shines on.
-- Friendly, confident, conversational tone — like a coach giving a quick verdict. No hype, no emojis, no markdown, no headings.
+- Friendly, confident, conversational tone: like a coach giving a quick verdict. No hype, no emojis, no markdown, no headings.
 - Do NOT invent a price, release year, or colorway. Stick to the facts provided.
 - Output ONLY the overview paragraph (plain text). Start with "The ${shoe.brand} ${shoe.model} is...".
 
@@ -175,7 +175,7 @@ function fallbackFaq(shoe: ShoeData): FaqEntry[] {
   return [
     {
       q: `Is the ${shoe.brand} ${shoe.model} a good ${cat}?`,
-      a: `Yes — the ${shoe.brand} ${shoe.model} is designed as a ${cat} with ${CUSHION_LABELS[shoe.cushioningLevel] || 'balanced cushioning'} and a ${shoe.heelToToeDrop}mm heel-to-toe drop, weighing ${shoe.weight} oz.`,
+      a: `Yes: the ${shoe.brand} ${shoe.model} is designed as a ${cat} with ${CUSHION_LABELS[shoe.cushioningLevel] || 'balanced cushioning'} and a ${shoe.heelToToeDrop}mm heel-to-toe drop, weighing ${shoe.weight} oz.`,
     },
     {
       q: `How long does the ${shoe.brand} ${shoe.model} last?`,
@@ -193,14 +193,14 @@ async function generateFaq(shoe: ShoeData): Promise<string> {
   const cushion = CUSHION_LABELS[shoe.cushioningLevel] || 'balanced cushioning';
   const prompt = `You are an SEO copywriter generating an FAQ section for a running-shoe product page (used for Google rich results / structured data).
 
-Return STRICT JSON ONLY in this exact shape — no prose, no markdown, no code fences:
+Return STRICT JSON ONLY in this exact shape: no prose, no markdown, no code fences:
 {"faq":[{"q":"...","a":"..."},{"q":"...","a":"..."},{"q":"...","a":"..."}]}
 
 Rules:
 - EXACTLY 3 entries.
 - Each "q" must be a natural-language question a runner would actually type into Google, and must include the full shoe name "${shoe.brand} ${shoe.model}" so the FAQ ranks for long-tail queries.
 - Each "a" is 1–2 sentences, factual, friendly, conversational. Reference the spec when relevant (weight, drop, stack, cushioning, stability, carbon plate, super foam). Do NOT invent prices, release dates, or features not listed.
-- Mix question types — pick 3 that genuinely fit this shoe from: best use case, comparison to previous version, durability/mileage, who it's for (beginners, heavier runners, racers), carbon plate / super foam questions, fit & sizing feel, daily-trainer vs. race-day suitability.
+- Mix question types: pick 3 that genuinely fit this shoe from: best use case, comparison to previous version, durability/mileage, who it's for (beginners, heavier runners, racers), carbon plate / super foam questions, fit & sizing feel, daily-trainer vs. race-day suitability.
 - No emojis, no markdown.
 
 Shoe data:
@@ -254,7 +254,7 @@ Shoe data:
 async function generateInsights() {
   const limitArg = process.argv.find((a) => a.startsWith('--limit='));
   const limit = limitArg ? Math.max(1, parseInt(limitArg.split('=')[1], 10) || 0) : 0;
-  console.log(`Starting AI insights generation (any year, missing aiNarrative or aiFaq)${limit ? ` — limit ${limit}` : ''}...`);
+  console.log(`Starting AI insights generation (any year, missing aiNarrative or aiFaq)${limit ? `: limit ${limit}` : ''}...`);
 
   const shoesNeedingInsights = await db
     .select({
@@ -283,7 +283,7 @@ async function generateInsights() {
 
   const allCount = shoesNeedingInsights.length;
   const batch = limit > 0 ? shoesNeedingInsights.slice(0, limit) : shoesNeedingInsights;
-  console.log(`Found ${allCount} shoes needing AI insights${limit ? ` — processing first ${batch.length}` : ''}`);
+  console.log(`Found ${allCount} shoes needing AI insights${limit ? `: processing first ${batch.length}` : ''}`);
 
   if (batch.length === 0) {
     console.log('All shoes already have AI insights!');

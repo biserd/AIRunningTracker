@@ -77,7 +77,7 @@ export default function LoginScreen() {
         setTimeout(
           () =>
             toast.show(
-              "Welcome to RunAnalytics — 7 days of Premium are on us.",
+              "Welcome to RunAnalytics: 7 days of Premium are on us.",
               "success",
             ),
           250,
@@ -123,7 +123,7 @@ export default function LoginScreen() {
       );
 
       if (result.type !== "success" || !result.url) {
-        // dismiss / cancel — silent (user knows they hit cancel)
+        // dismiss / cancel: silent (user knows they hit cancel)
         return;
       }
 
@@ -156,7 +156,7 @@ export default function LoginScreen() {
       try {
         user = await api<User>("/api/auth/user");
       } catch {
-        // Minimal fallback — AuthProvider's loadUser will fill in the rest.
+        // Minimal fallback: AuthProvider's loadUser will fill in the rest.
         user = {
           id: 0,
           email: null,
@@ -228,7 +228,7 @@ export default function LoginScreen() {
               </Text>
             </View>
 
-            {/* Strava OAuth button — works for sign in AND sign up */}
+            {/* Strava OAuth button: works for sign in AND sign up */}
             <Pressable
               onPress={onStravaSignIn}
               disabled={stravaSubmitting || submitting}
@@ -272,7 +272,7 @@ export default function LoginScreen() {
             {/* Segmented control */}
             <SegmentedControl mode={mode} onChange={setMode} />
 
-            {/* Trial banner — only on Sign Up */}
+            {/* Trial banner: only on Sign Up */}
             {isSignup ? <TrialBanner /> : null}
 
             {/* Form */}
@@ -352,7 +352,7 @@ export default function LoginScreen() {
                 }}
               >
                 {isSignup
-                  ? "By creating an account you agree to our terms. You can cancel anytime — there's no card on file."
+                  ? "By creating an account you agree to our terms. You can cancel anytime: there's no card on file."
                   : "Forgot your password? Reset it on aitracker.run."}
               </Text>
             </View>

@@ -273,7 +273,7 @@ export default function ShoeDatabasePage() {
   return (
     <>
       <SEO
-        title="Running Shoe Database — Browse & Filter 224+ Shoes (2026)"
+        title="Running Shoe Database: Browse & Filter 224+ Shoes (2026)"
         description="Filter 224+ running shoes by brand, category, weight, and ratings. Full specs on every model so you can compare options before you buy."
         keywords="running shoes database, compare running shoes, best running shoes 2026, running shoe reviews"
         url="https://aitracker.run/tools/shoes"

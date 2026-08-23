@@ -61,7 +61,7 @@ export default function AIAgentCoachBlogPost() {
             "name": "How accurate is AI coaching compared to a human coach?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "AI Agent Coach analyzes the same data a human coach would—heart rate, pace, cadence, elevation—but processes it instantly and consistently. It excels at pattern recognition across your entire training history, identifying trends a human might miss. However, it can't observe your running form visually or understand external life factors affecting your training."
+              "text": "AI Agent Coach analyzes the same data a human coach would: heart rate, pace, cadence, and elevation. It processes that data instantly and consistently. It excels at pattern recognition across your training history, identifying trends a human might miss. However, it cannot observe your running form visually or understand every external life factor affecting your training."
             }
           },
           {
@@ -232,7 +232,7 @@ export default function AIAgentCoachBlogPost() {
                   </div>
                   <h3 className="font-bold text-charcoal dark:text-white mb-2">Automatic Analysis</h3>
                   <p className="text-gray-600 dark:text-gray-300 text-sm">
-                    After every Strava sync, AI Agent Coach analyzes your activity—pace patterns, heart rate trends, effort distribution, and more.
+                    After every Strava sync, AI Agent Coach analyzes your activity: pace patterns, heart rate trends, effort distribution, and more.
                   </p>
                 </CardContent>
               </Card>
@@ -256,7 +256,7 @@ export default function AIAgentCoachBlogPost() {
                   </div>
                   <h3 className="font-bold text-charcoal dark:text-white mb-2">Next Step Recommendations</h3>
                   <p className="text-gray-600 dark:text-gray-300 text-sm">
-                    Get clear guidance on what to do next: rest, easy run, workout, long run, or recovery—based on your training load and goals.
+                    Get clear guidance on what to do next: rest, easy run, workout, long run, or recovery, based on your training load and goals.
                   </p>
                 </CardContent>
               </Card>
@@ -268,7 +268,7 @@ export default function AIAgentCoachBlogPost() {
                   </div>
                   <h3 className="font-bold text-charcoal dark:text-white mb-2">Proactive Delivery</h3>
                   <p className="text-gray-600 dark:text-gray-300 text-sm">
-                    Insights appear on your activity page and can be delivered via email—no need to search for them.
+                    Insights appear on your activity page and can be delivered via email; no need to search for them.
                   </p>
                 </CardContent>
               </Card>
@@ -312,7 +312,7 @@ export default function AIAgentCoachBlogPost() {
               How AI Agent Coach Fits Your Training Goals
             </h2>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              During onboarding, you set your primary goal—whether it's a specific race, general fitness, or injury recovery. The AI tailors every recommendation to this context:
+              During onboarding, you set your primary goal, whether it's a specific race, general fitness, or injury recovery. The AI tailors every recommendation to this context:
             </p>
             <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-6 mb-6">
               <div className="grid gap-4">
@@ -455,7 +455,7 @@ export default function AIAgentCoachBlogPost() {
                     How accurate is the AI coaching compared to a human coach?
                   </h3>
                   <p className="text-gray-600 dark:text-gray-300 text-sm">
-                    AI Agent Coach analyzes the same data a human coach would—heart rate, pace, cadence, elevation—but processes it instantly and consistently. It excels at pattern recognition across your entire training history, identifying trends a human might miss. However, it can't observe your running form visually or understand external life factors affecting your training.
+                    AI Agent Coach analyzes the same data a human coach would: heart rate, pace, cadence, and elevation. It processes that data instantly and consistently. It excels at pattern recognition across your training history, identifying trends a human might miss. However, it cannot observe your running form visually or understand every external life factor affecting your training.
                   </p>
                 </CardContent>
               </Card>

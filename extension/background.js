@@ -1,4 +1,4 @@
-// background.js — RunAnalytics extension service worker.
+// background.js: RunAnalytics extension service worker.
 // Two jobs: (1) accept auth tokens from the aitracker.run web app via
 // externally_connectable messaging, and (2) open the onboarding tab on first install.
 

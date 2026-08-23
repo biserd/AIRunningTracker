@@ -490,7 +490,7 @@ export default function ImproveRunningPace() {
             </h2>
             
             <p className="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
-              Improving your pace isn't just about running faster—it's about running smarter. Proper pacing strategies help you train more effectively and race to your potential.
+              Improving your pace isn't just about running faster; it's about running smarter. Proper pacing strategies help you train more effectively and race to your potential.
             </p>
 
             <div className="space-y-6 mb-8">
@@ -876,7 +876,7 @@ export default function ImproveRunningPace() {
                   <CardTitle className="text-lg dark:text-white">What's the best workout for improving pace?</CardTitle>
                 </CardHeader>
                 <CardContent className="text-gray-700 dark:text-gray-300">
-                  There's no single "best" workout—improvement comes from variety. Tempo runs build lactate threshold, intervals develop speed, and long runs build endurance. A well-rounded plan includes all three workout types.
+                  There's no single "best" workout; improvement comes from variety. Tempo runs build lactate threshold, intervals develop speed, and long runs build endurance. A well-rounded plan includes all three workout types.
                 </CardContent>
               </Card>
               <Card className="dark:border-slate-700">

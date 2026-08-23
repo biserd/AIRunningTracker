@@ -391,7 +391,7 @@ export default function TrainingPlans() {
                     Create Training Plan
                   </CardTitle>
                   <CardDescription>
-                    {wizardStep === "goal" && (canAccessTrainingPlans ? "Step 1: Set your goal" : "Step 1: Set your goal — Week 1 preview is free")}
+                    {wizardStep === "goal" && (canAccessTrainingPlans ? "Step 1: Set your goal" : "Step 1: Set your goal: Week 1 preview is free")}
                     {wizardStep === "preferences" && "Step 2: Customize preferences"}
                     {wizardStep === "generating" && "Generating your plan..."}
                     {wizardStep === "preview" && "Step 3: Preview your first week"}

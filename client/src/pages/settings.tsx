@@ -17,6 +17,7 @@ import { Settings, Save, Unlink, Trash2, Crown, Zap, CreditCard, ExternalLink, L
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import PushNotificationToggle from "@/components/PushNotificationToggle";
+import { TelegramTrialOffer } from "@/components/TelegramTrialOffer";
 
 function SettingsPageContent() {
   const { user } = useAuth();
@@ -32,7 +33,7 @@ function SettingsPageContent() {
 
   const [unitPreference, setUnitPreference] = useState("km");
   const [stravaBrandingEnabled, setStravaBrandingEnabled] = useState(false);
-  const [stravaBrandingTemplate, setStravaBrandingTemplate] = useState("🏃 Runner Score: {score} | {insight} — Analyzed with RunAnalytics");
+  const [stravaBrandingTemplate, setStravaBrandingTemplate] = useState("🏃 Runner Score: {score} | {insight}: Analyzed with RunAnalytics");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [notifyPostRun, setNotifyPostRun] = useState(true);
   const [postRunEmailFrequency, setPostRunEmailFrequency] = useState("every_run");
@@ -192,6 +193,10 @@ function SettingsPageContent() {
         </div>
 
       <div className="grid gap-6">
+        {!isPremium && (
+          <TelegramTrialOffer source="settings_telegram_offer" compact />
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -498,7 +503,7 @@ function SettingsPageContent() {
                         id="branding-template"
                         value={stravaBrandingTemplate}
                         onChange={(e) => setStravaBrandingTemplate(e.target.value)}
-                        placeholder="🏃 Runner Score: {score} | {insight} — Analyzed with RunAnalytics"
+                        placeholder="🏃 Runner Score: {score} | {insight}: Analyzed with RunAnalytics"
                         data-testid="input-branding-template"
                       />
                       <p className="text-xs text-gray-500">
@@ -622,7 +627,7 @@ function SettingsPageContent() {
                     Weekly Summary Email
                   </Label>
                   <p className="text-sm text-gray-500">
-                    Every Monday — your week's runs, distance, and training progress
+                    Every Monday: your week's runs, distance, and training progress
                   </p>
                 </div>
                 <Switch

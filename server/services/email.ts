@@ -44,7 +44,7 @@ class EmailService {
       try {
         // Resend returns { data, error } and does NOT throw on most API
         // errors (incl. 429 rate limits), so we must inspect `error`
-        // explicitly — otherwise a dropped email looks like a success.
+        // explicitly: otherwise a dropped email looks like a success.
         const { data, error } = await this.resend.emails.send({
           from: this.fromEmail,
           to: options.to,
@@ -137,7 +137,7 @@ class EmailService {
         <li><strong>Strava Athlete ID:</strong> ${params.stravaAthleteId}</li>
         <li><strong>Date:</strong> ${new Date().toLocaleString()}</li>
       </ul>
-      <p style="color:#666; font-size:13px;">No email on file yet — will be collected at billing checkout.</p>
+      <p style="color:#666; font-size:13px;">No email on file yet: will be collected at billing checkout.</p>
     `;
 
     await this.sendEmail({
@@ -265,7 +265,7 @@ The RunAnalytics Team
 
         <h2 style="color: #2c3e50;">Your account uses Strava sign-in</h2>
 
-        <p>You asked to reset your password, but this account was created with <strong>"Continue with Strava"</strong> — there's no password to reset. Click below to sign back in with Strava:</p>
+        <p>You asked to reset your password, but this account was created with <strong>"Continue with Strava"</strong>: there's no password to reset. Click below to sign back in with Strava:</p>
 
         <div style="text-align: center; margin: 30px 0;">
           <a href="${stravaUrl}" style="background: #FC4C02; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Sign in with Strava</a>
@@ -281,7 +281,7 @@ The RunAnalytics Team
         </div>
       </div>
     `;
-    const text = `Your RunAnalytics account uses Strava sign-in — there's no password to reset.
+    const text = `Your RunAnalytics account uses Strava sign-in: there's no password to reset.
 
 Sign back in here: ${stravaUrl}
 
@@ -327,7 +327,7 @@ The RunAnalytics Team`;
         <p style="color: #3498db; word-break: break-all; font-size: 14px;">${url}</p>
 
         <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; color: #666; font-size: 14px;">
-          <p>Didn't request this? Ignore this email — your account stays safe.</p>
+          <p>Didn't request this? Ignore this email: your account stays safe.</p>
           <p>Happy running!<br>The RunAnalytics Team</p>
         </div>
       </div>
@@ -514,7 +514,7 @@ This feedback has been stored in the deletion_feedback table for analysis.`;
 
   async sendWelcomeEmail(email: string, firstName?: string): Promise<void> {
     const name = firstName || 'there';
-    const subject = 'Welcome to RunAnalytics — your dashboard is ready';
+    const subject = 'Welcome to RunAnalytics: your dashboard is ready';
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
@@ -540,7 +540,7 @@ This feedback has been stored in the deletion_feedback table for analysis.`;
         </div>
 
         <div style="background: #eef6ff; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2563eb;">
-          <p style="margin: 0 0 10px 0; color: #1e3a8a;"><strong>New: get your insights right inside Strava.</strong> Install our free Chrome extension to see your run grade, Runner Score, readiness, and injury-risk signals on every Strava activity page — no extra clicks.</p>
+          <p style="margin: 0 0 10px 0; color: #1e3a8a;"><strong>New: get your insights right inside Strava.</strong> Install our free Chrome extension to see your run grade, Runner Score, readiness, and injury-risk signals on every Strava activity page: no extra clicks.</p>
           <a href="https://chromewebstore.google.com/detail/ginbekolfhooancaldnodcdhabjffbem/" style="color: #2563eb; font-weight: bold; text-decoration: none;">Add the RunAnalytics Chrome extension →</a>
         </div>
         
@@ -566,7 +566,7 @@ This feedback has been stored in the deletion_feedback table for analysis.`;
     `;
     
     const text = `
-Welcome to RunAnalytics — your dashboard is ready
+Welcome to RunAnalytics: your dashboard is ready
 
 Hey ${name}!
 
@@ -604,7 +604,7 @@ The RunAnalytics Team
   }
 
   async sendLaunchAnnouncementEmail(email: string): Promise<boolean> {
-    const subject = "We're live! Try RunAnalytics free — RunAnalytics";
+    const subject = "We're live! Try RunAnalytics free: RunAnalytics";
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
@@ -702,18 +702,18 @@ The RunAnalytics Team
 It's Biser. Been heads-down for a few months and shipped some stuff I'm actually pumped about. Quick rundown, no fluff:
 
 1. RunAnalytics now lives inside Strava
-We built a Chrome extension that drops your run grade, Runner Score, readiness, and injury-risk read right onto the Strava activity page. No new tab, no copy-pasting — finish a run, open it on Strava, and the analysis is just there. It's free. Add it here: ${chromeUrl}
+We built a Chrome extension that drops your run grade, Runner Score, readiness, and injury-risk read right onto the Strava activity page. No new tab, no copy-pasting: finish a run, open it on Strava, and the analysis is just there. It's free. Add it here: ${chromeUrl}
 
 2. Finish a run, insights hit your inbox instantly (free, forever)
-We hooked straight into Strava, so the second you upload a run we email you the breakdown — effort score, how your pace stacked up against your recent runs, your weekly load, the works. Every single run. No trial, no paid account, no catch. Free forever.
+We hooked straight into Strava, so the second you upload a run we email you the breakdown: effort score, how your pace stacked up against your recent runs, your weekly load, the works. Every single run. No trial, no paid account, no catch. Free forever.
 
 3. Story Mode: your runs explained like a human would (Premium)
-For Premium, every run gets a full "Story Mode" writeup — a Coach Verdict, an Effort Score, and a plain-English take on how hard it actually was. It's the difference between "here's your data" and "here's what your data means."
+For Premium, every run gets a full "Story Mode" writeup: a Coach Verdict, an Effort Score, and a plain-English take on how hard it actually was. It's the difference between "here's your data" and "here's what your data means."
 
 4. The Shoe Hub got way bigger
 Added 60+ of 2026's new shoes across 13 brands, plus side-by-side comparisons, a shoe finder, and a rotation planner. Go nerd out on foam: ${shoesUrl}
 
-That's the big stuff. As always, just hit reply if something's broken or you've got an idea — I read every message.
+That's the big stuff. As always, just hit reply if something's broken or you've got an idea: I read every message.
 
 Grab the Chrome extension (free): ${chromeUrl}
 
@@ -721,23 +721,23 @@ Catch you out there,
 Biser
 RunAnalytics
 
-P.S. I'm building a native iOS app too — proper push notifications and all the good stuff. The designs are done and it's coming along nicely. Want to kick the tires early via TestFlight? Just reply and I'll get you on the list.`;
+P.S. I'm building a native iOS app too: proper push notifications and all the good stuff. The designs are done and it's coming along nicely. Want to kick the tires early via TestFlight? Just reply and I'll get you on the list.`;
 
     const html = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #333; line-height: 1.6;">
 <p>Hey there,</p>
 <p>It's Biser. Been heads-down for a few months and shipped some stuff I'm actually pumped about. Quick rundown, no fluff:</p>
 <p><strong>1. RunAnalytics now lives inside Strava</strong><br/>
-We built a Chrome extension that drops your run grade, Runner Score, readiness, and injury-risk read right onto the Strava activity page. No new tab, no copy-pasting — finish a run, open it on Strava, and the analysis is just there. It's free. <a href="${chromeUrl}" style="color:#FC5200;">Add it to Chrome</a>.</p>
+We built a Chrome extension that drops your run grade, Runner Score, readiness, and injury-risk read right onto the Strava activity page. No new tab, no copy-pasting: finish a run, open it on Strava, and the analysis is just there. It's free. <a href="${chromeUrl}" style="color:#FC5200;">Add it to Chrome</a>.</p>
 <p><strong>2. Finish a run, insights hit your inbox instantly (free, forever)</strong><br/>
-We hooked straight into Strava, so the second you upload a run we email you the breakdown — effort score, how your pace stacked up against your recent runs, your weekly load, the works. Every single run. No trial, no paid account, no catch. Free forever.</p>
+We hooked straight into Strava, so the second you upload a run we email you the breakdown: effort score, how your pace stacked up against your recent runs, your weekly load, the works. Every single run. No trial, no paid account, no catch. Free forever.</p>
 <p><strong>3. Story Mode: your runs explained like a human would (Premium)</strong><br/>
-For Premium, every run gets a full "Story Mode" writeup — a Coach Verdict, an Effort Score, and a plain-English take on how hard it actually was. It's the difference between "here's your data" and "here's what your data means."</p>
+For Premium, every run gets a full "Story Mode" writeup: a Coach Verdict, an Effort Score, and a plain-English take on how hard it actually was. It's the difference between "here's your data" and "here's what your data means."</p>
 <p><strong>4. The Shoe Hub got way bigger</strong><br/>
 Added 60+ of 2026's new shoes across 13 brands, plus side-by-side comparisons, a shoe finder, and a rotation planner. <a href="${shoesUrl}" style="color:#FC5200;">Go nerd out on foam</a>.</p>
-<p>That's the big stuff. As always, just hit reply if something's broken or you've got an idea — I read every message.</p>
+<p>That's the big stuff. As always, just hit reply if something's broken or you've got an idea: I read every message.</p>
 <p style="margin: 28px 0;"><a href="${chromeUrl}" style="display:inline-block; background:#FC5200; color:#fff; padding:13px 24px; border-radius:8px; text-decoration:none; font-weight:bold;">Grab the Chrome extension (free)</a></p>
 <p>Catch you out there,<br/>Biser<br/><span style="color:#888;">RunAnalytics</span></p>
-<p style="color:#555; font-size:14px; border-top:1px solid #eee; padding-top:16px; margin-top:24px;"><strong>P.S.</strong> I'm building a native iOS app too — proper push notifications and all the good stuff. The designs are done and it's coming along nicely. Want to kick the tires early via TestFlight? Just reply and I'll get you on the list.</p>
+<p style="color:#555; font-size:14px; border-top:1px solid #eee; padding-top:16px; margin-top:24px;"><strong>P.S.</strong> I'm building a native iOS app too: proper push notifications and all the good stuff. The designs are done and it's coming along nicely. Want to kick the tires early via TestFlight? Just reply and I'll get you on the list.</p>
 </div>`;
 
     return { subject, html, text };
@@ -1371,7 +1371,7 @@ ${unsubLine}`.trim();
     };
 
     const fmtPace = (meters: number, seconds: number) => {
-      if (meters === 0) return "—";
+      if (meters === 0) return "Not available";
       const secPerUnit = isImperial
         ? (seconds / meters) * METERS_PER_MILE
         : (seconds / meters) * 1000;

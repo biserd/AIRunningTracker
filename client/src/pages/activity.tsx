@@ -256,7 +256,7 @@ function PremiumPreviewCard({ preview, createdAt, unitPreference }: { preview: P
   const useMiles = unitPreference === "miles";
   const units = runUnitLabels(unitPreference);
   const preferredPace = formatRunPace(src.movingTimeSec, src.distanceMeters, unitPreference);
-  const preferredPaceDisplay = preferredPace === "0:00" ? "—" : `${preferredPace}${units.paceUnit}`;
+  const preferredPaceDisplay = preferredPace === "0:00" ? "Not available" : `${preferredPace}${units.paceUnit}`;
 
   const sourceStats = [
     { label: `${formatRunDistance(src.distanceMeters, unitPreference)} ${units.distanceUnit}`, sub: "Distance" },
@@ -716,7 +716,7 @@ export default function ActivityPage() {
 
   // Free-tier lock: webhook-ingested activities are stored for training-context
   // accuracy but rendered behind a blur + upgrade CTA. The user landed here
-  // via a one-tap magic-link in the post-run email — show them what they're
+  // via a one-tap magic-link in the post-run email: show them what they're
   // missing and route to /pricing.
   const isLockedActivity = !!(activityData as any)?.locked || !!(activityData?.activity as any)?.locked;
   if (isLockedActivity) {
@@ -742,10 +742,10 @@ export default function ActivityPage() {
             <div className="select-none pointer-events-none filter blur-md grayscale opacity-80">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 {[
-                  { label: distanceDisplay || "—", sub: a.distanceUnit || "Distance", icon: MapPin },
-                  { label: a.formattedDuration || "—", sub: "Time", icon: Clock },
-                  { label: paceDisplay || "—", sub: a.paceUnit || "Pace", icon: TrendingUp },
-                  { label: a.averageHeartrate ? `${Math.round(a.averageHeartrate)}` : "—", sub: "bpm", icon: Heart },
+                  { label: distanceDisplay || "Not available", sub: a.distanceUnit || "Distance", icon: MapPin },
+                  { label: a.formattedDuration || "Not available", sub: "Time", icon: Clock },
+                  { label: paceDisplay || "Not available", sub: a.paceUnit || "Pace", icon: TrendingUp },
+                  { label: a.averageHeartrate ? `${Math.round(a.averageHeartrate)}` : "Not available", sub: "bpm", icon: Heart },
                 ].map((s, i) => {
                   const Icon = s.icon;
                   return (
@@ -776,7 +776,7 @@ export default function ActivityPage() {
                   </h2>
                   <p className="text-sm text-gray-700 mb-5">
                     Your free plan includes your 20 most-recent runs. Upgrade to Premium
-                    to see the full breakdown of this run — splits, route map, coach
+                    to see the full breakdown of this run: splits, route map, coach
                     verdict, efficiency score, and personalized next-run tips.
                   </p>
                   <DirectCheckoutButton upgradeUrl={buildUpgradeUrl({
@@ -1089,7 +1089,7 @@ export default function ActivityPage() {
                             </p>
                           )}
                           <p className="text-xs text-gray-400 mt-3 leading-relaxed">
-                            Measures how much your heart rate rises relative to pace. Lower is better — under 5% means strong aerobic fitness.
+                            Measures how much your heart rate rises relative to pace. Lower is better: under 5% means strong aerobic fitness.
                           </p>
                         </>
                       ) : (
@@ -1120,7 +1120,7 @@ export default function ActivityPage() {
                         </p>
                       )}
                       <p className="text-xs text-gray-400 mt-3 leading-relaxed">
-                        Shows how consistent your split times were. Higher scores mean even pacing — key for race efficiency.
+                        Shows how consistent your split times were. Higher scores mean even pacing: key for race efficiency.
                       </p>
                     </div>
 

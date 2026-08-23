@@ -285,7 +285,7 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
                 Preview Your Training Plan Setup
               </DialogTitle>
               <DialogDescription>
-                Set up your plan now — upgrade to Premium to generate it. Your choices carry over.
+                Set up your plan now: upgrade to Premium to generate it. Your choices carry over.
               </DialogDescription>
             </DialogHeader>
 

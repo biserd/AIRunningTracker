@@ -56,7 +56,7 @@ export function trackFunnelEvent(
         if (sessionStorage.getItem(guardKey)) return;
         sessionStorage.setItem(guardKey, "1");
       } catch {
-        // sessionStorage unavailable — rely on server-side dedupe
+        // sessionStorage unavailable: rely on server-side dedupe
       }
     }
 
@@ -91,7 +91,7 @@ export function trackFunnelEvent(
  *
  * The click dedupe key intentionally omits any timestamp and matches the
  * key the pricing page uses when inferring a click from an arriving
- * upgrade intent — so a gate click followed by the pricing-page arrival
+ * upgrade intent: so a gate click followed by the pricing-page arrival
  * records exactly ONE offer_clicked row per session/surface/context.
  */
 export function useOfferTracking(

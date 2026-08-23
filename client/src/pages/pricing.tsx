@@ -92,7 +92,7 @@ const premiumFeatures: FeatureSection[] = [
       "Training-load warning signals",
       "Fitness / fatigue / form charts",
       "AI Coach Chat (across your training)",
-      "AI Agent Coach — proactive post-run recaps",
+      "AI Agent Coach: proactive post-run recaps",
     ],
   },
   {
@@ -251,7 +251,7 @@ export default function PricingPage() {
                         data-testid="upgrade-intent-subscribe"
                       >
                         <Sparkles className="h-4 w-4 mr-2" />
-                        {checkout.isPending ? 'Processing...' : 'Start 14 days free — $0 today'}
+                        {checkout.isPending ? 'Processing...' : 'Start 14 days free: $0 today'}
                       </Button>
                       <p className="text-xs text-gray-500 mt-2">
                         Card required · $0 today · {billingCycle === 'monthly' ? 'Then $7.99/month' : 'Then $79.99/year'} · Cancel anytime
@@ -269,7 +269,7 @@ export default function PricingPage() {
           )}
           {checkoutCanceled && (
             <div className="max-w-2xl mx-auto mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4" data-testid="checkout-canceled-message">
-              <p className="font-semibold text-gray-900">Checkout canceled — nothing was charged.</p>
+              <p className="font-semibold text-gray-900">Checkout canceled: nothing was charged.</p>
               <p className="text-sm text-gray-700 mt-1">
                 Your selection is still here. You can continue when you're ready or go back to the feature you were exploring.
               </p>
@@ -349,7 +349,7 @@ export default function PricingPage() {
                       <span className="text-gray-400">/yr</span>
                     </div>
                     <p className="text-green-400 text-sm mt-1 font-medium">
-                      ≈ $6.67/mo — Save 17%
+                      ≈ $6.67/mo: Save 17%
                     </p>
                     <p className="text-gray-400 mt-1">after your free trial</p>
                   </>
@@ -390,7 +390,7 @@ export default function PricingPage() {
                   disabled={checkout.isPending}
                   data-testid="subscribe-premium"
                 >
-                  {checkout.isPending ? 'Processing...' : 'Start 14 days free — $0 today'}
+                  {checkout.isPending ? 'Processing...' : 'Start 14 days free: $0 today'}
                 </Button>
               )}
               {!isPremium && (

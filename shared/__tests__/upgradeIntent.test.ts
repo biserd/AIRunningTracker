@@ -26,6 +26,7 @@ console.log("sanitizeReturnTo");
 check("accepts relative path", sanitizeReturnTo("/activity/123") === "/activity/123");
 check("accepts path with query", sanitizeReturnTo("/coach-insights?tab=agent") === "/coach-insights?tab=agent");
 check("accepts contextual pricing return used by auth", sanitizeReturnTo("/pricing?capability=ai_coach") === "/pricing?capability=ai_coach");
+check("accepts Telegram setup return", sanitizeReturnTo("/coach/settings?connect=telegram") === "/coach/settings?connect=telegram");
 check("accepts ebook fulfillment return", sanitizeReturnTo("/ai-running-coaching-guide?download=1") === "/ai-running-coaching-guide?download=1");
 check("accepts MCP consent return after sign-in", sanitizeReturnTo("/mcp/consent?request=ra_mcp_req_example") === "/mcp/consent?request=ra_mcp_req_example");
 check("accepts MCP docs return", sanitizeReturnTo("/developers/mcp") === "/developers/mcp");
@@ -65,6 +66,10 @@ const mcpUrl = buildUpgradeUrl({ source: "mcp_docs", capability: "mcp_access", b
 const mcpParsed = parseUpgradeIntent(mcpUrl.split("?")[1]);
 check("MCP docs return preserved", mcpParsed?.returnTo === "/developers/mcp", mcpParsed);
 check("MCP benefit copy resolved", Boolean(mcpParsed?.benefit?.includes("read-only MCP tools")), mcpParsed);
+const telegramUrl = buildUpgradeUrl({ source: "dashboard_telegram_offer", capability: "ai_coach", benefitKey: "telegram_coach", returnTo: "/coach/settings?connect=telegram" });
+const telegramParsed = parseUpgradeIntent(telegramUrl.split("?")[1]);
+check("Telegram setup return preserved", telegramParsed?.returnTo === "/coach/settings?connect=telegram", telegramParsed);
+check("Telegram benefit copy resolved", Boolean(telegramParsed?.benefit?.includes("weather-aware")), telegramParsed);
 
 console.log("parseUpgradeIntent edge cases");
 check("plain pricing visit yields null", parseUpgradeIntent("") === null);

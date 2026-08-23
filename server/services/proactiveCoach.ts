@@ -180,7 +180,7 @@ async function buildMorningMessage(user: User, now: Date) {
   let action = today ? `${today.title || today.workoutType}: ${today.description || "follow the planned effort"}.` : "No workout is scheduled today; recovery is a valid training choice.";
   const reasons: string[] = [];
   if (availability === "unavailable") {
-    headline = "No run today—protect the week";
+    headline = "No run today. Protect the week";
     action = "Skip today's workout. Do not stack it onto tomorrow; resume with the next planned session.";
     reasons.push("You marked today unavailable.");
   } else if (availability === "limited") {
@@ -312,7 +312,7 @@ class ProactiveCoachWorker {
     if (this.intervalId) return;
     setTimeout(() => void runMorningBriefings().catch((error) => console.error("[ProactiveCoach] Initial run failed:", error)), 90_000);
     this.intervalId = setInterval(() => void runMorningBriefings().catch((error) => console.error("[ProactiveCoach] Worker failed:", error)), WORKER_INTERVAL_MS);
-    console.log("[ProactiveCoach] Worker started — hourly, runner-local delivery");
+    console.log("[ProactiveCoach] Worker started: hourly, runner-local delivery");
   }
   stop() { if (this.intervalId) clearInterval(this.intervalId); this.intervalId = null; }
 }

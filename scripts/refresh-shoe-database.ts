@@ -3,7 +3,7 @@
  *
  * Designed to run as a Replit Scheduled Deployment (cron). Steps:
  *   1. Run the typed importer against the curated JSON
- *      (attached_assets/shoes-2026-curated.json by default — override
+ *      (attached_assets/shoes-2026-curated.json by default: override
  *       with CURATED_SHOES_JSON env var to point at a fresher feed).
  *   2. Run AI enrichment to fill aiNarrative / aiFaq / etc. for any
  *      newly-inserted rows.
@@ -110,7 +110,7 @@ function escapeHtml(s: string): string {
 
 async function refresh() {
   const startedAt = new Date();
-  console.log(`\n=== Shoe DB monthly refresh — ${startedAt.toISOString()} ===\n`);
+  console.log(`\n=== Shoe DB monthly refresh: ${startedAt.toISOString()} ===\n`);
 
   const before = await getCounts();
   console.log('Before:', before);
@@ -133,7 +133,7 @@ async function refresh() {
   if (fs.existsSync(IMAGE_MAP_JSON)) {
     steps.push(await runStep('images', ['scripts/backfill-shoe-images.ts', IMAGE_MAP_JSON]));
   } else {
-    console.log(`(skipping image backfill — no ${path.relative(process.cwd(), IMAGE_MAP_JSON)})`);
+    console.log(`(skipping image backfill: no ${path.relative(process.cwd(), IMAGE_MAP_JSON)})`);
   }
 
   const after = await getCounts();
@@ -142,7 +142,7 @@ async function refresh() {
   const allOk = steps.every((s) => s.ok);
   const subject = allOk
     ? `[RunAnalytics] Shoe DB refresh ✓ ${after.total - before.total} new, ${after.withNarrative - before.withNarrative} enriched`
-    : `[RunAnalytics] Shoe DB refresh FAILED — see details`;
+    : `[RunAnalytics] Shoe DB refresh FAILED: see details`;
 
   const stepRows = steps
     .map(
@@ -162,8 +162,8 @@ async function refresh() {
     .join('');
 
   const html = `
-<h2>RunAnalytics — Monthly shoe-DB refresh</h2>
-<p><em>Started ${startedAt.toISOString()} — finished ${new Date().toISOString()}</em></p>
+<h2>RunAnalytics: Monthly shoe-DB refresh</h2>
+<p><em>Started ${startedAt.toISOString()}: finished ${new Date().toISOString()}</em></p>
 
 <h3>Summary</h3>
 <table border="1" cellpadding="4" cellspacing="0">
@@ -187,7 +187,7 @@ ${stepLogs}
 `;
 
   const text = [
-    `RunAnalytics — Monthly shoe-DB refresh`,
+    `RunAnalytics: Monthly shoe-DB refresh`,
     `Started ${startedAt.toISOString()}`,
     ``,
     `Total: ${before.total} → ${after.total} (Δ ${after.total - before.total})`,

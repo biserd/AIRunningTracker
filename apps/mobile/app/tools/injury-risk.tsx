@@ -133,7 +133,7 @@ export default function InjuryRiskScreen() {
             <Card>
               <EmptyState
                 title="Need more history"
-                body="Keep training — predictions appear once you have enough runs."
+                body="Keep training: predictions appear once you have enough runs."
               />
             </Card>
           ) : (

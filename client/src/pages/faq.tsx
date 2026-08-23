@@ -60,7 +60,7 @@ export default function FAQPage() {
                 <div>
                   <h3 className="font-semibold text-charcoal mb-2">Is RunAnalytics free to use?</h3>
                   <p>
-                    Eligible new accounts can start a 14-day trial with full access to Premium features — AI coaching, race predictions, training plans, and advanced analytics. A payment card is required, you pay $0 today, and you can cancel before the trial ends to avoid a charge. Premium is then $7.99/month or $79.99/year.
+                    Eligible new accounts can start a 14-day trial with full access to Premium features: AI coaching, race predictions, training plans, and advanced analytics. A payment card is required, you pay $0 today, and you can cancel before the trial ends to avoid a charge. Premium is then $7.99/month or $79.99/year.
                   </p>
                 </div>
               </div>
@@ -253,9 +253,9 @@ export default function FAQPage() {
                 <div>
                   <h3 className="font-semibold text-charcoal mb-2">How is it different from the AI Coach Chat?</h3>
                   <p>
-                    AI Coach Chat is reactive—you ask questions and get answers. AI Agent Coach is proactive—it 
-                    analyzes your runs automatically and delivers coaching insights without you asking. Think of 
-                    it as having a coach who reviews every run and leaves you notes.
+                    AI Coach Chat responds when you ask a question. AI Agent Coach analyzes your runs automatically
+                    and delivers coaching insights without you asking. Think of it as having a coach who reviews every
+                    run and leaves you notes.
                   </p>
                 </div>
                 

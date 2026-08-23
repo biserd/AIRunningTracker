@@ -38,7 +38,7 @@ export function getInitialSyncCap(
 
 /**
  * Free users get exactly one Strava sync. After their first sync (lastSyncAt
- * is set), every subsequent sync attempt — manual, webhook, or scheduled —
+ * is set), every subsequent sync attempt: manual, webhook, or scheduled:
  * must be blocked until they upgrade to Premium or start a trial.
  */
 export function canSyncFromStrava(user: {

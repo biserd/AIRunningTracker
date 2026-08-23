@@ -417,7 +417,7 @@ function ReadinessCard({ r, loading }: { r: RecoveryState | undefined; loading: 
   const router = useRouter();
 
   let color = colors.ink2;
-  let value: string = "—";
+  let value: string = "Not available";
   let tagBg = colors.surfaceAlt;
   let tagText = colors.ink2;
   let tagDot = colors.ink3;
@@ -489,7 +489,7 @@ function InjuryCard({
   const router = useRouter();
 
   let color = colors.ink2;
-  let value = "—";
+  let value = "Not available";
   let tagBg = colors.surfaceAlt;
   let tagText = colors.ink2;
   let tagDot = colors.ink3;
@@ -641,7 +641,7 @@ function ScoreQuiet({ score }: { score: RunnerScore | undefined }) {
         </View>
         <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 4 }}>
           <Text style={{ fontSize: 40, fontWeight: "700", color: colors.brand, letterSpacing: -2, lineHeight: 40 }}>
-            {score ? Math.round(score.totalScore) : "—"}
+            {score ? Math.round(score.totalScore) : "Not available"}
           </Text>
           {score ? (
             <Text style={{ fontSize: 20, fontWeight: "600", color: colors.ink2, paddingBottom: 4 }}>
