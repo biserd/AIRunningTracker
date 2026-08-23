@@ -58,6 +58,7 @@ COACH_MULTI_RUNNER_PILOT_ENABLED = "true"
 [userenv.production]
 COACH_AGENT_PILOT_USER_ID = "105"
 HERMES_MCP_CLIENT_ID = "ra_mcp_client_L0o4CkpSbZeZ8xlI4MyQeNXh"
+TELEGRAM_BOT_USERNAME = "hermes_3njyz3nxuousjmh2_bot"
 
 [postMerge]
 path = "scripts/post-merge.sh"
