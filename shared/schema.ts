@@ -790,8 +790,10 @@ export const mcpOauthTokens = pgTable("mcp_oauth_tokens", {
   userClientIdx: index("mcp_oauth_tokens_user_client_idx").on(table.userId, table.clientId),
 }));
 
-// Controlled multi-runner coach pilot. Telegram identifiers are HMAC-hashed;
-// the application never stores raw channel/user IDs or MCP bearer tokens.
+// Legacy launch allowlist retained for rollback compatibility. It is no longer
+// an authorization boundary; an unrevoked coachChannelBindings row records the
+// runner's explicit opt-in. Telegram identifiers remain HMAC-hashed and the
+// application never stores raw channel/user IDs or MCP bearer tokens.
 export const coachAgentPilotUsers = pgTable("coach_agent_pilot_users", {
   userId: integer("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
   enabled: boolean("enabled").notNull().default(true),

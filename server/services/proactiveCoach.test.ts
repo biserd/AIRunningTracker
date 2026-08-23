@@ -102,7 +102,7 @@ test("Hermes webhook is skipped when settings are absent", async () => {
   }
 });
 
-test("Hermes webhook rejects a runner outside the configured pilot", async () => {
+test("legacy rollback webhook rejects a runner outside the configured account", async () => {
   const { emitSignedCoachEvent } = await import("./proactiveCoach");
   const originalUrl = process.env.COACH_AGENT_WEBHOOK_URL;
   const originalSecret = process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2;

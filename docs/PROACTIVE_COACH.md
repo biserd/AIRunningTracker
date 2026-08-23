@@ -27,13 +27,14 @@ Weather is off by default. The browser requests coarse geolocation only after th
 
 The bundled skill is at `integrations/hermes/skills/runanalytics-coach`. It supports implicit invocation and depends on the production read-only MCP endpoint. The short profile identity is at `integrations/hermes/profiles/runanalytics-coach/SOUL.md`; keep this always loaded and let the full skill load only for coaching work.
 
-The controlled multi-runner Telegram pilot is documented in
-[`COACH_CHANNEL_PILOT.md`](./COACH_CHANNEL_PILOT.md). It uses an explicit
-database allowlist, single-use runner consent, hashed Telegram identities,
-opaque routing IDs and dedicated read-only MCP grants.
+The launched multi-runner Telegram channel is documented in
+[`COACH_CHANNEL_PILOT.md`](./COACH_CHANNEL_PILOT.md). The runner's secure,
+unrevoked channel binding is the explicit opt-in record. The flow uses
+single-use consent links, hashed Telegram identities, opaque routing IDs and
+dedicated read-only MCP grants; no administrative runner allowlist is required.
 
 The legacy fallback remains deliberately limited to one runner and is used
-only when `COACH_MULTI_RUNNER_PILOT_ENABLED` is not `true`. It requires:
+only when `COACH_MULTI_RUNNER_PILOT_ENABLED=false`. It requires:
 
 - `COACH_AGENT_WEBHOOK_URL`: the trusted Hermes webhook endpoint.
 - `COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2`: a unique 32+ character HMAC secret shared only with that endpoint.
@@ -45,7 +46,7 @@ Headers include `x-runanalytics-delivery`, `x-runanalytics-timestamp`, and
 `x-runanalytics-signature: v1=<hex>`. The receiver must reject timestamps more
 than five minutes old, verify HMAC-SHA256 over `<timestamp>.<raw-body>` with a
 constant-time comparison, and atomically deduplicate the delivery ID before
-calling `get_post_run_brief` through the pilot runner's OAuth connection.
+calling `get_post_run_brief` through that runner's OAuth connection.
 `x-hub-signature-256` remains temporarily available for the existing receiver,
 but it does not provide replay protection and should not be used by new code.
 

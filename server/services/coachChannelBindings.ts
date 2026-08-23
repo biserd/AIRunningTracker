@@ -4,7 +4,6 @@ import { z } from "zod";
 import { db } from "../db";
 import {
   coachAgentCallbackEvents,
-  coachAgentPilotUsers,
   coachChannelBindings,
   coachChannelLinkTokens,
   users,
@@ -41,8 +40,11 @@ const telegramBindingSchema = z.object({
 
 export type TelegramBindingCallback = z.infer<typeof telegramBindingSchema>;
 
-export function isMultiRunnerCoachPilotEnabled(): boolean {
-  return process.env.COACH_MULTI_RUNNER_PILOT_ENABLED === "true";
+export function isMultiRunnerCoachEnabled(): boolean {
+  // Public launch default: enabled unless operations explicitly uses the
+  // emergency kill switch. The existing variable name is retained so current
+  // Replit deployments do not need a coordinated secret rename.
+  return process.env.COACH_MULTI_RUNNER_PILOT_ENABLED !== "false";
 }
 
 function requireStrongSecret(name: string): string {
@@ -94,19 +96,12 @@ export function verifyHermesBindingSignature(input: {
   }
 }
 
-async function isPilotUserEnabled(userId: number): Promise<boolean> {
-  if (!isMultiRunnerCoachPilotEnabled()) return false;
-  const [row] = await db.select({ userId: coachAgentPilotUsers.userId })
-    .from(coachAgentPilotUsers)
-    .where(and(eq(coachAgentPilotUsers.userId, userId), eq(coachAgentPilotUsers.enabled, true)))
-    .limit(1);
-  return Boolean(row);
-}
-
 export async function getCoachChannelStatus(user: User) {
-  const pilotEligible = canAccessCapability(user, "ai_coach") && await isPilotUserEnabled(user.id);
+  const featureEnabled = isMultiRunnerCoachEnabled();
+  const hasPremiumAccess = canAccessCapability(user, "ai_coach");
+  const available = featureEnabled && hasPremiumAccess;
   // Always surface an existing binding so a runner can disconnect even after
-  // an admin removes pilot eligibility or the subscription changes.
+  // their subscription changes or operations activates the kill switch.
   const [binding] = await db.select({
     bindingId: coachChannelBindings.bindingId,
     status: coachChannelBindings.status,
@@ -117,7 +112,12 @@ export async function getCoachChannelStatus(user: User) {
     isNull(coachChannelBindings.revokedAt),
   )).limit(1);
   return {
-    pilotEligible,
+    available,
+    accessReason: !featureEnabled
+      ? "feature_disabled"
+      : hasPremiumAccess
+        ? "available"
+        : "premium_required",
     telegram: {
       connected: binding?.status === "active",
       status: binding?.status || "not_connected",
@@ -127,11 +127,11 @@ export async function getCoachChannelStatus(user: User) {
 }
 
 export async function createTelegramLink(user: User) {
+  if (!isMultiRunnerCoachEnabled()) {
+    throw new CoachChannelError("feature_disabled", "Telegram coach connections are temporarily unavailable", 503);
+  }
   if (!canAccessCapability(user, "ai_coach")) {
     throw new CoachChannelError("premium_required", "AI Coach is a Premium feature", 403);
-  }
-  if (!await isPilotUserEnabled(user.id)) {
-    throw new CoachChannelError("pilot_not_enabled", "Telegram coach pilot is not enabled for this account", 403);
   }
   const botUsername = process.env.TELEGRAM_BOT_USERNAME?.replace(/^@/, "");
   if (!botUsername || !/^[A-Za-z0-9_]{5,32}$/.test(botUsername)) {
@@ -173,8 +173,8 @@ export async function completeTelegramBinding(input: {
   signatureHeader?: string;
   deliveryId?: string;
 }) {
-  if (!isMultiRunnerCoachPilotEnabled()) {
-    throw new CoachChannelError("pilot_disabled", "Telegram coach pilot is disabled", 503);
+  if (!isMultiRunnerCoachEnabled()) {
+    throw new CoachChannelError("feature_disabled", "Telegram coach connections are temporarily unavailable", 503);
   }
   verifyHermesBindingSignature(input);
   if (!input.deliveryId || !/^[A-Za-z0-9:_-]{16,128}$/.test(input.deliveryId)) {
@@ -209,12 +209,6 @@ export async function completeTelegramBinding(input: {
       gt(coachChannelLinkTokens.expiresAt, now),
     )).limit(1);
     if (!link) throw new CoachChannelError("invalid_link", "Link is invalid, expired, or already used", 400);
-
-    const [pilot] = await tx.select({ userId: coachAgentPilotUsers.userId }).from(coachAgentPilotUsers).where(and(
-      eq(coachAgentPilotUsers.userId, link.userId),
-      eq(coachAgentPilotUsers.enabled, true),
-    )).limit(1);
-    if (!pilot) throw new CoachChannelError("pilot_not_enabled", "Pilot access has been removed", 403);
 
     const [runner] = await tx.select().from(users).where(eq(users.id, link.userId)).limit(1);
     if (!runner || !canAccessCapability(runner, "ai_coach")) {
@@ -322,18 +316,17 @@ async function deliverSignedCoachEvent(bindingId: string, payload: Record<string
 }
 
 export async function emitBoundCoachActivityEvent(userId: number, activityId: number): Promise<boolean> {
-  if (!isMultiRunnerCoachPilotEnabled()) return false;
-  const [binding] = await db.select({ bindingId: coachChannelBindings.bindingId })
+  if (!isMultiRunnerCoachEnabled()) return false;
+  const [binding] = await db.select({ bindingId: coachChannelBindings.bindingId, runner: users })
     .from(coachChannelBindings)
-    .innerJoin(coachAgentPilotUsers, eq(coachAgentPilotUsers.userId, coachChannelBindings.userId))
+    .innerJoin(users, eq(users.id, coachChannelBindings.userId))
     .where(and(
     eq(coachChannelBindings.userId, userId),
     eq(coachChannelBindings.channel, "telegram"),
     eq(coachChannelBindings.status, "active"),
-    eq(coachAgentPilotUsers.enabled, true),
     isNull(coachChannelBindings.revokedAt),
   )).limit(1);
-  if (!binding) return false;
+  if (!binding || !canAccessCapability(binding.runner, "ai_coach")) return false;
   const secret = process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2;
   if (!isStrongApplicationSecret(secret)) return false;
   const eventId = crypto.createHmac("sha256", secret).update(`activity.ready:${binding.bindingId}:${activityId}`).digest("hex");

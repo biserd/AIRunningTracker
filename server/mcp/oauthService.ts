@@ -7,7 +7,7 @@ import {
   mcpOauthClients,
   mcpOauthRequests,
   mcpOauthTokens,
-  coachAgentPilotUsers,
+  coachChannelBindings,
   users,
 } from "@shared/schema";
 import { canAccessCapability } from "@shared/entitlements";
@@ -60,13 +60,18 @@ async function requireActiveClient(clientId: string): Promise<void> {
 
 async function isCoachGrantEligible(userId: number, clientId: string): Promise<boolean> {
   if (!process.env.HERMES_MCP_CLIENT_ID || clientId !== process.env.HERMES_MCP_CLIENT_ID) return true;
-  if (process.env.COACH_MULTI_RUNNER_PILOT_ENABLED !== "true") return false;
-  const [row] = await db.select({ runner: users, enabled: coachAgentPilotUsers.enabled })
+  if (process.env.COACH_MULTI_RUNNER_PILOT_ENABLED === "false") return false;
+  const [row] = await db.select({ runner: users, bindingStatus: coachChannelBindings.status })
     .from(users)
-    .innerJoin(coachAgentPilotUsers, eq(coachAgentPilotUsers.userId, users.id))
-    .where(and(eq(users.id, userId), eq(coachAgentPilotUsers.enabled, true)))
+    .innerJoin(coachChannelBindings, eq(coachChannelBindings.userId, users.id))
+    .where(and(
+      eq(users.id, userId),
+      eq(coachChannelBindings.channel, "telegram"),
+      or(eq(coachChannelBindings.status, "provisioning"), eq(coachChannelBindings.status, "active")),
+      isNull(coachChannelBindings.revokedAt),
+    ))
     .limit(1);
-  return Boolean(row?.enabled && canAccessCapability(row.runner, "ai_coach"));
+  return Boolean(row?.bindingStatus && canAccessCapability(row.runner, "ai_coach"));
 }
 
 export async function ensureMcpSchema(): Promise<void> {
@@ -274,7 +279,7 @@ export async function issueCoachAgentRunnerGrant(userId: number) {
   if (!clientId) throw new OAuthRequestError("temporarily_unavailable", "Coach MCP client is not configured", 503);
   await requireActiveClient(clientId);
   if (!await isCoachGrantEligible(userId, clientId)) {
-    throw new OAuthRequestError("access_denied", "Runner is not eligible for the coach pilot", 403);
+    throw new OAuthRequestError("access_denied", "Runner has not opted in to a current coach connection", 403);
   }
   const token = await issueToken({
     userId,

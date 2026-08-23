@@ -425,7 +425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
     "/proactive-running-coach": {
       title: "Proactive Running Coach on Telegram | RunAnalytics",
-      description: "Get concise, runner-specific post-run coaching in Telegram. Review the private, read-only RunAnalytics experience and join staged early access.",
+      description: "Get concise, runner-specific post-run coaching in Telegram through a private, read-only connection. Available with Premium and the 14-day trial.",
       keywords: "Telegram running coach, proactive running coach, WhatsApp running coach, Strava Telegram coach"
     },
     // Additional pages from sitemap
@@ -4296,7 +4296,8 @@ ${allPages.map(page => `  <url>
   });
 
   // Runner-owned coach channel controls. Eligibility comes from the signed-in
-  // account and the server-side pilot table; no caller-provided user ID is used.
+  // account and its entitlement; the completed private connection is the
+  // runner's explicit opt-in. No caller-provided user ID is used.
   app.get("/api/coach/channels", authenticateJWT, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);

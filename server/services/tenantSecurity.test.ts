@@ -64,6 +64,47 @@ test("production signing secrets must use independent values", async () => {
   }
 });
 
+test("production multi-runner coach is enabled by default and fails closed when launch secrets are missing", async () => {
+  const { assertProductionSecurityConfiguration } = await import("../config/security");
+  const names = [
+    "NODE_ENV",
+    "JWT_SIGNING_SECRET",
+    "EMAIL_UNSUBSCRIBE_SIGNING_SECRET_V2",
+    "COACH_MULTI_RUNNER_PILOT_ENABLED",
+    "COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2",
+    "COACH_BINDING_CALLBACK_SECRET",
+    "CHANNEL_IDENTITY_HASH_SECRET",
+    "MCP_TOKEN_HASH_SECRET",
+    "COACH_AGENT_WEBHOOK_URL",
+    "HERMES_MCP_CLIENT_ID",
+    "TELEGRAM_BOT_USERNAME",
+  ] as const;
+  const originals = new Map(names.map((name) => [name, process.env[name]]));
+  try {
+    process.env.NODE_ENV = "production";
+    process.env.JWT_SIGNING_SECRET = "jwt-secret-for-tests-with-more-than-32-characters";
+    process.env.EMAIL_UNSUBSCRIBE_SIGNING_SECRET_V2 = "unsubscribe-secret-for-tests-over-32-characters";
+    delete process.env.COACH_MULTI_RUNNER_PILOT_ENABLED;
+    delete process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2;
+    process.env.COACH_BINDING_CALLBACK_SECRET = "callback-secret-for-tests-with-more-than-32-characters";
+    process.env.CHANNEL_IDENTITY_HASH_SECRET = "identity-secret-for-tests-with-more-than-32-characters";
+    process.env.MCP_TOKEN_HASH_SECRET = "mcp-token-secret-for-tests-with-more-than-32-characters";
+    process.env.COACH_AGENT_WEBHOOK_URL = "https://hermes.example.test/webhook";
+    process.env.HERMES_MCP_CLIENT_ID = "hermes-test-client";
+    process.env.TELEGRAM_BOT_USERNAME = "runanalytics_test_bot";
+    assert.throws(
+      () => assertProductionSecurityConfiguration(),
+      /COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2 must be configured/,
+    );
+  } finally {
+    for (const name of names) {
+      const value = originals.get(name);
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  }
+});
+
 test("client user serializer excludes authentication and provider credentials", async () => {
   const { toClientUser } = await import("./clientUser");
   const serialized = JSON.stringify(toClientUser({

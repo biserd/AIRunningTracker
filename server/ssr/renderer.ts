@@ -905,8 +905,8 @@ export function renderHomepage(): string {
       <p class="ssg-section-subtitle">Run as usual and let Strava sync. RunAnalytics can turn the pattern that mattered into a concise, runner-specific coaching message in a private chat.</p>
       <div class="ssg-grid">
         <article class="ssg-card">
-          <h3>Telegram early access</h3>
-          <p>Post-run verdicts and natural follow-up in a private Telegram conversation. Access is being enabled in stages.</p>
+          <h3>Telegram available now</h3>
+          <p>Premium and trial runners can opt in to post-run verdicts and natural follow-up in a private Telegram conversation.</p>
         </article>
         <article class="ssg-card">
           <h3>Private by design</h3>
@@ -1298,7 +1298,7 @@ export function renderPricingPage(): string {
             <li>Compare runs (overlay two runs, split-by-split diffs)</li>
             <li>Form stability analysis (cadence and power stability over time)</li>
           </ul>
-          <p><a href="/proactive-running-coach"><strong>See how private Telegram coaching works</strong></a> — staged early access is available for selected Premium and trial runners; WhatsApp is coming next.</p>
+          <p><a href="/proactive-running-coach"><strong>See how private Telegram coaching works</strong></a> — available to Premium and trial runners; WhatsApp is coming next.</p>
         </section>
         <section>
           <h2>Frequently Asked Questions about Pricing</h2>
@@ -1331,7 +1331,7 @@ export function renderProactiveRunningCoachPage(): string {
   const url = '/proactive-running-coach';
   const meta: PageMeta = {
     title: "Proactive Running Coach on Telegram | RunAnalytics",
-    description: "Get concise, runner-specific post-run coaching in Telegram. Review the private, read-only RunAnalytics experience and join staged early access.",
+    description: "Get concise, runner-specific post-run coaching in Telegram through a private, read-only connection. Available with Premium and the 14-day trial.",
     keywords: "Telegram running coach, proactive running coach, WhatsApp running coach, Strava Telegram coach"
   };
   const structuredData = JSON.stringify({
@@ -1356,7 +1356,7 @@ export function renderProactiveRunningCoachPage(): string {
           {
             "@type": "Question",
             "name": "Is the proactive running coach available on Telegram?",
-            "acceptedAnswer": { "@type": "Answer", "text": "Telegram access is being enabled in stages for invited Premium and trial runners." }
+            "acceptedAnswer": { "@type": "Answer", "text": "Telegram is available to runners with an active Premium subscription or trial. Connect from AI Coach Settings." }
           },
           {
             "@type": "Question",
@@ -1391,7 +1391,7 @@ export function renderProactiveRunningCoachPage(): string {
             <li><strong>Your own context:</strong> authorized activities, trends, recovery signals, goals, and training-plan summaries</li>
             <li><strong>Natural follow-up:</strong> ask how the run fits the week without copying metrics into a generic chatbot</li>
           </ul>
-          <p><strong>Availability:</strong> Telegram access is being enabled in stages for invited Premium and trial runners. Starting a trial does not guarantee immediate channel access.</p>
+          <p><strong>Availability:</strong> Telegram is available to Premium and trial runners. Connecting from AI Coach Settings is an explicit runner-owned opt-in.</p>
         </section>
         <section>
           <h2>Telegram now; WhatsApp planned next</h2>
@@ -1424,7 +1424,7 @@ export function renderProactiveRunningCoachPage(): string {
         <section>
           <h2>Frequently asked questions</h2>
           <h3>Is Telegram available to every runner today?</h3>
-          <p>No. It is rolling out to invited Premium and trial runners in stages. Enabled runners see Connect Telegram in AI Coach Settings.</p>
+          <p>Sign in with an active Premium subscription or trial, open AI Coach Settings, and choose Connect Telegram. The single-use link opens a private bot conversation.</p>
           <h3>Is WhatsApp live?</h3>
           <p>No. WhatsApp is the next planned messaging channel.</p>
           <h3>Can the coach modify my data?</h3>
@@ -1434,7 +1434,7 @@ export function renderProactiveRunningCoachPage(): string {
         </section>
         <div class="ssr-cta">
           <h2>Start with your own training data</h2>
-          <p>Try RunAnalytics Premium for 14 days, connect Strava, and look for staged Telegram access in AI Coach Settings. Premium is $7.99/month after the trial.</p>
+          <p>Try RunAnalytics Premium for 14 days, connect Strava, then opt in to Telegram from AI Coach Settings. Premium is $7.99/month after the trial.</p>
           <a href="/pricing?source=proactive_coach_landing&amp;capability=ai_coach&amp;benefitKey=coach_chat">Start 14 days free &rarr;</a>
         </div>
         <p style="margin-top:24px;text-align:center;"><a href="/blog/ai-agent-coach-proactive-coaching">Read how proactive AI coaching works</a> &bull; <a href="/ai-agent-coach">Explore AI Agent Coach</a></p>

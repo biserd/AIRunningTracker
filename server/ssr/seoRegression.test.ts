@@ -61,16 +61,16 @@ test("static public SSR pages have one self-canonical and one H1", () => {
 
 test("proactive coach landing page states channel availability honestly", () => {
   const html = renderProactiveRunningCoachPage();
-  assert.match(html, /Telegram access is being enabled in stages/);
+  assert.match(html, /Telegram is available to Premium and trial runners/);
   assert.match(html, /WhatsApp is the next planned messaging channel/);
   assert.match(html, /read-only/);
-  assert.match(html, /Starting a trial does not guarantee immediate channel access/);
+  assert.match(html, /explicit runner-owned opt-in/);
 });
 
 test("homepage prominently cross-links the proactive messaging coach", () => {
   const html = renderHomepage();
   assert.match(html, /href="\/proactive-running-coach"/);
-  assert.match(html, /Telegram early access/);
+  assert.match(html, /Telegram available now/);
   assert.match(html, /WhatsApp coming next/);
   assert.match(html, /Read-only access is scoped to the connected runner/);
 });

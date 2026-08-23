@@ -53,7 +53,7 @@ const structuredData = {
           name: "Is the proactive running coach available on Telegram?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Telegram access is being enabled in stages for invited Premium and trial runners.",
+            text: "Telegram is available to runners with an active Premium subscription or trial. Connect from AI Coach Settings.",
           },
         },
         {
@@ -103,8 +103,8 @@ const roadmapCapabilities = [
 
 const faqs = [
   {
-    question: "Is Telegram available to every runner today?",
-    answer: "Not yet. Telegram is rolling out as a controlled early-access feature for invited Premium and trial runners. If your account is enabled, you will see Connect Telegram in AI Coach Settings.",
+    question: "How do I connect Telegram?",
+    answer: "Sign in with an active Premium subscription or trial, open AI Coach Settings, and choose Connect Telegram. The single-use link opens a private bot conversation and records your runner-owned opt-in.",
   },
   {
     question: "What about WhatsApp?",
@@ -176,8 +176,8 @@ function CoachMessagePreview() {
 
 export default function ProactiveRunningCoachLanding() {
   const { isAuthenticated } = useAuth();
-  const primaryHref = isAuthenticated ? "/coach-settings" : PRICING_URL;
-  const primaryLabel = isAuthenticated ? "Open AI Coach settings" : "Start 14 days free";
+  const primaryHref = isAuthenticated ? "/coach/settings" : PRICING_URL;
+  const primaryLabel = isAuthenticated ? "Connect or manage Telegram" : "Start 14 days free";
 
   useEffect(() => {
     trackFunnelEvent(
@@ -197,11 +197,11 @@ export default function ProactiveRunningCoachLanding() {
     <div className="min-h-screen bg-[#f7f8f6] text-slate-950">
       <SEO
         title="Proactive Running Coach on Telegram | RunAnalytics"
-        description="Get concise, runner-specific post-run coaching in Telegram. Review the private, read-only RunAnalytics experience and join staged early access."
+        description="Get concise, runner-specific post-run coaching in Telegram through a private, read-only RunAnalytics connection. Available with Premium and the 14-day trial."
         keywords="Telegram running coach, proactive running coach, WhatsApp running coach, AI running coach messages, Strava Telegram coach, post-run coaching"
         url="https://aitracker.run/proactive-running-coach"
         ogTitle="Your running coach, already in your messages"
-        ogDescription="Run, sync, and receive one useful next step. Telegram early access is rolling out now; WhatsApp is planned next."
+        ogDescription="Run, sync, and receive one useful next step in Telegram. Available with Premium and the 14-day trial; WhatsApp is planned next."
         structuredData={structuredData}
       />
       <PublicHeader />
@@ -212,7 +212,7 @@ export default function ProactiveRunningCoachLanding() {
             <div>
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-slate-700 shadow-sm">
                 <BellRing className="h-4 w-4 text-[#FC4C02]" />
-                Staged early access
+                Available with Premium
               </div>
               <h1 className="max-w-3xl text-4xl font-black leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
                 A running coach that messages <span className="text-[#FC4C02]">before the lesson gets lost.</span>
@@ -222,7 +222,7 @@ export default function ProactiveRunningCoachLanding() {
               </p>
 
               <div className="mt-7 flex flex-wrap gap-3">
-                <ChannelPill channel="telegram" status="Early access" />
+                <ChannelPill channel="telegram" status="Available now" />
                 <ChannelPill channel="whatsapp" status="Coming next" />
               </div>
 
@@ -243,7 +243,7 @@ export default function ProactiveRunningCoachLanding() {
                 <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-600" /> Disconnect anytime</span>
               </div>
               <p className="mt-4 max-w-xl text-xs leading-5 text-slate-500">
-                Telegram access is being enabled in stages. Starting a trial does not guarantee immediate channel access. WhatsApp is not yet generally available.
+                Telegram can be connected by Premium and trial runners from AI Coach Settings. Connecting is an explicit, runner-owned opt-in. WhatsApp is not yet generally available.
               </p>
             </div>
 
@@ -364,7 +364,7 @@ export default function ProactiveRunningCoachLanding() {
           <div className="mx-auto max-w-5xl overflow-hidden rounded-[2rem] bg-[#FC4C02] px-7 py-12 text-center text-white shadow-2xl sm:px-12 sm:py-16">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15"><Sparkles className="h-7 w-7" /></div>
             <h2 className="mx-auto mt-6 max-w-3xl text-3xl font-black tracking-tight sm:text-5xl">Your next useful coaching moment should find you.</h2>
-            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-orange-50">Start the 14-day Premium trial, connect Strava, and look for staged Telegram access in AI Coach Settings. Premium remains $7.99/month after the trial.</p>
+            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-orange-50">Start the 14-day Premium trial, connect Strava, then opt in to Telegram from AI Coach Settings. Premium remains $7.99/month after the trial.</p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Link href={primaryHref} onClick={trackPrimaryClick}>
                 <Button size="lg" className="h-14 w-full bg-white px-7 text-base font-bold text-[#C63B00] hover:bg-orange-50 sm:w-auto" data-testid="proactive-coach-bottom-cta">

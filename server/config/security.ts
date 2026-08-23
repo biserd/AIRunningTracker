@@ -57,9 +57,9 @@ export function getUnsubscribeTokenSecret(): string {
 
 export function assertProductionSecurityConfiguration(): void {
   if (process.env.NODE_ENV !== "production") return;
-  const multiRunnerPilot = process.env.COACH_MULTI_RUNNER_PILOT_ENABLED === "true";
+  const multiRunnerCoachEnabled = process.env.COACH_MULTI_RUNNER_PILOT_ENABLED !== "false";
   const requiredSecrets = ["JWT_SIGNING_SECRET", "EMAIL_UNSUBSCRIBE_SIGNING_SECRET_V2"];
-  if (multiRunnerPilot) {
+  if (multiRunnerCoachEnabled) {
     requiredSecrets.push(
       "COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2",
       "COACH_BINDING_CALLBACK_SECRET",
@@ -68,7 +68,7 @@ export function assertProductionSecurityConfiguration(): void {
     );
     const requiredValues = ["COACH_AGENT_WEBHOOK_URL", "HERMES_MCP_CLIENT_ID", "TELEGRAM_BOT_USERNAME"] as const;
     for (const name of requiredValues) {
-      if (!process.env[name]?.trim()) throw new Error(`[SecurityConfig] ${name} is required for the multi-runner coach pilot.`);
+      if (!process.env[name]?.trim()) throw new Error(`[SecurityConfig] ${name} is required for the multi-runner coach.`);
     }
     let webhookUrl: URL;
     try {

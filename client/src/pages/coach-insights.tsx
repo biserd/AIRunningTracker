@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Flame, Shield, Activity, Brain, Target, Heart, AlertTriangle, Gauge, Bot, Settings, Calendar, MessageSquare, ChevronRight, Sparkles, Clock, CheckCircle, XCircle, Timer, TrendingDown } from "lucide-react";
+import { Flame, Shield, Activity, Brain, Target, Heart, AlertTriangle, Gauge, Bot, Settings, Calendar, MessageSquare, ChevronRight, Sparkles, Clock, CheckCircle, XCircle, Timer, TrendingDown, Send } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureAccess } from "@/hooks/useSubscription";
 import { useQuery } from "@tanstack/react-query";
@@ -676,14 +676,23 @@ export default function CoachInsightsPage() {
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* Page Header */}
         <div className="mb-6">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
-              <Brain className="text-white" size={20} />
+          <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
+                <Brain className="text-white" size={20} />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-charcoal" data-testid="page-title">Coach Insights</h1>
+                <p className="text-gray-600">Running-performance analysis with clear data limits</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-charcoal" data-testid="page-title">Coach Insights</h1>
-              <p className="text-gray-600">Running-performance analysis with clear data limits</p>
-            </div>
+            {canAccessAICoachChat && (
+              <Button asChild className="w-full gap-2 bg-[#229ED9] text-white hover:bg-[#1d8fc4] sm:w-auto" data-testid="coach-insights-connect-telegram">
+                <Link href="/coach/settings">
+                  <Send className="h-4 w-4" /> Connect Telegram
+                </Link>
+              </Button>
+            )}
           </div>
 
           {/* Tabs */}

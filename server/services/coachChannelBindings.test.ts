@@ -59,7 +59,7 @@ test("link and Telegram identities are irreversibly represented in storage", asy
   }
 });
 
-test("pilot routes derive runner identity server-side and outbound events expose no user ID", () => {
+test("coach routes derive runner identity server-side and outbound events expose no user ID", () => {
   const routes = readFileSync(new URL("../routes.ts", import.meta.url), "utf8");
   const service = readFileSync(new URL("./coachChannelBindings.ts", import.meta.url), "utf8");
   const oauth = readFileSync(new URL("../mcp/oauthService.ts", import.meta.url), "utf8");
@@ -68,14 +68,48 @@ test("pilot routes derive runner identity server-side and outbound events expose
   assert.doesNotMatch(routes, /coach\/channels[\s\S]{0,300}req\.body\.userId/);
   assert.match(service, /binding_id: bindingId/);
   assert.doesNotMatch(service, /JSON\.stringify\(\{[^\n]*userId/);
+  assert.doesNotMatch(service, /coachAgentPilotUsers/);
+  assert.doesNotMatch(oauth, /coachAgentPilotUsers/);
+  assert.match(service, /!binding \|\| !canAccessCapability\(binding\.runner, "ai_coach"\)/);
+  assert.match(oauth, /eq\(coachChannelBindings\.userId, users\.id\)/);
+  assert.match(oauth, /eq\(coachChannelBindings\.channel, "telegram"\)/);
+  assert.match(oauth, /isNull\(coachChannelBindings\.revokedAt\)/);
   assert.match(oauth, /eq\(mcpOauthTokens\.userId, userId\)/);
   assert.match(oauth, /eq\(mcpOauthTokens\.clientId, clientId\)/);
 });
 
-test("pilot migration enforces one live binding per runner and Telegram identity", () => {
+test("coach channel migration enforces one live binding per runner and Telegram identity", () => {
   const migration = readFileSync(new URL("../../migrations/0002_coach_channel_pilot.sql", import.meta.url), "utf8");
   assert.match(migration, /active_user_channel_uidx[\s\S]*WHERE revoked_at IS NULL/);
   assert.match(migration, /active_provider_user_uidx[\s\S]*WHERE revoked_at IS NULL/);
   assert.match(migration, /active_provider_chat_uidx[\s\S]*WHERE revoked_at IS NULL/);
   assert.match(migration, /mcp_token_id integer REFERENCES mcp_oauth_tokens/);
+});
+
+test("multi-runner coach is launch-default-on with an explicit operational kill switch", async () => {
+  const original = process.env.COACH_MULTI_RUNNER_PILOT_ENABLED;
+  const { isMultiRunnerCoachEnabled } = await import("./coachChannelBindings");
+  try {
+    delete process.env.COACH_MULTI_RUNNER_PILOT_ENABLED;
+    assert.equal(isMultiRunnerCoachEnabled(), true);
+    process.env.COACH_MULTI_RUNNER_PILOT_ENABLED = "true";
+    assert.equal(isMultiRunnerCoachEnabled(), true);
+    process.env.COACH_MULTI_RUNNER_PILOT_ENABLED = "false";
+    assert.equal(isMultiRunnerCoachEnabled(), false);
+  } finally {
+    if (original === undefined) delete process.env.COACH_MULTI_RUNNER_PILOT_ENABLED;
+    else process.env.COACH_MULTI_RUNNER_PILOT_ENABLED = original;
+  }
+});
+
+test("runner navigation exposes coach settings and keeps the legacy route working", () => {
+  const app = readFileSync(new URL("../../client/src/App.tsx", import.meta.url), "utf8");
+  const header = readFileSync(new URL("../../client/src/components/AppHeader.tsx", import.meta.url), "utf8");
+  const insights = readFileSync(new URL("../../client/src/pages/coach-insights.tsx", import.meta.url), "utf8");
+  assert.match(app, /path="\/coach-settings"/);
+  assert.match(app, /window\.location\.replace\("\/coach\/settings"\)/);
+  assert.match(app, /<ProtectedRoute component=\{CoachSettingsPage\}/);
+  assert.match(header, /data-testid="menu-coach-settings"/);
+  assert.match(header, /href="\/coach\/settings"/);
+  assert.match(insights, /data-testid="coach-insights-connect-telegram"/);
 });

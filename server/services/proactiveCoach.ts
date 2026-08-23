@@ -251,10 +251,9 @@ export async function emitSignedCoachEvent(event: { activityId: number; userId: 
     return false;
   }
 
-  // Until per-runner Telegram/Hermes bindings exist, this legacy webhook is
-  // deliberately restricted to one explicitly configured pilot runner. This
-  // prevents a shared Hermes instance from receiving events for every paid
-  // account and selecting a tenant token heuristically.
+  // Emergency rollback path only. The launched path uses per-runner bindings;
+  // this legacy integration remains restricted to one explicitly configured
+  // runner so a shared receiver can never select tenant credentials heuristically.
   const pilotUserId = Number(process.env.COACH_AGENT_PILOT_USER_ID);
   if (!Number.isSafeInteger(pilotUserId) || pilotUserId <= 0 || pilotUserId !== event.userId) return false;
 
@@ -274,7 +273,7 @@ export async function emitSignedCoachEvent(event: { activityId: number; userId: 
     .createHmac("sha256", secret)
     .update(`${timestamp}.${body}`)
     .digest("hex");
-  // Keep the original raw-body signature during the pilot migration while
+  // Keep the original raw-body signature for legacy receiver compatibility while
   // requiring new receivers to verify timestamp + delivery ID for anti-replay.
   const legacySignature = crypto.createHmac("sha256", secret).update(body).digest("hex");
   const controller = new AbortController();

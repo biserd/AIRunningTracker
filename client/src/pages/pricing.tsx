@@ -404,7 +404,7 @@ export default function PricingPage() {
                 </div>
                 <div>
                   <p className="font-bold text-slate-900">Want the coach to come to you?</p>
-                  <p className="mt-1 text-sm leading-6 text-slate-600">Explore private Telegram coaching in staged early access. WhatsApp is coming next.</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">Connect private Telegram coaching with Premium or during your trial. WhatsApp is coming next.</p>
                 </div>
               </div>
               <span className="inline-flex shrink-0 items-center gap-2 font-bold text-[#167ca9]">

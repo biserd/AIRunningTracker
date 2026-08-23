@@ -115,6 +115,12 @@ export default function AppHeader() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link href="/coach/settings" className="flex items-center space-x-2 cursor-pointer" data-testid="menu-coach-settings">
+                    <Brain size={16} />
+                    <span>AI Coach Settings</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link href="/chat-history" className="flex items-center space-x-2 cursor-pointer">
                     <MessageCircle size={16} />
                     <span>Chat History</span>

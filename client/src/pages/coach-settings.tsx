@@ -56,7 +56,8 @@ const TONES = [
 ];
 
 type CoachChannelStatus = {
-  pilotEligible: boolean;
+  available: boolean;
+  accessReason: "available" | "premium_required" | "feature_disabled";
   telegram: {
     connected: boolean;
     status: "not_connected" | "provisioning" | "active" | "provisioning_failed" | "revoked";
@@ -79,7 +80,7 @@ export default function CoachSettingsPage() {
   const { data: channelStatus, isLoading: channelStatusLoading } = useQuery<CoachChannelStatus>({
     queryKey: ["/api/coach/channels"],
     queryFn: getQueryFn({ on401: "throw" }),
-    enabled: Boolean(user?.id && isPremium),
+    enabled: Boolean(user?.id),
     staleTime: 0,
     refetchOnMount: "always",
   });
@@ -252,8 +253,67 @@ export default function CoachSettingsPage() {
   }
 
   if (!isPremium) {
-    setLocation("/pricing");
-    return null;
+    const hasTelegramBinding = Boolean(
+      channelStatus?.telegram.status &&
+      channelStatus.telegram.status !== "not_connected" &&
+      channelStatus.telegram.status !== "revoked",
+    );
+    return (
+      <div className="min-h-screen bg-light-grey">
+        <AppHeader />
+        <main className="mx-auto max-w-3xl px-6 py-8">
+          <Button variant="ghost" onClick={() => setLocation("/settings")} className="mb-4 flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" /> Back to Settings
+          </Button>
+          <div className="mb-8 flex items-center gap-3">
+            <div className="rounded-full bg-yellow-100 p-2"><Crown className="h-6 w-6 text-yellow-600" /></div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">AI Coach Settings</h1>
+              <p className="text-gray-600">Manage your private coach connection.</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Premium coaching is paused</CardTitle>
+                <CardDescription>Start a trial or reactivate Premium to connect Telegram and use personalized coaching.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild className="bg-strava-orange hover:bg-strava-orange/90">
+                  <Link href="/pricing?source=coach_settings&capability=ai_coach&benefitKey=coach_chat">Start 14 days free</Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            {(channelStatusLoading || hasTelegramBinding) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><Send className="h-5 w-5 text-[#229ED9]" /> Telegram coach</CardTitle>
+                  <CardDescription>Your connection cannot receive new running data without Premium access.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {channelStatusLoading ? (
+                    <div className="flex items-center gap-2 text-sm text-gray-500"><Loader2 className="h-4 w-4 animate-spin" /> Checking connection…</div>
+                  ) : (
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="font-medium text-gray-900">Telegram connection paused</p>
+                        <p className="text-sm text-gray-500">Disconnecting revokes the runner-scoped MCP grant and opts this account out.</p>
+                      </div>
+                      <Button type="button" variant="outline" onClick={() => disconnectTelegramMutation.mutate()} disabled={disconnectTelegramMutation.isPending} className="gap-2">
+                        {disconnectTelegramMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unplug className="h-4 w-4" />}
+                        Disconnect
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </main>
+      </div>
+    );
   }
 
   return (
@@ -358,7 +418,7 @@ export default function CoachSettingsPage() {
                 )}
               </CardTitle>
               <CardDescription>
-                Get post-run analysis and proactive coaching in a private Telegram conversation.
+                Opt in to post-run analysis and proactive coaching in a private Telegram conversation.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -377,6 +437,12 @@ export default function CoachSettingsPage() {
               >
                 See how private messaging coaching works <ArrowLeft className="h-3.5 w-3.5 rotate-180" />
               </Link>
+
+              {!channelStatus?.telegram.connected && channelStatus?.available && (
+                <p className="rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-900">
+                  Connecting Telegram opts this account into messaging coaching. The connection is runner-scoped, can be used only in a private chat, and can be disconnected here at any time.
+                </p>
+              )}
 
               {channelStatusLoading ? (
                 <div className="flex items-center gap-2 text-sm text-gray-500"><Loader2 className="h-4 w-4 animate-spin" /> Checking connection…</div>
@@ -401,12 +467,16 @@ export default function CoachSettingsPage() {
                     Disconnect
                   </Button>
                 </div>
-              ) : !channelStatus?.pilotEligible ? (
-                <p className="text-sm text-gray-600">The Telegram coach is currently available to invited test runners. Your existing AI Coach features are unchanged.</p>
+              ) : !channelStatus?.available ? (
+                <p className="text-sm text-gray-600">
+                  {channelStatus?.accessReason === "premium_required"
+                    ? "Telegram coaching is available with an active Premium subscription or trial."
+                    : "Telegram connections are temporarily unavailable. Your existing AI Coach features are unchanged."}
+                </p>
               ) : (
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="font-medium text-gray-900">Ready to connect</p>
+                    <p className="font-medium text-gray-900">Available for your account</p>
                     <p className="text-sm text-gray-500">The secure Telegram link expires after 10 minutes and can be used only once.</p>
                   </div>
                   <Button

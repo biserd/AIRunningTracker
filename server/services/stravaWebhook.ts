@@ -297,8 +297,8 @@ export class StravaWebhookService {
       // Optional Hermes/agent handoff. Keep the existing eligibility gate:
       // paid, coach-enabled, onboarded runners only.
       if (userIsPaid && user.coachEnabled !== false && user.coachOnboardingCompleted && activityDbId) {
-        const { emitBoundCoachActivityEvent, isMultiRunnerCoachPilotEnabled } = await import("./coachChannelBindings");
-        if (isMultiRunnerCoachPilotEnabled()) {
+        const { emitBoundCoachActivityEvent, isMultiRunnerCoachEnabled } = await import("./coachChannelBindings");
+        if (isMultiRunnerCoachEnabled()) {
           // The binding lookup derives the exact tenant server-side and sends
           // only an opaque binding ID to Hermes.
           void emitBoundCoachActivityEvent(user.id, activityDbId);

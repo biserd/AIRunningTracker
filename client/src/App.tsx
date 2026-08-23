@@ -208,6 +208,10 @@ function Router() {
         <Route path="/ai-running-coaching-guide" component={AICoachingGuidePage} />
         <Route path="/ai-agent-coach" component={AIAgentCoachLanding} />
         <Route path="/proactive-running-coach" component={ProactiveRunningCoachLanding} />
+        {/* Preserve the originally published landing-page destination. */}
+        <Route path="/coach-settings">
+          {() => { window.location.replace("/coach/settings"); return null; }}
+        </Route>
         
         {/* Developer Routes */}
         <Route path="/developers" component={DevelopersPage} />
@@ -272,7 +276,7 @@ function Router() {
           <PremiumProtectedRoute component={CoachOnboardingPage} />
         </Route>
         <Route path="/coach/settings">
-          <PremiumProtectedRoute component={CoachSettingsPage} />
+          <ProtectedRoute component={CoachSettingsPage} />
         </Route>
         {/* Legacy /audit-report → dashboard. The audit funnel was retired
             with the free-tier pivot; new users land on /dashboard with the
