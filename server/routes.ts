@@ -40,6 +40,7 @@ import { sql, eq, isNull } from "drizzle-orm";
 import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getActivityHistoryLimit, getFreeActivityLimit, RATE_LIMITS, canSyncFromStrava, getInitialSyncCap, isPaidPlan } from "./rateLimits";
 import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage, renderToolPage, getAllToolSlugs, renderFaqPage, renderBlogIndex, renderPricingPage, renderFeaturesPage, renderAboutPage, renderEbookLandingPage, renderDevelopersPage, renderDevelopersApiPage, renderToolsHubPage, renderProactiveRunningCoachPage } from "./ssr/renderer";
 import { getAllBlogPosts } from "./ssr/blogContent";
+import { buildRobotsTxt, isCrawler, isPrivateCrawlerPath } from "./ssr/crawlerPolicy";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import {
   type Capability,
@@ -476,25 +477,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   };
 
-  // Crawler detection helper
-  const isCrawler = (userAgent: string): boolean => {
-    const crawlerPatterns = [
-      // Traditional search engines
-      /googlebot/i, /bingbot/i, /yandex/i, /baiduspider/i,
-      /duckduckbot/i, /slurp/i, /applebot/i,
-      /developers\.google\.com/i, /google-inspectiontool/i,
-      // Social / link-preview bots
-      /facebookexternalhit/i, /twitterbot/i, /linkedinbot/i, /pinterest/i,
-      // SEO tools
-      /semrush/i, /ahrefsbot/i, /mj12bot/i, /dotbot/i,
-      /petalbot/i, /rogerbot/i, /dataforseo/i,
-      // AI crawlers (GEO — Generative Engine Optimization)
-      /GPTBot/i, /ClaudeBot/i, /PerplexityBot/i, /Applebot-Extended/i,
-      /anthropic-ai/i, /cohere-ai/i, /meta-externalagent/i,
-    ];
-    return crawlerPatterns.some(pattern => pattern.test(userAgent));
-  };
-
   // SEO: 301 redirects for renamed blog posts (preserve indexed URLs)
   app.get("/blog/best-strava-analytics-tools-2025", (req, res) => {
     res.redirect(301, "/blog/best-strava-analytics-tools-2026");
@@ -503,16 +485,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // SEO: emit `X-Robots-Tag: noindex` for utility/auth pages so Google drops
   // them from the index even if discovered via internal links or backlinks.
   // (These are also excluded from the sitemap above.)
-  const NOINDEX_PATHS = new Set<string>([
-    "/auth",
-    "/auth/magic-link",
-    "/forgot-password",
-    "/reset-password",
-    "/magic-link",
-  ]);
   app.use((req, res, next) => {
-    if (NOINDEX_PATHS.has(req.path)) {
-      res.setHeader("X-Robots-Tag", "noindex, follow");
+    if (isPrivateCrawlerPath(req.path)) {
+      res.setHeader("X-Robots-Tag", "noindex, nofollow");
     }
     next();
   });
@@ -532,27 +507,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // SEO: robots.txt
   app.get("/robots.txt", (req, res) => {
-    const baseUrl = "https://aitracker.run";
-    
-    const robotsTxt = `Content-Signal: ai-train=yes, search=yes, ai-input=yes
-
-User-agent: *
-Allow: /
-Disallow: /api/
-Disallow: /dashboard
-Disallow: /admin
-Disallow: /admin/
-Disallow: /settings
-Disallow: /billing
-Disallow: /activities
-Disallow: /activity/
-Disallow: /performance
-Disallow: /ml-insights
-
-Sitemap: ${baseUrl}/sitemap.xml`;
-
-    res.header("Content-Type", "text/plain");
-    res.send(robotsTxt);
+    res.type("text/plain");
+    res.send(buildRobotsTxt());
   });
 
   // SEO: Sitemap (dynamic with shoe pages and lastmod timestamps)
