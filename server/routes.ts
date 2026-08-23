@@ -8162,11 +8162,14 @@ ${allPages.map(page => `  <url>
       const currentWeek = weeks.find((w: any) => {
         const start = new Date(w.weekStartDate);
         const end = new Date(w.weekEndDate);
+        // Week dates are stored at midnight. Treat the end date as the full
+        // calendar day so a Sunday plan does not disappear at 12:00 AM.
+        end.setHours(23, 59, 59, 999);
         return now >= start && now <= end;
       });
       
       if (!currentWeek) {
-        return res.status(404).json({ message: "No current week found" });
+        return res.json(null);
       }
       
       const days = await storage.getPlanDays(currentWeek.id);

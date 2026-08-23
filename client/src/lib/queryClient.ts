@@ -1,4 +1,12 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { notifyExtensionLogout } from "@/lib/extensionBridge";
+
+function clearInvalidSession(): void {
+  if (typeof window === "undefined" || !localStorage.getItem("auth_token")) return;
+  localStorage.removeItem("auth_token");
+  notifyExtensionLogout();
+  queryClient.clear();
+}
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -29,6 +37,9 @@ export async function apiRequest(
     credentials: "include",
   });
 
+  if (res.status === 401) {
+    clearInvalidSession();
+  }
   await throwIfResNotOk(res);
   return res.json();
 }
@@ -51,6 +62,9 @@ export const getQueryFn: <T>(options: {
       credentials: "include",
     });
 
+    if (res.status === 401) {
+      clearInvalidSession();
+    }
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
       return null;
     }

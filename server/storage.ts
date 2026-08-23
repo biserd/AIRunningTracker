@@ -2314,7 +2314,9 @@ export class DatabaseStorage implements IStorage {
       systemStatus = 'degraded';
     }
 
-    // Recent Errors - Query from performanceLogs table (statusCode >= 400)
+    // Recent Errors - exclude expected credential rejections. Browser sessions
+    // can expire normally, and OAuth refresh tokens are deliberately single-use
+    // to prevent replay. Those states are operational telemetry, not incidents.
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const errorLogs = await db
       .select({
@@ -2331,7 +2333,11 @@ export class DatabaseStorage implements IStorage {
       })
       .from(performanceLogs)
       .where(
-        sql`${performanceLogs.statusCode} >= 400 AND ${performanceLogs.timestamp} >= ${twentyFourHoursAgo}`
+        sql`${performanceLogs.statusCode} >= 400
+          AND ${performanceLogs.timestamp} >= ${twentyFourHoursAgo}
+          AND NOT (${performanceLogs.endpoint} = '/api/auth/user' AND ${performanceLogs.statusCode} = 401)
+          AND NOT (${performanceLogs.endpoint} = '/mcp' AND ${performanceLogs.statusCode} = 401 AND ${performanceLogs.errorMessage} = 'invalid_token')
+          AND NOT (${performanceLogs.endpoint} = '/mcp/oauth/token' AND ${performanceLogs.statusCode} = 400 AND ${performanceLogs.errorMessage} = 'invalid_grant')`
       )
       .orderBy(sql`${performanceLogs.timestamp} DESC`)
       .limit(10);
