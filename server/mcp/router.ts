@@ -3,7 +3,6 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { authService } from "../services/auth";
 import {
   MCP_ISSUER,
-  MCP_PUBLIC_RESOURCE,
   MCP_RESOURCE,
   MCP_SCOPES,
   MCP_SCOPE_NAMES,
@@ -23,6 +22,7 @@ import {
   ensureMcpSchema,
   exchangeAuthorizationCode,
   getPendingAuthorizationRequest,
+  isPrivateMcpGrantEligible,
   refreshAccessToken,
   registerPublicClient,
   revokeToken,
@@ -78,7 +78,7 @@ function consentHtml(rawRequest: string): string {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow"><title>Authorize MCP access | RunAnalytics</title>
-<style>body{margin:0;background:#f4f7fa;color:#102235;font:16px/1.55 system-ui,sans-serif}.card{max-width:680px;margin:7vh auto;background:#fff;border:1px solid #dbe4ec;border-radius:18px;padding:32px;box-shadow:0 18px 48px #1232}.brand{color:#fc4c02;font-weight:800}.scope{padding:12px 14px;background:#f7fafc;border-radius:10px;margin:9px 0}.actions{display:flex;gap:12px;margin-top:28px}button,a.button{border:0;border-radius:9px;padding:12px 18px;font-weight:700;cursor:pointer;text-decoration:none}.approve{background:#fc4c02;color:white}.deny{background:#e8edf2;color:#24384b}.fine{color:#607487;font-size:13px}.error{color:#a61b1b}</style></head>
+<style>body{margin:0;background:#f4f7fa;color:#102235;font:16px/1.55 system-ui,sans-serif}.card{max-width:680px;margin:7vh auto;background:#fff;border:1px solid #dbe4ec;border-radius:18px;padding:32px;box-shadow:0 18px 48px #1232}.brand{color:#fc4c02;font-weight:800}.scope{padding:12px 14px;background:#f7fafc;border-radius:10px;margin:9px 0}.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}button,a.button{border:0;border-radius:9px;padding:12px 18px;font-weight:700;cursor:pointer;text-decoration:none}.approve{background:#fc4c02;color:white}.deny{background:#e8edf2;color:#24384b}.fine{color:#607487;font-size:13px}.notice{margin-top:20px;padding:16px;border:1px solid #fed7aa;border-radius:12px;background:#fff7ed;color:#7c2d12}.error{color:#a61b1b}</style></head>
 <body><main class="card"><div class="brand">RunAnalytics</div><h1>Authorize read-only access</h1><div id="content"><p>Loading authorization request…</p></div></main>
 <script>
 const requestId=${requestLiteral};
@@ -90,7 +90,14 @@ async function load(){
  if(response.status===401){localStorage.removeItem('auth_token');location.href='/auth?redirect='+encodeURIComponent(location.pathname+location.search);return;}
  const data=await response.json();
  if(!response.ok){document.getElementById('content').innerHTML='<p class="error">'+esc(data.error_description||'This authorization request is unavailable.')+'</p>';return;}
- document.getElementById('content').innerHTML='<p><strong>'+esc(data.clientName)+'</strong> is requesting access to:</p>'+data.scopes.map(s=>'<div class="scope"><strong>'+esc(s.scope)+'</strong><br>'+esc(s.description)+'</div>').join('')+'<p class="fine">This connection cannot edit your account, sync Strava, trigger processing, send email, or change billing. Access expires after 15 minutes and refresh access can be revoked.</p><div class="actions"><button class="approve" onclick="decide(true)">Allow read-only access</button><button class="deny" onclick="decide(false)">Deny</button></div>';
+ const scopeHtml='<p><strong>'+esc(data.clientName)+'</strong> is requesting access to:</p>'+data.scopes.map(s=>'<div class="scope"><strong>'+esc(s.scope)+'</strong><br>'+esc(s.description)+'</div>').join('')+'<p class="fine">This connection cannot edit your account, sync Strava, trigger processing, send email, or change billing. Access expires after 15 minutes and refresh access can be revoked.</p>';
+ if(!data.eligible){
+   const returnTo='/mcp/consent?request='+encodeURIComponent(requestId);
+   const upgrade='/pricing?source=mcp_consent&capability=mcp_access&benefitKey=mcp_access&returnTo='+encodeURIComponent(returnTo);
+   document.getElementById('content').innerHTML=scopeHtml+'<div class="notice"><strong>Private MCP access is included with Premium.</strong><br>Start your 14-day trial, then return here to approve this connection. Card required; $0 today.</div><div class="actions"><a class="button approve" href="'+upgrade+'">Start 14-day free trial</a><button class="deny" onclick="decide(false)">Deny</button></div>';
+   return;
+ }
+ document.getElementById('content').innerHTML=scopeHtml+'<div class="actions"><button class="approve" onclick="decide(true)">Allow read-only access</button><button class="deny" onclick="decide(false)">Deny</button></div>';
 }
 async function decide(approved){
  const token=localStorage.getItem('auth_token');
@@ -101,11 +108,6 @@ async function decide(approved){
 }
 load().catch(()=>{document.getElementById('content').innerHTML='<p class="error">Authorization could not be loaded.</p>'});
 </script></body></html>`;
-}
-
-function docsHtml() {
-  const scopeRows = Object.entries(MCP_SCOPES).map(([scope, description]) => `<li><code>${scope}</code> — ${description}</li>`).join("");
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RunAnalytics read-only MCP server</title><meta name="robots" content="index,follow"></head><body style="font:16px/1.6 system-ui,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;color:#14283b"><h1>RunAnalytics read-only MCP server</h1><p><strong>Private endpoint:</strong> <code>${MCP_RESOURCE}</code><br><strong>Public catalog endpoint:</strong> <code>${MCP_PUBLIC_RESOURCE}</code></p><p>The private server uses OAuth authorization code with PKCE S256, exact registered redirect URIs, short-lived opaque access tokens, rotating refresh tokens, revocation, and resource binding. Web-session JWTs and magic-link tokens are not accepted at the MCP endpoint.</p><h2>Scopes</h2><ul>${scopeRows}</ul><h2>Private tools</h2><p><code>get_runner_profile</code>, <code>list_activities</code>, <code>get_activity</code>, <code>get_dashboard_trends</code>, <code>get_fitness_metrics</code>, <code>get_recovery_status</code>, <code>get_runner_score</code>, <code>list_goals</code>, <code>list_training_plans</code>, and <code>get_training_plan</code>.</p><h2>Public tools</h2><p><code>search_running_shoes</code>, <code>get_running_shoe</code>, and <code>list_runanalytics_tools</code>. They never expose private account data.</p><h2>Limits</h2><p>All tools are read-only. Activity date ranges are capped at 365 days, pages at 100 records, plan details at 32 weeks, tool execution at 8 seconds, and requests are rate limited across autoscale instances. No resources, prompts, arbitrary routes, SQL, mutations, syncs, email, AI generation, or billing operations are exposed.</p><h2>Operations</h2><p>Set a 32+ character <code>MCP_TOKEN_HASH_SECRET</code>. Set <code>MCP_ALLOWED_ORIGINS</code> only for additional trusted browser origins. Disable private OAuth immediately by removing/rotating the secret; revoke individual grants through <code>/mcp/oauth/revoke</code>. Opaque tokens have no JWKS dependency; secret rotation revokes all existing grants by design.</p></body></html>`;
 }
 
 async function handleMcpRequest(req: Request, res: Response, isPublic: boolean) {
@@ -158,7 +160,7 @@ export async function registerMcpRoutes(app: Express): Promise<void> {
   app.get("/.well-known/oauth-authorization-server", (_req, res) => res.set("Cache-Control", "public, max-age=3600").json(authorizationServerMetadata()));
   app.get("/.well-known/oauth-protected-resource", (_req, res) => res.set("Cache-Control", "public, max-age=3600").json(protectedResourceMetadata()));
   app.get("/.well-known/oauth-protected-resource/mcp", (_req, res) => res.set("Cache-Control", "public, max-age=3600").json(protectedResourceMetadata()));
-  app.get("/docs/mcp", (_req, res) => res.type("html").send(docsHtml()));
+  app.get("/docs/mcp", (_req, res) => res.redirect(301, "/developers/mcp"));
 
   app.post("/mcp/oauth/register", async (req, res) => {
     try {
@@ -214,7 +216,8 @@ export async function registerMcpRoutes(app: Express): Promise<void> {
       if (!webUser) return res.status(401).set("Cache-Control", "no-store").json({ error: "login_required" });
       const rawRequest = typeof req.query.request === "string" ? req.query.request : "";
       const { request, client } = await getPendingAuthorizationRequest(rawRequest);
-      res.set("Cache-Control", "no-store").json({ clientName: client.clientName, scopes: request.scopes.map((scope) => ({ scope, description: MCP_SCOPES[scope as keyof typeof MCP_SCOPES] })) });
+      const eligible = await isPrivateMcpGrantEligible(webUser.id, client.clientId);
+      res.set("Cache-Control", "no-store").json({ clientName: client.clientName, eligible, scopes: request.scopes.map((scope) => ({ scope, description: MCP_SCOPES[scope as keyof typeof MCP_SCOPES] })) });
     } catch (error) { oauthError(res, error); }
   });
 

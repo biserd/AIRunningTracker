@@ -498,6 +498,65 @@ export async function readPublicShoe(slug: string) {
   return { shoe: sanitizeShoe(shoe) };
 }
 
+export async function listPublicShoeFacets() {
+  const shoes = await storage.getShoes({});
+  const countBy = (selector: (shoe: RunningShoe) => string | null | undefined) => {
+    const counts = new Map<string, number>();
+    for (const shoe of shoes) {
+      const value = selector(shoe)?.trim();
+      if (value) counts.set(value, (counts.get(value) || 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .map(([value, count]) => ({ value, count }))
+      .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
+      .slice(0, 100);
+  };
+  const prices = shoes.map((shoe) => Number(shoe.price)).filter((price) => Number.isFinite(price) && price > 0);
+  const verified = shoes
+    .map((shoe) => shoe.lastVerified ? new Date(shoe.lastVerified).getTime() : 0)
+    .filter((value) => value > 0);
+  return {
+    totalShoes: shoes.length,
+    brands: countBy((shoe) => shoe.brand),
+    categories: countBy((shoe) => shoe.category),
+    cushioningLevels: countBy((shoe) => shoe.cushioningLevel),
+    stabilityTypes: countBy((shoe) => shoe.stability),
+    priceRangeUsd: prices.length ? { min: Math.min(...prices), max: Math.max(...prices) } : null,
+    latestVerificationDate: verified.length ? new Date(Math.max(...verified)).toISOString() : null,
+  };
+}
+
+export async function comparePublicShoes(slugs: string[]) {
+  const uniqueSlugs = Array.from(new Set(slugs));
+  if (uniqueSlugs.length < 2 || uniqueSlugs.length > 4 || uniqueSlugs.some((slug) => !/^[a-z0-9-]{1,120}$/.test(slug))) {
+    throw new McpToolError("invalid_arguments", "Provide two to four unique, valid shoe slugs");
+  }
+  const records = await Promise.all(uniqueSlugs.map((slug) => storage.getShoeBySlug(slug)));
+  if (records.some((shoe) => !shoe)) throw new McpToolError("not_found", "One or more shoes were not found");
+  const shoes = records as RunningShoe[];
+  return {
+    shoes: shoes.map(sanitizeShoe),
+    comparison: shoes.map((shoe) => ({
+      slug: shoe.slug,
+      weightOunces: shoe.weight,
+      heelToToeDropMm: shoe.heelToToeDrop,
+      heelStackHeightMm: shoe.heelStackHeight,
+      forefootStackHeightMm: shoe.forefootStackHeight,
+      priceUsd: shoe.price,
+      durabilityRating: shoe.durabilityRating,
+      responsivenessRating: shoe.responsivenessRating,
+      comfortRating: shoe.comfortRating,
+      hasCarbonPlate: shoe.hasCarbonPlate,
+      hasSuperFoam: shoe.hasSuperFoam,
+      category: shoe.category,
+      stability: shoe.stability,
+      cushioningLevel: shoe.cushioningLevel,
+      bestFor: shoe.bestFor,
+    })),
+    limitation: "Catalog specifications support comparison but do not replace fit testing or medical advice.",
+  };
+}
+
 export function listPublicTools(input: { query?: string; limit?: number }) {
   const limit = clampInteger(input.limit, 20, 1, 50);
   const query = input.query?.trim().toLowerCase();

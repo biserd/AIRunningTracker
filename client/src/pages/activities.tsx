@@ -13,6 +13,8 @@ import DashboardHeatmap from "@/components/dashboard/DashboardHeatmap";
 import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
+import { buildUpgradeUrl } from "@shared/upgradeIntent";
 
 interface ActivityData {
   id: number;
@@ -245,15 +247,19 @@ export default function ActivitiesPage() {
                   free trial. Card required; you pay $0 today.
                 </p>
               </div>
-              <Button
-                  asChild
+              <DirectCheckoutButton upgradeUrl={buildUpgradeUrl({
+                source: "activities_history_cap",
+                capability: "activity_history",
+                benefitKey: "activity_history",
+                returnTo: "/activities",
+              })}>
+                <Button
                   className="bg-orange-600 hover:bg-orange-700 text-white whitespace-nowrap"
                   data-testid="button-upgrade-from-cap"
                 >
-                <Link href="/pricing">
                   Start 14-day Premium trial
-                </Link>
-              </Button>
+                </Button>
+              </DirectCheckoutButton>
             </CardContent>
           </Card>
         )}

@@ -3,7 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Award, TrendingUp, TrendingDown, Minus, Lock, ChevronRight } from "lucide-react";
-import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
+import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
+import { buildUpgradeUrl } from "@shared/upgradeIntent";
 
 interface VerdictEvidence {
   type: "positive" | "neutral" | "negative";
@@ -97,11 +99,17 @@ export default function CoachVerdict({ activityId, compact = false }: CoachVerdi
               <div className="flex-1">
                 <p className="font-semibold text-yellow-900">Coach Verdict</p>
                 <p className="text-sm text-yellow-700">Unlock AI-powered run analysis with Premium</p>
-                <Link href="/pricing">
-                  <span className="text-sm font-medium text-yellow-600 hover:text-yellow-800 inline-flex items-center gap-1 mt-1 cursor-pointer" data-testid="link-upgrade-premium">
-                    Upgrade now <ChevronRight className="w-3 h-3" />
-                  </span>
-                </Link>
+                <DirectCheckoutButton upgradeUrl={buildUpgradeUrl({
+                  source: "activity_coach_verdict",
+                  capability: "activity_deep_dive",
+                  activityId,
+                  benefitKey: "activity_metrics",
+                  returnTo: `/activity/${activityId}`,
+                })}>
+                  <Button variant="link" className="h-auto p-0 text-sm font-medium text-yellow-600 hover:text-yellow-800 inline-flex gap-1 mt-1" data-testid="link-upgrade-premium">
+                    Start free trial <ChevronRight className="w-3 h-3" />
+                  </Button>
+                </DirectCheckoutButton>
               </div>
             </div>
           </CardContent>

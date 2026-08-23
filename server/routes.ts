@@ -38,7 +38,7 @@ import { resolvePlan } from "./webhookHandlers";
 import { db } from "./db";
 import { sql, eq, isNull } from "drizzle-orm";
 import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getActivityHistoryLimit, getFreeActivityLimit, RATE_LIMITS, canSyncFromStrava, getInitialSyncCap, isPaidPlan } from "./rateLimits";
-import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage, renderToolPage, getAllToolSlugs, renderFaqPage, renderBlogIndex, renderPricingPage, renderFeaturesPage, renderAboutPage, renderEbookLandingPage, renderDevelopersPage, renderDevelopersApiPage, renderToolsHubPage, renderProactiveRunningCoachPage } from "./ssr/renderer";
+import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage, renderToolPage, getAllToolSlugs, renderFaqPage, renderBlogIndex, renderPricingPage, renderFeaturesPage, renderAboutPage, renderEbookLandingPage, renderDevelopersPage, renderDevelopersApiPage, renderToolsHubPage, renderProactiveRunningCoachPage, renderMcpLandingPage, renderMcpDocsPage } from "./ssr/renderer";
 import { getAllBlogPosts } from "./ssr/blogContent";
 import { buildRobotsTxt, isCrawler, isPrivateCrawlerPath } from "./ssr/crawlerPolicy";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
@@ -470,6 +470,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       description: "Complete API documentation for RunAnalytics. Learn how to integrate running analytics, access activity data, and build custom solutions.",
       keywords: "API documentation, REST API, running data API, developer docs"
     },
+    "/mcp-server": {
+      title: "Read-Only Running Data MCP Server | RunAnalytics",
+      description: "Connect authorized AI clients to your RunAnalytics activities, analytics, goals, plans, and public running-shoe catalog through secure read-only MCP tools.",
+      keywords: "running MCP server, read-only MCP, Model Context Protocol running data"
+    },
+    "/developers/mcp": {
+      title: "RunAnalytics MCP Documentation | Read-Only Running Data",
+      description: "Production endpoints, OAuth scopes, read-only tools, limits, and setup details for the RunAnalytics MCP server.",
+      keywords: "MCP documentation, MCP OAuth, running data tools, Streamable HTTP"
+    },
     "/tools/shoes/compare": {
       title: "Compare Running Shoes | Side-by-Side Comparison | RunAnalytics",
       description: "Compare running shoes side-by-side. See specs, features, and AI insights to find the best shoes for your running style.",
@@ -553,6 +563,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Developer API
         { url: "/developers", changefreq: "weekly", priority: "0.8", lastmod: "2026-01-01" },
         { url: "/developers/api", changefreq: "weekly", priority: "0.8", lastmod: "2026-01-01" },
+        { url: "/mcp-server", changefreq: "weekly", priority: "0.8", lastmod: today },
+        { url: "/developers/mcp", changefreq: "weekly", priority: "0.8", lastmod: today },
         
         // Other Pages
         { url: "/faq", changefreq: "monthly", priority: "0.6", lastmod: "2026-01-01" },
@@ -808,6 +820,8 @@ ${allPages.map(page => `  <url>
           case '/tools':          html = renderToolsHubPage(); break;
           case '/developers':     html = renderDevelopersPage(); break;
           case '/developers/api': html = renderDevelopersApiPage(); break;
+          case '/mcp-server':     html = renderMcpLandingPage(); break;
+          case '/developers/mcp': html = renderMcpDocsPage(); break;
         }
         res.send(html ?? generateSEOHtml(meta, route));
       } else {
@@ -1281,7 +1295,7 @@ ${allPages.map(page => `  <url>
   // Create checkout session
   app.post("/api/stripe/create-checkout-session", authenticateJWT, async (req: any, res) => {
     try {
-      const { priceId, returnTo, source, capability, activityId, benefitKey, pendingResourceId, experimentVariant } = req.body;
+      const { priceId, billingPeriod: requestedBillingPeriod, returnTo, source, capability, activityId, benefitKey, pendingResourceId, experimentVariant } = req.body;
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
@@ -1289,12 +1303,21 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
 
+      // High-intent feature gates can request a billing period instead of
+      // making a separate client-side products request. The server resolves
+      // only the tagged Premium price; explicit price IDs remain supported by
+      // the pricing page and are still allow-listed below.
+      const safeBillingPeriod = requestedBillingPeriod === 'annual' ? 'annual' : 'monthly';
+      const resolvedPriceId = typeof priceId === 'string' && priceId
+        ? priceId
+        : await resolvePremiumPriceId(safeBillingPeriod);
+
       // Don't trust client-supplied priceId blindly. Allow only Premium-tagged
       // prices (env override or metadata in our synced stripe.prices table).
-      const allowed = await isAllowedCheckoutPriceId(priceId);
+      const allowed = await isAllowedCheckoutPriceId(resolvedPriceId);
       if (!allowed) {
-        console.warn('[checkout] rejected priceId not tagged as premium', { userId, priceId });
-        return res.status(400).json({ message: 'Invalid priceId for checkout' });
+        console.warn('[checkout] rejected priceId not tagged as premium', { userId, priceId: resolvedPriceId, billingPeriod: safeBillingPeriod });
+        return res.status(400).json({ message: 'Premium checkout is temporarily unavailable' });
       }
 
       const stripe = await getUncachableStripeClient();
@@ -1372,7 +1395,7 @@ ${allPages.map(page => `  <url>
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
         payment_method_types: ['card'],
-        line_items: [{ price: priceId, quantity: 1 }],
+        line_items: [{ price: resolvedPriceId!, quantity: 1 }],
         mode: 'subscription',
         allow_promotion_codes: true,
         success_url: `${checkoutBaseUrl}/billing?success=true${safeReturnTo ? `&returnTo=${encodeURIComponent(safeReturnTo)}` : ''}`,
@@ -1399,12 +1422,12 @@ ${allPages.map(page => `  <url>
       });
 
       // Server-authoritative funnel event, idempotent on the session id.
-      let billingPeriod = 'unknown';
+      let resolvedBillingPeriod = 'unknown';
       try {
         const priceRow = await db.execute(sql`
-          SELECT recurring->>'interval' AS interval FROM stripe.prices WHERE id = ${priceId} LIMIT 1
+          SELECT recurring->>'interval' AS interval FROM stripe.prices WHERE id = ${resolvedPriceId} LIMIT 1
         `);
-        billingPeriod = billingPeriodFromInterval((priceRow.rows?.[0] as any)?.interval);
+        resolvedBillingPeriod = billingPeriodFromInterval((priceRow.rows?.[0] as any)?.interval);
       } catch {
         // leave 'unknown' — analytics must not block checkout
       }
@@ -1413,8 +1436,8 @@ ${allPages.map(page => `  <url>
         dedupeKey: buildFunnelDedupeKey('checkout_session_created', [session.id]),
         userId,
         props: {
-          priceId,
-          billingPeriod,
+          priceId: resolvedPriceId!,
+          billingPeriod: resolvedBillingPeriod,
           trialEligible,
           source: typeof source === 'string' ? source.slice(0, 100) : undefined,
           capability: typeof capability === 'string' ? capability.slice(0, 100) : undefined,

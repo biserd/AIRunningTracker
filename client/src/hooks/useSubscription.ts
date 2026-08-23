@@ -61,7 +61,9 @@ export function useSubscription() {
 }
 
 export interface CheckoutParams {
-  priceId: string;
+  /** Optional for direct checkout; the server resolves the tagged Premium price. */
+  priceId?: string;
+  billingPeriod?: 'monthly' | 'annual';
   /** Relative in-app path to return the user to after trial activation. */
   returnTo?: string;
   /** Funnel attribution: where the checkout was initiated from. */
@@ -77,9 +79,9 @@ export interface CheckoutParams {
 export function useCheckout(onRequiresEmail?: () => void) {
   return useMutation({
     mutationFn: async (params: string | CheckoutParams) => {
-      const { priceId, returnTo, source, capability, activityId, benefitKey, pendingResourceId, experimentVariant } =
+      const { priceId, billingPeriod, returnTo, source, capability, activityId, benefitKey, pendingResourceId, experimentVariant } =
         typeof params === "string"
-          ? { priceId: params, returnTo: undefined, source: undefined, capability: undefined, activityId: undefined, benefitKey: undefined, pendingResourceId: undefined, experimentVariant: undefined }
+          ? { priceId: params, billingPeriod: undefined, returnTo: undefined, source: undefined, capability: undefined, activityId: undefined, benefitKey: undefined, pendingResourceId: undefined, experimentVariant: undefined }
           : params;
       const token = localStorage.getItem("auth_token");
       const res = await fetch("/api/stripe/create-checkout-session", {
@@ -91,6 +93,7 @@ export function useCheckout(onRequiresEmail?: () => void) {
         credentials: "include",
         body: JSON.stringify({
           priceId,
+          ...(billingPeriod ? { billingPeriod } : {}),
           ...(returnTo ? { returnTo } : {}),
           ...(source ? { source } : {}),
           ...(capability ? { capability } : {}),

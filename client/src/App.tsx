@@ -69,6 +69,8 @@ const UltraMarathonTrainingPlanBlogPost = lazy(() => import("@/pages/blog/ultra-
 const EditorialArticlePage = lazy(() => import("@/pages/blog/editorial-article"));
 const DevelopersPage = lazy(() => import("@/pages/developers"));
 const ApiDocsPage = lazy(() => import("@/pages/developers/api-docs"));
+const McpServerLandingPage = lazy(() => import("@/pages/mcp-server"));
+const McpDocsPage = lazy(() => import("@/pages/developers/mcp-docs"));
 const YearRecapPage = lazy(() => import("@/pages/year-recap"));
 const TrainingPlansPage = lazy(() => import("@/pages/training-plans"));
 const TrainingPlanDetailPage = lazy(() => import("@/pages/training-plan-detail"));
@@ -216,6 +218,8 @@ function Router() {
         {/* Developer Routes */}
         <Route path="/developers" component={DevelopersPage} />
         <Route path="/developers/api" component={ApiDocsPage} />
+        <Route path="/developers/mcp" component={McpDocsPage} />
+        <Route path="/mcp-server" component={McpServerLandingPage} />
         
         {/* Tool Routes */}
         <Route path="/tools/heatmap" component={RunningHeatmap} />

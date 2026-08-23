@@ -10,7 +10,7 @@ import {
   coachChannelBindings,
   users,
 } from "@shared/schema";
-import { canAccessCapability } from "@shared/entitlements";
+import { canAccessCapability, hasPremiumAccess } from "@shared/entitlements";
 import {
   MCP_RESOURCE,
   MCP_SCOPE_NAMES,
@@ -58,7 +58,13 @@ async function requireActiveClient(clientId: string): Promise<void> {
   if (!client) throw new OAuthRequestError("invalid_client", "OAuth client is unavailable", 401);
 }
 
-async function isCoachGrantEligible(userId: number, clientId: string): Promise<boolean> {
+export async function isPrivateMcpGrantEligible(userId: number, clientId: string): Promise<boolean> {
+  const [runner] = await db.select({
+    subscriptionPlan: users.subscriptionPlan,
+    subscriptionStatus: users.subscriptionStatus,
+  }).from(users).where(eq(users.id, userId)).limit(1);
+  if (!runner || !hasPremiumAccess(runner)) return false;
+
   if (!process.env.HERMES_MCP_CLIENT_ID || clientId !== process.env.HERMES_MCP_CLIENT_ID) return true;
   if (process.env.COACH_MULTI_RUNNER_PILOT_ENABLED === "false") return false;
   const [row] = await db.select({ runner: users, bindingStatus: coachChannelBindings.status })
@@ -153,6 +159,9 @@ export async function getPendingAuthorizationRequest(rawRequest: string) {
 
 export async function decideAuthorization(rawRequest: string, userId: number, approved: boolean) {
   const { request, client } = await getPendingAuthorizationRequest(rawRequest);
+  if (approved && !await isPrivateMcpGrantEligible(userId, client.clientId)) {
+    throw new OAuthRequestError("access_denied", "Private runner MCP access requires an active Premium subscription or trial", 403);
+  }
   const consumed = await db.update(mcpOauthRequests)
     .set({ consumedAt: new Date() })
     .where(and(eq(mcpOauthRequests.requestHash, request.requestHash), isNull(mcpOauthRequests.consumedAt)))
@@ -224,6 +233,9 @@ export async function exchangeAuthorizationCode(input: {
     throw new OAuthRequestError("invalid_grant", "PKCE verification failed");
   }
   await requireActiveClient(input.clientId);
+  if (!await isPrivateMcpGrantEligible(code.userId, input.clientId)) {
+    throw new OAuthRequestError("invalid_grant", "Private runner MCP access requires an active Premium subscription or trial", 403);
+  }
   const consumed = await db.update(mcpOauthAuthorizationCodes)
     .set({ consumedAt: new Date() })
     .where(and(eq(mcpOauthAuthorizationCodes.codeHash, code.codeHash), isNull(mcpOauthAuthorizationCodes.consumedAt)))
@@ -250,8 +262,8 @@ export async function refreshAccessToken(input: {
     throw new OAuthRequestError("invalid_grant", "Refresh token is invalid, expired, or bound to another client");
   }
   await requireActiveClient(input.clientId);
-  if (!await isCoachGrantEligible(existing.userId, input.clientId)) {
-    throw new OAuthRequestError("invalid_grant", "Coach connection is no longer eligible", 401);
+  if (!await isPrivateMcpGrantEligible(existing.userId, input.clientId)) {
+    throw new OAuthRequestError("invalid_grant", "Private runner MCP access is no longer eligible", 401);
   }
   const scopes = input.requestedScopes || (existing.scopes as McpScope[]);
   if (!isScopeSubset(scopes, existing.scopes)) throw new OAuthRequestError("invalid_scope", "Refresh cannot add scopes");
@@ -278,7 +290,7 @@ export async function issueCoachAgentRunnerGrant(userId: number) {
   const clientId = process.env.HERMES_MCP_CLIENT_ID;
   if (!clientId) throw new OAuthRequestError("temporarily_unavailable", "Coach MCP client is not configured", 503);
   await requireActiveClient(clientId);
-  if (!await isCoachGrantEligible(userId, clientId)) {
+  if (!await isPrivateMcpGrantEligible(userId, clientId)) {
     throw new OAuthRequestError("access_denied", "Runner has not opted in to a current coach connection", 403);
   }
   const token = await issueToken({
@@ -325,7 +337,7 @@ export async function validateAccessToken(rawToken: string): Promise<McpPrincipa
     isNull(mcpOauthClients.disabledAt),
   )).limit(1);
   if (!client) throw new OAuthRequestError("invalid_token", "Bearer token is invalid or expired", 401);
-  if (!await isCoachGrantEligible(token.userId, token.clientId)) {
+  if (!await isPrivateMcpGrantEligible(token.userId, token.clientId)) {
     throw new OAuthRequestError("invalid_token", "Bearer token is invalid or expired", 401);
   }
   return {

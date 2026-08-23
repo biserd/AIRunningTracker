@@ -7,6 +7,8 @@ import {
   renderBlogPost,
   renderDevelopersApiPage,
   renderDevelopersPage,
+  renderMcpDocsPage,
+  renderMcpLandingPage,
   renderFeaturesPage,
   renderFaqPage,
   renderHomepage,
@@ -54,9 +56,21 @@ test("static public SSR pages have one self-canonical and one H1", () => {
     ["/tools", renderToolsHubPage()],
     ["/developers", renderDevelopersPage()],
     ["/developers/api", renderDevelopersApiPage()],
+    ["/mcp-server", renderMcpLandingPage()],
+    ["/developers/mcp", renderMcpDocsPage()],
   ];
   pages.forEach(([path, html]) => assertSeoDocument(html, path));
   pages.forEach(([path, html]) => assertExternalLinksAreProtected(html, path));
+});
+
+test("MCP public pages distinguish open catalog and subscribed private access", () => {
+  const landing = renderMcpLandingPage();
+  const docs = renderMcpDocsPage();
+  assert.match(landing, /active Premium subscription or trial/i);
+  assert.match(landing, /mcp\/public/);
+  assert.match(landing, /No MCP tool can create, update, delete/i);
+  assert.match(docs, /compare_running_shoes/);
+  assert.match(docs, /mcp:activities\.read/);
 });
 
 test("pricing discloses the card requirement consistently", () => {

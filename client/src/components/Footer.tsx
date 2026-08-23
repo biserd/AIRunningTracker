@@ -30,6 +30,8 @@ export default function Footer() {
               <li><Link href="/ai-running-coaching-guide" className="hover:text-white transition-colors" data-testid="link-ai-coaching-guide">Free AI Coaching Guide</Link></li>
               <li><Link href="/ai-agent-coach" className="hover:text-white transition-colors" data-testid="link-ai-agent-coach">AI Agent Coach</Link></li>
               <li><Link href="/proactive-running-coach" className="hover:text-white transition-colors" data-testid="link-proactive-running-coach">Telegram Running Coach</Link></li>
+              <li><Link href="/mcp-server" className="hover:text-white transition-colors" data-testid="link-mcp-server">Read-Only MCP Server</Link></li>
+              <li><Link href="/developers/mcp" className="hover:text-white transition-colors" data-testid="link-mcp-docs">MCP Documentation</Link></li>
               <li><Link href="/chrome-extension" className="hover:text-white transition-colors" data-testid="link-chrome-extension">Chrome Extension</Link></li>
               <li><Link href="/blog" className="hover:text-white transition-colors" data-testid="link-blog">Blog</Link></li>
             </ul>

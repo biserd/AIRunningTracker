@@ -28,7 +28,8 @@ import { useSubscription, useFeatureAccess } from "@/hooks/useSubscription";
 import type { CoachRecap } from "@shared/schema";
 import { normalizeZoneDurations, zonesFromFractions } from "@shared/zoneCalculations";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
-import { trackFunnelEvent, useOfferTracking } from "@/lib/analytics";
+import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
+import { trackFunnelEvent } from "@/lib/analytics";
 import { normalizeCadenceToSpm } from "@shared/cadenceNormalization";
 import { formatRunDistance, formatRunPace, runUnitLabels } from "@shared/runFormatting";
 
@@ -164,7 +165,6 @@ function PremiumAnalysisUpsell({ activityId }: { activityId: number }) {
     benefitKey: "activity_history",
     returnTo: `/activity/${activityId}`,
   });
-  const trackOfferClick = useOfferTracking(pricingUrl);
 
   const premiumFeatures = [
     { icon: TrendingUp, label: "Performance drift, pacing, and baseline" },
@@ -204,16 +204,15 @@ function PremiumAnalysisUpsell({ activityId }: { activityId: number }) {
             </div>
           </div>
           <div className="lg:w-72 flex-shrink-0">
-            <Button
-                asChild
+            <DirectCheckoutButton upgradeUrl={pricingUrl}>
+              <Button
                 className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
                 data-testid="activity-premium-upsell-cta"
               >
-              <Link href={pricingUrl} onClick={trackOfferClick}>
                 <Sparkles className="h-4 w-4 mr-2" />
                 Unlock this run for 14 days free
-              </Link>
-            </Button>
+              </Button>
+            </DirectCheckoutButton>
             <p className="text-xs text-gray-500 text-center mt-2">
               Card required · $0 today · then $7.99/month · cancel anytime
             </p>
@@ -327,26 +326,25 @@ function PremiumPreviewCard({ preview, createdAt, unitPreference }: { preview: P
           <p className="text-xs text-gray-500 flex items-center gap-1">
             <Lock className="h-3 w-3" /> Splits, decoupling, and race predictions stay locked
           </p>
-          <Button
-              asChild
+          <DirectCheckoutButton
+            upgradeUrl={upgradeUrl}
+            onBeforeCheckout={() =>
+              trackFunnelEvent("preview_cta_clicked", {
+                source: "premium_preview",
+                capability: "activity_deep_dive",
+                activityId: preview.sourceData.activityId,
+                freshnessDays,
+              }, { dedupeParts: [preview.sourceData.activityId, Date.now()] })
+            }
+          >
+            <Button
               size="sm"
               className="bg-yellow-500 hover:bg-yellow-600 text-white"
               data-testid="premium-preview-upgrade"
             >
-            <Link
-              href={upgradeUrl}
-              onClick={() =>
-                trackFunnelEvent("preview_cta_clicked", {
-                  source: "premium_preview",
-                  capability: "activity_deep_dive",
-                  activityId: preview.sourceData.activityId,
-                  freshnessDays,
-                }, { dedupeParts: [preview.sourceData.activityId, Date.now()] })
-              }
-            >
               <Sparkles className="h-4 w-4 mr-1" /> Unlock my complete run analysis
-            </Link>
-          </Button>
+            </Button>
+          </DirectCheckoutButton>
         </div>
         <p className="text-xs text-gray-500">14 days free · Card required · $0 today · Then $7.99/month · Cancel anytime</p>
       </CardContent>
@@ -781,18 +779,18 @@ export default function ActivityPage() {
                     to see the full breakdown of this run — splits, route map, coach
                     verdict, efficiency score, and personalized next-run tips.
                   </p>
-                  <Button asChild className="bg-yellow-500 hover:bg-yellow-600 text-white w-full" data-testid="button-upgrade-locked-activity">
-                    <Link href={buildUpgradeUrl({
+                  <DirectCheckoutButton upgradeUrl={buildUpgradeUrl({
                     source: "locked_activity",
                     capability: "unlimited_history",
                     activityId: Number(activityId),
                     benefitKey: "activity_history",
                     returnTo: `/activity/${activityId}`,
                   })}>
+                    <Button className="bg-yellow-500 hover:bg-yellow-600 text-white w-full" data-testid="button-upgrade-locked-activity">
                       <Sparkles className="h-4 w-4 mr-2" />
                       Start 14-day Premium trial
-                    </Link>
-                  </Button>
+                    </Button>
+                  </DirectCheckoutButton>
                   <p className="text-xs text-gray-500 mt-3">Card required · $0 today · Cancel before the trial ends to avoid a charge.</p>
                 </CardContent>
               </Card>
@@ -998,6 +996,7 @@ export default function ActivityPage() {
             {(verdictData || verdictLoading) && !verdictError && (
               <div className="mb-6">
                 <UnifiedCoachCard 
+                  activityId={Number(activityId)}
                   verdictData={verdictData}
                   isLoading={verdictLoading && !verdictData}
                   onAskCoach={() => setIsChatOpen(true)}

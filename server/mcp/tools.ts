@@ -11,6 +11,8 @@ import {
   listRunnerTrainingPlans,
   readDashboardTrends,
   readFitnessMetrics,
+  comparePublicShoes,
+  listPublicShoeFacets,
   readPublicShoe,
   readRecoveryStatus,
   readRunnerActivity,
@@ -100,6 +102,8 @@ export const MCP_TOOL_DESCRIPTORS: readonly McpToolDescriptor[] = Object.freeze(
   { name: "get_training_plan", visibility: "private", scope: "mcp:plans.read", readOnly: true },
   { name: "search_running_shoes", visibility: "public", readOnly: true },
   { name: "get_running_shoe", visibility: "public", readOnly: true },
+  { name: "list_running_shoe_filters", visibility: "public", readOnly: true },
+  { name: "compare_running_shoes", visibility: "public", readOnly: true },
   { name: "list_runanalytics_tools", visibility: "public", readOnly: true },
 ]);
 
@@ -321,6 +325,34 @@ export function createPublicMcpServer(): McpServer {
     outputSchema: z.object({ shoe: z.record(z.unknown()) }),
     annotations: READ_ONLY_ANNOTATIONS,
   }, publicHandler("get_running_shoe", (args) => readPublicShoe(args.slug)));
+
+  server.registerTool("list_running_shoe_filters", {
+    title: "List running-shoe catalog filters",
+    description: "Read bounded public catalog facets including brands, categories, cushioning, stability, price range, and catalog freshness.",
+    inputSchema: z.object({}).strict(),
+    outputSchema: z.object({
+      totalShoes: z.number(),
+      brands: z.array(z.object({ value: z.string(), count: z.number() })),
+      categories: z.array(z.object({ value: z.string(), count: z.number() })),
+      cushioningLevels: z.array(z.object({ value: z.string(), count: z.number() })),
+      stabilityTypes: z.array(z.object({ value: z.string(), count: z.number() })),
+      priceRangeUsd: z.object({ min: z.number(), max: z.number() }).nullable(),
+      latestVerificationDate: z.string().nullable(),
+    }),
+    annotations: READ_ONLY_ANNOTATIONS,
+  }, publicHandler("list_running_shoe_filters", async () => listPublicShoeFacets()));
+
+  server.registerTool("compare_running_shoes", {
+    title: "Compare running shoes",
+    description: "Compare two to four public running-shoe catalog records using bounded specifications and ratings. Does not generate or modify catalog data.",
+    inputSchema: z.object({ slugs: z.array(z.string().min(1).max(120)).min(2).max(4) }).strict(),
+    outputSchema: z.object({
+      shoes: z.array(z.record(z.unknown())),
+      comparison: z.array(z.record(z.unknown())),
+      limitation: z.string(),
+    }),
+    annotations: READ_ONLY_ANNOTATIONS,
+  }, publicHandler("compare_running_shoes", (args) => comparePublicShoes(args.slugs)));
 
   server.registerTool("list_runanalytics_tools", {
     title: "List RunAnalytics tools",

@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
-import { TrackedUpgradeLink } from "@/components/TrackedUpgradeLink";
+import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
 import { selectSafePreferredRunDays } from "@shared/trainingPlanSafety";
 
 const KM_TO_MILES = 0.621371;
@@ -819,11 +819,11 @@ export default function TrainingPlans() {
                       <ChevronLeft className="w-4 h-4 mr-1" /> Edit setup
                     </Button>
                     <div className="text-right">
-                      <TrackedUpgradeLink href={trainingPlanUpgradeUrl}>
+                      <DirectCheckoutButton upgradeUrl={trainingPlanUpgradeUrl}>
                         <Button className="bg-strava-orange hover:bg-orange-600" data-testid="button-unlock-training-plan">
                           <Crown className="w-4 h-4 mr-2" /> Unlock my training plan
                         </Button>
-                      </TrackedUpgradeLink>
+                      </DirectCheckoutButton>
                       <p className="text-xs text-gray-500 mt-2">14 days free · Card required · $0 today · Then $7.99/month · Cancel anytime</p>
                     </div>
                   </>

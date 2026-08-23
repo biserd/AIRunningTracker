@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown, Minus, X, Crown, Calendar, Route, Clock, Heart, Zap, ChevronRight, Loader2 } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { Link } from "wouter";
-import { TrackedUpgradeLink } from "@/components/TrackedUpgradeLink";
+import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
+import { buildUpgradeUrl } from "@shared/upgradeIntent";
 
 const KM_TO_MILES = 0.621371;
 
@@ -159,19 +160,25 @@ function RouteHistorySparkline({ history, unitPreference = 'km' }: { history: Ar
   );
 }
 
-function PremiumUpgradePrompt({ message }: { message: string }) {
+function PremiumUpgradePrompt({ message, activityId }: { message: string; activityId: number }) {
   return (
     <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
       <div className="flex items-start gap-3">
         <Crown className="w-5 h-5 text-amber-500 mt-0.5" />
         <div className="flex-1">
           <p className="text-sm text-gray-700 mb-3">{message}</p>
-          <TrackedUpgradeLink href="/pricing" source="activity_compare" capability="activity_comparison">
+          <DirectCheckoutButton upgradeUrl={buildUpgradeUrl({
+            source: "activity_compare",
+            capability: "activity_comparison",
+            activityId,
+            benefitKey: "activity_comparison",
+            returnTo: `/activity/${activityId}`,
+          })}>
             <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600">
-              Upgrade to Premium
+              Start 14-day free trial
               <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
-          </TrackedUpgradeLink>
+          </DirectCheckoutButton>
         </div>
       </div>
     </div>
@@ -432,7 +439,7 @@ export default function CompareDrawer({ activityId, onClose, embedded = false }:
 
         {/* Premium Upgrade Prompt */}
         {!isPremium && upgradeMessage && (
-          <PremiumUpgradePrompt message={upgradeMessage} />
+          <PremiumUpgradePrompt message={upgradeMessage} activityId={activityId} />
         )}
 
         {/* Baseline Info (Premium only) */}

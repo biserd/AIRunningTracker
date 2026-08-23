@@ -17,7 +17,7 @@
     "test:public-tools": "tsx --test shared/__tests__/publicTools.test.ts",
     "test:seo": "tsx --test server/ssr/seoRegression.test.ts",
     "test:crawler-policy": "tsx --test server/ssr/crawlerPolicy.test.ts",
-    "test:mcp": "tsx --test server/mcp/__tests__/*.test.ts",
+    "test:mcp": "tsx --test server/mcp/__tests__/contract.test.ts server/mcp/__tests__/surface.test.ts server/mcp/__tests__/oauth.integration.test.ts",
     "test:proactive-coach": "tsx --test server/services/proactiveCoach.test.ts",
     "test:tenant-security": "tsx --test server/services/tenantSecurity.test.ts",
     "test:coach-channel-pilot": "tsx --test server/services/coachChannelBindings.test.ts",

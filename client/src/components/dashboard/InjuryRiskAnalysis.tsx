@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Shield, AlertTriangle, CheckCircle, XCircle, Lock, Crown, Target, Plus } from "lucide-react";
 import { useFeatureAccess } from "@/hooks/useSubscription";
-import { TrackedUpgradeLink } from "@/components/TrackedUpgradeLink";
+import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
@@ -88,16 +88,16 @@ export default function InjuryRiskAnalysis({ userId, batchData }: InjuryRiskAnal
             <p className="text-gray-500 mb-4 max-w-sm mx-auto">
               Spot unusual changes in training volume and intensity. These signals are coaching guidance, not a medical diagnosis.
             </p>
-            <TrackedUpgradeLink href={buildUpgradeUrl({
+            <DirectCheckoutButton upgradeUrl={buildUpgradeUrl({
               source: "coach_injury_risk",
               capability: "injury_risk",
               benefitKey: "injury_risk",
               returnTo: "/coach-insights",
             })}>
               <Button className="bg-gradient-to-r from-strava-orange to-orange-500 hover:from-orange-600 hover:to-orange-600">
-                Upgrade to Premium
+                Start 14-day free trial
               </Button>
-            </TrackedUpgradeLink>
+            </DirectCheckoutButton>
           </div>
         </CardContent>
       </Card>

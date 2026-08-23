@@ -28,6 +28,8 @@ check("accepts path with query", sanitizeReturnTo("/coach-insights?tab=agent") =
 check("accepts contextual pricing return used by auth", sanitizeReturnTo("/pricing?capability=ai_coach") === "/pricing?capability=ai_coach");
 check("accepts ebook fulfillment return", sanitizeReturnTo("/ai-running-coaching-guide?download=1") === "/ai-running-coaching-guide?download=1");
 check("accepts MCP consent return after sign-in", sanitizeReturnTo("/mcp/consent?request=ra_mcp_req_example") === "/mcp/consent?request=ra_mcp_req_example");
+check("accepts MCP docs return", sanitizeReturnTo("/developers/mcp") === "/developers/mcp");
+check("accepts MCP landing return", sanitizeReturnTo("/mcp-server") === "/mcp-server");
 check("rejects protocol-relative", sanitizeReturnTo("//evil.com") === null);
 check("rejects absolute URL", sanitizeReturnTo("https://evil.com") === null);
 check("rejects scheme smuggling", sanitizeReturnTo("/javascript:alert(1)") === null);
@@ -59,6 +61,10 @@ check("benefit copy resolved from approved map", parsed?.benefit === benefitCopy
 check("returnTo preserved", parsed?.returnTo === intent.returnTo, parsed);
 check("pending resource preserved", parsed?.pendingResourceId === intent.pendingResourceId, parsed);
 check("experiment preserved", parsed?.experimentVariant === intent.experimentVariant, parsed);
+const mcpUrl = buildUpgradeUrl({ source: "mcp_docs", capability: "mcp_access", benefitKey: "mcp_access", returnTo: "/developers/mcp" });
+const mcpParsed = parseUpgradeIntent(mcpUrl.split("?")[1]);
+check("MCP docs return preserved", mcpParsed?.returnTo === "/developers/mcp", mcpParsed);
+check("MCP benefit copy resolved", Boolean(mcpParsed?.benefit?.includes("read-only MCP tools")), mcpParsed);
 
 console.log("parseUpgradeIntent edge cases");
 check("plain pricing visit yields null", parseUpgradeIntent("") === null);
@@ -84,6 +90,7 @@ check("ebook bundle resolves approved copy", ebook?.benefit === benefitCopy("ebo
 console.log("capabilityLabel");
 check("known capability labeled", capabilityLabel("training_plans") === "AI Training Plans");
 check("ebook bundle labeled", capabilityLabel("ebook_bundle") === "AI Coaching Guide + Premium");
+check("MCP access labeled", capabilityLabel("mcp_access") === "Read-Only MCP Access");
 check("unknown capability falls back", capabilityLabel("mystery") === "Premium features");
 
 if (failures > 0) {

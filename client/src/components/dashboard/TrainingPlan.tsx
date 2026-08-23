@@ -14,7 +14,7 @@ import { CalendarDays, PlayCircle, Clock, MapPin, Target, Lock, Crown, Loader2, 
 import { useToast } from "@/hooks/use-toast";
 import { useFeatureAccess } from "@/hooks/useSubscription";
 import { Link } from "wouter";
-import { TrackedUpgradeLink } from "@/components/TrackedUpgradeLink";
+import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
 
 interface Workout {
@@ -343,12 +343,12 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
               <Button variant="outline" onClick={() => setDialogOpen(false)} data-testid="button-preview-cancel">
                 Cancel
               </Button>
-              <TrackedUpgradeLink href={upgradeUrl}>
+              <DirectCheckoutButton upgradeUrl={upgradeUrl}>
                 <Button className="bg-gradient-to-r from-strava-orange to-orange-500 hover:from-orange-600 hover:to-orange-600" data-testid="button-preview-upgrade">
                   <Crown className="h-4 w-4 mr-2" />
                   Unlock plan generation
                 </Button>
-              </TrackedUpgradeLink>
+              </DirectCheckoutButton>
             </div>
           </DialogContent>
         </Dialog>
@@ -382,11 +382,11 @@ export default function TrainingPlan({ userId, batchData }: TrainingPlanProps) {
                   <Target className="h-4 w-4 mr-2" />
                   Preview plan setup
                 </Button>
-                <TrackedUpgradeLink href={upgradeUrl}>
+                <DirectCheckoutButton upgradeUrl={upgradeUrl}>
                   <Button className="bg-gradient-to-r from-strava-orange to-orange-500 hover:from-orange-600 hover:to-orange-600" data-testid="button-upgrade-training-plans">
                     Unlock AI Training Plans
                   </Button>
-                </TrackedUpgradeLink>
+                </DirectCheckoutButton>
               </div>
             </div>
           </CardContent>

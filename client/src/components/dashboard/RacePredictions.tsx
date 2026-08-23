@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Trophy, Target, Clock, Lock, Crown, Plus, CheckCircle } from "lucide-react";
 import { useFeatureAccess } from "@/hooks/useSubscription";
-import { TrackedUpgradeLink } from "@/components/TrackedUpgradeLink";
+import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
@@ -88,16 +88,16 @@ export default function RacePredictions({ userId, batchData }: RacePredictionsPr
             <p className="text-gray-500 mb-4 max-w-sm mx-auto">
               Get AI-powered race time predictions for 5K, 10K, Half Marathon, and Marathon distances.
             </p>
-            <TrackedUpgradeLink href={buildUpgradeUrl({
+            <DirectCheckoutButton upgradeUrl={buildUpgradeUrl({
               source: "coach_race_predictions",
               capability: "race_predictions",
               benefitKey: "race_predictions",
               returnTo: "/coach-insights",
             })}>
               <Button className="bg-gradient-to-r from-strava-orange to-orange-500 hover:from-orange-600 hover:to-orange-600">
-                Upgrade to Premium
+                Start 14-day free trial
               </Button>
-            </TrackedUpgradeLink>
+            </DirectCheckoutButton>
           </div>
         </CardContent>
       </Card>

@@ -8,13 +8,13 @@ process.env.MCP_TOKEN_HASH_SECRET ||= "test-only-secret-with-at-least-thirty-two
 
 test("registered MCP surface contains only explicitly read-only tools", async () => {
   const { MCP_TOOL_DESCRIPTORS } = await import("../tools");
-  assert.equal(MCP_TOOL_DESCRIPTORS.length, 15);
+  assert.equal(MCP_TOOL_DESCRIPTORS.length, 17);
   assert.ok(MCP_TOOL_DESCRIPTORS.every((tool) => tool.readOnly === true));
   const forbidden = /(create|update|delete|remove|write|sync|send|email|subscribe|checkout|process|import|sql|route)/i;
   assert.ok(MCP_TOOL_DESCRIPTORS.every((tool) => !forbidden.test(tool.name)));
   assert.deepEqual(
     MCP_TOOL_DESCRIPTORS.filter((tool) => tool.visibility === "public").map((tool) => tool.name),
-    ["search_running_shoes", "get_running_shoe", "list_runanalytics_tools"],
+    ["search_running_shoes", "get_running_shoe", "list_running_shoe_filters", "compare_running_shoes", "list_runanalytics_tools"],
   );
 });
 
@@ -65,6 +65,25 @@ test("every private tool schema can be serialized for MCP discovery", async () =
     assert.equal(tool.outputSchema?.type, "object", `${tool.name} output schema must be an object`);
   }
 
+  await client.close();
+  await server.close();
+});
+
+test("public shoe and tool catalog schemas are discoverable without private scopes", async () => {
+  const { createPublicMcpServer } = await import("../tools");
+  const server = createPublicMcpServer();
+  const client = new Client({ name: "public-schema-test", version: "1.0.0" });
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
+  const result = await client.listTools();
+  assert.deepEqual(result.tools.map((tool) => tool.name), [
+    "search_running_shoes",
+    "get_running_shoe",
+    "list_running_shoe_filters",
+    "compare_running_shoes",
+    "list_runanalytics_tools",
+  ]);
+  assert.ok(result.tools.every((tool) => tool.annotations?.readOnlyHint === true));
   await client.close();
   await server.close();
 });

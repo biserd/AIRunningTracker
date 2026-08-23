@@ -7,7 +7,7 @@ import { AlertCircle, BarChart2, ChevronRight, Flag, Loader2, Sparkles } from "l
 import { useSubscription } from "@/hooks/useSubscription";
 import { trackFunnelEvent } from "@/lib/analytics";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
-import { TrackedUpgradeLink } from "@/components/TrackedUpgradeLink";
+import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
 
 interface PremiumPreviewTeaserData {
   preview: {
@@ -230,9 +230,9 @@ export default function PremiumPreviewTeaser() {
             See why this happened <ChevronRight className="h-4 w-4 ml-1" />
           </Link>
         </Button>
-        <TrackedUpgradeLink href={upgradeUrl}>
+        <DirectCheckoutButton upgradeUrl={upgradeUrl}>
           <Button className="bg-amber-500 hover:bg-amber-600 text-white">Unlock my complete run analysis</Button>
-        </TrackedUpgradeLink>
+        </DirectCheckoutButton>
       </div>
       <p className="text-xs text-gray-500 mt-3">14 days free · Card required · $0 today · Then $7.99/month · Cancel anytime</p>
     </PreviewShell>

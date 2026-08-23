@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Brain, Crown, Lock, Loader2, Sparkles } from "lucide-react";
-import { TrackedUpgradeLink } from "@/components/TrackedUpgradeLink";
+import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
 import { useFeatureAccess } from "@/hooks/useSubscription";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
 
@@ -131,7 +131,7 @@ export default function AIInsights({ insights, userId, insightsStatus = 'ready' 
                 <div className="text-center">
                   <Lock className="h-6 w-6 text-gray-500 mx-auto mb-2" />
                   <p className="text-sm font-medium text-gray-700 mb-2">Advanced Insights Locked</p>
-                  <TrackedUpgradeLink href={buildUpgradeUrl({
+                  <DirectCheckoutButton upgradeUrl={buildUpgradeUrl({
                     source: "dashboard_insights",
                     capability: "advanced_insights",
                     benefitKey: "advanced_insights",
@@ -139,9 +139,9 @@ export default function AIInsights({ insights, userId, insightsStatus = 'ready' 
                   })}>
                     <Button size="sm" className="bg-strava-orange hover:bg-strava-orange/90" data-testid="button-unlock-insights">
                       <Crown className="h-3 w-3 mr-1" />
-                      Upgrade to Premium
+                      Start 14-day free trial
                     </Button>
-                  </TrackedUpgradeLink>
+                  </DirectCheckoutButton>
                 </div>
               </div>
               

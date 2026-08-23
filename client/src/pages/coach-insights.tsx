@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useFeatureAccess } from "@/hooks/useSubscription";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { TrackedUpgradeLink } from "@/components/TrackedUpgradeLink";
+import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
 import AppHeader from "@/components/AppHeader";
 import { FloatingAICoach } from "@/components/FloatingAICoach";
 import RacePredictions from "@/components/dashboard/RacePredictions";
@@ -178,9 +178,9 @@ function FreeInsightsPreview() {
           <p className="font-semibold text-charcoal">Unlock the complete picture for 14 days</p>
           <p className="mt-1 text-sm text-gray-600">Card required · $0 today · Then $7.99/month · Cancel anytime</p>
         </div>
-        <TrackedUpgradeLink href={upgradeUrl}>
+        <DirectCheckoutButton upgradeUrl={upgradeUrl}>
           <Button className="mt-4 bg-strava-orange text-white hover:bg-orange-600 sm:mt-0">Unlock my training analysis</Button>
-        </TrackedUpgradeLink>
+        </DirectCheckoutButton>
       </div>
     </div>
   );
@@ -575,7 +575,7 @@ function AIAgentCoachTab({ user, canAccessAICoachChat }: { user: User; canAccess
           <p className="mt-3 text-xs text-gray-500">Telegram available now · Runner-controlled opt-in · Disconnect anytime</p>
         </div>
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
-          <TrackedUpgradeLink href={buildUpgradeUrl({
+          <DirectCheckoutButton upgradeUrl={buildUpgradeUrl({
             source: "coach_insights",
             capability: "ai_coach",
             benefitKey: "ai_coach",
@@ -585,7 +585,7 @@ function AIAgentCoachTab({ user, canAccessAICoachChat }: { user: User; canAccess
               <Sparkles className="mr-2 h-4 w-4" />
               Start 14 days free
             </Button>
-          </TrackedUpgradeLink>
+          </DirectCheckoutButton>
           <Button asChild variant="outline" data-testid="btn-learn-more">
             <Link href="/ai-agent-coach">
               Learn More

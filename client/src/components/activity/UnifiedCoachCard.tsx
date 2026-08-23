@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Award, TrendingUp, TrendingDown, Minus, CheckCircle2, XCircle, AlertCircle, Sparkles, Flag, ArrowRight, Clock, Calendar, Zap, Activity, Heart, Gauge, Route, Lock } from "lucide-react";
 import { Link } from "wouter";
+import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
+import { buildUpgradeUrl } from "@shared/upgradeIntent";
 
 interface VerdictEvidence {
   type: "positive" | "neutral" | "negative";
@@ -27,6 +29,7 @@ interface CoachVerdictData {
 }
 
 interface UnifiedCoachCardProps {
+  activityId: number;
   verdictData: CoachVerdictData | null | undefined;
   isLoading?: boolean;
   onAskCoach?: () => void;
@@ -191,6 +194,7 @@ function ComparisonMetric({
 }
 
 export default function UnifiedCoachCard({ 
+  activityId,
   verdictData, 
   isLoading,
   onAskCoach,
@@ -299,12 +303,18 @@ export default function UnifiedCoachCard({
                     </div>
                   </div>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Link href="/pricing">
+                    <DirectCheckoutButton upgradeUrl={buildUpgradeUrl({
+                      source: "activity_comparison",
+                      capability: "activity_comparison",
+                      activityId,
+                      benefitKey: "activity_comparison",
+                      returnTo: `/activity/${activityId}`,
+                    })}>
                       <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white shadow-lg" data-testid="button-unlock-comparison">
                         <Lock className="h-3.5 w-3.5 mr-1.5" />
                         Unlock
                       </Button>
-                    </Link>
+                    </DirectCheckoutButton>
                   </div>
                 </div>
               ) : (
@@ -389,7 +399,13 @@ export default function UnifiedCoachCard({
                     Ask Coach
                   </Button>
                 ) : (
-                  <Link href="/pricing">
+                  <DirectCheckoutButton upgradeUrl={buildUpgradeUrl({
+                    source: "activity_ask_coach",
+                    capability: "ai_coach",
+                    activityId,
+                    benefitKey: "ai_coach",
+                    returnTo: `/activity/${activityId}`,
+                  })}>
                     <Button 
                       size="sm" 
                       className="text-xs font-semibold bg-yellow-500 hover:bg-yellow-600 text-white" 
@@ -399,7 +415,7 @@ export default function UnifiedCoachCard({
                       Ask Coach
                       <span className="ml-1 text-[10px] bg-yellow-600/50 px-1 rounded">PREMIUM</span>
                     </Button>
-                  </Link>
+                  </DirectCheckoutButton>
                 )}
               </div>
             </div>

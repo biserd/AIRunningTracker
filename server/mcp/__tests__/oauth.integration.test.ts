@@ -12,7 +12,8 @@ test("OAuth code, PKCE, refresh rotation, validation, and revocation lifecycle",
   const { MCP_RESOURCE } = await import("../contract");
   const oauth = await import("../oauthService");
   const { db } = await import("../../db");
-  const { sql } = await import("drizzle-orm");
+  const { users } = await import("@shared/schema");
+  const { eq, sql } = await import("drizzle-orm");
   const verifier = "v".repeat(43);
   const challenge = crypto.createHash("sha256").update(verifier).digest("base64url");
   const userId = 2_000_000_000;
@@ -20,6 +21,12 @@ test("OAuth code, PKCE, refresh rotation, validation, and revocation lifecycle",
 
   await oauth.ensureMcpSchema();
   try {
+    await db.insert(users).values({
+      id: userId,
+      email: `mcp-integration-${userId}@example.test`,
+      subscriptionPlan: "premium",
+      subscriptionStatus: "trialing",
+    });
     const client = await oauth.registerPublicClient({
       clientName: "MCP integration test",
       redirectUris: ["https://client.example/callback"],
@@ -54,6 +61,10 @@ test("OAuth code, PKCE, refresh rotation, validation, and revocation lifecycle",
     assert.equal(principal.userId, userId);
     assert.deepEqual(principal.scopes, ["mcp:profile.read", "mcp:activities.read"]);
 
+    await db.update(users).set({ subscriptionPlan: "free", subscriptionStatus: "active" }).where(eq(users.id, userId));
+    await assert.rejects(() => oauth.validateAccessToken(first.access_token), /invalid or expired/);
+    await db.update(users).set({ subscriptionPlan: "premium", subscriptionStatus: "trialing" }).where(eq(users.id, userId));
+
     const second = await oauth.refreshAccessToken({
       refreshToken: first.refresh_token,
       clientId,
@@ -78,5 +89,6 @@ test("OAuth code, PKCE, refresh rotation, validation, and revocation lifecycle",
       await db.execute(sql.raw(`DELETE FROM mcp_audit_events WHERE client_id = '${clientId.replace(/'/g, "''")}'`));
       await db.execute(sql.raw(`DELETE FROM mcp_oauth_clients WHERE client_id = '${clientId.replace(/'/g, "''")}'`));
     }
+    await db.delete(users).where(eq(users.id, userId));
   }
 });

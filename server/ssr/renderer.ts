@@ -1786,6 +1786,45 @@ export function renderDevelopersApiPage(): string {
 </html>`;
 }
 
+export function renderMcpLandingPage(): string {
+  const url = '/mcp-server';
+  const meta: PageMeta = {
+    title: "Read-Only Running Data MCP Server | RunAnalytics",
+    description: "Connect authorized AI clients to your RunAnalytics activities, trends, goals, plans, and public running-shoe catalog through secure read-only MCP tools.",
+    keywords: "running MCP server, read-only MCP, AI running data, Model Context Protocol running"
+  };
+  const head = generateHtmlHead(meta, url, generateStructuredData(meta, url, 'WebPage'));
+  return `${head}
+<body><div id="root"><header class="ssr-header"><h1>Read-Only Running Data for Your AI Coach</h1><p class="ssr-meta">OAuth-protected private runner data and a separate open public catalog.</p></header>
+<main class="ssr-container"><article class="ssr-content">
+<section><h2>Useful context without account control</h2><p>RunAnalytics MCP lets an authorized client read bounded profile, activity, analytics, goal, and training-plan data for the signed-in runner. The OAuth subject determines ownership; a client cannot request a different runner by supplying a user ID.</p></section>
+<section><h2>Private runner tools</h2><ul><li>Profile and preferences</li><li>Paginated activities and bounded activity details</li><li>Dashboard trends, fitness, recovery, and Runner Score</li><li>Goals and training-plan summaries or details</li><li>Coach snapshots and post-run briefs</li></ul><p>Private access requires an active Premium subscription or trial.</p></section>
+<section><h2>Open public catalog</h2><p>The separate <code>https://aitracker.run/mcp/public</code> endpoint requires no private-account access. It can search the running-shoe database, read shoe specifications, list catalog filters, compare two to four shoes, and discover public RunAnalytics tools.</p></section>
+<section><h2>A strict read-only boundary</h2><p>No MCP tool can create, update, delete, sync, email, change billing, invoke arbitrary routes, or execute arbitrary SQL. Tokens are short-lived, refresh grants rotate, responses are bounded, and access can be revoked.</p></section>
+<div class="ssr-cta"><h2>Connect your running data</h2><p>Start a 14-day Premium trial, then authorize your preferred MCP client.</p><a href="/pricing?source=mcp_landing&amp;capability=mcp_access&amp;benefitKey=mcp_access&amp;returnTo=%2Fmcp-server">Start 14 days free &rarr;</a><p><a href="/developers/mcp">Read the MCP documentation</a></p></div>
+</article></main></div></body></html>`;
+}
+
+export function renderMcpDocsPage(): string {
+  const url = '/developers/mcp';
+  const meta: PageMeta = {
+    title: "RunAnalytics MCP Documentation | Read-Only Running Data",
+    description: "Production endpoints, OAuth scopes, read-only tools, limits, and setup details for the RunAnalytics Model Context Protocol server.",
+    keywords: "RunAnalytics MCP documentation, MCP OAuth, Streamable HTTP MCP, running data tools"
+  };
+  const head = generateHtmlHead(meta, url, generateStructuredData(meta, url, 'WebPage'));
+  return `${head}
+<body><div id="root"><header class="ssr-header"><h1>RunAnalytics MCP Documentation</h1><p class="ssr-meta">Production endpoints, OAuth scopes, tools, limits, and security boundaries.</p></header>
+<main class="ssr-container"><article class="ssr-content">
+<section><h2>Endpoints</h2><p><strong>Private:</strong> <code>https://aitracker.run/mcp</code> — OAuth plus active Premium or trial access.</p><p><strong>Public:</strong> <code>https://aitracker.run/mcp/public</code> — public shoe and tool catalog only.</p></section>
+<section><h2>OAuth discovery</h2><ul><li><code>/.well-known/oauth-authorization-server</code></li><li><code>/.well-known/oauth-protected-resource/mcp</code></li><li><code>/mcp/oauth/register</code></li><li><code>/mcp/oauth/authorize</code></li><li><code>/mcp/oauth/token</code></li><li><code>/mcp/oauth/revoke</code></li></ul><p>Clients use authorization code with PKCE S256 and exact registered redirect URIs. Web-session and magic-link tokens are not accepted as MCP bearer tokens.</p></section>
+<section><h2>Private scopes</h2><ul><li><code>mcp:profile.read</code></li><li><code>mcp:activities.read</code></li><li><code>mcp:analytics.read</code></li><li><code>mcp:goals.read</code></li><li><code>mcp:plans.read</code></li></ul></section>
+<section><h2>Public running-shoe tools</h2><ul><li><code>search_running_shoes</code></li><li><code>get_running_shoe</code></li><li><code>list_running_shoe_filters</code></li><li><code>compare_running_shoes</code></li><li><code>list_runanalytics_tools</code></li></ul></section>
+<section><h2>Operational limits</h2><p>Activity ranges are capped at 365 days, pages at 100 records, plan details at 32 weeks, shoe search at 50 results, comparison at four shoes, and tool execution at eight seconds. Private and public requests have separate distributed rate limits.</p></section>
+<div class="ssr-cta"><h2>Get private runner access</h2><p>Private MCP access is included during the trial and with Premium.</p><a href="/pricing?source=mcp_docs&amp;capability=mcp_access&amp;benefitKey=mcp_access&amp;returnTo=%2Fdevelopers%2Fmcp">Start 14 days free &rarr;</a><p><a href="/mcp-server">See the runner-friendly overview</a></p></div>
+</article></main></div></body></html>`;
+}
+
 export function renderToolsHubPage(): string {
   const url = '/tools';
   const meta: PageMeta = {

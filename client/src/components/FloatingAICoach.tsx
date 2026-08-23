@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ChatPanel } from "@/components/ChatPanel";
 import { cn } from "@/lib/utils";
 import { useFeatureAccess } from "@/hooks/useSubscription";
-import { TrackedUpgradeLink } from "@/components/TrackedUpgradeLink";
+import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
 
 export interface PageContext {
@@ -107,7 +107,7 @@ export function FloatingAICoach({ userId, className, pageContext, isOpen: contro
                     </div>
                   </div>
                   
-                  <TrackedUpgradeLink href={buildUpgradeUrl({
+                  <DirectCheckoutButton upgradeUrl={buildUpgradeUrl({
                     source: "floating_ai_coach",
                     capability: "ai_coach",
                     benefitKey: "ai_coach",
@@ -118,9 +118,9 @@ export function FloatingAICoach({ userId, className, pageContext, isOpen: contro
                       data-testid="button-upgrade-to-premium"
                     >
                       <Crown className="w-4 h-4 mr-2" />
-                      Upgrade to Premium
+                      Start 14-day free trial
                     </Button>
-                  </TrackedUpgradeLink>
+                  </DirectCheckoutButton>
                   
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-4">
                     Premium includes unlimited AI coach access
