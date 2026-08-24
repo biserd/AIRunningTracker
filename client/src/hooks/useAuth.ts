@@ -1,9 +1,21 @@
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { notifyExtensionLogout } from "@/lib/extensionBridge";
 
 export function useAuth() {
-  const token = localStorage.getItem("auth_token");
+  const [token, setToken] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    // Match the anonymous server render for the first hydration pass. Read the
+    // browser-only token immediately afterward so signed-in users retain the
+    // same behavior without forcing React to discard the fast server markup.
+    if (document.getElementById("root")?.dataset.ssrTool === "true") return null;
+    return localStorage.getItem("auth_token");
+  });
+
+  useEffect(() => {
+    setToken(localStorage.getItem("auth_token"));
+  }, []);
   
   const { data: user, isLoading, error } = useQuery({
     queryKey: ["/api/auth/user"],

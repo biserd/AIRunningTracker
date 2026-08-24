@@ -5,6 +5,7 @@ import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
 import viteConfig from "../vite.config";
 import { nanoid } from "nanoid";
+import { renderReactToolPage } from "./ssr/reactToolRenderer";
 
 const viteLogger = createLogger();
 
@@ -69,6 +70,7 @@ export async function setupVite(app: Express, server: Server) {
 
 export function serveStatic(app: Express) {
   const distPath = path.resolve(import.meta.dirname, "public");
+  const indexPath = path.resolve(distPath, "index.html");
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
@@ -79,7 +81,27 @@ export function serveStatic(app: Express) {
   app.use(express.static(distPath));
 
   // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+  app.use("*", async (req, res, next) => {
+    const requestPath = new URL(req.originalUrl, "http://localhost").pathname;
+    try {
+      const serverMarkup = await renderReactToolPage(requestPath);
+      if (!serverMarkup) {
+        res.sendFile(indexPath);
+        return;
+      }
+
+      const template = await fs.promises.readFile(indexPath, "utf-8");
+      const page = template.replace(
+        '<div id="root"></div>',
+        `<div id="root" data-ssr-tool="true">${serverMarkup}</div>`,
+      );
+      res.status(200).set({
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
+      }).send(page);
+    } catch (error) {
+      console.error(`[SSR] React tool render failed for ${requestPath}:`, error);
+      next(error);
+    }
   });
 }

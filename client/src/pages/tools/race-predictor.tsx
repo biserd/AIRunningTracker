@@ -39,6 +39,7 @@ import { FAQSchema } from "@/components/FAQSchema";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ToolEducationPanel } from "@/components/ToolEducationPanel";
 import { ToolResultActions } from "@/components/ToolResultActions";
+import { ClientOnlyContent } from "@/components/ClientOnlyContent";
 
 const manualInputSchema = z.object({
   baseDistance: z.coerce.number().min(0.5, "Minimum 0.5").max(50, "Maximum 50"),
@@ -258,6 +259,7 @@ export default function RacePredictor() {
             </AlertDescription>
           </Alert>
 
+          <ClientOnlyContent minHeight={900}>
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -793,8 +795,10 @@ export default function RacePredictor() {
               )}
             </CardContent>
           </Card>
+          </ClientOnlyContent>
         </div>
 
+        <ClientOnlyContent minHeight={600}>
         {/* FAQ Section */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
           <Card>
@@ -823,6 +827,7 @@ export default function RacePredictor() {
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6"><ToolEducationPanel variant="race-predictor" /></div>
         <Footer />
+        </ClientOnlyContent>
       </div>
     </>
   );

@@ -29,6 +29,7 @@ import Footer from '@/components/Footer';
 import { FAQSchema } from "@/components/FAQSchema";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ToolEducationPanel } from "@/components/ToolEducationPanel";
+import { ClientOnlyContent } from "@/components/ClientOnlyContent";
 import { ToolResultActions } from "@/components/ToolResultActions";
 
 const MARATHON_FUELING_FAQS = [
@@ -192,6 +193,7 @@ export default function MarathonFuelingPlanner() {
             </p>
           </div>
 
+          <ClientOnlyContent minHeight={900}>
           {/* CTA for non-authenticated users */}
           {!isAuthenticated && (
             <Card className="mb-6 bg-gradient-to-r from-strava-orange/10 to-strava-orange/5 border-strava-orange/20" data-testid="card-signup-cta">
@@ -706,10 +708,13 @@ export default function MarathonFuelingPlanner() {
               </Accordion>
             </CardContent>
           </Card>
+          </ClientOnlyContent>
         </div>
 
+        <ClientOnlyContent minHeight={600}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6"><ToolEducationPanel variant="marathon-fueling" /></div>
         <Footer />
+        </ClientOnlyContent>
       </div>
     </>
   );

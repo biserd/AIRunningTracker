@@ -6,7 +6,9 @@
 //   • the extension isn't installed
 //   • VITE_EXTENSION_ID isn't configured (e.g. before publishing)
 
-const EXTENSION_ID = import.meta.env.VITE_EXTENSION_ID as string | undefined;
+const EXTENSION_ID = typeof import.meta.env !== "undefined"
+  ? import.meta.env.VITE_EXTENSION_ID as string | undefined
+  : undefined;
 
 type ExtensionUser = { firstName?: string | null; email?: string | null };
 

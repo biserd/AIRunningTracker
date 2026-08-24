@@ -25,6 +25,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { calculateAerobicDecoupling, type DecouplingClassification } from "@shared/aerobicDecoupling";
 import { ToolResultActions } from "@/components/ToolResultActions";
 import { ToolEducationPanel } from "@/components/ToolEducationPanel";
+import { ClientOnlyContent } from "@/components/ClientOnlyContent";
 
 // Validation schema for manual input
 const manualInputSchema = z.object({
@@ -215,6 +216,7 @@ export default function AerobicDecouplingCalculator() {
             </AlertDescription>
           </Alert>
 
+          <ClientOnlyContent minHeight={900}>
           {/* Calculator */}
           <Card>
             <CardHeader>
@@ -632,10 +634,13 @@ export default function AerobicDecouplingCalculator() {
               </CardContent>
             </Card>
           </div>
+          </ClientOnlyContent>
         </div>
 
+        <ClientOnlyContent minHeight={600}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6"><ToolEducationPanel variant="aerobic-decoupling" /></div>
         <Footer />
+        </ClientOnlyContent>
       </div>
     </>
   );

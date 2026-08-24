@@ -26,6 +26,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { summarizeTrainingSplit } from "@shared/trainingSplit";
 import { ToolResultActions } from "@/components/ToolResultActions";
 import { ToolEducationPanel } from "@/components/ToolEducationPanel";
+import { ClientOnlyContent } from "@/components/ClientOnlyContent";
 
 const manualInputSchema = z.object({
   periodDays: z.coerce.number().min(28, "Minimum 28 days").max(42, "Maximum 42 days"),
@@ -213,6 +214,7 @@ export default function TrainingSplitAnalyzer() {
             </p>
           </div>
 
+          <ClientOnlyContent minHeight={900}>
           <Card className="mb-8">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -708,10 +710,13 @@ export default function TrainingSplitAnalyzer() {
               </Accordion>
             </CardContent>
           </Card>
+          </ClientOnlyContent>
         </div>
 
+        <ClientOnlyContent minHeight={600}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6"><ToolEducationPanel variant="training-split" /></div>
         <Footer />
+        </ClientOnlyContent>
       </div>
     </>
   );

@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { Map as LeafletMap } from "leaflet";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -12,9 +13,6 @@ import { SEO } from "@/components/SEO";
 import AppHeader from "@/components/AppHeader";
 import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import { decode } from "@googlemaps/polyline-codec";
 import { FAQSchema } from "@/components/FAQSchema";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
@@ -55,8 +53,11 @@ const HEATMAP_FAQS = [
 
 export default function RunningHeatmapPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const mapRef = useRef<L.Map | null>(null);
+  const mapRef = useRef<LeafletMap | null>(null);
+  const leafletRef = useRef<typeof import("leaflet")["default"] | null>(null);
+  const decodeRef = useRef<((encodedPath: string) => number[][]) | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const [mapReady, setMapReady] = useState(false);
 
   const { data, isLoading, error } = useQuery<{ routes: ActivityRoute[]; count: number }>({
     queryKey: ["/api/activities/routes", user?.id],
@@ -75,29 +76,48 @@ export default function RunningHeatmapPage() {
     // For authenticated users, wait for loading to finish; for unauthenticated, show immediately
     if (isAuthenticated && isLoading) return;
 
-    // Start with default center - will be updated when routes load
-    const map = L.map(mapContainerRef.current, {
-      center: [40.7749, -73.95], // Default to NYC
-      zoom: 13,
-      zoomControl: true,
+    let cancelled = false;
+    void Promise.all([
+      import("leaflet"),
+      import("leaflet/dist/leaflet.css"),
+      import("@googlemaps/polyline-codec"),
+    ]).then(([leafletModule, _leafletStyles, polylineModule]) => {
+      if (cancelled || !mapContainerRef.current) return;
+      const L = leafletModule.default;
+      const polylineExports = polylineModule as typeof polylineModule & { default?: typeof polylineModule };
+      leafletRef.current = L;
+      decodeRef.current = polylineExports.decode ?? polylineExports.default?.decode ?? null;
+
+      // Start with default center - will be updated when routes load
+      const map = L.map(mapContainerRef.current, {
+        center: [40.7749, -73.95], // Default to NYC
+        zoom: 13,
+        zoomControl: true,
+      });
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" rel="nofollow noopener noreferrer">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+      }).addTo(map);
+
+      mapRef.current = map;
+      setMapReady(true);
     });
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" rel="nofollow noopener noreferrer">OpenStreetMap</a> contributors',
-      maxZoom: 19,
-    }).addTo(map);
-
-    mapRef.current = map;
-
     return () => {
-      map.remove();
+      cancelled = true;
+      mapRef.current?.remove();
       mapRef.current = null;
+      leafletRef.current = null;
+      decodeRef.current = null;
     };
   }, [isLoading, isAuthenticated]); // Run when loading finishes and container is rendered
 
   // Render routes on map
   useEffect(() => {
-    if (!mapRef.current || !routes.length) return;
+    const L = leafletRef.current;
+    const decodePolyline = decodeRef.current;
+    if (!mapReady || !L || !decodePolyline || !mapRef.current || !routes.length) return;
 
     const map = mapRef.current;
 
@@ -117,7 +137,7 @@ export default function RunningHeatmapPage() {
       if (!route.polyline) return;
 
       try {
-        const decodedPath = decode(route.polyline);
+        const decodedPath = decodePolyline(route.polyline);
         const latLngs: [number, number][] = decodedPath.map(([lat, lng]) => [lat, lng]);
 
         // Add to all coordinates for rendering all routes
@@ -166,7 +186,7 @@ export default function RunningHeatmapPage() {
         maxZoom: 14   // Don't zoom in too close
       });
     }
-  }, [routes]);
+  }, [mapReady, routes]);
 
   // Show skeleton only for authenticated users while loading their data
   if (authLoading) {
