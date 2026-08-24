@@ -1,10 +1,12 @@
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { SiTelegram } from "react-icons/si";
 import { Check, CloudSun, LockKeyhole, Sparkles } from "lucide-react";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
 import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { getQueryFn } from "@/lib/queryClient";
 
 type TelegramTrialOfferProps = {
   source: "dashboard_telegram_offer" | "settings_telegram_offer" | "coach_settings_telegram_offer";
@@ -18,6 +20,21 @@ const benefits = [
 ];
 
 export function TelegramTrialOffer({ source, compact = false }: TelegramTrialOfferProps) {
+  const { data: channelStatus } = useQuery<{
+    telegram?: { connected?: boolean };
+  }>({
+    queryKey: ["/api/coach/channels"],
+    queryFn: getQueryFn({ on401: "throw" }),
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
+
+  // A connected runner should see the active connection card instead of
+  // being shown the acquisition offer again.
+  if (channelStatus?.telegram?.connected) {
+    return null;
+  }
+
   const upgradeUrl = buildUpgradeUrl({
     source,
     capability: "ai_coach",

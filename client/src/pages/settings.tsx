@@ -18,6 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import PushNotificationToggle from "@/components/PushNotificationToggle";
 import { TelegramTrialOffer } from "@/components/TelegramTrialOffer";
+import { TelegramConnectionCard } from "@/components/TelegramConnectionCard";
 
 function SettingsPageContent() {
   const { user } = useAuth();
@@ -195,6 +196,9 @@ function SettingsPageContent() {
       <div className="grid gap-6">
         {!isPremium && (
           <TelegramTrialOffer source="settings_telegram_offer" compact />
+        )}
+        {user?.id && (
+          <TelegramConnectionCard userId={user.id} location="settings" />
         )}
 
         <Card>
