@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { and, eq, gt, isNull, or, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   mcpAuditEvents,
@@ -86,13 +86,30 @@ export async function isPrivateMcpGrantEligible(userId: number, clientId: string
   return Boolean(await hasRecognizedLegacyCoachGrant(userId, clientId));
 }
 
-export async function hasRecognizedLegacyCoachGrant(userId: number, clientId = process.env.HERMES_MCP_CLIENT_ID) {
-  if (!clientId || !Number.isSafeInteger(userId) || userId <= 0) return null;
+function getLegacyCoachClientIds(): string[] {
+  return [...new Set(
+    (process.env.HERMES_LEGACY_MCP_CLIENT_IDS || "")
+      .split(",")
+      .map((clientId) => clientId.trim())
+      .filter((clientId) => /^ra_mcp_client_[A-Za-z0-9_-]+$/.test(clientId)),
+  )];
+}
+
+function getCoachAgentClientIds(): string[] {
+  return [...new Set([
+    process.env.HERMES_MCP_CLIENT_ID,
+    ...getLegacyCoachClientIds(),
+  ].filter((clientId): clientId is string => Boolean(clientId)))];
+}
+
+export async function hasRecognizedLegacyCoachGrant(userId: number) {
+  const legacyClientIds = getLegacyCoachClientIds();
+  if (legacyClientIds.length === 0 || !Number.isSafeInteger(userId) || userId <= 0) return null;
   const [grant] = await db.select({
     createdAt: mcpOauthTokens.createdAt,
   }).from(mcpOauthTokens).where(and(
     eq(mcpOauthTokens.userId, userId),
-    eq(mcpOauthTokens.clientId, clientId),
+    inArray(mcpOauthTokens.clientId, legacyClientIds),
     eq(mcpOauthTokens.resource, MCP_RESOURCE),
     isNull(mcpOauthTokens.revokedAt),
     gt(mcpOauthTokens.refreshExpiresAt, new Date()),
@@ -326,18 +343,19 @@ export async function issueCoachAgentRunnerGrant(userId: number) {
 /** Revokes every live token generation for this runner/client, including
  * refresh-rotated descendants whose database ID no longer matches the binding. */
 export async function revokeAllCoachAgentRunnerGrants(userId: number): Promise<number> {
-  const clientId = process.env.HERMES_MCP_CLIENT_ID;
-  if (!clientId || !Number.isSafeInteger(userId) || userId <= 0) return 0;
+  const coachClientIds = getCoachAgentClientIds();
+  if (coachClientIds.length === 0 || !Number.isSafeInteger(userId) || userId <= 0) return 0;
   const revoked = await db.update(mcpOauthTokens)
     .set({ revokedAt: new Date() })
     .where(and(
       eq(mcpOauthTokens.userId, userId),
-      eq(mcpOauthTokens.clientId, clientId),
+      inArray(mcpOauthTokens.clientId, coachClientIds),
+      eq(mcpOauthTokens.resource, MCP_RESOURCE),
       isNull(mcpOauthTokens.revokedAt),
     ))
     .returning({ id: mcpOauthTokens.id });
   if (revoked.length > 0) {
-    await recordMcpAudit({ eventType: "coach_binding_tokens_revoked", userId, clientId, success: true });
+    await recordMcpAudit({ eventType: "coach_binding_tokens_revoked", userId, success: true });
   }
   return revoked.length;
 }

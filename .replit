@@ -59,7 +59,8 @@ COACH_MULTI_RUNNER_PILOT_ENABLED = "true"
 COACH_AGENT_PILOT_USER_ID = "105"
 HERMES_MCP_CLIENT_ID = "ra_mcp_client_L0o4CkpSbZeZ8xlI4MyQeNXh"
 TELEGRAM_BOT_USERNAME = "hermes_3njyz3nxuousjmh2_bot"
+HERMES_LEGACY_MCP_CLIENT_IDS = "ra_mcp_client_qLaCiYxhphnDGZgiCWWj_yxg"
 
 [postMerge]
 path = "scripts/post-merge.sh"
-timeoutMs = 20000
+timeoutMs = 90000

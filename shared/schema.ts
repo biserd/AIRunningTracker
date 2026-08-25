@@ -602,6 +602,7 @@ export const notificationOutbox = pgTable("notification_outbox", {
   sentAt: timestamp("sent_at"),
   errorMessage: text("error_message"),
   retryCount: integer("retry_count").default(0),
+  processingStartedAt: timestamp("processing_started_at"),
   // Deduplication
   dedupeKey: text("dedupe_key"), // e.g., "recap:user_123:activity_456"
   // User preferences check
