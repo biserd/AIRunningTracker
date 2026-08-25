@@ -278,6 +278,20 @@ export class StravaWebhookService {
         console.log(`[Strava Webhook] Activity ${stravaId} already in DB for user ${user.id}, skipping insert`);
       }
 
+      // Webhook ingestion is a complete sync path of its own. Reconcile the
+      // active plan immediately so the runner sees completion and the correct
+      // calendar week before email or Telegram coaching is generated.
+      if (activityDbId) {
+        try {
+          const { autoLinkActivitiesForUser } = await import("./activityLinker");
+          const reconciled = await autoLinkActivitiesForUser(user.id);
+          const linkedCount = Array.from(reconciled.values()).reduce((sum, links) => sum + links.length, 0);
+          console.log(`[TrainingPlan] Webhook reconciled ${linkedCount} activities for user ${user.id}`);
+        } catch (reconciliationError) {
+          console.error(`[TrainingPlan] Webhook reconciliation failed for user ${user.id}:`, reconciliationError);
+        }
+      }
+
       // The first eligible run may arrive only through a webhook. Preview
       // creation is best-effort and exactly-once, so webhook retries and a
       // concurrent manual sync cannot create duplicates.

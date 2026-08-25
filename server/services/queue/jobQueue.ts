@@ -483,6 +483,15 @@ class JobQueue {
         })
         .then(async () => {
           console.log(`[JobQueue] Sync completed for user ${userId}. Processed ${syncState.processedActivities} activities.`);
+
+          try {
+            const { autoLinkActivitiesForUser } = await import("../activityLinker");
+            const reconciled = await autoLinkActivitiesForUser(userId);
+            const linkedCount = Array.from(reconciled.values()).reduce((sum, links) => sum + links.length, 0);
+            console.log(`[TrainingPlan] Queue sync reconciled ${linkedCount} activities for user ${userId}`);
+          } catch (reconciliationError) {
+            console.error(`[TrainingPlan] Queue sync reconciliation failed for user ${userId}:`, reconciliationError);
+          }
           
           // Generate AI insights after sync completes
           if (syncState.processedActivities > 0) {

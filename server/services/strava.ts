@@ -610,6 +610,18 @@ export class StravaService {
       if (syncedCount > 0) {
         await invalidateRecoveryCache(userId);
       }
+
+      // Reconcile every completed sync, including zero-new-activity syncs.
+      // This backfills plans created after activities were first imported and
+      // repairs stale plan progress without requiring a manual link action.
+      try {
+        const { autoLinkActivitiesForUser } = await import("./activityLinker");
+        const reconciled = await autoLinkActivitiesForUser(userId);
+        const linkedCount = Array.from(reconciled.values()).reduce((sum, links) => sum + links.length, 0);
+        console.log(`[TrainingPlan] Reconciled ${linkedCount} activities after Strava sync for user ${userId}`);
+      } catch (reconciliationError) {
+        console.error(`[TrainingPlan] Reconciliation failed after Strava sync for user ${userId}:`, reconciliationError);
+      }
       
       return { syncedCount, totalActivities: stravaActivities.length };
     } catch (error) {

@@ -15,7 +15,7 @@ import { runnerScoreService } from "./services/runnerScore";
 import goalsService from "./services/goals";
 import { ChatService } from "./services/chat";
 import { fitnessService } from "./services/fitness";
-import { autoLinkActivitiesForPlan } from "./services/activityLinker";
+import { actualMetrics, autoLinkActivitiesForPlan, reconcileTrainingPlanProgress } from "./services/activityLinker";
 import { calculateYearlyStats, reverseGeocode } from "./services/yearEndRecap";
 import { effortScoreService } from "./services/effortScore";
 import { coachVerdictService } from "./services/coachVerdict";
@@ -8152,17 +8152,8 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "Training plan not found" });
       }
       
-      // Find current week based on date
-      const now = new Date();
       const weeks = await storage.getPlanWeeks(planId);
-      const currentWeek = weeks.find((w: any) => {
-        const start = new Date(w.weekStartDate);
-        const end = new Date(w.weekEndDate);
-        // Week dates are stored at midnight. Treat the end date as the full
-        // calendar day so a Sunday plan does not disappear at 12:00 AM.
-        end.setHours(23, 59, 59, 999);
-        return now >= start && now <= end;
-      });
+      const currentWeek = weeks.find((week) => week.weekNumber === (plan.currentWeek || 1));
       
       if (!currentWeek) {
         return res.json(null);
@@ -8193,8 +8184,18 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "Workout not found" });
       }
       
-      const updates = req.body;
+      const updateResult = z.object({
+        status: z.enum(["pending", "completed", "partial", "missed", "skipped"]).optional(),
+        userNotes: z.string().trim().max(2000).nullable().optional(),
+        perceivedEffort: z.number().int().min(1).max(10).nullable().optional(),
+      }).strict().safeParse(req.body);
+      if (!updateResult.success) {
+        return res.status(400).json({ message: "Invalid workout update" });
+      }
+
+      const updates = updateResult.data;
       const updated = await storage.updatePlanDay(dayId, updates);
+      await reconcileTrainingPlanProgress(day.planId, userId);
       res.json(updated);
     } catch (error: any) {
       console.error("Update workout day error:", error);
@@ -8220,22 +8221,27 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "Workout not found" });
       }
       
-      // Get activity data
-      const activity = await storage.getActivityByStravaId(activityId.toString());
-      if (!activity || activity.userId !== userId) {
+      // Accept the internal activity ID used by the app. Retain Strava-ID
+      // fallback for older clients that already call this endpoint.
+      const internalActivityId = Number(activityId);
+      const activity = Number.isSafeInteger(internalActivityId)
+        ? await storage.getActivityByIdForUser(internalActivityId, userId)
+          || await storage.getActivityByStravaIdAndUser(String(activityId), userId)
+        : await storage.getActivityByStravaIdAndUser(String(activityId), userId);
+      if (!activity) {
         return res.status(404).json({ message: "Activity not found" });
       }
+
+      const planDaysForConflictCheck = await storage.getPlanDaysByPlanId(day.planId);
+      const existingLink = planDaysForConflictCheck.find((candidate) => (
+        candidate.id !== dayId && candidate.linkedActivityId === activity.id
+      ));
+      if (existingLink) {
+        return res.status(409).json({ message: "Activity is already linked to another workout" });
+      }
       
-      // Update day with activity data
-      const updated = await storage.updatePlanDay(dayId, {
-        linkedActivityId: activity.id,
-        status: "completed",
-        actualDistanceKm: activity.distance ? activity.distance / 1000 : undefined,
-        actualDurationMins: activity.movingTime ? Math.round(activity.movingTime / 60) : undefined,
-        actualPace: activity.averageSpeed ? 
-          `${Math.floor(1000 / activity.averageSpeed / 60)}:${String(Math.floor((1000 / activity.averageSpeed) % 60)).padStart(2, '0')}` : 
-          undefined,
-      });
+      const updated = await storage.linkActivityToPlanDay(dayId, activity.id, actualMetrics(activity));
+      await reconcileTrainingPlanProgress(day.planId, userId);
       
       res.json(updated);
     } catch (error: any) {

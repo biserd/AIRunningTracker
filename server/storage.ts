@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { db } from "./db";
 import { eq, desc, and, or, sql, inArray, gte, gt, lt, ne, isNull } from "drizzle-orm";
 import bcrypt from "bcrypt";
+import { deriveCalendarWeekNumber } from "@shared/trainingPlanProgress";
 
 export const RUNNING_ACTIVITY_TYPES = ['Run', 'TrailRun', 'VirtualRun'];
 
@@ -891,6 +892,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Training Plan v2 methods
+  private async withCalendarCurrentWeek(plan: TrainingPlan): Promise<TrainingPlan> {
+    if (plan.status !== "active") return plan;
+
+    const [weeks, owner] = await Promise.all([
+      db.select({
+        weekNumber: planWeeks.weekNumber,
+        weekStartDate: planWeeks.weekStartDate,
+        weekEndDate: planWeeks.weekEndDate,
+      }).from(planWeeks).where(eq(planWeeks.planId, plan.id)).orderBy(planWeeks.weekNumber),
+      db.select({ coachTimezone: users.coachTimezone }).from(users).where(eq(users.id, plan.userId)).limit(1),
+    ]);
+    if (!weeks.length) return plan;
+
+    const currentWeek = deriveCalendarWeekNumber(weeks, new Date(), owner[0]?.coachTimezone);
+    if (plan.currentWeek !== currentWeek) {
+      await db.update(trainingPlans).set({ currentWeek, updatedAt: new Date() }).where(eq(trainingPlans.id, plan.id));
+      return { ...plan, currentWeek, updatedAt: new Date() };
+    }
+    return plan;
+  }
+
   async createTrainingPlanV2(plan: InsertTrainingPlan): Promise<TrainingPlan> {
     const [created] = await db
       .insert(trainingPlans)
@@ -904,7 +926,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(trainingPlans)
       .where(eq(trainingPlans.id, planId));
-    return plan || undefined;
+    return plan ? this.withCalendarCurrentWeek(plan) : undefined;
   }
 
   async getActiveTrainingPlan(userId: number): Promise<TrainingPlan | undefined> {
@@ -917,15 +939,16 @@ export class DatabaseStorage implements IStorage {
       ))
       .orderBy(desc(trainingPlans.createdAt))
       .limit(1);
-    return plan || undefined;
+    return plan ? this.withCalendarCurrentWeek(plan) : undefined;
   }
 
   async getTrainingPlansByUserId(userId: number): Promise<TrainingPlan[]> {
-    return await db
+    const plans = await db
       .select()
       .from(trainingPlans)
       .where(eq(trainingPlans.userId, userId))
       .orderBy(desc(trainingPlans.createdAt));
+    return Promise.all(plans.map((plan) => this.withCalendarCurrentWeek(plan)));
   }
 
   async updateTrainingPlan(planId: number, updates: Partial<TrainingPlan>): Promise<TrainingPlan | undefined> {
@@ -990,14 +1013,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCurrentPlanWeek(planId: number): Promise<PlanWeek | undefined> {
-    const now = new Date();
+    const plan = await this.getTrainingPlanById(planId);
+    if (!plan) return undefined;
     const [week] = await db
       .select()
       .from(planWeeks)
       .where(and(
         eq(planWeeks.planId, planId),
-        lt(planWeeks.weekStartDate, now),
-        gte(planWeeks.weekEndDate, now)
+        eq(planWeeks.weekNumber, plan.currentWeek || 1)
       ));
     return week || undefined;
   }

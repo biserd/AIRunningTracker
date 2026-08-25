@@ -5,6 +5,7 @@ import { trainingGuardrails, type GeneratedPlan, type PlanWeekInput, type PlanDa
 import { generateSkeleton, type PlanSkeleton, type SkeletonWeek, type SkeletonDay } from "./skeletonGenerator";
 import type { AthleteProfile, TrainingPlan, InsertTrainingPlan, InsertPlanWeek, InsertPlanDay, GoalType, TerrainType } from "@shared/schema";
 import { selectSafePreferredRunDays } from "@shared/trainingPlanSafety";
+import { instantDateKey, planDateKey } from "@shared/trainingPlanProgress";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -1752,28 +1753,31 @@ Output:
       
       const profile = await athleteProfileService.getOrComputeProfile(plan.userId);
       const weeks = await storage.getPlanWeeks(planId);
+      const owner = await storage.getUser(plan.userId);
+      const today = instantDateKey(new Date(), owner?.coachTimezone);
       
-      // Calculate adherence for completed weeks
+      // Calculate adherence only from workouts whose calendar dates have
+      // elapsed. Weeks with no completed workouts still count, which prevents
+      // low adherence from being reported as perfect adherence.
       let totalPlanned = 0;
       let totalCompleted = 0;
-      let completedWeeks = 0;
       
       for (const week of weeks) {
         const days = await storage.getPlanDays(week.id);
-        const workoutDays = days.filter((d: any) => d.workoutType !== 'rest');
-        const completedDays = workoutDays.filter((d: any) => 
-          d.status === 'completed' || d.linkedActivityId
-        );
-        
-        if (completedDays.length > 0) {
-          completedWeeks++;
-          totalPlanned += workoutDays.length;
-          totalCompleted += completedDays.length;
-        }
+        const elapsedWorkoutDays = days.filter((day: any) => (
+          day.workoutType !== "rest" && planDateKey(day.date) <= today
+        ));
+        totalPlanned += elapsedWorkoutDays.length;
+        totalCompleted += elapsedWorkoutDays.reduce((sum: number, day: any) => {
+          if (day.status === "completed" || day.linkedActivityId) return sum + 1;
+          if (day.status === "partial") return sum + 0.5;
+          return sum;
+        }, 0);
       }
       
       const adherenceRate = totalPlanned > 0 ? totalCompleted / totalPlanned : 1;
-      const futureWeeks = weeks.filter((w: any) => w.weekNumber > completedWeeks);
+      const calendarWeek = plan.currentWeek || 1;
+      const futureWeeks = weeks.filter((w: any) => w.weekNumber >= calendarWeek);
       
       if (futureWeeks.length === 0) {
         return { 
@@ -1822,11 +1826,6 @@ Output:
         // Could optionally increase volume slightly, but safer to keep as-is
       } else {
         changes.push(`Good adherence (${(adherenceRate * 100).toFixed(0)}%). No changes needed.`);
-      }
-      
-      // Update current week pointer
-      if (completedWeeks > 0) {
-        await storage.updateTrainingPlan(planId, { currentWeek: completedWeeks + 1 });
       }
       
       console.log(`[PlanGenerator] Adapted ${futureWeeks.length} future weeks with ${changes.length} changes`);
