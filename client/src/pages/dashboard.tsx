@@ -12,6 +12,8 @@ import TrainingRecommendations from "@/components/dashboard/TrainingRecommendati
 import RunnerScoreRadar from "@/components/dashboard/RunnerScoreRadar";
 import ProgressChecklist from "@/components/dashboard/ProgressChecklist";
 import PremiumPreviewTeaser from "@/components/dashboard/PremiumPreviewTeaser";
+import { TelegramTrialOffer } from "@/components/TelegramTrialOffer";
+import { TelegramConnectionCard } from "@/components/TelegramConnectionCard";
 import TodayRunDecision from "@/components/dashboard/TodayRunDecision";
 import ThisWeekPlan from "@/components/dashboard/ThisWeekPlan";
 import { SyncProgress } from "@/components/SyncProgress";
@@ -501,6 +503,16 @@ export default function Dashboard() {
 
         {/* Lead free runners with proof of value before general guidance. */}
         <PremiumPreviewTeaser />
+
+        {isFree ? (
+          <div className="mb-6">
+            <TelegramTrialOffer source="dashboard_telegram_offer" />
+          </div>
+        ) : user?.id ? (
+          <div className="mb-6">
+            <TelegramConnectionCard userId={user.id} location="dashboard" />
+          </div>
+        ) : null}
 
         <div className="mb-6">
           <TodayRunDecision
