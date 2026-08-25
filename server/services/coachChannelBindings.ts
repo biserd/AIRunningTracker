@@ -12,7 +12,6 @@ import {
 import { canAccessCapability } from "@shared/entitlements";
 import { isStrongApplicationSecret } from "../config/security";
 import {
-  hasRecognizedLegacyCoachGrant,
   issueCoachAgentRunnerGrant,
   revokeAllCoachAgentRunnerGrants,
 } from "../mcp/oauthService";
@@ -115,8 +114,6 @@ export async function getCoachChannelStatus(user: User) {
     eq(coachChannelBindings.channel, "telegram"),
     isNull(coachChannelBindings.revokedAt),
   )).limit(1);
-  const legacyGrant = await hasRecognizedLegacyCoachGrant(user.id);
-  const connected = binding?.status === "active" || Boolean(legacyGrant);
   return {
     available,
     accessReason: !featureEnabled
@@ -125,9 +122,9 @@ export async function getCoachChannelStatus(user: User) {
         ? "available"
         : "premium_required",
     telegram: {
-      connected,
-      status: connected ? "active" : (binding?.status || "not_connected"),
-      linkedAt: binding?.linkedAt?.toISOString() || legacyGrant?.createdAt?.toISOString() || null,
+      connected: binding?.status === "active",
+      status: binding?.status || "not_connected",
+      linkedAt: binding?.linkedAt?.toISOString() || null,
     },
   };
 }
@@ -354,9 +351,6 @@ export async function disconnectTelegram(userId: number) {
       isNull(coachChannelBindings.revokedAt),
     )).returning({ bindingId: coachChannelBindings.bindingId });
   });
-  // Older Telegram connections were represented only by the dedicated
-  // Hermes OAuth grant and therefore have no binding row to revoke.
-  const revokedGrantCount = await revokeAllCoachAgentRunnerGrants(userId);
   for (const binding of revoked) {
     const secret = process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2;
     if (isStrongApplicationSecret(secret)) {
@@ -364,7 +358,7 @@ export async function disconnectTelegram(userId: number) {
       await deliverSignedCoachEvent(binding.bindingId, { event_type: "binding.revoked" }, eventId);
     }
   }
-  return { disconnected: revoked.length > 0 || revokedGrantCount > 0 };
+  return { disconnected: revoked.length > 0 };
 }
 
 export const coachChannelContract = {
