@@ -77,7 +77,27 @@ export async function isPrivateMcpGrantEligible(userId: number, clientId: string
       isNull(coachChannelBindings.revokedAt),
     ))
     .limit(1);
-  return Boolean(row?.bindingStatus && canAccessCapability(row.runner, "ai_coach"));
+  if (row?.bindingStatus && canAccessCapability(row.runner, "ai_coach")) return true;
+
+  // Before channel bindings existed, Hermes received a dedicated MCP grant
+  // directly. Those grants are the explicit legacy Telegram authorization set:
+  // the configured Hermes client, the private MCP resource, and a still-live
+  // refresh grant. Do not broaden this to other OAuth clients.
+  return Boolean(await hasRecognizedLegacyCoachGrant(userId, clientId));
+}
+
+export async function hasRecognizedLegacyCoachGrant(userId: number, clientId = process.env.HERMES_MCP_CLIENT_ID) {
+  if (!clientId || !Number.isSafeInteger(userId) || userId <= 0) return null;
+  const [grant] = await db.select({
+    createdAt: mcpOauthTokens.createdAt,
+  }).from(mcpOauthTokens).where(and(
+    eq(mcpOauthTokens.userId, userId),
+    eq(mcpOauthTokens.clientId, clientId),
+    eq(mcpOauthTokens.resource, MCP_RESOURCE),
+    isNull(mcpOauthTokens.revokedAt),
+    gt(mcpOauthTokens.refreshExpiresAt, new Date()),
+  )).limit(1);
+  return grant || null;
 }
 
 export async function ensureMcpSchema(): Promise<void> {

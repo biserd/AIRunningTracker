@@ -113,3 +113,31 @@ test("runner navigation exposes coach settings and keeps the legacy route workin
   assert.match(header, /href="\/coach\/settings"/);
   assert.match(insights, /data-testid="coach-insights-connect-telegram"/);
 });
+
+test("legacy coach access is limited to live Hermes grants and is visible without a binding", () => {
+  const service = readFileSync(new URL("./coachChannelBindings.ts", import.meta.url), "utf8");
+  const oauth = readFileSync(new URL("../mcp/oauthService.ts", import.meta.url), "utf8");
+  assert.match(service, /hasRecognizedLegacyCoachGrant\(user\.id\)/);
+  assert.match(service, /binding\?\.status === "active" \|\| Boolean\(legacyGrant\)/);
+  assert.match(oauth, /eq\(mcpOauthTokens\.clientId, clientId\)/);
+  assert.match(oauth, /eq\(mcpOauthTokens\.resource, MCP_RESOURCE\)/);
+  assert.match(oauth, /isNull\(mcpOauthTokens\.revokedAt\)/);
+  assert.match(oauth, /gt\(mcpOauthTokens\.refreshExpiresAt, new Date\(\)\)/);
+});
+
+test("Telegram disconnect revokes legacy grants even without a current binding", () => {
+  const service = readFileSync(new URL("./coachChannelBindings.ts", import.meta.url), "utf8");
+  const oauth = readFileSync(new URL("../mcp/oauthService.ts", import.meta.url), "utf8");
+  assert.match(service, /const revokedGrantCount = await revokeAllCoachAgentRunnerGrants\(userId\)/);
+  assert.match(service, /revoked\.length > 0 \|\| revokedGrantCount > 0/);
+  assert.match(oauth, /eq\(mcpOauthTokens\.clientId, clientId\)/);
+  assert.match(oauth, /eq\(mcpOauthTokens\.userId, userId\)/);
+  assert.match(oauth, /clientId = process\.env\.HERMES_MCP_CLIENT_ID/);
+});
+
+test("legacy recognition and revocation do not target unrelated OAuth clients", () => {
+  const oauth = readFileSync(new URL("../mcp/oauthService.ts", import.meta.url), "utf8");
+  assert.match(oauth, /clientId = process\.env\.HERMES_MCP_CLIENT_ID/);
+  assert.match(oauth, /clientId !== process\.env\.HERMES_MCP_CLIENT_ID/);
+  assert.match(oauth, /eq\(mcpOauthTokens\.clientId, clientId\)/);
+});

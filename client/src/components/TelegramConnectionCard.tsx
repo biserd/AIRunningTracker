@@ -97,7 +97,7 @@ export function TelegramConnectionCard({ userId, location }: TelegramConnectionC
               <p className="text-sm text-gray-500">
                 {channelStatus?.telegram.linkedAt
                   ? `Connected ${new Date(channelStatus.telegram.linkedAt).toLocaleDateString()}`
-                  : "Your private coach connection is active."}
+                  : "Your private coach connection is active, including any earlier authorization."}
               </p>
             </div>
             <Button
