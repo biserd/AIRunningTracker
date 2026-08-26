@@ -6,6 +6,7 @@ import { runMigrations } from 'stripe-replit-sync';
 import { getStripeSync } from './stripeClient';
 import { WebhookHandlers } from './webhookHandlers';
 import { assertProductionSecurityConfiguration } from './config/security';
+import { handleResendWebhook } from './services/resendWebhook';
 
 // Refuse to serve production traffic with known/default authentication keys.
 assertProductionSecurityConfiguration();
@@ -52,6 +53,17 @@ app.post(
     }
   }
 );
+
+app.post('/api/webhooks/resend', express.raw({ type: 'application/json' }), async (req, res) => {
+  try {
+    if (!Buffer.isBuffer(req.body)) return res.status(400).json({ error: 'Invalid payload' });
+    const result = await handleResendWebhook(req.body, req.headers as Record<string, string | string[] | undefined>);
+    if (result === 'invalid') return res.status(401).json({ error: 'Invalid signature' });
+    return res.status(200).json({ received: true });
+  } catch {
+    return res.status(400).json({ error: 'Webhook processing error' });
+  }
+});
 
 app.use(express.json({
   // Hermes binding callbacks are authenticated over the exact received bytes.

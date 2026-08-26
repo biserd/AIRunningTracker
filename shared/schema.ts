@@ -102,6 +102,13 @@ export const users = pgTable("users", {
   activationAt: timestamp("activation_at"), // When user first hits aha moment (snapshot/story/coach)
   lastSeenAt: timestamp("last_seen_at"), // Last app interaction
   marketingOptOut: boolean("marketing_opt_out").default(false), // User opted out of lifecycle emails
+  marketingConsentStatus: text("marketing_consent_status", {
+    enum: ["unknown", "consented", "unsubscribed", "suppressed"]
+  }).default("unknown"),
+  marketingConsentedAt: timestamp("marketing_consented_at"),
+  marketingUnsubscribedAt: timestamp("marketing_unsubscribed_at"),
+  marketingSuppressionReason: text("marketing_suppression_reason"),
+  marketingConsentSource: text("marketing_consent_source"),
   coachQuestionsCount7d: integer("coach_questions_count_7d").default(0), // Rolling 7-day coach question count
   welcomeEmailSentAt: timestamp("welcome_email_sent_at"), // When the welcome campaign email was sent
   onboardingGoal: text("onboarding_goal", { 
@@ -1202,12 +1209,15 @@ export const userCampaigns = pgTable("user_campaigns", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   campaign: text("campaign", { 
-    enum: ["segment_a", "segment_b", "segment_c", "segment_d"] 
+    enum: ["segment_a", "segment_b", "segment_c", "segment_d", "signup_no_strava", "preview_ready_unseen", "preview_engaged_no_trial", "checkout_abandoned", "trial_needs_activation", "trial_engaged", "trial_ending", "trial_expired_winback", "inactive_free"]
   }).notNull(),
   state: text("state", { 
     enum: ["active", "completed", "exited", "cancelled"] 
   }).default("active"),
   currentStep: integer("current_step").default(1), // A1=1, A2=2, B1=1, B2=2, etc.
+  campaignVersion: integer("campaign_version").default(2).notNull(),
+  experimentVariant: text("experiment_variant").default("control").notNull(),
+  isHoldout: boolean("is_holdout").default(false).notNull(),
   enteredAt: timestamp("entered_at").defaultNow(),
   exitedAt: timestamp("exited_at"),
   exitReason: text("exit_reason"), // "converted", "subscribed", "unsubscribed", "completed", "segment_change"
@@ -1217,7 +1227,8 @@ export const userCampaigns = pgTable("user_campaigns", {
   userIdIdx: index("user_campaigns_user_id_idx").on(table.userId),
   campaignIdx: index("user_campaigns_campaign_idx").on(table.campaign),
   stateIdx: index("user_campaigns_state_idx").on(table.state),
-  userCampaignUniqueIdx: index("user_campaigns_user_campaign_unique_idx").on(table.userId, table.campaign),
+  userCampaignUniqueIdx: uniqueIndex("user_campaigns_user_campaign_unique_idx").on(table.userId, table.campaign, table.campaignVersion),
+  oneActiveCampaignIdx: uniqueIndex("user_campaigns_one_active_idx").on(table.userId).where(sql`${table.state} = 'active'`),
 }));
 
 // Email jobs - scheduled emails with deduplication
@@ -1231,9 +1242,13 @@ export const emailJobs = pgTable("email_jobs", {
   step: text("step"), // A1, A2, B1, B2, etc.
   scheduledAt: timestamp("scheduled_at").notNull(),
   status: text("status", { 
-    enum: ["pending", "sent", "cancelled", "failed"] 
+    enum: ["pending", "processing", "retry_scheduled", "sent", "cancelled", "failed", "suppressed"]
   }).default("pending"),
   dedupeKey: text("dedupe_key").notNull(), // user_id + campaign + step
+  enrollmentId: integer("enrollment_id"),
+  channel: text("channel", { enum: ["email", "in_app", "telegram", "whatsapp"] }).default("email").notNull(),
+  campaignVersion: integer("campaign_version").default(2).notNull(),
+  experimentVariant: text("experiment_variant").default("control").notNull(),
   metadata: json("metadata").$type<{
     ctaUrl?: string;
     activityId?: number;
@@ -1241,8 +1256,18 @@ export const emailJobs = pgTable("email_jobs", {
     compareA2?: number;
     subject?: string;
     previewText?: string;
+    ctaKey?: string;
+    personalizationKey?: string;
   }>(),
   sentAt: timestamp("sent_at"),
+  claimedAt: timestamp("claimed_at"),
+  claimedBy: text("claimed_by"),
+  leaseExpiresAt: timestamp("lease_expires_at"),
+  nextAttemptAt: timestamp("next_attempt_at"),
+  providerMessageId: text("provider_message_id"),
+  deliveredAt: timestamp("delivered_at"),
+  bouncedAt: timestamp("bounced_at"),
+  complainedAt: timestamp("complained_at"),
   errorMessage: text("error_message"),
   retryCount: integer("retry_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
@@ -1250,7 +1275,8 @@ export const emailJobs = pgTable("email_jobs", {
   userIdIdx: index("email_jobs_user_id_idx").on(table.userId),
   statusIdx: index("email_jobs_status_idx").on(table.status),
   scheduledAtIdx: index("email_jobs_scheduled_at_idx").on(table.scheduledAt),
-  dedupeKeyIdx: index("email_jobs_dedupe_key_idx").on(table.dedupeKey),
+  dedupeKeyIdx: uniqueIndex("email_jobs_dedupe_key_idx").on(table.dedupeKey),
+  claimIdx: index("email_jobs_claim_idx").on(table.status, table.scheduledAt, table.nextAttemptAt, table.leaseExpiresAt),
 }));
 
 // Email click tracking - for campaign analytics
@@ -1260,11 +1286,14 @@ export const emailClicks = pgTable("email_clicks", {
   campaign: text("campaign"),
   step: text("step"),
   ctaKey: text("cta_key"), // "connect_strava", "view_snapshot", "upgrade", etc.
+  jobId: integer("job_id"),
+  dedupeKey: text("dedupe_key"),
   clickedAt: timestamp("clicked_at").defaultNow(),
   source: text("source"), // From URL param ?source=B1
 }, (table) => ({
   userIdIdx: index("email_clicks_user_id_idx").on(table.userId),
   campaignStepIdx: index("email_clicks_campaign_step_idx").on(table.campaign, table.step),
+  dedupeKeyIdx: uniqueIndex("email_clicks_dedupe_key_idx").on(table.dedupeKey),
 }));
 
 export const insertUserCampaignSchema = createInsertSchema(userCampaigns).omit({
@@ -1334,6 +1363,7 @@ export const registerSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
+  marketingConsent: z.boolean().default(false),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

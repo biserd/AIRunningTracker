@@ -7,7 +7,10 @@ interface EmailOptions {
   subject: string;
   html: string;
   text?: string;
+  headers?: Record<string, string>;
 }
+
+export interface EmailDeliveryResult { success: boolean; providerMessageId?: string; error?: string; }
 
 class EmailService {
   private resend: Resend | null = null;
@@ -30,9 +33,13 @@ class EmailService {
   }
 
   async sendEmail(options: EmailOptions, retries: number = 3): Promise<boolean> {
+    return (await this.sendEmailDetailed(options, retries)).success;
+  }
+
+  async sendEmailDetailed(options: EmailOptions, retries: number = 3): Promise<EmailDeliveryResult> {
     if (!this.resend) {
       console.log('📧 Resend not configured - would send:', options.subject, 'to:', options.to);
-      return false;
+      return { success: false, error: "resend_not_configured" };
     }
 
     const isRateLimit = (err: any): boolean =>
@@ -50,7 +57,8 @@ class EmailService {
           to: options.to,
           subject: options.subject,
           html: options.html,
-          text: options.text
+          text: options.text,
+          headers: options.headers,
         });
 
         if (error) {
@@ -61,11 +69,11 @@ class EmailService {
             continue;
           }
           console.error('📧 Email send returned error:', error);
-          return false;
+          return { success: false, error: error.message || "provider_error" };
         }
 
         console.log(`📧 Email sent successfully: ${options.subject} to ${options.to} (id: ${data?.id ?? 'n/a'})`);
-        return true;
+        return { success: true, providerMessageId: data?.id };
       } catch (error: any) {
         if (isRateLimit(error) && attempt < retries) {
           const backoff = 1000 * attempt;
@@ -74,12 +82,12 @@ class EmailService {
           continue;
         }
         console.error('📧 Email sending failed:', error);
-        return false;
+        return { success: false, error: error?.message || "provider_exception" };
       }
     }
 
     console.error(`📧 Email to ${options.to} failed after ${retries} attempts (rate limited)`);
-    return false;
+    return { success: false, error: "rate_limit_retries_exhausted" };
   }
 
   async sendWaitlistNotification(email: string): Promise<void> {
@@ -840,21 +848,20 @@ Your AI Coach at RunAnalytics
     to: string;
     subject: string;
     previewText: string;
+    bodyText: string;
     ctaText: string;
     ctaUrl: string;
+    unsubscribeUrl: string;
     userName: string;
     step: string;
     campaign: string;
-  }): Promise<boolean> {
-    const { to, subject, previewText, ctaText, ctaUrl, userName, step, campaign } = options;
-    
-    const segmentLabels: Record<string, string> = {
-      segment_a: "Start your free Premium trial",
-      segment_b: "Get the most from your Premium trial",
-      segment_c: "We miss you! Come back and explore",
-    };
-    
-    const headline = segmentLabels[campaign] || "Your running insights await";
+  }): Promise<EmailDeliveryResult> {
+    const { to, subject, previewText, bodyText, ctaText, ctaUrl, unsubscribeUrl, userName, step, campaign } = options;
+    const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character] || character));
+    const safeName = escapeHtml(userName);
+    const safePreview = escapeHtml(previewText);
+    const safeBody = escapeHtml(bodyText);
+    const safeCtaText = escapeHtml(ctaText);
     
     const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -863,59 +870,59 @@ Your AI Coach at RunAnalytics
         </div>
         
         <div style="padding: 30px 0;">
-          <h2 style="color: #2c3e50; font-size: 22px; margin-bottom: 20px;">Hey ${userName}! 👋</h2>
+          <h2 style="color: #2c3e50; font-size: 22px; margin-bottom: 20px;">Hi ${safeName},</h2>
           
           <p style="color: #34495e; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
-            ${headline}
-          </p>
-          
-          <p style="color: #34495e; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
-            ${previewText}
+            ${safeBody}
           </p>
           
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${ctaUrl}" style="background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block;">${ctaText}</a>
+            <a href="${ctaUrl}" style="background: #e64a19; color: white; padding: 14px 26px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px; display: inline-block;">${safeCtaText}</a>
           </div>
           
           <p style="color: #7f8c8d; font-size: 14px; text-align: center; margin-top: 30px;">
-            Or copy this link: <a href="${ctaUrl}" style="color: #e74c3c;">${ctaUrl}</a>
+            ${safePreview}
           </p>
         </div>
         
         <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; color: #666; font-size: 14px;">
-          <p>Happy running!<br>The RunAnalytics Team</p>
+          <p>Happy running,<br>Biser from AITracker</p>
           <p style="font-size: 12px; color: #999;">
-            You're receiving this because you signed up for RunAnalytics. 
-            <a href="https://aitracker.run/settings?unsubscribe=marketing" style="color: #999;">Unsubscribe from marketing emails</a>
+            You opted in to personalized running insights from AITracker.
+            <a href="${unsubscribeUrl}" style="color: #666;">Unsubscribe</a><br>
+            AITracker, New York, NY, USA
           </p>
         </div>
       </div>
     `;
     
     const text = `
-Hey ${userName}!
+Hi ${userName},
 
-${headline}
-
-${previewText}
+${bodyText}
 
 ${ctaText}: ${ctaUrl}
 
-Happy running!
-The RunAnalytics Team
+Happy running,
+Biser from AITracker
 
 ---
-You're receiving this because you signed up for RunAnalytics.
-Unsubscribe: https://aitracker.run/settings?unsubscribe=marketing
+You opted in to personalized running insights from AITracker.
+Unsubscribe: ${unsubscribeUrl}
+AITracker, New York, NY, USA
     `;
     
     console.log(`[Email] Sending drip email ${step} (${campaign}) to ${to}`);
     
-    return await this.sendEmail({
+    return await this.sendEmailDetailed({
       to,
       subject,
       html,
-      text
+      text,
+      headers: {
+        "List-Unsubscribe": `<${unsubscribeUrl}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      }
     });
   }
 

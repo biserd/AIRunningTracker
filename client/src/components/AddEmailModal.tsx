@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Mail } from "lucide-react";
@@ -16,10 +17,11 @@ interface AddEmailModalProps {
 
 export function AddEmailModal({ open, onClose, onSuccess }: AddEmailModalProps) {
   const [email, setEmail] = useState("");
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const { toast } = useToast();
 
   const mutation = useMutation({
-    mutationFn: () => apiRequest("/api/auth/add-email", "POST", { email }),
+    mutationFn: () => apiRequest("/api/auth/add-email", "POST", { email, marketingConsent }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({ title: "Email saved!", description: "You can now subscribe to Premium." });
@@ -42,6 +44,11 @@ export function AddEmailModal({ open, onClose, onSuccess }: AddEmailModalProps) 
             <div className="w-12 h-12 bg-strava-orange/10 rounded-full flex items-center justify-center">
               <Mail className="h-6 w-6 text-strava-orange" />
             </div>
+          </div>
+
+          <div className="flex items-start gap-3 rounded-lg border bg-gray-50 p-3">
+            <Checkbox id="add-email-marketing" checked={marketingConsent} onCheckedChange={(checked) => setMarketingConsent(checked === true)} />
+            <Label htmlFor="add-email-marketing" className="cursor-pointer text-sm font-normal leading-5">Email me occasional personalized running insights and Premium updates. Optional. Unsubscribe anytime.</Label>
           </div>
           <DialogTitle className="text-center">Add your email</DialogTitle>
           <DialogDescription className="text-center">
@@ -71,7 +78,7 @@ export function AddEmailModal({ open, onClose, onSuccess }: AddEmailModalProps) 
           </Button>
 
           <p className="text-xs text-gray-500 text-center">
-            Your email is only used for billing and important account notifications.
+            Billing and important account messages are sent regardless of this optional preference.
           </p>
         </div>
       </DialogContent>

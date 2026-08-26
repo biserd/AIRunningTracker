@@ -137,15 +137,37 @@ interface CampaignWorkerStatus {
   jobsFailed: number;
   workerActive: boolean;
   campaignsEnabled: boolean;
+  dryRun: boolean;
+  hourlyLimit: number;
+  sendsThisHour: number;
+  rolloutPercent: number;
+  holdoutPercent: number;
+  readiness: { ready: boolean; checks: Record<string, boolean> };
 }
 
 interface SegmentStats {
-  segment_a: number;
-  segment_b: number;
-  segment_c: number;
+  segments: Record<string, number>;
+  eligible: number;
+  suppressed: number;
   paid: number;
   total: number;
 }
+
+interface LifecycleAnalytics {
+  rows: Array<{ campaign: string; variant: string; sent: number; delivered: number; clicked: number; trials: number; bounced: number; complained: number }>;
+}
+
+const SEGMENT_LABELS: Record<string, string> = {
+  signup_no_strava: "No Strava",
+  preview_ready_unseen: "Preview unseen",
+  preview_engaged_no_trial: "Preview engaged",
+  checkout_abandoned: "Checkout left",
+  trial_needs_activation: "Trial activation",
+  trial_engaged: "Trial engaged",
+  trial_ending: "Trial ending",
+  trial_expired_winback: "Trial win-back",
+  inactive_free: "Inactive free",
+};
 
 export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -191,6 +213,12 @@ export default function AdminPage() {
 
   const { data: segmentStats, isLoading: segmentStatsLoading } = useQuery<SegmentStats>({
     queryKey: ["/api/admin/campaigns/segment-stats"],
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
+
+  const { data: lifecycleAnalytics } = useQuery<LifecycleAnalytics>({
+    queryKey: ["/api/admin/campaigns/analytics"],
     enabled: !!user,
     refetchInterval: 30000,
   });
@@ -973,88 +1001,47 @@ export default function AdminPage() {
                 {/* Segment Stats */}
                 <div>
                   <h4 className="text-sm font-semibold text-gray-700 mb-3">User Segments</h4>
-                  <TooltipProvider>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-lg p-3 border border-red-200 cursor-help">
-                            <div className="flex items-center gap-1 mb-1">
-                              <UserX className="h-3 w-3 text-red-500" />
-                              <span className="text-xs font-medium text-gray-600">Segment A</span>
-                            </div>
-                            <p className="text-xl font-bold text-charcoal" data-testid="stat-segment-a">
-                              {segmentStats?.segment_a || 0}
-                            </p>
-                            <p className="text-xs text-gray-500">Not Connected</p>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="font-medium">Segment A: Not Connected</p>
-                          <p className="text-xs text-gray-400">Users who haven't connected Strava yet. Receives 3 emails pushing Premium trial.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg p-3 border border-yellow-200 cursor-help">
-                            <div className="flex items-center gap-1 mb-1">
-                              <Activity className="h-3 w-3 text-yellow-600" />
-                              <span className="text-xs font-medium text-gray-600">Segment B</span>
-                            </div>
-                            <p className="text-xl font-bold text-charcoal" data-testid="stat-segment-b">
-                              {segmentStats?.segment_b || 0}
-                            </p>
-                            <p className="text-xs text-gray-500">Active Trial</p>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="font-medium">Segment B: Active Trial Users</p>
-                          <p className="text-xs text-gray-400">Active Premium trial users. Receives 7 emails over 14 days for feature discovery.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-lg p-3 border border-gray-200 cursor-help">
-                            <div className="flex items-center gap-1 mb-1">
-                              <UserMinus className="h-3 w-3 text-gray-500" />
-                              <span className="text-xs font-medium text-gray-600">Segment C</span>
-                            </div>
-                            <p className="text-xl font-bold text-charcoal" data-testid="stat-segment-c">
-                              {segmentStats?.segment_c || 0}
-                            </p>
-                            <p className="text-xs text-gray-500">Inactive/Expired</p>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="font-medium">Segment C: Inactive or Expired Trial</p>
-                          <p className="text-xs text-gray-400">Inactive 7+ days or expired trial. Receives 4 win-back emails.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-3 border border-green-200">
-                        <div className="flex items-center gap-1 mb-1">
-                          <CheckCircle className="h-3 w-3 text-green-600" />
-                          <span className="text-xs font-medium text-gray-600">Paid</span>
-                        </div>
-                        <p className="text-xl font-bold text-charcoal" data-testid="stat-paid-users">
-                          {segmentStats?.paid || 0}
-                        </p>
-                        <p className="text-xs text-gray-500">Subscribed</p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                    {Object.entries(segmentStats?.segments || {}).map(([segment, count]) => (
+                      <div key={segment} className="rounded-lg border border-indigo-100 bg-indigo-50 p-3">
+                        <p className="text-xs font-medium text-gray-600">{SEGMENT_LABELS[segment] || segment}</p>
+                        <p className="text-xl font-bold text-charcoal">{count}</p>
                       </div>
-                      <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-3 border border-purple-200">
-                        <div className="flex items-center gap-1 mb-1">
-                          <Users className="h-3 w-3 text-purple-600" />
-                          <span className="text-xs font-medium text-gray-600">Total</span>
-                        </div>
-                        <p className="text-xl font-bold text-charcoal" data-testid="stat-total-users-campaigns">
-                          {segmentStats?.total || 0}
-                        </p>
-                        <p className="text-xs text-gray-500">All Users</p>
-                      </div>
+                    ))}
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                      <p className="text-xs font-medium text-gray-600">Suppressed</p>
+                      <p className="text-xl font-bold text-charcoal">{segmentStats?.suppressed || 0}</p>
                     </div>
-                  </TooltipProvider>
+                    <div className="rounded-lg border border-green-200 bg-green-50 p-3">
+                      <p className="text-xs font-medium text-gray-600">Paid</p>
+                      <p className="text-xl font-bold text-charcoal">{segmentStats?.paid || 0}</p>
+                    </div>
+                  </div>
                 </div>
+
+                {lifecycleAnalytics?.rows.length ? (
+                  <div>
+                    <h4 className="mb-3 text-sm font-semibold text-gray-700">Delivery and conversion</h4>
+                    <div className="overflow-x-auto rounded-lg border">
+                      <Table>
+                        <TableHeader><TableRow><TableHead>Segment</TableHead><TableHead>Variant</TableHead><TableHead>Sent</TableHead><TableHead>Delivered</TableHead><TableHead>Clicked</TableHead><TableHead>Trials</TableHead><TableHead>Problems</TableHead></TableRow></TableHeader>
+                        <TableBody>{lifecycleAnalytics.rows.map((row) => <TableRow key={`${row.campaign}:${row.variant}`}><TableCell>{SEGMENT_LABELS[row.campaign] || row.campaign}</TableCell><TableCell>{row.variant}</TableCell><TableCell>{row.sent}</TableCell><TableCell>{row.delivered}</TableCell><TableCell>{row.clicked}</TableCell><TableCell>{row.trials}</TableCell><TableCell>{row.bounced + row.complained}</TableCell></TableRow>)}</TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                ) : null}
 
                 {/* Worker Status */}
                 <div>
+                  <div className={`mb-3 rounded-lg border p-3 ${campaignWorkerStatus?.readiness.ready ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"}`}>
+                    <p className="text-sm font-semibold">{campaignWorkerStatus?.readiness.ready ? "Delivery readiness checks passed" : "Delivery is not ready"}</p>
+                    <p className="mt-1 text-xs text-gray-600">
+                      Mode: {campaignWorkerStatus?.dryRun ? "dry-run" : "live"} | Rollout: {campaignWorkerStatus?.rolloutPercent || 0}% | Holdout: {campaignWorkerStatus?.holdoutPercent || 0}% | Limit: {campaignWorkerStatus?.hourlyLimit || 0}/hour
+                    </p>
+                    {!campaignWorkerStatus?.readiness.ready && (
+                      <p className="mt-1 text-xs text-amber-800">Missing: {Object.entries(campaignWorkerStatus?.readiness.checks || {}).filter(([, ok]) => !ok).map(([key]) => key).join(", ")}</p>
+                    )}
+                  </div>
                   <h4 className="text-sm font-semibold text-gray-700 mb-3">Worker Status</h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div className="bg-gray-50 rounded-lg p-3">

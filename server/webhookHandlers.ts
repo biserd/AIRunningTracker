@@ -416,7 +416,11 @@ export class WebhookHandlers {
             billingPeriod: billingPeriodFromInterval(interval),
             plan: planToWrite,
             previousPlan,
-            source: 'stripe_webhook',
+            source: subscription.metadata?.source || 'stripe_webhook',
+            experimentVariant: subscription.metadata?.experimentVariant || undefined,
+            lifecycleCampaign: subscription.metadata?.lifecycleCampaign || undefined,
+            lifecycleStep: subscription.metadata?.lifecycleStep || undefined,
+            lifecycleCampaignVersion: subscription.metadata?.lifecycleCampaignVersion || undefined,
             stripeEventId: event.id,
             occurredAt: new Date((event.created || Math.floor(Date.now() / 1000)) * 1000).toISOString(),
           },
@@ -438,6 +442,17 @@ export class WebhookHandlers {
             dedupeKey: buildFunnelDedupeKey(conversionEvent, [subscription.id]),
             ...funnelBase,
           });
+          try {
+            const { dripCampaignService } = await import("./services/dripCampaign");
+            if (conversionEvent === "trial_started") {
+              await dripCampaignService.exitCampaignForUser(user.id, "trial_started");
+              await dripCampaignService.scheduleNextEmailForUser(user.id);
+            } else {
+              await dripCampaignService.onUserSubscribed(user.id);
+            }
+          } catch (campaignError) {
+            console.error("[Webhook] Lifecycle campaign transition failed:", campaignError);
+          }
         }
         if (
           event.type === 'customer.subscription.updated' &&

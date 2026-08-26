@@ -24,6 +24,7 @@ import { dataQualityService } from "./services/dataQuality";
 import { efficiencyService } from "./services/efficiency";
 import { dripCampaignService } from "./services/dripCampaign";
 import { dripCampaignWorker } from "./services/dripCampaignWorker";
+import { createMarketingToken, verifyMarketingToken } from "./services/campaignSecurity";
 import { sendWeeklySummaries, weeklySummaryWorker } from "./services/weeklySummaryWorker";
 import { accountDormancyWorker, reactivateDormantAccount } from "./services/accountDormancy";
 import { stravaWebhookService } from "./services/stravaWebhook";
@@ -1375,11 +1376,17 @@ ${allPages.map(page => `  <url>
       const checkoutBaseUrl = requestBaseUrl;
 
       const safeCapability = typeof capability === 'string' ? capability.slice(0, 80) : 'premium';
-      const safeSource = typeof source === 'string' ? source.slice(0, 80) : 'pricing';
+      const attributionCookie = String(req.headers.cookie || '').split(';').map((value: string) => value.trim()).find((value: string) => value.startsWith('lifecycle_attribution='));
+      let attributionToken: string | undefined;
+      try { attributionToken = attributionCookie ? decodeURIComponent(attributionCookie.slice('lifecycle_attribution='.length)) : undefined; } catch { attributionToken = undefined; }
+      const attribution = verifyMarketingToken(attributionToken, "attribution");
+      const attributionJob = attribution && attribution.userId === userId && attribution.jobId ? await storage.getEmailJob(attribution.jobId) : undefined;
+      const attributedSource = attributionJob ? `lifecycle:${attributionJob.campaign}:${attributionJob.step}` : undefined;
+      const safeSource = (attributedSource || (typeof source === 'string' ? source : 'pricing')).slice(0, 80);
       const safeActivityId = Number.isInteger(activityId) && activityId > 0 ? activityId : undefined;
       const safeBenefitKey = isBenefitKey(benefitKey) ? benefitKey : undefined;
       const safePendingResourceId = typeof pendingResourceId === 'string' ? pendingResourceId.slice(0, 80) : undefined;
-      const safeExperimentVariant = typeof experimentVariant === 'string' ? experimentVariant.slice(0, 80) : undefined;
+      const safeExperimentVariant = (attributionJob?.experimentVariant || (typeof experimentVariant === 'string' ? experimentVariant : undefined))?.slice(0, 80);
       const cancelPath = buildUpgradeUrl({
         source: safeSource,
         capability: safeCapability,
@@ -1408,6 +1415,9 @@ ${allPages.map(page => `  <url>
           ...(safeActivityId ? { activityId: String(safeActivityId) } : {}),
           ...(safePendingResourceId ? { pendingResourceId: safePendingResourceId } : {}),
           ...(safeExperimentVariant ? { experimentVariant: safeExperimentVariant } : {}),
+          ...(attributionJob?.campaign ? { lifecycleCampaign: attributionJob.campaign } : {}),
+          ...(attributionJob?.step ? { lifecycleStep: attributionJob.step } : {}),
+          ...(attributionJob?.campaignVersion ? { lifecycleCampaignVersion: String(attributionJob.campaignVersion) } : {}),
         },
         subscription_data: {
           ...(trialEligible ? { trial_period_days: 14 } : {}),
@@ -1417,6 +1427,10 @@ ${allPages.map(page => `  <url>
             source: safeSource,
             capability: safeCapability,
             ...(safePendingResourceId ? { pendingResourceId: safePendingResourceId } : {}),
+            ...(safeExperimentVariant ? { experimentVariant: safeExperimentVariant } : {}),
+            ...(attributionJob?.campaign ? { lifecycleCampaign: attributionJob.campaign } : {}),
+            ...(attributionJob?.step ? { lifecycleStep: attributionJob.step } : {}),
+            ...(attributionJob?.campaignVersion ? { lifecycleCampaignVersion: String(attributionJob.campaignVersion) } : {}),
           }
         }
       });
@@ -2188,7 +2202,7 @@ ${allPages.map(page => `  <url>
   // Lazy email collection: called when user needs email for billing
   app.post("/api/auth/add-email", authenticateJWT, async (req: any, res) => {
     try {
-      const { email } = z.object({ email: z.string().email() }).parse(req.body);
+      const { email, marketingConsent } = z.object({ email: z.string().email(), marketingConsent: z.boolean().optional() }).parse(req.body);
       const userId = req.user.id;
 
       // Check uniqueness
@@ -2197,7 +2211,10 @@ ${allPages.map(page => `  <url>
         return res.status(409).json({ message: "That email is already registered to another account." });
       }
 
-      await storage.updateUser(userId, { email });
+      await storage.updateUser(userId, {
+        email,
+        ...(marketingConsent === true ? { marketingOptOut: false, marketingConsentStatus: "consented" as const, marketingConsentedAt: new Date(), marketingConsentSource: "email_capture" } : {}),
+      });
       // Invalidate the cached dashboard payload so the saved email shows up immediately
       deleteCachedByPrefix(`dashboard:${userId}:`);
       res.json({ success: true });
@@ -3024,6 +3041,8 @@ ${allPages.map(page => `  <url>
           coachQuietHoursEnd: user.coachQuietHoursEnd,
           notifyPostRun: user.notifyPostRun ?? true,
           postRunEmailFrequency: user.postRunEmailFrequency ?? "every_run",
+          marketingOptOut: user.marketingOptOut ?? false,
+          marketingConsentStatus: user.marketingConsentStatus ?? "unknown",
         },
         usage: usageStats,
         stats: {
@@ -8923,35 +8942,71 @@ ${allPages.map(page => `  <url>
 
   // ============= DRIP CAMPAIGN ENDPOINTS =============
 
-  // Track email click (public endpoint with token validation)
-  app.get("/api/track/click", async (req: any, res) => {
+  // Signed campaign click. The target path comes from the server-side job,
+  // never from the request, preventing IDOR attribution and open redirects.
+  app.get("/api/marketing/click", async (req: any, res) => {
     try {
-      const { userId, campaign, step, redirect, source } = req.query;
-      
-      if (userId && campaign && step) {
-        await storage.createEmailClick({
-          userId: parseInt(userId),
-          campaign,
-          step,
-          source: source || null,
-          ctaKey: null,
-        });
-      }
-      
-      // Redirect to the target URL or dashboard
-      const targetUrl = redirect || '/dashboard';
-      res.redirect(302, targetUrl);
+      const payload = verifyMarketingToken(req.query.token, "click");
+      if (!payload?.jobId) return res.status(400).send("This campaign link is invalid or has expired.");
+      const job = await storage.getEmailJob(payload.jobId);
+      if (!job || job.userId !== payload.userId || job.jobType !== "drip") return res.status(400).send("This campaign link is invalid or has expired.");
+      const metadata = (job.metadata || {}) as { ctaUrl?: string; ctaKey?: string };
+      const targetPath = sanitizeReturnTo(metadata.ctaUrl) || "/dashboard";
+      await storage.createEmailClick({ userId: job.userId, jobId: job.id, campaign: job.campaign, step: job.step, source: "signed_email", ctaKey: metadata.ctaKey || null, dedupeKey: `click:${job.id}:${metadata.ctaKey || "primary"}` });
+      const attributionToken = createMarketingToken({ kind: "attribution", userId: job.userId, jobId: job.id }, 14 * 24 * 60 * 60);
+      res.cookie("lifecycle_attribution", attributionToken, { maxAge: 14 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/" });
+      const user = await storage.getUser(job.userId);
+      res.redirect(302, await authService.wrapWithEmailMagicLink(user?.email, targetPath));
     } catch (error) {
-      console.error("Track click error:", error);
-      res.redirect(302, '/dashboard');
+      console.error("Campaign click error:", error);
+      res.status(400).send("This campaign link could not be opened.");
     }
   });
+
+  // Retire the legacy caller-controlled click endpoint.
+  app.get("/api/track/click", (_req, res) => res.status(410).send("This campaign link is no longer supported."));
+
+  const unsubscribeMarketing = async (req: any, res: Response) => {
+    const payload = verifyMarketingToken(req.query.token, "unsubscribe");
+    if (!payload) return res.status(400).send("This unsubscribe link is invalid or has expired.");
+    if (req.method === "GET") {
+      const token = String(req.query.token).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+      return res.status(200).type("html").send(`<!doctype html><html><body style='font-family:system-ui;max-width:560px;margin:64px auto;padding:20px'><h1>Stop marketing emails?</h1><p>You will still receive account, billing and requested service messages.</p><form method='post' action='/api/marketing/unsubscribe?token=${token}'><button style='background:#e64a19;color:white;border:0;border-radius:8px;padding:12px 18px;font-weight:700' type='submit'>Unsubscribe</button></form></body></html>`);
+    }
+    await storage.updateUser(payload.userId, { marketingOptOut: true, marketingConsentStatus: "unsubscribed", marketingUnsubscribedAt: new Date() });
+    await dripCampaignService.exitCampaignForUser(payload.userId, "unsubscribed");
+    return res.status(200).type("html").send("<!doctype html><html><body style='font-family:system-ui;max-width:560px;margin:64px auto;padding:20px'><h1>You are unsubscribed</h1><p>AITracker will no longer send you marketing emails. Your account and service emails are unchanged.</p><p><a href='https://aitracker.run/settings'>Manage account settings</a></p></body></html>");
+  };
+  app.get("/api/marketing/unsubscribe", unsubscribeMarketing);
+  app.post("/api/marketing/unsubscribe", unsubscribeMarketing);
 
   // Admin: Get campaign analytics
   app.get("/api/admin/campaigns/analytics", authenticateAdmin, async (req: any, res) => {
     try {
-      const analytics = await storage.getCampaignAnalytics();
-      res.json(analytics);
+      const delivery = await db.execute(sql`
+        SELECT campaign, experiment_variant,
+          COUNT(*) FILTER (WHERE status = 'sent')::int AS sent,
+          COUNT(*) FILTER (WHERE delivered_at IS NOT NULL)::int AS delivered,
+          COUNT(*) FILTER (WHERE bounced_at IS NOT NULL)::int AS bounced,
+          COUNT(*) FILTER (WHERE complained_at IS NOT NULL)::int AS complained
+        FROM email_jobs
+        WHERE job_type = 'drip' AND campaign_version = 2
+        GROUP BY campaign, experiment_variant
+      `);
+      const clicks = await db.execute(sql`
+        SELECT campaign, COUNT(DISTINCT job_id)::int AS clicked
+        FROM email_clicks WHERE job_id IS NOT NULL GROUP BY campaign
+      `);
+      const trials = await db.execute(sql`
+        SELECT properties->>'lifecycleCampaign' AS campaign, COUNT(*)::int AS trials
+        FROM funnel_events
+        WHERE event = 'trial_started' AND properties->>'lifecycleCampaign' IS NOT NULL
+        GROUP BY properties->>'lifecycleCampaign'
+      `);
+      const clickMap = new Map((clicks.rows as any[]).map((row) => [row.campaign, Number(row.clicked)]));
+      const trialMap = new Map((trials.rows as any[]).map((row) => [row.campaign, Number(row.trials)]));
+      const rows = (delivery.rows as any[]).map((row) => ({ campaign: row.campaign, variant: row.experiment_variant, sent: Number(row.sent), delivered: Number(row.delivered), clicked: clickMap.get(row.campaign) || 0, trials: trialMap.get(row.campaign) || 0, bounced: Number(row.bounced), complained: Number(row.complained) }));
+      res.json({ rows });
     } catch (error: any) {
       console.error("Campaign analytics error:", error);
       res.status(500).json({ message: error.message || "Failed to get analytics" });
@@ -8962,7 +9017,11 @@ ${allPages.map(page => `  <url>
   app.get("/api/admin/campaigns/worker-status", authenticateAdmin, async (req: any, res) => {
     try {
       const status = dripCampaignWorker.getStatus();
-      res.json(status);
+      res.json({
+        ...status,
+        rolloutPercent: Number(await storage.getSystemSetting("drip_campaigns_rollout_percent") || "5"),
+        holdoutPercent: Number(await storage.getSystemSetting("drip_campaigns_holdout_percent") || "10"),
+      });
     } catch (error: any) {
       console.error("Worker status error:", error);
       res.status(500).json({ message: error.message || "Failed to get worker status" });
@@ -9002,19 +9061,25 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  app.post("/api/admin/campaigns/safety-config", authenticateAdmin, async (req: any, res) => {
+    try {
+      const input = z.object({ dryRun: z.boolean().optional(), hourlyLimit: z.number().int().min(1).max(500).optional(), rolloutPercent: z.number().int().min(0).max(100).optional(), holdoutPercent: z.number().int().min(0).max(50).optional() }).parse(req.body);
+      await dripCampaignWorker.setSafetyConfig({ dryRun: input.dryRun, hourlyLimit: input.hourlyLimit });
+      if (input.rolloutPercent !== undefined) await storage.setSystemSetting("drip_campaigns_rollout_percent", String(input.rolloutPercent));
+      if (input.holdoutPercent !== undefined) await storage.setSystemSetting("drip_campaigns_holdout_percent", String(input.holdoutPercent));
+      res.json({ success: true, ...dripCampaignWorker.getStatus(), rolloutPercent: input.rolloutPercent, holdoutPercent: input.holdoutPercent });
+    } catch (error: any) { res.status(400).json({ message: error.message || "Invalid campaign safety settings" }); }
+  });
+
   // Admin: Get segment stats for campaigns (reads from user_campaigns table)
   app.get("/api/admin/campaigns/segment-stats", authenticateAdmin, async (req: any, res) => {
     try {
-      // Get actual enrollment counts from user_campaigns table
-      const segmentStats = await storage.getSegmentStatsFromCampaigns();
-      
-      // Get user counts using proper count queries (no limit)
+      const result = await dripCampaignService.getSegmentStats();
       const userCounts = await storage.getUserCountsBySubscription();
-      
       res.json({
-        segment_a: segmentStats.segment_a || 0,
-        segment_b: segmentStats.segment_b || 0,
-        segment_c: segmentStats.segment_c || 0,
+        segments: result.bySegment,
+        eligible: result.eligible,
+        suppressed: result.suppressed,
         paid: userCounts.paid,
         total: userCounts.total,
       });
@@ -9171,7 +9236,7 @@ ${allPages.map(page => `  <url>
       }
 
       const allUsers = await storage.getAllUsers(10000);
-      const recipients = allUsers.filter((u: any) => !u.marketingOptOut && u.email);
+      const recipients = allUsers.filter((u: any) => u.marketingConsentStatus === "consented" && !u.marketingOptOut && u.email);
 
       let sent = 0;
       let failed = 0;
@@ -9229,7 +9294,7 @@ ${allPages.map(page => `  <url>
         return res.status(403).json({ message: "Access denied" });
       }
       
-      await storage.updateUser(userId, { marketingOptOut: true });
+      await storage.updateUser(userId, { marketingOptOut: true, marketingConsentStatus: "unsubscribed", marketingUnsubscribedAt: new Date() });
       await dripCampaignService.exitCampaignForUser(userId, "user_optout");
       
       res.json({ success: true, message: "Successfully unsubscribed from marketing emails" });
@@ -9237,6 +9302,30 @@ ${allPages.map(page => `  <url>
       console.error("Marketing optout error:", error);
       res.status(500).json({ message: error.message || "Failed to opt out" });
     }
+  });
+
+  app.put("/api/marketing/preferences", authenticateJWT, async (req: any, res) => {
+    try {
+      const { subscribed } = z.object({ subscribed: z.boolean() }).parse(req.body);
+      const userId = req.user.id;
+      const current = await storage.getUser(userId);
+      if (!current) return res.status(404).json({ message: "User not found" });
+      if (subscribed && current.marketingConsentStatus === "suppressed") return res.status(409).json({ message: "Marketing email cannot be enabled until the delivery problem is resolved." });
+      const updated = await storage.updateUser(userId, subscribed ? {
+        marketingOptOut: false,
+        marketingConsentStatus: "consented",
+        marketingConsentedAt: new Date(),
+        marketingUnsubscribedAt: null,
+        marketingConsentSource: "settings",
+      } : {
+        marketingOptOut: true,
+        marketingConsentStatus: "unsubscribed",
+        marketingUnsubscribedAt: new Date(),
+      });
+      if (subscribed) await dripCampaignService.scheduleNextEmailForUser(userId);
+      else await dripCampaignService.exitCampaignForUser(userId, "unsubscribed_in_settings");
+      res.json({ success: true, user: updated ? toClientUser(updated) : undefined });
+    } catch (error: any) { res.status(400).json({ message: error.message || "Failed to update marketing preferences" }); }
   });
 
   // Update user's last seen timestamp on dashboard load

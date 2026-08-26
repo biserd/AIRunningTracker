@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Activity, Eye, EyeOff, Mail, CheckCircle2 } from "lucide-react";
 import { SiStrava } from "react-icons/si";
 import { apiRequest } from "@/lib/queryClient";
@@ -46,7 +47,7 @@ export default function AuthPage() {
 
   const registerForm = useForm<RegisterData>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { email: "", password: "", firstName: "", lastName: "" },
+    defaultValues: { email: "", password: "", firstName: "", lastName: "", marketingConsent: false },
   });
 
   const registerMutation = useMutation({
@@ -292,6 +293,17 @@ export default function AuthPage() {
                     {registerForm.formState.errors.password && (
                       <p className="text-sm text-red-500">{registerForm.formState.errors.password.message}</p>
                     )}
+                  </div>
+
+                  <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <Checkbox
+                      id="marketingConsent"
+                      checked={registerForm.watch("marketingConsent")}
+                      onCheckedChange={(checked) => registerForm.setValue("marketingConsent", checked === true)}
+                    />
+                    <Label htmlFor="marketingConsent" className="cursor-pointer text-sm font-normal leading-5 text-gray-700">
+                      Email me occasional personalized running insights and Premium updates. Optional. Unsubscribe anytime.
+                    </Label>
                   </div>
 
                   <Button

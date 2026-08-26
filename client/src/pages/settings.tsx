@@ -41,6 +41,7 @@ function SettingsPageContent() {
   const [notifyWeeklySummary, setNotifyWeeklySummary] = useState(true);
   const [emailEditing, setEmailEditing] = useState(false);
   const [emailDraft, setEmailDraft] = useState("");
+  const [marketingSubscribed, setMarketingSubscribed] = useState(false);
 
   useEffect(() => {
     if (dashboardData?.user?.unitPreference) {
@@ -61,6 +62,7 @@ function SettingsPageContent() {
     if (dashboardData?.user?.coachNotifyWeeklySummary !== undefined) {
       setNotifyWeeklySummary(dashboardData.user.coachNotifyWeeklySummary);
     }
+    setMarketingSubscribed(dashboardData?.user?.marketingConsentStatus === "consented" && !dashboardData?.user?.marketingOptOut);
   }, [dashboardData]);
 
   const updateSettingsMutation = useMutation({
@@ -171,6 +173,17 @@ function SettingsPageContent() {
         variant: "destructive",
       });
     },
+  });
+
+  const updateMarketingMutation = useMutation({
+    mutationFn: async (subscribed: boolean) => apiRequest("/api/marketing/preferences", "PUT", { subscribed }),
+    onSuccess: (_data, subscribed) => {
+      setMarketingSubscribed(subscribed);
+      queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user!.id}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({ title: subscribed ? "Running insights enabled" : "Marketing emails stopped", description: subscribed ? "We will send occasional personalized tips and Premium updates." : "Service and account emails are unchanged." });
+    },
+    onError: (error: any) => toast({ title: "Could not save preference", description: error.message || "Please try again.", variant: "destructive" }),
   });
 
   const handleSave = () => {
@@ -663,6 +676,23 @@ function SettingsPageContent() {
             </CardContent>
           </Card>
         )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Mail className="h-5 w-5" /> Personalized running insights</CardTitle>
+            <CardDescription>Occasional, relevant emails based on where you are in AITracker. This is separate from run summaries and account messages.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <Label htmlFor="marketing-email-toggle" className="text-base font-medium">Tips and Premium updates</Label>
+                <p className="mt-1 text-sm text-gray-500">Get useful prompts such as a ready run insight, a trial reminder or a return-to-training check-in. Unsubscribe anytime.</p>
+              </div>
+              <Switch id="marketing-email-toggle" checked={marketingSubscribed} disabled={updateMarketingMutation.isPending || dashboardData?.user?.marketingConsentStatus === "suppressed"} onCheckedChange={(checked) => updateMarketingMutation.mutate(checked)} />
+            </div>
+            {dashboardData?.user?.marketingConsentStatus === "suppressed" && <p className="mt-3 text-sm text-amber-700">Marketing email is unavailable because a previous message bounced or was reported as spam.</p>}
+          </CardContent>
+        </Card>
 
         <Card className="border-red-200">
           <CardHeader>

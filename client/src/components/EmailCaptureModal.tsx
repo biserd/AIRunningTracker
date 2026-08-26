@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Mail, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -15,11 +16,12 @@ interface Props {
 
 export default function EmailCaptureModal({ open, userId }: Props) {
   const [email, setEmail] = useState("");
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const { toast } = useToast();
 
   const mutation = useMutation({
     mutationFn: (email: string) =>
-      apiRequest("/api/auth/add-email", "POST", { email }),
+      apiRequest("/api/auth/add-email", "POST", { email, marketingConsent }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${userId}`] });
@@ -45,6 +47,11 @@ export default function EmailCaptureModal({ open, userId }: Props) {
         <DialogHeader className="items-center text-center gap-2">
           <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mx-auto">
             <Mail className="h-6 w-6 text-orange-600" />
+          </div>
+
+          <div className="flex items-start gap-3 rounded-lg border bg-gray-50 p-3">
+            <Checkbox id="capture-marketing" checked={marketingConsent} onCheckedChange={(checked) => setMarketingConsent(checked === true)} />
+            <Label htmlFor="capture-marketing" className="cursor-pointer text-sm font-normal leading-5">Email me occasional personalized running insights and Premium updates. Optional. Unsubscribe anytime.</Label>
           </div>
           <DialogTitle className="text-xl">One last thing: add your email</DialogTitle>
           <DialogDescription className="text-center text-sm text-muted-foreground">

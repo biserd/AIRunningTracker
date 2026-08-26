@@ -162,7 +162,9 @@ export interface IStorage {
   
   createEmailJob(job: InsertEmailJob): Promise<EmailJob>;
   getPendingEmailJobs(limit?: number): Promise<EmailJob[]>;
+  claimPendingEmailJobs(limit: number, workerId: string, leaseSeconds?: number): Promise<EmailJob[]>;
   getEmailJobByDedupeKey(dedupeKey: string): Promise<EmailJob | undefined>;
+  getEmailJob(id: number): Promise<EmailJob | undefined>;
   updateEmailJob(id: number, updates: Partial<EmailJob>): Promise<EmailJob | undefined>;
   cancelEmailJobsForUser(userId: number): Promise<void>;
   getLastSentEmailForUser(userId: number): Promise<EmailJob | null>;
@@ -1558,8 +1560,12 @@ export class DatabaseStorage implements IStorage {
     const [result] = await db
       .insert(userCampaigns)
       .values(campaign)
+      .onConflictDoNothing()
       .returning();
-    return result;
+    if (result) return result;
+    const [existing] = await db.select().from(userCampaigns).where(and(eq(userCampaigns.userId, campaign.userId), eq(userCampaigns.state, "active"))).limit(1);
+    if (!existing) throw new Error("Campaign enrollment conflict could not be resolved");
+    return existing;
   }
 
   async updateUserCampaign(id: number, updates: Partial<UserCampaign>): Promise<UserCampaign | undefined> {
@@ -1586,9 +1592,13 @@ export class DatabaseStorage implements IStorage {
   async createEmailJob(job: InsertEmailJob): Promise<EmailJob> {
     const [result] = await db
       .insert(emailJobs)
-      .values(job)
+      .values(job as typeof emailJobs.$inferInsert)
+      .onConflictDoNothing({ target: emailJobs.dedupeKey })
       .returning();
-    return result;
+    if (result) return result;
+    const existing = await this.getEmailJobByDedupeKey(job.dedupeKey);
+    if (!existing) throw new Error("Email job deduplication failed");
+    return existing;
   }
 
   async getPendingEmailJobs(limit = 100): Promise<EmailJob[]> {
@@ -1597,11 +1607,44 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(emailJobs)
       .where(and(
-        eq(emailJobs.status, "pending"),
-        lt(emailJobs.scheduledAt, now)
+        or(eq(emailJobs.status, "pending"), eq(emailJobs.status, "retry_scheduled")),
+        lt(emailJobs.scheduledAt, now),
+        or(isNull(emailJobs.nextAttemptAt), lt(emailJobs.nextAttemptAt, now))
       ))
       .orderBy(emailJobs.scheduledAt)
       .limit(limit);
+  }
+
+  async claimPendingEmailJobs(limit: number, workerId: string, leaseSeconds = 300): Promise<EmailJob[]> {
+    const safeLimit = Math.max(1, Math.min(100, Math.floor(limit)));
+    const safeLease = Math.max(60, Math.min(900, Math.floor(leaseSeconds)));
+    const result = await db.execute(sql`
+      WITH candidates AS (
+        SELECT id
+        FROM email_jobs
+        WHERE scheduled_at <= NOW()
+          AND (next_attempt_at IS NULL OR next_attempt_at <= NOW())
+          AND (
+            status IN ('pending', 'retry_scheduled')
+            OR (status = 'processing' AND lease_expires_at < NOW())
+          )
+        ORDER BY scheduled_at ASC
+        FOR UPDATE SKIP LOCKED
+        LIMIT ${safeLimit}
+      )
+      UPDATE email_jobs AS jobs
+      SET status = 'processing',
+          claimed_at = NOW(),
+          claimed_by = ${workerId},
+          lease_expires_at = NOW() + (${safeLease} * INTERVAL '1 second')
+      FROM candidates
+      WHERE jobs.id = candidates.id
+      RETURNING jobs.id
+    `);
+    const rawRows = Array.isArray((result as any)?.rows) ? (result as any).rows : (Array.isArray(result) ? result : []);
+    const ids = rawRows.map((row: any) => Number(row.id)).filter(Number.isInteger);
+    if (!ids.length) return [];
+    return db.select().from(emailJobs).where(and(inArray(emailJobs.id, ids), eq(emailJobs.claimedBy, workerId))).orderBy(emailJobs.scheduledAt);
   }
 
   async getEmailJobByDedupeKey(dedupeKey: string): Promise<EmailJob | undefined> {
@@ -1609,6 +1652,11 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(emailJobs)
       .where(eq(emailJobs.dedupeKey, dedupeKey));
+    return result;
+  }
+
+  async getEmailJob(id: number): Promise<EmailJob | undefined> {
+    const [result] = await db.select().from(emailJobs).where(eq(emailJobs.id, id)).limit(1);
     return result;
   }
 
@@ -1624,8 +1672,8 @@ export class DatabaseStorage implements IStorage {
   async cancelEmailJobsForUser(userId: number): Promise<void> {
     await db
       .update(emailJobs)
-      .set({ status: "cancelled" })
-      .where(and(eq(emailJobs.userId, userId), eq(emailJobs.status, "pending")));
+      .set({ status: "cancelled", claimedAt: null, claimedBy: null, leaseExpiresAt: null })
+      .where(and(eq(emailJobs.userId, userId), inArray(emailJobs.status, ["pending", "processing", "retry_scheduled"])));
   }
 
   async getLastSentEmailForUser(userId: number): Promise<EmailJob | null> {
@@ -1645,8 +1693,12 @@ export class DatabaseStorage implements IStorage {
     const [result] = await db
       .insert(emailClicks)
       .values(click)
+      .onConflictDoNothing({ target: emailClicks.dedupeKey })
       .returning();
-    return result;
+    if (result) return result;
+    const [existing] = await db.select().from(emailClicks).where(eq(emailClicks.dedupeKey, click.dedupeKey || "")).limit(1);
+    if (!existing) throw new Error("Email click deduplication failed");
+    return existing;
   }
 
   async getEmailClicksByUser(userId: number, limit = 50): Promise<EmailClick[]> {

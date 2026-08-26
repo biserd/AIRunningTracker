@@ -36,6 +36,8 @@ export interface DashboardData {
     coachDailyAvailabilityDate?: string | null;
     notifyPostRun?: boolean;
     postRunEmailFrequency?: string;
+    marketingConsentStatus?: "unknown" | "consented" | "unsubscribed" | "suppressed";
+    marketingOptOut?: boolean;
   };
   stats: {
     totalDistance: string;

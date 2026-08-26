@@ -43,6 +43,10 @@ export class AuthService {
       firstName: userData.firstName,
       lastName: userData.lastName,
       username: userData.email,
+      marketingOptOut: !userData.marketingConsent,
+      marketingConsentStatus: userData.marketingConsent ? "consented" : "unknown",
+      marketingConsentedAt: userData.marketingConsent ? new Date() : null,
+      marketingConsentSource: userData.marketingConsent ? "email_registration" : null,
     });
 
     // Generate JWT token
