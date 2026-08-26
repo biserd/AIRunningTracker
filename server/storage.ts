@@ -4,6 +4,7 @@ import { db } from "./db";
 import { eq, desc, and, or, sql, inArray, gte, gt, lt, ne, isNull } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { deriveCalendarWeekNumber } from "@shared/trainingPlanProgress";
+import { classifyAdminError, sanitizeAdminLogText, type AdminErrorSeverity } from "./services/adminTelemetry";
 
 export const RUNNING_ACTIVITY_TYPES = ['Run', 'TrailRun', 'VirtualRun'];
 
@@ -230,6 +231,8 @@ export interface IStorage {
     activityTrend: Array<{ date: string; count: number }>;
   }>;
   getSystemPerformance(): Promise<{
+    telemetryWindowMinutes: number;
+    telemetryAvailable: boolean;
     apiMetrics: {
       totalRequests: number;
       avgResponseTime: number;
@@ -239,13 +242,10 @@ export interface IStorage {
     databaseMetrics: {
       connectionStatus: 'healthy' | 'warning' | 'error';
       avgQueryTime: number;
-      slowQueries: number;
-      totalQueries: number;
     };
     systemHealth: {
       uptime: number;
       memoryUsage: number;
-      diskUsage: number;
       status: 'operational' | 'degraded' | 'down';
     };
     recentErrors: Array<{
@@ -257,8 +257,9 @@ export interface IStorage {
       errorMessage?: string | null;
       errorDetails?: string | null;
       elapsedTime?: number | null;
-      requestBody?: string | null;
-      responseBody?: string | null;
+      severity: AdminErrorSeverity;
+      expected: boolean;
+      category: string;
     }>;
     performanceTrend: Array<{
       timestamp: string;
@@ -273,8 +274,6 @@ export interface IStorage {
       userId?: number | null;
       elapsedTime: number;
       statusCode: number;
-      requestBody?: string | null;
-      responseBody?: string | null;
     }>;
   }>;
   
@@ -2075,14 +2074,20 @@ export class DatabaseStorage implements IStorage {
     sent: number;
     pending: number;
   }> {
+    const eligibleCondition = and(
+      eq(users.marketingConsentStatus, "consented"),
+      eq(users.marketingOptOut, false),
+      sql`${users.email} IS NOT NULL`
+    );
     const [totalResult] = await db
       .select({ count: sql<number>`count(*)` })
-      .from(users);
+      .from(users)
+      .where(eligibleCondition);
     
     const [sentResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(users)
-      .where(sql`${users.welcomeEmailSentAt} IS NOT NULL`);
+      .where(and(eligibleCondition, sql`${users.welcomeEmailSentAt} IS NOT NULL`));
     
     const total = Number(totalResult?.count || 0);
     const sent = Number(sentResult?.count || 0);
@@ -2098,7 +2103,12 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(users)
-      .where(sql`${users.welcomeEmailSentAt} IS NULL`)
+      .where(and(
+        sql`${users.welcomeEmailSentAt} IS NULL`,
+        eq(users.marketingConsentStatus, "consented"),
+        eq(users.marketingOptOut, false),
+        sql`${users.email} IS NOT NULL`
+      ))
       .orderBy(users.id);
   }
 
@@ -2282,6 +2292,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getSystemPerformance(): Promise<{
+    telemetryWindowMinutes: number;
+    telemetryAvailable: boolean;
     apiMetrics: {
       totalRequests: number;
       avgResponseTime: number;
@@ -2291,13 +2303,10 @@ export class DatabaseStorage implements IStorage {
     databaseMetrics: {
       connectionStatus: 'healthy' | 'warning' | 'error';
       avgQueryTime: number;
-      slowQueries: number;
-      totalQueries: number;
     };
     systemHealth: {
       uptime: number;
       memoryUsage: number;
-      diskUsage: number;
       status: 'operational' | 'degraded' | 'down';
     };
     recentErrors: Array<{
@@ -2309,8 +2318,9 @@ export class DatabaseStorage implements IStorage {
       errorMessage?: string | null;
       errorDetails?: string | null;
       elapsedTime?: number | null;
-      requestBody?: string | null;
-      responseBody?: string | null;
+      severity: AdminErrorSeverity;
+      expected: boolean;
+      category: string;
     }>;
     performanceTrend: Array<{
       timestamp: string;
@@ -2325,35 +2335,27 @@ export class DatabaseStorage implements IStorage {
       userId?: number | null;
       elapsedTime: number;
       statusCode: number;
-      requestBody?: string | null;
-      responseBody?: string | null;
     }>;
   }> {
-    // Calculate system metrics (simulated based on current data and system state)
     const now = new Date();
     const hourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-    
-    // API Metrics - Based on database activity as proxy for API usage
-    const [recentActivitiesCount] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(activities)
-      .where(gte(activities.createdAt, hourAgo));
 
-    const [recentUsersCount] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(users)
-      .where(gte(users.createdAt, hourAgo));
+    const metricsResult = await db.execute(sql`
+      SELECT
+        COUNT(*)::int AS request_count,
+        COALESCE(AVG(elapsed_time), 0)::float AS avg_response_time,
+        COUNT(*) FILTER (WHERE status_code >= 500)::int AS server_error_count
+      FROM performance_logs
+      WHERE timestamp >= ${hourAgo}
+    `);
+    const metricRow = (metricsResult.rows[0] || {}) as any;
+    const requestCount = Number(metricRow.request_count || 0);
+    const serverErrorCount = Number(metricRow.server_error_count || 0);
+    const avgResponseTime = Number(metricRow.avg_response_time || 0);
+    const errorRate = requestCount > 0 ? (serverErrorCount / requestCount) * 100 : 0;
 
-    // Estimate API requests based on platform activity
-    const estimatedRequests = (recentActivitiesCount.count * 3) + (recentUsersCount.count * 5) + 50; // Base requests
-    const avgResponseTime = 150 + Math.random() * 100; // 150-250ms typical
-    const errorRate = Math.random() * 2; // 0-2% error rate
-    
-    // Database Metrics - Test connection and estimate performance
     let connectionStatus: 'healthy' | 'warning' | 'error' = 'healthy';
-    let avgQueryTime = 25 + Math.random() * 25; // 25-50ms typical
-    let slowQueries = 0;
-    let totalQueries = estimatedRequests * 2; // Estimate 2 queries per request
+    let avgQueryTime = 0;
 
     try {
       // Test database connection with a simple query
@@ -2363,31 +2365,20 @@ export class DatabaseStorage implements IStorage {
       
       avgQueryTime = queryTime;
       
-      if (queryTime > 100) {
-        connectionStatus = 'warning';
-        slowQueries = Math.floor(totalQueries * 0.05); // 5% slow if db is slow
-      } else if (queryTime > 500) {
-        connectionStatus = 'error';
-        slowQueries = Math.floor(totalQueries * 0.15); // 15% slow if db is very slow
-      }
+      if (queryTime > 500) connectionStatus = 'error';
+      else if (queryTime > 100) connectionStatus = 'warning';
     } catch (error) {
       connectionStatus = 'error';
       avgQueryTime = 1000;
-      slowQueries = Math.floor(totalQueries * 0.3);
     }
 
-    // System Health Metrics
     const uptimeSeconds = process.uptime();
     const memoryUsage = process.memoryUsage();
     const memoryUsagePercent = Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100);
-    const diskUsagePercent = 25 + Math.random() * 30; // Simulated 25-55% disk usage
-    
+
     let systemStatus: 'operational' | 'degraded' | 'down' = 'operational';
-    if (connectionStatus === 'error' || memoryUsagePercent > 90) {
-      systemStatus = 'down';
-    } else if (connectionStatus === 'warning' || memoryUsagePercent > 80 || errorRate > 5) {
-      systemStatus = 'degraded';
-    }
+    if (connectionStatus === 'error') systemStatus = 'down';
+    else if (connectionStatus === 'warning' || memoryUsagePercent > 95 || errorRate > 5) systemStatus = 'degraded';
 
     // Recent Errors - exclude expected credential rejections. Browser sessions
     // can expire normally, and OAuth refresh tokens are deliberately single-use
@@ -2403,8 +2394,6 @@ export class DatabaseStorage implements IStorage {
         errorMessage: performanceLogs.errorMessage,
         errorDetails: performanceLogs.errorDetails,
         elapsedTime: performanceLogs.elapsedTime,
-        requestBody: performanceLogs.requestBody,
-        responseBody: performanceLogs.responseBody
       })
       .from(performanceLogs)
       .where(
@@ -2417,18 +2406,20 @@ export class DatabaseStorage implements IStorage {
       .orderBy(sql`${performanceLogs.timestamp} DESC`)
       .limit(10);
 
-    const recentErrors = errorLogs.map(log => ({
-      timestamp: log.timestamp.toISOString(),
-      statusCode: log.statusCode,
-      endpoint: log.endpoint,
-      method: log.method,
-      userId: log.userId,
-      errorMessage: log.errorMessage,
-      errorDetails: log.errorDetails,
-      elapsedTime: log.elapsedTime,
-      requestBody: log.requestBody,
-      responseBody: log.responseBody
-    }));
+    const recentErrors = errorLogs.map(log => {
+      const classification = classifyAdminError(log);
+      return {
+        timestamp: log.timestamp.toISOString(),
+        statusCode: log.statusCode,
+        endpoint: log.endpoint,
+        method: log.method,
+        userId: log.userId,
+        errorMessage: sanitizeAdminLogText(log.errorMessage),
+        errorDetails: sanitizeAdminLogText(log.errorDetails, 1000),
+        elapsedTime: log.elapsedTime,
+        ...classification,
+      };
+    });
 
     // Slow Requests - Query from performanceLogs table (elapsedTime > 10 seconds)
     const slowRequestLogs = await db
@@ -2439,8 +2430,6 @@ export class DatabaseStorage implements IStorage {
         userId: performanceLogs.userId,
         elapsedTime: performanceLogs.elapsedTime,
         statusCode: performanceLogs.statusCode,
-        requestBody: performanceLogs.requestBody,
-        responseBody: performanceLogs.responseBody
       })
       .from(performanceLogs)
       .where(
@@ -2459,44 +2448,52 @@ export class DatabaseStorage implements IStorage {
       userId: log.userId,
       elapsedTime: log.elapsedTime!,
       statusCode: log.statusCode,
-      requestBody: log.requestBody,
-      responseBody: log.responseBody
     }));
 
-    // Performance Trend (last 6 hours, hourly data points)
-    const performanceTrend = [];
-    for (let i = 5; i >= 0; i--) {
-      const timestamp = new Date(now.getTime() - i * 60 * 60 * 1000);
-      const baseResponseTime = 150;
-      const timeVariation = Math.sin(i * 0.5) * 30; // Some fluctuation
-      const hourlyRequests = 100 + Math.random() * 50;
-      const hourlyErrors = Math.floor(hourlyRequests * (errorRate / 100));
-      
-      performanceTrend.push({
+    const trendStart = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+    const trendResult = await db.execute(sql`
+      SELECT
+        date_trunc('hour', timestamp) AS bucket,
+        COUNT(*)::int AS request_count,
+        COALESCE(AVG(elapsed_time), 0)::float AS avg_response_time,
+        COUNT(*) FILTER (WHERE status_code >= 500)::int AS error_count
+      FROM performance_logs
+      WHERE timestamp >= ${trendStart}
+      GROUP BY date_trunc('hour', timestamp)
+      ORDER BY bucket
+    `);
+    const trendByHour = new Map((trendResult.rows as any[]).map((row) => [
+      new Date(row.bucket).toISOString().slice(0, 13),
+      row,
+    ]));
+    const performanceTrend = Array.from({ length: 6 }, (_, index) => {
+      const timestamp = new Date(now.getTime() - (5 - index) * 60 * 60 * 1000);
+      timestamp.setMinutes(0, 0, 0);
+      const row = trendByHour.get(timestamp.toISOString().slice(0, 13));
+      return {
         timestamp: timestamp.toISOString(),
-        responseTime: Math.round(baseResponseTime + timeVariation),
-        requestCount: Math.round(hourlyRequests),
-        errorCount: hourlyErrors
-      });
-    }
+        responseTime: Math.round(Number(row?.avg_response_time || 0)),
+        requestCount: Number(row?.request_count || 0),
+        errorCount: Number(row?.error_count || 0),
+      };
+    });
 
     return {
+      telemetryWindowMinutes: 60,
+      telemetryAvailable: requestCount > 0,
       apiMetrics: {
-        totalRequests: estimatedRequests,
+        totalRequests: requestCount,
         avgResponseTime: Math.round(avgResponseTime),
         errorRate: Math.round(errorRate * 10) / 10,
-        requestsPerHour: estimatedRequests
+        requestsPerHour: requestCount,
       },
       databaseMetrics: {
         connectionStatus,
         avgQueryTime: Math.round(avgQueryTime),
-        slowQueries,
-        totalQueries
       },
       systemHealth: {
         uptime: Math.round(uptimeSeconds),
         memoryUsage: memoryUsagePercent,
-        diskUsage: Math.round(diskUsagePercent),
         status: systemStatus
       },
       recentErrors,

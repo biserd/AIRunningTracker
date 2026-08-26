@@ -855,8 +855,9 @@ Your AI Coach at RunAnalytics
     userName: string;
     step: string;
     campaign: string;
+    listUnsubscribe?: boolean;
   }): Promise<EmailDeliveryResult> {
-    const { to, subject, previewText, bodyText, ctaText, ctaUrl, unsubscribeUrl, userName, step, campaign } = options;
+    const { to, subject, previewText, bodyText, ctaText, ctaUrl, unsubscribeUrl, userName, step, campaign, listUnsubscribe = true } = options;
     const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character] || character));
     const safeName = escapeHtml(userName);
     const safePreview = escapeHtml(previewText);
@@ -919,10 +920,10 @@ AITracker, New York, NY, USA
       subject,
       html,
       text,
-      headers: {
+      headers: listUnsubscribe ? {
         "List-Unsubscribe": `<${unsubscribeUrl}>`,
         "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-      }
+      } : undefined,
     });
   }
 
@@ -1028,7 +1029,7 @@ Author, experienced runner, and creator of RunAnalytics`;
     return this.sendEmail({ to, subject, html, text });
   }
 
-  async sendFoundersWelcomeEmail(to: string): Promise<boolean> {
+  async sendFoundersWelcomeEmail(to: string, unsubscribeUrl: string, listUnsubscribe = true): Promise<boolean> {
     const subject = 'Welcome to RunAnalytics and thank you for being early';
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333; line-height: 1.7;">
@@ -1089,7 +1090,8 @@ Author, experienced runner, and creator of RunAnalytics`;
         </p>
         
         <div style="border-top: 1px solid #eee; padding-top: 15px; margin-top: 30px; font-size: 12px; color: #999;">
-          <p>You're receiving this because you signed up for RunAnalytics</p>
+          <p>You're receiving this because you opted in to product and coaching emails from AITracker.</p>
+          <p><a href="${unsubscribeUrl}" style="color:#666">Unsubscribe</a></p>
         </div>
       </div>
     `;
@@ -1134,13 +1136,21 @@ Use code AITRACKERFOUNDERS at Stripe checkout.
 Thank you again for being here early. I'm excited to build this alongside you.
 
 Kind regards,
-Biser`;
+Biser
+
+---
+You opted in to product and coaching emails from AITracker.
+Unsubscribe: ${unsubscribeUrl}`;
 
     return await this.sendEmail({
       to,
       subject,
       html,
-      text
+      text,
+      headers: listUnsubscribe ? {
+        "List-Unsubscribe": `<${unsubscribeUrl}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      } : undefined,
     });
   }
 

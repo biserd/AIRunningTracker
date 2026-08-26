@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { storage } from "../storage";
+import { sanitizeAdminLogText } from "../services/adminTelemetry";
 
 /**
  * Sensitive endpoints where we should NOT log request/response bodies
@@ -108,8 +109,8 @@ export function truncateData(data: any, maxBytes: number = 5120): string | null 
 }
 
 /**
- * Middleware to log API performance metrics to the database
- * Captures: endpoint, method, status code, elapsed time, user ID, request/response bodies
+ * Middleware to log metadata-only API performance metrics to the database.
+ * Request and response bodies are intentionally excluded.
  */
 export function performanceLogger(req: Request, res: Response, next: NextFunction) {
   const startTime = Date.now();
@@ -128,18 +129,11 @@ export function performanceLogger(req: Request, res: Response, next: NextFunctio
     // Extract user agent from headers
     const userAgent = req.headers['user-agent'] || null;
 
-    // Check if this is a sensitive endpoint where we should NOT log bodies
-    const suppressBodies = isSensitiveEndpoint(endpoint);
-
-    // Capture request body (for POST, PUT, PATCH requests) - skip for sensitive endpoints
-    const requestBody = (
-      !suppressBodies &&
-      ['POST', 'PUT', 'PATCH'].includes(method) && 
-      req.body
-    ) ? truncateData(req.body) : null;
-
-    // Capture response body - skip for sensitive endpoints
-    const responseBody = (!suppressBodies && data) ? truncateData(data) : null;
+    // Performance monitoring does not need payload bodies. Keeping them out of
+    // the database prevents credentials, magic links and private runner data
+    // from becoming visible through an admin troubleshooting surface.
+    const requestBody = null;
+    const responseBody = null;
 
     // Extract error message and details if this is an error response
     let errorMessage: string | null = null;
@@ -148,8 +142,8 @@ export function performanceLogger(req: Request, res: Response, next: NextFunctio
     if (statusCode >= 400 && data) {
       try {
         const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
-        errorMessage = parsedData?.message || parsedData?.error || `HTTP ${statusCode}`;
-        errorDetails = parsedData?.details || parsedData?.stack || null;
+        errorMessage = sanitizeAdminLogText(parsedData?.message || parsedData?.error || `HTTP ${statusCode}`);
+        errorDetails = sanitizeAdminLogText(parsedData?.details || parsedData?.stack || null, 1000);
         
         // Log slow requests (>10 seconds) to console for debugging
         if (elapsedTime > 10000) {

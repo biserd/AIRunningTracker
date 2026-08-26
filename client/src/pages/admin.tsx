@@ -1,1831 +1,202 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "wouter";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import {
+  Activity, AlertTriangle, Bot, CheckCircle, ChevronLeft, ChevronRight, Clock,
+  Database, ExternalLink, Gauge, Layers, Power, RefreshCw, Search, Server,
+  Settings2, Shield, ShoppingBag, Target, TestTube2, TrendingUp, UserCheck, Users,
+  XCircle,
+} from "lucide-react";
+import { Line, LineChart, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from "recharts";
+import AppHeader from "@/components/AppHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Users, Activity, TrendingUp, Calendar, Shield, Database, BarChart3, Clock, Target, Signal, Server, Cpu, HardDrive, AlertTriangle, CheckCircle, XCircle, ChevronLeft, ChevronRight, ShoppingBag, Layers, Mail, Send, Bot, Zap, PlayCircle, Power, MailOpen, UserX, UserCheck, UserMinus } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Switch } from "@/components/ui/switch";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
-import { useEffect, useState } from "react";
-import AppHeader from "@/components/AppHeader";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
-interface AdminStats {
-  totalUsers: number;
-  connectedUsers: number;
-  totalActivities: number;
-  recentUsers: {
-    id: number;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    stravaConnected: boolean;
-    createdAt: string;
-  }[];
-  recentActivities: {
-    id: number;
-    userId: number;
-    name: string;
-    distance: number;
-    movingTime: number;
-    startDate: string;
-  }[];
+type SectionKey = "overview" | "growth" | "campaigns" | "users" | "coach" | "system" | "catalog";
+
+interface AdminStats { totalUsers: number; connectedUsers: number; totalActivities: number; }
+interface GrowthData {
+  periodDays: number; generatedAt: string;
+  cohort: { signups: number; connected: number; previewReady: number; currentlyTrialing: number; currentlyPaid: number };
+  current: { activePaid: number; activeTrials: number; activeRunners: number };
+  cancellations: number;
+  stages: Array<{ key: string; label: string; count: number; conversionFromPrevious: number | null }>;
 }
-
-interface User {
-  id: number;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  stravaConnected: boolean;
-  unitPreference: string;
-  isAdmin: boolean;
-  createdAt: string;
-  lastSyncAt?: string;
-}
-
-interface UserAnalytics {
-  dailyActiveUsers: number;
-  weeklyActiveUsers: number;
-  monthlyActiveUsers: number;
-  avgActivitiesPerUser: number;
-  avgDistancePerActivity: number;
-  avgTimePerActivity: number;
-  newUsersToday: number;
-  newUsersThisWeek: number;
-  syncSuccessRate: number;
-  topActivityTypes: Array<{ type: string; count: number }>;
-  userGrowthTrend: Array<{ date: string; count: number }>;
-  activityTrend: Array<{ date: string; count: number }>;
-}
-
-interface SystemPerformance {
-  apiMetrics: {
-    totalRequests: number;
-    avgResponseTime: number;
-    errorRate: number;
-    requestsPerHour: number;
-  };
-  databaseMetrics: {
-    connectionStatus: 'healthy' | 'warning' | 'error';
-    avgQueryTime: number;
-    slowQueries: number;
-    totalQueries: number;
-  };
-  systemHealth: {
-    uptime: number;
-    memoryUsage: number;
-    diskUsage: number;
-    status: 'operational' | 'degraded' | 'down';
-  };
-  recentErrors: Array<{
-    timestamp: string;
-    statusCode: number;
-    endpoint: string;
-    method: string;
-    userId?: number | null;
-    errorMessage?: string | null;
-    errorDetails?: string | null;
-    elapsedTime?: number | null;
-    requestBody?: string | null;
-    responseBody?: string | null;
-  }>;
-  performanceTrend: Array<{
-    timestamp: string;
-    responseTime: number;
-    requestCount: number;
-    errorCount: number;
-  }>;
-  slowRequests: Array<{
-    timestamp: string;
-    endpoint: string;
-    method: string;
-    userId?: number | null;
-    elapsedTime: number;
-    statusCode: number;
-    requestBody?: string | null;
-    responseBody?: string | null;
-  }>;
-}
-
-interface AgentStats {
-  totalRuns: number;
-  byStatus: { status: string; count: number }[];
-  byType: { runType: string; count: number }[];
-  recentRuns: {
-    id: number;
-    userId: number;
-    runType: string;
-    triggeredBy: string;
-    status: string;
-    createdAt: string;
-    completedAt?: string;
-    errorMessage?: string;
-  }[];
-  last24Hours: number;
-  successRate: number;
-}
-
-interface CampaignWorkerStatus {
-  isRunning: boolean;
-  lastRunAt: string | null;
-  jobsProcessed: number;
-  jobsFailed: number;
-  workerActive: boolean;
-  campaignsEnabled: boolean;
-  dryRun: boolean;
-  hourlyLimit: number;
-  sendsThisHour: number;
-  rolloutPercent: number;
-  holdoutPercent: number;
+interface CampaignStatus {
+  workerActive: boolean; campaignsEnabled: boolean; dryRun: boolean; hourlyLimit: number; sendsThisHour: number;
+  rolloutPercent: number; holdoutPercent: number; lastRunAt: string | null; jobsProcessed: number; jobsFailed: number;
+  operationalState: "blocked" | "disabled" | "dry_run" | "canary" | "live"; nextAction: string;
   readiness: { ready: boolean; checks: Record<string, boolean> };
 }
-
 interface SegmentStats {
-  segments: Record<string, number>;
-  eligible: number;
-  suppressed: number;
-  paid: number;
-  total: number;
+  segments: Record<string, number>; eligible: number; suppressed: number; paid: number; total: number; marketingAudience: number;
+  suppressionReasons: Record<string, number>;
+}
+interface LifecycleAnalytics { rows: Array<{ campaign: string; variant: string; sent: number; delivered: number; clicked: number; trials: number; bounced: number; complained: number }> }
+interface AgentStats {
+  totalRuns: number; last24Hours: number; successRate: number;
+  byStatus: Array<{ status: string; count: number }>;
+  recentRuns: Array<{ id: number; userId: number; runType: string; triggeredBy: string; status: string; createdAt: string; errorMessage?: string }>;
+}
+interface SystemPerformance {
+  telemetryWindowMinutes: number; telemetryAvailable: boolean;
+  apiMetrics: { totalRequests: number; avgResponseTime: number; errorRate: number; requestsPerHour: number };
+  databaseMetrics: { connectionStatus: "healthy" | "warning" | "error"; avgQueryTime: number };
+  systemHealth: { uptime: number; memoryUsage: number; status: "operational" | "degraded" | "down" };
+  recentErrors: Array<{ timestamp: string; statusCode: number; endpoint: string; method: string; userId?: number; errorMessage?: string; elapsedTime?: number; severity: "critical" | "warning" | "info"; expected: boolean; category: string }>;
+  performanceTrend: Array<{ timestamp: string; responseTime: number; requestCount: number; errorCount: number }>;
+  slowRequests: Array<{ timestamp: string; endpoint: string; method: string; userId?: number; elapsedTime: number; statusCode: number }>;
+}
+interface AdminUser {
+  id: number; email?: string; firstName?: string; lastName?: string; stravaConnected: boolean; unitPreference?: string; isAdmin: boolean;
+  createdAt?: string; lastSyncAt?: string; lastSeenAt?: string; subscriptionPlan?: string; subscriptionStatus?: string; trialEndsAt?: string;
+  marketingConsentStatus?: string; marketingOptOut: boolean; premiumPreviewCreatedAt?: string; coachEnabled: boolean;
 }
 
-interface LifecycleAnalytics {
-  rows: Array<{ campaign: string; variant: string; sent: number; delivered: number; clicked: number; trials: number; bounced: number; complained: number }>;
-}
-
+const SECTIONS: Array<{ key: SectionKey; label: string; icon: typeof Users }> = [
+  { key: "overview", label: "Overview", icon: Gauge }, { key: "growth", label: "Growth", icon: TrendingUp },
+  { key: "campaigns", label: "Campaigns", icon: Target }, { key: "users", label: "Users", icon: Users },
+  { key: "coach", label: "Coach operations", icon: Bot }, { key: "system", label: "System", icon: Server },
+  { key: "catalog", label: "Catalog", icon: ShoppingBag },
+];
 const SEGMENT_LABELS: Record<string, string> = {
-  signup_no_strava: "No Strava",
-  preview_ready_unseen: "Preview unseen",
-  preview_engaged_no_trial: "Preview engaged",
-  checkout_abandoned: "Checkout left",
-  trial_needs_activation: "Trial activation",
-  trial_engaged: "Trial engaged",
-  trial_ending: "Trial ending",
-  trial_expired_winback: "Trial win-back",
-  inactive_free: "Inactive free",
+  signup_no_strava: "No Strava", preview_ready_unseen: "Preview unseen", preview_engaged_no_trial: "Preview engaged",
+  checkout_abandoned: "Checkout left", trial_needs_activation: "Trial activation", trial_engaged: "Trial engaged",
+  trial_ending: "Trial ending", trial_expired_winback: "Trial win-back", inactive_free: "Inactive free",
 };
+const SUPPRESSION_LABELS: Record<string, string> = {
+  missing_email: "Missing email", consent_missing: "Consent not collected", unsubscribed: "Unsubscribed",
+  delivery_suppressed: "Bounce or complaint", paid: "Paid and excluded", not_currently_eligible: "No current lifecycle trigger",
+};
+
+function pct(numerator: number, denominator: number) { return denominator > 0 ? `${Math.round((numerator / denominator) * 1000) / 10}%` : "Not enough data"; }
+function dateLabel(value?: string | null) { return value ? new Date(value).toLocaleString() : "Never"; }
+function statusTone(status: string) {
+  if (["operational", "healthy", "live", "completed", "sent"].includes(status)) return "bg-emerald-100 text-emerald-800 border-emerald-200";
+  if (["blocked", "down", "critical", "failed"].includes(status)) return "bg-red-100 text-red-800 border-red-200";
+  if (["degraded", "warning", "canary", "dry_run", "pending"].includes(status)) return "bg-amber-100 text-amber-800 border-amber-200";
+  return "bg-slate-100 text-slate-700 border-slate-200";
+}
+
+function StatCard({ label, value, note, icon: Icon }: { label: string; value: string | number; note: string; icon: typeof Users }) {
+  return <Card><CardContent className="p-5"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-medium text-slate-600">{label}</p><p className="mt-2 text-3xl font-bold text-slate-950">{value}</p><p className="mt-1 text-xs text-slate-500">{note}</p></div><Icon className="h-5 w-5 text-orange-500" /></div></CardContent></Card>;
+}
+
+function BulkConfirm({ open, title, description, phrase, pending, onClose, onConfirm }: { open: boolean; title: string; description: string; phrase: string; pending: boolean; onClose: () => void; onConfirm: () => void }) {
+  const [value, setValue] = useState("");
+  useEffect(() => { if (!open) setValue(""); }, [open]);
+  return <Dialog open={open} onOpenChange={(next) => { if (!next && !pending) onClose(); }}><DialogContent><DialogHeader><DialogTitle>{title}</DialogTitle><DialogDescription>{description}</DialogDescription></DialogHeader><div><p className="mb-2 text-sm text-slate-600">Type <strong>{phrase}</strong> to continue.</p><Input value={value} onChange={(event) => setValue(event.target.value)} autoComplete="off" /></div><DialogFooter><Button variant="outline" onClick={onClose} disabled={pending}>Cancel</Button><Button variant="destructive" onClick={onConfirm} disabled={pending || value !== phrase}>{pending ? "Working..." : "Confirm"}</Button></DialogFooter></DialogContent></Dialog>;
+}
 
 export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const [section, setSection] = useState<SectionKey>("overview");
+  const [days, setDays] = useState(30);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
-
-  const { data: stats, isLoading: statsLoading } = useQuery<AdminStats>({
-    queryKey: ["/api/admin/stats"],
-    enabled: !!user,
-  });
-
-  const { data: usersData, isLoading: usersLoading } = useQuery<{ users: User[], total: number }>({
-    queryKey: ["/api/admin/users", page, pageSize],
-    enabled: !!user,
-  });
-
-  const { data: analytics, isLoading: analyticsLoading } = useQuery<UserAnalytics>({
-    queryKey: ["/api/admin/analytics"],
-    enabled: !!user,
-  });
-
-  const { data: performance, isLoading: performanceLoading } = useQuery<SystemPerformance>({
-    queryKey: ["/api/admin/performance"],
-    enabled: !!user,
-    refetchInterval: 30000, // Refresh every 30 seconds for real-time monitoring
-  });
-
-  // AI Agent stats
-  const { data: agentStats, isLoading: agentStatsLoading } = useQuery<AgentStats>({
-    queryKey: ["/api/admin/agent-stats"],
-    enabled: !!user,
-    refetchInterval: 30000,
-  });
-
-  // Drip Campaign stats
-  const { data: campaignWorkerStatus, isLoading: campaignWorkerLoading } = useQuery<CampaignWorkerStatus>({
-    queryKey: ["/api/admin/campaigns/worker-status"],
-    enabled: !!user,
-    refetchInterval: 10000,
-  });
-
-  const { data: segmentStats, isLoading: segmentStatsLoading } = useQuery<SegmentStats>({
-    queryKey: ["/api/admin/campaigns/segment-stats"],
-    enabled: !!user,
-    refetchInterval: 30000,
-  });
-
-  const { data: lifecycleAnalytics } = useQuery<LifecycleAnalytics>({
-    queryKey: ["/api/admin/campaigns/analytics"],
-    enabled: !!user,
-    refetchInterval: 30000,
-  });
-
-  const toggleCampaignsMutation = useMutation({
-    mutationFn: (enabled: boolean) => apiRequest("/api/admin/campaigns/toggle", "POST", { enabled }),
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns/worker-status"] });
-      toast({
-        title: data.campaignsEnabled ? "Campaigns Enabled" : "Campaigns Disabled",
-        description: data.message,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Toggle Failed",
-        description: error.message || "Could not toggle campaigns",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Launch email blast
-  const { data: pendingLaunchEmails, isLoading: pendingEmailsLoading } = useQuery<{ count: number; emails: string[] }>({
-    queryKey: ["/api/admin/launch-emails/pending"],
-    enabled: !!user,
-  });
-
-  const [launchEmailResult, setLaunchEmailResult] = useState<{ sent: number; failed: number; errors: string[] } | null>(null);
-  const [showConfirmSend, setShowConfirmSend] = useState(false);
-
-  const sendLaunchEmailsMutation = useMutation({
-    mutationFn: () => apiRequest("/api/admin/send-launch-emails", "POST"),
-    onSuccess: (data: any) => {
-      setLaunchEmailResult(data);
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/launch-emails/pending"] });
-      toast({
-        title: "Launch Emails Sent",
-        description: `Successfully sent ${data.sent} emails${data.failed > 0 ? `, ${data.failed} failed` : ""}`,
-      });
-      setShowConfirmSend(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Failed to Send",
-        description: error.message || "Could not send launch emails",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Welcome Campaign
-  const { data: welcomeCampaignStats, isLoading: welcomeCampaignLoading } = useQuery<{
-    total: number;
-    sent: number;
-    pending: number;
-  }>({
-    queryKey: ["/api/admin/welcome-campaign/stats"],
-    enabled: !!user,
-  });
-
-  const [welcomeEmailResult, setWelcomeEmailResult] = useState<{
-    sent: number;
-    failed: number;
-    total: number;
-    message: string;
-  } | null>(null);
-  const [showConfirmWelcome, setShowConfirmWelcome] = useState(false);
-
-  const [productUpdateResult, setProductUpdateResult] = useState<{
-    sent: number;
-    failed: number;
-    total: number;
-    message: string;
-  } | null>(null);
-  const [showConfirmProductUpdate, setShowConfirmProductUpdate] = useState(false);
-
-  const sendTestProductUpdateMutation = useMutation({
-    mutationFn: () => apiRequest("/api/admin/send-product-update?test=true", "POST"),
-    onSuccess: (data: any) => {
-      toast({
-        title: data.success ? "Test Email Sent" : "Failed",
-        description: data.message,
-        variant: data.success ? "default" : "destructive",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Failed to Send",
-        description: error.message || "Could not send test email",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const sendAllProductUpdateMutation = useMutation({
-    mutationFn: () => apiRequest("/api/admin/send-product-update", "POST"),
-    onSuccess: (data: any) => {
-      setProductUpdateResult(data);
-      toast({
-        title: "Product Update Sent",
-        description: data.message,
-      });
-      setShowConfirmProductUpdate(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Failed to Send",
-        description: error.message || "Could not send product update emails",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const sendTestWelcomeEmailMutation = useMutation({
-    mutationFn: () => apiRequest("/api/admin/welcome-campaign/test", "POST"),
-    onSuccess: (data: any) => {
-      toast({
-        title: data.success ? "Test Email Sent" : "Failed",
-        description: data.message,
-        variant: data.success ? "default" : "destructive",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Failed to Send",
-        description: error.message || "Could not send test email",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const sendAllWelcomeEmailsMutation = useMutation({
-    mutationFn: () => apiRequest("/api/admin/welcome-campaign/send-all", "POST"),
-    onSuccess: (data: any) => {
-      setWelcomeEmailResult(data);
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/welcome-campaign/stats"] });
-      toast({
-        title: "Welcome Emails Sent",
-        description: data.message,
-      });
-      setShowConfirmWelcome(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Failed to Send",
-        description: error.message || "Could not send welcome emails",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Check if user is admin
-  useEffect(() => {
-    if (!authLoading && user && !user.isAdmin) {
-      toast({
-        title: "Access Denied",
-        description: "Admin access required",
-        variant: "destructive"
-      });
-      setLocation("/dashboard");
-    }
-  }, [user, authLoading, toast, setLocation]);
-
-  // Don't render if user is not admin
-  if (authLoading || !user || !user.isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange mx-auto mb-4"></div>
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
-
-  const formatDistance = (meters: number) => {
-    return `${(meters / 1000).toFixed(1)}km`;
-  };
-
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
-  };
-
-  const formatUptime = (seconds: number) => {
-    const days = Math.floor(seconds / 86400);
-    const hours = Math.floor((seconds % 86400) / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    
-    if (days > 0) {
-      return `${days}d ${hours}h ${mins}m`;
-    } else if (hours > 0) {
-      return `${hours}h ${mins}m`;
-    } else {
-      return `${mins}m`;
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'operational':
-      case 'healthy':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'warning':
-      case 'degraded':
-        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
-      case 'error':
-      case 'down':
-        return <XCircle className="h-4 w-4 text-red-500" />;
-      default:
-        return <AlertTriangle className="h-4 w-4 text-gray-500" />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'operational':
-      case 'healthy':
-        return 'text-green-600 bg-green-50';
-      case 'warning':
-      case 'degraded':
-        return 'text-yellow-600 bg-yellow-50';
-      case 'error':
-      case 'down':
-        return 'text-red-600 bg-red-50';
-      default:
-        return 'text-gray-600 bg-gray-50';
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <AppHeader />
-      
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-3">
-                <Shield className="h-8 w-8 text-strava-orange" />
-                <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-              </div>
-              <p className="text-gray-600 mt-2">Platform overview and user management</p>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                onClick={() => setLocation('/admin/queue')}
-                variant="outline"
-                className="flex items-center gap-2"
-                data-testid="button-queue-dashboard"
-              >
-                <Layers className="h-4 w-4" />
-                Queue Dashboard
-              </Button>
-              <Button 
-                onClick={() => setLocation('/admin/shoes')}
-                variant="outline"
-                className="flex items-center gap-2"
-                data-testid="button-shoes-admin"
-              >
-                <ShoppingBag className="h-4 w-4" />
-                Shoe Database
-              </Button>
-              <Button 
-                onClick={() => setLocation('/admin/performance-logs')}
-                variant="outline"
-                className="flex items-center gap-2"
-                data-testid="button-performance-logs"
-              >
-                <Server className="h-4 w-4" />
-                Performance Logs
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{statsLoading ? "-" : stats?.totalUsers}</div>
-              <p className="text-xs text-muted-foreground">
-                {statsLoading ? "-" : stats?.connectedUsers} connected to Strava
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Activities</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{statsLoading ? "-" : stats?.totalActivities}</div>
-              <p className="text-xs text-muted-foreground">
-                Synced from Strava
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Connection Rate</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {statsLoading ? "-" : stats?.totalUsers ? Math.round((stats.connectedUsers / stats.totalUsers) * 100) : 0}%
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Users with Strava connected
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Launch Email Blast */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              Launch Email Blast
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {pendingEmailsLoading ? (
-              <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-strava-orange mx-auto"></div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-lg font-semibold" data-testid="text-pending-emails-count">
-                      {pendingLaunchEmails?.count || 0} subscribers waiting
-                    </p>
-                    <p className="text-sm text-gray-500">Waitlist subscribers who haven't received the launch email</p>
-                  </div>
-                  {!showConfirmSend ? (
-                    <Button
-                      onClick={() => setShowConfirmSend(true)}
-                      disabled={(pendingLaunchEmails?.count || 0) === 0}
-                      className="bg-green-600 hover:bg-green-700"
-                      data-testid="button-send-launch-emails"
-                    >
-                      <Send className="h-4 w-4 mr-2" />
-                      Send Launch Emails
-                    </Button>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowConfirmSend(false)}
-                        data-testid="button-cancel-send"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={() => sendLaunchEmailsMutation.mutate()}
-                        disabled={sendLaunchEmailsMutation.isPending}
-                        className="bg-red-600 hover:bg-red-700"
-                        data-testid="button-confirm-send"
-                      >
-                        {sendLaunchEmailsMutation.isPending ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Sending...
-                          </>
-                        ) : (
-                          <>Confirm Send {pendingLaunchEmails?.count} Emails</>
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {launchEmailResult && (
-                  <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border">
-                    <h4 className="font-semibold mb-2">Last Send Results:</h4>
-                    <div className="flex gap-4">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span data-testid="text-sent-count">{launchEmailResult.sent} sent</span>
-                      </div>
-                      {launchEmailResult.failed > 0 && (
-                        <div className="flex items-center gap-2">
-                          <XCircle className="h-4 w-4 text-red-500" />
-                          <span data-testid="text-failed-count">{launchEmailResult.failed} failed</span>
-                        </div>
-                      )}
-                    </div>
-                    {launchEmailResult.errors.length > 0 && (
-                      <details className="mt-2">
-                        <summary className="text-sm text-red-600 cursor-pointer hover:underline">
-                          View errors
-                        </summary>
-                        <ul className="text-xs text-red-500 mt-1 list-disc list-inside">
-                          {launchEmailResult.errors.map((err, i) => (
-                            <li key={i}>{err}</li>
-                          ))}
-                        </ul>
-                      </details>
-                    )}
-                  </div>
-                )}
-
-                {(pendingLaunchEmails?.emails?.length || 0) > 0 && (
-                  <details className="text-sm">
-                    <summary className="cursor-pointer text-gray-600 hover:text-gray-800">
-                      Show pending email addresses
-                    </summary>
-                    <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded max-h-40 overflow-y-auto">
-                      {pendingLaunchEmails?.emails.map((email, i) => (
-                        <div key={i} className="text-xs text-gray-600">{email}</div>
-                      ))}
-                    </div>
-                  </details>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* AI Agent Coach Stats */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bot className="h-5 w-5 text-amber-500" />
-              AI Agent Coach Stats
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {agentStatsLoading ? (
-              <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-strava-orange mx-auto"></div>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Summary Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-4 border border-amber-200">
-                    <div className="flex items-center gap-2 mb-1">
-                      <PlayCircle className="h-4 w-4 text-amber-600" />
-                      <span className="text-sm font-medium text-gray-600">Total Runs</span>
-                    </div>
-                    <p className="text-2xl font-bold text-charcoal" data-testid="stat-total-agent-runs">
-                      {agentStats?.totalRuns || 0}
-                    </p>
-                  </div>
-                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-4 border border-blue-200">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Zap className="h-4 w-4 text-blue-600" />
-                      <span className="text-sm font-medium text-gray-600">Last 24h</span>
-                    </div>
-                    <p className="text-2xl font-bold text-charcoal" data-testid="stat-agent-runs-24h">
-                      {agentStats?.last24Hours || 0}
-                    </p>
-                  </div>
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
-                    <div className="flex items-center gap-2 mb-1">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-sm font-medium text-gray-600">Success Rate</span>
-                    </div>
-                    <p className="text-2xl font-bold text-charcoal" data-testid="stat-agent-success-rate">
-                      {agentStats?.successRate || 100}%
-                    </p>
-                  </div>
-                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Activity className="h-4 w-4 text-purple-600" />
-                      <span className="text-sm font-medium text-gray-600">Run Types</span>
-                    </div>
-                    <p className="text-2xl font-bold text-charcoal" data-testid="stat-agent-run-types">
-                      {agentStats?.byType?.length || 0}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Status Breakdown */}
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3">By Status</h4>
-                    <div className="space-y-2">
-                      {agentStats?.byStatus?.map((item) => (
-                        <div key={item.status} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
-                          <div className="flex items-center gap-2">
-                            {item.status === 'completed' && <CheckCircle className="h-4 w-4 text-green-500" />}
-                            {item.status === 'failed' && <XCircle className="h-4 w-4 text-red-500" />}
-                            {item.status === 'running' && <PlayCircle className="h-4 w-4 text-blue-500" />}
-                            {item.status === 'pending' && <Clock className="h-4 w-4 text-yellow-500" />}
-                            {item.status === 'skipped' && <AlertTriangle className="h-4 w-4 text-gray-500" />}
-                            <span className="capitalize text-sm">{item.status}</span>
-                          </div>
-                          <Badge variant="outline">{item.count}</Badge>
-                        </div>
-                      )) || <p className="text-sm text-gray-500">No agent runs yet</p>}
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3">By Type</h4>
-                    <div className="space-y-2">
-                      {agentStats?.byType?.map((item) => (
-                        <div key={item.runType} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
-                          <span className="text-sm capitalize">{item.runType.replace(/_/g, ' ')}</span>
-                          <Badge variant="outline">{item.count}</Badge>
-                        </div>
-                      )) || <p className="text-sm text-gray-500">No agent runs yet</p>}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Recent Runs */}
-                {(agentStats?.recentRuns?.length || 0) > 0 && (
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Recent Agent Runs</h4>
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>ID</TableHead>
-                            <TableHead>User</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Trigger</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Created</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {agentStats?.recentRuns?.slice(0, 10).map((run) => (
-                            <TableRow key={run.id}>
-                              <TableCell className="font-mono text-xs">{run.id}</TableCell>
-                              <TableCell>{run.userId}</TableCell>
-                              <TableCell className="capitalize text-xs">{run.runType.replace(/_/g, ' ')}</TableCell>
-                              <TableCell className="capitalize text-xs">{run.triggeredBy}</TableCell>
-                              <TableCell>
-                                <Badge 
-                                  variant="outline"
-                                  className={
-                                    run.status === 'completed' ? 'bg-green-50 text-green-700 border-green-200' :
-                                    run.status === 'failed' ? 'bg-red-50 text-red-700 border-red-200' :
-                                    run.status === 'running' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                    'bg-gray-50 text-gray-700 border-gray-200'
-                                  }
-                                >
-                                  {run.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-xs text-gray-500">
-                                {new Date(run.createdAt).toLocaleString()}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Welcome Campaign Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Send className="h-5 w-5 text-orange-500" />
-              Welcome Campaign (Founders Email)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {welcomeCampaignLoading ? (
-              <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500 mx-auto"></div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-gray-50 rounded-lg p-4 text-center">
-                    <p className="text-2xl font-bold text-charcoal">{welcomeCampaignStats?.total || 0}</p>
-                    <p className="text-sm text-gray-500">Total Users</p>
-                  </div>
-                  <div className="bg-green-50 rounded-lg p-4 text-center">
-                    <p className="text-2xl font-bold text-green-600">{welcomeCampaignStats?.sent || 0}</p>
-                    <p className="text-sm text-gray-500">Already Sent</p>
-                  </div>
-                  <div className="bg-orange-50 rounded-lg p-4 text-center">
-                    <p className="text-2xl font-bold text-orange-600">{welcomeCampaignStats?.pending || 0}</p>
-                    <p className="text-sm text-gray-500">Pending</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => sendTestWelcomeEmailMutation.mutate()}
-                    disabled={sendTestWelcomeEmailMutation.isPending}
-                  >
-                    {sendTestWelcomeEmailMutation.isPending ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
-                    ) : (
-                      <Mail className="h-4 w-4 mr-2" />
-                    )}
-                    Send Test to Me
-                  </Button>
-
-                  {!showConfirmWelcome ? (
-                    <Button
-                      onClick={() => setShowConfirmWelcome(true)}
-                      disabled={(welcomeCampaignStats?.pending || 0) === 0}
-                      className="bg-orange-600 hover:bg-orange-700"
-                    >
-                      <Send className="h-4 w-4 mr-2" />
-                      Send to All ({welcomeCampaignStats?.pending || 0} users)
-                    </Button>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-red-600 font-medium">Are you sure?</span>
-                      <Button
-                        onClick={() => sendAllWelcomeEmailsMutation.mutate()}
-                        disabled={sendAllWelcomeEmailsMutation.isPending}
-                        variant="destructive"
-                      >
-                        {sendAllWelcomeEmailsMutation.isPending ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                        ) : null}
-                        Yes, Send All
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowConfirmWelcome(false)}
-                        disabled={sendAllWelcomeEmailsMutation.isPending}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {welcomeEmailResult && (
-                  <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
-                    <p className="text-sm text-blue-800">
-                      <strong>Result:</strong> {welcomeEmailResult.message}
-                    </p>
-                    <p className="text-xs text-blue-600 mt-1">
-                      Sent: {welcomeEmailResult.sent} | Failed: {welcomeEmailResult.failed}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Product Update Email */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5 text-blue-500" />
-              Product Update Email
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                Send the latest product update email to all users (skips marketing opt-outs).
-              </p>
-
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => sendTestProductUpdateMutation.mutate()}
-                  disabled={sendTestProductUpdateMutation.isPending}
-                >
-                  {sendTestProductUpdateMutation.isPending ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
-                  ) : (
-                    <Mail className="h-4 w-4 mr-2" />
-                  )}
-                  Send Test to Me
-                </Button>
-
-                {!showConfirmProductUpdate ? (
-                  <Button
-                    onClick={() => setShowConfirmProductUpdate(true)}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    Send to All Users
-                  </Button>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-red-600 font-medium">Are you sure?</span>
-                    <Button
-                      onClick={() => sendAllProductUpdateMutation.mutate()}
-                      disabled={sendAllProductUpdateMutation.isPending}
-                      variant="destructive"
-                    >
-                      {sendAllProductUpdateMutation.isPending ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                      ) : null}
-                      Yes, Send All
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowConfirmProductUpdate(false)}
-                      disabled={sendAllProductUpdateMutation.isPending}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              {productUpdateResult && (
-                <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
-                  <p className="text-sm text-blue-800">
-                    <strong>Result:</strong> {productUpdateResult.message}
-                  </p>
-                  <p className="text-xs text-blue-600 mt-1">
-                    Sent: {productUpdateResult.sent} | Failed: {productUpdateResult.failed}
-                  </p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Drip Campaigns Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <MailOpen className="h-5 w-5 text-indigo-500" />
-                Drip Campaigns
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-normal text-gray-500">
-                  {campaignWorkerStatus?.campaignsEnabled ? "Enabled" : "Disabled"}
-                </span>
-                <Button
-                  size="sm"
-                  variant={campaignWorkerStatus?.campaignsEnabled ? "default" : "outline"}
-                  onClick={() => toggleCampaignsMutation.mutate(!campaignWorkerStatus?.campaignsEnabled)}
-                  disabled={toggleCampaignsMutation.isPending || campaignWorkerLoading}
-                  className={campaignWorkerStatus?.campaignsEnabled 
-                    ? "bg-green-600 hover:bg-green-700" 
-                    : "border-red-300 text-red-600 hover:bg-red-50"
-                  }
-                  data-testid="btn-toggle-campaigns"
-                >
-                  <Power className="h-4 w-4 mr-1" />
-                  {campaignWorkerStatus?.campaignsEnabled ? "ON" : "OFF"}
-                </Button>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {(campaignWorkerLoading || segmentStatsLoading) ? (
-              <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500 mx-auto"></div>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Segment Stats */}
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3">User Segments</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                    {Object.entries(segmentStats?.segments || {}).map(([segment, count]) => (
-                      <div key={segment} className="rounded-lg border border-indigo-100 bg-indigo-50 p-3">
-                        <p className="text-xs font-medium text-gray-600">{SEGMENT_LABELS[segment] || segment}</p>
-                        <p className="text-xl font-bold text-charcoal">{count}</p>
-                      </div>
-                    ))}
-                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                      <p className="text-xs font-medium text-gray-600">Suppressed</p>
-                      <p className="text-xl font-bold text-charcoal">{segmentStats?.suppressed || 0}</p>
-                    </div>
-                    <div className="rounded-lg border border-green-200 bg-green-50 p-3">
-                      <p className="text-xs font-medium text-gray-600">Paid</p>
-                      <p className="text-xl font-bold text-charcoal">{segmentStats?.paid || 0}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {lifecycleAnalytics?.rows.length ? (
-                  <div>
-                    <h4 className="mb-3 text-sm font-semibold text-gray-700">Delivery and conversion</h4>
-                    <div className="overflow-x-auto rounded-lg border">
-                      <Table>
-                        <TableHeader><TableRow><TableHead>Segment</TableHead><TableHead>Variant</TableHead><TableHead>Sent</TableHead><TableHead>Delivered</TableHead><TableHead>Clicked</TableHead><TableHead>Trials</TableHead><TableHead>Problems</TableHead></TableRow></TableHeader>
-                        <TableBody>{lifecycleAnalytics.rows.map((row) => <TableRow key={`${row.campaign}:${row.variant}`}><TableCell>{SEGMENT_LABELS[row.campaign] || row.campaign}</TableCell><TableCell>{row.variant}</TableCell><TableCell>{row.sent}</TableCell><TableCell>{row.delivered}</TableCell><TableCell>{row.clicked}</TableCell><TableCell>{row.trials}</TableCell><TableCell>{row.bounced + row.complained}</TableCell></TableRow>)}</TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                ) : null}
-
-                {/* Worker Status */}
-                <div>
-                  <div className={`mb-3 rounded-lg border p-3 ${campaignWorkerStatus?.readiness.ready ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"}`}>
-                    <p className="text-sm font-semibold">{campaignWorkerStatus?.readiness.ready ? "Delivery readiness checks passed" : "Delivery is not ready"}</p>
-                    <p className="mt-1 text-xs text-gray-600">
-                      Mode: {campaignWorkerStatus?.dryRun ? "dry-run" : "live"} | Rollout: {campaignWorkerStatus?.rolloutPercent || 0}% | Holdout: {campaignWorkerStatus?.holdoutPercent || 0}% | Limit: {campaignWorkerStatus?.hourlyLimit || 0}/hour
-                    </p>
-                    {!campaignWorkerStatus?.readiness.ready && (
-                      <p className="mt-1 text-xs text-amber-800">Missing: {Object.entries(campaignWorkerStatus?.readiness.checks || {}).filter(([, ok]) => !ok).map(([key]) => key).join(", ")}</p>
-                    )}
-                  </div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Worker Status</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <span className="text-xs text-gray-500">Status</span>
-                      <div className="flex items-center gap-1 mt-1">
-                        {campaignWorkerStatus?.workerActive ? (
-                          <>
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                            <span className="text-sm font-medium text-green-700">Active</span>
-                          </>
-                        ) : (
-                          <>
-                            <XCircle className="h-4 w-4 text-red-500" />
-                            <span className="text-sm font-medium text-red-700">Inactive</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <span className="text-xs text-gray-500">Last Run</span>
-                      <p className="text-sm font-medium mt-1">
-                        {campaignWorkerStatus?.lastRunAt 
-                          ? new Date(campaignWorkerStatus.lastRunAt).toLocaleTimeString()
-                          : "Never"
-                        }
-                      </p>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <span className="text-xs text-gray-500">Jobs Processed</span>
-                      <p className="text-sm font-medium mt-1 text-green-600">
-                        {campaignWorkerStatus?.jobsProcessed || 0}
-                      </p>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <span className="text-xs text-gray-500">Jobs Failed</span>
-                      <p className="text-sm font-medium mt-1 text-red-600">
-                        {campaignWorkerStatus?.jobsFailed || 0}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="pt-4 border-t">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Actions</h4>
-                  <div className="flex gap-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          const response = await fetch("/api/admin/campaigns/enroll-missing", {
-                            method: "POST",
-                            credentials: "include",
-                          });
-                          const data = await response.json();
-                          if (response.ok) {
-                            toast({
-                              title: "Users Enrolled",
-                              description: data.message,
-                            });
-                          } else {
-                            throw new Error(data.message);
-                          }
-                        } catch (error: any) {
-                          toast({
-                            title: "Error",
-                            description: error.message || "Failed to enroll users",
-                            variant: "destructive",
-                          });
-                        }
-                      }}
-                    >
-                      <Users className="h-4 w-4 mr-2" />
-                      Enroll Missing Users
-                    </Button>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Schedule the first drip email for all existing users who don't have pending emails yet.
-                  </p>
-                </div>
-
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* User Analytics Section */}
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Usage Analytics</h2>
-            <p className="text-gray-600">Detailed platform usage and engagement metrics</p>
-          </div>
-
-          {/* Activity Analytics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Daily Active Users</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="stat-daily-active-users">
-                  {analyticsLoading ? "-" : analytics?.dailyActiveUsers}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Users with activities today
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Weekly Active Users</CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="stat-weekly-active-users">
-                  {analyticsLoading ? "-" : analytics?.weeklyActiveUsers}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Users active in last 7 days
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Monthly Active Users</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="stat-monthly-active-users">
-                  {analyticsLoading ? "-" : analytics?.monthlyActiveUsers}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Users active in last 30 days
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">New Users Today</CardTitle>
-                <Database className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="stat-new-users-today">
-                  {analyticsLoading ? "-" : analytics?.newUsersToday}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {analyticsLoading ? "-" : analytics?.newUsersThisWeek} this week
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Platform Usage Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Avg Activities/User</CardTitle>
-                <BarChart3 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="stat-avg-activities-per-user">
-                  {analyticsLoading ? "-" : analytics?.avgActivitiesPerUser}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Activities per user average
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Avg Distance</CardTitle>
-                <Target className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="stat-avg-distance">
-                  {analyticsLoading ? "-" : `${analytics?.avgDistancePerActivity}km`}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Average per activity
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Avg Duration</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="stat-avg-duration">
-                  {analyticsLoading ? "-" : `${analytics?.avgTimePerActivity}min`}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Average per activity
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Sync Success Rate</CardTitle>
-                <Signal className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="stat-sync-success-rate">
-                  {analyticsLoading ? "-" : `${analytics?.syncSuccessRate}%`}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Users synced in last 7 days
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Charts Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* User Growth Trend */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  User Growth Trend (7 Days)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {analyticsLoading ? (
-                  <div className="h-64 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange"></div>
-                  </div>
-                ) : (
-                  <ResponsiveContainer width="100%" height={250}>
-                    <LineChart data={analytics?.userGrowthTrend}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="date" 
-                        tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      />
-                      <YAxis />
-                      <RechartsTooltip 
-                        labelFormatter={(value) => new Date(value).toLocaleDateString()}
-                        formatter={(value: any) => [value, 'New Users']}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="count" 
-                        stroke="#3b82f6" 
-                        strokeWidth={2} 
-                        dot={{ fill: '#3b82f6' }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Activity Trend */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Activity Trend (7 Days)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {analyticsLoading ? (
-                  <div className="h-64 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange"></div>
-                  </div>
-                ) : (
-                  <ResponsiveContainer width="100%" height={250}>
-                    <LineChart data={analytics?.activityTrend}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="date" 
-                        tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      />
-                      <YAxis />
-                      <RechartsTooltip 
-                        labelFormatter={(value) => new Date(value).toLocaleDateString()}
-                        formatter={(value: any) => [value, 'Activities']}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="count" 
-                        stroke="#10b981" 
-                        strokeWidth={2} 
-                        dot={{ fill: '#10b981' }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-        </div>
-
-        {/* Performance Monitoring Section */}
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">System Performance</h2>
-            <p className="text-gray-600">Real-time system health metrics and performance monitoring</p>
-          </div>
-
-          {/* System Health Status Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">System Status</CardTitle>
-                {performanceLoading ? (
-                  <Server className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  getStatusIcon(performance?.systemHealth.status || 'operational')
-                )}
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <span className={`text-sm font-medium px-2 py-1 rounded-full ${getStatusColor(performance?.systemHealth.status || 'operational')}`} data-testid="system-status">
-                    {performanceLoading ? "Loading..." : (performance?.systemHealth.status || 'operational').charAt(0).toUpperCase() + (performance?.systemHealth.status || 'operational').slice(1)}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Uptime: {performanceLoading ? "-" : formatUptime(performance?.systemHealth.uptime || 0)}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Database Status</CardTitle>
-                {performanceLoading ? (
-                  <Database className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  getStatusIcon(performance?.databaseMetrics.connectionStatus || 'healthy')
-                )}
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <span className={`text-sm font-medium px-2 py-1 rounded-full ${getStatusColor(performance?.databaseMetrics.connectionStatus || 'healthy')}`} data-testid="database-status">
-                    {performanceLoading ? "Loading..." : (performance?.databaseMetrics.connectionStatus || 'healthy').charAt(0).toUpperCase() + (performance?.databaseMetrics.connectionStatus || 'healthy').slice(1)}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Avg Query: {performanceLoading ? "-" : `${performance?.databaseMetrics.avgQueryTime}ms`}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Memory Usage</CardTitle>
-                <Cpu className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="memory-usage">
-                  {performanceLoading ? "-" : `${performance?.systemHealth.memoryUsage}%`}
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                  <div 
-                    className={`h-2 rounded-full ${(performance?.systemHealth.memoryUsage || 0) > 80 ? 'bg-red-500' : (performance?.systemHealth.memoryUsage || 0) > 60 ? 'bg-yellow-500' : 'bg-green-500'}`}
-                    style={{ width: `${performance?.systemHealth.memoryUsage || 0}%` }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Disk Usage</CardTitle>
-                <HardDrive className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="disk-usage">
-                  {performanceLoading ? "-" : `${performance?.systemHealth.diskUsage}%`}
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                  <div 
-                    className={`h-2 rounded-full ${(performance?.systemHealth.diskUsage || 0) > 80 ? 'bg-red-500' : (performance?.systemHealth.diskUsage || 0) > 60 ? 'bg-yellow-500' : 'bg-green-500'}`}
-                    style={{ width: `${performance?.systemHealth.diskUsage || 0}%` }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* API Performance Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Requests/Hour</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="requests-per-hour">
-                  {performanceLoading ? "-" : performance?.apiMetrics.requestsPerHour}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {performanceLoading ? "-" : `${performance?.apiMetrics.totalRequests} total requests`}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Avg Response Time</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="avg-response-time">
-                  {performanceLoading ? "-" : `${performance?.apiMetrics.avgResponseTime}ms`}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  API endpoint response time
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Error Rate</CardTitle>
-                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="error-rate">
-                  {performanceLoading ? "-" : `${performance?.apiMetrics.errorRate}%`}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Failed requests percentage
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Database Queries</CardTitle>
-                <Database className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="total-queries">
-                  {performanceLoading ? "-" : performance?.databaseMetrics.totalQueries}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {performanceLoading ? "-" : `${performance?.databaseMetrics.slowQueries} slow queries`}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Performance Trends Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Performance Trend (6 Hours)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {performanceLoading ? (
-                <div className="h-64 flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange"></div>
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={performance?.performanceTrend}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="timestamp" 
-                      tickFormatter={(value) => new Date(value).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                    />
-                    <YAxis yAxisId="responseTime" orientation="left" />
-                    <YAxis yAxisId="requests" orientation="right" />
-                    <RechartsTooltip 
-                      labelFormatter={(value) => new Date(value).toLocaleTimeString()}
-                      formatter={(value: any, name: string) => {
-                        if (name === 'responseTime') return [`${value}ms`, 'Response Time'];
-                        if (name === 'requestCount') return [value, 'Requests'];
-                        if (name === 'errorCount') return [value, 'Errors'];
-                        return [value, name];
-                      }}
-                    />
-                    <Line 
-                      yAxisId="responseTime"
-                      type="monotone" 
-                      dataKey="responseTime" 
-                      stroke="#3b82f6" 
-                      strokeWidth={2} 
-                      name="responseTime"
-                    />
-                    <Line 
-                      yAxisId="requests"
-                      type="monotone" 
-                      dataKey="requestCount" 
-                      stroke="#10b981" 
-                      strokeWidth={2} 
-                      name="requestCount"
-                    />
-                    <Line 
-                      yAxisId="requests"
-                      type="monotone" 
-                      dataKey="errorCount" 
-                      stroke="#ef4444" 
-                      strokeWidth={2} 
-                      name="errorCount"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Recent Errors */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5" />
-                Recent Errors
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {performanceLoading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange mx-auto mb-4"></div>
-                  <p>Loading errors...</p>
-                </div>
-              ) : performance?.recentErrors.length ? (
-                <div className="space-y-3">
-                  {performance.recentErrors.map((error, index) => (
-                    <div key={index} className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-950 border border-red-100 dark:border-red-900 rounded-lg">
-                      <XCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <Badge 
-                            variant={error.statusCode >= 500 ? "destructive" : "outline"} 
-                            className="font-medium"
-                            data-testid={`error-status-${index}`}
-                          >
-                            {error.statusCode} {error.method}
-                          </Badge>
-                          <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
-                            {error.endpoint}
-                          </span>
-                          {error.userId && (
-                            <Badge variant="secondary" className="text-xs">
-                              User {error.userId}
-                            </Badge>
-                          )}
-                          {error.elapsedTime && error.elapsedTime > 10000 && (
-                            <Badge variant="destructive" className="text-xs">
-                              SLOW {(error.elapsedTime / 1000).toFixed(1)}s
-                            </Badge>
-                          )}
-                        </div>
-                        {error.errorMessage && (
-                          <p className="text-sm font-medium text-red-700 dark:text-red-400 mt-1">
-                            {error.errorMessage}
-                          </p>
-                        )}
-                        {error.errorDetails && (
-                          <details className="mt-1">
-                            <summary className="text-xs text-red-600 dark:text-red-500 cursor-pointer hover:underline">
-                              View error details
-                            </summary>
-                            <pre className="text-xs text-red-700 dark:text-red-400 mt-1 p-2 bg-red-100 dark:bg-red-900 rounded overflow-x-auto">
-                              {error.errorDetails}
-                            </pre>
-                          </details>
-                        )}
-                        {error.requestBody && (
-                          <details className="mt-1">
-                            <summary className="text-xs text-red-600 dark:text-red-500 cursor-pointer hover:underline">
-                              View request
-                            </summary>
-                            <pre className="text-xs text-red-700 dark:text-red-400 mt-1 p-2 bg-red-100 dark:bg-red-900 rounded overflow-x-auto">
-                              {error.requestBody}
-                            </pre>
-                          </details>
-                        )}
-                        {error.responseBody && (
-                          <details className="mt-1">
-                            <summary className="text-xs text-red-600 dark:text-red-500 cursor-pointer hover:underline">
-                              View response
-                            </summary>
-                            <pre className="text-xs text-red-700 dark:text-red-400 mt-1 p-2 bg-red-100 dark:bg-red-900 rounded overflow-x-auto">
-                              {error.responseBody}
-                            </pre>
-                          </details>
-                        )}
-                        <p className="text-xs text-red-600 dark:text-red-500 mt-1">
-                          {new Date(error.timestamp).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
-                  <p>No recent errors detected</p>
-                  <p className="text-xs text-gray-400 mt-1">System is running smoothly</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Slow Requests */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Slow Requests (&gt;10s)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {performanceLoading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange mx-auto mb-4"></div>
-                  <p>Loading slow requests...</p>
-                </div>
-              ) : performance?.slowRequests?.length ? (
-                <div className="space-y-3">
-                  {performance.slowRequests.map((request, index) => (
-                    <div key={index} className="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-950 border border-orange-100 dark:border-orange-900 rounded-lg">
-                      <Clock className="h-5 w-5 text-orange-500 mt-0.5 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <Badge variant="destructive" className="font-medium" data-testid={`slow-request-time-${index}`}>
-                            {(request.elapsedTime / 1000).toFixed(1)}s
-                          </Badge>
-                          <Badge variant={request.statusCode >= 400 ? "destructive" : "outline"} className="text-xs">
-                            {request.statusCode} {request.method}
-                          </Badge>
-                          <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
-                            {request.endpoint}
-                          </span>
-                          {request.userId && (
-                            <Badge variant="secondary" className="text-xs">
-                              User {request.userId}
-                            </Badge>
-                          )}
-                        </div>
-                        {request.requestBody && (
-                          <details className="mt-1">
-                            <summary className="text-xs text-orange-600 dark:text-orange-500 cursor-pointer hover:underline">
-                              View request
-                            </summary>
-                            <pre className="text-xs text-orange-700 dark:text-orange-400 mt-1 p-2 bg-orange-100 dark:bg-orange-900 rounded overflow-x-auto">
-                              {request.requestBody}
-                            </pre>
-                          </details>
-                        )}
-                        {request.responseBody && (
-                          <details className="mt-1">
-                            <summary className="text-xs text-orange-600 dark:text-orange-500 cursor-pointer hover:underline">
-                              View response
-                            </summary>
-                            <pre className="text-xs text-orange-700 dark:text-orange-400 mt-1 p-2 bg-orange-100 dark:bg-orange-900 rounded overflow-x-auto">
-                              {request.responseBody}
-                            </pre>
-                          </details>
-                        )}
-                        <p className="text-xs text-orange-600 dark:text-orange-500 mt-1">
-                          {new Date(request.timestamp).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
-                  <p>No slow requests detected</p>
-                  <p className="text-xs text-gray-400 mt-1">All requests are performing well</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Users Table */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                All Users {usersData && `(${usersData.total})`}
-              </CardTitle>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">Show:</span>
-                  <Select value={pageSize.toString()} onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}>
-                    <SelectTrigger className="w-20" data-testid="select-page-size">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="10">10</SelectItem>
-                      <SelectItem value="25">25</SelectItem>
-                      <SelectItem value="50">50</SelectItem>
-                      <SelectItem value="100">100</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    data-testid="button-prev-page"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm text-gray-600">
-                    Page {page} of {usersData ? Math.ceil(usersData.total / pageSize) : 1}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage(p => p + 1)}
-                    disabled={!usersData || page >= Math.ceil(usersData.total / pageSize)}
-                    data-testid="button-next-page"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {usersLoading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange mx-auto mb-4"></div>
-                <p>Loading users...</p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Strava</TableHead>
-                    <TableHead>Units</TableHead>
-                    <TableHead>Admin</TableHead>
-                    <TableHead>Joined</TableHead>
-                    <TableHead>Last Sync</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {usersData?.users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">
-                        {user.firstName && user.lastName 
-                          ? `${user.firstName} ${user.lastName}` 
-                          : user.email.split('@')[0]}
-                      </TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <Badge variant={user.stravaConnected ? "default" : "secondary"}>
-                          {user.stravaConnected ? "Connected" : "Not Connected"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{user.unitPreference}</TableCell>
-                      <TableCell>
-                        {user.isAdmin && <Badge variant="outline">Admin</Badge>}
-                      </TableCell>
-                      <TableCell>{formatDate(user.createdAt)}</TableCell>
-                      <TableCell>
-                        {user.lastSyncAt ? formatDate(user.lastSyncAt) : "Never"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-
-
-      </div>
-    </div>
-  );
+  const [search, setSearch] = useState("");
+  const [planFilter, setPlanFilter] = useState("all");
+  const [stravaFilter, setStravaFilter] = useState("all");
+  const [consentFilter, setConsentFilter] = useState("all");
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [bulkAction, setBulkAction] = useState<null | "welcome" | "product" | "launch" | "live" | "enable_live">(null);
+  const [safety, setSafety] = useState({ dryRun: true, hourlyLimit: 50, rolloutPercent: 5, holdoutPercent: 10 });
+  const adminEnabled = Boolean(user?.isAdmin);
+
+  useEffect(() => { if (!authLoading && user && !user.isAdmin) setLocation("/dashboard"); }, [authLoading, user, setLocation]);
+
+  const stats = useQuery<AdminStats>({ queryKey: ["/api/admin/stats"], enabled: adminEnabled });
+  const growth = useQuery<GrowthData>({ queryKey: [`/api/admin/growth?days=${days}`], enabled: adminEnabled });
+  const campaign = useQuery<CampaignStatus>({ queryKey: ["/api/admin/campaigns/worker-status"], enabled: adminEnabled, refetchInterval: 15000 });
+  const segments = useQuery<SegmentStats>({ queryKey: ["/api/admin/campaigns/segment-stats"], enabled: adminEnabled, refetchInterval: 30000 });
+  const lifecycle = useQuery<LifecycleAnalytics>({ queryKey: ["/api/admin/campaigns/analytics"], enabled: adminEnabled, refetchInterval: 30000 });
+  const agent = useQuery<AgentStats>({ queryKey: ["/api/admin/agent-stats"], enabled: adminEnabled, refetchInterval: 30000 });
+  const performance = useQuery<SystemPerformance>({ queryKey: ["/api/admin/performance"], enabled: adminEnabled, refetchInterval: 30000 });
+  const welcome = useQuery<{ total: number; sent: number; pending: number }>({ queryKey: ["/api/admin/welcome-campaign/stats"], enabled: adminEnabled });
+  const launch = useQuery<{ count: number }>({ queryKey: ["/api/admin/launch-emails/pending"], enabled: adminEnabled });
+  const userUrl = `/api/admin/users?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}&plan=${planFilter}&strava=${stravaFilter}&consent=${consentFilter}`;
+  const users = useQuery<{ users: AdminUser[]; total: number; page: number; pageSize: number }>({ queryKey: [userUrl], enabled: adminEnabled && section === "users" });
+
+  useEffect(() => { if (campaign.data) setSafety({ dryRun: campaign.data.dryRun, hourlyLimit: campaign.data.hourlyLimit, rolloutPercent: campaign.data.rolloutPercent, holdoutPercent: campaign.data.holdoutPercent }); }, [campaign.data]);
+
+  const refreshAdmin = () => queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0] || "").startsWith("/api/admin/") });
+  const notifySuccess = (title: string, description: string) => { toast({ title, description }); refreshAdmin(); };
+  const notifyError = (error: any) => toast({ title: "Action failed", description: error?.message || "Please try again", variant: "destructive" });
+  const toggleCampaign = useMutation({ mutationFn: ({ enabled, confirmation }: { enabled: boolean; confirmation?: string }) => apiRequest("/api/admin/campaigns/toggle", "POST", { enabled, confirmation }), onSuccess: (data) => notifySuccess(data.campaignsEnabled ? "Lifecycle enabled" : "Lifecycle paused", data.message), onError: notifyError });
+  const saveSafety = useMutation({ mutationFn: (confirmation?: string) => apiRequest("/api/admin/campaigns/safety-config", "POST", { ...safety, confirmation }), onSuccess: () => { setBulkAction(null); notifySuccess("Safety settings saved", "The worker will use the updated rollout controls."); }, onError: notifyError });
+  const enroll = useMutation({ mutationFn: () => apiRequest("/api/admin/campaigns/enroll-missing", "POST"), onSuccess: (data) => notifySuccess("Eligibility reconciled", data.message), onError: notifyError });
+  const processNow = useMutation({ mutationFn: () => apiRequest("/api/admin/campaigns/process", "POST"), onSuccess: () => notifySuccess("Worker checked", "Due jobs were processed using the current safety settings."), onError: notifyError });
+  const testLifecycle = useMutation({ mutationFn: () => apiRequest("/api/admin/campaigns/test", "POST", { segment: "preview_engaged_no_trial" }), onSuccess: (data) => notifySuccess("Test email sent", `Sent to ${data.recipient}. No campaign state was changed.`), onError: notifyError });
+  const sendWelcomeTest = useMutation({ mutationFn: () => apiRequest("/api/admin/welcome-campaign/test", "POST"), onSuccess: (data) => notifySuccess("Test email sent", data.message), onError: notifyError });
+  const sendProductTest = useMutation({ mutationFn: () => apiRequest("/api/admin/send-product-update?test=true", "POST"), onSuccess: (data) => notifySuccess("Test email sent", data.message), onError: notifyError });
+  const bulkMutation = useMutation({ mutationFn: (action: "welcome" | "product" | "launch") => apiRequest(action === "welcome" ? "/api/admin/welcome-campaign/send-all" : action === "product" ? "/api/admin/send-product-update" : "/api/admin/send-launch-emails", "POST", { confirmation: action === "welcome" ? "SEND WELCOME" : action === "product" ? "SEND UPDATE" : "SEND LAUNCH" }), onSuccess: (data) => { setBulkAction(null); notifySuccess("Campaign completed", data.message || `Sent ${data.sent || 0} emails.`); }, onError: notifyError });
+
+  const criticalErrors = performance.data?.recentErrors.filter((item) => item.severity === "critical" && !item.expected) || [];
+  const pendingAgent = agent.data?.byStatus.find((row) => row.status === "pending")?.count || 0;
+  const attention = useMemo(() => {
+    const items: Array<{ title: string; detail: string; target: SectionKey; tone: string }> = [];
+    if (campaign.data?.operationalState === "blocked") items.push({ title: "Lifecycle delivery is blocked", detail: campaign.data.nextAction, target: "campaigns", tone: "red" });
+    else if (campaign.data?.operationalState === "disabled") items.push({ title: "Lifecycle delivery is paused", detail: campaign.data.nextAction, target: "campaigns", tone: "amber" });
+    if ((segments.data?.suppressionReasons.consent_missing || 0) > 0) items.push({ title: "Marketing consent is missing", detail: `${segments.data?.suppressionReasons.consent_missing} accounts cannot receive marketing messages.`, target: "campaigns", tone: "amber" });
+    if (pendingAgent > 0) items.push({ title: "Coach jobs need review", detail: `${pendingAgent} agent runs are pending.`, target: "coach", tone: "amber" });
+    if (criticalErrors.length > 0) items.push({ title: "Server errors detected", detail: `${criticalErrors.length} recent server errors need investigation.`, target: "system", tone: "red" });
+    return items;
+  }, [campaign.data, segments.data, pendingAgent, criticalErrors.length]);
+
+  if (authLoading || !user || !user.isAdmin) return <div className="flex min-h-screen items-center justify-center bg-slate-50"><p className="text-slate-600">Checking admin access...</p></div>;
+
+  const renderOverview = () => <div className="space-y-6">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="New runners" value={growth.data?.cohort.signups ?? "-"} note={`Last ${days} days`} icon={Users} /><StatCard label="Strava activation" value={growth.data ? pct(growth.data.cohort.connected, growth.data.cohort.signups) : "-"} note={`${growth.data?.cohort.connected || 0} new runners connected`} icon={UserCheck} /><StatCard label="Trials started" value={growth.data?.stages.find((stage) => stage.key === "trial_started")?.count ?? "-"} note={`Last ${days} days`} icon={TestTube2} /><StatCard label="Active paid runners" value={growth.data?.current.activePaid ?? "-"} note={`${growth.data?.current.activeTrials || 0} active trials`} icon={Target} /></div>
+    <Card><CardHeader><CardTitle>Needs attention</CardTitle></CardHeader><CardContent className="space-y-3">{attention.length === 0 ? <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4"><CheckCircle className="h-5 w-5 text-emerald-600" /><div><p className="font-medium text-emerald-900">No urgent operator actions</p><p className="text-sm text-emerald-700">Campaign, coach and system checks are clear.</p></div></div> : attention.map((item) => <button key={item.title} onClick={() => setSection(item.target)} className={`flex w-full items-center justify-between rounded-lg border p-4 text-left ${item.tone === "red" ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50"}`}><div><p className="font-semibold text-slate-950">{item.title}</p><p className="mt-1 text-sm text-slate-600">{item.detail}</p></div><ExternalLink className="h-4 w-4 text-slate-500" /></button>)}</CardContent></Card>
+    <div className="grid gap-6 xl:grid-cols-2"><FunnelCard growth={growth.data} /><Card><CardHeader><CardTitle>Platform context</CardTitle></CardHeader><CardContent className="grid gap-4 sm:grid-cols-3"><div><p className="text-sm text-slate-500">Total runners</p><p className="text-2xl font-bold">{stats.data?.totalUsers ?? "-"}</p></div><div><p className="text-sm text-slate-500">Strava connected</p><p className="text-2xl font-bold">{stats.data?.connectedUsers ?? "-"}</p></div><div><p className="text-sm text-slate-500">Activities stored</p><p className="text-2xl font-bold">{stats.data?.totalActivities ?? "-"}</p></div><p className="col-span-full text-sm text-slate-500">Lifetime totals provide context. Growth and conversion decisions should use the dated funnel.</p></CardContent></Card></div>
+  </div>;
+
+  const renderGrowth = () => <div className="space-y-6"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-2xl font-bold">Growth and conversion</h2><p className="text-sm text-slate-600">Server-authoritative trial and paid events, plus product activation signals.</p></div><Select value={String(days)} onValueChange={(value) => setDays(Number(value))}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="7">Last 7 days</SelectItem><SelectItem value="30">Last 30 days</SelectItem><SelectItem value="90">Last 90 days</SelectItem></SelectContent></Select></div><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5"><StatCard label="Signups" value={growth.data?.cohort.signups ?? "-"} note="New-account cohort" icon={Users} /><StatCard label="Connected" value={growth.data?.cohort.connected ?? "-"} note={growth.data ? pct(growth.data.cohort.connected, growth.data.cohort.signups) : "-"} icon={Activity} /><StatCard label="Preview ready" value={growth.data?.cohort.previewReady ?? "-"} note={growth.data ? pct(growth.data.cohort.previewReady, growth.data.cohort.signups) : "-"} icon={Target} /><StatCard label="Current trials" value={growth.data?.current.activeTrials ?? "-"} note="All active trials" icon={TestTube2} /><StatCard label="Cancellations" value={growth.data?.cancellations ?? "-"} note={`Events in ${days} days`} icon={XCircle} /></div><FunnelCard growth={growth.data} detailed /></div>;
+
+  const renderCampaigns = () => <div className="space-y-6"><div><h2 className="text-2xl font-bold">Campaign center</h2><p className="text-sm text-slate-600">Audience safety, testing, lifecycle delivery and one-time announcements in one workflow.</p></div><Card><CardHeader><div className="flex flex-wrap items-start justify-between gap-4"><div><CardTitle>Lifecycle delivery</CardTitle><p className="mt-1 text-sm text-slate-600">{campaign.data?.nextAction}</p></div><Badge className={statusTone(campaign.data?.operationalState || "disabled")}>{(campaign.data?.operationalState || "loading").replace(/_/g, " ")}</Badge></div></CardHeader><CardContent className="space-y-5">
+    {!campaign.data?.readiness.ready && <div className="rounded-lg border border-red-200 bg-red-50 p-4"><p className="font-semibold text-red-900">Delivery configuration is incomplete</p><p className="mt-1 text-sm text-red-700">Missing: {Object.entries(campaign.data?.readiness.checks || {}).filter(([, ok]) => !ok).map(([key]) => key).join(", ")}</p></div>}
+    <div className="grid gap-4 md:grid-cols-4"><label className="space-y-2 rounded-lg border p-4"><span className="text-sm font-medium">Dry-run</span><div className="flex items-center justify-between"><span className="text-xs text-slate-500">No delivery</span><Switch checked={safety.dryRun} onCheckedChange={(checked) => setSafety((current) => ({ ...current, dryRun: checked }))} /></div></label><label className="space-y-2 rounded-lg border p-4"><span className="text-sm font-medium">Rollout percent</span><Input type="number" min={0} max={100} value={safety.rolloutPercent} onChange={(event) => setSafety((current) => ({ ...current, rolloutPercent: Number(event.target.value) }))} /></label><label className="space-y-2 rounded-lg border p-4"><span className="text-sm font-medium">Holdout percent</span><Input type="number" min={0} max={50} value={safety.holdoutPercent} onChange={(event) => setSafety((current) => ({ ...current, holdoutPercent: Number(event.target.value) }))} /></label><label className="space-y-2 rounded-lg border p-4"><span className="text-sm font-medium">Hourly limit</span><Input type="number" min={1} max={500} value={safety.hourlyLimit} onChange={(event) => setSafety((current) => ({ ...current, hourlyLimit: Number(event.target.value) }))} /></label></div>
+    <div className="flex flex-wrap gap-2"><Button onClick={() => safety.dryRun ? saveSafety.mutate(undefined) : setBulkAction("live")} disabled={saveSafety.isPending}><Settings2 className="mr-2 h-4 w-4" />Save safety settings</Button><Button variant="outline" onClick={() => testLifecycle.mutate()} disabled={testLifecycle.isPending}><TestTube2 className="mr-2 h-4 w-4" />Send lifecycle test to me</Button><Button variant="outline" onClick={() => enroll.mutate()} disabled={enroll.isPending}><Users className="mr-2 h-4 w-4" />Reconcile audience</Button><Button variant="outline" onClick={() => processNow.mutate()} disabled={processNow.isPending}><RefreshCw className="mr-2 h-4 w-4" />Check due jobs</Button><Button variant={campaign.data?.campaignsEnabled ? "destructive" : "outline"} onClick={() => { if (!campaign.data?.campaignsEnabled && !campaign.data?.dryRun) setBulkAction("enable_live"); else toggleCampaign.mutate({ enabled: !campaign.data?.campaignsEnabled }); }} disabled={toggleCampaign.isPending}><Power className="mr-2 h-4 w-4" />{campaign.data?.campaignsEnabled ? "Pause delivery" : "Enable worker"}</Button></div>
+    <div className="grid gap-3 sm:grid-cols-4"><MiniStatus label="Worker timer" value={campaign.data?.workerActive ? "Active" : "Inactive"} /><MiniStatus label="Last check" value={dateLabel(campaign.data?.lastRunAt)} /><MiniStatus label="Processed" value={String(campaign.data?.jobsProcessed || 0)} /><MiniStatus label="Failed" value={String(campaign.data?.jobsFailed || 0)} /></div>
+  </CardContent></Card><div className="grid gap-6 xl:grid-cols-2"><Card><CardHeader><CardTitle>Eligible lifecycle audiences</CardTitle></CardHeader><CardContent className="grid gap-3 sm:grid-cols-2">{Object.entries(segments.data?.segments || {}).map(([key, count]) => <div key={key} className="flex items-center justify-between rounded-lg border p-3"><span className="text-sm">{SEGMENT_LABELS[key] || key}</span><strong>{count}</strong></div>)}</CardContent></Card><Card><CardHeader><CardTitle>Why runners are excluded</CardTitle></CardHeader><CardContent className="space-y-3">{Object.entries(segments.data?.suppressionReasons || {}).map(([key, count]) => <div key={key} className="flex items-center justify-between"><span className="text-sm text-slate-600">{SUPPRESSION_LABELS[key] || key}</span><Badge variant="outline">{count}</Badge></div>)}</CardContent></Card></div>
+  <Card><CardHeader><CardTitle>Campaigns and announcements</CardTitle></CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Campaign</TableHead><TableHead>Audience</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody><CampaignRow name="Lifecycle coaching" note="Behavior-triggered sequence" audience={`${segments.data?.eligible || 0} currently eligible`} status={campaign.data?.operationalState?.replace(/_/g, " ") || "loading"} action={<Button size="sm" variant="outline" onClick={() => testLifecycle.mutate()}>Test</Button>} /><CampaignRow name="Founder's welcome" note="One-time opted-in audience" audience={`${welcome.data?.pending || 0} pending`} status="manual" action={<><Button size="sm" variant="outline" onClick={() => sendWelcomeTest.mutate()}>Test</Button><Button size="sm" onClick={() => setBulkAction("welcome")} disabled={!welcome.data?.pending}>Review send</Button></>} /><CampaignRow name="Product update" note="Consented marketing audience" audience={`${segments.data?.marketingAudience || 0} eligible`} status="manual" action={<><Button size="sm" variant="outline" onClick={() => sendProductTest.mutate()}>Test</Button><Button size="sm" onClick={() => setBulkAction("product")} disabled={!segments.data?.marketingAudience}>Review send</Button></>} /><CampaignRow name="Waitlist launch" note="Original waitlist subscribers" audience={`${launch.data?.count || 0} pending`} status="manual" action={<Button size="sm" onClick={() => setBulkAction("launch")} disabled={!launch.data?.count}>Review send</Button>} /></TableBody></Table></CardContent></Card>
+  <Card><CardHeader><CardTitle>Delivery and conversion</CardTitle></CardHeader><CardContent>{lifecycle.data?.rows.length ? <Table><TableHeader><TableRow><TableHead>Segment</TableHead><TableHead>Variant</TableHead><TableHead>Sent</TableHead><TableHead>Delivered</TableHead><TableHead>Clicked</TableHead><TableHead>Trials</TableHead><TableHead>Problems</TableHead></TableRow></TableHeader><TableBody>{lifecycle.data.rows.map((row) => <TableRow key={`${row.campaign}:${row.variant}`}><TableCell>{SEGMENT_LABELS[row.campaign] || row.campaign}</TableCell><TableCell>{row.variant}</TableCell><TableCell>{row.sent}</TableCell><TableCell>{row.delivered}</TableCell><TableCell>{row.clicked}</TableCell><TableCell>{row.trials}</TableCell><TableCell>{row.bounced + row.complained}</TableCell></TableRow>)}</TableBody></Table> : <p className="py-8 text-center text-sm text-slate-500">No version 2 lifecycle messages have been sent yet.</p>}</CardContent></Card></div>;
+
+  const renderUsers = () => <div className="space-y-6"><div><h2 className="text-2xl font-bold">Runner accounts</h2><p className="text-sm text-slate-600">Search and filter account state without exposing credentials or private activity payloads.</p></div><Card><CardContent className="p-5"><div className="grid gap-3 md:grid-cols-5"><div className="relative md:col-span-2"><Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" /><Input className="pl-9" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Name, email or user ID" /></div><FilterSelect value={planFilter} onChange={(value) => { setPlanFilter(value); setPage(1); }} options={["all", "free", "trial", "paid", "canceled"]} /><FilterSelect value={stravaFilter} onChange={(value) => { setStravaFilter(value); setPage(1); }} options={["all", "connected", "disconnected"]} /><FilterSelect value={consentFilter} onChange={(value) => { setConsentFilter(value); setPage(1); }} options={["all", "consented", "unknown", "unsubscribed", "suppressed"]} /></div></CardContent></Card><Card><CardHeader><div className="flex flex-wrap items-center justify-between gap-3"><CardTitle>{users.data?.total || 0} matching runners</CardTitle><Select value={String(pageSize)} onValueChange={(value) => { setPageSize(Number(value)); setPage(1); }}><SelectTrigger className="w-28"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="10">10 rows</SelectItem><SelectItem value="25">25 rows</SelectItem><SelectItem value="50">50 rows</SelectItem><SelectItem value="100">100 rows</SelectItem></SelectContent></Select></div></CardHeader><CardContent className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Runner</TableHead><TableHead>Plan</TableHead><TableHead>Strava</TableHead><TableHead>Marketing</TableHead><TableHead>Last sync</TableHead><TableHead>Joined</TableHead></TableRow></TableHeader><TableBody>{users.data?.users.map((runner) => <TableRow key={runner.id} className="cursor-pointer" onClick={() => setSelectedUser(runner)}><TableCell><p className="font-medium">{[runner.firstName, runner.lastName].filter(Boolean).join(" ") || `Runner ${runner.id}`}</p><p className="text-xs text-slate-500">{runner.email || "No email"} · ID {runner.id}</p></TableCell><TableCell><Badge variant="outline">{runner.subscriptionStatus === "trialing" ? "trial" : runner.subscriptionPlan || "free"}</Badge></TableCell><TableCell>{runner.stravaConnected ? "Connected" : "Not connected"}</TableCell><TableCell>{runner.marketingConsentStatus || "unknown"}</TableCell><TableCell>{dateLabel(runner.lastSyncAt)}</TableCell><TableCell>{runner.createdAt ? new Date(runner.createdAt).toLocaleDateString() : "Unknown"}</TableCell></TableRow>)}</TableBody></Table><div className="mt-4 flex items-center justify-end gap-3"><Button variant="outline" size="sm" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={page === 1}><ChevronLeft className="h-4 w-4" /></Button><span className="text-sm text-slate-600">Page {page} of {Math.max(1, Math.ceil((users.data?.total || 0) / pageSize))}</span><Button variant="outline" size="sm" onClick={() => setPage((value) => value + 1)} disabled={page >= Math.ceil((users.data?.total || 0) / pageSize)}><ChevronRight className="h-4 w-4" /></Button></div></CardContent></Card></div>;
+
+  const renderCoach = () => <div className="space-y-6"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-2xl font-bold">Coach operations</h2><p className="text-sm text-slate-600">Agent throughput, pending work and recent failures.</p></div><Button variant="outline" onClick={() => setLocation("/admin/queue")}><Layers className="mr-2 h-4 w-4" />Open queue dashboard</Button></div><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Agent runs" value={agent.data?.totalRuns || 0} note="All recorded runs" icon={Bot} /><StatCard label="Last 24 hours" value={agent.data?.last24Hours || 0} note="Recent throughput" icon={Clock} /><StatCard label="Success rate" value={`${agent.data?.successRate || 0}%`} note="Completed among terminal runs" icon={CheckCircle} /><StatCard label="Pending" value={pendingAgent} note="Review aging in queue" icon={AlertTriangle} /></div><Card><CardHeader><CardTitle>Recent agent runs</CardTitle></CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>ID</TableHead><TableHead>Runner</TableHead><TableHead>Type</TableHead><TableHead>Trigger</TableHead><TableHead>Status</TableHead><TableHead>Created</TableHead></TableRow></TableHeader><TableBody>{agent.data?.recentRuns.map((run) => <TableRow key={run.id}><TableCell>{run.id}</TableCell><TableCell>{run.userId}</TableCell><TableCell>{run.runType}</TableCell><TableCell>{run.triggeredBy}</TableCell><TableCell><Badge className={statusTone(run.status)}>{run.status}</Badge></TableCell><TableCell>{dateLabel(run.createdAt)}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card></div>;
+
+  const renderSystem = () => <div className="space-y-6"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-2xl font-bold">System health</h2><p className="text-sm text-slate-600">Measured request, database and runtime telemetry.</p></div><Button variant="outline" onClick={() => setLocation("/admin/performance-logs")}><Server className="mr-2 h-4 w-4" />Explore performance logs</Button></div><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="System state" value={performance.data?.systemHealth.status || "-"} note="Database and 5xx health" icon={Gauge} /><StatCard label="Requests" value={performance.data?.apiMetrics.requestsPerHour || 0} note="Measured in the last hour" icon={Activity} /><StatCard label="Average response" value={performance.data?.telemetryAvailable ? `${performance.data.apiMetrics.avgResponseTime}ms` : "No recent data"} note="Measured request logs" icon={Clock} /><StatCard label="Server error rate" value={performance.data?.telemetryAvailable ? `${performance.data.apiMetrics.errorRate}%` : "No recent data"} note="HTTP 5xx responses only" icon={AlertTriangle} /></div><div className="grid gap-6 xl:grid-cols-3"><Card className="xl:col-span-2"><CardHeader><CardTitle>Measured request trend</CardTitle></CardHeader><CardContent className="h-72">{performance.data?.telemetryAvailable ? <ResponsiveContainer width="100%" height="100%"><LineChart data={performance.data.performanceTrend}><XAxis dataKey="timestamp" tickFormatter={(value) => new Date(value).toLocaleTimeString([], { hour: "numeric" })} /><YAxis /><ChartTooltip labelFormatter={(value) => new Date(value).toLocaleString()} /><Line dataKey="responseTime" name="Response ms" stroke="#ea580c" strokeWidth={2} /><Line dataKey="errorCount" name="Server errors" stroke="#dc2626" strokeWidth={2} /></LineChart></ResponsiveContainer> : <div className="flex h-full items-center justify-center text-sm text-slate-500">No request telemetry was recorded in the last hour.</div>}</CardContent></Card><Card><CardHeader><CardTitle>Runtime signals</CardTitle></CardHeader><CardContent className="space-y-4"><Detail label="Database" value={`${performance.data?.databaseMetrics.connectionStatus || "unknown"} · ${performance.data?.databaseMetrics.avgQueryTime || 0}ms probe`} /><Detail label="Process heap" value={`${performance.data?.systemHealth.memoryUsage || 0}%`} /></CardContent></Card></div><Card><CardHeader><CardTitle>Recent request issues</CardTitle></CardHeader><CardContent className="space-y-3">{performance.data?.recentErrors.length ? performance.data.recentErrors.map((item, index) => <div key={`${item.timestamp}:${index}`} className={`rounded-lg border p-4 ${item.expected ? "bg-slate-50" : item.severity === "critical" ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50"}`}><div className="flex flex-wrap items-center gap-2"><Badge className={statusTone(item.severity)}>{item.severity}</Badge>{item.expected && <Badge variant="outline">Expected product response</Badge>}<span className="font-mono text-xs">{item.statusCode} {item.method} {item.endpoint}</span></div><p className="mt-2 text-sm text-slate-700">{item.errorMessage || "No message recorded"}</p><p className="mt-1 text-xs text-slate-500">{dateLabel(item.timestamp)}{item.userId ? ` · Runner ${item.userId}` : ""}</p></div>) : <p className="py-8 text-center text-sm text-slate-500">No request issues recorded in the last 24 hours.</p>}</CardContent></Card></div>;
+
+  const renderCatalog = () => <div className="space-y-6"><div><h2 className="text-2xl font-bold">Catalog and admin tools</h2><p className="text-sm text-slate-600">Focused workspaces for product data and operational investigation.</p></div><div className="grid gap-4 md:grid-cols-3"><ToolCard title="Shoe database" description="Review, enrich and maintain public running shoe records." icon={ShoppingBag} onClick={() => setLocation("/admin/shoes")} /><ToolCard title="Queue dashboard" description="Inspect background jobs, retries and processing state." icon={Layers} onClick={() => setLocation("/admin/queue")} /><ToolCard title="Performance logs" description="Filter real request telemetry by endpoint, method and status." icon={Database} onClick={() => setLocation("/admin/performance-logs")} /></div></div>;
+
+  return <div className="min-h-screen bg-slate-50 pb-24 md:pb-8"><AppHeader /><div className="border-b bg-white"><div className="mx-auto max-w-7xl px-4 py-7 sm:px-6"><div className="flex flex-wrap items-center justify-between gap-4"><div><div className="flex items-center gap-3"><Shield className="h-7 w-7 text-orange-600" /><h1 className="text-3xl font-bold text-slate-950">Admin workspace</h1></div><p className="mt-2 text-sm text-slate-600">Operate growth, lifecycle messaging, runner support and system health.</p></div><Button variant="outline" onClick={refreshAdmin}><RefreshCw className="mr-2 h-4 w-4" />Refresh data</Button></div></div></div><main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[220px_minmax(0,1fr)]"><nav className="flex h-fit gap-1 overflow-x-auto rounded-xl border bg-white p-2 lg:sticky lg:top-4 lg:block">{SECTIONS.map(({ key, label, icon: Icon }) => <button key={key} onClick={() => setSection(key)} className={`flex w-max shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium lg:w-full ${section === key ? "bg-orange-50 text-orange-800" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"}`}><Icon className="h-4 w-4" />{label}</button>)}</nav><section className="min-w-0">{section === "overview" && renderOverview()}{section === "growth" && renderGrowth()}{section === "campaigns" && renderCampaigns()}{section === "users" && renderUsers()}{section === "coach" && renderCoach()}{section === "system" && renderSystem()}{section === "catalog" && renderCatalog()}</section></main>
+    <Dialog open={Boolean(selectedUser)} onOpenChange={(open) => { if (!open) setSelectedUser(null); }}><DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>{selectedUser ? ([selectedUser.firstName, selectedUser.lastName].filter(Boolean).join(" ") || `Runner ${selectedUser.id}`) : "Runner"}</DialogTitle><DialogDescription>Account state summary. Credentials, tokens and private activity payloads are never shown here.</DialogDescription></DialogHeader>{selectedUser && <div className="grid gap-4 sm:grid-cols-2"><Detail label="Email" value={selectedUser.email || "No email"} /><Detail label="Subscription" value={selectedUser.subscriptionStatus === "trialing" ? "Trial" : `${selectedUser.subscriptionPlan || "free"} · ${selectedUser.subscriptionStatus || "no status"}`} /><Detail label="Strava" value={selectedUser.stravaConnected ? `Connected · last sync ${dateLabel(selectedUser.lastSyncAt)}` : "Not connected"} /><Detail label="Marketing" value={`${selectedUser.marketingConsentStatus || "unknown"}${selectedUser.marketingOptOut ? " · opted out" : ""}`} /><Detail label="Premium preview" value={selectedUser.premiumPreviewCreatedAt ? `Created ${dateLabel(selectedUser.premiumPreviewCreatedAt)}` : "Not created"} /><Detail label="Coach" value={selectedUser.coachEnabled ? "Enabled" : "Disabled"} /><Detail label="Last seen" value={dateLabel(selectedUser.lastSeenAt)} /><Detail label="Joined" value={dateLabel(selectedUser.createdAt)} /></div>}</DialogContent></Dialog>
+    <BulkConfirm open={bulkAction === "welcome"} title="Send founder's welcome" description={`This will send to ${welcome.data?.pending || 0} opted-in runners who have not received it. Unsubscribed and suppressed accounts are excluded.`} phrase="SEND WELCOME" pending={bulkMutation.isPending} onClose={() => setBulkAction(null)} onConfirm={() => bulkMutation.mutate("welcome")} />
+    <BulkConfirm open={bulkAction === "product"} title="Send product update" description={`This will send to ${segments.data?.marketingAudience || 0} consented runners. The message includes one-click unsubscribe.`} phrase="SEND UPDATE" pending={bulkMutation.isPending} onClose={() => setBulkAction(null)} onConfirm={() => bulkMutation.mutate("product")} />
+    <BulkConfirm open={bulkAction === "launch"} title="Send waitlist launch" description={`This will send to ${launch.data?.count || 0} original waitlist subscribers who have not received the launch message.`} phrase="SEND LAUNCH" pending={bulkMutation.isPending} onClose={() => setBulkAction(null)} onConfirm={() => bulkMutation.mutate("launch")} />
+    <BulkConfirm open={bulkAction === "live"} title="Disable dry-run" description="Due lifecycle jobs may be delivered within five minutes after this change if the worker is enabled. Confirm the rollout, holdout and hourly limit first." phrase="GO LIVE" pending={saveSafety.isPending} onClose={() => setBulkAction(null)} onConfirm={() => saveSafety.mutate("GO LIVE")} />
+    <BulkConfirm open={bulkAction === "enable_live"} title="Enable live lifecycle delivery" description="The worker is configured for live delivery. Eligible due jobs can send immediately after it is enabled." phrase="ENABLE LIVE" pending={toggleCampaign.isPending} onClose={() => setBulkAction(null)} onConfirm={() => { setBulkAction(null); toggleCampaign.mutate({ enabled: true, confirmation: "ENABLE LIVE" }); }} />
+  </div>;
 }
+
+function FunnelCard({ growth, detailed = false }: { growth?: GrowthData; detailed?: boolean }) {
+  const max = Math.max(1, ...(growth?.stages.map((stage) => stage.count) || [1]));
+  return <Card><CardHeader><CardTitle>Premium conversion funnel</CardTitle></CardHeader><CardContent className="space-y-4">{growth?.stages.map((stage) => <div key={stage.key}><div className="mb-1 flex items-center justify-between gap-3"><span className="text-sm font-medium text-slate-700">{stage.label}</span><span className="text-sm"><strong>{stage.count}</strong>{stage.conversionFromPrevious !== null ? ` · ${stage.conversionFromPrevious}% from prior` : ""}</span></div><div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-orange-500" style={{ width: `${Math.max(stage.count > 0 ? 4 : 0, (stage.count / max) * 100)}%` }} /></div></div>)}{!growth && <p className="text-sm text-slate-500">Loading conversion events...</p>}{detailed && <p className="text-xs text-slate-500">Offer and preview steps are client events. Trial and paid conversion steps are authoritative Stripe events. Counts are distinct runners within the selected period.</p>}</CardContent></Card>;
+}
+function FilterSelect({ value, onChange, options }: { value: string; onChange: (value: string) => void; options: string[] }) { return <Select value={value} onValueChange={onChange}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{options.map((option) => <SelectItem key={option} value={option}>{option.replace(/_/g, " ")}</SelectItem>)}</SelectContent></Select>; }
+function ToolCard({ title, description, icon: Icon, onClick }: { title: string; description: string; icon: typeof Users; onClick: () => void }) { return <button onClick={onClick} className="rounded-xl border bg-white p-5 text-left transition hover:border-orange-300 hover:shadow-sm"><Icon className="h-6 w-6 text-orange-600" /><h3 className="mt-4 font-semibold text-slate-950">{title}</h3><p className="mt-1 text-sm text-slate-600">{description}</p><span className="mt-4 inline-flex items-center text-sm font-medium text-orange-700">Open workspace <ExternalLink className="ml-1 h-3 w-3" /></span></button>; }
+function Detail({ label, value }: { label: string; value: string }) { return <div className="rounded-lg border p-3"><p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p><p className="mt-1 break-words text-sm text-slate-900">{value}</p></div>; }
+function MiniStatus({ label, value }: { label: string; value: string }) { return <div className="rounded-lg bg-slate-50 p-3"><p className="text-xs text-slate-500">{label}</p><p className="font-semibold">{value}</p></div>; }
+function CampaignRow({ name, note, audience, status, action }: { name: string; note: string; audience: string; status: string; action: React.ReactNode }) { return <TableRow><TableCell><strong>{name}</strong><p className="text-xs text-slate-500">{note}</p></TableCell><TableCell>{audience}</TableCell><TableCell><Badge className={statusTone(status.replace(/ /g, "_"))}>{status}</Badge></TableCell><TableCell><div className="flex justify-end gap-2">{action}</div></TableCell></TableRow>; }

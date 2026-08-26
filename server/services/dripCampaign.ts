@@ -181,7 +181,7 @@ export class DripCampaignService {
     return { enrolled, skipped, suppressed, bySegment };
   }
 
-  async getSegmentStats(): Promise<{ bySegment: Record<string, number>; eligible: number; suppressed: number }> {
+  async getSegmentStats(): Promise<{ bySegment: Record<string, number>; eligible: number; suppressed: number; suppressionReasons: Record<string, number> }> {
     const bySegment: Record<string, number> = Object.fromEntries(LIFECYCLE_SEGMENTS.map((segment) => [segment, 0]));
     const result = await db.execute(sql`
       WITH signals AS (
@@ -193,6 +193,14 @@ export class DripCampaignService {
         FROM funnel_events GROUP BY user_id
       ), categorized AS (
         SELECT users.id,
+          CASE
+            WHEN users.email IS NULL THEN 'missing_email'
+            WHEN users.marketing_consent_status = 'suppressed' THEN 'delivery_suppressed'
+            WHEN users.marketing_consent_status = 'unsubscribed' OR users.marketing_opt_out = true THEN 'unsubscribed'
+            WHEN users.marketing_consent_status <> 'consented' THEN 'consent_missing'
+            WHEN users.subscription_plan <> 'free' AND users.subscription_status = 'active' THEN 'paid'
+            ELSE NULL
+          END AS suppression_reason,
           CASE
             WHEN users.email IS NULL OR users.marketing_consent_status <> 'consented' OR users.marketing_opt_out = true THEN NULL
             WHEN users.subscription_plan <> 'free' AND users.subscription_status = 'active' THEN NULL
@@ -209,14 +217,28 @@ export class DripCampaignService {
           END AS segment
         FROM users LEFT JOIN signals ON signals.user_id = users.id
       )
-      SELECT segment, COUNT(*)::int AS count FROM categorized GROUP BY segment
+      SELECT segment, suppression_reason, COUNT(*)::int AS count
+      FROM categorized
+      GROUP BY segment, suppression_reason
     `);
     let suppressed = 0;
-    for (const row of result.rows as Array<{ segment: string | null; count: number | string }>) {
+    const suppressionReasons: Record<string, number> = {
+      missing_email: 0,
+      consent_missing: 0,
+      unsubscribed: 0,
+      delivery_suppressed: 0,
+      paid: 0,
+      not_currently_eligible: 0,
+    };
+    for (const row of result.rows as Array<{ segment: string | null; suppression_reason: string | null; count: number | string }>) {
       if (row.segment && row.segment in bySegment) bySegment[row.segment] = Number(row.count);
-      else suppressed += Number(row.count);
+      else {
+        const reason = row.suppression_reason || "not_currently_eligible";
+        suppressionReasons[reason] = (suppressionReasons[reason] || 0) + Number(row.count);
+        suppressed += Number(row.count);
+      }
     }
-    return { bySegment, eligible: Object.values(bySegment).reduce((sum, count) => sum + count, 0), suppressed };
+    return { bySegment, eligible: Object.values(bySegment).reduce((sum, count) => sum + count, 0), suppressed, suppressionReasons };
   }
 }
 

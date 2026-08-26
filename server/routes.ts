@@ -22,7 +22,7 @@ import { coachVerdictService } from "./services/coachVerdict";
 import { getRecoveryState } from "./services/recoveryService";
 import { dataQualityService } from "./services/dataQuality";
 import { efficiencyService } from "./services/efficiency";
-import { dripCampaignService } from "./services/dripCampaign";
+import { dripCampaignService, LIFECYCLE_CAMPAIGNS } from "./services/dripCampaign";
 import { dripCampaignWorker } from "./services/dripCampaignWorker";
 import { createMarketingToken, verifyMarketingToken } from "./services/campaignSecurity";
 import { sendWeeklySummaries, weeklySummaryWorker } from "./services/weeklySummaryWorker";
@@ -7148,25 +7148,45 @@ ${allPages.map(page => `  <url>
 
   app.get("/api/admin/users", authenticateAdmin, async (req, res) => {
     try {
-      const page = parseInt(req.query.page as string) || 1;
-      const pageSize = parseInt(req.query.pageSize as string) || 25;
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const pageSize = Math.max(10, Math.min(100, parseInt(req.query.pageSize as string) || 25));
       const offset = (page - 1) * pageSize;
-      
-      const allUsers = await storage.getAllUsers(1000); // Get all users
-      const total = allUsers.length;
-      const users = allUsers.slice(offset, offset + pageSize);
-      
-      // Remove sensitive data
-      const sanitizedUsers = users.map(user => ({
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        stravaConnected: user.stravaConnected,
-        unitPreference: user.unitPreference,
-        isAdmin: user.isAdmin,
-        createdAt: user.createdAt,
-        lastSyncAt: user.lastSyncAt
+      const search = String(req.query.search || "").trim().slice(0, 100);
+      const searchPattern = `%${search}%`;
+      const plan = ["all", "free", "trial", "paid", "canceled"].includes(String(req.query.plan)) ? String(req.query.plan) : "all";
+      const strava = ["all", "connected", "disconnected"].includes(String(req.query.strava)) ? String(req.query.strava) : "all";
+      const consent = ["all", "consented", "unknown", "unsubscribed", "suppressed"].includes(String(req.query.consent)) ? String(req.query.consent) : "all";
+      const userWhere = sql`
+        (${search} = '' OR users.email ILIKE ${searchPattern} OR users.first_name ILIKE ${searchPattern} OR users.last_name ILIKE ${searchPattern} OR users.id::text = ${search})
+        AND (${plan} = 'all'
+          OR (${plan} = 'free' AND COALESCE(users.subscription_plan, 'free') = 'free' AND COALESCE(users.subscription_status, '') <> 'trialing')
+          OR (${plan} = 'trial' AND users.subscription_status = 'trialing')
+          OR (${plan} = 'paid' AND users.subscription_plan <> 'free' AND users.subscription_status = 'active')
+          OR (${plan} = 'canceled' AND users.subscription_status IN ('canceled', 'past_due', 'unpaid')))
+        AND (${strava} = 'all' OR (${strava} = 'connected' AND users.strava_connected = true) OR (${strava} = 'disconnected' AND users.strava_connected = false))
+        AND (${consent} = 'all' OR users.marketing_consent_status = ${consent})
+      `;
+      const countResult = await db.execute(sql`SELECT COUNT(*)::int AS count FROM users WHERE ${userWhere}`);
+      const total = Number((countResult.rows[0] as any)?.count || 0);
+      const userResult = await db.execute(sql`
+        SELECT id, email, first_name, last_name, strava_connected, unit_preference, is_admin,
+          created_at, last_sync_at, last_seen_at, subscription_plan, subscription_status,
+          trial_ends_at, marketing_consent_status, marketing_opt_out, premium_preview_created_at,
+          coach_enabled
+        FROM users
+        WHERE ${userWhere}
+        ORDER BY created_at DESC NULLS LAST, id DESC
+        LIMIT ${pageSize} OFFSET ${offset}
+      `);
+      const sanitizedUsers = (userResult.rows as any[]).map((user) => ({
+        id: Number(user.id), email: user.email, firstName: user.first_name, lastName: user.last_name,
+        stravaConnected: Boolean(user.strava_connected), unitPreference: user.unit_preference,
+        isAdmin: Boolean(user.is_admin), createdAt: user.created_at, lastSyncAt: user.last_sync_at,
+        lastSeenAt: user.last_seen_at, subscriptionPlan: user.subscription_plan || "free",
+        subscriptionStatus: user.subscription_status, trialEndsAt: user.trial_ends_at,
+        marketingConsentStatus: user.marketing_consent_status || "unknown",
+        marketingOptOut: Boolean(user.marketing_opt_out), premiumPreviewCreatedAt: user.premium_preview_created_at,
+        coachEnabled: Boolean(user.coach_enabled),
       }));
       
       res.json({
@@ -7178,6 +7198,72 @@ ${allPages.map(page => `  <url>
     } catch (error: any) {
       console.error('Admin users error:', error);
       res.status(500).json({ message: error.message || "Failed to get users" });
+    }
+  });
+
+  app.get("/api/admin/growth", authenticateAdmin, async (req, res) => {
+    try {
+      const days = Math.max(7, Math.min(90, Number(req.query.days) || 30));
+      const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+      const cohortResult = await db.execute(sql`
+        SELECT
+          COUNT(*)::int AS signups,
+          COUNT(*) FILTER (WHERE strava_connected = true)::int AS connected,
+          COUNT(*) FILTER (WHERE premium_preview_created_at IS NOT NULL)::int AS preview_ready,
+          COUNT(*) FILTER (WHERE subscription_status = 'trialing')::int AS currently_trialing,
+          COUNT(*) FILTER (WHERE subscription_plan <> 'free' AND subscription_status = 'active')::int AS currently_paid
+        FROM users WHERE created_at >= ${cutoff}
+      `);
+      const eventResult = await db.execute(sql`
+        SELECT stage, COUNT(DISTINCT user_id)::int AS users
+        FROM (
+          SELECT user_id,
+            CASE
+              WHEN event IN ('checkout_started', 'checkout_session_created') THEN 'checkout'
+              WHEN event IN ('trial_converted', 'subscription_activated') THEN 'paid'
+              ELSE event
+            END AS stage
+          FROM funnel_events
+          WHERE occurred_at >= ${cutoff}
+            AND event IN ('offer_viewed', 'offer_clicked', 'preview_viewed', 'checkout_started', 'checkout_session_created', 'trial_started', 'trial_converted', 'subscription_activated', 'subscription_canceled')
+        ) staged_events
+        GROUP BY stage
+      `);
+      const globalResult = await db.execute(sql`
+        SELECT
+          COUNT(*) FILTER (WHERE subscription_plan <> 'free' AND subscription_status = 'active')::int AS active_paid,
+          COUNT(*) FILTER (WHERE subscription_status = 'trialing')::int AS active_trials,
+          COUNT(*) FILTER (WHERE last_seen_at >= ${cutoff})::int AS active_runners
+        FROM users
+      `);
+      const eventCounts = Object.fromEntries((eventResult.rows as any[]).map((row) => [row.stage, Number(row.users || 0)]));
+      const cohort = cohortResult.rows[0] as any;
+      const global = globalResult.rows[0] as any;
+      const stages = [
+        { key: "offer_viewed", label: "Premium offer viewed", count: eventCounts.offer_viewed || 0 },
+        { key: "offer_clicked", label: "Offer clicked", count: eventCounts.offer_clicked || 0 },
+        { key: "preview_viewed", label: "Preview viewed", count: eventCounts.preview_viewed || 0 },
+        { key: "checkout", label: "Checkout started", count: eventCounts.checkout || 0 },
+        { key: "trial_started", label: "Trial started", count: eventCounts.trial_started || 0 },
+        { key: "paid", label: "Paid conversion", count: eventCounts.paid || 0 },
+      ].map((stage, index, all) => ({
+        ...stage,
+        conversionFromPrevious: index === 0 || all[index - 1].count === 0 || stage.count > all[index - 1].count ? null : Math.round((stage.count / all[index - 1].count) * 1000) / 10,
+      }));
+      res.json({
+        periodDays: days,
+        generatedAt: new Date().toISOString(),
+        cohort: {
+          signups: Number(cohort?.signups || 0), connected: Number(cohort?.connected || 0),
+          previewReady: Number(cohort?.preview_ready || 0), currentlyTrialing: Number(cohort?.currently_trialing || 0),
+          currentlyPaid: Number(cohort?.currently_paid || 0),
+        },
+        current: { activePaid: Number(global?.active_paid || 0), activeTrials: Number(global?.active_trials || 0), activeRunners: Number(global?.active_runners || 0) },
+        cancellations: eventCounts.subscription_canceled || 0,
+        stages,
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Failed to get growth analytics" });
     }
   });
 
@@ -7734,13 +7820,12 @@ ${allPages.map(page => `  <url>
   // Get count of pending launch emails
   app.get("/api/admin/launch-emails/pending", authenticateAdmin, async (req: any, res) => {
     try {
-      const pendingEmails = await db.select()
+      const pendingResult = await db.select({ count: sql<number>`count(*)::int` })
         .from(emailWaitlist)
         .where(isNull(emailWaitlist.launchEmailSentAt));
       
       res.json({
-        count: pendingEmails.length,
-        emails: pendingEmails.map(e => e.email)
+        count: Number(pendingResult[0]?.count || 0),
       });
     } catch (error: any) {
       console.error('Pending launch emails error:', error);
@@ -7751,6 +7836,9 @@ ${allPages.map(page => `  <url>
   // Send launch announcement emails to all waitlist subscribers who haven't received it
   app.post("/api/admin/send-launch-emails", authenticateAdmin, async (req: any, res) => {
     try {
+      if (req.body?.confirmation !== "SEND LAUNCH") {
+        return res.status(400).json({ message: "Type SEND LAUNCH to confirm this bulk delivery" });
+      }
       const pendingEmails = await db.select()
         .from(emailWaitlist)
         .where(isNull(emailWaitlist.launchEmailSentAt));
@@ -8991,6 +9079,7 @@ ${allPages.map(page => `  <url>
           COUNT(*) FILTER (WHERE complained_at IS NOT NULL)::int AS complained
         FROM email_jobs
         WHERE job_type = 'drip' AND campaign_version = 2
+          AND campaign IN ('signup_no_strava', 'preview_ready_unseen', 'preview_engaged_no_trial', 'checkout_abandoned', 'trial_needs_activation', 'trial_engaged', 'trial_ending', 'trial_expired_winback', 'inactive_free')
         GROUP BY campaign, experiment_variant
       `);
       const clicks = await db.execute(sql`
@@ -9017,10 +9106,16 @@ ${allPages.map(page => `  <url>
   app.get("/api/admin/campaigns/worker-status", authenticateAdmin, async (req: any, res) => {
     try {
       const status = dripCampaignWorker.getStatus();
+      const rolloutPercent = Number(await storage.getSystemSetting("drip_campaigns_rollout_percent") || "5");
+      const holdoutPercent = Number(await storage.getSystemSetting("drip_campaigns_holdout_percent") || "10");
+      const operationalState = !status.readiness.ready ? "blocked" : !status.campaignsEnabled ? "disabled" : status.dryRun ? "dry_run" : rolloutPercent < 100 ? "canary" : "live";
+      const nextAction = operationalState === "blocked" ? "Add the missing delivery configuration" : operationalState === "disabled" ? (status.dryRun ? "Reconcile eligible runners, send a test, then enable the worker" : "Review live safety settings before enabling the worker") : operationalState === "dry_run" ? "Review scheduled jobs, send a test, then start a small canary" : operationalState === "canary" ? "Monitor delivery, complaints and trial starts before increasing rollout" : "Monitor delivery health and conversion";
       res.json({
         ...status,
-        rolloutPercent: Number(await storage.getSystemSetting("drip_campaigns_rollout_percent") || "5"),
-        holdoutPercent: Number(await storage.getSystemSetting("drip_campaigns_holdout_percent") || "10"),
+        rolloutPercent,
+        holdoutPercent,
+        operationalState,
+        nextAction,
       });
     } catch (error: any) {
       console.error("Worker status error:", error);
@@ -9042,10 +9137,15 @@ ${allPages.map(page => `  <url>
   // Admin: Toggle drip campaigns ON/OFF
   app.post("/api/admin/campaigns/toggle", authenticateAdmin, async (req: any, res) => {
     try {
-      const { enabled } = req.body;
+      const { enabled, confirmation } = req.body;
       
       if (typeof enabled !== 'boolean') {
         return res.status(400).json({ message: "enabled must be a boolean" });
+      }
+
+      const currentStatus = dripCampaignWorker.getStatus();
+      if (enabled && !currentStatus.dryRun && confirmation !== "ENABLE LIVE") {
+        return res.status(400).json({ message: "Type ENABLE LIVE to start live lifecycle delivery" });
       }
       
       await dripCampaignWorker.setCampaignsEnabled(enabled);
@@ -9063,7 +9163,11 @@ ${allPages.map(page => `  <url>
 
   app.post("/api/admin/campaigns/safety-config", authenticateAdmin, async (req: any, res) => {
     try {
-      const input = z.object({ dryRun: z.boolean().optional(), hourlyLimit: z.number().int().min(1).max(500).optional(), rolloutPercent: z.number().int().min(0).max(100).optional(), holdoutPercent: z.number().int().min(0).max(50).optional() }).parse(req.body);
+      const input = z.object({ dryRun: z.boolean().optional(), hourlyLimit: z.number().int().min(1).max(500).optional(), rolloutPercent: z.number().int().min(0).max(100).optional(), holdoutPercent: z.number().int().min(0).max(50).optional(), confirmation: z.string().optional() }).parse(req.body);
+      const currentStatus = dripCampaignWorker.getStatus();
+      if (input.dryRun === false && currentStatus.dryRun && input.confirmation !== "GO LIVE") {
+        return res.status(400).json({ message: "Type GO LIVE to disable dry-run delivery" });
+      }
       await dripCampaignWorker.setSafetyConfig({ dryRun: input.dryRun, hourlyLimit: input.hourlyLimit });
       if (input.rolloutPercent !== undefined) await storage.setSystemSetting("drip_campaigns_rollout_percent", String(input.rolloutPercent));
       if (input.holdoutPercent !== undefined) await storage.setSystemSetting("drip_campaigns_holdout_percent", String(input.holdoutPercent));
@@ -9071,17 +9175,50 @@ ${allPages.map(page => `  <url>
     } catch (error: any) { res.status(400).json({ message: error.message || "Invalid campaign safety settings" }); }
   });
 
+  app.post("/api/admin/campaigns/test", authenticateAdmin, async (req: any, res) => {
+    try {
+      const input = z.object({ segment: z.string(), step: z.string().optional() }).parse(req.body);
+      if (!(input.segment in LIFECYCLE_CAMPAIGNS)) return res.status(400).json({ message: "Unknown lifecycle segment" });
+      const steps = LIFECYCLE_CAMPAIGNS[input.segment as keyof typeof LIFECYCLE_CAMPAIGNS];
+      const selected = input.step ? steps.find((candidate) => candidate.step === input.step) : steps[0];
+      if (!selected) return res.status(400).json({ message: "Unknown lifecycle campaign step" });
+      const admin = await storage.getUser(req.user.id);
+      if (!admin?.email) return res.status(400).json({ message: "The admin account needs an email address" });
+      const baseUrl = (process.env.PUBLIC_APP_URL || "https://aitracker.run").replace(/\/$/, "");
+      const delivery = await emailService.sendDripEmail({
+        to: admin.email,
+        subject: `[TEST] ${selected.subject}`,
+        previewText: selected.previewText,
+        bodyText: selected.body,
+        ctaText: selected.ctaText,
+        ctaUrl: `${baseUrl}${selected.ctaPath}`,
+        unsubscribeUrl: `${baseUrl}/settings`,
+        userName: admin.firstName || admin.username || "Runner",
+        step: `TEST:${selected.step}`,
+        campaign: input.segment,
+        listUnsubscribe: false,
+      });
+      if (!delivery.success) return res.status(502).json({ message: delivery.error || "Email provider rejected the test" });
+      res.json({ success: true, recipient: admin.email, segment: input.segment, step: selected.step });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message || "Failed to send lifecycle test" });
+    }
+  });
+
   // Admin: Get segment stats for campaigns (reads from user_campaigns table)
   app.get("/api/admin/campaigns/segment-stats", authenticateAdmin, async (req: any, res) => {
     try {
       const result = await dripCampaignService.getSegmentStats();
       const userCounts = await storage.getUserCountsBySubscription();
+      const audienceResult = await db.execute(sql`SELECT COUNT(*)::int AS count FROM users WHERE email IS NOT NULL AND marketing_consent_status = 'consented' AND marketing_opt_out = false`);
       res.json({
         segments: result.bySegment,
         eligible: result.eligible,
         suppressed: result.suppressed,
+        suppressionReasons: result.suppressionReasons,
         paid: userCounts.paid,
         total: userCounts.total,
+        marketingAudience: Number((audienceResult.rows[0] as any)?.count || 0),
       });
     } catch (error: any) {
       console.error("Segment stats error:", error);
@@ -9132,11 +9269,11 @@ ${allPages.map(page => `  <url>
   app.post("/api/admin/welcome-campaign/test", authenticateAdmin, async (req: any, res) => {
     try {
       const adminUser = await storage.getUser(req.user.id);
-      if (!adminUser) {
-        return res.status(404).json({ message: "User not found" });
+      if (!adminUser?.email) {
+        return res.status(400).json({ message: "The admin account needs an email address" });
       }
-      
-      const success = await emailService.sendFoundersWelcomeEmail(adminUser.email);
+      const unsubscribeUrl = `${process.env.PUBLIC_APP_URL || "https://aitracker.run"}/settings`;
+      const success = await emailService.sendFoundersWelcomeEmail(adminUser.email, unsubscribeUrl, false);
       res.json({ 
         success, 
         message: success ? `Test email sent to ${adminUser.email}` : "Failed to send email" 
@@ -9150,6 +9287,9 @@ ${allPages.map(page => `  <url>
   // Admin: Send welcome emails to all users (rate-limited batch)
   app.post("/api/admin/welcome-campaign/send-all", authenticateAdmin, async (req: any, res) => {
     try {
+      if (req.body?.confirmation !== "SEND WELCOME") {
+        return res.status(400).json({ message: "Type SEND WELCOME to confirm this bulk delivery" });
+      }
       // Get all users who haven't received the welcome email yet
       const users = await storage.getUsersWithoutWelcomeEmail();
       
@@ -9176,7 +9316,9 @@ ${allPages.map(page => `  <url>
           batch.map(async (user: { id: number; email: string | null }) => {
             if (!user.email) return false; // Skip Strava-only users with no email
             try {
-              const success = await emailService.sendFoundersWelcomeEmail(user.email);
+              const unsubscribeToken = createMarketingToken({ kind: "unsubscribe", userId: user.id }, 2 * 365 * 24 * 60 * 60);
+              const unsubscribeUrl = `${process.env.PUBLIC_APP_URL || "https://aitracker.run"}/api/marketing/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`;
+              const success = await emailService.sendFoundersWelcomeEmail(user.email, unsubscribeUrl);
               if (success) {
                 await storage.updateUser(user.id, { welcomeEmailSentAt: new Date() });
                 return true;
@@ -9220,6 +9362,7 @@ ${allPages.map(page => `  <url>
       const { subject, html: htmlBody, text: textBody } = emailService.productUpdateNewsletter();
 
       if (isTest) {
+        if (!adminUser?.email) return res.status(400).json({ message: "The admin account needs an email address" });
         const success = await emailService.sendEmail({
           to: adminUser.email,
           subject: `[TEST] ${subject}`,
@@ -9233,6 +9376,10 @@ ${allPages.map(page => `  <url>
           total: 1,
           message: success ? `Test email sent to ${adminUser.email}` : "Failed to send test email",
         });
+      }
+
+      if (req.body?.confirmation !== "SEND UPDATE") {
+        return res.status(400).json({ message: "Type SEND UPDATE to confirm this bulk delivery" });
       }
 
       const allUsers = await storage.getAllUsers(10000);
@@ -9251,11 +9398,17 @@ ${allPages.map(page => `  <url>
         const results = await Promise.all(
           batch.map(async (user: any) => {
             try {
+              const unsubscribeToken = createMarketingToken({ kind: "unsubscribe", userId: user.id }, 2 * 365 * 24 * 60 * 60);
+              const unsubscribeUrl = `${process.env.PUBLIC_APP_URL || "https://aitracker.run"}/api/marketing/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`;
               const success = await emailService.sendEmail({
                 to: user.email,
                 subject,
-                html: htmlBody,
-                text: textBody,
+                html: `${htmlBody}<p style="font-family:Arial,sans-serif;font-size:12px;color:#777;text-align:center"><a href="${unsubscribeUrl}" style="color:#666">Unsubscribe from product emails</a></p>`,
+                text: `${textBody}\n\nUnsubscribe: ${unsubscribeUrl}`,
+                headers: {
+                  "List-Unsubscribe": `<${unsubscribeUrl}>`,
+                  "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+                },
               });
               return success;
             } catch (err) {
