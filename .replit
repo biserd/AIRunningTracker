@@ -63,3 +63,6 @@ TELEGRAM_BOT_USERNAME = "hermes_3njyz3nxuousjmh2_bot"
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 90000
+
+[objectStorage]
+defaultBucketID = "replit-objstore-75498800-417a-4cc6-8751-efcae3f344c1"
