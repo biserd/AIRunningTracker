@@ -7,11 +7,11 @@
   "send_email": [
     {
       "name": "REMINDER_EMAIL",
-      "allowed_sender_addresses": ["reminders@new.aitracker.run"],
+      "allowed_sender_addresses": ["reminders@aitracker.run"],
     },
   ],
   "vars": {
-    "REMINDER_FROM": "reminders@new.aitracker.run",
+    "REMINDER_FROM": "reminders@aitracker.run",
     "PUBLIC_ORIGIN": "https://new.aitracker.run",
   },
   "durable_objects": {

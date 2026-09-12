@@ -57,7 +57,7 @@ function fixture() {
   const env = Object.assign({} as Env, {
     DB: adapter,
     REMINDER_EMAIL: email,
-    REMINDER_FROM: "reminders@new.aitracker.run",
+    REMINDER_FROM: "reminders@aitracker.run",
     PUBLIC_ORIGIN: "https://new.aitracker.run",
   });
   async function verify(id = "a") {
