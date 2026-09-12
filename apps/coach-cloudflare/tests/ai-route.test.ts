@@ -105,7 +105,7 @@ test("quota blocks calls before provider execution and failures cannot silently 
     body = { id: crypto.randomUUID(), message: "Hi" };
   await assert.rejects(
     aiRoute(request, env, row, body, async () => false),
-    /limit/,
+    /wait a minute/,
   );
   assert.equal(count, 0);
   await assert.rejects(
@@ -142,7 +142,12 @@ test("image request is fixed-scope, counted once and not stored as a D1 blob", a
   );
   const request = new Request("https://test.example/api/ai/image"),
     body = { id: crypto.randomUUID() };
-  const result = (await aiRoute(request, env, row, body, async () => true)) as {
+  const result = (await aiRoute(request, env, row, body, async (_env, key, max, seconds) => {
+    assert.ok(key.startsWith("ai-burst:image:"));
+    assert.equal(seconds, 60);
+    assert.equal(max, key.endsWith(":global") ? 30 : 5);
+    return true;
+  })) as {
     image: string;
   };
   assert.equal(result.image, "data:image/webp;base64,YQ==");

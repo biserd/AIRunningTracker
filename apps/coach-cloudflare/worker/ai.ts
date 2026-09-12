@@ -108,24 +108,23 @@ export async function aiRoute(
   if (!claimed.meta.changes)
     throw new AIError("This request is already running.", 409);
   try {
-    const day = Math.floor(now / 86400);
-    // Global cap cannot be bypassed by recreating a browser session. Reserve before charging.
+    // Testing preview has no daily budget. Retain short burst protection.
     if (
       !(await limit(
         env,
-        `ai:${kind}:${row.id}:${day}`,
-        kind === "chat" ? 20 : 2,
-        86400,
+        `ai-burst:${kind}:${row.id}`,
+        kind === "chat" ? 20 : 5,
+        60,
       )) ||
       !(await limit(
         env,
-        `ai:${kind}:global:${day}`,
-        kind === "chat" ? 100 : 10,
-        86400,
+        `ai-burst:${kind}:global`,
+        kind === "chat" ? 100 : 30,
+        60,
       ))
     )
       throw new AIError(
-        "Today’s preview AI limit has been reached. Come back tomorrow.",
+        "Too many AI requests at once. Please wait a minute and try again.",
         429,
       );
     const signal = AbortSignal.timeout(kind === "image" ? 150_000 : 80_000);
