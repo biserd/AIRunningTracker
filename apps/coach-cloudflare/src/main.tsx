@@ -28,6 +28,7 @@ import {
 } from "../shared/coach";
 import "./style.css";
 import { CoachAI } from "./CoachAI";
+import { ReminderPanel, ReminderUnsubscribe } from "./Reminders";
 async function api<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch("/api/" + path, {
     method: body === undefined ? "GET" : "POST",
@@ -199,6 +200,7 @@ function App() {
           </span>
         </header>
         <div className="page-content">
+          <ReminderUnsubscribe />
           <div className="preview-note">
             <Info size={16} />
             <span>
@@ -592,6 +594,7 @@ function App() {
               {tab === "Settings" && (
                 <section className="settings-card">
                   <h2>Cloudflare-native. Intentionally separate.</h2>
+                  <ReminderPanel />
                   <p>
                     This preview uses Cloudflare Workers for its API and D1 for
                     saved plans. There are no requests to Replit or the live
@@ -602,7 +605,7 @@ function App() {
                     <dd>Fictional, created for this browser</dd>
                     <dt>Storage</dt>
                     <dd>Private session, expires after seven days</dd>
-                    <dt>Strava, billing and messaging</dt>
+                    <dt>Strava, billing and Telegram</dt>
                     <dd>Not connected</dd>
                     <dt>AI and voice</dt>
                     <dd>

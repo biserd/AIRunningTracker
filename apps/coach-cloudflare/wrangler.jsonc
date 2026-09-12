@@ -4,6 +4,16 @@
   "account_id": "73d71a2bef58f7469ecb48e2b8e84c0e",
   "main": "worker/index.ts",
   "secrets": { "required": ["OPENAI_API_KEY"] },
+  "send_email": [
+    {
+      "name": "REMINDER_EMAIL",
+      "allowed_sender_addresses": ["reminders@new.aitracker.run"],
+    },
+  ],
+  "vars": {
+    "REMINDER_FROM": "reminders@new.aitracker.run",
+    "PUBLIC_ORIGIN": "https://new.aitracker.run",
+  },
   "durable_objects": {
     "bindings": [{ "name": "VOICE_LEASE", "class_name": "VoiceLease" }],
   },
@@ -25,7 +35,7 @@
     },
   ],
   "observability": { "enabled": true, "head_sampling_rate": 0.1 },
-  "triggers": { "crons": ["0 4 * * *"] },
+  "triggers": { "crons": ["* * * * *"] },
   "workers_dev": true,
   "routes": [{ "pattern": "new.aitracker.run", "custom_domain": true }],
 }

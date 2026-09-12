@@ -1,6 +1,13 @@
 import { changePlan, seed, type State, type Change } from "../shared/coach";
 import { aiRoute, history } from "./ai";
-import { AIError } from "./openai";
+import { AIError, boundedJSON } from "./openai";
+import {
+  reminderAction,
+  reminderStatus,
+  ReminderError,
+  unsubscribe,
+  deliverReminders,
+} from "./reminders";
 export { VoiceLease } from "./voice";
 type Row = {
   id: string;
@@ -44,6 +51,30 @@ async function api(request: Request, env: Env): Promise<Response> {
     return json({ error: "Method not allowed" }, 405);
   if (request.method === "POST" && request.headers.get("Origin") !== url.origin)
     return json({ error: "Origin not allowed" }, 403);
+  if (
+    url.pathname === "/api/reminders/unsubscribe" &&
+    request.method === "POST"
+  ) {
+    if (!request.headers.get("Content-Type")?.startsWith("application/json"))
+      return json({ error: "JSON required" }, 415);
+    if (
+      !(await limit(
+        env,
+        `optout:${await digest(request.headers.get("CF-Connecting-IP") || "local")}`,
+        30,
+        60,
+      ))
+    )
+      return json({ error: "Please try later." }, 429);
+    try {
+      const input = (await boundedJSON(new Response(request.body), 512)) as {
+        token?: unknown;
+      };
+      return json(await unsubscribe(env, input?.token));
+    } catch {
+      return json({ error: "Invalid unsubscribe request." }, 400);
+    }
+  }
   if (url.pathname === "/api/session" && request.method === "POST") {
     const address = request.headers.get("CF-Connecting-IP") || "local";
     if (!(await limit(env, `signup:${await digest(address)}`, 20, 3600)))
@@ -84,6 +115,8 @@ async function api(request: Request, env: Env): Promise<Response> {
     return json({ error: "Your preview expired. Start a new one." }, 401);
   if (!(await limit(env, `session:${id}`, 120, 60)))
     return json({ error: "Please wait a moment before trying again." }, 429);
+  if (url.pathname === "/api/reminders" && request.method === "GET")
+    return json(await reminderStatus(env, id));
   if (url.pathname === "/api/ai/status" && request.method === "GET")
     return json({
       configured: !!env.OPENAI_API_KEY,
@@ -137,6 +170,29 @@ async function api(request: Request, env: Env): Promise<Response> {
     return json({ error: "Invalid request" }, 400);
   }
   const state = JSON.parse(row.state) as State;
+  if (url.pathname.startsWith("/api/reminders/")) {
+    try {
+      return json(
+        await reminderAction(
+          env,
+          id,
+          url.pathname.slice("/api/reminders/".length),
+          input,
+          request.headers.get("CF-Connecting-IP") || "local",
+        ),
+      );
+    } catch (e) {
+      return json(
+        {
+          error:
+            e instanceof ReminderError
+              ? e.message
+              : "Reminder request failed. Please try again later.",
+        },
+        e instanceof ReminderError ? e.status : 503,
+      );
+    }
+  }
   if (url.pathname.startsWith("/api/ai/")) {
     try {
       return json(await aiRoute(request, env, row, input, limit));
@@ -285,7 +341,14 @@ export default {
     return safe;
   },
   async scheduled(_event, env) {
+    await deliverReminders(env);
     const now = Math.floor(Date.now() / 1000);
+    // Retention cleanup runs daily; delivery polling runs every minute.
+    if (
+      new Date(_event.scheduledTime).getUTCHours() !== 4 ||
+      new Date(_event.scheduledTime).getUTCMinutes() !== 0
+    )
+      return;
     await env.DB.batch([
       env.DB.prepare("DELETE FROM sessions WHERE expires_at<?").bind(now),
       env.DB.prepare("DELETE FROM request_limits WHERE expires_at<?").bind(now),

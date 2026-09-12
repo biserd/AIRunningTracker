@@ -1,4 +1,10 @@
 import { changePlan, evidence, type Change, type State } from "../shared/coach";
+import type { ReminderIntent } from "../shared/reminders";
+import { ReminderError } from "./reminders";
+export type ReminderTools = {
+  context: unknown;
+  validate: (intent: unknown) => Promise<ReminderIntent>;
+};
 
 export class AIError extends Error {
   constructor(
@@ -95,6 +101,41 @@ const tools = [
     },
   },
 ];
+const reminderTools = [
+  {
+    type: "function",
+    name: "preview_email_reminder",
+    description:
+      "Prepare a one-time email reminder for on-screen confirmation. Never schedules or sends. Use the verified timezone in context. Ask for missing time details.",
+    strict: true,
+    parameters: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        localTime: {
+          type: "string",
+          description:
+            "Local date/time YYYY-MM-DDTHH:mm in the verified timezone, not UTC.",
+        },
+      },
+      required: ["title", "localTime"],
+      additionalProperties: false,
+    },
+  },
+  {
+    type: "function",
+    name: "preview_cancel_reminder",
+    description:
+      "Prepare cancellation of an existing reminder from the current user context, for on-screen confirmation.",
+    strict: true,
+    parameters: {
+      type: "object",
+      properties: { reminderId: { type: "string" } },
+      required: ["reminderId"],
+      additionalProperties: false,
+    },
+  },
+];
 export function validateChange(raw: unknown, state: State): Change {
   if (!raw || typeof raw !== "object" || Array.isArray(raw))
     throw new Error("Invalid change");
@@ -135,9 +176,11 @@ export async function coach(
   history: { role: string; content: string }[],
   message: string,
   signal: AbortSignal,
+  reminders?: ReminderTools,
 ) {
   const input: unknown[] = [...history, { role: "user", content: message }];
   let change: Change | undefined;
+  let reminder: ReminderIntent | undefined;
   for (let round = 0; round < 3; round++) {
     const raw = (await openai(
       key,
@@ -145,11 +188,15 @@ export async function coach(
       {
         model: "gpt-6-astra",
         store: false,
-        instructions,
+        instructions:
+          instructions +
+          (reminders
+            ? " You can also PREPARE a one-time email reminder or cancellation for separate on-screen confirmation. A draft is not scheduled. Read reminder context including actual current time, verified timezone and existing reminders. The sample plan date is not the actual date for reminders. Ask the runner to verify email in the reminders panel if unverified, and clarify missing dates or times. Never request or choose a recipient: the server controls it. Never say a reminder is set, cancelled, or an email was sent; tell the runner to review and confirm on screen. Recurring reminders are not supported."
+            : ""),
         reasoning: { effort: "low" },
         max_output_tokens: 1800,
         input,
-        tools,
+        tools: reminders ? [...tools, ...reminderTools] : tools,
         parallel_tool_calls: false,
         tool_choice:
           round === 0
@@ -173,7 +220,7 @@ export async function coach(
         .trim();
       if (!text || text.length > 8000)
         throw new AIError("The coach returned an incomplete answer.");
-      return { message: text, change };
+      return { message: text, change, reminder };
     }
     if (calls.length > 1)
       throw new AIError(
@@ -195,6 +242,7 @@ export async function coach(
             state,
             activityEvidence: evidence(state),
             realWeatherAvailable: false,
+            ...(reminders ? { emailReminders: reminders.context } : {}),
           };
         } else if (call.name === "preview_plan_change") {
           const candidate = validateChange(args, state);
@@ -205,11 +253,34 @@ export async function coach(
             description: preview.description,
             requiresOnScreenConfirmation: true,
           };
+        } else if (
+          reminders &&
+          (call.name === "preview_email_reminder" ||
+            call.name === "preview_cancel_reminder")
+        ) {
+          if (
+            !args ||
+            typeof args !== "object" ||
+            Array.isArray(args) ||
+            Object.keys(args).includes("kind")
+          )
+            throw new Error("Invalid reminder");
+          reminder = await reminders.validate({
+            ...args,
+            kind: call.name === "preview_email_reminder" ? "create" : "cancel",
+          });
+          result = {
+            status: "draft_only",
+            intent: reminder,
+            requiresOnScreenConfirmation: true,
+          };
         } else result = { error: "Tool not permitted" };
-      } catch {
+      } catch (error) {
         result = {
           error:
-            "That adjustment is not valid. Ask the runner to choose an eligible workout and change.",
+            error instanceof ReminderError
+              ? error.message
+              : "That adjustment is not valid. Ask the runner to choose an eligible workout and change.",
         };
       }
       input.push({

@@ -1,5 +1,6 @@
 import { changePlan, evidence, type State } from "../shared/coach";
 import { AIError, coach, openai } from "./openai";
+import { reminderContext, validateReminder, draftReminder } from "./reminders";
 type RunnerRow = { id: string; state: string; version: number };
 type Limit = (
   env: Env,
@@ -138,6 +139,10 @@ export async function aiRoute(
         await history(env, row.id),
         message,
         signal,
+        {
+          context: await reminderContext(env, row.id),
+          validate: (intent) => validateReminder(env, row.id, intent),
+        },
       );
       let proposal;
       if (generated.change) {
@@ -166,6 +171,15 @@ export async function aiRoute(
       result = {
         message: generated.message,
         ...(proposal ? { proposal } : {}),
+        ...(generated.reminder
+          ? {
+              reminderProposal: await draftReminder(
+                env,
+                row.id,
+                generated.reminder,
+              ),
+            }
+          : {}),
         source: "fictional_sample",
       };
       await env.DB.batch([

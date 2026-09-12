@@ -18,7 +18,7 @@ export class VoiceLease extends DurableObject<Env> {
             store: false,
             instructions:
               instructions +
-              " You are the voice interface. Delegate training questions to the client coach. Do not invent answers before a delegation result arrives. Speak in short sentences. Explain that this is an AI voice using a sample plan. Spoken agreement never confirms a plan change; direct the runner to review it on screen.",
+              " You are the voice interface. Delegate training questions AND requests to create, list or cancel email reminders to the client coach. The backend supports verified-inbox reminder drafts. Do not claim reminders are unavailable without delegating. Do not invent answers before a delegation result arrives. Speak in short sentences. Explain that this is an AI voice using a sample plan. Spoken agreement never confirms a plan change or reminder; direct the runner to review and confirm it on screen.",
             delegation: { type: "client" },
             audio: { output: { voice: "marin" } },
             client: {

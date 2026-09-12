@@ -15,9 +15,11 @@ Branch: `codex/cloudflare-coach`, based on `origin/main` at `c6f490f`. All code 
 
 ## Explicit limitations
 
-This is an AI-enabled UX preview, not a migrated production SaaS. All running data is fictional and identified as such. Text, voice and image generation have provider integrations, but require an OpenAI project key with access to the configured models. Missing credentials produce an honest unavailable state, not canned AI answers. Strava, billing, messaging, production accounts and real-data import are not connected. Private preview sessions are browser-bound, not verified runner accounts. Do not enter sensitive information.
+This is an AI-enabled UX preview, not a migrated production SaaS. All running data is fictional and identified as such. Text, voice and image generation have provider integrations, but require an OpenAI project key with access to the configured models. Missing credentials produce an honest unavailable state, not canned AI answers. Strava, billing, Telegram, production accounts and real-data import are not connected. Email reminders have a separate verified-inbox opt-in. Private preview sessions are browser-bound, not verified runner accounts. Do not enter sensitive training or medical information.
 
 ## Real AI setup and testing
+
+Email reminder setup, verification, limits and acceptance tests are documented in [EMAIL_REMINDERS.md](EMAIL_REMINDERS.md). The text and voice coach can now prepare one-time reminder and cancellation drafts for a verified inbox. They require on-screen confirmation. Email sending uses the native Cloudflare binding and minute cron, not an SMTP secret.
 
 Add **one encrypted secret**, `OPENAI_API_KEY`, to the `aitracker-coach-preview` Worker in Cloudflare Settings, or use `npx wrangler secret put OPENAI_API_KEY`. Never use a VITE-prefixed variable or commit a key. The OpenAI project must have billing and access to `gpt-6-astra`, `gpt-live-1`, and `gpt-image-2.5-flare`. A configured key is not proof of model access. Configure project spend alerts too.
 
@@ -29,7 +31,7 @@ Locally put the key in ignored `.dev.vars`; never copy the production key into t
 4. Choose **Create a running poster**. Wait for actual provider artwork. Verify the code-rendered sample labels and download it before leaving. R2 is not enabled on the account, so artwork is intentionally not retained on the server.
 5. Try a second browser/private window. It must not see the first session’s conversation or changes. Test an unavailable/revoked key and exhausted budgets on a non-production test Worker. No fallback should pretend success.
 
-Text uses the Responses API with one application-owned tool loop, not a hosted Agents API runtime. It has only `get_training_context` and `preview_plan_change`, at most three model requests, 1,800 output tokens per request, and 12 history messages. There is no apply, SQL, arbitrary URL, or user-ID tool. The existing confirmation endpoint remains the only writer of plan state. A session has at most one chat request in flight. Duplicate job IDs cannot invoke the provider twice. Unknown outcome requests do not automatically retry. Stopping the UI stops waiting; the backend may finish and save the reply, but cannot apply a plan.
+Text uses the Responses API with one application-owned tool loop, not a hosted Agents API runtime. Tools are `get_training_context`, `preview_plan_change`, `preview_email_reminder` and `preview_cancel_reminder`, with at most three model requests, 1,800 output tokens per request, and 12 history messages. There is no apply, send-email, SQL, arbitrary URL, or user-ID tool. Confirmation endpoints remain the only way to apply plan changes or schedule/cancel a reminder. A session has at most one chat request in flight. Duplicate job IDs cannot invoke the provider twice. Unknown outcome requests do not automatically retry. Stopping the UI stops waiting; the backend may finish and save the reply or a draft, but cannot apply a plan or schedule a reminder.
 
 Voice uses GPT-Live WebRTC with client delegation to the same scoped coach endpoint. API keys never enter the browser. One Durable Object lease per session persists the provider session ID and schedules closure after 180 seconds, independent of browser lifecycle. It uses the documented sideband `session.close` flow and retries failed closure every 30 seconds. A provider outage can delay finalization; this is not a guaranteed billing hard stop during provider failure. A setup timeout before the provider returns an ID has an uncertain outcome and is never automatically retried. Verify live model access and finalization before opening this anonymous preview broadly.
 
@@ -63,6 +65,7 @@ npm run check
 npm test
 npx tsx tests/browser.ts
 npx tsx tests/browser-ai.ts
+npx tsx tests/browser-reminders.ts
 npx wrangler deploy --dry-run
 ```
 

@@ -1,0 +1,411 @@
+import React, { useEffect, useState } from "react";
+import { Bell, Mail } from "lucide-react";
+import type { ReminderProposal } from "../shared/reminders";
+type Item = {
+  id: string;
+  title: string;
+  local_time: string;
+  timezone: string;
+  status: string;
+};
+type Status = {
+  configured: boolean;
+  verified: boolean;
+  email: string;
+  timezone: string;
+  expiresAt?: number;
+  reminders: Item[];
+};
+async function call<T>(path = "", body?: unknown): Promise<T> {
+  const r = await fetch("/api/reminders" + (path ? "/" + path : ""), {
+    method: body === undefined ? "GET" : "POST",
+    headers: body === undefined ? {} : { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+    signal: AbortSignal.timeout(25_000),
+  });
+  const data = await r.json();
+  if (!r.ok)
+    throw new Error(
+      data && typeof data === "object" && "error" in data
+        ? String(data.error)
+        : "Please try again.",
+    );
+  return data as T;
+}
+const labels: Record<string, string> = {
+  draft: "Needs confirmation",
+  scheduled: "Scheduled",
+  sending: "Sending; too late to cancel",
+  sent: "Accepted by email service",
+  failed: "Not sent",
+  unknown: "Delivery uncertain. Check your inbox.",
+  cancelled: "Cancelled",
+  expired: "Expired without sending",
+};
+export function ReminderPanel({ proposal }: { proposal?: ReminderProposal }) {
+  const [data, setData] = useState<Status>(),
+    [email, setEmail] = useState(""),
+    [zone, setZone] = useState(
+      () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+    ),
+    [code, setCode] = useState(""),
+    [codeSent, setCodeSent] = useState(false),
+    [busy, setBusy] = useState(false),
+    [message, setMessage] = useState(""),
+    [error, setError] = useState("");
+  const [title, setTitle] = useState(""),
+    [time, setTime] = useState(""),
+    [review, setReview] = useState<ReminderProposal>(),
+    [disconnect, setDisconnect] = useState(false);
+  async function refresh() {
+    const result = await call<Status>();
+    setData(result);
+    if (result.timezone) setZone(result.timezone);
+  }
+  useEffect(() => {
+    void refresh().catch((e) => setError(e.message));
+    const timer = setInterval(() => void refresh().catch(() => {}), 30_000);
+    return () => clearInterval(timer);
+  }, []);
+  useEffect(() => {
+    if (proposal) {
+      setReview(proposal);
+      void refresh().catch(() => {});
+    }
+  }, [proposal]);
+  async function run(task: () => Promise<void>) {
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      await task();
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <section className="reminder-panel" aria-label="Email reminders">
+      <div className="section-heading">
+        <h3>
+          <Bell size={18} /> A nudge when you need it
+        </h3>
+      </div>
+      <p>One-time email reminders you choose. No marketing emails.</p>
+      {!data ? (
+        <p>Loading reminder settings…</p>
+      ) : !data.verified ? (
+        <>
+          <form
+            className="reminder-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void run(async () => {
+                await call("verify/start", { email, timezone: zone });
+                setCodeSent(true);
+                setMessage("Check your inbox. Enter the code in this browser.");
+              });
+            }}
+          >
+            <label>
+              Your email
+              <input
+                type="email"
+                required
+                maxLength={254}
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+              />
+            </label>
+            <label>
+              Your timezone
+              <input
+                required
+                maxLength={80}
+                value={zone}
+                onChange={(e) => setZone(e.target.value)}
+                placeholder="America/New_York"
+              />
+            </label>
+            <button className="secondary" disabled={busy || !data.configured}>
+              <Mail size={16} />{" "}
+              {codeSent ? "Send a new code" : "Verify my email"}
+            </button>
+          </form>
+          {!data.configured && (
+            <p>Email sending is waiting for site-owner setup.</p>
+          )}
+          {codeSent && (
+            <form
+              className="reminder-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void run(async () => {
+                  await call("verify/finish", {
+                    code: code.replace(/\s/g, ""),
+                  });
+                  setCode("");
+                  setCodeSent(false);
+                  setMessage(
+                    "Email verified. Ask the coach for a reminder, or create one below.",
+                  );
+                });
+              }}
+            >
+              <label>
+                Verification code
+                <input
+                  required
+                  maxLength={16}
+                  autoComplete="one-time-code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="12 characters from your email"
+                />
+              </label>
+              <button className="primary" disabled={busy}>
+                Confirm email
+              </button>
+            </form>
+          )}
+        </>
+      ) : (
+        <>
+          <p className="reminder-address">
+            Verified: {data.email}
+            <br />
+            <small>{data.timezone}</small>
+          </p>
+          <details>
+            <summary>Create a reminder yourself</summary>
+            <form
+              className="reminder-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void run(async () =>
+                  setReview(
+                    await call<ReminderProposal>("draft", {
+                      kind: "create",
+                      title,
+                      localTime: time,
+                    }),
+                  ),
+                );
+              }}
+            >
+              <label>
+                Remind me to
+                <input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                  maxLength={160}
+                  placeholder="Lay out my running kit"
+                />
+              </label>
+              <label>
+                When ({data.timezone})
+                <input
+                  type="datetime-local"
+                  required
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                />
+              </label>
+              <button className="secondary" disabled={busy}>
+                Review reminder
+              </button>
+            </form>
+          </details>
+          <button className="text-button" onClick={() => setDisconnect(true)}>
+            Disconnect email and stop reminders
+          </button>
+        </>
+      )}
+      {review && (
+        <div
+          className="reminder-review"
+          role="region"
+          aria-label="Review email reminder"
+        >
+          <h4>
+            {review.kind === "cancel"
+              ? "Cancel this reminder?"
+              : "Schedule this email reminder?"}
+          </h4>
+          <p>{review.title}</p>
+          <p>
+            {review.localTime.replace("T", " ")}
+            <br />
+            {review.timezone}
+          </p>
+          <p>To: {data?.email || "your verified inbox"}</p>
+          <div className="ai-actions">
+            <button
+              className="primary"
+              disabled={busy || !data?.verified}
+              onClick={() =>
+                void run(async () => {
+                  await call("confirm", {
+                    id: review.id,
+                    kind: review.kind,
+                    confirm: true,
+                  });
+                  setMessage(
+                    review.kind === "cancel"
+                      ? "Reminder cancelled."
+                      : "Reminder scheduled. You can close this page.",
+                  );
+                  setReview(undefined);
+                })
+              }
+            >
+              {review.kind === "cancel"
+                ? "Confirm cancellation"
+                : "Confirm reminder"}
+            </button>
+            <button
+              className="secondary"
+              disabled={busy}
+              onClick={() => setReview(undefined)}
+            >
+              Not now
+            </button>
+          </div>
+        </div>
+      )}
+      {disconnect && (
+        <div className="reminder-review">
+          <p>
+            Stop all pending reminders for this preview and disconnect{" "}
+            {data?.email}? An email already being sent may still arrive.
+          </p>
+          <button
+            disabled={busy}
+            className="secondary"
+            onClick={() =>
+              void run(async () => {
+                await call("disconnect", { confirm: true });
+                setReview(undefined);
+                setDisconnect(false);
+                setMessage("Email disconnected. Pending reminders cancelled.");
+              })
+            }
+          >
+            Yes, disconnect
+          </button>
+          <button disabled={busy} onClick={() => setDisconnect(false)}>
+            Keep connected
+          </button>
+        </div>
+      )}
+      {!!data?.reminders.length && (
+        <ul className="reminder-list">
+          {data.reminders.map((item) => (
+            <li key={item.id}>
+              <strong>{item.title}</strong>
+              <small>
+                {item.local_time.replace("T", " ")} · {item.timezone}
+              </small>
+              <span>{labels[item.status] || item.status}</span>
+              {["scheduled", "draft"].includes(item.status) && (
+                <div>
+                  {item.status === "draft" && (
+                    <button
+                      disabled={busy}
+                      onClick={() =>
+                        setReview({
+                          id: item.id,
+                          kind: "create",
+                          title: item.title,
+                          localTime: item.local_time,
+                          timezone: item.timezone,
+                        })
+                      }
+                    >
+                      Review
+                    </button>
+                  )}
+                  <button
+                    disabled={busy}
+                    onClick={() =>
+                      setReview({
+                        id: item.id,
+                        kind: "cancel",
+                        title: item.title,
+                        localTime: item.local_time,
+                        timezone: item.timezone,
+                      })
+                    }
+                  >
+                    Cancel reminder
+                  </button>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {error && (
+        <p role="alert" className="ai-error">
+          {error}
+        </p>
+      )}
+      {message && <p role="status">{message}</p>}
+      <p className="footnote">
+        Reminders stop when this seven-day preview expires
+        {data?.expiresAt
+          ? ` (${new Date(data.expiresAt * 1000).toLocaleString()})`
+          : ""}
+        . Verification connects only this browser’s reminder inbox, not your
+        AITracker account. Delivery is checked every minute and may be delayed.
+        Recurring reminders are not available yet.
+      </p>
+    </section>
+  );
+}
+export function ReminderUnsubscribe() {
+  const [token] = useState(() =>
+      new URLSearchParams(location.hash.slice(1)).get("stop-reminders"),
+    ),
+    [done, setDone] = useState(false),
+    [error, setError] = useState("");
+  useEffect(() => {
+    if (token)
+      history.replaceState(null, "", location.pathname + location.search);
+  }, [token]);
+  if (!token) return null;
+  return (
+    <section className="reminder-review">
+      <h2>Stop email reminders</h2>
+      {done ? (
+        <p role="status">
+          Pending reminders for this preview are stopped. An email already being
+          sent may still arrive.
+        </p>
+      ) : (
+        <>
+          <p>
+            This stops all pending reminders associated with the email link. No
+            sign-in is needed.
+          </p>
+          <button
+            className="primary"
+            onClick={() =>
+              void call("unsubscribe", { token })
+                .then(() => setDone(true))
+                .catch((e) => setError(e.message))
+            }
+          >
+            Stop these reminders
+          </button>
+        </>
+      )}
+      {error && <p role="alert">{error}</p>}
+    </section>
+  );
+}

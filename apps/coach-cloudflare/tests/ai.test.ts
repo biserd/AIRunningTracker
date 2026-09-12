@@ -2,6 +2,89 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { coach, openai, boundedJSON, validateChange } from "../worker/openai";
 import { seed } from "../shared/coach";
+import type { ReminderIntent } from "../shared/reminders";
+
+test("agent prepares email reminders without sending or confirming them", async (t) => {
+  let count = 0;
+  let validated = false;
+  t.mock.method(
+    globalThis,
+    "fetch",
+    async (_url: unknown, options: RequestInit) => {
+      const body = JSON.parse(options.body as string);
+      count++;
+      if (count === 1)
+        return Response.json({
+          status: "completed",
+          output: [
+            {
+              type: "function_call",
+              name: "get_training_context",
+              arguments: "{}",
+              call_id: "context",
+            },
+          ],
+        });
+      if (count === 2) {
+        assert.equal(
+          JSON.parse(body.input.at(-1).output).emailReminders.timezone,
+          "UTC",
+        );
+        return Response.json({
+          status: "completed",
+          output: [
+            {
+              type: "function_call",
+              name: "preview_email_reminder",
+              arguments: JSON.stringify({
+                title: "Lay out running kit",
+                localTime: "2026-09-13T07:00",
+              }),
+              call_id: "reminder",
+            },
+          ],
+        });
+      }
+      assert.equal(JSON.parse(body.input.at(-1).output).status, "draft_only");
+      return Response.json({
+        status: "completed",
+        output: [
+          {
+            type: "message",
+            content: [
+              {
+                type: "output_text",
+                text: "Review and confirm your reminder below.",
+              },
+            ],
+          },
+        ],
+      });
+    },
+  );
+  const result = await coach(
+    "test",
+    seed(),
+    [],
+    "Remind me about my kit",
+    AbortSignal.timeout(1000),
+    {
+      context: { verified: true, timezone: "UTC" },
+      validate: async (intent) => {
+        validated = true;
+        assert.deepEqual(intent, {
+          kind: "create",
+          title: "Lay out running kit",
+          localTime: "2026-09-13T07:00",
+        });
+        return intent as ReminderIntent;
+      },
+    },
+  );
+  assert(validated);
+  assert.equal(result.reminder?.kind, "create");
+  assert.equal(result.change, undefined);
+});
 
 const state = seed(new Date("2026-09-09T12:00:00Z"));
 const day = state.days.find((d) => !d.completed && d.minutes > 20)!;

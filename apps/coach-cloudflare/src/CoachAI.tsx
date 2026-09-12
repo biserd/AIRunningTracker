@@ -1,8 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Mic, Send, Square, ImagePlus, Download } from "lucide-react";
 import type { Proposal } from "../shared/coach";
+import type { ReminderProposal } from "../shared/reminders";
+import { ReminderPanel } from "./Reminders";
 type Message = { role: string; content: string };
-type Answer = { message: string; proposal?: Proposal };
+type Answer = {
+  message: string;
+  proposal?: Proposal;
+  reminderProposal?: ReminderProposal;
+};
 async function request<T>(
   path: string,
   body?: unknown,
@@ -44,6 +50,7 @@ export function CoachAI({
     [art, setArt] = useState(""),
     [imageBusy, setImageBusy] = useState(false);
   const [pending, setPending] = useState<Proposal>();
+  const [reminderProposal, setReminderProposal] = useState<ReminderProposal>();
   useEffect(() => setPending(undefined), [version]);
   const connection = useRef<RTCPeerConnection | null>(null),
     channel = useRef<RTCDataChannel | null>(null),
@@ -98,6 +105,7 @@ export function CoachAI({
       [...m, { role: "assistant", content: answer.message }].slice(-12),
     );
     if (answer.proposal) setPending(answer.proposal);
+    if (answer.reminderProposal) setReminderProposal(answer.reminderProposal);
   }
   async function ask(e: React.FormEvent) {
     e.preventDefault();
@@ -251,6 +259,9 @@ export function CoachAI({
                 answer.message +
                   (answer.proposal
                     ? " A proposed change is ready on screen. It is not saved. Tap Review adjustment to confirm."
+                    : "") +
+                  (answer.reminderProposal
+                    ? " A reminder review is ready in the email reminders panel. Nothing is scheduled or cancelled until you confirm on screen."
                     : ""),
               );
             })
@@ -356,125 +367,130 @@ export function CoachAI({
     }
   }
   return (
-    <section className="conversation ai-coach">
-      <div className="section-heading">
-        <h3>What’s on your mind?</h3>
-        <span>{configured ? "AI coach" : "AI setup"}</span>
-      </div>
-      <p>Talk through your sample week. Any adjustment is yours to approve.</p>
-      {configured === false && (
-        <p role="status">
-          AI is not ready yet. The site owner needs to add the server API key.
-          You can still explore and adjust the sample week.
-        </p>
-      )}
-      <div className="chat-history" aria-live="polite" aria-busy={busy}>
-        {messages.map((m, i) => (
-          <div key={i} className={"chat-message " + m.role}>
-            <small>{m.role === "user" ? "You" : "Coach"}</small>
-            <p>{m.content}</p>
-          </div>
-        ))}
-      </div>
-      {pending && (
-        <button className="secondary" onClick={() => onProposal(pending)}>
-          Review adjustment
-        </button>
-      )}
-      <form onSubmit={ask}>
-        <input
-          aria-label="Ask about your sample plan"
-          maxLength={2000}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="I only have 20 minutes for my next run…"
-          disabled={!configured || busy || voice !== "off"}
-        />
-        <button
-          aria-label="Send message"
-          disabled={!configured || busy || !text.trim() || voice !== "off"}
-        >
-          <Send size={18} />
-        </button>
-      </form>
-      {busy && (
-        <div className="voice-note" role="status">
-          Checking your sample week…{" "}
-          <button onClick={() => abort.current?.abort()}>Stop waiting</button>
+    <>
+      <section className="conversation ai-coach">
+        <div className="section-heading">
+          <h3>What’s on your mind?</h3>
+          <span>{configured ? "AI coach" : "AI setup"}</span>
         </div>
-      )}
-      {error && (
-        <p className="ai-error" role="alert">
-          {error}
+        <p>
+          Talk through your sample week. Any adjustment is yours to approve.
         </p>
-      )}
-      <div className="ai-actions">
-        {voice === "off" ? (
-          <button
-            className="secondary"
-            disabled={!configured || busy}
-            onClick={() => void startVoice()}
-          >
-            <Mic size={16} /> Talk to your coach
+        {configured === false && (
+          <p role="status">
+            AI is not ready yet. The site owner needs to add the server API key.
+            You can still explore and adjust the sample week.
+          </p>
+        )}
+        <div className="chat-history" aria-live="polite" aria-busy={busy}>
+          {messages.map((m, i) => (
+            <div key={i} className={"chat-message " + m.role}>
+              <small>{m.role === "user" ? "You" : "Coach"}</small>
+              <p>{m.content}</p>
+            </div>
+          ))}
+        </div>
+        {pending && (
+          <button className="secondary" onClick={() => onProposal(pending)}>
+            Review adjustment
           </button>
-        ) : (
-          <>
+        )}
+        <form onSubmit={ask}>
+          <input
+            aria-label="Ask about your sample plan"
+            maxLength={2000}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="I only have 20 minutes for my next run…"
+            disabled={!configured || busy || voice !== "off"}
+          />
+          <button
+            aria-label="Send message"
+            disabled={!configured || busy || !text.trim() || voice !== "off"}
+          >
+            <Send size={18} />
+          </button>
+        </form>
+        {busy && (
+          <div className="voice-note" role="status">
+            Checking your sample week…{" "}
+            <button onClick={() => abort.current?.abort()}>Stop waiting</button>
+          </div>
+        )}
+        {error && (
+          <p className="ai-error" role="alert">
+            {error}
+          </p>
+        )}
+        <div className="ai-actions">
+          {voice === "off" ? (
             <button
               className="secondary"
-              onClick={() => void stop()}
-              disabled={voice === "ending"}
+              disabled={!configured || busy}
+              onClick={() => void startVoice()}
             >
-              <Square size={14} />{" "}
-              {voice === "ending" ? "Ending call…" : "End call"}
+              <Mic size={16} /> Talk to your coach
             </button>
-            <button disabled={voice !== "live"} onClick={mute}>
-              {muted ? "Unmute" : "Mute"}
-            </button>
-            <span role="status">
-              {voice === "connecting"
-                ? "Connecting…"
-                : muted
-                  ? "Microphone muted"
-                  : "Voice connected"}
-            </span>
-          </>
+          ) : (
+            <>
+              <button
+                className="secondary"
+                onClick={() => void stop()}
+                disabled={voice === "ending"}
+              >
+                <Square size={14} />{" "}
+                {voice === "ending" ? "Ending call…" : "End call"}
+              </button>
+              <button disabled={voice !== "live"} onClick={mute}>
+                {muted ? "Unmute" : "Mute"}
+              </button>
+              <span role="status">
+                {voice === "connecting"
+                  ? "Connecting…"
+                  : muted
+                    ? "Microphone muted"
+                    : "Voice connected"}
+              </span>
+            </>
+          )}
+          <button
+            className="secondary"
+            disabled={!configured || imageBusy}
+            onClick={() => void generateImage()}
+          >
+            <ImagePlus size={16} />
+            {imageBusy ? "Creating artwork…" : "Create a running poster"}
+          </button>
+        </div>
+        <audio ref={audio} autoPlay controls hidden={voice === "off"} />
+        {voice !== "off" && caption && (
+          <p className="voice-caption">You: {caption}</p>
         )}
-        <button
-          className="secondary"
-          disabled={!configured || imageBusy}
-          onClick={() => void generateImage()}
-        >
-          <ImagePlus size={16} />
-          {imageBusy ? "Creating artwork…" : "Create a running poster"}
-        </button>
-      </div>
-      <audio ref={audio} autoPlay controls hidden={voice === "off"} />
-      {voice !== "off" && caption && (
-        <p className="voice-caption">You: {caption}</p>
-      )}
-      <p className="footnote">
-        AI-generated replies and voice. Sample plan and messages are sent to
-        OpenAI when you ask. Voice uses your microphone only during a call,
-        limited to three minutes. No real Strava or weather connection yet.
-      </p>
-      {art && (
-        <figure className="generated-art">
-          <img
-            src={art}
-            alt="AI-generated running illustration with verified fictional sample activity totals"
-          />
-          <figcaption>
-            <a
-              className="secondary"
-              href={art}
-              download="aitracker-sample-running-poster.png"
-            >
-              <Download size={16} /> Download poster
-            </a>
-            <p>Save before leaving. Artwork is not stored on the server.</p>
-          </figcaption>
-        </figure>
-      )}
-    </section>
+        <p className="footnote">
+          AI-generated replies and voice. Sample plan and messages are sent to
+          OpenAI when you ask. Voice uses your microphone only during a call,
+          limited to three minutes. No real Strava or weather connection yet.
+        </p>
+        {art && (
+          <figure className="generated-art">
+            <img
+              src={art}
+              alt="AI-generated running illustration with verified fictional sample activity totals"
+            />
+            <figcaption>
+              <a
+                className="secondary"
+                href={art}
+                download="aitracker-sample-running-poster.png"
+              >
+                <Download size={16} /> Download poster
+              </a>
+              <p>Save before leaving. Artwork is not stored on the server.</p>
+            </figcaption>
+          </figure>
+        )}
+      </section>
+      <ReminderPanel proposal={reminderProposal} />
+    </>
   );
 }

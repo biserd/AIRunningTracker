@@ -1196,3 +1196,83 @@ dialog > p {
   max-width: 100%;
   margin-top: 12px;
 }
+.reminder-panel {
+  background: #fff;
+  border: 1px solid #e2e6db;
+  border-radius: 16px;
+  padding: 22px;
+  margin-top: 20px;
+  overflow-wrap: anywhere;
+}
+.reminder-panel h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.reminder-panel p {
+  line-height: 1.55;
+}
+.reminder-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 16px 0;
+}
+.reminder-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+.reminder-form input {
+  border: 1px solid #ccd5c7;
+  border-radius: 8px;
+  padding: 10px;
+  font: inherit;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.reminder-form button {
+  align-self: flex-start;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+.reminder-review {
+  padding: 18px;
+  background: #f3f5ec;
+  border: 1px solid #c9d5bc;
+  border-radius: 12px;
+  margin: 16px 0;
+}
+.reminder-review h4 {
+  margin: 0;
+}
+.reminder-list {
+  list-style: none;
+  padding: 0;
+}
+.reminder-list li {
+  padding: 12px 0;
+  border-top: 1px solid #e2e6db;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.reminder-list small {
+  color: #58654f;
+}
+.reminder-list button,
+.text-button {
+  font-size: 13px;
+  text-decoration: underline;
+  padding: 6px 8px 6px 0;
+}
+.reminder-panel summary {
+  cursor: pointer;
+  padding: 10px 0;
+}
+.reminder-address {
+  font-size: 14px;
+}
