@@ -332,7 +332,7 @@ export function CoachAI({
       const result = await request<{
         image: string;
         evidence: PosterEvidence;
-      }>("image", { id: crypto.randomUUID() });
+      }>("image", { id: crypto.randomUUID() }, AbortSignal.timeout(165_000));
       setArt(await renderPoster(result.image, result.evidence));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Image generation failed.");
@@ -433,7 +433,7 @@ export function CoachAI({
             onClick={() => void generateImage()}
           >
             <ImagePlus size={16} />
-            {imageBusy ? "Creating artwork…" : "Create a running poster"}
+            {imageBusy ? "Crafting your poster. Allow up to 3 minutes…" : "Create a running poster"}
           </button>
         </div>
         <audio ref={audio} autoPlay controls hidden={voice === "off"} />

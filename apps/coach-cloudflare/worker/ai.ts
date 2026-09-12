@@ -128,7 +128,7 @@ export async function aiRoute(
         "Today’s preview AI limit has been reached. Come back tomorrow.",
         429,
       );
-    const signal = AbortSignal.timeout(kind === "image" ? 110_000 : 80_000);
+    const signal = AbortSignal.timeout(kind === "image" ? 150_000 : 80_000);
     const state = JSON.parse(row.state) as State;
     let result: unknown;
     if (kind === "chat") {
@@ -199,13 +199,13 @@ export async function aiRoute(
         env.OPENAI_API_KEY,
         "images/generations",
         {
-          model: "gpt-image-2.5-flare",
+          model: "gpt-image-2.5-sunburst",
           n: 1,
-          size: "1024x1024",
-          quality: "low",
+          size: "1440x1808",
+          quality: "high",
           output_format: "webp",
           prompt:
-            "Create a polished editorial illustration for a running consistency celebration. Quiet olive green, warm ivory and orange accents. A runner on an inviting park path at sunrise. Flat print-inspired artwork, tasteful texture. NO TEXT, NO NUMBERS, no logos. Leave lower quarter visually quiet for an application-rendered statistics caption. This is illustration, not a real athlete photograph.",
+            "Art-direct a collectible premium endurance-running campaign poster, portrait 4:5 composition. Full-bleed cinematic landscape with a tiny anonymous runner at the right-hand middle third, on a sweeping terracotta running track that curves into a misty forest. Rich photographic detail, tactile fine-grain print finish, dramatic golden rim light, deep pine-green shadows, warm copper highlights, sophisticated restrained color grading. Strong sculptural curves, subtle atmospheric depth, beautiful negative space. The runner and track should dominate the middle 25-55% of the canvas. Keep the top 22% and bottom 45% very dark pine green and low-detail for ivory editorial typography and numerical statistics added by the application. The entire image is a unified art print, not a website, infographic, card layout or stock vector illustration. NO TEXT, NO NUMBERS, NO LOGOS, NO fake route maps, graphs or achievement badges. This is fictional conceptual artwork, not a photograph of the user's run.",
         },
         signal,
         8_000_000,

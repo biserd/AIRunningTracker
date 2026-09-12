@@ -39,8 +39,18 @@ export async function renderPoster(imageUrl: string, evidence: PosterEvidence) {
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Your browser could not prepare the download.");
   const ctx: CanvasRenderingContext2D = context;
-  const ink = "#173d36", paper = "#f4f1e8", muted = "#61726a", orange = "#db552e";
+  const ink = "#f4f1e8", paper = "#132e29", muted = "#c2cdbd", orange = "#f4a47c";
   ctx.fillStyle = paper;
+  ctx.fillRect(0, 0, 1440, 1800);
+  // Preserve the full composition instead of discarding most of the generated artwork.
+  ctx.drawImage(image, 0, 0, 1440, 1800);
+  const shade = ctx.createLinearGradient(0, 0, 0, 1800);
+  shade.addColorStop(0, "rgba(9,26,22,0.75)");
+  shade.addColorStop(0.24, "rgba(9,26,22,0.05)");
+  shade.addColorStop(0.49, "rgba(9,26,22,0.35)");
+  shade.addColorStop(0.72, "rgba(9,26,22,0.94)");
+  shade.addColorStop(1, "rgba(9,26,22,0.98)");
+  ctx.fillStyle = shade;
   ctx.fillRect(0, 0, 1440, 1800);
   function text(value: string, x: number, y: number, size: number, color = ink, weight = "400", maxWidth = 1280) {
     ctx.fillStyle = color;
@@ -48,7 +58,7 @@ export async function renderPoster(imageUrl: string, evidence: PosterEvidence) {
     ctx.fillText(value, x, y, maxWidth);
   }
   function line(y: number) {
-    ctx.fillStyle = "#cbd0c4";
+    ctx.fillStyle = "rgba(230,235,218,0.3)";
     ctx.fillRect(80, y, 1280, 2);
   }
   text("AITracker", 80, 100, 32, ink, "700");
@@ -62,11 +72,6 @@ export async function renderPoster(imageUrl: string, evidence: PosterEvidence) {
   ctx.fillText("Every run adds up.", 74, 313);
   text(stats.period, 80, 368, 26, muted);
 
-  // A deliberate panoramic crop leaves the quantitative recap in its own quiet space.
-  const cropHeight = image.width * (480 / 1280);
-  const sourceHeight = Math.min(cropHeight, image.height);
-  ctx.drawImage(image, 0, (image.height - sourceHeight) / 2,
-    image.width, sourceHeight, 80, 418, 1280, 480);
   ctx.fillStyle = orange;
   ctx.fillRect(80, 898, 90, 7);
 
@@ -78,7 +83,7 @@ export async function renderPoster(imageUrl: string, evidence: PosterEvidence) {
   line(1230);
   text("RUNS LOGGED", 80, 1293, 23, muted, "700");
   text(stats.runs, 76, 1410, 100, ink, "700", 540);
-  ctx.fillStyle = "#cbd0c4";
+  ctx.fillStyle = "rgba(230,235,218,0.3)";
   ctx.fillRect(719, 1270, 2, 180);
   text("AVERAGE RUN", 790, 1293, 23, muted, "700");
   text(stats.average, 786, 1410, 100, ink, "700", 420);
@@ -86,10 +91,10 @@ export async function renderPoster(imageUrl: string, evidence: PosterEvidence) {
   line(1485);
   text("Small efforts. A story worth keeping.", 80, 1570, 34);
   text("Totals reflect the available activity history, not a performance rating.", 80, 1620, 23, muted);
-  ctx.fillStyle = ink;
+  ctx.fillStyle = paper;
   ctx.fillRect(0, 1690, 1440, 110);
-  text("FICTIONAL SAMPLE DATA", 80, 1755, 23, paper, "700");
+  text("FICTIONAL SAMPLE DATA", 80, 1755, 23, ink, "700");
   ctx.textAlign = "right";
-  text("AI-generated artwork · new.aitracker.run", 1360, 1755, 23, paper);
+  text("AI-generated artwork · new.aitracker.run", 1360, 1755, 23, ink);
   return canvas.toDataURL("image/png");
 }

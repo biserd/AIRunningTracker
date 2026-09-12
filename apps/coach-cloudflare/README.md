@@ -21,7 +21,9 @@ This is an AI-enabled UX preview, not a migrated production SaaS. All running da
 
 Email reminder setup, verification, limits and acceptance tests are documented in [EMAIL_REMINDERS.md](EMAIL_REMINDERS.md). The text and voice coach can now prepare one-time reminder and cancellation drafts for a verified inbox. They require on-screen confirmation. Email sending uses the native Cloudflare binding and minute cron, not an SMTP secret.
 
-Add **one encrypted secret**, `OPENAI_API_KEY`, to the `aitracker-coach-preview` Worker in Cloudflare Settings, or use `npx wrangler secret put OPENAI_API_KEY`. Never use a VITE-prefixed variable or commit a key. The OpenAI project must have billing and access to `gpt-6-astra`, `gpt-live-1`, and `gpt-image-2.5-flare`. A configured key is not proof of model access. Configure project spend alerts too.
+Add **one encrypted secret**, `OPENAI_API_KEY`, to the `aitracker-coach-preview` Worker in Cloudflare Settings, or use `npx wrangler secret put OPENAI_API_KEY`. Never use a VITE-prefixed variable or commit a key. The OpenAI project must have billing and access to `gpt-6-astra`, `gpt-live-1`, and `gpt-image-2.5-sunburst`. A configured key is not proof of model access. Configure project spend alerts too.
+
+Posters use Sunburst at high quality, 1440x1808 WebP, with a full-bleed composition and deterministic statistics overlaid into a 1440x1800 PNG. Generation has a 150-second server timeout and a 165-second browser timeout. Daily caps remain unchanged; no cheaper-model fallback or automatic billable retry is used. The higher quality increases cost and latency compared with the former low-quality Flare setting.
 
 Locally put the key in ignored `.dev.vars`; never copy the production key into test fixtures. Deterministic tests mock OpenAI and incur no model charges.
 

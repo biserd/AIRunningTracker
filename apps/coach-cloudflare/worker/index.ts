@@ -124,7 +124,7 @@ async function api(request: Request, env: Env): Promise<Response> {
       models: {
         text: "gpt-6-astra",
         voice: "gpt-live-1",
-        image: "gpt-image-2.5-flare",
+        image: "gpt-image-2.5-sunburst",
       },
       source: "fictional_sample",
     });

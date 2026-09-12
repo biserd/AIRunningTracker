@@ -133,7 +133,9 @@ test("image request is fixed-scope, counted once and not stored as a D1 blob", a
       count++;
       assert.equal(url, "https://api.openai.com/v1/images/generations");
       const body = JSON.parse(options.body as string);
-      assert.equal(body.model, "gpt-image-2.5-flare");
+      assert.equal(body.model, "gpt-image-2.5-sunburst");
+      assert.equal(body.quality, "high");
+      assert.equal(body.size, "1440x1808");
       assert.equal(body.n, 1);
       return Response.json({ data: [{ b64_json: "YQ==" }] });
     },
