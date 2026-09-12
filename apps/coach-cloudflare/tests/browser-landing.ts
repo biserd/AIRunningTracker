@@ -6,6 +6,9 @@ try {
   for (const width of [1440,390]) {
     await page.setViewport({width,height:1000});await page.goto('http://127.0.0.1:8787');
     await page.waitForSelector('#waitlist-email');
+    assert.equal(await page.$('a[href*="/preview"]'),null);
+    assert.equal(await page.$('.launch-preview'),null);
+    assert.match(await page.$eval('h1',el=>el.textContent||''),/Your coach listens/);
     await page.$eval('.launch-editorial',el=>el.scrollIntoView());
     await page.waitForFunction(()=>Array.from(document.querySelectorAll('.launch-page img')).every(img=>img instanceof HTMLImageElement && img.complete && img.naturalWidth>0));
     await page.evaluate(()=>window.scrollTo(0,0));
