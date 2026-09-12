@@ -21,7 +21,7 @@ try {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(String(e)));
   await page.setViewport({ width: 390, height: 844 });
-  await page.goto(base);
+  await page.goto(base + "/preview");
   await page.locator("::-p-text(Explore the coach preview)").click();
   await page.waitForSelector(".reminder-form");
   const before = await mailFiles();

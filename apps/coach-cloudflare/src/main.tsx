@@ -29,6 +29,7 @@ import {
 import "./style.css";
 import { CoachAI } from "./CoachAI";
 import { ReminderPanel, ReminderUnsubscribe } from "./Reminders";
+import { Landing, WaitlistUnsubscribe } from "./Landing";
 async function api<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch("/api/" + path, {
     method: body === undefined ? "GET" : "POST",
@@ -779,4 +780,7 @@ function App() {
     </div>
   );
 }
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  location.pathname === "/waitlist/unsubscribe" ? <WaitlistUnsubscribe/> :
+  location.pathname === "/" ? <Landing/> : <App />
+);

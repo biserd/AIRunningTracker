@@ -1,6 +1,7 @@
 import { changePlan, seed, type State, type Change } from "../shared/coach";
 import { aiRoute, history } from "./ai";
 import { AIError, boundedJSON } from "./openai";
+import { waitlistInput, joinWaitlist, leaveWaitlist, deliverLaunch } from "./waitlist";
 import {
   reminderAction,
   reminderStatus,
@@ -51,6 +52,25 @@ async function api(request: Request, env: Env): Promise<Response> {
     return json({ error: "Method not allowed" }, 405);
   if (request.method === "POST" && request.headers.get("Origin") !== url.origin)
     return json({ error: "Origin not allowed" }, 403);
+  if (["/api/waitlist", "/api/waitlist/unsubscribe"].includes(url.pathname)) {
+    if (request.method !== "POST") return json({error:"Method not allowed"},405);
+    if (!request.headers.get("Content-Type")?.startsWith("application/json")) return json({error:"JSON required"},415);
+    if (!(await limit(env, `waitlist:${await digest(request.headers.get("CF-Connecting-IP") || "local")}`, 10, 3600))) return json({error:"Please try again later."},429);
+    let input: unknown;
+    try { input = await boundedJSON(new Response(request.body), 1024); }
+    catch { return json({error:"Invalid request."},400); }
+    if (url.pathname.endsWith("/unsubscribe")) {
+      const token = input && typeof input === "object" && "token" in input ? input.token : null;
+      if (typeof token !== "string" || !/^[a-f0-9]{64}$/.test(token)) return json({error:"Invalid unsubscribe link."},400);
+      await leaveWaitlist(env,token);
+    } else {
+      let email: string | null;
+      try { email = waitlistInput(input); }
+      catch { return json({error:"Enter a valid email and agree to the launch email."},400); }
+      if (email) await joinWaitlist(env,email);
+    }
+    return json({ok:true});
+  }
   if (
     url.pathname === "/api/reminders/unsubscribe" &&
     request.method === "POST"
@@ -342,6 +362,7 @@ export default {
   },
   async scheduled(_event, env) {
     await deliverReminders(env);
+    await deliverLaunch(env);
     const now = Math.floor(Date.now() / 1000);
     // Retention cleanup runs daily; delivery polling runs every minute.
     if (

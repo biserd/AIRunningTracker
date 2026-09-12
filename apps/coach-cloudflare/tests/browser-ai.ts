@@ -33,7 +33,7 @@ try {
     else void r.continue();
   });
   await page.setViewport({ width: 390, height: 844 });
-  await page.goto(process.env.TEST_BASE_URL || "http://127.0.0.1:8787");
+  await page.goto((process.env.TEST_BASE_URL || "http://127.0.0.1:8787") + "/preview");
   await page.locator("::-p-text(Explore the coach preview)").click();
   await page.waitForSelector(".recommendation");
   proposal = await page.evaluate(async () => {

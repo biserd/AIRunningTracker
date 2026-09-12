@@ -18,7 +18,7 @@ async function click(text: string) {
 try {
   await mkdir("test-results", { recursive: true });
   await page.setViewport({ width: 1440, height: 1050 });
-  await page.goto(base);
+  await page.goto(base + "/preview");
   await click("Explore the coach preview");
   await page.waitForSelector(".recommendation");
   await page.screenshot({
