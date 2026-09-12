@@ -1,0 +1,32 @@
+{
+  "name": "aitracker-cloudflare-coach",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite --host 127.0.0.1",
+    "preview": "wrangler dev",
+    "types": "wrangler types",
+    "check": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "db:local": "wrangler d1 migrations apply DB --local",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "dependencies": {
+    "lucide-react": "^0.453.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.2",
+    "puppeteer-core": "^25.10.0",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.0",
+    "wrangler": "latest"
+  }
+}
