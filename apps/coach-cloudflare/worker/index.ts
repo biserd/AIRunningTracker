@@ -1,5 +1,6 @@
 import { changePlan, seed, type State, type Change } from "../shared/coach";
 import { aiRoute, history } from "./ai";
+import { whatsappWebhook, whatsappStatus, whatsappAction, processWhatsApp } from './whatsapp';
 import { AIError, boundedJSON } from "./openai";
 import { waitlistInput, joinWaitlist, leaveWaitlist, deliverLaunch } from "./waitlist";
 import {
@@ -48,6 +49,7 @@ async function limit(env: Env, key: string, max: number, seconds: number) {
 async function api(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url),
     now = Math.floor(Date.now() / 1000);
+  if (['/api/whatsapp/inbound','/api/whatsapp/status'].includes(url.pathname)) return whatsappWebhook(request,env);
   if (!["GET", "POST"].includes(request.method))
     return json({ error: "Method not allowed" }, 405);
   if (request.method === "POST" && request.headers.get("Origin") !== url.origin)
@@ -137,6 +139,7 @@ async function api(request: Request, env: Env): Promise<Response> {
     return json({ error: "Please wait a moment before trying again." }, 429);
   if (url.pathname === "/api/reminders" && request.method === "GET")
     return json(await reminderStatus(env, id));
+  if (url.pathname === '/api/whatsapp' && request.method === 'GET') return json(await whatsappStatus(env,id));
   if (url.pathname === "/api/ai/status" && request.method === "GET")
     return json({
       configured: !!env.OPENAI_API_KEY,
@@ -190,6 +193,10 @@ async function api(request: Request, env: Env): Promise<Response> {
     return json({ error: "Invalid request" }, 400);
   }
   const state = JSON.parse(row.state) as State;
+  if (url.pathname.startsWith('/api/whatsapp/')) {
+    try { return json(await whatsappAction(env,id,url.pathname.slice('/api/whatsapp/'.length),input)); }
+    catch(e) { return json({error:e instanceof ReminderError?e.message:'WhatsApp unavailable.'},e instanceof ReminderError?e.status:503); }
+  }
   if (url.pathname.startsWith("/api/reminders/")) {
     try {
       return json(
@@ -363,6 +370,7 @@ export default {
   async scheduled(_event, env) {
     await deliverReminders(env);
     await deliverLaunch(env);
+    await processWhatsApp(env);
     const now = Math.floor(Date.now() / 1000);
     // Retention cleanup runs daily; delivery polling runs every minute.
     if (

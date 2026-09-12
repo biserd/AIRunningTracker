@@ -3,7 +3,7 @@
   "name": "aitracker-coach-preview",
   "account_id": "73d71a2bef58f7469ecb48e2b8e84c0e",
   "main": "worker/index.ts",
-  "secrets": { "required": ["OPENAI_API_KEY"] },
+  "secrets": { "required": ["OPENAI_API_KEY", "TWILIO_AUTH_TOKEN", "TWILIO_ACCOUNT_SID", "TWILIO_WHATSAPP_FROM", "TWILIO_WHATSAPP_CONTENT_SID"] },
   "send_email": [
     {
       "name": "REMINDER_EMAIL",

@@ -5,6 +5,7 @@ import {
   type ReminderIntent,
   type ReminderProposal,
 } from "../shared/reminders";
+import { activeLink, sendWhatsApp, disconnectWhatsApp } from './whatsapp';
 export class ReminderError extends Error {
   constructor(
     message: string,
@@ -45,6 +46,8 @@ type Contact = {
   expires_at: number;
 };
 type Reminder = {
+  channel: 'email'|'whatsapp';
+  channel_generation: string | null;
   id: string;
   session_id: string;
   generation: string;
@@ -77,7 +80,7 @@ async function ready(env: Env, id: string) {
 export async function reminderStatus(env: Env, id: string) {
   const c = await contact(env, id);
   const items = await env.DB.prepare(
-    "SELECT id,title,local_time,timezone,due_at,status,error_code FROM email_reminders WHERE session_id=? ORDER BY CASE WHEN status IN ('draft','scheduled','sending') THEN 0 ELSE 1 END,created_at DESC LIMIT 20",
+    "SELECT id,title,local_time,timezone,due_at,status,error_code,channel,delivery_status FROM email_reminders WHERE session_id=? ORDER BY CASE WHEN status IN ('draft','scheduled','sending') THEN 0 ELSE 1 END,created_at DESC LIMIT 20",
   )
     .bind(id)
     .all();
@@ -354,7 +357,8 @@ export async function reminderAction(
     return draftReminder(env, id, input);
   }
   if (path === "confirm") {
-    exact(input, ["id", "kind", "confirm"]);
+    exact(input, ["id", "kind", "confirm", "channel"]);
+    if(input.channel!==undefined && !['email','whatsapp'].includes(String(input.channel))) throw new ReminderError('Invalid delivery channel.');
     if (
       input.confirm !== true ||
       typeof input.id !== "string" ||
@@ -375,10 +379,20 @@ export async function reminderAction(
         );
       return { ok: true };
     }
+    const channel=input.channel==='whatsapp'?'whatsapp':'email';
+    const link=channel==='whatsapp'?await activeLink(env,id):null;
+    if(channel==='whatsapp' && !link) throw new ReminderError('Connect WhatsApp first.',409);
+    const prior=await env.DB.prepare('SELECT status,channel FROM email_reminders WHERE id=? AND session_id=?').bind(input.id,id).first<{status:string;channel:string}>();
+    if(prior?.status==='scheduled') {
+      if(prior.channel!==channel) throw new ReminderError('Cancel this reminder and create another to change its channel.',409);
+      return {ok:true};
+    }
     const result = await env.DB.prepare(
-      "UPDATE email_reminders SET status='scheduled' WHERE id=? AND session_id=? AND generation=? AND due_at>? AND due_at<? AND (status='scheduled' OR (status='draft' AND draft_expires>?)) AND EXISTS(SELECT 1 FROM reminder_contacts WHERE session_id=? AND generation=? AND disabled=0 AND verified_at IS NOT NULL)",
+      "UPDATE email_reminders SET status='scheduled',channel=?,channel_generation=? WHERE id=? AND session_id=? AND generation=? AND due_at>? AND due_at<? AND status='draft' AND draft_expires>? AND EXISTS(SELECT 1 FROM reminder_contacts WHERE session_id=? AND generation=? AND disabled=0 AND verified_at IS NOT NULL)",
     )
       .bind(
+        channel,
+        link?.generation ?? null,
         input.id,
         id,
         c.generation,
@@ -407,6 +421,7 @@ async function disconnect(env: Env, id: string, generation?: string) {
       "UPDATE email_reminders SET status='cancelled' WHERE session_id=? AND (? IS NULL OR generation=?) AND status IN ('draft','scheduled')",
     ).bind(id, generation ?? null, generation ?? null),
   ]);
+  if(!generation) await disconnectWhatsApp(env,id);
 }
 export async function unsubscribe(env: Env, token: unknown) {
   if (typeof token !== "string" || !/^[a-f0-9]{64}$/.test(token))
@@ -477,7 +492,7 @@ export async function deliverReminders(env: Env) {
       .bind(await hash(token), item.session_id, claimed.generation)
       .run();
     try {
-      const result = await send(
+      const result = claimed.channel==='whatsapp' ? await sendWhatsApp(env,item.session_id,claimed.channel_generation || '',`Your AITracker reminder: ${claimed.title}\nOpen your preview: ${env.PUBLIC_ORIGIN}/preview\nSend STOP to disconnect.`,true) : await send(
         env,
         c.email,
         "Your AITracker running reminder",

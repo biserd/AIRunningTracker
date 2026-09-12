@@ -192,7 +192,7 @@ export async function coach(
           instructions +
           (reminders
             ? " You can also PREPARE a one-time email reminder or cancellation for separate on-screen confirmation. A draft is not scheduled. Read reminder context including actual current time, verified timezone and existing reminders. The sample plan date is not the actual date for reminders. Ask the runner to verify email in the reminders panel if unverified, and clarify missing dates or times. Never request or choose a recipient: the server controls it. Never say a reminder is set, cancelled, or an email was sent; tell the runner to review and confirm on screen. Recurring reminders are not supported."
-            : ""),
+            : " This channel is read-only. You cannot create or cancel reminders here. For scheduling or changes, ask the runner to open the preview and confirm there. Never claim an action has been performed."),
         reasoning: { effort: "low" },
         max_output_tokens: 1800,
         input,

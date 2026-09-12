@@ -21,6 +21,7 @@ function fixture() {
       "utf8",
     ),
   );
+  sqlite.exec(readFileSync(new URL('../migrations/0005_whatsapp.sql',import.meta.url),'utf8'));
   const state = JSON.stringify(seed(new Date("2026-09-09T12:00:00Z")));
   for (const id of ["runner-a", "runner-b"])
     sqlite

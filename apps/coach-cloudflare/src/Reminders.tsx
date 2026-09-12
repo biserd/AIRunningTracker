@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Bell, Mail } from "lucide-react";
+import { WhatsAppPanel, type WhatsAppStatus } from './WhatsApp';
 import type { ReminderProposal } from "../shared/reminders";
 type Item = {
+  channel: 'email'|'whatsapp';
+  delivery_status?: string;
   id: string;
   title: string;
   local_time: string;
@@ -43,6 +46,8 @@ const labels: Record<string, string> = {
   expired: "Expired without sending",
 };
 export function ReminderPanel({ proposal }: { proposal?: ReminderProposal }) {
+  const [whatsapp,setWhatsapp]=useState<WhatsAppStatus>();
+  const [channel,setChannel]=useState<'email'|'whatsapp'>('email');
   const [data, setData] = useState<Status>(),
     [email, setEmail] = useState(""),
     [zone, setZone] = useState(
@@ -93,7 +98,8 @@ export function ReminderPanel({ proposal }: { proposal?: ReminderProposal }) {
           <Bell size={18} /> A nudge when you need it
         </h3>
       </div>
-      <p>One-time email reminders you choose. No marketing emails.</p>
+      <p>One-time reminders you choose. No marketing emails.</p>
+      <WhatsAppPanel verified={!!data?.verified} onStatus={setWhatsapp}/>
       {!data ? (
         <p>Loading reminder settings…</p>
       ) : !data.verified ? (
@@ -235,7 +241,7 @@ export function ReminderPanel({ proposal }: { proposal?: ReminderProposal }) {
           <h4>
             {review.kind === "cancel"
               ? "Cancel this reminder?"
-              : "Schedule this email reminder?"}
+              : "Schedule this reminder?"}
           </h4>
           <p>{review.title}</p>
           <p>
@@ -243,7 +249,8 @@ export function ReminderPanel({ proposal }: { proposal?: ReminderProposal }) {
             <br />
             {review.timezone}
           </p>
-          <p>To: {data?.email || "your verified inbox"}</p>
+          {review.kind==='create'&&<label>Deliver through <select value={channel} onChange={e=>setChannel(e.target.value as 'email'|'whatsapp')}><option value="email">Email</option><option value="whatsapp" disabled={!whatsapp?.connected}>WhatsApp</option></select></label>}
+          <p>To: {channel==='whatsapp'?whatsapp?.destination:data?.email || "your verified inbox"}</p>
           <div className="ai-actions">
             <button
               className="primary"
@@ -254,6 +261,7 @@ export function ReminderPanel({ proposal }: { proposal?: ReminderProposal }) {
                     id: review.id,
                     kind: review.kind,
                     confirm: true,
+                    channel,
                   });
                   setMessage(
                     review.kind === "cancel"
@@ -311,7 +319,7 @@ export function ReminderPanel({ proposal }: { proposal?: ReminderProposal }) {
               <small>
                 {item.local_time.replace("T", " ")} · {item.timezone}
               </small>
-              <span>{labels[item.status] || item.status}</span>
+              <span>{item.channel==='whatsapp'?'WhatsApp':'Email'} · {item.channel==='whatsapp'&&item.status==='sent'?'Accepted by Twilio':labels[item.status] || item.status}{item.delivery_status?' · '+item.delivery_status:''}</span>
               {["scheduled", "draft"].includes(item.status) && (
                 <div>
                   {item.status === "draft" && (
