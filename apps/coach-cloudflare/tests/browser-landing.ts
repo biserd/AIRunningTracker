@@ -4,8 +4,9 @@ const browser=await puppeteer.launch({executablePath:'C:/Program Files/Google/Ch
 try {
   const page=await browser.newPage();
   for (const width of [1440,390]) {
-    await page.setViewport({width,height:1000});await page.goto('http://127.0.0.1:8787');
+    await page.setViewport({width,height:740});await page.goto('http://127.0.0.1:8787');
     await page.waitForSelector('#waitlist-email');
+    assert.equal(await page.evaluate(()=>['#waitlist-email','#waitlist button','input[name="consent"]'].every(s=>{const r=document.querySelector(s)!.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight;})),true,'Signup controls must be above the fold');
     assert.equal(await page.$('a[href*="/preview"]'),null);
     assert.equal(await page.$('.launch-preview'),null);
     assert.match(await page.$eval('h1',el=>el.textContent||''),/Your coach listens/);
