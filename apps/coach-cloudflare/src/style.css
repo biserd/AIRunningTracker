@@ -6,14 +6,14 @@
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  color: #283d34;
-  background: #f7f8f4;
+  color: #334155;
+  background: #f8fafc;
   font-synthesis: none;
   font-weight: 400;
-  --green: #293f35;
-  --muted: #6e7b73;
-  --line: #e2e7df;
-  --lime: #d9efac;
+  --green: #334155;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --lime: #f74702;
 }
 * {
   box-sizing: border-box;
@@ -41,7 +41,7 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 select:focus-visible {
-  outline: 3px solid #83aa54;
+  outline: 3px solid #f74702;
   outline-offset: 3px;
 }
 button {
@@ -94,8 +94,8 @@ small {
   position: fixed;
   inset: 0 auto 0 0;
   width: 235px;
-  background: #263c32;
-  color: #f4f6ef;
+  background: #273444;
+  color: #ffffff;
   padding: 35px 22px 20px;
   display: flex;
   flex-direction: column;
@@ -115,7 +115,7 @@ small {
 .brand-mark {
   height: 35px;
   width: 35px;
-  border: 1px solid #70806a;
+  border: 1px solid #475569;
   border-radius: 11px;
   display: grid;
   place-items: center;
@@ -124,7 +124,7 @@ small {
 .workspace-label {
   font-size: 10px;
   letter-spacing: 1.8px;
-  color: #a4b2a6;
+  color: #cbd5e1;
   margin: 53px 12px 17px;
 }
 .nav {
@@ -132,13 +132,13 @@ small {
   padding: 14px;
   border-radius: 9px;
   justify-content: flex-start;
-  color: #c8d2c9;
+  color: #cbd5e1;
   font-size: 14px;
   margin-bottom: 6px;
 }
 .nav.active {
-  background: #3c5345;
-  color: #f6faed;
+  background: #475569;
+  color: #ffffff;
 }
 .nav-dot {
   width: 6px;
@@ -149,7 +149,7 @@ small {
 }
 .sidebar-note {
   margin: auto 12px 34px;
-  color: #c7d4bd;
+  color: #cbd5e1;
   padding-top: 55px;
 }
 .sidebar-note p {
@@ -159,26 +159,26 @@ small {
 }
 .sidebar-note span {
   font-size: 11px;
-  color: #a3b1a5;
+  color: #cbd5e1;
 }
 .profile {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 19px 5px 0;
-  border-top: 1px solid #49604d;
+  border-top: 1px solid #475569;
   font-size: 13px;
 }
 .profile small {
   display: block;
   margin-top: 5px;
-  color: #b0bdb0;
+  color: #cbd5e1;
   font-size: 10px;
 }
 .avatar {
   border-radius: 50%;
-  background: #dee6cd;
-  color: #354738;
+  background: #ffdfcc;
+  color: #334155;
   display: grid;
   place-items: center;
   width: 33px;
@@ -196,19 +196,19 @@ header {
   justify-content: space-between;
   align-items: center;
   padding: 0 45px;
-  background: #fcfdfb;
+  background: #ffffff;
 }
 .breadcrumb {
   font-size: 12px;
   color: var(--muted);
 }
 .breadcrumb strong {
-  color: #34493d;
+  color: #334155;
   font-weight: 500;
 }
 .preview-pill {
   font-size: 11px;
-  border: 1px solid #dde5d6;
+  border: 1px solid #e2e8f0;
   border-radius: 30px;
   padding: 7px 11px;
   display: flex;
@@ -219,7 +219,7 @@ header {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #8aab64;
+  background: #f74702;
 }
 .page-content {
   max-width: 1320px;
@@ -231,7 +231,7 @@ header {
   align-items: center;
   gap: 9px;
   font-size: 11px;
-  color: #687760;
+  color: #64748b;
   margin-bottom: 34px;
 }
 .preview-note svg {
@@ -241,7 +241,7 @@ header {
   font-size: 10px;
   letter-spacing: 1.7px;
   font-weight: 650;
-  color: #788971;
+  color: #64748b;
   display: block;
   margin-bottom: 13px;
 }
@@ -274,8 +274,8 @@ header {
   gap: 24px;
 }
 .recommendation {
-  border: 1px solid #d9e2cd;
-  background: linear-gradient(115deg, #f0f5e6, #f8faf3);
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(115deg, #fff4ed, #fff4ed);
   border-radius: 17px;
   padding: 28px 30px;
 }
@@ -290,7 +290,7 @@ header {
 .round-icon {
   display: grid;
   place-items: center;
-  background: #e2eccf;
+  background: #ffdfcc;
   border-radius: 50%;
   width: 34px;
   height: 34px;
@@ -299,7 +299,7 @@ header {
   margin-left: auto;
   font-size: 9px;
   letter-spacing: 0;
-  color: #7b886e;
+  color: #64748b;
 }
 .recommendation h2 {
   max-width: 440px;
@@ -307,7 +307,7 @@ header {
 }
 .recommendation > p {
   font-size: 14px;
-  color: #5d6d5b;
+  color: #64748b;
   max-width: 475px;
   margin-bottom: 24px;
 }
@@ -316,7 +316,7 @@ header {
   gap: 25px;
   font-size: 12px;
   padding-bottom: 23px;
-  border-bottom: 1px solid #dbe3d1;
+  border-bottom: 1px solid #e2e8f0;
   flex-wrap: wrap;
 }
 .run-details span {
@@ -330,12 +330,12 @@ header {
 .reason > span {
   font-size: 9px;
   letter-spacing: 1.5px;
-  color: #63715c;
+  color: #64748b;
   font-weight: 650;
 }
 .reason p {
   font-size: 12px;
-  color: #66745f;
+  color: #64748b;
   margin-top: 9px;
 }
 .text-button {
@@ -366,13 +366,13 @@ header {
 .quick-actions button > svg:first-child {
   width: 18px;
   height: 18px;
-  color: #7f8f72;
+  color: #64748b;
 }
 .quick-actions button > svg:last-child {
   position: absolute;
   top: 17px;
   right: 12px;
-  color: #9aa18f;
+  color: #64748b;
 }
 .quick-actions strong {
   font-size: 12px;
@@ -437,7 +437,7 @@ header {
   align-items: center;
   gap: 7px;
   font-size: 10px;
-  color: #85907d;
+  color: #64748b;
   margin-top: 14px;
 }
 .week-card {
@@ -474,24 +474,24 @@ header {
   font-style: normal;
 }
 .week-mini .run {
-  background: #dceac9;
+  background: #ffdfcc;
 }
 .week-mini .run span {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #7f9f57;
+  background: #f74702;
 }
 .week-mini .done {
-  background: #526d45;
+  background: #166534;
   color: white;
 }
 .week-mini .rest {
-  border: 1px solid #e0e6d9;
-  color: #7a8570;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
 }
 .week-mini .today i {
-  outline: 2px solid #83986f;
+  outline: 2px solid #f74702;
   outline-offset: 3px;
 }
 .week-total {
@@ -518,7 +518,7 @@ header {
   min-height: 45px;
 }
 .outline {
-  border: 1px solid #dce3d6;
+  border: 1px solid #e2e8f0;
   background: #fff;
   border-radius: 8px;
   padding: 11px 13px;
@@ -530,7 +530,7 @@ header {
 }
 .insight-card {
   padding: 26px 20px;
-  background: #edf0e7;
+  background: #f1f5f9;
   border-radius: 13px;
   margin-top: 20px;
 }
@@ -542,13 +542,13 @@ header {
 }
 .insight-card p {
   font-size: 12px;
-  color: #728067;
+  color: #64748b;
 }
 .quiet-note {
   display: flex;
   gap: 12px;
   padding: 22px;
-  color: #87967a;
+  color: #64748b;
   align-items: center;
 }
 .quiet-note p {
@@ -576,10 +576,10 @@ header {
   gap: 22px;
   align-items: center;
   padding: 20px 12px;
-  border-top: 1px solid #edf0e8;
+  border-top: 1px solid #e2e8f0;
 }
 .day-row.current {
-  background: #f3f7ec;
+  background: #fff4ed;
   border-radius: 8px;
   border-top-color: transparent;
 }
@@ -602,14 +602,14 @@ header {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: #eef3e7;
-  color: #7b8d6b;
+  background: #fff4ed;
+  color: #64748b;
 }
 .day-icon svg {
   width: 18px;
 }
 .day-icon.rest {
-  background: #f4f3ef;
+  background: #f8fafc;
 }
 .day-main {
   flex: 1;
@@ -626,12 +626,12 @@ header {
 .day-main small {
   margin-left: 10px;
   font-size: 9px;
-  color: #708453;
+  color: #166534;
   font-weight: 400;
 }
 .completed {
   font-size: 10px;
-  color: #6e805f;
+  color: #166534;
 }
 .footnote {
   font-size: 11px;
@@ -674,7 +674,7 @@ header {
 .bar {
   width: 100%;
   max-width: 65px;
-  background: #a7bc8c;
+  background: #f74702;
   border-radius: 7px 7px 0 0;
 }
 .source-note {
@@ -695,7 +695,7 @@ header {
   display: flex;
   justify-content: space-between;
   padding: 10px 0;
-  border-bottom: 1px solid #edf0e8;
+  border-bottom: 1px solid #e2e8f0;
   font-size: 11px;
 }
 .activity-list span {
@@ -722,7 +722,7 @@ dd {
 footer {
   padding: 38px 0 22px;
   font-size: 10px;
-  color: #8b9683;
+  color: #64748b;
   display: flex;
   justify-content: space-between;
 }
@@ -752,10 +752,10 @@ dialog {
   max-width: 500px;
   width: calc(100% - 28px);
   color: var(--green);
-  box-shadow: 0 25px 100px #102a2a33;
+  box-shadow: 0 25px 100px #0f172a33;
 }
 dialog::backdrop {
-  background: #20382f66;
+  background: #0f172a66;
   backdrop-filter: blur(3px);
 }
 .dialog-top {
@@ -787,8 +787,8 @@ dialog > p {
   font-size: 12px;
 }
 .choice-row button.selected {
-  background: #edf4e4;
-  border-color: #92a77b;
+  background: #fff4ed;
+  border-color: #f74702;
 }
 .field {
   display: flex;
@@ -816,7 +816,7 @@ dialog > p {
   align-items: center;
   gap: 15px;
   margin-bottom: 24px;
-  background: #f4f6ee;
+  background: #f8fafc;
   padding: 17px;
   border-radius: 9px;
 }
@@ -865,8 +865,8 @@ dialog > p {
   transform: translateX(-50%);
   padding: 15px 22px;
   border-radius: 10px;
-  box-shadow: 0 5px 30px #183a2a22;
-  background: #273f33;
+  box-shadow: 0 5px 30px #0f172a22;
+  background: #273444;
   color: white;
   display: flex;
   gap: 10px;
@@ -958,7 +958,7 @@ dialog > p {
     height: 69px;
     padding: 7px 14px;
     z-index: 4;
-    border-top: 1px solid #4a604d;
+    border-top: 1px solid #475569;
     display: block;
   }
   .sidebar .brand,
@@ -1139,17 +1139,17 @@ dialog > p {
 .ai-coach .chat-message {
   padding: 12px 16px;
   border-radius: 12px;
-  background: #f2f4ed;
+  background: #f8fafc;
   margin: 8px 0;
   white-space: pre-wrap;
 }
 .ai-coach .chat-message.user {
-  background: #f6f3eb;
+  background: #fff4ed;
   margin-left: 24px;
 }
 .ai-coach .chat-message small {
   font-weight: 700;
-  color: #375344;
+  color: #334155;
 }
 .ai-coach .chat-message p {
   margin: 6px 0;
@@ -1198,7 +1198,7 @@ dialog > p {
 }
 .reminder-panel {
   background: #fff;
-  border: 1px solid #e2e6db;
+  border: 1px solid #e2e8f0;
   border-radius: 16px;
   padding: 22px;
   margin-top: 20px;
@@ -1225,7 +1225,7 @@ dialog > p {
   font-size: 14px;
 }
 .reminder-form input {
-  border: 1px solid #ccd5c7;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 10px;
   font: inherit;
@@ -1241,8 +1241,8 @@ dialog > p {
 }
 .reminder-review {
   padding: 18px;
-  background: #f3f5ec;
-  border: 1px solid #c9d5bc;
+  background: #fff4ed;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
   margin: 16px 0;
 }
@@ -1255,13 +1255,13 @@ dialog > p {
 }
 .reminder-list li {
   padding: 12px 0;
-  border-top: 1px solid #e2e6db;
+  border-top: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 .reminder-list small {
-  color: #58654f;
+  color: #64748b;
 }
 .reminder-list button,
 .text-button {
@@ -1276,3 +1276,14 @@ dialog > p {
 .reminder-address {
   font-size: 14px;
 }
+
+/* Shared AITracker brand: orange actions, slate surfaces, distinct green completion. */
+.app-shell .primary, .app-shell .conversation form button {
+  background: #d9400c;
+  color: #fff;
+}
+.app-shell .primary:hover, .app-shell .conversation form button:hover { background: #bc3508; }
+.app-shell .nav.active { background: #fff4ed; color: #9a3412; }
+.app-shell .brand-mark { border-color: #f74702; }
+.app-shell .round-icon, .app-shell .day-icon:not(.rest) { color: #9a3412; }
+.app-shell .choice-row button.selected { color: #9a3412; }
