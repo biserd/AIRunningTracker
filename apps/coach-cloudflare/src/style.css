@@ -1130,3 +1130,69 @@ dialog > p {
     font-size: 9px;
   }
 }
+.ai-coach .chat-history {
+  max-height: 420px;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  margin-bottom: 16px;
+}
+.ai-coach .chat-message {
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #f2f4ed;
+  margin: 8px 0;
+  white-space: pre-wrap;
+}
+.ai-coach .chat-message.user {
+  background: #f6f3eb;
+  margin-left: 24px;
+}
+.ai-coach .chat-message small {
+  font-weight: 700;
+  color: #375344;
+}
+.ai-coach .chat-message p {
+  margin: 6px 0;
+  line-height: 1.55;
+}
+.ai-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  align-items: center;
+}
+.ai-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.ai-error {
+  color: #9c3625 !important;
+  background: #fff2ec;
+  padding: 12px;
+  border-radius: 8px;
+}
+.generated-art {
+  margin: 20px 0 0;
+}
+.generated-art img {
+  max-width: 100%;
+  width: 380px;
+  border-radius: 12px;
+}
+.generated-art a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.voice-caption {
+  max-height: 100px;
+  overflow: auto;
+  font-size: 13px;
+}
+.ai-coach audio {
+  max-width: 100%;
+  margin-top: 12px;
+}

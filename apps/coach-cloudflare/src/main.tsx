@@ -27,6 +27,7 @@ import {
   type Proposal,
 } from "../shared/coach";
 import "./style.css";
+import { CoachAI } from "./CoachAI";
 async function api<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch("/api/" + path, {
     method: body === undefined ? "GET" : "POST",
@@ -62,9 +63,7 @@ function App() {
     [minutes, setMinutes] = useState(20),
     [moveDate, setMoveDate] = useState("");
   const [proposal, setProposal] = useState<Proposal | null>(null),
-    [toast, setToast] = useState(""),
-    [message, setMessage] = useState(""),
-    [reply, setReply] = useState("");
+    [toast, setToast] = useState("");
   const dialog = useRef<HTMLDialogElement>(null);
   const refresh = async () => {
     const value = await api<Snapshot>("state");
@@ -139,20 +138,6 @@ function App() {
       setProposal(null);
       setToast("Your week is updated. Saved to your private preview.");
     });
-  const ask = () => {
-    const text = message.trim().toLowerCase();
-    if (!text) return;
-    setMessage("");
-    if (/tired|rest/.test(text) && upcoming) openAdjust(upcoming, "rest");
-    else if (/short|time|busy/.test(text) && upcoming) openAdjust(upcoming);
-    else if (/mov|week|schedule/.test(text)) setTab("My week");
-    else if (/progress|consistent|evidence|improv/.test(text))
-      setTab("Progress");
-    else
-      setReply(
-        "This preview supports adjusting your week and exploring consistency. Try “I have less time” or “Am I becoming more consistent?” Live AI conversation is not connected yet.",
-      );
-  };
   const totals = data?.state.days.reduce((a, d) => a + d.minutes, 0) || 0;
   const stats = data ? evidence(data.state) : null;
   return (
@@ -380,42 +365,7 @@ function App() {
                         </button>
                       </div>
                     </section>
-                    <section className="conversation">
-                      <div className="section-heading">
-                        <h3>What’s on your mind?</h3>
-                        <span>Guided preview</span>
-                      </div>
-                      <p>Ask about your week, less time or consistency.</p>
-                      {reply && (
-                        <p className="reply" role="status">
-                          {reply}
-                        </p>
-                      )}
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          ask();
-                        }}
-                      >
-                        <input
-                          aria-label="Ask about your sample plan"
-                          value={message}
-                          maxLength={300}
-                          onChange={(e) => setMessage(e.target.value)}
-                          placeholder="I only have 20 minutes for my next run…"
-                        />
-                        <button
-                          aria-label="Send message"
-                          disabled={!message.trim()}
-                        >
-                          <Send size={18} />
-                        </button>
-                      </form>
-                      <div className="voice-note">
-                        <Mic size={15} />
-                        Live voice is not connected in this preview.
-                      </div>
-                    </section>
+                    <CoachAI onProposal={setProposal} version={data.version} />
                   </div>
                   <aside className="right-column">
                     <section className="week-card">
@@ -655,7 +605,10 @@ function App() {
                     <dt>Strava, billing and messaging</dt>
                     <dd>Not connected</dd>
                     <dt>AI and voice</dt>
-                    <dd>Not connected. Guided interactions only.</dd>
+                    <dd>
+                      OpenAI integration. Availability is shown in the Coach
+                      tab. Uses your sample plan, not your real running history.
+                    </dd>
                   </dl>
                   <p className="footnote">
                     Do not enter private or medical information. This is a

@@ -1,0 +1,480 @@
+import React, { useEffect, useRef, useState } from "react";
+import { Mic, Send, Square, ImagePlus, Download } from "lucide-react";
+import type { Proposal } from "../shared/coach";
+type Message = { role: string; content: string };
+type Answer = { message: string; proposal?: Proposal };
+async function request<T>(
+  path: string,
+  body?: unknown,
+  signal?: AbortSignal,
+): Promise<T> {
+  const r = await fetch("/api/ai/" + path, {
+    method: body === undefined ? "GET" : "POST",
+    headers: body === undefined ? {} : { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+    signal: signal || AbortSignal.timeout(120_000),
+  });
+  const result = await r.json();
+  if (!r.ok)
+    throw new Error(
+      result &&
+        typeof result === "object" &&
+        "error" in result &&
+        typeof result.error === "string"
+        ? result.error
+        : "Please try again later.",
+    );
+  return result as T;
+}
+export function CoachAI({
+  onProposal,
+  version,
+}: {
+  onProposal: (p: Proposal) => void;
+  version: number;
+}) {
+  const [configured, setConfigured] = useState<boolean | null>(null),
+    [messages, setMessages] = useState<Message[]>([]),
+    [text, setText] = useState(""),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
+  const [voice, setVoice] = useState("off"),
+    [muted, setMuted] = useState(false),
+    [caption, setCaption] = useState(""),
+    [art, setArt] = useState(""),
+    [imageBusy, setImageBusy] = useState(false);
+  const [pending, setPending] = useState<Proposal>();
+  useEffect(() => setPending(undefined), [version]);
+  const connection = useRef<RTCPeerConnection | null>(null),
+    channel = useRef<RTCDataChannel | null>(null),
+    stream = useRef<MediaStream | null>(null),
+    audio = useRef<HTMLAudioElement | null>(null),
+    timer = useRef<ReturnType<typeof setTimeout>>();
+  const generation = useRef(0),
+    abort = useRef<AbortController>(),
+    voiceAbort = useRef<AbortController>();
+  const transcript = useRef(""),
+    delegateBusy = useRef(false),
+    seen = useRef(new Set<string>());
+  function clean() {
+    clearTimeout(timer.current);
+    stream.current?.getTracks().forEach((t) => t.stop());
+    stream.current = null;
+    channel.current?.close();
+    channel.current = null;
+    connection.current?.close();
+    connection.current = null;
+    if (audio.current) {
+      audio.current.pause();
+      audio.current.srcObject = null;
+    }
+    voiceAbort.current?.abort();
+    setVoice("off");
+    setMuted(false);
+  }
+  useEffect(() => {
+    request<{ configured: boolean; history: Message[] }>("status")
+      .then((s) => {
+        setConfigured(s.configured);
+        setMessages(s.history);
+      })
+      .catch((e) => setError(e.message));
+    return () => {
+      const hadCall = !!connection.current;
+      generation.current++;
+      abort.current?.abort();
+      clean();
+      if (hadCall)
+        void fetch("/api/ai/voice/stop", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: "{}",
+          keepalive: true,
+        }).catch(() => {});
+    };
+  }, []);
+  function receive(answer: Answer) {
+    setMessages((m) =>
+      [...m, { role: "assistant", content: answer.message }].slice(-12),
+    );
+    if (answer.proposal) setPending(answer.proposal);
+  }
+  async function ask(e: React.FormEvent) {
+    e.preventDefault();
+    if (busy || !text.trim()) return;
+    const message = text.trim();
+    setText("");
+    setBusy(true);
+    setError("");
+    setMessages((m) => [...m, { role: "user", content: message }].slice(-12));
+    abort.current = new AbortController();
+    try {
+      receive(
+        await request<Answer>(
+          "chat",
+          { id: crypto.randomUUID(), message },
+          AbortSignal.any([abort.current.signal, AbortSignal.timeout(85_000)]),
+        ),
+      );
+    } catch (e) {
+      setError(
+        e instanceof Error && e.name === "AbortError"
+          ? "Stopped waiting. Your week was not changed."
+          : e instanceof Error
+            ? e.message
+            : "Could not contact the coach.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function stop() {
+    generation.current++;
+    stream.current?.getTracks().forEach((t) => t.stop());
+    setVoice("ending");
+    voiceAbort.current?.abort();
+    // Backend owns finalization; its durable alarm survives a closed browser.
+    try {
+      await request("voice/stop", {});
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "The server is finalizing the call.",
+      );
+    } finally {
+      clean();
+    }
+  }
+  async function startVoice() {
+    if (voice !== "off") return;
+    const call = ++generation.current;
+    setVoice("connecting");
+    setError("");
+    transcript.current = "";
+    seen.current.clear();
+    delegateBusy.current = false;
+    try {
+      const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (call !== generation.current) {
+        mic.getTracks().forEach((t) => t.stop());
+        return;
+      }
+      stream.current = mic;
+      const pc = new RTCPeerConnection();
+      connection.current = pc;
+      mic.getTracks().forEach((t) => pc.addTrack(t, mic));
+      const dc = pc.createDataChannel("oai-events");
+      channel.current = dc;
+      pc.ontrack = (event) => {
+        if (audio.current) {
+          audio.current.srcObject =
+            event.streams[0] || new MediaStream([event.track]);
+          void audio.current
+            .play()
+            .catch(() => setError("Tap Play audio below to hear your coach."));
+        }
+      };
+      pc.onconnectionstatechange = () => {
+        if (pc.connectionState === "failed" && call === generation.current) {
+          setError("Voice connection interrupted.");
+          void stop();
+        }
+      };
+      dc.onmessage = (event) => {
+        if (call !== generation.current || typeof event.data !== "string")
+          return;
+        let data;
+        try {
+          data = JSON.parse(event.data);
+        } catch {
+          return;
+        }
+        if (data.type === "session.started") setVoice("live");
+        if (data.type === "session.closed") {
+          generation.current++;
+          clean();
+        }
+        if (data.type === "error")
+          setError("Voice encountered a problem. End the call and try again.");
+        if (
+          data.type === "session.input_transcript.delta" &&
+          typeof data.delta === "string"
+        ) {
+          transcript.current = (transcript.current + data.delta).slice(-1800);
+          setCaption(transcript.current);
+        }
+        if (
+          data.type === "session.delegation.created" &&
+          typeof data.delegation?.id === "string"
+        ) {
+          const id = data.delegation.id;
+          if (seen.current.has(id)) return;
+          seen.current.add(id);
+          const answerBack = (content: string) => {
+            if (call === generation.current && dc.readyState === "open")
+              dc.send(
+                JSON.stringify({
+                  type: "session.commentary.append",
+                  event_id: crypto.randomUUID(),
+                  delegation_id: id,
+                  content: content.slice(0, 1500),
+                }),
+              );
+          };
+          if (delegateBusy.current) {
+            answerBack(
+              "I am still checking the previous question. Please wait.",
+            );
+            return;
+          }
+          const message = transcript.current.trim();
+          if (!message) {
+            answerBack("I did not catch that. Please repeat your question.");
+            return;
+          }
+          delegateBusy.current = true;
+          voiceAbort.current = new AbortController();
+          setMessages((m) =>
+            [...m, { role: "user", content: message }].slice(-12),
+          );
+          void request<Answer>(
+            "chat",
+            { id: crypto.randomUUID(), message },
+            AbortSignal.any([
+              voiceAbort.current.signal,
+              AbortSignal.timeout(85_000),
+            ]),
+          )
+            .then((answer) => {
+              if (call !== generation.current) return;
+              receive(answer);
+              answerBack(
+                answer.message +
+                  (answer.proposal
+                    ? " A proposed change is ready on screen. It is not saved. Tap Review adjustment to confirm."
+                    : ""),
+              );
+            })
+            .catch(() =>
+              answerBack(
+                "I could not check your sample plan just now. No changes were made.",
+              ),
+            )
+            .finally(() => {
+              delegateBusy.current = false;
+            });
+        }
+      };
+      await pc.setLocalDescription(await pc.createOffer());
+      if (pc.iceGatheringState !== "complete")
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(
+            () => reject(new Error("Could not establish voice networking.")),
+            10_000,
+          );
+          pc.addEventListener("icegatheringstatechange", () => {
+            if (pc.iceGatheringState === "complete") {
+              clearTimeout(timeout);
+              resolve();
+            }
+          });
+        });
+      if (call !== generation.current) return;
+      const result = await request<{ sdp: string; seconds: number }>("voice", {
+        id: crypto.randomUUID(),
+        sdp: pc.localDescription?.sdp,
+      });
+      if (call !== generation.current) {
+        void request("voice/stop", {}).catch(() => {});
+        return;
+      }
+      await pc.setRemoteDescription({ type: "answer", sdp: result.sdp });
+      timer.current = setTimeout(() => void stop(), result.seconds * 1000);
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Microphone access or voice connection failed.",
+      );
+      clean();
+      void request("voice/stop", {}).catch(() => {});
+    }
+  }
+  function mute() {
+    const next = !muted;
+    stream.current?.getAudioTracks().forEach((t) => (t.enabled = !next));
+    setMuted(next);
+    if (channel.current?.readyState === "open")
+      channel.current.send(
+        JSON.stringify({
+          type: next
+            ? "session.input_audio.mute"
+            : "session.input_audio.unmute",
+          event_id: crypto.randomUUID(),
+        }),
+      );
+  }
+  async function generateImage() {
+    setImageBusy(true);
+    setError("");
+    try {
+      const result = await request<{
+        image: string;
+        evidence: { totalRuns: number; totalKm: number };
+      }>("image", { id: crypto.randomUUID() });
+      // Exact labels are rendered in code, never entrusted to image-model typography.
+      const image = new Image();
+      image.src = result.image;
+      await image.decode();
+      const canvas = document.createElement("canvas");
+      canvas.width = 1024;
+      canvas.height = 1200;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Your browser could not prepare the download.");
+      ctx.drawImage(image, 0, 0, 1024, 1024);
+      ctx.fillStyle = "#f6f5ed";
+      ctx.fillRect(0, 960, 1024, 240);
+      ctx.fillStyle = "#243c30";
+      ctx.font = "bold 44px system-ui";
+      ctx.fillText("Every run adds up.", 56, 1025);
+      ctx.font = "30px system-ui";
+      ctx.fillText(
+        `${result.evidence.totalRuns} runs · ${result.evidence.totalKm} km in the sample history`,
+        56,
+        1080,
+      );
+      ctx.font = "24px system-ui";
+      ctx.fillText(
+        "AITracker · Fictional sample data · AI-generated artwork",
+        56,
+        1140,
+      );
+      setArt(canvas.toDataURL("image/png"));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Image generation failed.");
+    } finally {
+      setImageBusy(false);
+    }
+  }
+  return (
+    <section className="conversation ai-coach">
+      <div className="section-heading">
+        <h3>What’s on your mind?</h3>
+        <span>{configured ? "AI coach" : "AI setup"}</span>
+      </div>
+      <p>Talk through your sample week. Any adjustment is yours to approve.</p>
+      {configured === false && (
+        <p role="status">
+          AI is not ready yet. The site owner needs to add the server API key.
+          You can still explore and adjust the sample week.
+        </p>
+      )}
+      <div className="chat-history" aria-live="polite" aria-busy={busy}>
+        {messages.map((m, i) => (
+          <div key={i} className={"chat-message " + m.role}>
+            <small>{m.role === "user" ? "You" : "Coach"}</small>
+            <p>{m.content}</p>
+          </div>
+        ))}
+      </div>
+      {pending && (
+        <button className="secondary" onClick={() => onProposal(pending)}>
+          Review adjustment
+        </button>
+      )}
+      <form onSubmit={ask}>
+        <input
+          aria-label="Ask about your sample plan"
+          maxLength={2000}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="I only have 20 minutes for my next run…"
+          disabled={!configured || busy || voice !== "off"}
+        />
+        <button
+          aria-label="Send message"
+          disabled={!configured || busy || !text.trim() || voice !== "off"}
+        >
+          <Send size={18} />
+        </button>
+      </form>
+      {busy && (
+        <div className="voice-note" role="status">
+          Checking your sample week…{" "}
+          <button onClick={() => abort.current?.abort()}>Stop waiting</button>
+        </div>
+      )}
+      {error && (
+        <p className="ai-error" role="alert">
+          {error}
+        </p>
+      )}
+      <div className="ai-actions">
+        {voice === "off" ? (
+          <button
+            className="secondary"
+            disabled={!configured || busy}
+            onClick={() => void startVoice()}
+          >
+            <Mic size={16} /> Talk to your coach
+          </button>
+        ) : (
+          <>
+            <button
+              className="secondary"
+              onClick={() => void stop()}
+              disabled={voice === "ending"}
+            >
+              <Square size={14} />{" "}
+              {voice === "ending" ? "Ending call…" : "End call"}
+            </button>
+            <button disabled={voice !== "live"} onClick={mute}>
+              {muted ? "Unmute" : "Mute"}
+            </button>
+            <span role="status">
+              {voice === "connecting"
+                ? "Connecting…"
+                : muted
+                  ? "Microphone muted"
+                  : "Voice connected"}
+            </span>
+          </>
+        )}
+        <button
+          className="secondary"
+          disabled={!configured || imageBusy}
+          onClick={() => void generateImage()}
+        >
+          <ImagePlus size={16} />
+          {imageBusy ? "Creating artwork…" : "Create a running poster"}
+        </button>
+      </div>
+      <audio ref={audio} autoPlay controls hidden={voice === "off"} />
+      {voice !== "off" && caption && (
+        <p className="voice-caption">You: {caption}</p>
+      )}
+      <p className="footnote">
+        AI-generated replies and voice. Sample plan and messages are sent to
+        OpenAI when you ask. Voice uses your microphone only during a call,
+        limited to three minutes. No real Strava or weather connection yet.
+      </p>
+      {art && (
+        <figure className="generated-art">
+          <img
+            src={art}
+            alt="AI-generated running illustration with verified fictional sample activity totals"
+          />
+          <figcaption>
+            <a
+              className="secondary"
+              href={art}
+              download="aitracker-sample-running-poster.png"
+            >
+              <Download size={16} /> Download poster
+            </a>
+            <p>Save before leaving. Artwork is not stored on the server.</p>
+          </figcaption>
+        </figure>
+      )}
+    </section>
+  );
+}

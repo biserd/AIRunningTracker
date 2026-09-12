@@ -1,4 +1,7 @@
 import { changePlan, seed, type State, type Change } from "../shared/coach";
+import { aiRoute, history } from "./ai";
+import { AIError } from "./openai";
+export { VoiceLease } from "./voice";
 type Row = {
   id: string;
   state: string;
@@ -81,6 +84,17 @@ async function api(request: Request, env: Env): Promise<Response> {
     return json({ error: "Your preview expired. Start a new one." }, 401);
   if (!(await limit(env, `session:${id}`, 120, 60)))
     return json({ error: "Please wait a moment before trying again." }, 429);
+  if (url.pathname === "/api/ai/status" && request.method === "GET")
+    return json({
+      configured: !!env.OPENAI_API_KEY,
+      history: await history(env, id),
+      models: {
+        text: "gpt-6-astra",
+        voice: "gpt-live-1",
+        image: "gpt-image-2.5-flare",
+      },
+      source: "fictional_sample",
+    });
   if (url.pathname === "/api/state" && request.method === "GET")
     return json({
       state: JSON.parse(row.state),
@@ -99,7 +113,14 @@ async function api(request: Request, env: Env): Promise<Response> {
       const part = await reader.read();
       if (part.done) break;
       size += part.value.byteLength;
-      if (size > 2048) {
+      if (
+        size >
+        (url.pathname === "/api/ai/voice"
+          ? 26000
+          : url.pathname === "/api/ai/chat"
+            ? 12000
+            : 2048)
+      ) {
         await reader.cancel();
         return json({ error: "Request too large" }, 413);
       }
@@ -116,6 +137,19 @@ async function api(request: Request, env: Env): Promise<Response> {
     return json({ error: "Invalid request" }, 400);
   }
   const state = JSON.parse(row.state) as State;
+  if (url.pathname.startsWith("/api/ai/")) {
+    try {
+      return json(await aiRoute(request, env, row, input, limit));
+    } catch (e) {
+      return json(
+        {
+          error:
+            e instanceof AIError ? e.message : "AI is temporarily unavailable.",
+        },
+        e instanceof AIError ? e.status : 503,
+      );
+    }
+  }
   if (url.pathname === "/api/proposals") {
     if (
       Object.keys(input).some(
@@ -242,11 +276,11 @@ export default {
     safe.headers.set("Referrer-Policy", "no-referrer");
     safe.headers.set(
       "Content-Security-Policy",
-      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
     );
     safe.headers.set(
       "Permissions-Policy",
-      "microphone=(), camera=(), geolocation=()",
+      "microphone=(self), camera=(), geolocation=()",
     );
     return safe;
   },

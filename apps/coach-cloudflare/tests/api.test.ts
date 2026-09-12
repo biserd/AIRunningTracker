@@ -102,6 +102,53 @@ test("D1 session isolation, confirmation, replay, stale edit and undo", async ()
     400,
   );
   const response = await request("state", cookie);
+  assert.equal((await request("ai/status")).status, 401);
+  const aiStatus = (await (await request("ai/status", cookie)).json()) as {
+    configured: boolean;
+    history: unknown[];
+  };
+  assert.equal(typeof aiStatus.configured, "boolean");
+  assert.deepEqual(aiStatus.history, []);
+  assert.equal(
+    (
+      await request("ai/chat", cookie, {
+        id: crypto.randomUUID(),
+        message: "Hi",
+        userId: "someone-else",
+      })
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await request("ai/voice", cookie, {
+        id: crypto.randomUUID(),
+        sdp: "arbitrary URL",
+      })
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await request(
+        "ai/chat",
+        cookie,
+        { id: crypto.randomUUID(), message: "Hi" },
+        "https://evil.example",
+      )
+    ).status,
+    403,
+  );
+  if (!aiStatus.configured)
+    assert.equal(
+      (
+        await request("ai/chat", cookie, {
+          id: crypto.randomUUID(),
+          message: "Hi",
+        })
+      ).status,
+      503,
+    );
   assert.equal(response.headers.get("cache-control"), "no-store");
   assert.match(
     response.headers.get("content-security-policy")!,

@@ -3,6 +3,11 @@
   "name": "aitracker-coach-preview",
   "account_id": "73d71a2bef58f7469ecb48e2b8e84c0e",
   "main": "worker/index.ts",
+  "secrets": { "required": ["OPENAI_API_KEY"] },
+  "durable_objects": {
+    "bindings": [{ "name": "VOICE_LEASE", "class_name": "VoiceLease" }],
+  },
+  "migrations": [{ "tag": "voice-v1", "new_sqlite_classes": ["VoiceLease"] }],
   "compatibility_date": "2026-09-12",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
