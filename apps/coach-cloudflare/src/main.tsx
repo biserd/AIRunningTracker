@@ -27,6 +27,7 @@ import {
   type Proposal,
 } from "../shared/coach";
 import "./style.css";
+import "./chat-first.css";
 import { CoachAI } from "./CoachAI";
 import { ReminderPanel, ReminderUnsubscribe } from "./Reminders";
 import { Landing, WaitlistUnsubscribe } from "./Landing";
@@ -143,62 +144,14 @@ function App() {
   const totals = data?.state.days.reduce((a, d) => a + d.minutes, 0) || 0;
   const stats = data ? evidence(data.state) : null;
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <a className="brand" href="/" aria-label="AITracker home">
-          <span className="brand-mark">
-            <Footprints size={22} />
-          </span>
-          AITracker<span className="brand-dot">.</span>
-        </a>
-        <div className="workspace-label">YOUR RUNNING SPACE</div>
-        <nav aria-label="Main navigation">
-          {[
-            { name: "Coach", icon: MessageCircle },
-            { name: "My week", icon: CalendarDays },
-            { name: "Progress", icon: ChartNoAxesCombined },
-          ].map(({ name, icon: Icon }) => (
-            <button
-              key={name}
-              className={tab === name ? "nav active" : "nav"}
-              onClick={() => setTab(name)}
-              aria-current={tab === name ? "page" : undefined}
-            >
-              <Icon size={19} />
-              {name}
-              {tab === name && <span className="nav-dot" />}
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-note">
-          <Leaf size={23} />
-          <p>
-            Good training fits
-            <br />
-            your actual life.
-          </p>
-          <span>A little direction. More good runs.</span>
-        </div>
-        <button className="nav settings" onClick={() => setTab("Settings")}>
-          <Settings2 size={18} />
-          Preview settings
-        </button>
-        <div className="profile">
-          <span className="avatar">R</span>
-          <div>
-            Sample runner<small>Private preview workspace</small>
-          </div>
-        </div>
-      </aside>
+    <div className="app-shell chat-first">
       <main>
-        <header>
-          <span className="breadcrumb">
-            Your running / <strong>{tab}</strong>
-          </span>
-          <span className="preview-pill">
-            <span />
-            UX preview
-          </span>
+        <header className="coach-topbar">
+          <a className="coach-wordmark" href="/">AITracker<span>.</span></a>
+          <nav aria-label="Main navigation">
+            {tab !== "Coach" && <button className="secondary" onClick={()=>setTab("Coach")}>Back to coach</button>}
+            <button className="secondary" aria-label="Settings" onClick={()=>setTab("Settings")}><Settings2 size={18}/> Settings</button>
+          </nav>
         </header>
         <div className="page-content">
           <ReminderUnsubscribe />
@@ -217,8 +170,8 @@ function App() {
             <section className="welcome">
               <span className="eyebrow">MEET YOUR NEW RUNNING SPACE</span>
               <h1>
-                A little direction.
-                <br />A better week of running.
+                Your running coach.
+                <br />Ready when you are.
               </h1>
               <p>
                 Start with what matters today. Make room for real life.
@@ -240,7 +193,7 @@ function App() {
             </section>
           ) : (
             <>
-              <div className="title-row">
+              {tab !== "Coach" && <div className="title-row">
                 <div>
                   <span className="eyebrow">
                     {tab === "Coach"
@@ -278,181 +231,13 @@ function App() {
                   <small>UTC preview</small>
                 </span>
               </div>
+              }
               {error && !adjust && !proposal && (
                 <p className="error" role="alert">
                   {error}
                 </p>
               )}
-              {tab === "Coach" && (
-                <div className="coach-grid">
-                  <div>
-                    <section className="recommendation">
-                      <div className="card-kicker">
-                        <span className="round-icon">
-                          <Leaf size={19} />
-                        </span>
-                        TODAY’S DIRECTION
-                        <span className="sample-label">
-                          Sample recommendation
-                        </span>
-                      </div>
-                      <h2>
-                        {today?.kind === "rest"
-                          ? "Make room for a little recovery."
-                          : today?.minutes
-                            ? `${today.minutes} minutes. Keep it easy.`
-                            : "Your week is in a good place."}
-                      </h2>
-                      <p>
-                        {today?.kind === "rest"
-                          ? "A rest day is already part of this sample plan. There’s nothing to make up today."
-                          : "This sample plan keeps today conversational. Finish feeling like you could have done a little more."}
-                      </p>
-                      <div className="run-details">
-                        <span>
-                          <Clock3 size={17} />
-                          {today?.minutes || 0} min
-                        </span>
-                        <span>
-                          <Footprints size={17} />
-                          {today?.kind === "rest" ? "Rest day" : "Easy effort"}
-                        </span>
-                        <span>
-                          <CalendarDays size={17} />
-                          {dayLabel(data.state.today)}
-                        </span>
-                      </div>
-                      <div className="reason">
-                        <span>WHY THIS FITS</span>
-                        <p>
-                          {today?.kind === "rest"
-                            ? "Space between runs is built into your sample week. No recovery score or health assessment is being inferred."
-                            : "An easy session keeps the sample week balanced around its longer run. This is plan context, not a physiological readiness score."}
-                        </p>
-                      </div>
-                      <button
-                        className="text-button"
-                        onClick={() => setTab("My week")}
-                      >
-                        See where it fits in my week <ArrowRight size={17} />
-                      </button>
-                    </section>
-                    <section className="adapt">
-                      <h3>Life happens. Let’s work with it.</h3>
-                      <div className="quick-actions">
-                        <button
-                          disabled={!upcoming}
-                          onClick={() => upcoming && openAdjust(upcoming)}
-                        >
-                          <Clock3 />
-                          <strong>I have less time</strong>
-                          <span>Make the next run shorter</span>
-                          <ArrowUpRight size={17} />
-                        </button>
-                        <button
-                          disabled={!upcoming}
-                          onClick={() =>
-                            upcoming && openAdjust(upcoming, "rest")
-                          }
-                        >
-                          <Moon />
-                          <strong>I feel tired</strong>
-                          <span>Make room for a rest day</span>
-                          <ArrowUpRight size={17} />
-                        </button>
-                        <button onClick={() => setTab("My week")}>
-                          <CalendarDays />
-                          <strong>Adjust my week</strong>
-                          <span>Find a better place for a run</span>
-                          <ArrowUpRight size={17} />
-                        </button>
-                      </div>
-                    </section>
-                    <CoachAI onProposal={setProposal} version={data.version} />
-                  </div>
-                  <aside className="right-column">
-                    <section className="week-card">
-                      <div className="section-heading">
-                        <h3>This week</h3>
-                        <button
-                          aria-label="Open my week"
-                          onClick={() => setTab("My week")}
-                        >
-                          <ArrowUpRight size={18} />
-                        </button>
-                      </div>
-                      <p className="subtle">{data.state.goal}</p>
-                      <div className="week-mini">
-                        {data.state.days.map((d) => (
-                          <div
-                            key={d.id}
-                            className={
-                              d.date === data.state.today ? "today" : ""
-                            }
-                          >
-                            <span>{dayLabel(d.date).slice(0, 1)}</span>
-                            <i
-                              className={
-                                d.completed
-                                  ? "done"
-                                  : d.kind === "rest"
-                                    ? "rest"
-                                    : "run"
-                              }
-                            >
-                              {d.completed ? (
-                                <Check size={13} />
-                              ) : d.kind === "rest" ? (
-                                <span>·</span>
-                              ) : (
-                                <span />
-                              )}
-                            </i>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="week-total">
-                        <strong>
-                          {Math.floor(totals / 60)}h {totals % 60}m
-                        </strong>
-                        <span>planned this week</span>
-                      </div>
-                      <button
-                        className="outline wide"
-                        onClick={() => setTab("My week")}
-                      >
-                        Open my week <ArrowRight size={16} />
-                      </button>
-                    </section>
-                    <section className="insight-card">
-                      <span className="eyebrow">A LITTLE PERSPECTIVE</span>
-                      <h3>
-                        Consistency beats
-                        <br />a perfect run.
-                      </h3>
-                      <p>
-                        The sample runner logged four runs each week. Repeating
-                        a manageable routine can be more useful than chasing one
-                        big effort.
-                      </p>
-                      <button
-                        className="text-button"
-                        onClick={() => setTab("Progress")}
-                      >
-                        Show me the evidence <ArrowRight size={16} />
-                      </button>
-                    </section>
-                    <div className="quiet-note">
-                      <Leaf size={18} />
-                      <p>
-                        Built around the runner.
-                        <br />
-                        Not around the numbers.
-                      </p>
-                    </div>
-                  </aside>
-                </div>
-              )}
+              {tab === "Coach" && <CoachAI onProposal={setProposal} version={data.version} state={data.state} onWeek={()=>setTab("My week")} onSettings={()=>setTab("Settings")}/>}
               {tab === "My week" && (
                 <section className="week-full">
                   <div className="section-heading">
@@ -594,7 +379,7 @@ function App() {
               )}
               {tab === "Settings" && (
                 <section className="settings-card">
-                  <h2>Cloudflare-native. Intentionally separate.</h2>
+                  <h2>Your connections and preferences</h2>
                   <ReminderPanel />
                   <p>
                     This preview uses Cloudflare Workers for its API and D1 for

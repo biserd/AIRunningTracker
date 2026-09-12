@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Mic, Send, Square, ImagePlus, Download } from "lucide-react";
-import type { Proposal } from "../shared/coach";
+import type { State, Proposal } from "../shared/coach";
 import type { ReminderProposal } from "../shared/reminders";
 import { ReminderPanel } from "./Reminders";
 import { renderPoster, type PosterEvidence } from "./poster";
+import { RunningChart } from "./RunningChart";
 type Message = { role: string; content: string };
 type Answer = {
   message: string;
@@ -36,9 +37,15 @@ async function request<T>(
 export function CoachAI({
   onProposal,
   version,
+  state,
+  onWeek,
+  onSettings,
 }: {
   onProposal: (p: Proposal) => void;
   version: number;
+  state: State;
+  onWeek: () => void;
+  onSettings: () => void;
 }) {
   const [configured, setConfigured] = useState<boolean | null>(null),
     [messages, setMessages] = useState<Message[]>([]),
@@ -101,6 +108,13 @@ export function CoachAI({
         }).catch(() => {});
     };
   }, []);
+  const [card,setCard] = useState<"chart"|"week"|null>(null);
+  function showRequested(message:string) {
+    if (/\b(chart|graph|plot)\b/i.test(message)) { setCard("chart"); return "Here is your sample running distance by calendar week. This is recorded distance, not a fitness or recovery score."; }
+    if (/^(show|view|open) (me )?(my |the )?(week|plan|schedule)[.!?]*$/i.test(message.trim())) { setCard("week"); return "Here is your sample week. Nothing has been changed."; }
+    if (/\b(create|make|generate)\b.*\bposter\b/i.test(message)) { void generateImage(); return "I’m creating a poster from the sample running totals. It may take up to three minutes."; }
+    return null;
+  }
   function receive(answer: Answer) {
     setMessages((m) =>
       [...m, { role: "assistant", content: answer.message }].slice(-12),
@@ -116,6 +130,8 @@ export function CoachAI({
     setBusy(true);
     setError("");
     setMessages((m) => [...m, { role: "user", content: message }].slice(-12));
+    const local = showRequested(message);
+    if(local) { receive({message:local}); setBusy(false); return; }
     abort.current = new AbortController();
     try {
       receive(
@@ -240,6 +256,8 @@ export function CoachAI({
             answerBack("I did not catch that. Please repeat your question.");
             return;
           }
+          const local=showRequested(message);
+          if(local) { receive({message:local}); answerBack(local); return; }
           delegateBusy.current = true;
           voiceAbort.current = new AbortController();
           setMessages((m) =>
@@ -344,11 +362,11 @@ export function CoachAI({
     <>
       <section className="conversation ai-coach">
         <div className="section-heading">
-          <h3>What’s on your mind?</h3>
+          <h1>Let’s talk running.</h1>
           <span>{configured ? "AI coach" : "AI setup"}</span>
         </div>
         <p>
-          Talk through your sample week. Any adjustment is yours to approve.
+          Tell me how you’re feeling, or what you have time for. We’ll work out the next step together.
         </p>
         {configured === false && (
           <p role="status">
@@ -369,37 +387,16 @@ export function CoachAI({
             Review adjustment
           </button>
         )}
-        <form onSubmit={ask}>
-          <input
-            aria-label="Ask about your sample plan"
-            maxLength={2000}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="I only have 20 minutes for my next run…"
-            disabled={!configured || busy || voice !== "off"}
-          />
-          <button
-            aria-label="Send message"
-            disabled={!configured || busy || !text.trim() || voice !== "off"}
-          >
-            <Send size={18} />
-          </button>
-        </form>
-        {busy && (
-          <div className="voice-note" role="status">
-            Checking your sample week…{" "}
-            <button onClick={() => abort.current?.abort()}>Stop waiting</button>
-          </div>
-        )}
-        {error && (
-          <p className="ai-error" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="ai-actions">
+        {card && <section className="chat-attachment" aria-label={card==="chart"?"Running chart":"Sample week"}>
+          <button className="text-button" onClick={()=>setCard(null)}>Close {card==="chart"?"chart":"plan"}</button>
+          {card==="chart"?<RunningChart state={state}/>:<><h3>Your sample week</h3>{state.days.map(day=><p key={day.id}><strong>{day.date}</strong> · {day.title} · {day.minutes} min{day.completed?" · Completed":""}</p>)}<button className="secondary" onClick={onWeek}>Review or adjust my week</button></>}
+        </section>}
+        {reminderProposal && <div className="inline-reminder"><ReminderPanel proposal={reminderProposal} reviewOnly/><button className="text-button" onClick={onSettings}>Manage connections in Settings</button></div>}
+        <div className="coach-composer">
+        <div className="ai-actions voice-primary">
           {voice === "off" ? (
             <button
-              className="secondary"
+              className="primary"
               disabled={!configured || busy}
               onClick={() => void startVoice()}
             >
@@ -427,24 +424,49 @@ export function CoachAI({
               </span>
             </>
           )}
-          <button
-            className="secondary"
-            disabled={!configured || imageBusy}
-            onClick={() => void generateImage()}
-          >
-            <ImagePlus size={16} />
-            {imageBusy ? "Crafting your poster. Allow up to 3 minutes…" : "Create a running poster"}
-          </button>
         </div>
+        {!messages.length && <div className="conversation-starters">
+          {["I only have 20 minutes", "Show my week", "Show a distance chart"].map(prompt=><button key={prompt} onClick={()=>setText(prompt)}>{prompt}</button>)}
+        </div>}
+        <form onSubmit={ask}>
+          <input
+            aria-label="Ask about your sample plan"
+            maxLength={2000}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="I only have 20 minutes for my next run…"
+            disabled={!configured || busy || voice !== "off"}
+          />
+          <button
+            aria-label="Send message"
+            disabled={!configured || busy || !text.trim() || voice !== "off"}
+          >
+            <Send size={18} />
+          </button>
+        </form>
+        </div>
+        {imageBusy && <p role="status">Creating your running poster. Allow up to three minutes.</p>}
+        {busy && (
+          <div className="voice-note" role="status">
+            Checking your sample week…{" "}
+            <button onClick={() => abort.current?.abort()}>Stop waiting</button>
+          </div>
+        )}
+        {error && (
+          <p className="ai-error" role="alert">
+            {error}
+          </p>
+        )}
         <audio ref={audio} autoPlay controls hidden={voice === "off"} />
         {voice !== "off" && caption && (
           <p className="voice-caption">You: {caption}</p>
         )}
-        <p className="footnote">
+        <details className="coach-privacy"><summary>About this preview and your privacy</summary><p className="footnote">
           AI-generated replies and voice. Sample plan and messages are sent to
           OpenAI when you ask. Voice uses your microphone only during a call,
           limited to three minutes. No real Strava or weather connection yet.
         </p>
+        </details>
         {art && (
           <figure className="generated-art">
             <img
@@ -464,7 +486,7 @@ export function CoachAI({
           </figure>
         )}
       </section>
-      <ReminderPanel proposal={reminderProposal} />
+
     </>
   );
 }

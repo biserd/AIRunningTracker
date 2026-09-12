@@ -23,6 +23,7 @@ try {
   await page.setViewport({ width: 390, height: 844 });
   await page.goto(base + "/preview");
   await page.locator("::-p-text(Explore the coach preview)").click();
+  await page.click('button[aria-label="Settings"]');
   await page.waitForSelector(".reminder-form");
   const before = await mailFiles();
   await page
@@ -62,6 +63,8 @@ try {
     "::-p-text(Reminder scheduled. You can close this page.)",
   );
   await page.reload();
+  await page.waitForSelector('button[aria-label="Settings"]');
+  await page.click('button[aria-label="Settings"]');
   await page.waitForSelector(".reminder-list");
   assert(await page.$("::-p-text(Prepare my running kit)"));
   await page.locator("::-p-text(Cancel reminder)").click();

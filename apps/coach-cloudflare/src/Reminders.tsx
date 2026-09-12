@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Bell, Mail } from "lucide-react";
-import { WhatsAppPanel, type WhatsAppStatus } from './WhatsApp';
+import { WhatsAppPanel, whatsappCall, type WhatsAppStatus } from './WhatsApp';
 import type { ReminderProposal } from "../shared/reminders";
 type Item = {
   channel: 'email'|'whatsapp';
@@ -45,7 +45,7 @@ const labels: Record<string, string> = {
   cancelled: "Cancelled",
   expired: "Expired without sending",
 };
-export function ReminderPanel({ proposal }: { proposal?: ReminderProposal }) {
+export function ReminderPanel({ proposal, reviewOnly=false }: { proposal?: ReminderProposal; reviewOnly?:boolean }) {
   const [whatsapp,setWhatsapp]=useState<WhatsAppStatus>();
   const [channel,setChannel]=useState<'email'|'whatsapp'>('email');
   const [data, setData] = useState<Status>(),
@@ -65,6 +65,7 @@ export function ReminderPanel({ proposal }: { proposal?: ReminderProposal }) {
   async function refresh() {
     const result = await call<Status>();
     setData(result);
+    if(reviewOnly) setWhatsapp(await whatsappCall<WhatsAppStatus>());
     if (result.timezone) setZone(result.timezone);
   }
   useEffect(() => {
@@ -92,7 +93,8 @@ export function ReminderPanel({ proposal }: { proposal?: ReminderProposal }) {
     }
   }
   return (
-    <section className="reminder-panel" aria-label="Email reminders">
+    <section className={"reminder-panel"+(reviewOnly?' review-only':'')} aria-label="Email reminders">
+      {!reviewOnly && <>
       <div className="section-heading">
         <h3>
           <Bell size={18} /> A nudge when you need it
@@ -232,6 +234,7 @@ export function ReminderPanel({ proposal }: { proposal?: ReminderProposal }) {
           </button>
         </>
       )}
+      </>}
       {review && (
         <div
           className="reminder-review"
@@ -311,7 +314,7 @@ export function ReminderPanel({ proposal }: { proposal?: ReminderProposal }) {
           </button>
         </div>
       )}
-      {!!data?.reminders.length && (
+      {!reviewOnly && !!data?.reminders.length && (
         <ul className="reminder-list">
           {data.reminders.map((item) => (
             <li key={item.id}>
@@ -364,7 +367,7 @@ export function ReminderPanel({ proposal }: { proposal?: ReminderProposal }) {
         </p>
       )}
       {message && <p role="status">{message}</p>}
-      <p className="footnote">
+      {!reviewOnly && <p className="footnote">
         Reminders stop when this seven-day preview expires
         {data?.expiresAt
           ? ` (${new Date(data.expiresAt * 1000).toLocaleString()})`
@@ -372,7 +375,7 @@ export function ReminderPanel({ proposal }: { proposal?: ReminderProposal }) {
         . Verification connects only this browser’s reminder inbox, not your
         AITracker account. Delivery is checked every minute and may be delayed.
         Recurring reminders are not available yet.
-      </p>
+      </p>}
     </section>
   );
 }
