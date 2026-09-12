@@ -158,8 +158,7 @@ function App() {
           <div className="preview-note">
             <Info size={16} />
             <span>
-              Sample training data. Changes are saved only to your private
-              preview, never your AITracker account.
+              Sample data. Your real AITracker account stays unchanged.
             </span>
           </div>
           {loading ? (
@@ -379,7 +378,7 @@ function App() {
               )}
               {tab === "Settings" && (
                 <section className="settings-card">
-                  <h2>Your connections and preferences</h2>
+                  <h2>Connections & reminders</h2>
                   <ReminderPanel />
                   <p>
                     This preview uses Cloudflare Workers for its API and D1 for

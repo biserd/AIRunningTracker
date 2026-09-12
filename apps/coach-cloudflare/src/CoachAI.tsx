@@ -366,7 +366,7 @@ export function CoachAI({
           <span>{configured ? "AI coach" : "AI setup"}</span>
         </div>
         <p>
-          Tell me how you’re feeling, or what you have time for. We’ll work out the next step together.
+          How are you feeling today?
         </p>
         {configured === false && (
           <p role="status">
@@ -374,6 +374,12 @@ export function CoachAI({
             You can still explore and adjust the sample week.
           </p>
         )}
+        <nav className="coach-shortcuts" aria-label="Coach tools">
+          <button onClick={onWeek}>My schedule</button>
+          <button disabled={!configured || imageBusy || busy} onClick={()=>void generateImage()}>{imageBusy ? "Creating poster…" : "Create a poster"}</button>
+          <button onClick={onSettings}>Connect WhatsApp</button>
+          <button onClick={onSettings}>Reminders</button>
+        </nav>
         <div className="chat-history" aria-live="polite" aria-busy={busy}>
           {messages.map((m, i) => (
             <div key={i} className={"chat-message " + m.role}>
@@ -425,16 +431,13 @@ export function CoachAI({
             </>
           )}
         </div>
-        {!messages.length && <div className="conversation-starters">
-          {["I only have 20 minutes", "Show my week", "Show a distance chart"].map(prompt=><button key={prompt} onClick={()=>setText(prompt)}>{prompt}</button>)}
-        </div>}
         <form onSubmit={ask}>
           <input
             aria-label="Ask about your sample plan"
             maxLength={2000}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="I only have 20 minutes for my next run…"
+            placeholder="Ask your coach…"
             disabled={!configured || busy || voice !== "off"}
           />
           <button
@@ -445,7 +448,7 @@ export function CoachAI({
           </button>
         </form>
         </div>
-        {imageBusy && <p role="status">Creating your running poster. Allow up to three minutes.</p>}
+        {imageBusy && <p role="status">Creating your poster. Up to 3 minutes.</p>}
         {busy && (
           <div className="voice-note" role="status">
             Checking your sample week…{" "}
@@ -461,7 +464,7 @@ export function CoachAI({
         {voice !== "off" && caption && (
           <p className="voice-caption">You: {caption}</p>
         )}
-        <details className="coach-privacy"><summary>About this preview and your privacy</summary><p className="footnote">
+        <details className="coach-privacy"><summary>Preview & privacy</summary><p className="footnote">
           AI-generated replies and voice. Sample plan and messages are sent to
           OpenAI when you ask. Voice uses your microphone only during a call,
           limited to three minutes. No real Strava or weather connection yet.

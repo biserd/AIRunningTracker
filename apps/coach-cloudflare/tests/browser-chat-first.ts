@@ -7,6 +7,11 @@ try {
  page.on('request',req=>{if(req.url().endsWith('/api/ai/status'))void req.respond({status:200,contentType:'application/json',body:JSON.stringify({configured:true,history:[]})});else void req.continue();});
  await page.goto((process.env.TEST_BASE_URL || 'http://127.0.0.1:8787')+'/preview');
  await page.waitForSelector('.welcome .primary');await page.click('.welcome .primary');await page.waitForSelector('.coach-composer');
+ assert.equal(await page.$$('.coach-shortcuts button').then(x=>x.length),4);
+ await page.locator('::-p-text(My schedule)').click();await page.waitForSelector('.week-full');
+ await page.locator('::-p-text(Back to coach)').click();
+ await page.locator('::-p-text(Connect WhatsApp)').click();await page.waitForSelector('.settings-card .reminder-review');
+ await page.locator('::-p-text(Back to coach)').click();
  for(const width of [1440,390]){
   await page.setViewport({width,height:850});
   assert.equal(await page.$('.sidebar'),null);assert.equal(await page.$('.recommendation'),null);
