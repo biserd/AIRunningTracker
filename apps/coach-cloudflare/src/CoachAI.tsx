@@ -3,6 +3,7 @@ import { Mic, Send, Square, ImagePlus, Download } from "lucide-react";
 import type { Proposal } from "../shared/coach";
 import type { ReminderProposal } from "../shared/reminders";
 import { ReminderPanel } from "./Reminders";
+import { renderPoster, type PosterEvidence } from "./poster";
 type Message = { role: string; content: string };
 type Answer = {
   message: string;
@@ -330,36 +331,9 @@ export function CoachAI({
     try {
       const result = await request<{
         image: string;
-        evidence: { totalRuns: number; totalKm: number };
+        evidence: PosterEvidence;
       }>("image", { id: crypto.randomUUID() });
-      // Exact labels are rendered in code, never entrusted to image-model typography.
-      const image = new Image();
-      image.src = result.image;
-      await image.decode();
-      const canvas = document.createElement("canvas");
-      canvas.width = 1024;
-      canvas.height = 1200;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Your browser could not prepare the download.");
-      ctx.drawImage(image, 0, 0, 1024, 1024);
-      ctx.fillStyle = "#f6f5ed";
-      ctx.fillRect(0, 960, 1024, 240);
-      ctx.fillStyle = "#243c30";
-      ctx.font = "bold 44px system-ui";
-      ctx.fillText("Every run adds up.", 56, 1025);
-      ctx.font = "30px system-ui";
-      ctx.fillText(
-        `${result.evidence.totalRuns} runs · ${result.evidence.totalKm} km in the sample history`,
-        56,
-        1080,
-      );
-      ctx.font = "24px system-ui";
-      ctx.fillText(
-        "AITracker · Fictional sample data · AI-generated artwork",
-        56,
-        1140,
-      );
-      setArt(canvas.toDataURL("image/png"));
+      setArt(await renderPoster(result.image, result.evidence));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Image generation failed.");
     } finally {
