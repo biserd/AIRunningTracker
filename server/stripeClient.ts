@@ -3,6 +3,7 @@
 
 import Stripe from 'stripe';
 import { isCloudflareRuntime } from './config/runtime';
+import { stripeDatabaseConfig } from './config/stripeDatabase';
 
 let connectionSettings: any;
 let cachedCredentials: { publishableKey: string; secretKey: string } | null = null;
@@ -115,10 +116,7 @@ export async function getStripeSync() {
     const secretKey = await getStripeSecretKey();
 
     stripeSync = new StripeSync({
-      poolConfig: {
-        connectionString: process.env.DATABASE_URL!,
-        max: 2,
-      },
+      poolConfig: stripeDatabaseConfig(process.env.DATABASE_URL!, isCloudflareRuntime()),
       stripeSecretKey: secretKey,
     });
   }
