@@ -1,5 +1,5 @@
 export type ProviderCheck = { name: string; status: 'pass' | 'fail' | 'unverified'; detail: string; subscriptionId?: number };
-type Credentials = { stripe: string; resend: string; openai: string; stravaClientId: string; stravaSecret: string };
+type Credentials = { stripe: string; openai: string; stravaClientId: string; stravaSecret: string };
 type JsonRecord = Record<string, unknown>;
 const record = (value: unknown): JsonRecord => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as JsonRecord : {};
 const rows = (value: unknown): JsonRecord[] => Array.isArray(value) ? value.map(record) : [];
@@ -23,11 +23,6 @@ export async function providerChecks(credentials: Credentials, send: typeof fetc
     const data = new Uint8Array(length); let offset = 0;
     for (const chunk of chunks) { data.set(chunk, offset); offset += chunk.length; }
     if (!response.ok) {
-      if (new URL(url).hostname === 'api.resend.com' && response.status === 401) {
-        try {
-          if (record(JSON.parse(new TextDecoder().decode(data))).name === 'restricted_api_key') throw new Error('SENDING_ONLY');
-        } catch (error) { if (error instanceof Error && error.message === 'SENDING_ONLY') throw error; }
-      }
       throw new Error(`HTTP_${response.status}`);
     }
     return JSON.parse(new TextDecoder().decode(data));
@@ -66,11 +61,6 @@ export async function providerChecks(credentials: Credentials, send: typeof fetc
       const match = subscriptions.find(r => r.callback_url === 'https://aitracker.run/api/strava/webhook' && Number.isSafeInteger(r.id));
       return match ? { name: 'Strava subscription', status: 'pass', detail: 'Existing subscription targets the main domain', subscriptionId: Number(match.id) }
         : { name: 'Strava subscription', status: 'fail', detail: 'No subscription matches the production callback' };
-    }),
-    check('Resend domain', Boolean(credentials.resend), async () => {
-      const result = record(await read('https://api.resend.com/domains?limit=100', credentials.resend));
-      const valid = rows(result.data).some(r => r.name === 'aitracker.run' && r.status === 'verified');
-      return { name: 'Resend domain', status: valid ? 'pass' : 'unverified', detail: valid ? 'Sender domain verified; this check sends no email' : 'Verified sender domain not found with this key' };
     }),
     check('OpenAI access', Boolean(credentials.openai), async () => {
       const result = record(await read('https://api.openai.com/v1/models', credentials.openai));

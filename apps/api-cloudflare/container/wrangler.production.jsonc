@@ -16,6 +16,8 @@
   "r2_buckets": [{ "binding": "PUBLIC_ASSETS", "bucket_name": "aitracker-main-assets" }],
   "ratelimits": [{ "name": "UPLOAD_LIMITER", "namespace_id": "1002", "simple": { "limit": 30, "period": 60 } }],
   "vars": {
+    "CLOUDFLARE_EMAIL_ACCOUNT_ID": "73d71a2bef58f7469ecb48e2b8e84c0e",
+    "EMAIL_FROM": "RunAnalytics <hello@aitracker.run>",
     "APP_ROLE": "jobs",
     "HERMES_MCP_CLIENT_ID": "ra_mcp_client_L0o4CkpSbZeZ8xlI4MyQeNXh",
     "TELEGRAM_BOT_USERNAME": "hermes_3njyz3nxuousjmh2_bot",
@@ -24,7 +26,7 @@
   "secrets": { "required": ["DATABASE_URL","JWT_SIGNING_SECRET","EMAIL_UNSUBSCRIBE_SIGNING_SECRET_V2",
     "MARKETING_LINK_SIGNING_SECRET","MCP_TOKEN_HASH_SECRET","CHANNEL_IDENTITY_HASH_SECRET",
     "COACH_BINDING_CALLBACK_SECRET","COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2","COACH_AGENT_WEBHOOK_URL",
-    "OPENAI_API_KEY","RESEND_API_KEY","RESEND_FROM_EMAIL","RESEND_WEBHOOK_SECRET","STRAVA_CLIENT_SECRET",
+    "OPENAI_API_KEY","CLOUDFLARE_EMAIL_API_TOKEN","STRAVA_CLIENT_SECRET",
     "VITE_STRAVA_CLIENT_ID","STRIPE_SECRET_KEY","VITE_STRIPE_PUBLIC_KEY","STRAVA_SUBSCRIPTION_ID"] },
   // Promote the tested staging image by immutable digest. Update only after its staging checks pass.
   "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:dc6add197a6dd6489662f491f3579278ce4c582965fe74955c94bbb6da9d1e53",

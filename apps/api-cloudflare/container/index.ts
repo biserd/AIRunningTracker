@@ -36,9 +36,9 @@ export default {
         inspect: session => new RunnerReads(env.HYPERDRIVE).migrationReadiness(session),
         limit: async key => (await env.AUTH_LIMITER.limit({ key })).success,
         // The single approved delivery test was received. No further test sends are enabled.
-        providers: async () => [...await providerChecks({ stripe: env.CUTOVER_STRIPE_SECRET_KEY, resend: env.CUTOVER_RESEND_API_KEY,
+        providers: async () => [...await providerChecks({ stripe: env.CUTOVER_STRIPE_SECRET_KEY,
           openai: env.CUTOVER_OPENAI_API_KEY, stravaClientId: env.CUTOVER_VITE_STRAVA_CLIENT_ID, stravaSecret: env.CUTOVER_STRAVA_CLIENT_SECRET }),
-          ...await productionChecks(request => env.PRODUCTION.fetch(request),env.CUTOVER_RESEND_WEBHOOK_SECRET)] });
+          ...await productionChecks(request => env.PRODUCTION.fetch(request))] });
       if (readiness) return readiness;
       const auth = await magicLinks(request, {
         database: env.AUTH_DB, signingSecret: env.JWT_SIGNING_SECRET,

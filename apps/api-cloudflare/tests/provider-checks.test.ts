@@ -18,7 +18,7 @@ test('provider preflight is GET-only, bounded, and returns no credentials or ups
     return Response.json({object:'list',data:[{id:'internal-model-name'}]});
   };
   const result = await providerChecks(keys, send);
-  assert.equal(calls.length, 6);
+  assert.equal(calls.length, 5);
   assert.ok(result.every(check => check.status === 'pass'));
   for (const secret of [...Object.values(keys), 'never-return', 'internal-model-name']) assert.ok(!JSON.stringify(result).includes(secret) || secret === '123');
 });
@@ -29,6 +29,6 @@ test('provider errors, oversized responses and missing keys never pass', async (
   const oversized = await providerChecks(keys, async () => new Response('x'.repeat(512_001)));
   assert.ok(oversized.every(check => check.status === 'unverified'));
   let calls = 0;
-  const missing = await providerChecks({stripe:'',resend:'',openai:'',stravaClientId:'',stravaSecret:''}, async () => {calls++; return Response.json({});});
+  const missing = await providerChecks({stripe:'',openai:'',stravaClientId:'',stravaSecret:''}, async () => {calls++; return Response.json({});});
   assert.equal(calls,0); assert.ok(missing.every(check => check.status === 'fail'));
 });

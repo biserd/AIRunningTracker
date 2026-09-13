@@ -1,4 +1,4 @@
-import { Resend } from "resend";
+import { CloudflareEmailTransport } from "../server/services/cloudflareEmail";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { eq, and } from "drizzle-orm";
@@ -10,8 +10,9 @@ const isTest = process.argv.includes("--test");
 const sql = neon(process.env.DATABASE_URL!);
 const db = drizzle({ client: sql, schema });
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const fromEmail = "Biser from RunAnalytics <noreply@aitracker.run>";
+const transport = new CloudflareEmailTransport({ accountId: process.env.CLOUDFLARE_EMAIL_ACCOUNT_ID,
+  token: process.env.CLOUDFLARE_EMAIL_API_TOKEN, from: fromEmail });
 
 const subject = "RunAnalytics product update: Ultra plans, dual goals, Coach chat + Strava email cadence";
 
@@ -65,15 +66,14 @@ const htmlBody = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'S
 
 async function sendEmail(to: string): Promise<boolean> {
   try {
-    await resend.emails.send({
-      from: fromEmail,
+    const result = await transport.send({
       to,
       replyTo: ADMIN_EMAIL,
       subject: isTest ? `[TEST] ${subject}` : subject,
       html: htmlBody,
       text: textBody,
     });
-    return true;
+    return result.success;
   } catch (error) {
     console.error(`  Failed to send to ${to}:`, error);
     return false;

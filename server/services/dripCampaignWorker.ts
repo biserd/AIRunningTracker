@@ -27,9 +27,10 @@ class DripCampaignWorker {
   private readiness() {
     const checks = {
       marketingLinkSecret: Boolean(process.env.MARKETING_LINK_SIGNING_SECRET && process.env.MARKETING_LINK_SIGNING_SECRET.length >= 32),
-      resendApiKey: Boolean(process.env.RESEND_API_KEY),
-      resendWebhookSecret: Boolean(process.env.RESEND_WEBHOOK_SECRET),
-      fromEmail: Boolean(process.env.RESEND_FROM_EMAIL),
+      emailProvider: emailService.isConfigured(),
+      // Fail closed until asynchronous Cloudflare delivery feedback is integrated.
+      deliveryFeedback: false,
+      fromEmail: Boolean(process.env.EMAIL_FROM),
     };
     return { ready: Object.values(checks).every(Boolean), checks };
   }
@@ -96,6 +97,7 @@ class DripCampaignWorker {
         console.log("[DripWorker] Dry-run active. Eligibility reconciled, delivery skipped.");
         return;
       }
+      if (!this.readiness().ready) return;
       const jobs = await storage.claimPendingEmailJobs(Math.min(MAX_JOBS_PER_RUN, this.hourlyLimit - this.sendsThisHour), this.workerId);
       
       if (jobs.length === 0) {

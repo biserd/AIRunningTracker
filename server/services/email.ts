@@ -1,6 +1,4 @@
-// Custom Resend email service
-// Uses RESEND_API_KEY secret and RESEND_FROM_EMAIL environment variable
-import { Resend } from 'resend';
+import { CloudflareEmailTransport } from './cloudflareEmail';
 
 interface EmailOptions {
   to: string;
@@ -13,23 +11,20 @@ interface EmailOptions {
 export interface EmailDeliveryResult { success: boolean; providerMessageId?: string; error?: string; }
 
 class EmailService {
-  private resend: Resend | null = null;
+  private transport: CloudflareEmailTransport;
   private fromEmail: string;
 
   constructor() {
-    const apiKey = process.env.RESEND_API_KEY;
-    this.fromEmail = process.env.RESEND_FROM_EMAIL || 'RunAnalytics <noreply@aitracker.run>';
-    
-    if (apiKey) {
-      this.resend = new Resend(apiKey);
-      console.log('📧 Resend email service initialized');
-    } else {
-      console.log('📧 RESEND_API_KEY not configured - emails will be logged only');
-    }
+    this.fromEmail = process.env.EMAIL_FROM || 'RunAnalytics <hello@aitracker.run>';
+    this.transport = new CloudflareEmailTransport({
+      accountId: process.env.CLOUDFLARE_EMAIL_ACCOUNT_ID,
+      token: process.env.CLOUDFLARE_EMAIL_API_TOKEN,
+      from: this.fromEmail,
+    });
   }
 
   isConfigured(): boolean {
-    return this.resend !== null;
+    return this.transport.isConfigured();
   }
 
   async sendEmail(options: EmailOptions, retries: number = 3): Promise<boolean> {
@@ -37,57 +32,7 @@ class EmailService {
   }
 
   async sendEmailDetailed(options: EmailOptions, retries: number = 3): Promise<EmailDeliveryResult> {
-    if (!this.resend) {
-      console.log('📧 Resend not configured - would send:', options.subject, 'to:', options.to);
-      return { success: false, error: "resend_not_configured" };
-    }
-
-    const isRateLimit = (err: any): boolean =>
-      err?.statusCode === 429 ||
-      err?.name === 'rate_limit_exceeded' ||
-      /rate.?limit|too many requests/i.test(err?.message || '');
-
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      try {
-        // Resend returns { data, error } and does NOT throw on most API
-        // errors (incl. 429 rate limits), so we must inspect `error`
-        // explicitly: otherwise a dropped email looks like a success.
-        const { data, error } = await this.resend.emails.send({
-          from: this.fromEmail,
-          to: options.to,
-          subject: options.subject,
-          html: options.html,
-          text: options.text,
-          headers: options.headers,
-        });
-
-        if (error) {
-          if (isRateLimit(error) && attempt < retries) {
-            const backoff = 1000 * attempt;
-            console.warn(`📧 Rate limited sending to ${options.to} (attempt ${attempt}/${retries}); retrying in ${backoff}ms`);
-            await new Promise(resolve => setTimeout(resolve, backoff));
-            continue;
-          }
-          console.error('📧 Email send returned error:', error);
-          return { success: false, error: error.message || "provider_error" };
-        }
-
-        console.log(`📧 Email sent successfully: ${options.subject} to ${options.to} (id: ${data?.id ?? 'n/a'})`);
-        return { success: true, providerMessageId: data?.id };
-      } catch (error: any) {
-        if (isRateLimit(error) && attempt < retries) {
-          const backoff = 1000 * attempt;
-          console.warn(`📧 Rate limited (threw) sending to ${options.to} (attempt ${attempt}/${retries}); retrying in ${backoff}ms`);
-          await new Promise(resolve => setTimeout(resolve, backoff));
-          continue;
-        }
-        console.error('📧 Email sending failed:', error);
-        return { success: false, error: error?.message || "provider_exception" };
-      }
-    }
-
-    console.error(`📧 Email to ${options.to} failed after ${retries} attempts (rate limited)`);
-    return { success: false, error: "rate_limit_retries_exhausted" };
+    return this.transport.send(options, retries);
   }
 
   async sendWaitlistNotification(email: string): Promise<void> {
