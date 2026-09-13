@@ -34,7 +34,17 @@ export default {
       if (uploaded) return uploaded;
       // One stable application instance preserves the existing process-local caches and SSE streams.
       // The database leadership lock prevents overlapping deployments from running timers twice.
-      return await container.fetch(request);
+      const upstream = await container.fetch(request);
+      const failure = upstream.headers.get('X-AITracker-Webhook-Failure');
+      if (failure) {
+        const allowed = ['managed_webhook_missing','signature_rejected','database_tls','database_connection',
+          'database_42P01','database_42703','database_42501','database_25006','stripe_account_read','processing_failed'];
+        console.error(JSON.stringify({event:'stripe_webhook_failed',failure:allowed.includes(failure) ? failure : 'processing_failed'}));
+        const response = new Response(upstream.body,upstream);
+        response.headers.delete('X-AITracker-Webhook-Failure');
+        return response;
+      }
+      return upstream;
     } catch {
       console.error(JSON.stringify({event:'production_request_failed'}));
       return Response.json({error:'Service temporarily unavailable'},{status:503,headers:{'Retry-After':'10'}});

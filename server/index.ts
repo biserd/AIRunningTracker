@@ -8,6 +8,7 @@ import { WebhookHandlers } from './webhookHandlers';
 import { assertProductionSecurityConfiguration } from './config/security';
 import { handleResendWebhook } from './services/resendWebhook';
 import { isCloudflareRuntime, isMigrationStaging } from './config/runtime';
+import { stripeWebhookFailure } from './config/stripeWebhookDiagnostics';
 
 // Refuse to serve production traffic with known/default authentication keys.
 assertProductionSecurityConfiguration();
@@ -64,7 +65,10 @@ app.post(
       await WebhookHandlers.processWebhook(req.body as Buffer, sig, uuid);
       res.status(200).json({ received: true });
     } catch (error: any) {
-      console.error('Webhook error:', error.message);
+      const failure = stripeWebhookFailure(error);
+      console.error(JSON.stringify({ event: 'stripe_webhook_failed', failure }));
+      // The trusted Cloudflare edge records this classification, then strips it.
+      if (isCloudflareRuntime()) res.setHeader('X-AITracker-Webhook-Failure', failure);
       res.status(400).json({ error: 'Webhook processing error' });
     }
   }
