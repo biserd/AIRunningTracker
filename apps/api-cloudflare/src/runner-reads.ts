@@ -65,7 +65,14 @@ export class RunnerReads {
         FROM pg_constraint WHERE conrelid=to_regclass('public.cloudflare_jobs') ORDER BY contype, conname LIMIT 16`);
       const indexes = await client.query(`SELECT pg_get_indexdef(indexrelid) AS definition, indisvalid AS valid, indisready AS ready
         FROM pg_index WHERE indrelid=to_regclass('public.cloudflare_jobs') ORDER BY indexrelid LIMIT 16`);
+      const leaders = await client.query(`SELECT count(*)::int AS count FROM pg_locks
+        WHERE locktype='advisory' AND classid=1296126535 AND objid=1 AND objsubid=2 AND granted
+        AND database=(SELECT oid FROM pg_database WHERE datname=current_database())`);
+      const queue = state.rows[0]?.queueTable === true
+        ? await client.query(`SELECT status, count(*)::int AS count FROM public.cloudflare_jobs GROUP BY status ORDER BY status LIMIT 8`)
+        : { rows: [] };
       return { queueTable: state.rows[0]?.queueTable === true, queueSchema: { columns: columns.rows, constraints: constraints.rows, indexes: indexes.rows }, pushKeys: state.rows[0]?.pushKeys === true,
+        schedulerLeaders: leaders.rows[0]?.count ?? null, queueCounts: queue.rows,
         campaignsEnabled: state.rows[0]?.campaignsEnabled === true };
     });
   }

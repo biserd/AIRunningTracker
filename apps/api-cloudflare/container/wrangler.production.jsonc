@@ -7,12 +7,16 @@
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
   "preview_urls": false,
-  "routes": [],
-  "triggers": { "crons": [] },
+  // Existing production sessions passed the initial auth-only canary.
+  "routes": [
+    { "pattern": "aitracker.run/*", "zone_name": "aitracker.run" },
+    { "pattern": "www.aitracker.run/*", "zone_name": "aitracker.run" }
+  ],
+  "triggers": { "crons": ["* * * * *"] },
   "r2_buckets": [{ "binding": "PUBLIC_ASSETS", "bucket_name": "aitracker-main-assets" }],
   "ratelimits": [{ "name": "UPLOAD_LIMITER", "namespace_id": "1002", "simple": { "limit": 30, "period": 60 } }],
   "vars": {
-    "APP_ROLE": "web",
+    "APP_ROLE": "jobs",
     "HERMES_MCP_CLIENT_ID": "ra_mcp_client_L0o4CkpSbZeZ8xlI4MyQeNXh",
     "TELEGRAM_BOT_USERNAME": "hermes_3njyz3nxuousjmh2_bot",
     "ALLOWED_PRICE_IDS": "price_1SbtcfRwvWaTf8xfSEO4iKnc,price_1SbtcfRwvWaTf8xfwcVnrRf8"

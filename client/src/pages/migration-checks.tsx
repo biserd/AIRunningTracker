@@ -1,11 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { isReadOnlyStaging } from '@/lib/runtime';
-import { useState } from 'react';
-import { apiRequest } from '@/lib/queryClient';
 type Readiness = { checkedAt: string; database: { queueTable: boolean; pushKeys: boolean; campaignsEnabled: boolean;
+  schedulerLeaders?: number | null; queueCounts?: {status:string;count:number}[];
   queueSchema?: { columns: {name:string;type:string;nullable:string;default:string|null}[]; constraints:{type:string;definition:string;validated:boolean}[]; indexes:{definition:string;valid:boolean;ready:boolean}[] } }; providers?: {name:string;status:string;detail:string;subscriptionId?:number}[]; remaining: string[] };
 export default function MigrationChecks() {
-  const [emailResult,setEmailResult] = useState('');
   const check = useQuery<Readiness>({ queryKey: ['/api/admin/migration/readiness'], enabled: isReadOnlyStaging, staleTime: 0 });
   if (!isReadOnlyStaging) return <p>Not available.</p>;
   return <main className="mx-auto max-w-2xl p-6 space-y-5">
@@ -14,20 +12,16 @@ export default function MigrationChecks() {
     {check.isPending && <p>Checking database readiness…</p>}
     {check.isError && <p role="alert">Unable to load checks. Sign in with an admin account and try again.</p>}
     {check.data && <>
-      <h2 className="text-xl font-semibold">Cutover is not yet verified</h2>
+      <h2 className="text-xl font-semibold">Post-cutover checks</h2>
       <ul className="list-disc pl-5 space-y-2">
-        <li>Durable queue table: {check.data.database.queueTable ? 'Present; execution still needs validation' : 'Missing; apply the queue SQL migration'}</li>
+        <li>Durable queue table: {check.data.database.queueTable ? 'Present' : 'Missing; apply the queue SQL migration'}</li>
+        <li>Active scheduler database leases: {check.data.database.schedulerLeaders ?? 'Not measured'} (expected: 1)</li>
+        {check.data.database.queueCounts?.map(row => <li key={row.status}>Queue {row.status}: {row.count}</li>)}
         <li>Existing push keys: {check.data.database.pushKeys ? 'Present' : 'Not found'}</li>
         <li>Marketing campaigns: {check.data.database.campaignsEnabled ? 'Enabled in database' : 'Disabled in database'}</li>
       </ul>
       <h2 className="text-xl font-semibold">Live provider reads</h2>
-      <p>Approved exception: one test email to biserd@gmail.com. No campaigns or runner records change.</p>
-      <button className="border rounded px-4 py-2" disabled={Boolean(emailResult)} onClick={async()=>{
-        setEmailResult('Sending approved test…');
-        try { const result=await apiRequest('/api/admin/migration/test-email','POST'); setEmailResult(result.message); }
-        catch { setEmailResult('Test not confirmed. Inspect delivery before retrying.'); }
-      }}>Send approved email test</button>
-      {emailResult && <p role="status">{emailResult}</p>}
+      <p>The approved email test was received. Further test sends are disabled.</p>
       <ul className="list-disc pl-5 space-y-2">{check.data.providers?.map(p => <li key={p.name}>{p.name}: {p.status}. {p.detail}{p.subscriptionId && ` (Subscription ${p.subscriptionId})`}</li>)}</ul>
       {check.data.database.queueSchema && <details><summary className="cursor-pointer font-semibold">Queue schema evidence</summary>
         <pre className="overflow-auto whitespace-pre-wrap text-xs mt-3">{JSON.stringify(check.data.database.queueSchema,null,2)}</pre>

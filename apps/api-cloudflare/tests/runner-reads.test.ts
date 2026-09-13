@@ -28,6 +28,20 @@ function fixture(rows: Record<string, unknown>[] = [], fail = false) {
   return { store, queries, close };
 }
 
+test('scheduler diagnostics require current admin ownership and only issue bounded reads', async () => {
+  const denied = fixture([{ is_admin: false }]);
+  await assert.rejects(denied.store.migrationReadiness(await session()), /FORBIDDEN/);
+  assert.equal(denied.queries.filter(q => q.sql.startsWith('SELECT')).length, 1);
+  assert.deepEqual(denied.queries.find(q => q.sql.startsWith('SELECT'))!.params, [42]);
+  const allowed = fixture([{ is_admin: true, queueTable: true, count: 1 }]);
+  const state = await allowed.store.migrationReadiness(await session());
+  assert.equal(state.schedulerLeaders, 1);
+  assert.ok(allowed.queries.some(q => /FROM pg_locks/.test(q.sql) && /classid=1296126535 AND objid=1/.test(q.sql)));
+  assert.ok(allowed.queries.some(q => /GROUP BY status ORDER BY status LIMIT 8/.test(q.sql)));
+  assert.ok(allowed.queries.every(q => /^(SELECT|BEGIN READ ONLY|SET LOCAL|ROLLBACK)/.test(q.sql)));
+  assert.equal(allowed.close.mock.callCount(), 1);
+});
+
 test('profile query selects an explicit safe projection and verified identity', async () => {
   const f = fixture([{ id: 42 }]);
   assert.deepEqual(await f.store.profile(await session()), { id: 42 });

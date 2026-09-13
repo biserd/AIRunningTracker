@@ -35,13 +35,7 @@ export default {
       const readiness = await migrationReadiness(request, { signingSecret: env.JWT_SIGNING_SECRET,
         inspect: session => new RunnerReads(env.HYPERDRIVE).migrationReadiness(session),
         limit: async key => (await env.AUTH_LIMITER.limit({ key })).success,
-        testEmail: async () => {
-          const sent = await fetch('https://api.resend.com/emails', {method:'POST',redirect:'manual',signal:AbortSignal.timeout(10_000),
-            headers:{Authorization:`Bearer ${env.CUTOVER_RESEND_API_KEY}`,'Content-Type':'application/json','Idempotency-Key':'aitracker-cloudflare-migration-test-20260913'},
-            body:JSON.stringify({from:'RunAnalytics <hello@aitracker.run>',to:['biserd@gmail.com'],subject:'AITracker Cloudflare migration: email delivery test',
-              text:'This is the single email delivery test you approved for the Cloudflare migration. No campaigns were enabled and no other runners were emailed. Please confirm receipt in the migration task.'})});
-          await sent.body?.cancel(); return sent.ok;
-        },
+        // The single approved delivery test was received. No further test sends are enabled.
         providers: async () => [...await providerChecks({ stripe: env.CUTOVER_STRIPE_SECRET_KEY, resend: env.CUTOVER_RESEND_API_KEY,
           openai: env.CUTOVER_OPENAI_API_KEY, stravaClientId: env.CUTOVER_VITE_STRAVA_CLIENT_ID, stravaSecret: env.CUTOVER_STRAVA_CLIENT_SECRET }),
           ...await productionChecks(request => env.PRODUCTION.fetch(request),env.CUTOVER_RESEND_WEBHOOK_SECRET)] });

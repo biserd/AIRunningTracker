@@ -1,5 +1,15 @@
 # Production migration on codex/cloudflare-coach
 
+## Current cutover status
+
+Production traffic and background-job ownership moved to Cloudflare on September
+13, 2026. Replit is paused, retained for rollback, and still billable. See the
+[current cutover record](CLOUDFLARE_CUTOVER_20260913.md) for verified evidence and
+remaining validation. The initial migration notes below are historical and do
+not describe the current deployment.
+
+## Historical planning record
+
 ## Decision and current status
 
 Use `codex/cloudflare-coach` as the single migration branch. GitHub main at

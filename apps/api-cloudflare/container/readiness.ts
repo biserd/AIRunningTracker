@@ -26,8 +26,8 @@ export async function migrationReadiness(request: Request, deps: Dependencies): 
     }
     const providers = deps.providers ? await deps.providers() : [];
     return reply({ checkedAt: new Date().toISOString(), environment: 'staging', cutoverReady: false, database: state,
-      providers, remaining: ['Signed webhook and delivery round trips', 'Production scheduler failover validation',
-        'Replit queue drain and scheduler shutdown', 'Production deployment, traffic switch and live smoke tests'] });
+      providers, remaining: ['Controlled Stripe billing and Hermes delivery round trips', 'Production scheduler failover rehearsal',
+        'Observation window and backup restore rehearsal before permanently retiring Replit'] });
   } catch (error) {
     return reply({ error: error instanceof Error && error.message === 'FORBIDDEN' ? 'Admin access required' : 'Readiness check unavailable' },
       error instanceof Error && error.message === 'FORBIDDEN' ? 403 : 503);

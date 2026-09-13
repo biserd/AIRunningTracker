@@ -3,6 +3,10 @@ import { servePublicAsset } from './public-assets';
 import { privateAssets } from './private-assets';
 import { productionEnvironment } from './production-environment';
 
+// Promoted after Replit was paused. The old preflight instance has APP_ROLE=web.
+// Keep this identity stable across subsequent deployments for caches and SSE.
+const productionInstance = 'production-live';
+
 export class RunAnalyticsProduction extends Container<ProductionEnv> {
   defaultPort = 5000;
   sleepAfter = '10m';
@@ -18,7 +22,7 @@ export default {
     try {
       const asset = await servePublicAsset(request,env.PUBLIC_ASSETS);
       if (asset) return asset;
-      const container = getContainer(env.WEB,'production');
+      const container = getContainer(env.WEB,productionInstance);
       const uploaded = await privateAssets(request,env.PUBLIC_ASSETS,async () => {
         const authorization = request.headers.get('authorization');
         if (!authorization?.startsWith('Bearer ')) return null;
@@ -38,7 +42,7 @@ export default {
   },
   async scheduled(_event,env): Promise<void> {
     // Keeps the single scheduler process alive without exposing a public execution endpoint.
-    const response = await getContainer(env.WEB,'production').fetch('http://container/health');
+    const response = await getContainer(env.WEB,productionInstance).fetch('http://container/health');
     await response.body?.cancel();
     if (!response.ok) throw new Error('Production scheduler health failed');
   },

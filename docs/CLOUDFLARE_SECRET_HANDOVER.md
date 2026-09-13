@@ -87,6 +87,10 @@ R2 with ACL and checksum verification before retiring the source.
 
 ## Job ownership
 
+Current state supersedes the preflight notes below: production traffic and job
+ownership moved to Cloudflare after Replit was confirmed paused. See the
+[cutover record](CLOUDFLARE_CUTOVER_20260913.md). Marketing remains disabled.
+
 ### Private production verification, 2026-09-13
 
 The `aitracker-main` application is deployed using the tested staging image pinned
