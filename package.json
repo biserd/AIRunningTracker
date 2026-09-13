@@ -4,6 +4,11 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
+    "d1:schema": "tsx scripts/d1/generate.ts && tsx scripts/d1/generate-model.ts",
+    "d1:inspect": "tsx scripts/d1/inspect.ts",
+    "d1:import": "tsx scripts/d1/import.ts --execute-isolated-target",
+    "d1:verify": "tsx scripts/d1/verify.ts",
+    "test:d1": "tsx --test scripts/d1/*.test.ts",
     "test:entitlements": "tsx scripts/test-entitlements.ts",
     "test:premium-preview": "tsx scripts/test-premium-preview.ts",
     "test:dashboard-periods": "tsx server/services/dashboardPeriods.test.ts",

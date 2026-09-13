@@ -1,0 +1,14 @@
+{
+  "$schema": "../api-cloudflare/node_modules/wrangler/config-schema.json",
+  "name": "aitracker-d1-migration",
+  "account_id": "73d71a2bef58f7469ecb48e2b8e84c0e",
+  "compatibility_date": "2026-09-13",
+  "workers_dev": false,
+  "preview_urls": false,
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "aitracker-d1-migration",
+    "database_id": "5ee1a1a5-44a5-42c9-aa74-d12fe63b08f2",
+    "migrations_dir": "migrations"
+  }]
+}
