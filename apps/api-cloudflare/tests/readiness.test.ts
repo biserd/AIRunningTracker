@@ -24,3 +24,17 @@ test('migration readiness requires a verified session and current database admin
   assert.equal(failed?.status, 503);
   assert.ok(!(await failed!.text()).includes('password'));
 });
+
+test('controlled email test requires POST, same origin, session and fresh admin access', async () => {
+  let sent=0;
+  const origin='https://aitracker-api-staging.biser-d.workers.dev';
+  const deps={signingSecret:'test-only-secret-'.repeat(3),limit:async()=>true,
+    inspect:async()=>{throw new Error('FORBIDDEN');},testEmail:async()=>{sent++;return true;}};
+  const url=origin+'/api/admin/migration/test-email';
+  assert.equal((await migrationReadiness(new Request(url),deps))?.status,405);
+  assert.equal((await migrationReadiness(new Request(url,{method:'POST'}),deps))?.status,403);
+  assert.equal((await migrationReadiness(new Request(url,{method:'POST',headers:{origin}}),deps))?.status,401);
+  const token=await new SignJWT({userId:1,email:'test@example.test'}).setProtectedHeader({alg:'HS256'}).setIssuedAt().setExpirationTime('5m').sign(new TextEncoder().encode(deps.signingSecret));
+  assert.equal((await migrationReadiness(new Request(url,{method:'POST',headers:{origin,authorization:`Bearer ${token}`}}),deps))?.status,403);
+  assert.equal(sent,0);
+});

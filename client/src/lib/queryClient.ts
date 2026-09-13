@@ -21,7 +21,7 @@ export async function apiRequest(
   method: string = "GET",
   data?: unknown | undefined,
 ): Promise<any> {
-  const permitted = ['/api/auth/login', '/api/auth/logout', '/api/auth/magic-link/request', '/api/auth/magic-link/verify'];
+  const permitted = ['/api/auth/login', '/api/auth/logout', '/api/auth/magic-link/request', '/api/auth/magic-link/verify', '/api/admin/migration/test-email'];
   if (isReadOnlyStaging && !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase()) && !permitted.includes(url)) {
     throw new Error(stagingWriteMessage);
   }
