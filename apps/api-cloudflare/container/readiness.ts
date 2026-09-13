@@ -1,9 +1,10 @@
 import { verifyRunnerSession, type RunnerSession } from '../src/session';
+import type { ProviderCheck } from './provider-checks';
 
 type State = { queueTable: boolean; pushKeys: boolean; campaignsEnabled: boolean };
-type Dependencies = { signingSecret: string; inspect: (session: RunnerSession) => Promise<State>; limit: (key: string) => Promise<boolean> };
+type Dependencies = { signingSecret: string; inspect: (session: RunnerSession) => Promise<State>; limit: (key: string) => Promise<boolean>; providers?: () => Promise<ProviderCheck[]> };
 
-/** No provider calls, secrets or raw records. This is evidence, not a cutover authorization. */
+/** Provider reads run only after fresh database admin authorization. No credentials or runner records are returned. */
 export async function migrationReadiness(request: Request, deps: Dependencies): Promise<Response | null> {
   if (new URL(request.url).pathname !== '/api/admin/migration/readiness') return null;
   const reply = (data: unknown, status = 200) => Response.json(data, { status,
@@ -15,8 +16,9 @@ export async function migrationReadiness(request: Request, deps: Dependencies): 
   if (!await deps.limit(`readiness:${session.userId}`)) return reply({ error: 'Try again in a minute' }, 429);
   try {
     const state = await deps.inspect(session);
+    const providers = deps.providers ? await deps.providers() : [];
     return reply({ checkedAt: new Date().toISOString(), environment: 'staging', cutoverReady: false, database: state,
-      remaining: ['Live provider round trips', 'Production queue schema and scheduler failover validation',
+      providers, remaining: ['Signed webhook and delivery round trips', 'Production scheduler failover validation',
         'Replit queue drain and scheduler shutdown', 'Production deployment, traffic switch and live smoke tests'] });
   } catch (error) {
     return reply({ error: error instanceof Error && error.message === 'FORBIDDEN' ? 'Admin access required' : 'Readiness check unavailable' },

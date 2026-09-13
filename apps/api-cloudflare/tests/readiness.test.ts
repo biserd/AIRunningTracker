@@ -6,7 +6,8 @@ import { migrationReadiness } from '../container/readiness';
 test('migration readiness requires a verified session and current database admin authorization', async () => {
   const signingSecret = 'test-only-secret-'.repeat(3);
   let reads = 0;
-  const deps = { signingSecret, limit: async () => true, inspect: async () => { reads++; throw new Error('FORBIDDEN'); } };
+  let providerCalls = 0;
+  const deps = { signingSecret, limit: async () => true, inspect: async () => { reads++; throw new Error('FORBIDDEN'); }, providers: async () => { providerCalls++; return []; } };
   const url = 'https://staging.test/api/admin/migration/readiness';
   assert.equal((await migrationReadiness(new Request(url), deps))?.status, 401);
   assert.equal(reads, 0);
@@ -14,6 +15,7 @@ test('migration readiness requires a verified session and current database admin
     .setIssuedAt().setExpirationTime('5m').sign(new TextEncoder().encode(signingSecret));
   const request = () => new Request(url, { headers: { Authorization: `Bearer ${token}` } });
   assert.equal((await migrationReadiness(request(), deps))?.status, 403);
+  assert.equal(providerCalls, 0);
   const response = await migrationReadiness(request(), { ...deps, inspect: async () => ({ queueTable: false, pushKeys: true, campaignsEnabled: false }) });
   assert.equal(response?.headers.get('cache-control'), 'no-store');
   assert.equal((await response?.json() as { cutoverReady: boolean }).cutoverReady, false);

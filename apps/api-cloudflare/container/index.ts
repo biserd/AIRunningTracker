@@ -4,6 +4,7 @@ import { privateAssets } from './private-assets';
 import { magicLinks } from './magic-links';
 import { RunnerReads } from '../src/runner-reads';
 import { migrationReadiness } from './readiness';
+import { providerChecks } from './provider-checks';
 
 /** Staging deliberately has no billing, messaging or Strava provider credentials. */
 export class RunAnalyticsWeb extends Container<Env> {
@@ -32,7 +33,9 @@ export default {
     try {
       const readiness = await migrationReadiness(request, { signingSecret: env.JWT_SIGNING_SECRET,
         inspect: session => new RunnerReads(env.HYPERDRIVE).migrationReadiness(session),
-        limit: async key => (await env.AUTH_LIMITER.limit({ key })).success });
+        limit: async key => (await env.AUTH_LIMITER.limit({ key })).success,
+        providers: () => providerChecks({ stripe: env.CUTOVER_STRIPE_SECRET_KEY, resend: env.CUTOVER_RESEND_API_KEY,
+          openai: env.CUTOVER_OPENAI_API_KEY, stravaClientId: env.CUTOVER_VITE_STRAVA_CLIENT_ID, stravaSecret: env.CUTOVER_STRAVA_CLIENT_SECRET }) });
       if (readiness) return readiness;
       const auth = await magicLinks(request, {
         database: env.AUTH_DB, signingSecret: env.JWT_SIGNING_SECRET,

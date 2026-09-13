@@ -59,7 +59,13 @@ export class RunnerReads {
         EXISTS (SELECT 1 FROM public.system_settings WHERE key='vapid_public_key' AND length(value)>0) AND
         EXISTS (SELECT 1 FROM public.system_settings WHERE key='vapid_private_key' AND length(value)>0) AS "pushKeys",
         EXISTS (SELECT 1 FROM public.system_settings WHERE key='drip_campaigns_enabled' AND value='true') AS "campaignsEnabled"`);
-      return { queueTable: state.rows[0]?.queueTable === true, pushKeys: state.rows[0]?.pushKeys === true,
+      const columns = await client.query(`SELECT column_name AS name, data_type AS type, is_nullable AS nullable, column_default AS "default"
+        FROM information_schema.columns WHERE table_schema='public' AND table_name='cloudflare_jobs' ORDER BY ordinal_position LIMIT 32`);
+      const constraints = await client.query(`SELECT contype AS type, pg_get_constraintdef(oid) AS definition, convalidated AS validated
+        FROM pg_constraint WHERE conrelid=to_regclass('public.cloudflare_jobs') ORDER BY contype, conname LIMIT 16`);
+      const indexes = await client.query(`SELECT pg_get_indexdef(indexrelid) AS definition, indisvalid AS valid, indisready AS ready
+        FROM pg_index WHERE indrelid=to_regclass('public.cloudflare_jobs') ORDER BY indexrelid LIMIT 16`);
+      return { queueTable: state.rows[0]?.queueTable === true, queueSchema: { columns: columns.rows, constraints: constraints.rows, indexes: indexes.rows }, pushKeys: state.rows[0]?.pushKeys === true,
         campaignsEnabled: state.rows[0]?.campaignsEnabled === true };
     });
   }

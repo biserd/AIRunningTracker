@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { isReadOnlyStaging } from '@/lib/runtime';
-type Readiness = { checkedAt: string; database: { queueTable: boolean; pushKeys: boolean; campaignsEnabled: boolean }; remaining: string[] };
+type Readiness = { checkedAt: string; database: { queueTable: boolean; pushKeys: boolean; campaignsEnabled: boolean;
+  queueSchema?: { columns: {name:string;type:string;nullable:string;default:string|null}[]; constraints:{type:string;definition:string;validated:boolean}[]; indexes:{definition:string;valid:boolean;ready:boolean}[] } }; providers?: {name:string;status:string;detail:string;subscriptionId?:number}[]; remaining: string[] };
 export default function MigrationChecks() {
   const check = useQuery<Readiness>({ queryKey: ['/api/admin/migration/readiness'], enabled: isReadOnlyStaging, staleTime: 0 });
   if (!isReadOnlyStaging) return <p>Not available.</p>;
@@ -16,6 +17,11 @@ export default function MigrationChecks() {
         <li>Existing push keys: {check.data.database.pushKeys ? 'Present' : 'Not found'}</li>
         <li>Marketing campaigns: {check.data.database.campaignsEnabled ? 'Enabled in database' : 'Disabled in database'}</li>
       </ul>
+      <h2 className="text-xl font-semibold">Live provider reads</h2>
+      <ul className="list-disc pl-5 space-y-2">{check.data.providers?.map(p => <li key={p.name}>{p.name}: {p.status}. {p.detail}{p.subscriptionId && ` (Subscription ${p.subscriptionId})`}</li>)}</ul>
+      {check.data.database.queueSchema && <details><summary className="cursor-pointer font-semibold">Queue schema evidence</summary>
+        <pre className="overflow-auto whitespace-pre-wrap text-xs mt-3">{JSON.stringify(check.data.database.queueSchema,null,2)}</pre>
+      </details>}
       <h2 className="text-xl font-semibold">Remaining verification</h2>
       <ul className="list-disc pl-5 space-y-2">{check.data.remaining.map(item => <li key={item}>{item}</li>)}</ul>
       <p className="text-sm text-muted-foreground">Checked {new Date(check.data.checkedAt).toLocaleString()}</p>
