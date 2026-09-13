@@ -39,6 +39,8 @@ export function Landing() {
         <div className="launch-section-title"><p className="launch-eyebrow">LESS APP HOPPING. MORE RUNNING.</p><h2 id="channels-title">Your coach. In your messages.</h2><p>Ask about your next run. Talk through a tough day. Get a reminder you asked for.</p></div>
         <div className="launch-grid">
           <article><span>COMING AT LAUNCH</span><h3>WhatsApp</h3><p>Text your AI running coach and receive reminders in a private conversation. Connect when access opens.</p></article>
+          <article><span>COMING AT LAUNCH</span><h3>Email</h3><p>A helpful nudge in your inbox. Set running reminders for the moments that matter, without another app.</p></article>
+          <article><span>PLANNED FOR THE NEW COACH</span><h3>Telegram</h3><p>Your running coach in a private chat. Ask questions and get timely nudges. Connection to the new coach is planned.</p></article>
           <article><span>PLANNED</span><h3>SMS</h3><p>Simple text coaching and reminders. No new app to install. Not available yet.</p></article>
           <article><span>PLANNED · SUBJECT TO APPROVAL</span><h3>iMessage</h3><p>Coaching in Apple Messages is on our roadmap. Availability depends on platform approval and integration.</p></article>
         </div>
