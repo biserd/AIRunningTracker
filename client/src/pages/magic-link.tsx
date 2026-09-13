@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, Link } from "wouter";
 import { Helmet } from "react-helmet";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -7,11 +7,12 @@ import { Activity, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { notifyExtensionAuth } from "@/lib/extensionBridge";
 import { sanitizeReturnTo } from "@shared/upgradeIntent";
 
-type Status = "confirm" | "verifying" | "ok" | "error" | "expired";
+type Status = "verifying" | "ok" | "error" | "expired";
 
 export default function MagicLinkPage() {
   const [, setLocation] = useLocation();
-  const [status, setStatus] = useState<Status>("confirm");
+  const [status, setStatus] = useState<Status>("verifying");
+  const verificationStarted = useRef(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [credentials] = useState(() => {
     const fragment = new URLSearchParams(window.location.hash.slice(1));
@@ -26,12 +27,12 @@ export default function MagicLinkPage() {
     if (!credentials.token) {
       setStatus("error");
       setErrorMsg("This link is missing its sign-in token.");
+      return;
     }
-  }, [credentials]);
-
-  const confirmSignIn = async () => {
-    if (status !== 'confirm' || !credentials.token) return;
-    setStatus('verifying');
+    // React StrictMode can replay effects. Never redeem a one-time link twice.
+    if (verificationStarted.current) return;
+    verificationStarted.current = true;
+    const signIn = async () => {
       try {
         const res = await fetch("/api/auth/magic-link/verify", {
           method: "POST",
@@ -51,16 +52,21 @@ export default function MagicLinkPage() {
         }
 
         // Same shape as /api/auth/login: { user, token }
+        if (typeof body.token !== 'string' || !body.token) {
+          throw new Error('Missing session token');
+        }
         localStorage.setItem("auth_token", body.token);
         notifyExtensionAuth(body.token, body.user || {});
         setStatus("ok");
 
-        setTimeout(() => setLocation(credentials.redirect), 600);
+        setLocation(credentials.redirect, { replace: true });
       } catch {
           setStatus("error");
           setErrorMsg("Couldn't reach the server. Please try again.");
       }
-  };
+    };
+    void signIn();
+  }, [credentials, setLocation]);
 
   return (
     <>
@@ -83,12 +89,6 @@ export default function MagicLinkPage() {
 
           <Card>
             <CardHeader className="text-center">
-              {status === 'confirm' && (
-                <>
-                  <CardTitle>Ready to sign in?</CardTitle>
-                  <CardDescription>Continue to securely open your account. This link works once.</CardDescription>
-                </>
-              )}
               {status === "verifying" && (
                 <>
                   <div className="mx-auto mb-3 w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center">
@@ -128,7 +128,6 @@ export default function MagicLinkPage() {
                 </>
               )}
             </CardHeader>
-            {status === 'confirm' && <CardContent><Button className="w-full bg-strava-orange" onClick={confirmSignIn}>Continue to my account</Button></CardContent>}
 
             {(status === "expired" || status === "error") && (
               <CardContent className="space-y-3">
