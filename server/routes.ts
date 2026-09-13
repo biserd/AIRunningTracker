@@ -35,6 +35,7 @@ import { shoeData } from "./shoe-data";
 import { validateAllShoes, getPipelineStats, findDuplicates, getShoeDataWithMetadata, getShoesWithMetadataFromStorage, getEnrichedShoeData, enrichShoeWithAIData } from "./shoe-pipeline";
 import { z } from "zod";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
+import { BillingCatalog } from './services/billingCatalog';
 import { resolvePlan } from "./webhookHandlers";
 import { db } from "./db";
 import { sql, eq, isNull } from "drizzle-orm";
@@ -45,6 +46,8 @@ import { buildRobotsTxt, isCrawler, isPrivateCrawlerPath } from "./ssr/crawlerPo
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { ownsScheduledJobs, mayInitializeSchema, isMigrationStaging, isCloudflareRuntime } from './config/runtime';
 import { runAsSchedulerLeader } from './services/schedulerLeadership';
+import { runAsD1SchedulerLeader } from './d1/schedulerLeadership';
+import type { SqlDatabase } from './d1/activities';
 import { parseStravaEvent, stravaEventJobId } from './services/queue/stravaEvent';
 import { pool as schedulerPool } from './db';
 import {
@@ -213,87 +216,37 @@ export function deleteCachedByPrefix(prefix: string): void {
 // Resolve the price ID for the Premium plan (current Stripe environment).
 // Strategy:
 //   1. Env-var override (STRIPE_PRICE_PREMIUM_MONTHLY / STRIPE_PRICE_PREMIUM_ANNUAL)
-//   2. Active price in stripe.prices sync table whose product/price metadata
+//   2. Active Stripe price whose product/price metadata
 //      matches { plan: 'premium', billing: 'monthly' | 'annual' }.
 // Returns null if nothing matches so the caller can return a clear 500.
-const _priceCache = new Map<string, { value: string | null; at: number }>();
-const PRICE_CACHE_TTL = 60_000; // 60s
+const billingCatalog = new BillingCatalog(getUncachableStripeClient);
 async function resolvePremiumPriceId(billing: 'monthly' | 'annual'): Promise<string | null> {
   const envName = billing === 'monthly' ? 'STRIPE_PRICE_PREMIUM_MONTHLY' : 'STRIPE_PRICE_PREMIUM_ANNUAL';
   const envVal = process.env[envName];
   if (envVal) return envVal;
 
-  const cached = _priceCache.get(billing);
-  if (cached && Date.now() - cached.at < PRICE_CACHE_TTL) return cached.value;
-
   try {
-    const result = await db.execute(sql`
-      SELECT pr.id
-      FROM stripe.prices pr
-      JOIN stripe.products p ON p.id = pr.product
-      WHERE pr.active = true
-        AND p.active = true
-        AND (
-          (pr.metadata->>'plan' = 'premium' AND pr.metadata->>'billing' = ${billing})
-          OR (
-            p.metadata->>'plan' = 'premium'
-            AND (pr.recurring->>'interval' = ${billing === 'monthly' ? 'month' : 'year'})
-          )
-        )
-      ORDER BY pr.created DESC
-      LIMIT 1
-    `);
-    const row: any = result.rows?.[0];
-    const id = row?.id ? String(row.id) : null;
-    _priceCache.set(billing, { value: id, at: Date.now() });
-    return id;
+    return await billingCatalog.resolvePremium(billing);
   } catch (err) {
-    console.warn(`[resolvePremiumPriceId] DB lookup failed for ${billing}:`, (err as any)?.message);
+    console.warn('[BillingCatalog] Price resolution unavailable');
     return null;
   }
 }
 
 // Server-side allow-list for /api/stripe/create-checkout-session. We never
 // trust a client-supplied priceId blindly: it must either match a configured
-// env override or be tagged as Premium in our synced stripe.prices table.
+// env override or be tagged as Premium in the Stripe catalog.
 // 60s cache to keep happy paths fast.
-const _allowedPriceCache = new Map<string, { allowed: boolean; at: number }>();
 async function isAllowedCheckoutPriceId(priceId: unknown): Promise<boolean> {
-  if (typeof priceId !== 'string' || !priceId.startsWith('price_')) return false;
-
-  // Env-pinned IDs are always allowed.
-  if (
-    priceId === process.env.STRIPE_PRICE_PREMIUM_MONTHLY ||
-    priceId === process.env.STRIPE_PRICE_PREMIUM_ANNUAL
-  ) {
-    return true;
-  }
-
-  const cached = _allowedPriceCache.get(priceId);
-  if (cached && Date.now() - cached.at < PRICE_CACHE_TTL) return cached.allowed;
-
-  let allowed = false;
   try {
-    const result = await db.execute(sql`
-      SELECT 1
-      FROM stripe.prices pr
-      JOIN stripe.products p ON p.id = pr.product
-      WHERE pr.id = ${priceId}
-        AND pr.active = true
-        AND p.active = true
-        AND (pr.metadata->>'plan' = 'premium' OR p.metadata->>'plan' = 'premium')
-      LIMIT 1
-    `);
-    allowed = (result.rows?.length ?? 0) > 0;
+    return await billingCatalog.isAllowed(priceId, [process.env.STRIPE_PRICE_PREMIUM_MONTHLY, process.env.STRIPE_PRICE_PREMIUM_ANNUAL]);
   } catch (err) {
-    console.warn('[isAllowedCheckoutPriceId] DB lookup failed:', (err as any)?.message);
-    allowed = false;
+    console.warn('[BillingCatalog] Price validation unavailable');
+    return false;
   }
-  _allowedPriceCache.set(priceId, { allowed, at: Date.now() });
-  return allowed;
 }
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export async function registerRoutes(app: Express, runtime?: { schedulerDatabase: SqlDatabase }): Promise<Server> {
   registerObjectStorageRoutes(app);
   await registerMcpRoutes(app);
   if (mayInitializeSchema()) await ensureProactiveCoachSchema();
@@ -1162,47 +1115,7 @@ ${allPages.map(page => `  <url>
   // Get subscription products and prices
   app.get("/api/stripe/products", async (req, res) => {
     try {
-      const result = await db.execute(sql`
-        SELECT 
-          p.id as product_id,
-          p.name as product_name,
-          p.description as product_description,
-          p.metadata as product_metadata,
-          pr.id as price_id,
-          pr.unit_amount,
-          pr.currency,
-          pr.recurring,
-          pr.metadata as price_metadata
-        FROM stripe.products p
-        LEFT JOIN stripe.prices pr ON pr.product = p.id AND pr.active = true
-        WHERE p.active = true
-        ORDER BY pr.unit_amount ASC
-      `);
-      
-      // Group by product
-      const productsMap = new Map();
-      for (const row of result.rows as any[]) {
-        if (!productsMap.has(row.product_id)) {
-          productsMap.set(row.product_id, {
-            id: row.product_id,
-            name: row.product_name,
-            description: row.product_description,
-            metadata: row.product_metadata,
-            prices: []
-          });
-        }
-        if (row.price_id) {
-          productsMap.get(row.product_id).prices.push({
-            id: row.price_id,
-            unit_amount: row.unit_amount,
-            currency: row.currency,
-            recurring: row.recurring,
-            metadata: row.price_metadata
-          });
-        }
-      }
-      
-      res.json({ products: Array.from(productsMap.values()) });
+      res.json({ products: await billingCatalog.publicProducts() });
     } catch (error: any) {
       console.error('Stripe products error:', error);
       res.status(500).json({ message: "Failed to fetch products" });
@@ -1318,7 +1231,7 @@ ${allPages.map(page => `  <url>
         : await resolvePremiumPriceId(safeBillingPeriod);
 
       // Don't trust client-supplied priceId blindly. Allow only Premium-tagged
-      // prices (env override or metadata in our synced stripe.prices table).
+      // prices (env override or metadata in the Stripe catalog).
       const allowed = await isAllowedCheckoutPriceId(resolvedPriceId);
       if (!allowed) {
         console.warn('[checkout] rejected priceId not tagged as premium', { userId, priceId: resolvedPriceId, billingPeriod: safeBillingPeriod });
@@ -1442,10 +1355,7 @@ ${allPages.map(page => `  <url>
       // Server-authoritative funnel event, idempotent on the session id.
       let resolvedBillingPeriod = 'unknown';
       try {
-        const priceRow = await db.execute(sql`
-          SELECT recurring->>'interval' AS interval FROM stripe.prices WHERE id = ${resolvedPriceId} LIMIT 1
-        `);
-        resolvedBillingPeriod = billingPeriodFromInterval((priceRow.rows?.[0] as any)?.interval);
+        resolvedBillingPeriod = billingPeriodFromInterval(await billingCatalog.interval(resolvedPriceId!));
       } catch {
         // leave 'unknown': analytics must not block checkout
       }
@@ -9559,7 +9469,8 @@ ${allPages.map(page => `  <url>
   }
   notificationDeliveryWorker.start();
   };
-  if (isCloudflareRuntime()) runAsSchedulerLeader(schedulerPool, startWorkers);
+  if (runtime?.schedulerDatabase) runAsD1SchedulerLeader(runtime.schedulerDatabase, startWorkers);
+  else if (isCloudflareRuntime()) runAsSchedulerLeader(schedulerPool, startWorkers);
   else await startWorkers();
   }
 

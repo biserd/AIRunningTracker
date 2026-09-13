@@ -19,6 +19,7 @@ export interface IStorage {
   updateUserResetToken(userId: number, resetToken: string, resetTokenExpiry: Date): Promise<void>;
   getUserByResetToken(resetToken: string): Promise<User | undefined>;
   updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
+  consumePasswordReset(userId: number, tokenHash: string, passwordHash: string, now: Date): Promise<boolean>;
   
   // Strava lookup methods
   getUserByStravaId(stravaAthleteId: string): Promise<User | undefined>;
@@ -527,6 +528,13 @@ export class DatabaseStorage implements IStorage {
       .values(insertActivity)
       .returning();
     return activity;
+  }
+
+  async consumePasswordReset(userId: number, tokenHash: string, passwordHash: string, now: Date): Promise<boolean> {
+    const changed = await db.update(users).set({ password: passwordHash, resetToken: null, resetTokenExpiry: null })
+      .where(and(eq(users.id, userId), eq(users.resetToken, tokenHash), gt(users.resetTokenExpiry, now)))
+      .returning({ id: users.id });
+    return changed.length === 1;
   }
 
   async getMostRecentActivityByUserId(userId: number): Promise<Activity | undefined> {

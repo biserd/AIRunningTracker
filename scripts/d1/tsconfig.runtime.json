@@ -1,0 +1,6 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {"incremental": false, "target": "ES2022"},
+  "include": ["../../server/d1/**/*.ts", "../../server/services/billingCatalog.ts", "../../server/services/authCore.ts", "../../server/services/authStore.ts", "../../server/services/queue/jobStore.ts", "../../server/services/queue/durableJobStore.ts"],
+  "exclude": ["../../node_modules", "**/*.test.ts"]
+}

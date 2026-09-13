@@ -6,6 +6,9 @@ import { storage } from './storage';
 import { emailService } from './services/email';
 import { recordFunnelEvent } from './services/funnelAnalytics';
 import { buildFunnelDedupeKey, billingPeriodFromInterval, conversionEventForSubscriptionChange } from '@shared/funnelEvents';
+import { pool } from './db';
+import { deliverBillingWebhook } from './services/billingWebhookDelivery';
+import { PostgresBillingWebhookDelivery } from './services/postgresBillingWebhookDelivery';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'hello@bigappledigital.nyc';
 const APP_SLUG = process.env.APP_SLUG || 'aitracker';
@@ -119,8 +122,7 @@ export async function resolvePlan(subscription: any): Promise<ResolvedPlan> {
   return { plan: 'free', source: 'unknown-status', priceId, productId };
 }
 
-const processedEvents = new Set<string>();
-const MAX_PROCESSED_EVENTS = 1000;
+const webhookDelivery = new PostgresBillingWebhookDelivery(pool);
 
 export class WebhookHandlers {
   private static determineOwnerApp(event: any): string | null {
@@ -251,16 +253,10 @@ export class WebhookHandlers {
     
     const event = JSON.parse(payload.toString());
 
-    if (processedEvents.has(event.id)) {
-      console.log(`[Webhook] Skipping duplicate event ${event.id} (${event.type})`);
-      return;
-    }
-    processedEvents.add(event.id);
-    if (processedEvents.size > MAX_PROCESSED_EVENTS) {
-      const first = processedEvents.values().next().value;
-      if (first) processedEvents.delete(first);
-    }
+    await deliverBillingWebhook(webhookDelivery,event,()=>this.processVerifiedEvent(event));
+  }
 
+  private static async processVerifiedEvent(event: any): Promise<void> {
     if (!(await this.shouldProcessEvent(event))) {
       return;
     }

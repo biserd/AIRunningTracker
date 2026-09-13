@@ -14,6 +14,7 @@ import { canAccessCapability } from '@shared/entitlements';
 import { isMigrationStaging, isCloudflareRuntime } from '../../config/runtime';
 import { pool } from '../../db';
 import { DurableJobStore } from './durableJobStore';
+import type { JobStore } from './jobStore';
 
 // Track users with active sync operations
 const activeSyncs = new Map<number, { startedAt: Date; totalActivities: number; processedActivities: number }>();
@@ -35,9 +36,9 @@ export interface QueueConfig {
 
 type JobProgressCallback = (userId: number, message: string, data?: any) => void;
 
-class JobQueue {
+export class JobQueue {
   // Staging does not run jobs or depend on the unapplied production queue migration.
-  private readonly durable = isCloudflareRuntime() && !isMigrationStaging() ? new DurableJobStore(pool) : null;
+  private readonly durable: JobStore | null;
   private readonly owner = crypto.randomUUID();
   private claiming = false;
   private queue: Job[] = [];
@@ -55,7 +56,9 @@ class JobQueue {
     processIntervalMs: 1000,
   };
 
-  constructor() {}
+  constructor(durable: JobStore | null = isCloudflareRuntime() && !isMigrationStaging() ? new DurableJobStore(pool) : null) {
+    this.durable = durable;
+  }
 
   configure(config: Partial<QueueConfig>): void {
     this.config = { ...this.config, ...config };

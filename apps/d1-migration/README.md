@@ -22,7 +22,7 @@ Source: existing production Neon, opened in a repeatable-read, read-only transac
   Active-plus-archive counts reconcile with the 503,684-row import. The 570 users are unchanged.
 - Independent count, exclusion, missing-user and declared-FK checks pass. Migration status
   is `verifying`, stage `snapshot_imported_runtime_not_ready`, not production-ready.
-- Seventeen SQLite tests pass. Focused strict type checking of implementation files passes.
+- Twenty-six local tests pass. Focused strict type checking of implementation files passes.
 - Full target payload checksum parity, runtime port, end-to-end tests and cutover remain open.
 
 The complete copy is retained for review. Do not clear/restart it using the activity-only
@@ -120,6 +120,29 @@ the repeatable-read snapshot began. Cutover needs a final consistent refresh/del
 not merely binding this database to the app.
 
 ## Still required before removing Neon
+
+Runtime port checkpoint:
+- Checkout catalog, price validation and billing-interval reads use bounded Stripe API
+  reads rather than the PostgreSQL catalog mirror. Public response fields are preserved.
+- Webhook delivery uses durable receipts instead of an in-memory processed-event set.
+  The existing handler uses the PostgreSQL adapter; a tested D1 adapter is available.
+  **Before deploying this handler on PostgreSQL**, apply
+  `migrations/20260913_billing_webhook_receipts.sql`. It has NOT been applied to production.
+  Signature verification and business updates still depend on the existing Stripe sync/storage path.
+- D1 scheduler leadership can be injected through `registerRoutes` and is lease/generation
+  guarded. The application has NOT been configured to use it, and per-job claims remain required.
+- Isolated remote D1 migrations 0007 and 0008 are applied. Remote scheduler ownership and
+  billing retry/deduplication smoke tests passed; synthetic operational rows were removed.
+  Run `tsx scripts/d1/remote-runtime-smoke.ts` only against this fixed isolated target.
+  These are database smoke tests, not deployed application end-to-end tests.
+- Authentication logic accepts a storage contract, with a D1 account implementation.
+  Existing production authentication still uses PostgreSQL through the compatibility facade.
+- Password reset consumption uses a conditional update to prevent concurrent reuse.
+- The queue processor accepts the shared PostgreSQL/D1 job-store contract. No production
+  D1 connection or scheduler has been enabled.
+- `scripts/d1/auth.test.ts` covers registration, login, token-purpose isolation, expiry,
+  deleted accounts and concurrent password resets using SQLite. This is not deployed E2E coverage.
+- Focused runtime types can be checked with `tsc -p scripts/d1/tsconfig.runtime.json`.
 
 1. Finish and independently verify the full import, exclusions, relationships and derived analytics.
 2. Port the production `server/db.ts` / `server/storage.ts` data-access layer and

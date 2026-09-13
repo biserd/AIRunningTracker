@@ -1,4 +1,5 @@
 import type { Job } from './jobTypes';
+import type { JobStore } from './jobStore';
 
 export interface JobSqlClient {
   query<T extends Record<string, unknown> = Record<string, unknown>>(sql: string, values?: unknown[]): Promise<{ rows: T[] }>;
@@ -14,7 +15,7 @@ const fromRow = (r: Row): Job => ({ id: r.id, userId: r.user_id, type: r.type, d
   attempts: r.attempts, maxAttempts: r.max_attempts, status: r.status, error: r.error_code } as Job);
 
 /** Postgres is the durable source of truth. No provider responses or credentials are stored. */
-export class DurableJobStore {
+export class DurableJobStore implements JobStore {
   constructor(private readonly pool: JobSqlPool) {}
 
   private async insert(client: JobSqlClient, job: Job) {

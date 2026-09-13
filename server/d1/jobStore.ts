@@ -2,6 +2,7 @@ import type {Job} from '../services/queue/jobTypes';
 import type {SqlDatabase,SqlStatement} from './activities';
 import {D1JobLeases} from './jobLeases';
 import {positiveId} from './activityPolicy';
+import type {JobStore} from '../services/queue/jobStore';
 
 export interface AtomicSqlDatabase extends SqlDatabase {
   batch(statements:SqlStatement[]):Promise<{meta:{changes?:number}}[]>;
@@ -23,7 +24,7 @@ function encoded(job:Job){
 }
 
 /** Native D1 binding only. No PostgreSQL pool, REST credential, scheduler or provider calls. */
-export class D1JobStore {
+export class D1JobStore implements JobStore {
   private leases:D1JobLeases;
   constructor(private db:AtomicSqlDatabase,private clock:()=>Date=()=>new Date()){
     this.leases=new D1JobLeases(db,clock);
@@ -80,10 +81,12 @@ export class D1JobStore {
   }
   async stats(){
     const now=this.clock().toISOString();
-    return this.db.prepare(`SELECT count(CASE WHEN status='pending' AND scheduled_at<=? THEN 1 END) pending,
+    const result=await this.db.prepare(`SELECT count(CASE WHEN status='pending' AND scheduled_at<=? THEN 1 END) pending,
       count(CASE WHEN status='pending' AND scheduled_at>? THEN 1 END) delayed,
       count(CASE WHEN status='processing' THEN 1 END) processing,count(CASE WHEN status='completed' THEN 1 END) completed,
       count(CASE WHEN status='failed' THEN 1 END) failed FROM cloudflare_jobs`).bind(now,now)
       .first<{pending:number;delayed:number;processing:number;completed:number;failed:number}>();
+    if(!result)throw new Error('JOB_STATS_UNAVAILABLE');
+    return result;
   }
 }
