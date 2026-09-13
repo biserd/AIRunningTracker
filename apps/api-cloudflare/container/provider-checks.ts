@@ -5,11 +5,11 @@ const record = (value: unknown): JsonRecord => value !== null && typeof value ==
 const rows = (value: unknown): JsonRecord[] => Array.isArray(value) ? value.map(record) : [];
 
 /** Fixed GET-only provider reads. Never return response bodies, credentials or upstream errors. */
-export async function providerChecks(credentials: Credentials, send: typeof fetch = fetch): Promise<ProviderCheck[]> {
+export async function providerChecks(credentials: Credentials, send: typeof fetch = (input, init) => fetch(input, init)): Promise<ProviderCheck[]> {
   async function read(url: URL | string, bearer?: string): Promise<unknown> {
     const response = await send(url, { method: 'GET', redirect: 'error', signal: AbortSignal.timeout(10_000),
       headers: bearer ? { Authorization: `Bearer ${bearer}` } : {} });
-    if (!response.ok) { await response.body?.cancel(); throw new Error(response.status === 403 ? 'DENIED' : 'FAILED'); }
+    if (!response.ok) { await response.body?.cancel(); throw new Error(`HTTP_${response.status}`); }
     if (!response.body) throw new Error('FAILED');
     const reader = response.body.getReader();
     const chunks: Uint8Array[] = []; let length = 0;
@@ -28,8 +28,16 @@ export async function providerChecks(credentials: Credentials, send: typeof fetc
   async function check(name: string, configured: boolean, operation: () => Promise<ProviderCheck>): Promise<ProviderCheck> {
     if (!configured) return { name, status: 'fail', detail: 'Required production credential missing or wrong mode' };
     try { return await operation(); }
-    catch (error) { return { name, status: 'unverified', detail: error instanceof Error && error.message === 'DENIED'
-      ? 'Provider refused this read permission; verify the configured key scope' : 'Read failed, timed out or returned an unexpected response' }; }
+    catch (error) {
+      // Only allowlisted classifications can leave the Worker. Never expose upstream error text or URLs.
+      const message = error instanceof Error ? error.message : '';
+      const detail = /^HTTP_[1-5][0-9]{2}$/.test(message) ? `Provider returned HTTP ${message.slice(5)}; verify credential permissions and provider availability`
+        : message === 'LIMIT' ? 'Provider response exceeded the bounded read limit'
+        : error instanceof Error && ['TimeoutError', 'AbortError'].includes(error.name) ? 'Provider read timed out'
+        : error instanceof TypeError ? 'Provider transport or runtime rejected the request'
+        : 'Read failed or returned an unexpected response';
+      return { name, status: 'unverified', detail };
+    }
   }
   return Promise.all([
     check('Stripe prices', credentials.stripe?.startsWith('sk_live_'), async () => {
