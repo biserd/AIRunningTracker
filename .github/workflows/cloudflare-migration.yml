@@ -2,9 +2,9 @@ name: Cloudflare migration safety
 on:
   push:
     branches: [codex/cloudflare-coach]
-    paths: ['apps/api-cloudflare/**', '.github/workflows/cloudflare-migration.yml']
+    paths: ['apps/api-cloudflare/**', 'server/**', 'shared/**', 'migrations/**', '.github/workflows/cloudflare-migration.yml']
   pull_request:
-    paths: ['apps/api-cloudflare/**', '.github/workflows/cloudflare-migration.yml']
+    paths: ['apps/api-cloudflare/**', 'server/**', 'shared/**', 'migrations/**', '.github/workflows/cloudflare-migration.yml']
 permissions:
   contents: read
 jobs:
@@ -22,6 +22,8 @@ jobs:
           cache-dependency-path: apps/api-cloudflare/package-lock.json
       - run: npm ci
       - run: npm run check
+      - run: npx tsc --noEmit -p container/tsconfig.json
+      - run: npx tsc --noEmit -p container/tsconfig.production.json
       - run: npm test
       - run: npm run build
     # Intentionally no deployment step or production secrets.

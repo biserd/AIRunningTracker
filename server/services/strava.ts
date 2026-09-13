@@ -526,7 +526,7 @@ export class StravaService {
           const needsLaps = !activity.lapsData || activity.lapsData === 'null';
           
           if (needsStreams || needsLaps) {
-            jobQueue.addJob(createHydrateActivityJob(
+            await jobQueue.addJob(createHydrateActivityJob(
               userId,
               activity.id,
               activity.stravaId,

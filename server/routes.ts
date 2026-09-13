@@ -43,7 +43,10 @@ import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage, r
 import { getAllBlogPosts } from "./ssr/blogContent";
 import { buildRobotsTxt, isCrawler, isPrivateCrawlerPath } from "./ssr/crawlerPolicy";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
-import { ownsScheduledJobs, mayInitializeSchema, isMigrationStaging } from './config/runtime';
+import { ownsScheduledJobs, mayInitializeSchema, isMigrationStaging, isCloudflareRuntime } from './config/runtime';
+import { runAsSchedulerLeader } from './services/schedulerLeadership';
+import { parseStravaEvent, stravaEventJobId } from './services/queue/stravaEvent';
+import { pool as schedulerPool } from './db';
 import {
   type Capability,
   canAccessCapability,
@@ -1645,6 +1648,11 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  app.get("/api/auth/identity", authenticateJWT, (req: any, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ id: req.user.id });
+  });
+
   app.get("/api/auth/user", authenticateJWT, async (req: any, res) => {
     try {
       // Loading any authenticated app screen counts as a return visit, not
@@ -2156,7 +2164,7 @@ ${allPages.map(page => `  <url>
           newUser.subscriptionStatus ?? null,
           200
         );
-        jobQueue.addJob(createListActivitiesJob(newUser.id, 1, 200, initialCap));
+        await jobQueue.addJob(createListActivitiesJob(newUser.id, 1, 200, initialCap));
         console.log(`[StravaLogin] Queued initial sync for new user ${newUser.id} (cap=${initialCap})`);
       } catch (syncError) {
         console.error('[StravaLogin] Failed to queue sync:', syncError);
@@ -2565,6 +2573,18 @@ ${allPages.map(page => `  <url>
   // Strava Webhook Events (POST request when activities happen)
   app.post("/api/strava/webhook", async (req, res) => {
     const body = req.body;
+    if (isCloudflareRuntime()) {
+      const event = parseStravaEvent(body, process.env.STRAVA_SUBSCRIPTION_ID);
+      if (!event) return res.status(400).json({ error: 'Invalid event' });
+      try {
+        const runner = await storage.getUserByStravaId(String(event.owner_id));
+        if (runner?.stravaConnected) {
+          await jobQueue.addJob({ type: 'STRAVA_WEBHOOK', userId: runner.id, data: event,
+            priority: 1, scheduledAt: new Date(), maxAttempts: 5 }, stravaEventJobId(event));
+        }
+        return res.status(200).send('EVENT_RECEIVED');
+      } catch { return res.status(503).json({ error: 'Please retry delivery' }); }
+    }
     console.log("[Strava Webhook] Received event:", JSON.stringify(body));
     res.status(200).send("EVENT_RECEIVED");
 
@@ -2920,7 +2940,7 @@ ${allPages.map(page => `  <url>
       ) {
         try {
           await storage.updateUser(user.id, { needsHistoricalBackfill: false });
-          jobQueue.addJob(createListActivitiesJob(user.id, 1, 200, 500));
+          await jobQueue.addJob(createListActivitiesJob(user.id, 1, 200, 500));
           console.log(`[Dashboard] Auto-enqueued historical Strava backfill for user ${user.id}`);
         } catch (backfillErr) {
           console.error(`[Dashboard] Failed to enqueue backfill for user ${user.id}:`, backfillErr);
@@ -4741,9 +4761,9 @@ ${allPages.map(page => `  <url>
   app.get("/api/strava/queue/status", authenticateAdmin, async (req: any, res) => {
     try {
       const userId = req.user!.id;
-      const queueStats = jobQueue.getStats();
+      const queueStats = await jobQueue.getStats();
       const rateLimitState = stravaClient.getRateLimitState();
-      const userJobs = jobQueue.getJobsForUser(userId);
+      const userJobs = await jobQueue.getJobsForUser(userId);
       const metricsSnapshot = metrics.getSnapshot();
       
       res.json({
@@ -4782,7 +4802,7 @@ ${allPages.map(page => `  <url>
       }
       
       // Also get current queue state for this user
-      const userJobs = jobQueue.getJobsForUser(userId);
+      const userJobs = await jobQueue.getJobsForUser(userId);
       
       res.json({
         syncStatus: syncState.syncStatus,
@@ -4852,7 +4872,7 @@ ${allPages.map(page => `  <url>
           ? 500
           : RATE_LIMITS.FREE_ACTIVITY_LIMIT;
         
-        const job = jobQueue.addJob(createListActivitiesJob(
+        const job = await jobQueue.addJob(createListActivitiesJob(
           userId,
           1,       // Start from page 1
           200,     // Per page
@@ -4888,7 +4908,7 @@ ${allPages.map(page => `  <url>
         const needsLaps = !activity.lapsData || !activity.lapsData.includes('"status":"not_available"');
         
         if (needsStreams || needsLaps) {
-          jobQueue.addJob(createHydrateActivityJob(
+          await jobQueue.addJob(createHydrateActivityJob(
             userId,
             activity.id,
             activity.stravaId,
@@ -4947,7 +4967,7 @@ ${allPages.map(page => `  <url>
       }
 
       // Add the initial LIST_ACTIVITIES job to the queue
-      const job = jobQueue.addJob(createListActivitiesJob(
+      const job = await jobQueue.addJob(createListActivitiesJob(
         userId,
         1,
         200,
@@ -5370,7 +5390,7 @@ ${allPages.map(page => `  <url>
         // Trigger on-demand hydration if streams not available
         const needsStreams = !activity.streamsData || activity.streamsData === 'null';
         if (needsStreams) {
-          jobQueue.addJob(createHydrateActivityJob(
+          await jobQueue.addJob(createHydrateActivityJob(
             userId,
             activity.id,
             activity.stravaId,
@@ -6019,7 +6039,7 @@ ${allPages.map(page => `  <url>
       const needsLaps = !activity.lapsData || activity.lapsData === 'null';
       
       if (needsStreams || needsLaps) {
-        jobQueue.addJob(createHydrateActivityJob(
+        await jobQueue.addJob(createHydrateActivityJob(
           activity.userId,
           activity.id,
           activity.stravaId,
@@ -6034,7 +6054,7 @@ ${allPages.map(page => `  <url>
         message: "Hydration queued",
         needsStreams,
         needsLaps,
-        queuePosition: jobQueue.getStats().pending
+        queuePosition: (await jobQueue.getStats()).pending
       });
     } catch (error: any) {
       console.error('Activity hydration error:', error);
@@ -6072,7 +6092,7 @@ ${allPages.map(page => `  <url>
       // Queue hydration jobs with high priority
       let queued = 0;
       for (const activity of activities) {
-        jobQueue.addJob(createHydrateActivityJob(
+        await jobQueue.addJob(createHydrateActivityJob(
           userId,
           activity.id,
           activity.stravaId,
@@ -6155,7 +6175,7 @@ ${allPages.map(page => `  <url>
             connectedUser.subscriptionStatus ?? null,
             200
           );
-          jobQueue.addJob(createListActivitiesJob(userId, 1, 200, cap));
+          await jobQueue.addJob(createListActivitiesJob(userId, 1, 200, cap));
           console.log(`[Strava] Queued initial activity sync for user ${userId} (cap=${cap})`);
         } else {
           console.log(`[Strava] Skipped resync for free user ${userId} on reconnect (already used one-time sync)`);
@@ -9519,6 +9539,8 @@ ${allPages.map(page => `  <url>
 
   // Start the drip campaign worker (async, loads settings from DB)
   if (ownsScheduledJobs()) {
+  const startWorkers = async () => {
+  if (isCloudflareRuntime()) jobQueue.start();
   dripCampaignWorker.start().catch(err => 
     console.error("[DripWorker] Failed to start:", err)
   );
@@ -9536,6 +9558,9 @@ ${allPages.map(page => `  <url>
     console.warn("[ProactiveCoach] Worker disabled; set ENABLE_PROACTIVE_COACH_WORKER=true to enable");
   }
   notificationDeliveryWorker.start();
+  };
+  if (isCloudflareRuntime()) runAsSchedulerLeader(schedulerPool, startWorkers);
+  else await startWorkers();
   }
 
   const httpServer = createServer(app);

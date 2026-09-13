@@ -2,6 +2,7 @@ import { Client } from 'pg';
 import { assertRunnerSession, type RunnerSession } from './session';
 import { compare } from 'bcryptjs';
 import { SignJWT } from 'jose';
+import type { LoginUser } from '../container/magic-links';
 
 // Initial staging reads only. No writes, raw SQL or caller-supplied user IDs
 // are exposed by the HTTP surface.
@@ -14,6 +15,17 @@ const makeClient: ClientFactory = (connectionString) => new Client({
 export class RunnerReads {
   constructor(private readonly hyperdrive: Pick<Hyperdrive, 'connectionString'>,
     private readonly factory: ClientFactory = makeClient) {}
+
+  /** Only the authentication handler uses this lookup; no public arbitrary-user read route. */
+  findLoginUser(key: { email: string } | { id: number }): Promise<LoginUser | null> {
+    return this.transaction(async client => {
+      const result = await client.query<LoginUser>(`SELECT id, email, first_name AS "firstName", last_name AS "lastName",
+        subscription_plan AS "subscriptionPlan", subscription_status AS "subscriptionStatus" FROM public.users
+        WHERE ${'email' in key ? 'lower(email) = $1' : 'id = $1'} LIMIT 2`, ['email' in key ? key.email.toLowerCase() : key.id]);
+      // Ambiguous case-variant duplicates must not sign into an arbitrary account.
+      return result.rows.length === 1 ? result.rows[0] : null;
+    });
+  }
 
   private async transaction<T>(operation: (client: DatabaseClient) => Promise<T>): Promise<T> {
     const client = this.factory(this.hyperdrive.connectionString);

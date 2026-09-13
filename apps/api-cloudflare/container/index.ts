@@ -1,5 +1,8 @@
 import { Container, getContainer } from '@cloudflare/containers';
 import { servePublicAsset } from './public-assets';
+import { privateAssets } from './private-assets';
+import { magicLinks } from './magic-links';
+import { RunnerReads } from '../src/runner-reads';
 
 /** Staging deliberately has no billing, messaging or Strava provider credentials. */
 export class RunAnalyticsWeb extends Container<Env> {
@@ -26,12 +29,32 @@ export default {
     const cookie = request.headers.get('cookie')?.match(/(?:^|;\s*)cf_migration_shard=([01])(?:;|$)/)?.[1];
     const shard = cookie ?? String(crypto.getRandomValues(new Uint8Array(1))[0] % 2);
     try {
+      const auth = await magicLinks(request, {
+        database: env.AUTH_DB, signingSecret: env.JWT_SIGNING_SECRET,
+        origin: 'https://aitracker-api-staging.biser-d.workers.dev',
+        findUser: key => new RunnerReads(env.HYPERDRIVE).findLoginUser(key),
+        limit: async key => (await env.AUTH_LIMITER.limit({ key })).success,
+        send: async (to, link) => { await env.AUTH_EMAIL.send({ from: 'reminders@aitracker.run', to,
+          subject: 'Sign in to AITracker staging',
+          text: `Here is your secure sign-in link:\n\n${link}\n\nIt expires in 15 minutes and works once. This is the read-only migration test site.\n\nIf you did not request this, ignore this email.` }); },
+      });
+      if (auth) return auth;
+      const container = getContainer(env.WEB, `web-${shard}`);
+      const privateResponse = await privateAssets(request, env.PUBLIC_ASSETS, async () => {
+        const authorization = request.headers.get('authorization');
+        if (!authorization?.startsWith('Bearer ')) return null;
+        const check = await container.fetch(new Request(new URL('/api/auth/identity', request.url), { headers: { authorization } }));
+        if (!check.ok) { await check.body?.cancel(); return null; }
+        const identity: { id?: number } = await check.json();
+        return Number.isSafeInteger(identity.id) && identity.id! > 0 ? identity.id! : null;
+      }, false, async userId => (await env.UPLOAD_LIMITER.limit({ key: String(userId) })).success);
+      if (privateResponse) { privateResponse.headers.set('X-Robots-Tag','noindex, nofollow'); return privateResponse; }
       const asset = await servePublicAsset(request, env.PUBLIC_ASSETS);
       if (asset) {
         asset.headers.set('X-Robots-Tag', 'noindex, nofollow');
         return asset;
       }
-      const upstream = await getContainer(env.WEB, `web-${shard}`).fetch(request);
+      const upstream = await container.fetch(request);
       const response = new Response(upstream.body, upstream);
       response.headers.set('X-Robots-Tag', 'noindex, nofollow');
       if (!cookie) response.headers.append('Set-Cookie', `cf_migration_shard=${shard}; Path=/; HttpOnly; Secure; SameSite=Lax`);

@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { storage } from '../storage';
 import type { RegisterData, LoginData, User } from '@shared/schema';
 import { getJwtSecret } from '../config/security';
+import { sessionUserId } from './sessionClaims';
 
 const JWT_SECRET = getJwtSecret();
 const SALT_ROUNDS = 10;
@@ -100,8 +101,9 @@ export class AuthService {
 
   async verifyToken(token: string): Promise<AuthUser | null> {
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
-      const user = await storage.getUser(decoded.userId);
+      const userId = sessionUserId(token, JWT_SECRET);
+      if (userId === null) return null;
+      const user = await storage.getUser(userId);
       
       if (!user) {
         return null;

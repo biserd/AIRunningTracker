@@ -11,7 +11,9 @@ import { aiService } from '../ai';
 import goalsService from '../goals';
 import { deleteCachedByPrefix, deleteCachedResponse } from '../../routes';
 import { canAccessCapability } from '@shared/entitlements';
-import { isMigrationStaging } from '../../config/runtime';
+import { isMigrationStaging, isCloudflareRuntime } from '../../config/runtime';
+import { pool } from '../../db';
+import { DurableJobStore } from './durableJobStore';
 
 // Track users with active sync operations
 const activeSyncs = new Map<number, { startedAt: Date; totalActivities: number; processedActivities: number }>();
@@ -34,6 +36,10 @@ export interface QueueConfig {
 type JobProgressCallback = (userId: number, message: string, data?: any) => void;
 
 class JobQueue {
+  // Staging does not run jobs or depend on the unapplied production queue migration.
+  private readonly durable = isCloudflareRuntime() && !isMigrationStaging() ? new DurableJobStore(pool) : null;
+  private readonly owner = crypto.randomUUID();
+  private claiming = false;
   private queue: Job[] = [];
   private processing: Map<string, Job> = new Map();
   private completed: Job[] = [];
@@ -70,14 +76,19 @@ class JobQueue {
     }
   }
 
-  addJob(jobData: Omit<Job, 'id' | 'createdAt' | 'status' | 'attempts'>): Job {
+  async addJob(jobData: Omit<Job, 'id' | 'createdAt' | 'status' | 'attempts'>, durableId?: string): Promise<Job> {
     const job: Job = {
       ...jobData,
-      id: createJobId(),
+      id: durableId || createJobId(),
       createdAt: new Date(),
       status: 'pending',
       attempts: 0,
     } as Job;
+
+    if (this.durable) {
+      await this.durable.enqueue(job);
+      return job;
+    }
 
     this.queue.push(job);
     this.queue.sort((a, b) => {
@@ -97,8 +108,8 @@ class JobQueue {
     return job;
   }
 
-  addJobs(jobs: Omit<Job, 'id' | 'createdAt' | 'status' | 'attempts'>[]): Job[] {
-    return jobs.map(job => this.addJob(job));
+  async addJobs(jobs: Omit<Job, 'id' | 'createdAt' | 'status' | 'attempts'>[]): Promise<Job[]> {
+    return Promise.all(jobs.map(job => this.addJob(job)));
   }
 
   private getNextJob(): Job | null {
@@ -127,6 +138,7 @@ class JobQueue {
   }
 
   private async processJob(job: Job): Promise<void> {
+    if (this.durable) return this.processDurableJob(job);
     job.attempts++;
     console.log(`[JobQueue] Processing job ${job.id} (${job.type}), attempt ${job.attempts}/${job.maxAttempts}`);
 
@@ -141,11 +153,11 @@ class JobQueue {
         this.notifyProgress(job.userId, `Completed ${job.type}`, result.data);
         
         if (result.newJobs && result.newJobs.length > 0) {
-          this.addJobs(result.newJobs);
+          await this.addJobs(result.newJobs);
         }
         
         // Check if sync is complete (no more jobs for this user)
-        this.checkSyncCompletion(job.userId);
+        await this.checkSyncCompletion(job.userId);
         
         if (this.completed.length > 1000) {
           this.completed = this.completed.slice(-500);
@@ -202,6 +214,15 @@ class JobQueue {
         return await this.executeHydrateActivity(job);
       case 'GENERATE_COACH_RECAP':
         return await this.executeCoachRecap(job);
+      case 'FINALIZE_SYNC':
+        return await this.executeFinalizeSync(job);
+      case 'STRAVA_WEBHOOK': {
+        const runner = await storage.getUserByStravaId(String(job.data.owner_id));
+        if (!runner || runner.id !== job.userId || !runner.stravaConnected) return { success: true };
+        const { stravaWebhookService } = await import('../stravaWebhook');
+        const outcome = await stravaWebhookService.handleEvent(job.data);
+        return { success: !outcome.includes('failed') && !outcome.startsWith('error:') };
+      }
       default:
         return { success: false, error: `Unknown job type: ${(job as any).type}` };
     }
@@ -313,6 +334,10 @@ class JobQueue {
     }
 
     const { activityId, stravaId, fetchStreams, fetchLaps } = job.data;
+    const ownedActivity = await storage.getActivityById(activityId);
+    if (!ownedActivity || ownedActivity.userId !== job.userId || ownedActivity.stravaId !== stravaId) {
+      return { success: false, error: 'Activity unavailable' };
+    }
     const SENTINEL = JSON.stringify({ status: 'not_available' });
     const updates: any = {};
     const transientErrors: string[] = [];
@@ -427,12 +452,66 @@ class JobQueue {
     this.isRunning = true;
     console.log('[JobQueue] Starting job processor');
 
-    this.processInterval = setInterval(async () => {
-      const job = this.getNextJob();
+    this.processInterval = setInterval(() => { void this.tick().catch(() => {
+      console.error('[JobQueue] Processor tick failed');
+    }); }, this.config.processIntervalMs);
+  }
+
+  private async tick(): Promise<void> {
+    if (this.claiming || this.processing.size >= this.config.concurrency || stravaClient.isRateLimited()) return;
+    this.claiming = true;
+    try {
+      const job = this.durable ? await this.durable.claim(this.owner) : this.getNextJob();
       if (job) {
-        this.processJob(job);
+        this.processing.set(job.id, job);
+        void this.processJob(job).catch(() => console.error('[JobQueue] Processing failed'));
       }
-    }, this.config.processIntervalMs);
+    } finally { this.claiming = false; }
+  }
+
+  private async processDurableJob(job: Job): Promise<void> {
+    const durable = this.durable!;
+    let lost = false;
+    const heartbeat = setInterval(() => { void durable.heartbeat(job.id, this.owner)
+      .then(owned => { if (!owned) lost = true; }).catch(() => { lost = true; }); }, 60_000);
+    try {
+      if (job.attempts > job.maxAttempts) throw new Error('ATTEMPTS_EXHAUSTED');
+      const result = await this.executeJob(job);
+      if (!result.success || lost) throw new Error('JOB_EXECUTION_FAILED');
+      const children = (result.newJobs || []).map((child, index) => ({ ...child,
+        id: `${job.id}_${index}`, createdAt: new Date(), status: 'pending', attempts: 0 } as Job));
+      if (job.type === 'LIST_ACTIVITIES' && !children.some(child => child.type === 'LIST_ACTIVITIES')) {
+        children.push({ id: `${job.id}_finalize`, type: 'FINALIZE_SYNC', userId: job.userId,
+          data: {}, priority: 10, createdAt: new Date(), scheduledAt: new Date(), maxAttempts: 20, attempts: 0, status: 'pending' });
+      }
+      await durable.complete(job, this.owner, children, job.type === 'LIST_ACTIVITIES' ? result.data : undefined);
+      metrics.incrementJobsProcessed(job.type);
+    } catch {
+      const retryAt = job.attempts < job.maxAttempts ? new Date(Date.now() + Math.min(300_000, 60_000 * job.attempts)) : null;
+      const owned = await durable.fail(job, this.owner, retryAt);
+      if (owned && !retryAt && ['LIST_ACTIVITIES', 'FINALIZE_SYNC'].includes(job.type)) await storage.completeSyncError(job.userId, 'Sync could not finish. Please retry.');
+      console.error('[JobQueue] Durable job attempt failed');
+    } finally {
+      clearInterval(heartbeat);
+      this.processing.delete(job.id);
+    }
+  }
+
+  private async executeFinalizeSync(job: Job): Promise<JobResult> {
+    if (!this.durable || await this.durable.hasPending(job.userId, job.id)) return { success: false };
+    const state = await storage.getSyncState(job.userId);
+    if (!state || state.syncStatus !== 'running') return { success: true };
+    const { autoLinkActivitiesForUser } = await import('../activityLinker');
+    await autoLinkActivitiesForUser(job.userId);
+    if (state.syncProgress > 0) {
+      await aiService.generateInsights(job.userId);
+      await goalsService.checkAndCompleteGoals(job.userId);
+    }
+    const latest = await storage.getMostRecentActivityByUserId(job.userId);
+    await storage.completeSyncSuccess(job.userId, latest?.startDate || new Date());
+    deleteCachedByPrefix(`dashboard:${job.userId}:`);
+    deleteCachedResponse(`chart:${job.userId}:30days`);
+    return { success: true };
   }
 
   stop(): void {
@@ -448,7 +527,8 @@ class JobQueue {
     console.log('[JobQueue] Stopped job processor');
   }
 
-  getStats(): QueueStats {
+  async getStats(): Promise<QueueStats> {
+    if (this.durable) return this.durable.stats();
     const now = new Date();
     return {
       pending: this.queue.filter(j => j.status === 'pending' && j.scheduledAt <= now).length,
@@ -459,7 +539,8 @@ class JobQueue {
     };
   }
 
-  getJobsForUser(userId: number): { pending: Job[]; processing: Job[]; completed: Job[]; failed: Job[] } {
+  async getJobsForUser(userId: number): Promise<{ pending: Job[]; processing: Job[]; completed: Job[]; failed: Job[] }> {
+    if (this.durable) return this.durable.jobsForUser(userId);
     return {
       pending: this.queue.filter(j => j.userId === userId),
       processing: Array.from(this.processing.values()).filter(j => j.userId === userId),
@@ -468,8 +549,8 @@ class JobQueue {
     };
   }
 
-  private checkSyncCompletion(userId: number): void {
-    const userJobs = this.getJobsForUser(userId);
+  private async checkSyncCompletion(userId: number): Promise<void> {
+    const userJobs = await this.getJobsForUser(userId);
     const hasPendingWork = userJobs.pending.length > 0 || userJobs.processing.length > 0;
     
     if (!hasPendingWork && activeSyncs.has(userId)) {
@@ -542,4 +623,5 @@ class JobQueue {
 
 export const jobQueue = new JobQueue();
 
-if (!isMigrationStaging()) jobQueue.start();
+// Cloudflare processors start only after the scheduler leadership lock is held.
+if (!isCloudflareRuntime() && !isMigrationStaging()) jobQueue.start();

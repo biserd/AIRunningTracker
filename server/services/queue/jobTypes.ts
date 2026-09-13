@@ -2,7 +2,7 @@
  * Strava Job Queue - Job Type Definitions
  */
 
-export type JobType = 'LIST_ACTIVITIES' | 'HYDRATE_ACTIVITY' | 'GENERATE_COACH_RECAP';
+export type JobType = 'LIST_ACTIVITIES' | 'HYDRATE_ACTIVITY' | 'GENERATE_COACH_RECAP' | 'FINALIZE_SYNC' | 'STRAVA_WEBHOOK';
 
 export interface BaseJob {
   id: string;
@@ -45,7 +45,16 @@ export interface GenerateCoachRecapJob extends BaseJob {
   };
 }
 
-export type Job = ListActivitiesJob | HydrateActivityJob | GenerateCoachRecapJob;
+export interface FinalizeSyncJob extends BaseJob {
+  type: 'FINALIZE_SYNC';
+  data: Record<string, never>;
+}
+export interface StravaEvent {
+  object_type: 'activity' | 'athlete'; object_id: number; aspect_type: 'create' | 'update' | 'delete';
+  owner_id: number; subscription_id: number; event_time: number; updates?: Record<string, unknown>;
+}
+export interface StravaWebhookJob extends BaseJob { type: 'STRAVA_WEBHOOK'; data: StravaEvent }
+export type Job = ListActivitiesJob | HydrateActivityJob | GenerateCoachRecapJob | FinalizeSyncJob | StravaWebhookJob;
 
 export interface JobResult {
   success: boolean;
@@ -55,7 +64,7 @@ export interface JobResult {
 }
 
 export function createJobId(): string {
-  return `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `job_${crypto.randomUUID()}`;
 }
 
 export function createListActivitiesJob(

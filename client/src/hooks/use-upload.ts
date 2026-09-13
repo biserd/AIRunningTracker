@@ -1,6 +1,13 @@
 import { useState, useCallback } from "react";
 import type { UppyFile } from "@uppy/core";
 
+// Never forward the application token to legacy third-party presigned URLs.
+function uploadAuthHeaders(url: string): Record<string, string> {
+  if (new URL(url, window.location.origin).origin !== window.location.origin) return {};
+  const token = localStorage.getItem('auth_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 interface UploadMetadata {
   name: string;
   size: number;
@@ -66,6 +73,7 @@ export function useUpload(options: UseUploadOptions = {}) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...uploadAuthHeaders('/api/uploads/request-url'),
         },
         body: JSON.stringify({
           name: file.name,
@@ -94,6 +102,7 @@ export function useUpload(options: UseUploadOptions = {}) {
         body: file,
         headers: {
           "Content-Type": file.type || "application/octet-stream",
+          ...uploadAuthHeaders(uploadURL),
         },
       });
 
@@ -166,6 +175,7 @@ export function useUpload(options: UseUploadOptions = {}) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...uploadAuthHeaders('/api/uploads/request-url'),
         },
         body: JSON.stringify({
           name: file.name,
@@ -182,7 +192,7 @@ export function useUpload(options: UseUploadOptions = {}) {
       return {
         method: "PUT",
         url: data.uploadURL,
-        headers: { "Content-Type": file.type || "application/octet-stream" },
+        headers: { "Content-Type": file.type || "application/octet-stream", ...uploadAuthHeaders(data.uploadURL) },
       };
     },
     []

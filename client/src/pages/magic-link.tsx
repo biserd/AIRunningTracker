@@ -7,37 +7,38 @@ import { Activity, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { notifyExtensionAuth } from "@/lib/extensionBridge";
 import { sanitizeReturnTo } from "@shared/upgradeIntent";
 
-type Status = "verifying" | "ok" | "error" | "expired";
+type Status = "confirm" | "verifying" | "ok" | "error" | "expired";
 
 export default function MagicLinkPage() {
   const [, setLocation] = useLocation();
-  const [status, setStatus] = useState<Status>("verifying");
+  const [status, setStatus] = useState<Status>("confirm");
   const [errorMsg, setErrorMsg] = useState("");
+  const [credentials] = useState(() => {
+    const fragment = new URLSearchParams(window.location.hash.slice(1));
+    const query = new URLSearchParams(window.location.search);
+    const params = fragment.has('token') ? fragment : query;
+    return { token: params.get('token'), redirect: sanitizeReturnTo(params.get('redirect')) || '/dashboard' };
+  });
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get("token");
-    // Optional deep-link destination (e.g. /activity/123): only same-origin
-    // paths are accepted to prevent open-redirect abuse. Anything that isn't
-    // a single-leading-slash path falls back to /dashboard.
-    const safeRedirect = sanitizeReturnTo(params.get("redirect")) || "/dashboard";
-
-    if (!token) {
+    // Remove credentials from browser history before any navigation or third-party requests.
+    window.history.replaceState(window.history.state, '', window.location.pathname);
+    if (!credentials.token) {
       setStatus("error");
       setErrorMsg("This link is missing its sign-in token.");
-      return;
     }
+  }, [credentials]);
 
-    let cancelled = false;
-    (async () => {
+  const confirmSignIn = async () => {
+    if (status !== 'confirm' || !credentials.token) return;
+    setStatus('verifying');
       try {
         const res = await fetch("/api/auth/magic-link/verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }),
+          body: JSON.stringify({ token: credentials.token }),
         });
         const body = await res.json().catch(() => ({}));
-        if (cancelled) return;
 
         if (!res.ok) {
           if (body?.code === "EXPIRED_TOKEN") {
@@ -54,24 +55,19 @@ export default function MagicLinkPage() {
         notifyExtensionAuth(body.token, body.user || {});
         setStatus("ok");
 
-        setTimeout(() => setLocation(safeRedirect), 600);
+        setTimeout(() => setLocation(credentials.redirect), 600);
       } catch {
-        if (!cancelled) {
           setStatus("error");
           setErrorMsg("Couldn't reach the server. Please try again.");
-        }
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [setLocation]);
+  };
 
   return (
     <>
       <Helmet>
         <title>Signing you in: RunAnalytics</title>
         <meta name="robots" content="noindex" />
+        <meta name="referrer" content="no-referrer" />
       </Helmet>
 
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -87,6 +83,12 @@ export default function MagicLinkPage() {
 
           <Card>
             <CardHeader className="text-center">
+              {status === 'confirm' && (
+                <>
+                  <CardTitle>Ready to sign in?</CardTitle>
+                  <CardDescription>Continue to securely open your account. This link works once.</CardDescription>
+                </>
+              )}
               {status === "verifying" && (
                 <>
                   <div className="mx-auto mb-3 w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center">
@@ -112,7 +114,7 @@ export default function MagicLinkPage() {
                   </div>
                   <CardTitle>This link has expired</CardTitle>
                   <CardDescription>
-                    Sign-in links in emails are valid for 7 days. This one is past that window: just sign in directly or request a fresh link.
+                    This link has expired. Request a fresh link to sign in securely.
                   </CardDescription>
                 </>
               )}
@@ -126,6 +128,7 @@ export default function MagicLinkPage() {
                 </>
               )}
             </CardHeader>
+            {status === 'confirm' && <CardContent><Button className="w-full bg-strava-orange" onClick={confirmSignIn}>Continue to my account</Button></CardContent>}
 
             {(status === "expired" || status === "error") && (
               <CardContent className="space-y-3">

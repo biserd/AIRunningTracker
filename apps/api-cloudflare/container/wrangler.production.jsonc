@@ -1,0 +1,29 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "aitracker-main",
+  "account_id": "73d71a2bef58f7469ecb48e2b8e84c0e",
+  "main": "production.ts",
+  "compatibility_date": "2026-09-13",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [],
+  "triggers": { "crons": [] },
+  "r2_buckets": [{ "binding": "PUBLIC_ASSETS", "bucket_name": "aitracker-main-assets" }],
+  "ratelimits": [{ "name": "UPLOAD_LIMITER", "namespace_id": "1002", "simple": { "limit": 30, "period": 60 } }],
+  "vars": {
+    "HERMES_MCP_CLIENT_ID": "ra_mcp_client_L0o4CkpSbZeZ8xlI4MyQeNXh",
+    "TELEGRAM_BOT_USERNAME": "hermes_3njyz3nxuousjmh2_bot",
+    "ALLOWED_PRICE_IDS": "price_1SbtcfRwvWaTf8xfSEO4iKnc,price_1SbtcfRwvWaTf8xfwcVnrRf8"
+  },
+  "secrets": { "required": ["DATABASE_URL","JWT_SIGNING_SECRET","EMAIL_UNSUBSCRIBE_SIGNING_SECRET_V2",
+    "MARKETING_LINK_SIGNING_SECRET","MCP_TOKEN_HASH_SECRET","CHANNEL_IDENTITY_HASH_SECRET",
+    "COACH_BINDING_CALLBACK_SECRET","COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2","COACH_AGENT_WEBHOOK_URL",
+    "OPENAI_API_KEY","RESEND_API_KEY","RESEND_FROM_EMAIL","RESEND_WEBHOOK_SECRET","STRAVA_CLIENT_SECRET",
+    "VITE_STRAVA_CLIENT_ID","STRIPE_SECRET_KEY","VITE_STRIPE_PUBLIC_KEY","STRAVA_SUBSCRIPTION_ID"] },
+  "containers": [{ "class_name":"RunAnalyticsProduction","image":"../../../Dockerfile.cloudflare",
+    "image_build_context":"../../..","instance_type":"standard-1","max_instances":2 }],
+  "durable_objects": { "bindings": [{ "name":"WEB","class_name":"RunAnalyticsProduction" }] },
+  "migrations": [{ "tag":"v1","new_sqlite_classes":["RunAnalyticsProduction"] }],
+  "observability": { "enabled":true,"head_sampling_rate":0.1 }
+}

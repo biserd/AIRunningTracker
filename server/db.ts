@@ -15,7 +15,7 @@ const connectionUrl = new URL(process.env.DATABASE_URL);
 if (isCloudflareRuntime()) {
   for (const key of ['sslmode', 'sslcert', 'sslkey', 'sslrootcert']) connectionUrl.searchParams.delete(key);
 }
-const pool = new Pool({
+export const pool = new Pool({
   connectionString: connectionUrl.toString(),
   ssl: { rejectUnauthorized: isCloudflareRuntime() },
   max: 10,
