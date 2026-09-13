@@ -333,6 +333,7 @@ export default function TrainingPlans() {
               onClick={() => setShowWizard(true)}
               className="bg-strava-orange hover:bg-orange-600"
               data-testid="button-create-plan"
+              mutation
             >
               <Plus className="w-4 h-4 mr-2" />
               {canAccessTrainingPlans ? "Create New Plan" : "Preview New Plan"}

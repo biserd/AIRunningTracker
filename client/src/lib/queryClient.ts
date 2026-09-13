@@ -1,5 +1,6 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { notifyExtensionLogout } from "@/lib/extensionBridge";
+import { isReadOnlyStaging, stagingWriteMessage } from '@/lib/runtime';
 
 function clearInvalidSession(): void {
   if (typeof window === "undefined" || !localStorage.getItem("auth_token")) return;
@@ -20,6 +21,10 @@ export async function apiRequest(
   method: string = "GET",
   data?: unknown | undefined,
 ): Promise<any> {
+  const permitted = ['/api/auth/login', '/api/auth/logout', '/api/auth/magic-link/request', '/api/auth/magic-link/verify'];
+  if (isReadOnlyStaging && !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase()) && !permitted.includes(url)) {
+    throw new Error(stagingWriteMessage);
+  }
   const token = localStorage.getItem("auth_token");
   
   const headers: Record<string, string> = {};

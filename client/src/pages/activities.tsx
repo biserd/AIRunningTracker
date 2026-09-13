@@ -1,6 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import AppHeader from "@/components/AppHeader";
+import { isReadOnlyStaging, stagingWriteMessage } from '@/lib/runtime';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -537,6 +538,8 @@ export default function ActivitiesPage() {
                               <button
                                 type="button"
                                 aria-label={`Delete ${activity.name}`}
+                                disabled={isReadOnlyStaging}
+                                title={isReadOnlyStaging ? stagingWriteMessage : undefined}
                                 className="flex-shrink-0 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                 onClick={(e) => {
                                   e.preventDefault();

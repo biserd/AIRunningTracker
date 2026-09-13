@@ -3,6 +3,7 @@ import { servePublicAsset } from './public-assets';
 import { privateAssets } from './private-assets';
 import { magicLinks } from './magic-links';
 import { RunnerReads } from '../src/runner-reads';
+import { migrationReadiness } from './readiness';
 
 /** Staging deliberately has no billing, messaging or Strava provider credentials. */
 export class RunAnalyticsWeb extends Container<Env> {
@@ -29,6 +30,10 @@ export default {
     const cookie = request.headers.get('cookie')?.match(/(?:^|;\s*)cf_migration_shard=([01])(?:;|$)/)?.[1];
     const shard = cookie ?? String(crypto.getRandomValues(new Uint8Array(1))[0] % 2);
     try {
+      const readiness = await migrationReadiness(request, { signingSecret: env.JWT_SIGNING_SECRET,
+        inspect: session => new RunnerReads(env.HYPERDRIVE).migrationReadiness(session),
+        limit: async key => (await env.AUTH_LIMITER.limit({ key })).success });
+      if (readiness) return readiness;
       const auth = await magicLinks(request, {
         database: env.AUTH_DB, signingSecret: env.JWT_SIGNING_SECRET,
         origin: 'https://aitracker-api-staging.biser-d.workers.dev',
@@ -58,6 +63,11 @@ export default {
       const response = new Response(upstream.body, upstream);
       response.headers.set('X-Robots-Tag', 'noindex, nofollow');
       if (!cookie) response.headers.append('Set-Cookie', `cf_migration_shard=${shard}; Path=/; HttpOnly; Secure; SameSite=Lax`);
+      if (response.headers.get('content-type')?.includes('text/html')) {
+        return new HTMLRewriter().on('head', { element(element) {
+          element.append('<meta name="app-environment" content="staging">', { html: true });
+        } }).transform(response);
+      }
       return response;
     } catch {
       // Never print connection details, request bodies or provider errors.

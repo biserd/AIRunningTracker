@@ -28,6 +28,7 @@ export function StravaConnectButton({
 
   return (
     <Button
+      mutation
       onClick={onClick}
       disabled={disabled}
       className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]}`}

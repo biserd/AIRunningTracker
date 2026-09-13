@@ -8,6 +8,7 @@ import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { ExternalLinkPolicy } from "@/components/ExternalLinkPolicy";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
+import { MigrationNotice } from '@/components/MigrationNotice';
 
 // Code-split every route into its own chunk so visiting any single page
 // no longer downloads/parses code for every other page. Huge LCP win on
@@ -16,6 +17,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 const MaintenancePage = lazy(() => import("@/pages/maintenance"));
 const Dashboard = lazy(() => import("@/pages/dashboard"));
 const SettingsPage = lazy(() => import("@/pages/settings"));
+const MigrationChecks = lazy(() => import("@/pages/migration-checks"));
 const ActivityPage = lazy(() => import("@/pages/activity"));
 const ActivitiesPage = lazy(() => import("@/pages/activities"));
 const CoachInsightsPage = lazy(() => import("@/pages/coach-insights"));
@@ -231,6 +233,7 @@ function Router() {
         <Route path="/dashboard">
           <ProtectedRoute component={Dashboard} />
         </Route>
+        <Route path="/migration-checks"><ProtectedRoute component={MigrationChecks} /></Route>
         <Route path="/coach-insights">
           <ProtectedRoute component={CoachInsightsPage} />
         </Route>
@@ -324,6 +327,7 @@ function App() {
       <TooltipProvider>
         <ExternalLinkPolicy />
         <RouteScrollManager />
+        <MigrationNotice />
         <Toaster />
         <Router />
         <PWAInstallPrompt />

@@ -109,6 +109,7 @@ export default function Header({
                       variant="outline"
                       size="sm"
                       onClick={onSyncActivities}
+                      mutation
                       disabled={isSyncing}
                     >
                       <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />

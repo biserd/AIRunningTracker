@@ -471,13 +471,12 @@ class JobQueue {
 
   private async processDurableJob(job: Job): Promise<void> {
     const durable = this.durable!;
-    let lost = false;
-    const heartbeat = setInterval(() => { void durable.heartbeat(job.id, this.owner)
-      .then(owned => { if (!owned) lost = true; }).catch(() => { lost = true; }); }, 60_000);
+    const { guardJobLease } = await import('./leaseGuard');
+    const heartbeat = guardJobLease(() => durable.heartbeat(job.id, this.owner));
     try {
       if (job.attempts > job.maxAttempts) throw new Error('ATTEMPTS_EXHAUSTED');
       const result = await this.executeJob(job);
-      if (!result.success || lost) throw new Error('JOB_EXECUTION_FAILED');
+      if (!result.success) throw new Error('JOB_EXECUTION_FAILED');
       const children = (result.newJobs || []).map((child, index) => ({ ...child,
         id: `${job.id}_${index}`, createdAt: new Date(), status: 'pending', attempts: 0 } as Job));
       if (job.type === 'LIST_ACTIVITIES' && !children.some(child => child.type === 'LIST_ACTIVITIES')) {
@@ -492,7 +491,7 @@ class JobQueue {
       if (owned && !retryAt && ['LIST_ACTIVITIES', 'FINALIZE_SYNC'].includes(job.type)) await storage.completeSyncError(job.userId, 'Sync could not finish. Please retry.');
       console.error('[JobQueue] Durable job attempt failed');
     } finally {
-      clearInterval(heartbeat);
+      heartbeat.stop();
       this.processing.delete(job.id);
     }
   }

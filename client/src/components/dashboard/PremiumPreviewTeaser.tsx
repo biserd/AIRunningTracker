@@ -8,6 +8,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { trackFunnelEvent } from "@/lib/analytics";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
 import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
+import { isReadOnlyStaging } from '@/lib/runtime';
 
 interface PremiumPreviewTeaserData {
   preview: {
@@ -98,6 +99,14 @@ export default function PremiumPreviewTeaser() {
   if (subscriptionLoading || !isFree) return null;
 
   if (query.data?.status === "not_connected") return null;
+
+  if (isReadOnlyStaging && !preview) return (
+    <PreviewShell testId="premium-preview-staging">
+      <h3 className="font-bold text-gray-900">Preview generation is paused in staging</h3>
+      <p className="mt-1 text-sm text-gray-700">You can explore your saved runs. Generating new analysis is disabled on this test site.</p>
+      <Button asChild variant="outline" className="mt-3"><Link href="/activities">View saved runs</Link></Button>
+    </PreviewShell>
+  );
 
   if (query.isError || retry.isError || query.data?.status === "failed") {
     return (

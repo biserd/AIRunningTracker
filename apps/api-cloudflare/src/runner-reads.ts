@@ -50,6 +50,20 @@ export class RunnerReads {
     return this.transaction(operation);
   }
 
+  migrationReadiness(session: RunnerSession) {
+    return this.read(session, async client => {
+      const admin = await client.query('SELECT is_admin FROM public.users WHERE id=$1 LIMIT 1', [session.userId]);
+      if (admin.rows[0]?.is_admin !== true) throw new Error('FORBIDDEN');
+      const state = await client.query(`SELECT
+        to_regclass('public.cloudflare_jobs') IS NOT NULL AS "queueTable",
+        EXISTS (SELECT 1 FROM public.system_settings WHERE key='vapid_public_key' AND length(value)>0) AND
+        EXISTS (SELECT 1 FROM public.system_settings WHERE key='vapid_private_key' AND length(value)>0) AS "pushKeys",
+        EXISTS (SELECT 1 FROM public.system_settings WHERE key='drip_campaigns_enabled' AND value='true') AS "campaignsEnabled"`);
+      return { queueTable: state.rows[0]?.queueTable === true, pushKeys: state.rows[0]?.pushKeys === true,
+        campaignsEnabled: state.rows[0]?.campaignsEnabled === true };
+    });
+  }
+
   async login(email: string, password: string, signingSecret: string) {
     if (signingSecret.length < 32) throw new Error('NOT_CONFIGURED');
     const row = await this.transaction(async (client) => {

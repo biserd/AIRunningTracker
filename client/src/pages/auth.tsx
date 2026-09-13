@@ -15,13 +15,14 @@ import { notifyExtensionAuth } from "@/lib/extensionBridge";
 import { useToast } from "@/hooks/use-toast";
 import { registerSchema, type RegisterData } from "@shared/schema";
 import { sanitizeReturnTo } from "@shared/upgradeIntent";
+import { isReadOnlyStaging } from '@/lib/runtime';
 
 type AuthMode = "signin" | "signup";
 
 export default function AuthPage() {
   const [, setLocation] = useLocation();
   const [mode, setMode] = useState<AuthMode>(() =>
-    new URLSearchParams(window.location.search).get("mode") === "signup" ? "signup" : "signin"
+    !isReadOnlyStaging && new URLSearchParams(window.location.search).get("mode") === "signup" ? "signup" : "signin"
   );
   const [showPassword, setShowPassword] = useState(false);
   const [magicLinkEmail, setMagicLinkEmail] = useState("");
@@ -134,6 +135,7 @@ export default function AuthPage() {
                 <Button
                   type="button"
                   onClick={handleStravaLogin}
+                  mutation
                   className="w-full bg-[#FC4C02] hover:bg-[#e04400] text-white font-semibold flex items-center justify-center gap-2 h-11"
                   data-testid="button-strava-login"
                 >
@@ -175,7 +177,7 @@ export default function AuthPage() {
                     {magicLinkSubmitting ? "Sending…" : "Email me a sign-in link"}
                   </Button>
                   <p className="text-xs text-center text-gray-500">
-                    We'll send a one-tap link. No password needed.
+                    We'll send a secure sign-in link. No password needed.
                   </p>
                 </form>
               </>
@@ -191,7 +193,7 @@ export default function AuthPage() {
                   <p className="font-semibold text-charcoal">Check your inbox</p>
                   <p className="text-sm text-gray-600">
                     If an account exists for <span className="font-medium">{magicLinkSentTo}</span>,
-                    we've sent a one-tap sign-in link. It expires in 15 minutes.
+                    we've sent a secure sign-in link. It expires in 15 minutes.
                   </p>
                 </div>
                 <Button
@@ -319,6 +321,7 @@ export default function AuthPage() {
 
             {/* Mode toggle */}
             <div className="text-center border-t border-gray-100 pt-4">
+              {isReadOnlyStaging ? <p className="text-sm text-gray-600">Sign in with your existing account. New registrations are disabled in staging.</p> :
               <button
                 type="button"
                 onClick={() => {
@@ -334,6 +337,7 @@ export default function AuthPage() {
                   <>Already have an account? <span className="text-strava-orange font-medium">Sign in</span></>
                 )}
               </button>
+              }
             </div>
           </CardContent>
         </Card>

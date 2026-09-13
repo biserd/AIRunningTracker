@@ -77,6 +77,7 @@ export function DirectCheckoutButton({
       {cloneElement(button, {
         ...buttonProps,
         type: "button",
+        mutation: true,
         disabled: disabled || checkout.isPending,
         onClick: (event: MouseEvent<HTMLButtonElement>) => {
           onClick?.(event);
