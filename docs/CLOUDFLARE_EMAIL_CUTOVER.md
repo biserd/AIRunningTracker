@@ -32,4 +32,15 @@ Rollback requires the prior container image and its Resend environment variables
 
 ## Status
 
-Domain confirmed Enabled / DNS Configured in Cloudflare. Dedicated token created with explicit account-scope approval and saved encrypted on `aitracker-main`. Local tests and build passed. Production promotion and inbox verification pending.
+Domain confirmed Enabled / DNS Configured in Cloudflare. Dedicated token created with explicit account-scope approval and saved encrypted on `aitracker-main`.
+
+Production promoted on September 13, 2026:
+
+- Worker version `3df4bc23-27d2-4293-a15f-cb7c151139e7`.
+- Container image `sha256:a3046219ff46aa36a3e87a8c4039adf0d48594a26545d73e8d8ad81ce43b5d5a`, application version 3.
+- Stable `production-live` instance running, one healthy active instance, no failed instances.
+- Build commit `3f1d060`; 43 regression tests, campaign signing tests, staging/production type checks and local build passed.
+- One explicitly approved product-update test sent through the signed-in admin UI to `biserd@gmail.com`. Gmail receipt verified at 11:49 AM EDT: `RunAnalytics hello@aitracker.run`, mailed-by `cf-bounce.aitracker.run`, signed-by `aitracker.run`, TLS.
+- No database migration, DNS mutation, campaign activation or messages to other runners were triggered for this test.
+
+Remaining limitation: lifecycle campaigns deliberately stay blocked until per-job Cloudflare delivery feedback is implemented. The REST response lacks a message ID, so the old Resend message-ID correlation cannot be reused or fabricated. Cloudflare delivery logs remain the delivery source of truth meanwhile.

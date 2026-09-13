@@ -3,8 +3,9 @@
 ## Current state
 
 - `aitracker.run/*` and `www.aitracker.run/*` route to `aitracker-main`.
-- Production Worker version: `db618b7e-88a5-47db-963a-b9760a656b08`.
-- Production image digest: `sha256:dc6add197a6dd6489662f491f3579278ce4c582965fe74955c94bbb6da9d1e53`.
+- Production Worker version: `3df4bc23-27d2-4293-a15f-cb7c151139e7`.
+- Production image digest: `sha256:a3046219ff46aa36a3e87a8c4039adf0d48594a26545d73e8d8ad81ce43b5d5a`.
+- New outbound email now uses Cloudflare Email Service. The controlled inbox test passed; see `CLOUDFLARE_EMAIL_CUTOVER.md`. Earlier Resend verification entries below are historical, not the current sending provider.
 - Account: `73d71a2bef58f7469ecb48e2b8e84c0e`.
 - Verified aitracker.run zone: `210ac2ad4e37375dacd9d1aa1234d9d8`.
 - Existing production Neon database retained; no runner data migration or new SQL
