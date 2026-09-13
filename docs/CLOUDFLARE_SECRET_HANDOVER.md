@@ -1,16 +1,16 @@
 # Replit retirement: credentials and cutover
 
 Never put secret values in this file, Wrangler vars, GitHub issues or build logs.
-This is an inventory, not confirmation that credentials have been transferred.
+This records verified transfers and the remaining cutover gates. It contains no secret values.
 
 ## Current state (2026-09-13)
 
 - The supplied Neon connection is stored in staging Hyperdrive. Query caching is disabled.
 - A read-only schema inventory succeeded. The public application tables and Stripe schema exist.
-- This does not prove that this database contains current production records.
+- Replit's Production Database UI independently confirmed this is the live 1.61 GB database.
 - Nineteen application/provider/config entries are now installed as encrypted
-  `CUTOVER_*` secrets in `aitracker-api-staging`. They are inactive and the code
-  never reads them. Sources were copied from Replit and compared in memory before
+  `CUTOVER_*` secrets in `aitracker-api-staging`. The admin preflight now uses the
+  provider keys for fixed read-only checks; they are not passed into the staging application container. Sources were copied from Replit and compared in memory before
   saving. The live and test Stripe key prefixes were checked independently.
 - `JWT_SIGNING_SECRET` is a separately generated staging key. Never replace it
   with `CUTOVER_JWT_SIGNING_SECRET` while using a different database from production.
@@ -19,6 +19,23 @@ This is an inventory, not confirmation that credentials have been transferred.
   Stripe private/public keys. VAPID keys and a destination-specific Stripe webhook
   signing secret have not been provisioned or verified.
 - Replit remains the sole production owner. Do not stop its deployment yet.
+- On September 13, the user separately approved the same production secret transfer
+  to `aitracker-main`. Sixteen application entries, `DATABASE_URL` and the verified
+  `STRAVA_SUBSCRIPTION_ID` (327049) were saved as encrypted secrets. The Worker was
+  created as an inert placeholder; its workers.dev and preview URLs are disabled.
+  No main-domain route or scheduler was enabled.
+- Live preflight passed Stripe live recurring prices, matching enabled Stripe
+  webhook configuration, Strava subscription and OpenAI model discovery.
+  These are configuration reads, not signed delivery or paid-inference tests.
+- Resend domain listing returned 401. Sending-only keys can legitimately return
+  this response. Do not replace the key or grant broader permissions based on
+  that status alone. The user approved one test email to biserd@gmail.com.
+- Detailed production `cloudflare_jobs` verification passed: all 14 columns,
+  five validated constraints and three valid/ready indexes match the SQL migration.
+- Scheduler standby takeover, connection loss, stalled heartbeat and startup
+  failure have controlled test coverage. Live failover and Replit drain/stop
+  have NOT been executed. Production defaults to `APP_ROLE=web`; only switch
+  to `jobs` after Replit timers have stopped and pending work is accounted for.
 
 ## Preserve these values at production cutover
 
