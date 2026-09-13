@@ -29,7 +29,10 @@ This records verified transfers and the remaining cutover gates. It contains no 
   These are configuration reads, not signed delivery or paid-inference tests.
 - Resend domain listing returned 401. Sending-only keys can legitimately return
   this response. Do not replace the key or grant broader permissions based on
-  that status alone. The user approved one test email to biserd@gmail.com.
+  that status alone. The bounded error classification confirmed `restricted_api_key`.
+  The user approved one test email to biserd@gmail.com. Resend accepted that
+  fixed-recipient, idempotent test from the Cloudflare edge at approximately
+  09:22 America/New_York. Inbox receipt remains to be confirmed by the user.
 - Detailed production `cloudflare_jobs` verification passed: all 14 columns,
   five validated constraints and three valid/ready indexes match the SQL migration.
 - Scheduler standby takeover, connection loss, stalled heartbeat and startup
