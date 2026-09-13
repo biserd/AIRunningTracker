@@ -32,7 +32,7 @@ This records verified transfers and the remaining cutover gates. It contains no 
   that status alone. The bounded error classification confirmed `restricted_api_key`.
   The user approved one test email to biserd@gmail.com. Resend accepted that
   fixed-recipient, idempotent test from the Cloudflare edge at approximately
-  09:22 America/New_York. Inbox receipt remains to be confirmed by the user.
+  09:22 America/New_York. The user subsequently confirmed inbox receipt.
 - Detailed production `cloudflare_jobs` verification passed: all 14 columns,
   five validated constraints and three valid/ready indexes match the SQL migration.
 - Scheduler standby takeover, connection loss, stalled heartbeat and startup
@@ -86,6 +86,23 @@ Replace the connector with direct provider credentials. Copy storage objects to
 R2 with ACL and checksum verification before retiring the source.
 
 ## Job ownership
+
+### Private production verification, 2026-09-13
+
+The `aitracker-main` application is deployed using the tested staging image pinned
+by digest. It has no public routes, preview URL or cron triggers; `APP_ROLE=web`
+keeps its scheduled jobs disabled. Staging's admin-authorized readiness page uses
+a private service binding with fixed probes, not an arbitrary production proxy.
+Health, live Stripe public configuration and production OAuth issuer checks pass.
+A correctly signed Resend no-op returned 200; a changed raw body returned 401.
+That probe contains no email ID and does not change runner or email records.
+The user confirmed receiving the separately approved single delivery test.
+
+All 37 migration tests and TypeScript checks pass. This does not establish live
+scheduler failover or complete provider round trips. Replit still serves traffic.
+Production admin sign-in is needed to inspect its pending queue before scheduler
+handover. Do not shut down Replit or enable Cloudflare jobs based on these probes
+alone.
 
 Keep Cloudflare production delivery disabled until cutover. Port each timer to
 durable Queues or scheduled handlers with atomic job claims and deduplication.

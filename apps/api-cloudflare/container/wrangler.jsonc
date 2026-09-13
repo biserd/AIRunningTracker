@@ -8,6 +8,7 @@
   "workers_dev": true,
   "preview_urls": false,
   "routes": [],
+  "services": [{ "binding": "PRODUCTION", "service": "aitracker-main" }],
   "r2_buckets": [{ "binding": "PUBLIC_ASSETS", "bucket_name": "aitracker-main-assets" }],
   "ratelimits": [
     { "name": "UPLOAD_LIMITER", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } },
@@ -17,7 +18,7 @@
   "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "a75ea8f13ccd4939bb0178b798e1ffc8" }],
   "d1_databases": [{ "binding": "AUTH_DB", "database_name": "aitracker-staging-auth", "database_id": "0bf68529-3559-4d3d-8031-6597d69955d8", "migrations_dir": "auth-migrations" }],
   "vars": { "APP_ENV": "staging" },
-  "secrets": { "required": ["DATABASE_URL", "JWT_SIGNING_SECRET", "CUTOVER_EMAIL_UNSUBSCRIBE_SIGNING_SECRET_V2", "CUTOVER_STRIPE_SECRET_KEY", "CUTOVER_RESEND_API_KEY", "CUTOVER_OPENAI_API_KEY", "CUTOVER_VITE_STRAVA_CLIENT_ID", "CUTOVER_STRAVA_CLIENT_SECRET"] },
+  "secrets": { "required": ["DATABASE_URL", "JWT_SIGNING_SECRET", "CUTOVER_EMAIL_UNSUBSCRIBE_SIGNING_SECRET_V2", "CUTOVER_STRIPE_SECRET_KEY", "CUTOVER_RESEND_API_KEY", "CUTOVER_RESEND_WEBHOOK_SECRET", "CUTOVER_OPENAI_API_KEY", "CUTOVER_VITE_STRAVA_CLIENT_ID", "CUTOVER_STRAVA_CLIENT_SECRET"] },
   "containers": [{
     "class_name": "RunAnalyticsWeb",
     "image": "../../../Dockerfile.cloudflare",
