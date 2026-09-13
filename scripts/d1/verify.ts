@@ -1,5 +1,6 @@
 import { migrationTarget } from './target';
 import { buildApplicationSchema, quote } from './schema';
+import {archiveName,expectedQuarantine} from './quarantine-policy';
 
 // Independent read-only target checks. This does not certify runtime readiness,
 // compare complete payload hashes, mutate status, or connect to the source.
@@ -22,9 +23,11 @@ try {
     const expected=manifest.tables[name];
     if(!expected||!Number.isSafeInteger(expected.inserted))throw new Error('INVALID_MANIFEST');
     const actual=await count(`SELECT count(*) n FROM ${quote(name)}`);
-    if(actual!==expected.inserted||expected.source!==expected.inserted+expected.omitted)throw new Error('COUNT_MISMATCH');
+    const archived=manifest.quarantine&&name in expectedQuarantine?await count(`SELECT count(*) n FROM ${quote(archiveName(name))}`):0;
+    if(manifest.quarantine&&name in expectedQuarantine&&archived!==expectedQuarantine[name])throw new Error('QUARANTINE_COUNT_MISMATCH');
+    if(actual+archived!==expected.inserted||expected.source!==expected.inserted+expected.omitted)throw new Error('COUNT_MISMATCH');
     total+=actual;
-    console.log(JSON.stringify({table:name,rows:actual,countVerified:true}));
+    console.log(JSON.stringify({table:name,rows:actual,quarantined:archived,countVerified:true}));
   }
   for(const [table,expected] of Object.entries(manifest.stripe)){
     if(await count('SELECT count(*) n FROM migration_stripe_snapshot WHERE source_table=?',[table])!==expected)throw new Error('ARCHIVE_COUNT_MISMATCH');
@@ -40,6 +43,9 @@ try {
     checks[`${table}_excluded_link`]=`SELECT count(*) n FROM ${quote(table)} a JOIN migration_activity_exclusions e ON a.activity_id=e.activity_id`;
   }
   let referencesValid=true;
+  for(const table of buildApplicationSchema().filter(t=>t.columns.some(c=>c.name==='user_id'))){
+    checks[`${table.name}_owner_missing`]=`SELECT count(*) n FROM ${quote(table.name)} a LEFT JOIN users u ON u.id=a.user_id WHERE a.user_id IS NOT NULL AND u.id IS NULL`;
+  }
   for(const [name,sql] of Object.entries(checks)){
     const violations=await count(sql);
     if(violations)referencesValid=false;

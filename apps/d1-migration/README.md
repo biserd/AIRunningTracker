@@ -13,21 +13,30 @@ Source: existing production Neon, opened in a repeatable-read, read-only transac
 - Source activity count: 79,956. Exactly 33 approved activities excluded, unchanged in Neon.
 - Stripe/internal tables preserved in the private archive; not a live billing projection.
 - Independent table-count and exclusion-reference checks passed. Declared foreign keys passed.
-- Import stopped with `status=failed`, `stage=integrity_checks`: 364 activities reference
-  seven user IDs absent from the same snapshot's complete users table.
-- Wider inspection found 1,345 non-null missing-user references across 14 tables.
-  Some history, such as deletion feedback, may intentionally outlive its user. Do not
-  treat every reference as corruption or silently delete it. No remediation has been applied.
-- Thirteen SQLite tests pass. Focused strict type checking of implementation files passes.
+- The initial integrity stop found 364 activities referencing seven missing account IDs,
+  and 1,345 missing-user references across 14 tables in total.
+- With explicit user approval, all 1,345 records were moved atomically to
+  `migration_quarantine_<table>` tables. Stored column values are preserved without JSON
+  reserialization. Nothing was changed in Neon, reassigned to another runner or put in R2.
+- There are now 502,339 active rows, including 79,559 activities, plus 1,345 archived rows.
+  Active-plus-archive counts reconcile with the 503,684-row import. The 570 users are unchanged.
+- Independent count, exclusion, missing-user and declared-FK checks pass. Migration status
+  is `verifying`, stage `snapshot_imported_runtime_not_ready`, not production-ready.
+- Seventeen SQLite tests pass. Focused strict type checking of implementation files passes.
 - Full target payload checksum parity, runtime port, end-to-end tests and cutover remain open.
 
 The complete copy is retained for review. Do not clear/restart it using the activity-only
-recovery helper. Proposed quarantine of missing-account records requires approval and
-must preserve source data and audit history. Production remains on Neon.
+recovery helper. Quarantine archives are not part of any application repository or public API.
+They preserve audit/deletion history as well as runner records. Restoring them requires
+deliberate administrative review and valid ownership; never automatically reassign user IDs.
+Production remains on Neon.
 
 Read-only diagnosis: `tsx scripts/d1/diagnose-integrity.ts`.
-Count/reference review of this stopped run: `tsx scripts/d1/verify.ts --inspect-failed-integrity`.
-The latter exits nonzero for the known ownership violations; it does not change migration status.
+Current count/reference review: `npm run d1:verify`.
+The approved, inventory-guarded quarantine command is
+`tsx scripts/d1/quarantine.ts --execute-approved-quarantine`. It can recover an interrupted
+quarantine but refuses changed counts or columns. Each DELETE first archives the entire row
+in the same transaction through a trigger; an archive conflict aborts the removal.
 
 ## User-approved exclusion policy
 
@@ -57,6 +66,10 @@ The latter exits nonzero for the known ownership violations; it does not change 
   It does not claim complete payload checksum parity or mark the app ready.
 - `server/d1/activities.ts`: runner-scoped D1 activity repository with bounded cursor pagination.
 - `server/d1/jobLeases.ts`: SQLite atomic claims, heartbeat, lease-loss and retry handling.
+- `server/d1/jobStore.ts`: D1 batch-based completion receipts, child enqueue, progress,
+  deduplicated enqueue, runner-scoped job history and queue stats. Migration 0006 is
+  applied to the isolated target. Tests cover lease loss, replay, tenant mismatch and rollback.
+  This store is not wired to the production job manager and no scheduler is enabled.
 - `migration_stripe_snapshot`: lossless JSON baseline for Stripe and `_system` tables.
   This is NOT a replacement billing service or query-compatible Stripe schema.
 
@@ -113,8 +126,8 @@ not merely binding this database to the app.
    all raw PostgreSQL SQL to D1. The new activity repository is not yet wired to routes.
 3. Replace `stripe-replit-sync` and `stripe.*` queries with a real D1 billing
    projection, signed webhook processing and reconciliation. Archived JSON alone is insufficient.
-4. Complete atomic job enqueue/completion/progress, email outbox and scheduler
-   leadership replacement. Lease primitives alone do not replace the scheduler.
+4. Wire and native-D1-test the new job store; port email outbox and scheduler
+   leadership. Local SQLite transaction tests do not certify the running scheduler.
 5. Port OAuth, consent, refresh rotation, Telegram binding and remaining transaction paths.
 6. Run end-to-end auth, Strava, billing, unsubscribe, analytics and multi-runner isolation tests.
 7. Load-test native D1 and measure storage/growth. SQLite unit tests do not replace D1 load testing.
