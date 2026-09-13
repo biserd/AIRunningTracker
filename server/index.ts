@@ -7,15 +7,31 @@ import { getStripeSync } from './stripeClient';
 import { WebhookHandlers } from './webhookHandlers';
 import { assertProductionSecurityConfiguration } from './config/security';
 import { handleResendWebhook } from './services/resendWebhook';
+import { isCloudflareRuntime, isMigrationStaging } from './config/runtime';
 
 // Refuse to serve production traffic with known/default authentication keys.
 assertProductionSecurityConfiguration();
 
 const app = express();
+if (isCloudflareRuntime()) app.set('trust proxy', 1);
 
 // Health check endpoint - MUST be first, before any middleware that could slow or redirect
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
+});
+
+// Staging must not accept production callbacks or emit publicly cacheable pages.
+app.use((req, res, next) => {
+  if (isMigrationStaging()) {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && req.path !== '/api/auth/login') {
+      return res.status(503).json({ error: 'MIGRATION_READ_ONLY', message: 'This migration rehearsal does not change live accounts.' });
+    }
+    if (/^\/(?:mcp|api\/(?:stripe|webhooks|integrations\/hermes))(?:\/|$)/.test(req.path)) {
+      return res.status(503).json({ error: 'MIGRATION_STAGING' });
+    }
+  }
+  next();
 });
 
 // Security headers (TLS termination is handled by Replit's proxy - no HTTPS redirect needed)
@@ -94,7 +110,7 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse && !isSensitiveEndpoint(path)) {
+      if (capturedJsonResponse && !isCloudflareRuntime() && !isSensitiveEndpoint(path)) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
 
@@ -228,11 +244,11 @@ async function verifyPremiumPriceConfig(): Promise<void> {
     // ALWAYS serve the app on port 5000
     // this serves both the API and the client.
     // It is the only port that is not firewalled.
-    const port = 5000;
+    const port = Number(process.env.PORT || 5000);
     server.listen({
       port,
       host: "0.0.0.0",
-      reusePort: true,
+    reusePort: process.platform !== 'win32',
     }, () => {
       log(`serving on port ${port}`);
       console.log(`🚀 RunAnalytics app is ready at http://localhost:${port}`);
@@ -240,7 +256,13 @@ async function verifyPremiumPriceConfig(): Promise<void> {
       // Stripe setup performs database migrations and external API calls. Keep
       // it off the readiness path so autoscale promotion can probe the app even
       // when Stripe is slow or temporarily unavailable.
-      void initStripe();
+      if (!isCloudflareRuntime()) void initStripe();
+      // Cloudflare uses the existing Stripe schema and explicit credentials.
+      // Webhook registration/backfills are deliberate cutover operations, not boot effects.
+    });
+    process.once('SIGTERM', () => {
+      server.close(() => process.exit(0));
+      setTimeout(() => process.exit(0), 25_000).unref();
     });
   } catch (error) {
     console.error('Failed to start server:', error);

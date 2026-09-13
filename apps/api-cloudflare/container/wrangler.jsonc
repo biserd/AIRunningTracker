@@ -1,0 +1,23 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "aitracker-api-staging",
+  "account_id": "73d71a2bef58f7469ecb48e2b8e84c0e",
+  "main": "index.ts",
+  "compatibility_date": "2026-09-13",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "routes": [],
+  "vars": { "APP_ENV": "staging" },
+  "secrets": { "required": ["DATABASE_URL", "JWT_SIGNING_SECRET", "CUTOVER_EMAIL_UNSUBSCRIBE_SIGNING_SECRET_V2"] },
+  "containers": [{
+    "class_name": "RunAnalyticsWeb",
+    "image": "../../../Dockerfile.cloudflare",
+    "image_build_context": "../../..",
+    "instance_type": "standard-1",
+    "max_instances": 2
+  }],
+  "durable_objects": { "bindings": [{ "name": "WEB", "class_name": "RunAnalyticsWeb" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RunAnalyticsWeb"] }],
+  "observability": { "enabled": true, "head_sampling_rate": 0.1 }
+}

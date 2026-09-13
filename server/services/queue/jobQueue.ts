@@ -11,6 +11,7 @@ import { aiService } from '../ai';
 import goalsService from '../goals';
 import { deleteCachedByPrefix, deleteCachedResponse } from '../../routes';
 import { canAccessCapability } from '@shared/entitlements';
+import { isMigrationStaging } from '../../config/runtime';
 
 // Track users with active sync operations
 const activeSyncs = new Map<number, { startedAt: Date; totalActivities: number; processedActivities: number }>();
@@ -541,4 +542,4 @@ class JobQueue {
 
 export const jobQueue = new JobQueue();
 
-jobQueue.start();
+if (!isMigrationStaging()) jobQueue.start();

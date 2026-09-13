@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { authService } from "../services/auth";
+import { mayInitializeSchema } from '../config/runtime';
 import {
   MCP_ISSUER,
   MCP_RESOURCE,
@@ -152,7 +153,7 @@ async function handleMcpRequest(req: Request, res: Response, isPublic: boolean) 
 }
 
 export async function registerMcpRoutes(app: Express): Promise<void> {
-  await ensureMcpSchema();
+  if (mayInitializeSchema()) await ensureMcpSchema();
   if (!process.env.MCP_TOKEN_HASH_SECRET || process.env.MCP_TOKEN_HASH_SECRET.length < 32) {
     console.warn("[MCP] Private OAuth disabled until MCP_TOKEN_HASH_SECRET is configured with at least 32 characters");
   }

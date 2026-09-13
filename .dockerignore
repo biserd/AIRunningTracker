@@ -1,0 +1,11 @@
+.git
+**/node_modules
+**/.npm-cache
+**/.wrangler
+**/dist
+**/.env*
+**/.dev.vars*
+**/*.log
+.codex
+.agents
+apps

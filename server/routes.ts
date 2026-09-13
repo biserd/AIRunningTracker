@@ -43,6 +43,7 @@ import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage, r
 import { getAllBlogPosts } from "./ssr/blogContent";
 import { buildRobotsTxt, isCrawler, isPrivateCrawlerPath } from "./ssr/crawlerPolicy";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
+import { ownsScheduledJobs, mayInitializeSchema, isMigrationStaging } from './config/runtime';
 import {
   type Capability,
   canAccessCapability,
@@ -292,7 +293,7 @@ async function isAllowedCheckoutPriceId(priceId: unknown): Promise<boolean> {
 export async function registerRoutes(app: Express): Promise<Server> {
   registerObjectStorageRoutes(app);
   await registerMcpRoutes(app);
-  await ensureProactiveCoachSchema();
+  if (mayInitializeSchema()) await ensureProactiveCoachSchema();
 
   
   // SEO: Page-specific meta data for dynamic rendering
@@ -1629,7 +1630,7 @@ ${allPages.map(page => `  <url>
     try {
       const loginData = loginSchema.parse(req.body);
       const result = await authService.login(loginData);
-      const reactivation = await reactivateDormantAccount(result.user.id);
+      const reactivation = isMigrationStaging() ? { reactivated: false } : await reactivateDormantAccount(result.user.id);
       res.json({ ...result, accountReactivated: reactivation.reactivated });
     } catch (error: any) {
       // Surface a machine-readable code so the web client can switch the UI
@@ -1648,7 +1649,7 @@ ${allPages.map(page => `  <url>
     try {
       // Loading any authenticated app screen counts as a return visit, not
       // only loading the dashboard.
-      await reactivateDormantAccount(req.user.id);
+      if (!isMigrationStaging()) await reactivateDormantAccount(req.user.id);
       const user = await storage.getUser(req.user.id);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -9517,6 +9518,7 @@ ${allPages.map(page => `  <url>
   });
 
   // Start the drip campaign worker (async, loads settings from DB)
+  if (ownsScheduledJobs()) {
   dripCampaignWorker.start().catch(err => 
     console.error("[DripWorker] Failed to start:", err)
   );
@@ -9534,6 +9536,7 @@ ${allPages.map(page => `  <url>
     console.warn("[ProactiveCoach] Worker disabled; set ENABLE_PROACTIVE_COACH_WORKER=true to enable");
   }
   notificationDeliveryWorker.start();
+  }
 
   const httpServer = createServer(app);
   return httpServer;

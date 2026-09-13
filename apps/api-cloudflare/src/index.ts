@@ -1,7 +1,8 @@
 // Deliberately do not import server/index.ts or server/routes.ts:
 // their startup behavior initializes billing and background workers.
+import { handleApi } from './http-api';
 export default {
-  fetch(request: Request): Response {
+  async fetch(request: Request, env?: Env): Promise<Response> {
     const headers = {
       "Content-Type": "application/json",
       "Cache-Control": "no-store",
@@ -15,10 +16,11 @@ export default {
         status: "ok", environment: "staging", migrationReady: false,
       }), { headers });
     }
+    if (env) return handleApi(request, env);
     // Never acknowledge production webhook deliveries or proxy to production.
     return new Response(request.method === "HEAD" ? null : JSON.stringify({
       error: "MIGRATION_NOT_READY",
       message: "The staging API is not connected yet.",
     }), { status: 503, headers });
   },
-} satisfies ExportedHandler;
+} satisfies ExportedHandler<Env>;

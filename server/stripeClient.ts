@@ -2,6 +2,7 @@
 // Handles credentials fetching and StripeSync initialization
 
 import Stripe from 'stripe';
+import { isCloudflareRuntime } from './config/runtime';
 
 let connectionSettings: any;
 let cachedCredentials: { publishableKey: string; secretKey: string } | null = null;
@@ -63,7 +64,7 @@ async function getCredentials() {
   }
 
   // Try Replit connector first
-  const connectorCreds = await getCredentialsFromConnector();
+  const connectorCreds = isCloudflareRuntime() ? null : await getCredentialsFromConnector();
   if (connectorCreds) {
     cachedCredentials = connectorCreds;
     return cachedCredentials;
