@@ -1,13 +1,17 @@
-import type { PoolClient, Pool } from 'pg';
+type LeadershipClient = {
+  query(sql: string): Promise<{ rows: { acquired?: boolean }[] }>;
+  release(destroy?: boolean): void;
+  on(event: 'error' | 'end', listener: () => void): unknown;
+};
 
 /** Dedicated Postgres session owns all legacy timers. A rolling deploy cannot start a second owner. */
-export function runAsSchedulerLeader(pool: Pick<Pool, 'connect'>, start: () => Promise<void>): void {
+export function runAsSchedulerLeader(pool: { connect(): Promise<LeadershipClient> }, start: () => Promise<void>): void {
   let trying = false;
-  let leader: PoolClient | null = null;
+  let leader: LeadershipClient | null = null;
   const attempt = async () => {
     if (trying || leader) return;
     trying = true;
-    let client: PoolClient | null = null;
+    let client: LeadershipClient | null = null;
     try {
       client = await pool.connect();
       const result = await client.query('SELECT pg_try_advisory_lock(1296126535, 1) AS acquired');

@@ -9,7 +9,6 @@ export async function providerChecks(credentials: Credentials, send: typeof fetc
   async function read(url: URL | string, bearer?: string): Promise<unknown> {
     const response = await send(url, { method: 'GET', redirect: 'manual', signal: AbortSignal.timeout(10_000),
       headers: bearer ? { Authorization: `Bearer ${bearer}` } : {} });
-    if (!response.ok) { await response.body?.cancel(); throw new Error(`HTTP_${response.status}`); }
     if (!response.body) throw new Error('FAILED');
     const reader = response.body.getReader();
     const chunks: Uint8Array[] = []; let length = 0;
@@ -23,6 +22,14 @@ export async function providerChecks(credentials: Credentials, send: typeof fetc
     } finally { await reader.cancel(); }
     const data = new Uint8Array(length); let offset = 0;
     for (const chunk of chunks) { data.set(chunk, offset); offset += chunk.length; }
+    if (!response.ok) {
+      if (new URL(url).hostname === 'api.resend.com' && response.status === 401) {
+        try {
+          if (record(JSON.parse(new TextDecoder().decode(data))).name === 'restricted_api_key') throw new Error('SENDING_ONLY');
+        } catch (error) { if (error instanceof Error && error.message === 'SENDING_ONLY') throw error; }
+      }
+      throw new Error(`HTTP_${response.status}`);
+    }
     return JSON.parse(new TextDecoder().decode(data));
   }
   async function check(name: string, configured: boolean, operation: () => Promise<ProviderCheck>): Promise<ProviderCheck> {
@@ -31,7 +38,8 @@ export async function providerChecks(credentials: Credentials, send: typeof fetc
     catch (error) {
       // Only allowlisted classifications can leave the Worker. Never expose upstream error text or URLs.
       const message = error instanceof Error ? error.message : '';
-      const detail = /^HTTP_[1-5][0-9]{2}$/.test(message) ? `Provider returned HTTP ${message.slice(5)}; verify credential permissions and provider availability`
+      const detail = message === 'SENDING_ONLY' ? 'Sending-only key accepted; domain listing is not permitted. Verify delivery with a controlled test, not broader key permissions'
+        : /^HTTP_[1-5][0-9]{2}$/.test(message) ? `Provider returned HTTP ${message.slice(5)}; verify credential permissions and provider availability`
         : message === 'LIMIT' ? 'Provider response exceeded the bounded read limit'
         : error instanceof Error && ['TimeoutError', 'AbortError'].includes(error.name) ? 'Provider read timed out'
         : error instanceof TypeError ? 'Provider transport or runtime rejected the request'
