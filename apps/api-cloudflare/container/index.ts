@@ -1,4 +1,5 @@
 import { Container, getContainer } from '@cloudflare/containers';
+import { servePublicAsset } from './public-assets';
 
 /** Staging deliberately has no billing, messaging or Strava provider credentials. */
 export class RunAnalyticsWeb extends Container<Env> {
@@ -25,6 +26,11 @@ export default {
     const cookie = request.headers.get('cookie')?.match(/(?:^|;\s*)cf_migration_shard=([01])(?:;|$)/)?.[1];
     const shard = cookie ?? String(crypto.getRandomValues(new Uint8Array(1))[0] % 2);
     try {
+      const asset = await servePublicAsset(request, env.PUBLIC_ASSETS);
+      if (asset) {
+        asset.headers.set('X-Robots-Tag', 'noindex, nofollow');
+        return asset;
+      }
       const upstream = await getContainer(env.WEB, `web-${shard}`).fetch(request);
       const response = new Response(upstream.body, upstream);
       response.headers.set('X-Robots-Tag', 'noindex, nofollow');

@@ -8,6 +8,7 @@
   "workers_dev": true,
   "preview_urls": false,
   "routes": [],
+  "r2_buckets": [{ "binding": "PUBLIC_ASSETS", "bucket_name": "aitracker-main-assets" }],
   "vars": { "APP_ENV": "staging" },
   "secrets": { "required": ["DATABASE_URL", "JWT_SIGNING_SECRET", "CUTOVER_EMAIL_UNSUBSCRIBE_SIGNING_SECRET_V2"] },
   "containers": [{

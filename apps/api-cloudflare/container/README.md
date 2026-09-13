@@ -73,7 +73,14 @@ The remote image deployed successfully as Worker version
 - `/api/user` without credentials: 401
 - POST `/api/stripe/webhook/test`: 503, expected staging refusal
 
-R2 activation is blocked at the account subscription screen and requires the
-account owner to accept usage-based billing. Source App Storage contains
-`public/og/chrome-extension.jpg` and 90 objects under `public/shoes/`.
-These files have been inventoried but not copied. Replit remains live.
+R2 was activated by the account owner. All 91 public images (36,050,640 bytes)
+were copied into `aitracker-main-assets` and individually verified against the
+source using SHA-256 after downloading them back from R2. Source files remain
+unchanged. The Worker preserves `/public-objects/og/` and `/public-objects/shoes/`
+URLs and serves only approved image keys through its R2 binding. The bucket
+does not require public access. Private uploads still require migration.
+
+The inventory is in `scripts/replit-public-assets.mjs`. Run
+`node scripts/migrate-public-assets-r2.mjs` to verify existing copies, or add
+`--apply` to copy missing objects. Existing objects are never overwritten.
+Replit remains live pending the other cutover checks above.
