@@ -11,6 +11,15 @@
   was performed during this cutover.
 - Public assets remain in `aitracker-main-assets` R2.
 - `new.aitracker.run` remains the separate preview deployment.
+- At the user's request, the Replit DNS origin was removed: the proxied apex A
+  record now uses Cloudflare's reserved originless placeholder `192.0.2.0`, not
+  `34.111.179.208`. The proxied `www` CNAME still points to the apex.
+- The obsolete apex TXT `replit-verify=b13af9a6-2dde-4df5-bbce-bbaaba898ea4`
+  was deleted with explicit confirmation. It can be recreated manually from this
+  value if required. All other DNS records were left unchanged.
+- After DNS cleanup, the homepage, health, race predictor, OAuth metadata and
+  preview returned HTTP 200; `www` redirected to the working apex. The DNS UI
+  contained no remaining Replit target or verification record.
 - Replit production shows **Paused**, not unpublished or deleted. Replit explicitly
   warns that billing continues while paused. Do not treat this as cancellation.
 - `APP_ROLE=jobs`, stable container identity `production-live`, every-minute cron
@@ -83,9 +92,11 @@ changing APP_ROLE or removing a route is not proof that a running container stop
 Replit's old in-memory queue cannot automatically consume the new durable queue.
 
 Only after scheduler ownership is safely transferred should the two aitracker.run
-Worker routes be removed. The original proxied Replit DNS origin was left intact
-(`34.111.179.208`; www CNAME to aitracker.run), enabling routing rollback. Do not
-touch preview, mail, verification, or unrelated domains' DNS records.
+Worker routes be removed. The user subsequently removed the Replit DNS origin,
+so removing the Worker routes alone is NOT a working rollback. A deliberate
+rollback would also need to restore the old proxied apex A target `34.111.179.208`
+and, if required by Replit, the verification TXT recorded above. Do not touch
+preview, mail, Google verification, or unrelated domains' DNS records.
 
 Production remains pinned to the tested immutable staging image digest in
 `apps/api-cloudflare/container/wrangler.production.jsonc`. Git builds deploy staging,
