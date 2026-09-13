@@ -7,7 +7,7 @@ const rows = (value: unknown): JsonRecord[] => Array.isArray(value) ? value.map(
 /** Fixed GET-only provider reads. Never return response bodies, credentials or upstream errors. */
 export async function providerChecks(credentials: Credentials, send: typeof fetch = (input, init) => fetch(input, init)): Promise<ProviderCheck[]> {
   async function read(url: URL | string, bearer?: string): Promise<unknown> {
-    const response = await send(url, { method: 'GET', redirect: 'error', signal: AbortSignal.timeout(10_000),
+    const response = await send(url, { method: 'GET', redirect: 'manual', signal: AbortSignal.timeout(10_000),
       headers: bearer ? { Authorization: `Bearer ${bearer}` } : {} });
     if (!response.ok) { await response.body?.cancel(); throw new Error(`HTTP_${response.status}`); }
     if (!response.body) throw new Error('FAILED');

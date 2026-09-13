@@ -7,7 +7,7 @@ export function productionEnvironment(values: object): Record<string, string> {
     'VITE_STRAVA_CLIENT_ID','STRIPE_SECRET_KEY','VITE_STRIPE_PUBLIC_KEY','HERMES_MCP_CLIENT_ID',
     'TELEGRAM_BOT_USERNAME','ALLOWED_PRICE_IDS','STRAVA_SUBSCRIPTION_ID'];
   const output: Record<string,string> = { NODE_ENV:'production',APP_PLATFORM:'cloudflare',APP_ENV:'production',
-    APP_ROLE:'jobs',PORT:'5000',PUBLIC_APP_URL:'https://aitracker.run',APP_URL:'https://aitracker.run',
+    APP_ROLE:Reflect.get(values, 'APP_ROLE') === 'jobs' ? 'jobs' : 'web',PORT:'5000',PUBLIC_APP_URL:'https://aitracker.run',APP_URL:'https://aitracker.run',
     COACH_MULTI_RUNNER_PILOT_ENABLED:'true',MCP_ISSUER:'https://aitracker.run',
     MCP_ALLOWED_HOSTS:'aitracker.run,www.aitracker.run',MCP_ALLOWED_ORIGINS:'https://aitracker.run,https://www.aitracker.run' };
   for (const name of required) {

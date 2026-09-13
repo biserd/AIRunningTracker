@@ -7,7 +7,7 @@ test('provider preflight is GET-only, bounded, and returns no credentials or ups
   const calls: string[] = [];
   const send: typeof fetch = async (input, init) => {
     const url = new URL(String(input)); calls.push(url.origin);
-    assert.equal(init?.method, 'GET'); assert.equal(init?.redirect, 'error'); assert.ok(init?.signal);
+    assert.equal(init?.method, 'GET'); assert.equal(init?.redirect, 'manual'); assert.ok(init?.signal);
     if (url.pathname.includes('/prices/')) return Response.json({active:true,livemode:true,type:'recurring',secret:'never-return'});
     if (url.pathname.includes('webhook_endpoints')) return Response.json({data:[{livemode:true,status:'enabled',url:'https://aitracker.run/api/stripe/webhook/test-id'}]});
     if (url.pathname.includes('push_subscriptions')) {

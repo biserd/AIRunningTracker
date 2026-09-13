@@ -12,6 +12,7 @@
   "r2_buckets": [{ "binding": "PUBLIC_ASSETS", "bucket_name": "aitracker-main-assets" }],
   "ratelimits": [{ "name": "UPLOAD_LIMITER", "namespace_id": "1002", "simple": { "limit": 30, "period": 60 } }],
   "vars": {
+    "APP_ROLE": "web",
     "HERMES_MCP_CLIENT_ID": "ra_mcp_client_L0o4CkpSbZeZ8xlI4MyQeNXh",
     "TELEGRAM_BOT_USERNAME": "hermes_3njyz3nxuousjmh2_bot",
     "ALLOWED_PRICE_IDS": "price_1SbtcfRwvWaTf8xfSEO4iKnc,price_1SbtcfRwvWaTf8xfwcVnrRf8"
@@ -25,5 +26,5 @@
     "image_build_context":"../../..","instance_type":"standard-1","max_instances":2 }],
   "durable_objects": { "bindings": [{ "name":"WEB","class_name":"RunAnalyticsProduction" }] },
   "migrations": [{ "tag":"v1","new_sqlite_classes":["RunAnalyticsProduction"] }],
-  "observability": { "enabled":true,"head_sampling_rate":0.1 }
+  "observability": { "enabled":true,"head_sampling_rate":0.1,"redact_query_string":true }
 }
