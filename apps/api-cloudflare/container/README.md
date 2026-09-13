@@ -53,3 +53,12 @@ Do not disable Replit until all are complete:
 The production DB host was verified in Replit's Production Database settings on
 2026-09-13 as `ep-falling-bird-ahn3og92.c-3.us-east-1.aws.neon.tech` (1.61 GB shown).
 This corrects the earlier assumption that the supplied URL was a separate Dev DB.
+
+## Latest local verification (2026-09-13)
+
+The root production build, full-app runtime smoke test, container TypeScript check,
+18 API adapter tests, and `test:phase1` pass. The PostgreSQL OAuth lifecycle test
+inside `test:phase1` is skipped without a dedicated `MCP_TEST_DATABASE_URL`; it must
+not be run against the live database. Cloudflare Builds is connected using the
+AITracker migration staging builds token. The runtime DATABASE_URL secret was
+verified as encrypted in the dashboard. Remote image deployment is still pending.
