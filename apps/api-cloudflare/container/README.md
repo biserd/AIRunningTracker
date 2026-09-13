@@ -61,4 +61,19 @@ The root production build, full-app runtime smoke test, container TypeScript che
 inside `test:phase1` is skipped without a dedicated `MCP_TEST_DATABASE_URL`; it must
 not be run against the live database. Cloudflare Builds is connected using the
 AITracker migration staging builds token. The runtime DATABASE_URL secret was
-verified as encrypted in the dashboard. Remote image deployment is still pending.
+verified as encrypted in the dashboard.
+
+The remote image deployed successfully as Worker version
+`edaccfdd-764b-453a-b50f-5b1f7865b3d8`, container application
+`a0388380-9721-4a1a-a85e-7c9c733a7070`. Live checks against
+`https://aitracker-api-staging.biser-d.workers.dev` returned:
+
+- `/health`, `/auth`, `/tools/race-predictor`: 200
+- `/api/shoes/brands`: 200, 32 brands (verifies the database connection)
+- `/api/user` without credentials: 401
+- POST `/api/stripe/webhook/test`: 503, expected staging refusal
+
+R2 activation is blocked at the account subscription screen and requires the
+account owner to accept usage-based billing. Source App Storage contains
+`public/og/chrome-extension.jpg` and 90 objects under `public/shoes/`.
+These files have been inventoried but not copied. Replit remains live.
