@@ -3,7 +3,8 @@
 ## Current state
 
 - `aitracker.run/*` and `www.aitracker.run/*` route to `aitracker-main`.
-- Production Worker version: `97e0344b-95d6-45e7-886e-dffbb47f2b2c`.
+- Production Worker version: `db618b7e-88a5-47db-963a-b9760a656b08`.
+- Production image digest: `sha256:dc6add197a6dd6489662f491f3579278ce4c582965fe74955c94bbb6da9d1e53`.
 - Account: `73d71a2bef58f7469ecb48e2b8e84c0e`.
 - Verified aitracker.run zone: `210ac2ad4e37375dacd9d1aa1234d9d8`.
 - Existing production Neon database retained; no runner data migration or new SQL
@@ -35,6 +36,31 @@
 
 The admin-only staging checks now query the exact scheduler advisory lock and
 aggregate durable job counts. These are reads, not a trigger or queue mutation.
+
+The September 13 11:05 EDT admin check showed exactly one scheduler lease and
+26 completed jobs, with no other queue statuses listed. The production image
+rollout completed at 14:57:13 UTC, with one healthy active instance and no rollout
+errors. The later instance listing identified `production-live` as running version
+2 and the previous preflight instance as inactive. This is rollout evidence, not
+a complete scheduler crash/failover rehearsal.
+
+## Billing investigation deferred by user
+
+On September 13 the user requested that billing-handler work be deferred while
+other migration work continues. Do not automatically promote the subsequent
+diagnostic build or keep opening billing portal sessions.
+
+- The live Stripe billing portal opens. No payment or subscription was changed.
+- Actual Stripe webhook deliveries returned HTTP 400. A bounded edge diagnostic
+  confirmed that the signature header was present and the application returned
+  its generic handler-error response.
+- Explicit verified TLS was added to StripeSync's separate database pool, but
+  the HTTP 400 persisted. The root cause is not established.
+- Successful checkout/payment capture and automatic Premium activation have NOT
+  been verified. A working portal is not evidence of either. Failed webhook
+  processing can prevent entitlements from updating after a successful charge.
+- Commit `60cdee1` adds a further runtime marker/diagnostic for staging. It has
+  not been promoted to production. Billing remains an unresolved migration risk.
 
 ## Still not established
 
