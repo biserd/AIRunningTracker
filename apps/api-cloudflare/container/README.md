@@ -84,3 +84,10 @@ The inventory is in `scripts/replit-public-assets.mjs`. Run
 `node scripts/migrate-public-assets-r2.mjs` to verify existing copies, or add
 `--apply` to copy missing objects. Existing objects are never overwritten.
 Replit remains live pending the other cutover checks above.
+
+The R2 deployment from `6c08434` completed successfully through Cloudflare
+Builds. `node scripts/verify-staging-public-assets.mjs` verified all 91 existing
+public URLs on the staging HTTPS endpoint against production SHA-256 hashes,
+plus HEAD, conditional 304 responses and rejection of private/traversal paths.
+After deployment `/health` and `/api/shoes/brands` returned 200, and unauthenticated
+`/api/user` returned 401. All 21 API tests and both TypeScript checks pass.
