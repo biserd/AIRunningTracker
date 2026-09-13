@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "aitracker-api-staging",
+  "account_id": "73d71a2bef58f7469ecb48e2b8e84c0e",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-13",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "routes": [],
+  "observability": { "enabled": true, "head_sampling_rate": 0.1 }
+}

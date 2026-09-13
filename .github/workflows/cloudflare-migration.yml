@@ -1,0 +1,27 @@
+name: Cloudflare migration safety
+on:
+  push:
+    branches: [codex/cloudflare-coach]
+    paths: ['apps/api-cloudflare/**', '.github/workflows/cloudflare-migration.yml']
+  pull_request:
+    paths: ['apps/api-cloudflare/**', '.github/workflows/cloudflare-migration.yml']
+permissions:
+  contents: read
+jobs:
+  staging-api:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api-cloudflare
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: apps/api-cloudflare/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - run: npm run build
+    # Intentionally no deployment step or production secrets.
