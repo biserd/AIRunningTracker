@@ -9,7 +9,7 @@ test('provider preflight is GET-only, bounded, and returns no credentials or ups
     const url = new URL(String(input)); calls.push(url.origin);
     assert.equal(init?.method, 'GET'); assert.equal(init?.redirect, 'manual'); assert.ok(init?.signal);
     if (url.pathname.includes('/prices/')) return Response.json({active:true,livemode:true,type:'recurring',secret:'never-return'});
-    if (url.pathname.includes('webhook_endpoints')) return Response.json({data:[{livemode:true,status:'enabled',url:'https://aitracker.run/api/stripe/webhook/test-id'}]});
+    if (url.pathname.includes('webhook_endpoints')) return Response.json({data:[{livemode:true,status:'enabled',url:'https://aitracker.run/api/stripe/webhook/00000000-0000-4000-8000-000000000000'}]});
     if (url.pathname.includes('push_subscriptions')) {
       assert.equal(url.searchParams.get('client_secret'), keys.stravaSecret);
       return Response.json([{id:123,callback_url:'https://aitracker.run/api/strava/webhook'}]);

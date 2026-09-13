@@ -35,6 +35,19 @@ export default {
       // One stable application instance preserves the existing process-local caches and SSE streams.
       // The database leadership lock prevents overlapping deployments from running timers twice.
       const upstream = await container.fetch(request);
+      if (url.pathname.startsWith('/api/stripe/webhook/') && upstream.status >= 400) {
+        let responseClass = 'other';
+        const length = Number(upstream.headers.get('content-length'));
+        if (length > 0 && length < 2048 && upstream.headers.get('content-type')?.includes('application/json')) {
+          try {
+            const body = await upstream.clone().json() as {error?:unknown};
+            if (body.error === 'Missing stripe-signature') responseClass = 'signature_header_missing';
+            else if (body.error === 'Webhook processing error') responseClass = 'handler_error';
+          } catch { /* Never log upstream response contents. */ }
+        }
+        console.error(JSON.stringify({event:'stripe_callback_rejected',status:upstream.status,
+          signaturePresent:request.headers.has('stripe-signature'),responseClass}));
+      }
       const failure = upstream.headers.get('X-AITracker-Webhook-Failure');
       if (failure) {
         const allowed = ['managed_webhook_missing','signature_rejected','database_tls','database_connection',

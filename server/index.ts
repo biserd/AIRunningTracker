@@ -18,7 +18,7 @@ if (isCloudflareRuntime()) app.set('trust proxy', 1);
 
 // Health check endpoint - MUST be first, before any middleware that could slow or redirect
 app.get('/health', (_req, res) => {
-  res.status(200).json({ status: 'ok' });
+  res.status(200).json({ status: 'ok', build: '20260913-stripe-diagnostics' });
 });
 
 // Staging must not accept production callbacks or emit publicly cacheable pages.
@@ -69,7 +69,7 @@ app.post(
       console.error(JSON.stringify({ event: 'stripe_webhook_failed', failure }));
       // The trusted Cloudflare edge records this classification, then strips it.
       if (isCloudflareRuntime()) res.setHeader('X-AITracker-Webhook-Failure', failure);
-      res.status(400).json({ error: 'Webhook processing error' });
+      res.status(400).json({ error: 'Webhook processing error', code: failure });
     }
   }
 );

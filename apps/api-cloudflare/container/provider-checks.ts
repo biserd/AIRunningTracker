@@ -55,7 +55,7 @@ export async function providerChecks(credentials: Credentials, send: typeof fetc
     }),
     check('Stripe webhook', credentials.stripe?.startsWith('sk_live_'), async () => {
       const result = record(await read('https://api.stripe.com/v1/webhook_endpoints?limit=100', credentials.stripe));
-      const valid = rows(result.data).some(r => r.status === 'enabled' && r.livemode === true && typeof r.url === 'string' && /^https:\/\/aitracker\.run\/api\/stripe\/webhook\/[a-zA-Z0-9-]+$/.test(r.url));
+      const valid = rows(result.data).some(r => r.status === 'enabled' && r.livemode === true && typeof r.url === 'string' && /^https:\/\/aitracker\.run\/api\/stripe\/webhook\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(r.url));
       return { name: 'Stripe webhook', status: valid ? 'pass' : 'unverified', detail: valid ? 'Enabled live webhook targets the main domain; signed delivery still needs a round trip' : 'No matching enabled webhook found in the first 100 endpoints' };
     }),
     check('Strava subscription', Boolean(credentials.stravaClientId && credentials.stravaSecret), async () => {

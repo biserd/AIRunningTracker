@@ -27,7 +27,7 @@
     "OPENAI_API_KEY","RESEND_API_KEY","RESEND_FROM_EMAIL","RESEND_WEBHOOK_SECRET","STRAVA_CLIENT_SECRET",
     "VITE_STRAVA_CLIENT_ID","STRIPE_SECRET_KEY","VITE_STRIPE_PUBLIC_KEY","STRAVA_SUBSCRIPTION_ID"] },
   // Promote the tested staging image by immutable digest. Update only after its staging checks pass.
-  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:c3c74ba5ece7bb212b032918aef38274fda8323bc5ff04b7265ceebbf6c7acbc",
+  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:dc6add197a6dd6489662f491f3579278ce4c582965fe74955c94bbb6da9d1e53",
     "instance_type":"standard-1","max_instances":2 }],
   "durable_objects": { "bindings": [{ "name":"WEB","class_name":"RunAnalyticsProduction" }] },
   "migrations": [{ "tag":"v1","new_sqlite_classes":["RunAnalyticsProduction"] }],
