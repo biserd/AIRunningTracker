@@ -49,10 +49,10 @@ async function limit(env: Env, key: string, max: number, seconds: number) {
     .first<{ count: number }>();
   return !!row && row.count <= max;
 }
-async function api(request: Request, env: Env): Promise<Response> {
+async function api(request: Request, env: Env, ctx:ExecutionContext): Promise<Response> {
   const url = new URL(request.url),
     now = Math.floor(Date.now() / 1000);
-  if (['/api/whatsapp/inbound','/api/whatsapp/status'].includes(url.pathname)) return whatsappWebhook(request,env);
+  if (['/api/whatsapp/inbound','/api/whatsapp/status'].includes(url.pathname)) return whatsappWebhook(request,env,ctx);
   if (!["GET", "POST"].includes(request.method))
     return json({ error: "Method not allowed" }, 405);
   if (request.method === "POST" && request.headers.get("Origin") !== url.origin)
@@ -353,11 +353,11 @@ async function api(request: Request, env: Env): Promise<Response> {
   return json({ error: "Not found" }, 404);
 }
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     let response: Response;
     try {
       response = new URL(request.url).pathname.startsWith("/api/")
-        ? await api(request, env)
+        ? await api(request, env, ctx)
         : await env.ASSETS.fetch(request);
     } catch {
       response = json(

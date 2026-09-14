@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { reminderAction } from '../worker/reminders';
 export function fixture() {
   const db = new DatabaseSync(":memory:");
-  for (const file of ["0001_preview.sql", "0003_reminders.sql", "0005_whatsapp.sql", "0006_whatsapp_oauth.sql", "0007_whatsapp_realtime.sql"])
+  for (const file of ["0001_preview.sql", "0003_reminders.sql", "0005_whatsapp.sql", "0006_whatsapp_oauth.sql", "0007_whatsapp_realtime.sql", "0008_whatsapp_context.sql"])
     db.exec(
       readFileSync(new URL("../migrations/" + file, import.meta.url), "utf8"),
     );

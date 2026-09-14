@@ -4,6 +4,7 @@ import { whatsappCoach } from './whatsapp-coach';
 import { history } from './ai';
 import type { State } from '../shared/coach';
 import {hasGrant,oauthConfigured,revokeGrant,whatsappContext,validateGrant} from './whatsapp-oauth';
+import {typing,maintainTyping} from './whatsapp-typing';
 
 const now = () => Math.floor(Date.now()/1000);
 const addressPattern = /^whatsapp:\+[1-9][0-9]{7,14}$/;
@@ -53,7 +54,7 @@ export async function validSignature(secret:string,url:string,form:URLSearchPara
  return crypto.subtle.verify('HMAC',key,Uint8Array.from(atob(signature),c=>c.charCodeAt(0)),new TextEncoder().encode(data));
 }
 const xml=(message='') => new Response('<?xml version="1.0" encoding="UTF-8"?><Response>'+(message?'<Message>'+message.replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&apos;'}[c]!))+'</Message>':'')+'</Response>',{headers:{'Content-Type':'text/xml','Cache-Control':'no-store'}});
-export async function whatsappWebhook(request:Request,env:Env) {
+export async function whatsappWebhook(request:Request,env:Env,ctx?:Pick<ExecutionContext,'waitUntil'>) {
  const url=new URL(request.url), path=url.pathname;
  if(!whatsappConfigured(env)) return new Response('Unavailable',{status:503});
  if(request.method!=='POST') return new Response('Method not allowed',{status:405});
@@ -92,6 +93,10 @@ export async function whatsappWebhook(request:Request,env:Env) {
   const existing=await env.DB.prepare('SELECT session_id FROM whatsapp_links WHERE address=?').bind(from).first();
   if(existing) return xml('This number is already connected. Disconnect it in your preview Settings first.');
   const linked=await env.DB.prepare("UPDATE whatsapp_links SET address=?,last_inbound=?,token_hash=NULL WHERE token_hash=? AND token_expires>? AND address IS NULL AND disabled=0 AND EXISTS(SELECT 1 FROM sessions s WHERE s.id=whatsapp_links.session_id AND s.expires_at>? AND (EXISTS(SELECT 1 FROM whatsapp_oauth_grants g WHERE g.session_id=s.id AND g.expires_at>?) OR (COALESCE(json_extract(s.state,'$.source'),'')!='production_account' AND EXISTS(SELECT 1 FROM reminder_contacts c WHERE c.session_id=s.id AND c.verified_at IS NOT NULL AND c.disabled=0)))) RETURNING session_id").bind(from,now(),await hash(body.slice(5)),now(),now(),now()).first();
+  if(linked&&typeof linked.session_id==='string'){
+   const active=await activeLink(env,linked.session_id);
+   if(active)await env.WHATSAPP_QUEUE.send({warm:active.session_id,generation:active.generation},{contentType:'json',delaySeconds:0}).catch(()=>{/* First message can load on demand if prewarming cannot be queued. */});
+  }
   return xml(linked?'You\'re connected. Ask me about your runs or training plan. Send STOP anytime to disconnect.':'This link expired or was already used. Create a new link in Settings.');
  }
  const link=await env.DB.prepare('SELECT w.* FROM whatsapp_links w JOIN sessions s ON s.id=w.session_id WHERE w.address=? AND w.disabled=0 AND s.expires_at>?').bind(from,now()).first<Link>();
@@ -100,6 +105,9 @@ export async function whatsappWebhook(request:Request,env:Env) {
  if(!body || body.length>2000 || form.get('NumMedia')!=='0') return xml('Please send text of up to 2,000 characters. Voice notes and images are not supported in this preview.');
  if(!await budget(env,'wa-chat:'+link.session_id,30,86400) || !await budget(env,'wa-chat-global',300,86400)) return xml();
  await env.DB.prepare('INSERT OR IGNORE INTO whatsapp_inbox(sid,session_id,generation,body,created_at) VALUES (?,?,?,?,?)').bind(sid,link.session_id,link.generation,body,now()).run();
+ // Start feedback before Queue pickup. Only this short cosmetic call uses
+ // waitUntil; all coaching remains in the durable Queue consumer.
+ if(ctx)ctx.waitUntil(typing(env,sid));
  await wakeWhatsApp(env,sid);
  return xml();
 }
@@ -125,20 +133,16 @@ export async function wakeWhatsApp(env:Env,sid:string) {
  await env.WHATSAPP_QUEUE.send({sid},{contentType:'json',delaySeconds:0});
 }
 
-async function typing(env:Env,sid:string) {
- try {
-  const response=await fetch('https://messaging.twilio.com/v3/Indicators/Typing.json',{
-   method:'POST',headers:{Authorization:'Basic '+btoa(env.TWILIO_ACCOUNT_SID+':'+env.TWILIO_AUTH_TOKEN),'Content-Type':'application/json'},
-   body:JSON.stringify({messageId:sid,channel:'whatsapp'}),signal:AbortSignal.timeout(3000),
-  });
-  await response.body?.cancel();
-  if(!response.ok)console.warn(JSON.stringify({event:'whatsapp_typing_unavailable',status:response.status}));
- } catch { /* Cosmetic only. Never fail a reply or log provider payloads. */ }
-}
-
 export async function consumeWhatsApp(batch:MessageBatch<unknown>,env:Env) {
  for(const message of batch.messages) {
   const body=message.body;
+  if(body&&typeof body==='object'&&'warm' in body&&typeof body.warm==='string'&&body.warm.length<=128&&'generation' in body&&typeof body.generation==='string'&&body.generation.length<=128){
+   try{
+    const result=await processWhatsApp(env,body.warm,body.generation);
+    if(result==='busy'||result==='more')message.retry({delaySeconds:5});else message.ack();
+   }catch{message.ack();/* Optional preload; the next message retries context normally. */}
+   continue;
+  }
   if(!body||typeof body!=='object'||!('sid' in body)||typeof body.sid!=='string'||!/^SM[a-f0-9]{32}$/i.test(body.sid)) {message.ack();continue;}
   try {
    const row=await env.DB.prepare('SELECT session_id FROM whatsapp_inbox WHERE sid=?').bind(body.sid).first<{session_id:string}>();
@@ -157,12 +161,13 @@ export async function consumeWhatsApp(batch:MessageBatch<unknown>,env:Env) {
 // Cron is only an outbox recovery mechanism, not the normal chat path. It
 // republishes pending work if a producer/consumer crashed or publishing failed.
 export async function recoverWhatsApp(env:Env) {
+ await env.DB.prepare('DELETE FROM whatsapp_context_cache WHERE expires_at<=?').bind(now()).run();
  await env.DB.prepare("UPDATE whatsapp_inbox SET status='failed',body='',failure_stage='expired',finished_at_ms=? WHERE (status='pending' AND created_at<?) OR (status='processing' AND COALESCE(started_at_ms,created_at*1000)<?)").bind(Date.now(),now()-600,Date.now()-600000).run();
  const rows=await env.DB.prepare("SELECT sid FROM whatsapp_inbox w WHERE status='pending' AND NOT EXISTS(SELECT 1 FROM whatsapp_conversation_leases l WHERE l.session_id=w.session_id AND l.expires_at>?) GROUP BY session_id ORDER BY MIN(created_at) LIMIT 100").bind(now()).all<{sid:string}>();
  if(rows.results.length)await env.WHATSAPP_QUEUE.sendBatch(rows.results.map(({sid})=>({body:{sid}})),{delaySeconds:0});
 }
 
-export async function processWhatsApp(env:Env,id:string):Promise<'done'|'busy'|'more'> {
+export async function processWhatsApp(env:Env,id:string,warmGeneration?:string):Promise<'done'|'busy'|'more'> {
  if(!whatsappConfigured(env)||!env.OPENAI_API_KEY)throw new Error('WhatsApp unavailable');
  const owner=crypto.randomUUID();
  const lease=await env.DB.prepare('INSERT INTO whatsapp_conversation_leases(session_id,owner,expires_at) VALUES (?,?,?) ON CONFLICT(session_id) DO UPDATE SET owner=excluded.owner,expires_at=excluded.expires_at WHERE expires_at<=? RETURNING owner').bind(id,owner,now()+300,now()).first();
@@ -170,6 +175,12 @@ export async function processWhatsApp(env:Env,id:string):Promise<'done'|'busy'|'
  try {
   // Do not run past a crashed/uncertain delivery. Recovery expires it, never resends it.
   if(await env.DB.prepare("SELECT sid FROM whatsapp_inbox WHERE session_id=? AND status='processing' LIMIT 1").bind(id).first())return 'busy';
+  if(warmGeneration){
+   const link=await activeLink(env,id);
+   if(!link||link.generation!==warmGeneration)return 'done';
+   const session=await env.DB.prepare('SELECT state FROM sessions WHERE id=?').bind(id).first<{state:string}>();
+   if(session&&JSON.parse(session.state).source==='production_account')await whatsappContext(env,id);
+  }
   for(let count=0;count<3;count++) {
    const renewed=await env.DB.prepare('UPDATE whatsapp_conversation_leases SET expires_at=? WHERE session_id=? AND owner=? AND expires_at>? RETURNING owner').bind(now()+300,id,owner,now()).first();
    if(!renewed)return 'busy';
@@ -178,16 +189,21 @@ export async function processWhatsApp(env:Env,id:string):Promise<'done'|'busy'|'
    const item=await env.DB.prepare("UPDATE whatsapp_inbox SET status='processing',started_at_ms=?,queue_ms=MAX(0,?-created_at*1000) WHERE sid=(SELECT sid FROM whatsapp_inbox WHERE session_id=? AND status='pending' ORDER BY created_at,rowid LIMIT 1) AND status='pending' RETURNING sid,session_id,generation,body,created_at").bind(started,started,id).first<{sid:string;session_id:string;generation:string;body:string;created_at:number}>();
    if(!item)return 'done';
    let stage='context',contextMs=0,aiMs=0,deliveryMs=0;
+   let stopTyping:undefined|(()=>Promise<void>);
    try {
     if(item.created_at<now()-600)throw new Error('Expired');
     const link=await activeLink(env,id);
     if(!link||link.generation!==item.generation)throw new Error('Disconnected');
+    stopTyping=maintainTyping(async signal=>{
+     const current=await activeLink(env,id);
+     if(!signal.aborted&&current?.generation===item.generation)await typing(env,item.sid,signal);
+    });
     const row=await env.DB.prepare('SELECT state FROM sessions WHERE id=? AND expires_at>?').bind(id,now()).first<{state:string}>();
     if(!row)throw new Error('Expired');
     const saved=JSON.parse(row.state) as State;
     const [state,conversation]=await Promise.all([
-     saved.source==='production_account'?whatsappContext(env,id):Promise.resolve(saved),
-     history(env,id), typing(env,item.sid),
+     saved.source==='production_account'?whatsappContext(env,id,/^\/refresh\b/i.test(item.body)):Promise.resolve(saved),
+     history(env,id),
     ]);
     contextMs=Date.now()-started;stage='ai';const aiStart=Date.now();
     const reply=await whatsappCoach(env.OPENAI_API_KEY,state,conversation,item.body,AbortSignal.timeout(25000));
@@ -196,6 +212,7 @@ export async function processWhatsApp(env:Env,id:string):Promise<'done'|'busy'|'
     // A suspended old consumer must not send after another worker acquired its lease.
     const owns=await env.DB.prepare('SELECT owner FROM whatsapp_conversation_leases WHERE session_id=? AND owner=? AND expires_at>?').bind(id,owner,now()).first();
     if(!owns)throw new Error('Lease expired');
+    await stopTyping();
     stage='delivery';const sendStart=Date.now();
     await sendWhatsApp(env,id,item.generation,(state.source==='production_account'?'':'Sample data: ')+reply.slice(0,1400));
     deliveryMs=Date.now()-sendStart;stage='persistence';
@@ -206,6 +223,7 @@ export async function processWhatsApp(env:Env,id:string):Promise<'done'|'busy'|'
     ]);
     console.log(JSON.stringify({event:'whatsapp_reply',queue_ms:Math.max(0,started-item.created_at*1000),context_ms:contextMs,ai_ms:aiMs,delivery_ms:deliveryMs,total_ms:Date.now()-started}));
    } catch {
+    await stopTyping?.();
     // Give a useful, non-private failure response, but never follow an uncertain
     // send with another send. Authorization is rechecked before an AI-error reply.
     if(stage==='context'||stage==='ai') {
@@ -219,7 +237,7 @@ export async function processWhatsApp(env:Env,id:string):Promise<'done'|'busy'|'
     // Never retry uncertain outbound delivery, which could duplicate a message.
     await env.DB.prepare("UPDATE whatsapp_inbox SET status='failed',body='',finished_at_ms=?,context_ms=?,ai_ms=?,delivery_ms=?,failure_stage=? WHERE sid=?").bind(Date.now(),contextMs,aiMs,deliveryMs,stage,item.sid).run();
     console.warn(JSON.stringify({event:'whatsapp_reply_failed',stage,total_ms:Date.now()-started}));
-   }
+   } finally {await stopTyping?.();}
   }
   return await env.DB.prepare("SELECT sid FROM whatsapp_inbox WHERE session_id=? AND status='pending' LIMIT 1").bind(id).first()?'more':'done';
  } finally {

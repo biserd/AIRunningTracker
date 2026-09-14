@@ -10,7 +10,7 @@ const now=()=>Math.floor(Date.now()/1000);
 const fail=()=>new ReminderError('Reconnect WhatsApp in Settings to authorize your running data.',409);
 const random=()=>Array.from(crypto.getRandomValues(new Uint8Array(32)),x=>x.toString(16).padStart(2,'0')).join('');
 const obj=(v:unknown):Facts=>v && typeof v==='object' && !Array.isArray(v)?v as Facts:{};
-const b64=(v:Uint8Array)=>btoa(String.fromCharCode(...v));
+const b64=(v:Uint8Array)=>{let s='';for(let i=0;i<v.length;i+=8192)s+=String.fromCharCode(...v.subarray(i,i+8192));return btoa(s);};
 const bytes=(v:string)=>Uint8Array.from(atob(v),x=>x.charCodeAt(0));
 type Grant={session_id:string;client_id:string;email_hash:string;credentials:string;access_expires:number;expires_at:number;generation:string;refresh_lock:number};
 type Tokens={access_token:string;refresh_token:string;expires_in:number};
@@ -72,6 +72,7 @@ export async function finishAuthorization(env:Env,id:string,input:Facts){
  return {ok:true};
 }
 export async function revokeGrant(env:Env,id:string){
+ await env.DB.prepare('DELETE FROM whatsapp_context_cache WHERE session_id=?').bind(id).run();
  await env.DB.prepare('DELETE FROM whatsapp_oauth_pending WHERE session_id=?').bind(id).run();
  const grant=await env.DB.prepare('DELETE FROM whatsapp_oauth_grants WHERE session_id=? RETURNING *').bind(id).first<Grant>();
  if(grant){try{const t=JSON.parse(await crypt(env,id,grant.credentials,true)) as Tokens;await post(env,'/mcp/oauth/revoke',new URLSearchParams({client_id:grant.client_id,token:t.refresh_token}));}catch{/* Local deletion is fail-closed even if the issuer is unavailable. */}}
@@ -98,8 +99,15 @@ export function clean(value:unknown):unknown{
  if(value && typeof value==='object')return Object.fromEntries(Object.entries(value).filter(([k])=>!/(email|token|secret|credential)/i.test(k)).map(([k,v])=>[k,clean(v)]));
  return typeof value==='string'?value.slice(0,2000):value;
 }
-export async function whatsappContext(env:Env,id:string):Promise<State>{
- const {t}=await authorized(env,id);
+export async function whatsappContext(env:Env,id:string,refresh=false):Promise<State>{
+ // Always validate the live OAuth subject, even on a cache hit.
+ const {t,g}=await authorized(env,id);
+ const aad='context:'+id+':'+g.generation;
+ if(!refresh){
+  const cached=await env.DB.prepare('SELECT payload FROM whatsapp_context_cache WHERE session_id=? AND generation=? AND expires_at>?').bind(id,g.generation,now()).first<{payload:string}>();
+  if(cached){try{return JSON.parse(await crypt(env,aad,cached.payload,true)) as State;}catch{/* Corrupt or incompatible cache: reload, never use another grant. */}}
+ }
+ const loadedAt=new Date().toISOString();
  const snapshot=obj(clean(await read(env,t.access_token,'get_runner_coach_snapshot',{days:90})));
  const active=obj(snapshot.activePlan);let plan=active;
  if(Number.isSafeInteger(active.planId))plan=obj(clean(await read(env,t.access_token,'get_training_plan',{planId:active.planId})));
@@ -107,6 +115,14 @@ export async function whatsappContext(env:Env,id:string):Promise<State>{
  const timezone=typeof prefs.coachTimezone==='string'?prefs.coachTimezone:'UTC';
  let today=new Date().toISOString().slice(0,10);try{today=new Intl.DateTimeFormat('en-CA',{timeZone:timezone,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}catch{}
  const activities=(Array.isArray(snapshot.recentActivities)?snapshot.recentActivities:[]).map(obj).filter(a=>typeof a.startDate==='string'&&Number.isFinite(Date.parse(a.startDate))&&typeof a.distanceMeters==='number'&&typeof a.movingTimeSeconds==='number').map(a=>({date:String(a.startDate).slice(0,10),km:Number(a.distanceMeters)/1000,minutes:Number(a.movingTimeSeconds)/60})).sort((a,b)=>a.date.localeCompare(b.date));
- return {source:'production_account',updatedAt:new Date().toISOString(),timezone,today,historyLimit:20,historyDays:90,goal:String(plan.goalType||prefs.coachGoal||'Discuss your running goals'),days:[],activities,
-  trainingContext:{loadedAt:new Date().toISOString(),canWritePlans:false,profile,plans:Object.keys(plan).length?[plan]:[],goals:Array.isArray(snapshot.activeGoals)?snapshot.activeGoals as Facts[]:[],metrics:{snapshot},unavailable:[],coverage:'Latest read-only MCP snapshot: up to 20 runs in 90 days and up to 32 weeks of the active plan. Full details are in metrics.snapshot and plans. Missing fields are unknown, not zero. WhatsApp cannot change plans or schedule reminders. Ask the runner to confirm those actions on the website.'}};
+ const state:State={source:'production_account',updatedAt:loadedAt,timezone,today,historyLimit:20,historyDays:90,goal:String(plan.goalType||prefs.coachGoal||'Discuss your running goals'),days:[],activities,
+  trainingContext:{loadedAt,canWritePlans:false,profile,plans:Object.keys(plan).length?[plan]:[],goals:Array.isArray(snapshot.activeGoals)?snapshot.activeGoals as Facts[]:[],metrics:{snapshot},unavailable:[],coverage:'Read-only MCP snapshot, loaded at loadedAt and reused for at most two minutes. Up to 20 runs in 90 days and up to 32 weeks of the active plan. Full details are in metrics.snapshot and plans. Missing fields are unknown, not zero. Send /refresh to reload immediately after a sync or plan change. WhatsApp cannot change plans or schedule reminders. Ask the runner to confirm those actions on the website.'}};
+ const serialized=JSON.stringify(state);
+ // Bounded below D1 row limits, including encryption overhead. A revoked or
+ // replaced grant cannot repopulate the cache while an old fetch finishes.
+ if(new TextEncoder().encode(serialized).length<=400000){
+  const payload=await crypt(env,aad,serialized);
+  await env.DB.prepare('INSERT INTO whatsapp_context_cache(session_id,generation,payload,expires_at) SELECT session_id,generation,?,? FROM whatsapp_oauth_grants WHERE session_id=? AND generation=? AND expires_at>? ON CONFLICT(session_id) DO UPDATE SET generation=excluded.generation,payload=excluded.payload,expires_at=excluded.expires_at').bind(payload,Math.floor(Date.parse(loadedAt)/1000)+120,id,g.generation,now()).run();
+ }
+ return state;
 }

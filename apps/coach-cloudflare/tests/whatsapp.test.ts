@@ -94,6 +94,7 @@ test('Forged webhook has no effect; inbound retries queue only once; callbacks c
 
 test('Signed inbound publishes immediately; failed publishing is recovered without duplicating the inbox',async(t)=>{
  const f=setup();t.after(()=>f.db.close());await whatsappWebhook(await pair(f),f.env);
+ assert.equal((f.queued[0] as {warm:string}).warm,'a');f.queued.length=0;
  const chat=request(f.env,'Test immediate delivery'),retry=chat.clone() as Request;
  const queue=f.env.WHATSAPP_QUEUE;
  Object.assign(f.env,{WHATSAPP_QUEUE:{async send(){throw new Error('Queue unavailable');}}});
@@ -106,4 +107,17 @@ test('Signed inbound publishes immediately; failed publishing is recovered witho
  await recoverWhatsApp(f.env);assert.equal(f.queued.length,2);
  assert.ok(!JSON.stringify(f.queued).includes('Test immediate delivery'));
  assert.ok(!JSON.stringify(f.queued).includes('14155550111'));
+});
+
+test('Signed accepted messages start typing before Queue pickup; forged requests do not',async(t)=>{
+ const f=setup();t.after(()=>f.db.close());await whatsappWebhook(await pair(f),f.env);
+ const original=globalThis.fetch;t.after(()=>globalThis.fetch=original);
+ let indicators=0;const tasks:Promise<unknown>[]=[];
+ globalThis.fetch=async url=>{assert.match(String(url),/Indicators\/Typing/);indicators++;return Response.json({success:true});};
+ const ctx={waitUntil(task:Promise<unknown>){tasks.push(task);}};
+ const good=request(f.env,'How are my legs?');
+ const bad=new Request(good.clone() as Request,{headers:{'Content-Type':'application/x-www-form-urlencoded','X-Twilio-Signature':'invalid'}});
+ await whatsappWebhook(bad,f.env,ctx);assert.equal(tasks.length,0);
+ await whatsappWebhook(good,f.env,ctx);await Promise.all(tasks);assert.equal(indicators,1);
+ assert.equal(f.db.prepare("SELECT COUNT(*) n FROM whatsapp_inbox WHERE status='pending'").get()!.n,1);
 });
