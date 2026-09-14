@@ -495,7 +495,9 @@ export const performanceLogs = pgTable("performance_logs", {
     requestBody: text("request_body"), // Request body (POST/PUT data), truncated if >5KB
     responseBody: text("response_body"), // Response body, truncated if >5KB
     timestamp: timestamp("timestamp").default(sql `(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`).notNull(),
-});
+}, (table) => ({
+    timestampMetricsIdx: index("performance_logs_timestamp_metrics_idx").on(table.timestamp, table.elapsedTime, table.statusCode),
+}));
 export const aiConversations = pgTable("ai_conversations", {
     id: serial("id").primaryKey({ autoIncrement: true }),
     userId: integer("user_id").notNull(),
