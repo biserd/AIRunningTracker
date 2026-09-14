@@ -16,7 +16,12 @@ test('Typing records accepted/rejected/timeout outcomes without logging sensitiv
  Object.assign(f.env,{TWILIO_ACCOUNT_SID:'AC'+'a'.repeat(32),TWILIO_AUTH_TOKEN:'private-secret'});
  const original=globalThis.fetch,log=console.log;const logs:string[]=[];
  t.after(()=>{globalThis.fetch=original;console.log=log;});console.log=(s:string)=>logs.push(s);
- globalThis.fetch=async()=>Response.json({success:true});await typing(f.env,sid);
+ globalThis.fetch=async(url,init)=>{
+  assert.equal(String(url),'https://messaging.twilio.com/v3/Indicators/Typing.json');
+  assert.equal(new Headers(init?.headers).get('Content-Type'),'application/json');
+  assert.deepEqual(JSON.parse(String(init?.body)),{messageId:sid,channel:'WHATSAPP'});
+  return Response.json({success:true});
+ };await typing(f.env,sid);
  let row=f.db.prepare('SELECT * FROM whatsapp_inbox WHERE sid=?').get(sid)!;
  assert.equal(row.typing_accepted,1);assert.equal(row.typing_last_outcome,'accepted');
  globalThis.fetch=async()=>Response.json({code:20003,message:'private-secret private question',details:{phone:'+14155550111'}},{status:401});

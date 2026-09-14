@@ -6,7 +6,8 @@ export async function typing(env:Env,sid:string,signal?:AbortSignal) {
  try {
   const response=await fetch('https://messaging.twilio.com/v3/Indicators/Typing.json',{
    method:'POST',headers:{Authorization:'Basic '+btoa(env.TWILIO_ACCOUNT_SID+':'+env.TWILIO_AUTH_TOKEN),'Content-Type':'application/json'},
-   body:JSON.stringify({messageId:sid,channel:'whatsapp'}),signal:signal?AbortSignal.any([signal,AbortSignal.timeout(3000)]):AbortSignal.timeout(3000),
+   // v3 JSON uses the uppercase enum in Twilio's request example, unlike v2 forms.
+   body:JSON.stringify({messageId:sid,channel:'WHATSAPP'}),signal:signal?AbortSignal.any([signal,AbortSignal.timeout(3000)]):AbortSignal.timeout(3000),
   });
   status=response.status;
   let data:unknown;

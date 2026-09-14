@@ -27,7 +27,11 @@ for(const direct of [false,true])test('Workers runtime signed webhook uses '+(di
    bindings:{TWILIO_ACCOUNT_SID:account,TWILIO_AUTH_TOKEN:secret,TWILIO_WHATSAPP_FROM:sender,OPENAI_API_KEY:'synthetic',PUBLIC_ORIGIN:'https://new.aitracker.run'},outboundService:'provider'},
   {name:'provider',compatibilityDate:'2026-09-14',modules:true,d1Databases:{DB:'test-db'},script:`export default {async fetch(request,env){
    const url=new URL(request.url);
-   if(url.pathname.includes('/Indicators/Typing.json'))return Response.json({success:true});
+   if(url.pathname.includes('/Indicators/Typing.json')){
+    const body=await request.json();
+    return body.channel==='WHATSAPP'&&/^SM[a-f0-9]{32}$/i.test(body.messageId)
+     ?Response.json({success:true}):Response.json({code:400},{status:400});
+   }
    if(url.hostname==='api.openai.com'){
     const body=await request.json();
     if(body.model!=='gpt-5.6-luna' || body.reasoning.effort!=='low' || body.tools.length || body.tool_choice!=='none' || !body.input[0].content.includes('activityEvidence'))return new Response('',{status:400});
