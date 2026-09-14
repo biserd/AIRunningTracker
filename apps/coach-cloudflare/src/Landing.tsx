@@ -25,7 +25,7 @@ export function Landing() {
     catch(e){setError(e instanceof Error?e.message:'Please try again.');} finally{setBusy(false);}
   }
   return <div className="launch-page">
-    <header className="launch-nav"><a className="launch-brand" href="/"><Footprints size={25}/> AITracker<span>.</span></a><nav aria-label="Landing navigation"><a href="#features">The experience</a><a className="launch-small-cta" href="#waitlist">Join the waitlist <ArrowUpRight size={16}/></a></nav></header>
+    <header className="launch-nav"><a className="launch-brand" href="/"><Footprints size={25}/> AITracker<span>.</span></a><nav aria-label="Landing navigation"><a href="/preview">Sign in</a><a className="launch-small-cta" href="#waitlist">Join the waitlist <ArrowUpRight size={16}/></a></nav></header>
     <main>
       <ReminderUnsubscribe/>
       <section className="launch-hero">

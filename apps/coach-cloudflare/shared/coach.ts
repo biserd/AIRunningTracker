@@ -8,6 +8,11 @@ export type Day = {
 };
 export type Activity = { date: string; km: number; minutes: number };
 export type State = {
+  source?: "fictional_sample" | "production_account";
+  updatedAt?: string;
+  timezone?: string;
+  historyLimit?: number;
+  historyDays?: number;
   days: Day[];
   activities: Activity[];
   today: string;
@@ -20,6 +25,8 @@ export type Change = {
   date?: string;
 };
 export type Snapshot = {
+  runner?: { id: number; name: string; timezone: string; unitPreference: string };
+  canUseAI?: boolean;
   state: State;
   version: number;
   lastAction: string | null;
@@ -76,6 +83,7 @@ export function changePlan(
   state: State,
   input: Change,
 ): { state: State; description: string } {
+  if (state.source === "production_account") throw new Error("Manage your real training plan on aitracker.run/training-plans. No changes were made here.");
   const next = structuredClone(state);
   const day = next.days.find((d) => d.id === input.dayId);
   if (!day || day.completed || day.date < state.today)
@@ -121,15 +129,18 @@ export function changePlan(
 }
 export function evidence(state: State) {
   const runs = state.activities;
-  const weeks = Array.from({ length: 4 }, (_, i) => {
-    const selected = runs.slice(i * 4, i * 4 + 4);
-    return {
-      label: `Week ${i + 1}`,
-      runs: selected.length,
-      km: Math.round(selected.reduce((a, x) => a + x.km, 0) * 10) / 10,
-    };
-  });
+  const grouped = new Map<string, {label:string;runs:number;km:number}>();
+  for (const run of runs) {
+    const day = new Date(run.date+"T12:00:00Z");
+    day.setUTCDate(day.getUTCDate()-((day.getUTCDay()+6)%7));
+    const label=day.toISOString().slice(0,10);
+    const bucket=grouped.get(label) || {label,runs:0,km:0};
+    bucket.runs++; bucket.km+=run.km; grouped.set(label,bucket);
+  }
+  const weeks=[...grouped.values()].sort((a,b)=>a.label.localeCompare(b.label))
+    .map(w=>({...w,km:Math.round(w.km*10)/10}));
   return {
+    source: state.source || "fictional_sample",
     weeks,
     totalRuns: runs.length,
     totalKm: runs.reduce((a, x) => a + x.km, 0),

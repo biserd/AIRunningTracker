@@ -17,8 +17,8 @@ export class VoiceLease extends DurableObject<Env> {
             model: "gpt-live-1",
             store: false,
             instructions:
-              instructions +
-              " You are the voice interface. Delegate training questions AND requests to create, list or cancel email reminders to the client coach. The backend supports verified-inbox reminder drafts. Do not claim reminders are unavailable without delegating. Do not invent answers before a delegation result arrives. Speak in short sentences. Explain that this is an AI voice using a sample plan. Spoken agreement never confirms a plan change or reminder; direct the runner to review and confirm it on screen.",
+              instructions.replace("This is a fictional sample runner, NOT the user's real training history. All supplied activity and plan data is SAMPLE DATA. Never imply Strava, weather, heart rate, recovery measurements or real accounts are connected.", "The client coach retrieves the authenticated runner's data. Use its returned source and freshness information. Never invent missing measurements.") +
+              " You are the AI voice interface. Delegate all training questions and reminder requests to the client coach. Do not invent answers before a delegation result arrives. Speak briefly. Spoken agreement never confirms a reminder. Real training plan edits must be made on aitracker.run/training-plans.",
             delegation: { type: "client" },
             audio: { output: { voice: "marin" } },
             client: {

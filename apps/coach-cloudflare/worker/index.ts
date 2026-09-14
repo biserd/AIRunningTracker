@@ -1,5 +1,6 @@
-import { changePlan, seed, type State, type Change } from "../shared/coach";
+import { changePlan, type State, type Change } from "../shared/coach";
 import { aiRoute, history } from "./ai";
+import { accountAction, accountToken, loadAccount } from "./account";
 import { whatsappWebhook, whatsappStatus, whatsappAction, processWhatsApp } from './whatsapp';
 import { AIError, boundedJSON } from "./openai";
 import { waitlistInput, joinWaitlist, leaveWaitlist, deliverLaunch } from "./waitlist";
@@ -25,7 +26,6 @@ type ProposalRow = {
   description: string;
 };
 const lifetime = 60 * 60 * 24 * 7;
-const cookieName = "coach_preview";
 const json = (data: unknown, status = 200) =>
   Response.json(data, { status, headers: { "Cache-Control": "no-store" } });
 async function digest(value: string) {
@@ -54,6 +54,16 @@ async function api(request: Request, env: Env): Promise<Response> {
     return json({ error: "Method not allowed" }, 405);
   if (request.method === "POST" && request.headers.get("Origin") !== url.origin)
     return json({ error: "Origin not allowed" }, 403);
+  if (url.pathname.startsWith("/api/account/")) {
+    if (request.method !== "POST") return json({error:"Method not allowed"},405);
+    if (!request.headers.get("Content-Type")?.startsWith("application/json")) return json({error:"JSON required"},415);
+    if (!await limit(env, "account:"+await digest(request.headers.get("CF-Connecting-IP") || "local"),20,600)) return json({error:"Please try again later."},429);
+    try {
+      const input = await boundedJSON(new Response(request.body), 8000);
+      if (!input || typeof input !== "object" || Array.isArray(input)) return json({error:"Invalid request"},400);
+      return await accountAction(env,url.pathname,input as Record<string,unknown>);
+    } catch(e) { return json({error:e instanceof AIError ? e.message : "Sign-in is temporarily unavailable."}, e instanceof AIError ? e.status : 503); }
+  }
   if (["/api/waitlist", "/api/waitlist/unsubscribe"].includes(url.pathname)) {
     if (request.method !== "POST") return json({error:"Method not allowed"},405);
     if (!request.headers.get("Content-Type")?.startsWith("application/json")) return json({error:"JSON required"},415);
@@ -97,37 +107,16 @@ async function api(request: Request, env: Env): Promise<Response> {
       return json({ error: "Invalid unsubscribe request." }, 400);
     }
   }
-  if (url.pathname === "/api/session" && request.method === "POST") {
-    const address = request.headers.get("CF-Connecting-IP") || "local";
-    if (!(await limit(env, `signup:${await digest(address)}`, 20, 3600)))
-      return json(
-        { error: "Too many preview sessions. Try again later." },
-        429,
-      );
-    const token = Array.from(crypto.getRandomValues(new Uint8Array(32)), (x) =>
-      x.toString(16).padStart(2, "0"),
-    ).join("");
-    await env.DB.prepare(
-      "INSERT INTO sessions(id,state,expires_at) VALUES (?,?,?)",
-    )
-      .bind(await digest(token), JSON.stringify(seed()), now + lifetime)
-      .run();
-    const response = json({ ok: true });
-    response.headers.set(
-      "Set-Cookie",
-      `${cookieName}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${lifetime}${url.protocol === "https:" ? "; Secure" : ""}`,
-    );
-    return response;
-  }
-  const token = request.headers
-    .get("Cookie")
-    ?.split(";")
-    .map((x) => x.trim())
-    .find((x) => x.startsWith(cookieName + "="))
-    ?.slice(cookieName.length + 1);
-  if (!token || !/^[a-f0-9]{64}$/.test(token))
-    return json({ error: "Start your private preview first." }, 401);
-  const id = await digest(token);
+  if (url.pathname === "/api/session") return json({error:"Sign in with your AITracker account."},401);
+  const token = accountToken(request);
+  if (!token) return json({error:"Sign in with your AITracker account."},401);
+  if (!await limit(env,"account-read:"+await digest(token),120,60)) return json({error:"Please wait before trying again."},429);
+  let account;
+  try { account = await loadAccount(env,token); }
+  catch(e) { return json({error:e instanceof AIError ? e.message : "Your running data could not load."},e instanceof AIError ? e.status : 503); }
+  const id = await digest("production-runner:"+account.runner.id);
+  await env.DB.prepare("INSERT INTO sessions(id,state,expires_at) VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state,expires_at=excluded.expires_at")
+    .bind(id,JSON.stringify(account.state),now+lifetime).run();
   const row = await env.DB.prepare(
     "SELECT id,state,version,last_action FROM sessions WHERE id=? AND expires_at>?",
   )
@@ -149,13 +138,16 @@ async function api(request: Request, env: Env): Promise<Response> {
         voice: "gpt-live-1",
         image: "gpt-image-2.5-sunburst",
       },
-      source: "fictional_sample",
+      source: "production_account",
+      canUseAI: account.canUseAI,
     });
   if (url.pathname === "/api/state" && request.method === "GET")
     return json({
       state: JSON.parse(row.state),
       version: row.version,
       lastAction: row.last_action,
+      runner: account.runner,
+      canUseAI: account.canUseAI,
     });
   if (request.method !== "POST") return json({ error: "Not found" }, 404);
   if (!request.headers.get("Content-Type")?.startsWith("application/json"))
@@ -193,6 +185,10 @@ async function api(request: Request, env: Env): Promise<Response> {
     return json({ error: "Invalid request" }, 400);
   }
   const state = JSON.parse(row.state) as State;
+  if (["/api/proposals","/api/confirm","/api/undo-proposal"].includes(url.pathname))
+    return json({error:"Manage your training plan on aitracker.run/training-plans. No changes were made here."},403);
+  if (url.pathname.startsWith("/api/ai/") && !account.canUseAI)
+    return json({error:"AI coaching requires an active trial or subscription. Your running data remains available."},403);
   if (url.pathname.startsWith('/api/whatsapp/')) {
     try { return json(await whatsappAction(env,id,url.pathname.slice('/api/whatsapp/'.length),input)); }
     catch(e) { return json({error:e instanceof ReminderError?e.message:'WhatsApp unavailable.'},e instanceof ReminderError?e.status:503); }

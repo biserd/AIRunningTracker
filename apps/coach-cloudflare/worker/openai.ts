@@ -189,7 +189,9 @@ export async function coach(
         model: "gpt-6-astra",
         store: false,
         instructions:
-          instructions +
+          instructions.replace("This is a fictional sample runner, NOT the user's real training history. All supplied activity and plan data is SAMPLE DATA. Never imply Strava, weather, heart rate, recovery measurements or real accounts are connected.",
+            state.source === "production_account" ? "This is the authenticated runner's real account. Use only the bounded server-provided running history and current plan. Respect its date range and freshness timestamp. No weather, heart-rate or recovery measurements are supplied. Never invent those. Real plan edits are unavailable here: direct the runner to aitracker.run/training-plans. Never propose or claim to save a real plan change." :
+              "This is fictional sample data, not the runner's real history.") +
           (reminders
             ? " You can also PREPARE a one-time email reminder or cancellation for separate on-screen confirmation. A draft is not scheduled. Read reminder context including actual current time, verified timezone and existing reminders. The sample plan date is not the actual date for reminders. Ask the runner to verify email in the reminders panel if unverified, and clarify missing dates or times. Never request or choose a recipient: the server controls it. Never say a reminder is set, cancelled, or an email was sent; tell the runner to review and confirm on screen. Recurring reminders are not supported."
             : " This channel is read-only. You cannot create or cancel reminders here. For scheduling or changes, ask the runner to open the preview and confirm there. Never claim an action has been performed."),
@@ -238,7 +240,7 @@ export async function coach(
           !Object.keys(args).length
         ) {
           result = {
-            source: "fictional_sample",
+            source: state.source || "fictional_sample",
             state,
             activityEvidence: evidence(state),
             realWeatherAvailable: false,

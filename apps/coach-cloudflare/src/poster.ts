@@ -1,4 +1,5 @@
 export type PosterEvidence = {
+  source?: string;
   totalRuns: number;
   totalKm: number;
   from?: string;
@@ -93,7 +94,7 @@ export async function renderPoster(imageUrl: string, evidence: PosterEvidence) {
   text("Totals reflect the available activity history, not a performance rating.", 80, 1620, 23, muted);
   ctx.fillStyle = paper;
   ctx.fillRect(0, 1690, 1440, 110);
-  text("FICTIONAL SAMPLE DATA", 80, 1755, 23, ink, "700");
+  text(evidence.source === "production_account" ? "YOUR RECORDED RUNS" : "FICTIONAL SAMPLE DATA", 80, 1755, 23, ink, "700");
   ctx.textAlign = "right";
   text("AI-generated artwork · new.aitracker.run", 1360, 1755, 23, ink);
   return canvas.toDataURL("image/png");

@@ -31,6 +31,7 @@ import "./chat-first.css";
 import { CoachAI } from "./CoachAI";
 import { ReminderPanel, ReminderUnsubscribe } from "./Reminders";
 import { Landing, WaitlistUnsubscribe } from "./Landing";
+import { AccountLogin, signOut } from "./Account";
 async function api<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch("/api/" + path, {
     method: body === undefined ? "GET" : "POST",
@@ -100,11 +101,6 @@ function App() {
       setBusy(false);
     }
   }
-  const start = () =>
-    run(async () => {
-      await api("session", {});
-      await refresh();
-    });
   const upcoming = data?.state.days.find(
     (d) => !d.completed && d.kind !== "rest",
   );
@@ -149,6 +145,7 @@ function App() {
         <header className="coach-topbar">
           <a className="coach-wordmark" href="/">AITracker<span>.</span></a>
           <nav aria-label="Main navigation">
+            {data && <button className="secondary" disabled={busy} onClick={()=>void run(refresh)}>Refresh runs</button>}
             {tab !== "Coach" && <button className="secondary" onClick={()=>setTab("Coach")}>Back to coach</button>}
             <button className="secondary" aria-label="Settings" onClick={()=>setTab("Settings")}><Settings2 size={18}/> Settings</button>
           </nav>
@@ -158,7 +155,7 @@ function App() {
           <div className="preview-note">
             <Info size={16} />
             <span>
-              Sample data. Your real AITracker account stays unchanged.
+              {data?.runner ? `Connected as ${data.runner.name}. Using your AITracker running data.` : "Sign in to use your running data."}
             </span>
           </div>
           {loading ? (
@@ -166,30 +163,7 @@ function App() {
               <p>Opening your running space…</p>
             </div>
           ) : !data ? (
-            <section className="welcome">
-              <span className="eyebrow">MEET YOUR NEW RUNNING SPACE</span>
-              <h1>
-                Your running coach.
-                <br />Ready when you are.
-              </h1>
-              <p>
-                Start with what matters today. Make room for real life.
-                <br />
-                See how a coach-first AITracker could feel.
-              </p>
-              <button className="primary" disabled={busy} onClick={start}>
-                Explore the coach preview <ArrowRight size={18} />
-              </button>
-              <small>
-                No login or Strava connection needed. Fictional data, real saved
-                plan adjustments.
-              </small>
-              {error && (
-                <p role="alert" className="error">
-                  {error}
-                </p>
-              )}
-            </section>
+            <><AccountLogin/>{error && !/Sign in with/.test(error) && <p role="alert">{error}</p>}</>
           ) : (
             <>
               {tab !== "Coach" && <div className="title-row">
@@ -227,7 +201,7 @@ function App() {
                     "en-US",
                     { month: "short", day: "numeric", timeZone: "UTC" },
                   )}
-                  <small>UTC preview</small>
+                  <small>{data.state.timezone || "UTC"}</small>
                 </span>
               </div>
               }
@@ -236,7 +210,7 @@ function App() {
                   {error}
                 </p>
               )}
-              {tab === "Coach" && <CoachAI onProposal={setProposal} version={data.version} state={data.state} onWeek={()=>setTab("My week")} onSettings={()=>setTab("Settings")}/>}
+              {tab === "Coach" && <>{!data.canUseAI && <p>Start a trial on <a href="https://aitracker.run/pricing">AITracker</a> to use AI coaching. Your runs and schedule are available here.</p>}<CoachAI onProposal={setProposal} version={data.version} state={data.state} onWeek={()=>setTab("My week")} onSettings={()=>setTab("Settings")}/></>}
               {tab === "My week" && (
                 <section className="week-full">
                   <div className="section-heading">
@@ -248,7 +222,7 @@ function App() {
                           data.state.days.filter((d) => d.kind !== "rest")
                             .length
                         }{" "}
-                        runs · saved in D1
+                        runs · from your active AITracker plan
                       </p>
                     </div>
                     {data.lastAction && (
@@ -270,6 +244,7 @@ function App() {
                       </button>
                     )}
                   </div>
+                  {!data.state.days.length && <p>No workouts are scheduled for this week. <a href="https://aitracker.run/training-plans">Review your training plans</a>.</p>}
                   {data.state.days.map((d) => (
                     <article
                       className={
@@ -304,6 +279,8 @@ function App() {
                       </div>
                       {d.completed ? (
                         <span className="completed">Completed</span>
+                      ) : data.state.source === "production_account" ? (
+                        <a href="https://aitracker.run/training-plans">Manage plan</a>
                       ) : d.kind !== "rest" ? (
                         <button
                           className="outline"
@@ -317,8 +294,7 @@ function App() {
                     </article>
                   ))}
                   <p className="footnote">
-                    Completed sample sessions are protected. Moving a run uses
-                    an upcoming rest day within this week.
+                    This schedule comes from your active plan. Manage changes on AITracker.
                   </p>
                 </section>
               )}
@@ -326,17 +302,16 @@ function App() {
                 <section className="progress-layout">
                   <div className="progress-card">
                     <span className="eyebrow">CONSISTENCY</span>
-                    <h2>Four runs. Four weeks in a row.</h2>
+                    <h2>Your recent weeks.</h2>
                     <p>
-                      In this fictional history, the weekly run count is steady.
-                      That shows consistency, not necessarily improved fitness.
+                      Recorded runs by calendar week. Run count alone does not measure fitness.
                     </p>
                     <div
                       className="bar-chart"
                       role="img"
-                      aria-label="Sample data: four runs in each of four weeks"
+                      aria-label="Recorded runs in recent calendar weeks"
                     >
-                      {stats.weeks.map((w) => (
+                      {stats.weeks.slice(-4).map((w) => (
                         <div key={w.label}>
                           <strong>{w.runs} runs</strong>
                           <div
@@ -352,9 +327,9 @@ function App() {
                       <div>
                         <strong>What this is based on</strong>
                         <p>
-                          {stats.totalRuns} fictional activities · {stats.from}{" "}
-                          to {stats.to}. Distance: {stats.totalKm} km. No real
-                          Strava data or recovery measurements.
+                          {stats.totalRuns} recorded runs · {stats.from || "No runs yet"}{" "}
+                          {stats.to ? `to ${stats.to}` : ""}. Distance: {stats.totalKm.toFixed(1)} km.
+                          Up to {data.state.historyLimit} runs in the last {data.state.historyDays} days. No inferred recovery measurements.
                         </p>
                       </div>
                     </div>
@@ -365,8 +340,8 @@ function App() {
                       {data.state.activities
                         .slice()
                         .reverse()
-                        .map((a) => (
-                          <div key={a.date}>
+                        .map((a,index) => (
+                          <div key={a.date+":"+index}>
                             <span>{a.date}</span>
                             <strong>{a.km} km</strong>
                             <span>{a.minutes} min</span>
@@ -380,24 +355,21 @@ function App() {
                 <section className="settings-card">
                   <h2>Connections & reminders</h2>
                   <ReminderPanel />
-                  <p>
-                    This preview uses Cloudflare Workers for its API and D1 for
-                    saved plans. There are no requests to Replit or the live
-                    AITracker backend.
-                  </p>
+                  <p>Your account, runs and training plan come from AITracker. Chat, reminder and WhatsApp preferences are private to your account in this experience.</p>
                   <dl>
                     <dt>Runner data</dt>
-                    <dd>Fictional, created for this browser</dd>
+                    <dd>Your recorded runs, up to {data.state.historyLimit} in the last {data.state.historyDays} days</dd>
                     <dt>Storage</dt>
-                    <dd>Private session, expires after seven days</dd>
+                    <dd>Secure sign-in. Your existing subscription applies.</dd>
                     <dt>Strava, billing and Telegram</dt>
-                    <dd>Not connected</dd>
+                    <dd><a href="https://aitracker.run/coach/settings">Manage on AITracker</a></dd>
                     <dt>AI and voice</dt>
                     <dd>
                       OpenAI integration. Availability is shown in the Coach
-                      tab. Uses your sample plan, not your real running history.
+                      tab. Uses your recorded runs and current plan.
                     </dd>
                   </dl>
+                  <button className="outline" onClick={()=>void signOut().catch(()=>setError("Could not sign out. Please retry."))}>Sign out</button>
                   <p className="footnote">
                     Do not enter private or medical information. This is a
                     product preview, not training or medical advice.
@@ -565,6 +537,7 @@ function App() {
   );
 }
 createRoot(document.getElementById("root")!).render(
+  location.pathname === "/auth/magic-link" ? <AccountLogin/> :
   location.pathname === "/waitlist/unsubscribe" ? <WaitlistUnsubscribe/> :
   location.pathname === "/" ? <Landing/> : <App />
 );

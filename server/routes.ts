@@ -9,6 +9,7 @@ import { jobQueue, createListActivitiesJob, createHydrateActivityJob, metrics } 
 import { aiService } from "./services/ai";
 import { mlService } from "./services/ml";
 import { performanceService } from "./services/performance";
+import { coachExperience } from "./services/coachExperience";
 import { authService, AuthError } from "./services/auth";
 import { emailService } from "./services/email";
 import { runnerScoreService } from "./services/runnerScore";
@@ -1883,11 +1884,22 @@ ${allPages.map(page => `  <url>
   // ─── Magic-link sign-in (one-tap, no password) ─────────────────────────
   // Works for both password-based and Strava-only accounts. Tokens expire
   // in 15 minutes and are signed JWTs (no DB writes needed).
+  app.get("/api/coach/experience", authenticateJWT, async (req: any, res) => {
+    res.set("Cache-Control", "no-store");
+    try {
+      const snapshot = await coachExperience(req.user.id);
+      return snapshot ? res.json(snapshot) : res.status(401).json({ message: "Sign in again." });
+    } catch {
+      return res.status(503).json({ message: "Your running data could not load. Please retry." });
+    }
+  });
+
   app.post("/api/auth/magic-link/request", async (req, res) => {
     try {
-      const { email, redirect } = z.object({
+      const { email, redirect, client } = z.object({
         email: z.string().email(),
         redirect: z.string().max(300).optional(),
+        client: z.literal("coach").optional(),
       }).parse(req.body);
       const safeRedirect = sanitizeReturnTo(redirect);
       const token = await authService.generateMagicLinkToken(email);
@@ -1897,7 +1909,7 @@ ${allPages.map(page => `  <url>
         // email service if the host header is somehow missing.
         const host = req.get('host');
         const proto = req.get('x-forwarded-proto') || req.protocol;
-        const baseUrl = host ? `${proto}://${host}` : 'https://aitracker.run';
+        const baseUrl = client === "coach" ? "https://new.aitracker.run" : host ? `${proto}://${host}` : 'https://aitracker.run';
         console.log(`[MagicLink] Sending link to ${email} via ${baseUrl}`);
         await emailService.sendMagicLinkEmail(email, token, baseUrl, safeRedirect || undefined);
       } else {

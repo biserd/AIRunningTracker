@@ -109,6 +109,16 @@ try {
   assert.ok(batch.hrZones?.heartRateZones);
   assert.equal((await request('/api/performance/efficiency/2')).status,404);
   assert.equal((await request('/api/analytics/batch/2')).status,404);
+  const coachResponse=await request('/api/coach/experience?userId=2');
+  assert.equal(coachResponse.status,200);
+  const coach=await coachResponse.json();
+  assert.equal(coach.runner.id,1);
+  assert.equal(coach.state.source,'production_account');
+  assert.equal(coach.state.activities.length,21);
+  assert.ok(coach.state.activities.every((a:any)=>!('streamsData' in a) && !('userId' in a)));
+  assert.deepEqual(coach.state.days,[]);
+  assert.ok(!JSON.stringify(coach).includes('test-password'));
+  assert.equal((await fetch(base+'/api/coach/experience')).status,401);
   // Calendar's existing free-user lock filter must still be enforced.
   sqlite.exec("UPDATE users SET subscription_plan='free',subscription_status=NULL WHERE id=1; UPDATE activities SET locked_for_free=1 WHERE id=10");
   const calendar=await (await request('/api/activities/heatmap')).json();

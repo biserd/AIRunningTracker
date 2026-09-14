@@ -179,7 +179,7 @@ export async function aiRoute(
               ),
             }
           : {}),
-        source: "fictional_sample",
+        source: state.source || "fictional_sample",
       };
       await env.DB.batch([
         env.DB.prepare(
@@ -219,7 +219,7 @@ export async function aiRoute(
       result = {
         image: `data:image/webp;base64,${image}`,
         evidence: evidence(state),
-        source: "fictional_sample",
+        source: state.source || "fictional_sample",
       };
     }
     // Images are intentionally ephemeral, never multi-megabyte D1 blobs. A replay cannot bill twice.

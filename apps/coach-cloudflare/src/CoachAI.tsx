@@ -110,9 +110,9 @@ export function CoachAI({
   }, []);
   const [card,setCard] = useState<"chart"|"week"|null>(null);
   function showRequested(message:string) {
-    if (/\b(chart|graph|plot)\b/i.test(message)) { setCard("chart"); return "Here is your sample running distance by calendar week. This is recorded distance, not a fitness or recovery score."; }
-    if (/^(show|view|open) (me )?(my |the )?(week|plan|schedule)[.!?]*$/i.test(message.trim())) { setCard("week"); return "Here is your sample week. Nothing has been changed."; }
-    if (/\b(create|make|generate)\b.*\bposter\b/i.test(message)) { void generateImage(); return "I’m creating a poster from the sample running totals. It may take up to three minutes."; }
+    if (/\b(chart|graph|plot)\b/i.test(message)) { setCard("chart"); return "Here is your recorded distance by week. Distance alone is not a fitness score."; }
+    if (/^(show|view|open) (me )?(my |the )?(week|plan|schedule)[.!?]*$/i.test(message.trim())) { setCard("week"); return "Here is your current week. Nothing has been changed."; }
+    if (/\b(create|make|generate)\b.*\bposter\b/i.test(message)) { void generateImage(); return "I’m creating a poster from your available running totals. It may take up to three minutes."; }
     return null;
   }
   function receive(answer: Answer) {
@@ -286,7 +286,7 @@ export function CoachAI({
             })
             .catch(() =>
               answerBack(
-                "I could not check your sample plan just now. No changes were made.",
+                "I could not check your plan just now. No changes were made.",
               ),
             )
             .finally(() => {
@@ -371,7 +371,7 @@ export function CoachAI({
         {configured === false && (
           <p role="status">
             AI is not ready yet. The site owner needs to add the server API key.
-            You can still explore and adjust the sample week.
+            You can still review your runs and schedule.
           </p>
         )}
         <nav className="coach-shortcuts" aria-label="Coach tools">
@@ -395,7 +395,7 @@ export function CoachAI({
         )}
         {card && <section className="chat-attachment" aria-label={card==="chart"?"Running chart":"Sample week"}>
           <button className="text-button" onClick={()=>setCard(null)}>Close {card==="chart"?"chart":"plan"}</button>
-          {card==="chart"?<RunningChart state={state}/>:<><h3>Your sample week</h3>{state.days.map(day=><p key={day.id}><strong>{day.date}</strong> · {day.title} · {day.minutes} min{day.completed?" · Completed":""}</p>)}<button className="secondary" onClick={onWeek}>Review or adjust my week</button></>}
+          {card==="chart"?<RunningChart state={state}/>:<><h3>Your week</h3>{!state.days.length && <p>No workouts scheduled this week.</p>}{state.days.map(day=><p key={day.id}><strong>{day.date}</strong> · {day.title} · {day.minutes} min{day.completed?" · Completed":""}</p>)}<button className="secondary" onClick={onWeek}>Review my week</button></>}
         </section>}
         {reminderProposal && <div className="inline-reminder"><ReminderPanel proposal={reminderProposal} reviewOnly/><button className="text-button" onClick={onSettings}>Manage connections in Settings</button></div>}
         <div className="coach-composer">
@@ -433,7 +433,7 @@ export function CoachAI({
         </div>
         <form onSubmit={ask}>
           <input
-            aria-label="Ask about your sample plan"
+            aria-label="Ask your running coach"
             maxLength={2000}
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -451,7 +451,7 @@ export function CoachAI({
         {imageBusy && <p role="status">Creating your poster. Up to 3 minutes.</p>}
         {busy && (
           <div className="voice-note" role="status">
-            Checking your sample week…{" "}
+            Checking your running data…{" "}
             <button onClick={() => abort.current?.abort()}>Stop waiting</button>
           </div>
         )}
@@ -474,13 +474,13 @@ export function CoachAI({
           <figure className="generated-art">
             <img
               src={art}
-              alt="AI-generated running illustration with verified fictional sample activity totals"
+              alt="AI-generated running illustration with recorded activity totals"
             />
             <figcaption>
               <a
                 className="secondary"
                 href={art}
-                download="aitracker-sample-running-poster.png"
+                download="aitracker-running-poster.png"
               >
                 <Download size={16} /> Download poster
               </a>
