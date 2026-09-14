@@ -27,9 +27,9 @@
     "PUBLIC_ORIGIN": "https://new.aitracker.run",
   },
   "durable_objects": {
-    "bindings": [{ "name": "VOICE_LEASE", "class_name": "VoiceLease" }],
+    "bindings": [{ "name": "VOICE_LEASE", "class_name": "VoiceLease" }, { "name": "WHATSAPP_DISPATCH", "class_name": "WhatsAppDispatch" }],
   },
-  "migrations": [{ "tag": "voice-v1", "new_sqlite_classes": ["VoiceLease"] }],
+  "migrations": [{ "tag": "voice-v1", "new_sqlite_classes": ["VoiceLease"] }, { "tag": "whatsapp-dispatch-v1", "new_sqlite_classes": ["WhatsAppDispatch"] }],
   "compatibility_date": "2026-09-12",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {

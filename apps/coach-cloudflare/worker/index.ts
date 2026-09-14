@@ -352,6 +352,7 @@ async function api(request: Request, env: Env, ctx:ExecutionContext): Promise<Re
   }
   return json({ error: "Not found" }, 404);
 }
+export {WhatsAppDispatch} from './whatsapp-dispatch';
 export default {
   async fetch(request, env, ctx) {
     let response: Response;

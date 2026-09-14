@@ -55,6 +55,7 @@ export async function validSignature(secret:string,url:string,form:URLSearchPara
 }
 const xml=(message='') => new Response('<?xml version="1.0" encoding="UTF-8"?><Response>'+(message?'<Message>'+message.replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&apos;'}[c]!))+'</Message>':'')+'</Response>',{headers:{'Content-Type':'text/xml','Cache-Control':'no-store'}});
 export async function whatsappWebhook(request:Request,env:Env,ctx?:Pick<ExecutionContext,'waitUntil'>) {
+ const receivedAt=Date.now();
  const url=new URL(request.url), path=url.pathname;
  if(!whatsappConfigured(env)) return new Response('Unavailable',{status:503});
  if(request.method!=='POST') return new Response('Method not allowed',{status:405});
@@ -104,9 +105,9 @@ export async function whatsappWebhook(request:Request,env:Env,ctx?:Pick<Executio
  await env.DB.prepare('UPDATE whatsapp_links SET last_inbound=? WHERE session_id=? AND generation=? AND disabled=0').bind(now(),link.session_id,link.generation).run();
  if(!body || body.length>2000 || form.get('NumMedia')!=='0') return xml('Please send text of up to 2,000 characters. Voice notes and images are not supported in this preview.');
  if(!await budget(env,'wa-chat:'+link.session_id,30,86400) || !await budget(env,'wa-chat-global',300,86400)) return xml();
- await env.DB.prepare('INSERT OR IGNORE INTO whatsapp_inbox(sid,session_id,generation,body,created_at) VALUES (?,?,?,?,?)').bind(sid,link.session_id,link.generation,body,now()).run();
+ await env.DB.prepare('INSERT OR IGNORE INTO whatsapp_inbox(sid,session_id,generation,body,created_at,received_at_ms) VALUES (?,?,?,?,?,?)').bind(sid,link.session_id,link.generation,body,now(),receivedAt).run();
  // Start feedback before Queue pickup. Only this short cosmetic call uses
- // waitUntil; all coaching remains in the durable Queue consumer.
+ // waitUntil; all coaching runs in a durable alarm or Queue recovery consumer.
  if(ctx)ctx.waitUntil(typing(env,sid));
  await wakeWhatsApp(env,sid);
  return xml();
@@ -130,7 +131,24 @@ export async function sendWhatsApp(env:Env,id:string,generation:string,text:stri
 // Queue payload contains only an opaque message reference. Runner identity,
 // phone number, body and OAuth credentials are always resolved server-side.
 export async function wakeWhatsApp(env:Env,sid:string) {
- await env.WHATSAPP_QUEUE.send({sid},{contentType:'json',delaySeconds:0});
+ const row=await env.DB.prepare("SELECT session_id FROM whatsapp_inbox WHERE sid=? AND status='pending'").bind(sid).first<{session_id:string}>();
+ if(!row)return;
+ let direct=false;
+ if(env.WHATSAPP_DISPATCH){
+  let timer:ReturnType<typeof setTimeout>|undefined;
+  try{
+   await Promise.race([
+    env.WHATSAPP_DISPATCH.getByName(row.session_id).wake(row.session_id),
+    new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new Error('Dispatch timeout')),3000);}),
+   ]);
+   direct=true;
+  }catch{console.warn(JSON.stringify({event:'whatsapp_dispatch_fallback'}));}
+  finally{if(timer!==undefined)clearTimeout(timer);}
+ }
+ // A durable alarm starts now. The delayed Queue is insurance, not the hot path.
+ // A late RPC and the recovery consumer still contend on the same D1 lease.
+ try{await env.WHATSAPP_QUEUE.send({sid},{contentType:'json',delaySeconds:direct?15:0});}
+ catch{if(!direct)throw new Error('WhatsApp dispatch unavailable');console.warn(JSON.stringify({event:'whatsapp_recovery_publish_failed'}));}
 }
 
 export async function consumeWhatsApp(batch:MessageBatch<unknown>,env:Env) {
@@ -167,7 +185,7 @@ export async function recoverWhatsApp(env:Env) {
  if(rows.results.length)await env.WHATSAPP_QUEUE.sendBatch(rows.results.map(({sid})=>({body:{sid}})),{delaySeconds:0});
 }
 
-export async function processWhatsApp(env:Env,id:string,warmGeneration?:string):Promise<'done'|'busy'|'more'> {
+export async function processWhatsApp(env:Env,id:string,warmGeneration?:string,processingPath:'direct'|'queue'='queue'):Promise<'done'|'busy'|'more'> {
  if(!whatsappConfigured(env)||!env.OPENAI_API_KEY)throw new Error('WhatsApp unavailable');
  const owner=crypto.randomUUID();
  const lease=await env.DB.prepare('INSERT INTO whatsapp_conversation_leases(session_id,owner,expires_at) VALUES (?,?,?) ON CONFLICT(session_id) DO UPDATE SET owner=excluded.owner,expires_at=excluded.expires_at WHERE expires_at<=? RETURNING owner').bind(id,owner,now()+300,now()).first();
@@ -186,7 +204,7 @@ export async function processWhatsApp(env:Env,id:string,warmGeneration?:string):
    if(!renewed)return 'busy';
    // D1 arrival order breaks ties within the same second, regardless of Queue delivery order.
    const started=Date.now();
-   const item=await env.DB.prepare("UPDATE whatsapp_inbox SET status='processing',started_at_ms=?,queue_ms=MAX(0,?-created_at*1000) WHERE sid=(SELECT sid FROM whatsapp_inbox WHERE session_id=? AND status='pending' ORDER BY created_at,rowid LIMIT 1) AND status='pending' RETURNING sid,session_id,generation,body,created_at").bind(started,started,id).first<{sid:string;session_id:string;generation:string;body:string;created_at:number}>();
+   const item=await env.DB.prepare("UPDATE whatsapp_inbox SET status='processing',started_at_ms=?,processing_path=?,queue_ms=MAX(0,?-COALESCE(received_at_ms,created_at*1000)) WHERE sid=(SELECT sid FROM whatsapp_inbox WHERE session_id=? AND status='pending' ORDER BY created_at,rowid LIMIT 1) AND status='pending' RETURNING sid,session_id,generation,body,created_at,received_at_ms").bind(started,processingPath,started,id).first<{sid:string;session_id:string;generation:string;body:string;created_at:number;received_at_ms:number|null}>();
    if(!item)return 'done';
    let stage='context',contextMs=0,aiMs=0,deliveryMs=0;
    let stopTyping:undefined|(()=>Promise<void>);
@@ -221,7 +239,7 @@ export async function processWhatsApp(env:Env,id:string,warmGeneration?:string):
      env.DB.prepare("INSERT INTO coach_messages(session_id,role,content,created_at) VALUES (?,'assistant',?,?)").bind(id,reply,now()),
      env.DB.prepare("UPDATE whatsapp_inbox SET status='done',body='',finished_at_ms=?,context_ms=?,ai_ms=?,delivery_ms=? WHERE sid=?").bind(Date.now(),contextMs,aiMs,deliveryMs,item.sid),
     ]);
-    console.log(JSON.stringify({event:'whatsapp_reply',queue_ms:Math.max(0,started-item.created_at*1000),context_ms:contextMs,ai_ms:aiMs,delivery_ms:deliveryMs,total_ms:Date.now()-started}));
+    console.log(JSON.stringify({event:'whatsapp_reply',processing_path:processingPath,queue_ms:Math.max(0,started-(item.received_at_ms??item.created_at*1000)),context_ms:contextMs,ai_ms:aiMs,delivery_ms:deliveryMs,total_ms:Date.now()-started}));
    } catch {
     await stopTyping?.();
     // Give a useful, non-private failure response, but never follow an uncertain

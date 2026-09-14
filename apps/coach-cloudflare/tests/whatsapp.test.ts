@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createHmac} from 'node:crypto';
 import {fixture} from './reminder-fixture';
-import {whatsappAction,whatsappWebhook,whatsappStatus,sendWhatsApp,validSignature,processWhatsApp,consumeWhatsApp,recoverWhatsApp} from '../worker/whatsapp';
+import {whatsappAction,whatsappWebhook,whatsappStatus,sendWhatsApp,validSignature,processWhatsApp,consumeWhatsApp,recoverWhatsApp,wakeWhatsApp} from '../worker/whatsapp';
 import {readFileSync} from 'node:fs';
 import {seed} from '../shared/coach';
 import {draftReminder,reminderAction,deliverReminders} from '../worker/reminders';
@@ -120,4 +120,18 @@ test('Signed accepted messages start typing before Queue pickup; forged requests
  await whatsappWebhook(bad,f.env,ctx);assert.equal(tasks.length,0);
  await whatsappWebhook(good,f.env,ctx);await Promise.all(tasks);assert.equal(indicators,1);
  assert.equal(f.db.prepare("SELECT COUNT(*) n FROM whatsapp_inbox WHERE status='pending'").get()!.n,1);
+});
+test('Immediate dispatch derives the runner from D1, delays recovery, and falls back safely',async(t)=>{
+ const f=setup();t.after(()=>f.db.close());
+ const sid='SM'+'f'.repeat(32);f.db.prepare('INSERT INTO whatsapp_inbox(sid,session_id,generation,body,created_at) VALUES (?,?,?,?,?)').run(sid,'a','g','private',1);
+ const wakes:string[]=[],delays:number[]=[];
+ Object.assign(f.env,{WHATSAPP_DISPATCH:{getByName(id:string){wakes.push(id);return {async wake(subject:string){assert.equal(subject,id);}};}},WHATSAPP_QUEUE:{async send(body:unknown,options:{delaySeconds:number}){assert.deepEqual(body,{sid});delays.push(options.delaySeconds);}}});
+ await wakeWhatsApp(f.env,sid);assert.deepEqual(wakes,['a']);assert.deepEqual(delays,[15]);
+ Object.assign(f.env,{WHATSAPP_DISPATCH:{getByName(){throw new Error('unavailable');}}});
+ await wakeWhatsApp(f.env,sid);assert.deepEqual(delays,[15,0]);
+ Object.assign(f.env,{WHATSAPP_QUEUE:{async send(){throw new Error('unavailable');}}});
+ await assert.rejects(wakeWhatsApp(f.env,sid));
+ Object.assign(f.env,{WHATSAPP_DISPATCH:{getByName(){return {async wake(){}};}}});
+ await wakeWhatsApp(f.env,sid); // persisted alarm is sufficient when recovery publishing fails
+ f.db.prepare("UPDATE whatsapp_inbox SET status='done'").run();await wakeWhatsApp(f.env,sid);
 });
