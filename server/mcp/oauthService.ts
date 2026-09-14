@@ -383,13 +383,14 @@ export async function consumeDistributedRateLimit(key: string, limit: number, wi
   // when private OAuth has deliberately been disabled by removing its secret.
   const keyHash = crypto.createHash("sha256").update(`mcp-rate-v1:${key}`).digest("hex");
   const cutoff = new Date(Date.now() - windowMs);
+  const now = new Date();
   const result = await db.execute(sql`
     INSERT INTO mcp_rate_limits (key, window_started_at, count, updated_at)
-    VALUES (${keyHash}, now(), 1, now())
+    VALUES (${keyHash}, ${now}, 1, ${now})
     ON CONFLICT (key) DO UPDATE SET
       count = CASE WHEN mcp_rate_limits.window_started_at <= ${cutoff} THEN 1 ELSE mcp_rate_limits.count + 1 END,
-      window_started_at = CASE WHEN mcp_rate_limits.window_started_at <= ${cutoff} THEN now() ELSE mcp_rate_limits.window_started_at END,
-      updated_at = now()
+      window_started_at = CASE WHEN mcp_rate_limits.window_started_at <= ${cutoff} THEN ${now} ELSE mcp_rate_limits.window_started_at END,
+      updated_at = ${now}
     RETURNING count, window_started_at
   `);
   const row = (result.rows?.[0] || {}) as any;

@@ -1,4 +1,7 @@
-import { Container, getContainer } from '@cloudflare/containers';
+import { Container, ContainerProxy, getContainer } from '@cloudflare/containers';
+import { privateDatabaseHandler } from '../../../server/d1/transport';
+import { nativeD1Transport } from './d1-database';
+export { ContainerProxy };
 import { servePublicAsset } from './public-assets';
 import { privateAssets } from './private-assets';
 import { productionEnvironment } from './production-environment';
@@ -10,8 +13,14 @@ const productionInstance = 'production-live';
 export class RunAnalyticsProduction extends Container<ProductionEnv> {
   defaultPort = 5000;
   sleepAfter = '10m';
+  entrypoint = ['node', 'dist/d1-index.mjs'];
   envVars = productionEnvironment(this.env);
 }
+
+RunAnalyticsProduction.outboundByHost = {
+  'aitracker.database.internal': async (request, env: ProductionEnv) =>
+    privateDatabaseHandler(nativeD1Transport(env.DB), env.D1_TRANSPORT_SECRET)(request),
+};
 
 export default {
   async fetch(request, env): Promise<Response> {

@@ -1,6 +1,6 @@
 /** Explicit allowlist: no Replit connector identity or development keys enter production. */
 export function productionEnvironment(values: object): Record<string, string> {
-  const required = ['DATABASE_URL','JWT_SIGNING_SECRET','EMAIL_UNSUBSCRIBE_SIGNING_SECRET_V2',
+  const required = ['D1_TRANSPORT_SECRET','JWT_SIGNING_SECRET','EMAIL_UNSUBSCRIBE_SIGNING_SECRET_V2',
     'MARKETING_LINK_SIGNING_SECRET','MCP_TOKEN_HASH_SECRET','CHANNEL_IDENTITY_HASH_SECRET',
     'COACH_BINDING_CALLBACK_SECRET','COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2','COACH_AGENT_WEBHOOK_URL',
     'OPENAI_API_KEY','CLOUDFLARE_EMAIL_API_TOKEN','CLOUDFLARE_EMAIL_ACCOUNT_ID','EMAIL_FROM','STRAVA_CLIENT_SECRET',
@@ -19,7 +19,7 @@ export function productionEnvironment(values: object): Record<string, string> {
     throw new Error('Production requires live Stripe keys');
   }
   for (const name of ['STRAVA_VERIFY_TOKEN','VAPID_PRIVATE_KEY','VAPID_PUBLIC_KEY','VAPID_SUBJECT',
-    'ENABLE_PROACTIVE_COACH_WORKER','ENABLE_NOTIFICATION_DELIVERY','RESEND_WEBHOOK_SECRET']) {
+    'ENABLE_PROACTIVE_COACH_WORKER','ENABLE_NOTIFICATION_DELIVERY','RESEND_WEBHOOK_SECRET','STRIPE_WEBHOOK_SECRET']) {
     const value: unknown = Reflect.get(values, name);
     if (typeof value === 'string') output[name] = value;
   }

@@ -204,20 +204,20 @@ export class DripCampaignService {
           CASE
             WHEN users.email IS NULL OR users.marketing_consent_status <> 'consented' OR users.marketing_opt_out = true THEN NULL
             WHEN users.subscription_plan <> 'free' AND users.subscription_status = 'active' THEN NULL
-            WHEN users.subscription_status = 'trialing' AND users.trial_ends_at IS NOT NULL AND users.trial_ends_at <= NOW() + INTERVAL '72 hours' THEN 'trial_ending'
+            WHEN users.subscription_status = 'trialing' AND users.trial_ends_at IS NOT NULL AND users.trial_ends_at <= ${new Date(Date.now()+72*60*60*1000)} THEN 'trial_ending'
             WHEN users.subscription_status = 'trialing' AND users.activation_at IS NULL THEN 'trial_needs_activation'
             WHEN users.subscription_status = 'trialing' THEN 'trial_engaged'
             WHEN users.subscription_status IN ('canceled', 'past_due', 'unpaid') THEN 'trial_expired_winback'
             WHEN users.strava_connected = false THEN 'signup_no_strava'
-            WHEN signals.checkout_at <= NOW() - INTERVAL '30 minutes' AND (signals.trial_at IS NULL OR signals.trial_at < signals.checkout_at) THEN 'checkout_abandoned'
+            WHEN signals.checkout_at <= ${new Date(Date.now()-30*60*1000)} AND (signals.trial_at IS NULL OR signals.trial_at < signals.checkout_at) THEN 'checkout_abandoned'
             WHEN users.premium_preview_created_at IS NOT NULL AND (signals.preview_viewed_at IS NOT NULL OR signals.preview_clicked_at IS NOT NULL) THEN 'preview_engaged_no_trial'
             WHEN users.premium_preview_created_at IS NOT NULL THEN 'preview_ready_unseen'
-            WHEN COALESCE(users.last_seen_at, users.created_at) <= NOW() - INTERVAL '30 days' THEN 'inactive_free'
+            WHEN COALESCE(users.last_seen_at, users.created_at) <= ${new Date(Date.now()-30*24*60*60*1000)} THEN 'inactive_free'
             ELSE NULL
           END AS segment
         FROM users LEFT JOIN signals ON signals.user_id = users.id
       )
-      SELECT segment, suppression_reason, COUNT(*)::int AS count
+      SELECT segment, suppression_reason, CAST(COUNT(*) AS INTEGER) AS count
       FROM categorized
       GROUP BY segment, suppression_reason
     `);

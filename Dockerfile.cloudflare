@@ -5,6 +5,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY . .
 RUN npm run build
+RUN node node_modules/tsx/dist/cli.mjs scripts/d1/build-application.ts
 RUN node --input-type=module -e "import {readFileSync} from 'node:fs'; if (!readFileSync('dist/index.js','utf8').includes('20260913-stripe-diagnostics')) process.exit(1)"
 
 FROM node:24-bookworm-slim

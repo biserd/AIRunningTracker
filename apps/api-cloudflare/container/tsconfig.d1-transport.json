@@ -1,0 +1,5 @@
+{
+  "extends":"./tsconfig.json",
+  "include":["d1-database.ts","production-configuration.d.ts"],
+  "exclude":["index.ts","worker-configuration.d.ts"]
+}

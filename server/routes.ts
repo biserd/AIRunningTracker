@@ -45,11 +45,10 @@ import { getAllBlogPosts } from "./ssr/blogContent";
 import { buildRobotsTxt, isCrawler, isPrivateCrawlerPath } from "./ssr/crawlerPolicy";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { ownsScheduledJobs, mayInitializeSchema, isMigrationStaging, isCloudflareRuntime } from './config/runtime';
-import { runAsSchedulerLeader } from './services/schedulerLeadership';
+import { startRuntimeScheduler } from './runtimeServices';
 import { runAsD1SchedulerLeader } from './d1/schedulerLeadership';
 import type { SqlDatabase } from './d1/activities';
 import { parseStravaEvent, stravaEventJobId } from './services/queue/stravaEvent';
-import { pool as schedulerPool } from './db';
 import {
   type Capability,
   canAccessCapability,
@@ -1586,7 +1585,6 @@ ${allPages.map(page => `  <url>
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      console.log('[API /api/user] Returning user data:', { id: user.id, email: user.email, unitPreference: user.unitPreference });
       res.json(toClientUser(user));
     } catch (error: any) {
       console.error('Get user error:', error);
@@ -2346,7 +2344,8 @@ ${allPages.map(page => `  <url>
         return res.status(400).json({ message: "Invalid user ID" });
       }
       
-      const goals = await storage.getGoalsByUserId(userId, status as string);
+      if (req.user.id !== userId) return res.status(403).json({ message: 'Access denied' });
+      const goals = await storage.getGoalsByUserId(req.user.id, status as string);
       res.json(goals);
     } catch (error: any) {
       console.error('Get goals error:', error);
@@ -2356,7 +2355,7 @@ ${allPages.map(page => `  <url>
 
   app.post("/api/goals", authenticateJWT, async (req: any, res) => {
     try {
-      const goalData = insertGoalSchema.parse(req.body);
+      const goalData = insertGoalSchema.parse({ ...req.body, userId: req.user.id });
       const goal = await storage.createGoal(goalData);
       res.json(goal);
     } catch (error: any) {
@@ -2373,7 +2372,7 @@ ${allPages.map(page => `  <url>
         return res.status(400).json({ message: "Invalid goal ID" });
       }
       
-      const goal = await storage.completeGoal(goalId);
+      const goal = await storage.completeGoal(goalId, req.user.id);
       if (!goal) {
         return res.status(404).json({ message: "Goal not found" });
       }
@@ -2393,7 +2392,7 @@ ${allPages.map(page => `  <url>
         return res.status(400).json({ message: "Invalid goal ID" });
       }
       
-      await storage.deleteGoal(goalId);
+      await storage.deleteGoal(goalId, req.user.id);
       res.json({ success: true });
     } catch (error: any) {
       console.error('Delete goal error:', error);
@@ -2404,7 +2403,11 @@ ${allPages.map(page => `  <url>
   // Strava OAuth
   app.post("/api/strava/connect", authenticateJWT, async (req: any, res) => {
     try {
-      const { code, userId } = req.body;
+      const { code } = req.body;
+      const userId = req.user.id;
+      if (req.body.userId !== undefined && Number(req.body.userId) !== userId) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
       
       if (!code || !userId) {
         return res.status(400).json({ message: "Code and userId are required" });
@@ -6377,7 +6380,7 @@ ${allPages.map(page => `  <url>
   });
 
   // Goals Progress Tracking
-  app.get("/api/goals/progress/:userId", async (req, res) => {
+  app.get("/api/goals/progress/:userId", authenticateJWT, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
       
@@ -6390,7 +6393,8 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
 
-      const activities = await storage.getActivitiesByUserId(userId, 100);
+      if (req.user.id !== userId) return res.status(403).json({ message: 'Access denied' });
+      const activities = await storage.getActivitiesByUserId(req.user.id, 100);
       
       // Calculate current month's progress
       const now = new Date();
@@ -7088,7 +7092,7 @@ ${allPages.map(page => `  <url>
       const strava = ["all", "connected", "disconnected"].includes(String(req.query.strava)) ? String(req.query.strava) : "all";
       const consent = ["all", "consented", "unknown", "unsubscribed", "suppressed"].includes(String(req.query.consent)) ? String(req.query.consent) : "all";
       const userWhere = sql`
-        (${search} = '' OR users.email ILIKE ${searchPattern} OR users.first_name ILIKE ${searchPattern} OR users.last_name ILIKE ${searchPattern} OR users.id::text = ${search})
+        (${search} = '' OR lower(users.email) LIKE lower(${searchPattern}) OR lower(users.first_name) LIKE lower(${searchPattern}) OR lower(users.last_name) LIKE lower(${searchPattern}) OR CAST(users.id AS TEXT) = ${search})
         AND (${plan} = 'all'
           OR (${plan} = 'free' AND COALESCE(users.subscription_plan, 'free') = 'free' AND COALESCE(users.subscription_status, '') <> 'trialing')
           OR (${plan} = 'trial' AND users.subscription_status = 'trialing')
@@ -7097,7 +7101,7 @@ ${allPages.map(page => `  <url>
         AND (${strava} = 'all' OR (${strava} = 'connected' AND users.strava_connected = true) OR (${strava} = 'disconnected' AND users.strava_connected = false))
         AND (${consent} = 'all' OR users.marketing_consent_status = ${consent})
       `;
-      const countResult = await db.execute(sql`SELECT COUNT(*)::int AS count FROM users WHERE ${userWhere}`);
+      const countResult = await db.execute(sql`SELECT CAST(COUNT(*) AS INTEGER) AS count FROM users WHERE ${userWhere}`);
       const total = Number((countResult.rows[0] as any)?.count || 0);
       const userResult = await db.execute(sql`
         SELECT id, email, first_name, last_name, strava_connected, unit_preference, is_admin,
@@ -7138,15 +7142,15 @@ ${allPages.map(page => `  <url>
       const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
       const cohortResult = await db.execute(sql`
         SELECT
-          COUNT(*)::int AS signups,
-          COUNT(*) FILTER (WHERE strava_connected = true)::int AS connected,
-          COUNT(*) FILTER (WHERE premium_preview_created_at IS NOT NULL)::int AS preview_ready,
-          COUNT(*) FILTER (WHERE subscription_status = 'trialing')::int AS currently_trialing,
-          COUNT(*) FILTER (WHERE subscription_plan <> 'free' AND subscription_status = 'active')::int AS currently_paid
+          CAST(COUNT(*) AS INTEGER) AS signups,
+          CAST(COUNT(*) FILTER (WHERE strava_connected = true) AS INTEGER) AS connected,
+          CAST(COUNT(*) FILTER (WHERE premium_preview_created_at IS NOT NULL) AS INTEGER) AS preview_ready,
+          CAST(COUNT(*) FILTER (WHERE subscription_status = 'trialing') AS INTEGER) AS currently_trialing,
+          CAST(COUNT(*) FILTER (WHERE subscription_plan <> 'free' AND subscription_status = 'active') AS INTEGER) AS currently_paid
         FROM users WHERE created_at >= ${cutoff}
       `);
       const eventResult = await db.execute(sql`
-        SELECT stage, COUNT(DISTINCT user_id)::int AS users
+        SELECT stage, CAST(COUNT(DISTINCT user_id) AS INTEGER) AS users
         FROM (
           SELECT user_id,
             CASE
@@ -7162,9 +7166,9 @@ ${allPages.map(page => `  <url>
       `);
       const globalResult = await db.execute(sql`
         SELECT
-          COUNT(*) FILTER (WHERE subscription_plan <> 'free' AND subscription_status = 'active')::int AS active_paid,
-          COUNT(*) FILTER (WHERE subscription_status = 'trialing')::int AS active_trials,
-          COUNT(*) FILTER (WHERE last_seen_at >= ${cutoff})::int AS active_runners
+          CAST(COUNT(*) FILTER (WHERE subscription_plan <> 'free' AND subscription_status = 'active') AS INTEGER) AS active_paid,
+          CAST(COUNT(*) FILTER (WHERE subscription_status = 'trialing') AS INTEGER) AS active_trials,
+          CAST(COUNT(*) FILTER (WHERE last_seen_at >= ${cutoff}) AS INTEGER) AS active_runners
         FROM users
       `);
       const eventCounts = Object.fromEntries((eventResult.rows as any[]).map((row) => [row.stage, Number(row.users || 0)]));
@@ -7751,7 +7755,7 @@ ${allPages.map(page => `  <url>
   // Get count of pending launch emails
   app.get("/api/admin/launch-emails/pending", authenticateAdmin, async (req: any, res) => {
     try {
-      const pendingResult = await db.select({ count: sql<number>`count(*)::int` })
+      const pendingResult = await db.select({ count: sql<number>`CAST(count(*) AS INTEGER)` })
         .from(emailWaitlist)
         .where(isNull(emailWaitlist.launchEmailSentAt));
       
@@ -9004,21 +9008,21 @@ ${allPages.map(page => `  <url>
     try {
       const delivery = await db.execute(sql`
         SELECT campaign, experiment_variant,
-          COUNT(*) FILTER (WHERE status = 'sent')::int AS sent,
-          COUNT(*) FILTER (WHERE delivered_at IS NOT NULL)::int AS delivered,
-          COUNT(*) FILTER (WHERE bounced_at IS NOT NULL)::int AS bounced,
-          COUNT(*) FILTER (WHERE complained_at IS NOT NULL)::int AS complained
+          CAST(COUNT(*) FILTER (WHERE status = 'sent') AS INTEGER) AS sent,
+          CAST(COUNT(*) FILTER (WHERE delivered_at IS NOT NULL) AS INTEGER) AS delivered,
+          CAST(COUNT(*) FILTER (WHERE bounced_at IS NOT NULL) AS INTEGER) AS bounced,
+          CAST(COUNT(*) FILTER (WHERE complained_at IS NOT NULL) AS INTEGER) AS complained
         FROM email_jobs
         WHERE job_type = 'drip' AND campaign_version = 2
           AND campaign IN ('signup_no_strava', 'preview_ready_unseen', 'preview_engaged_no_trial', 'checkout_abandoned', 'trial_needs_activation', 'trial_engaged', 'trial_ending', 'trial_expired_winback', 'inactive_free')
         GROUP BY campaign, experiment_variant
       `);
       const clicks = await db.execute(sql`
-        SELECT campaign, COUNT(DISTINCT job_id)::int AS clicked
+        SELECT campaign, CAST(COUNT(DISTINCT job_id) AS INTEGER) AS clicked
         FROM email_clicks WHERE job_id IS NOT NULL GROUP BY campaign
       `);
       const trials = await db.execute(sql`
-        SELECT properties->>'lifecycleCampaign' AS campaign, COUNT(*)::int AS trials
+        SELECT properties->>'lifecycleCampaign' AS campaign, CAST(COUNT(*) AS INTEGER) AS trials
         FROM funnel_events
         WHERE event = 'trial_started' AND properties->>'lifecycleCampaign' IS NOT NULL
         GROUP BY properties->>'lifecycleCampaign'
@@ -9141,7 +9145,7 @@ ${allPages.map(page => `  <url>
     try {
       const result = await dripCampaignService.getSegmentStats();
       const userCounts = await storage.getUserCountsBySubscription();
-      const audienceResult = await db.execute(sql`SELECT COUNT(*)::int AS count FROM users WHERE email IS NOT NULL AND marketing_consent_status = 'consented' AND marketing_opt_out = false`);
+      const audienceResult = await db.execute(sql`SELECT CAST(COUNT(*) AS INTEGER) AS count FROM users WHERE email IS NOT NULL AND marketing_consent_status = 'consented' AND marketing_opt_out = false`);
       res.json({
         segments: result.bySegment,
         eligible: result.eligible,
@@ -9470,7 +9474,7 @@ ${allPages.map(page => `  <url>
   notificationDeliveryWorker.start();
   };
   if (runtime?.schedulerDatabase) runAsD1SchedulerLeader(runtime.schedulerDatabase, startWorkers);
-  else if (isCloudflareRuntime()) runAsSchedulerLeader(schedulerPool, startWorkers);
+  else if (isCloudflareRuntime()) startRuntimeScheduler(startWorkers);
   else await startWorkers();
   }
 

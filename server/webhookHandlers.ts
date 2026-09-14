@@ -1,14 +1,14 @@
 // Stripe Webhook Handlers
 // Processes Stripe webhook events via stripe-replit-sync
 
-import { getStripeSync, getUncachableStripeClient } from './stripeClient';
+import { getUncachableStripeClient } from './stripeClient';
+import { verifyStripeWebhook } from './stripeWebhookVerification';
 import { storage } from './storage';
 import { emailService } from './services/email';
 import { recordFunnelEvent } from './services/funnelAnalytics';
 import { buildFunnelDedupeKey, billingPeriodFromInterval, conversionEventForSubscriptionChange } from '@shared/funnelEvents';
-import { pool } from './db';
 import { deliverBillingWebhook } from './services/billingWebhookDelivery';
-import { PostgresBillingWebhookDelivery } from './services/postgresBillingWebhookDelivery';
+import { createBillingWebhookStore } from './runtimeServices';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'hello@bigappledigital.nyc';
 const APP_SLUG = process.env.APP_SLUG || 'aitracker';
@@ -122,7 +122,7 @@ export async function resolvePlan(subscription: any): Promise<ResolvedPlan> {
   return { plan: 'free', source: 'unknown-status', priceId, productId };
 }
 
-const webhookDelivery = new PostgresBillingWebhookDelivery(pool);
+const webhookDelivery = createBillingWebhookStore();
 
 export class WebhookHandlers {
   private static determineOwnerApp(event: any): string | null {
@@ -247,11 +247,7 @@ export class WebhookHandlers {
       );
     }
 
-    const sync = await getStripeSync();
-    
-    await sync.processWebhook(payload, signature, uuid);
-    
-    const event = JSON.parse(payload.toString());
+    const event = await verifyStripeWebhook(payload, signature, uuid);
 
     await deliverBillingWebhook(webhookDelivery,event,()=>this.processVerifiedEvent(event));
   }
@@ -304,8 +300,8 @@ export class WebhookHandlers {
           priceId: resolved.priceId,
         });
 
-        await storage.updateStripeSubscriptionId(user.id, subscription.id);
-        await storage.updateSubscriptionStatus(user.id, status, planToWrite);
+        // Persist the entitlement and subscription identity together in one statement.
+        await storage.updateSubscriptionStatus(user.id, status, planToWrite, subscription.id);
 
         // Free → paid (trial or active) transition: flag the user for a one-time
         // historical Strava backfill. The dashboard endpoint will pick this up

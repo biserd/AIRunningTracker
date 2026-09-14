@@ -30,7 +30,7 @@ class GoalsService {
         const shouldComplete = this.shouldCompleteGoal(goal, recentActivities);
         
         if (shouldComplete) {
-          await storage.completeGoal(goal.id);
+          await storage.completeGoal(goal.id, userId);
           completedCount++;
           console.log(`Auto-completed goal: ${goal.title} for user ${userId}`);
         }

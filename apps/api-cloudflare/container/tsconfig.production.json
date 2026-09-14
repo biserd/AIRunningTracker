@@ -1,5 +1,6 @@
 {
   "extends":"./tsconfig.json",
+  "compilerOptions":{"types":["node"]},
   "include":["production.ts","production-configuration.d.ts"],
   "exclude":["index.ts","worker-configuration.d.ts"]
 }

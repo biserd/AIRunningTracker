@@ -13,6 +13,7 @@
     { "pattern": "www.aitracker.run/*", "zone_name": "aitracker.run" }
   ],
   "triggers": { "crons": ["* * * * *"] },
+  "d1_databases": [{ "binding": "DB", "database_name": "aitracker-d1-migration", "database_id": "5ee1a1a5-44a5-42c9-aa74-d12fe63b08f2" }],
   "r2_buckets": [{ "binding": "PUBLIC_ASSETS", "bucket_name": "aitracker-main-assets" }],
   "ratelimits": [{ "name": "UPLOAD_LIMITER", "namespace_id": "1002", "simple": { "limit": 30, "period": 60 } }],
   "vars": {
@@ -23,7 +24,7 @@
     "TELEGRAM_BOT_USERNAME": "hermes_3njyz3nxuousjmh2_bot",
     "ALLOWED_PRICE_IDS": "price_1SbtcfRwvWaTf8xfSEO4iKnc,price_1SbtcfRwvWaTf8xfwcVnrRf8"
   },
-  "secrets": { "required": ["DATABASE_URL","JWT_SIGNING_SECRET","EMAIL_UNSUBSCRIBE_SIGNING_SECRET_V2",
+  "secrets": { "required": ["D1_TRANSPORT_SECRET","JWT_SIGNING_SECRET","EMAIL_UNSUBSCRIBE_SIGNING_SECRET_V2",
     "MARKETING_LINK_SIGNING_SECRET","MCP_TOKEN_HASH_SECRET","CHANNEL_IDENTITY_HASH_SECRET",
     "COACH_BINDING_CALLBACK_SECRET","COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2","COACH_AGENT_WEBHOOK_URL",
     "OPENAI_API_KEY","CLOUDFLARE_EMAIL_API_TOKEN","STRAVA_CLIENT_SECRET",

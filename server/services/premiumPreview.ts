@@ -412,7 +412,7 @@ export async function createPremiumPreviewForUser(userId: number): Promise<Creat
           sql`(
             ${users.premiumPreview} IS NULL OR
             (${users.premiumPreview}->>'version') IS NULL OR
-            (${users.premiumPreview}->>'version')::int < ${PREMIUM_PREVIEW_VERSION} OR
+            CAST((${users.premiumPreview}->>'version') AS INTEGER) < ${PREMIUM_PREVIEW_VERSION} OR
             (${users.premiumPreview}->>'unitPreference') IS DISTINCT FROM ${payload.unitPreference}
           )`,
         ))

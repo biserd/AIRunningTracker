@@ -12,8 +12,7 @@ import goalsService from '../goals';
 import { deleteCachedByPrefix, deleteCachedResponse } from '../../routes';
 import { canAccessCapability } from '@shared/entitlements';
 import { isMigrationStaging, isCloudflareRuntime } from '../../config/runtime';
-import { pool } from '../../db';
-import { DurableJobStore } from './durableJobStore';
+import { createJobStore } from '../../runtimeServices';
 import type { JobStore } from './jobStore';
 
 // Track users with active sync operations
@@ -56,7 +55,7 @@ export class JobQueue {
     processIntervalMs: 1000,
   };
 
-  constructor(durable: JobStore | null = isCloudflareRuntime() && !isMigrationStaging() ? new DurableJobStore(pool) : null) {
+  constructor(durable: JobStore | null = createJobStore()) {
     this.durable = durable;
   }
 

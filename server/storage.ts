@@ -5,6 +5,8 @@ import { eq, desc, and, or, sql, inArray, gte, gt, lt, ne, isNull } from "drizzl
 import bcrypt from "bcrypt";
 import { deriveCalendarWeekNumber } from "@shared/trainingPlanProgress";
 import { classifyAdminError, sanitizeAdminLogText, type AdminErrorSeverity } from "./services/adminTelemetry";
+import { isCloudflareRuntime } from './config/runtime';
+import {deleteActivityAtomic,deleteConversationAtomic,addMessageAtomic,claimEmailJobIds} from './storageAtomic';
 
 export const RUNNING_ACTIVITY_TYPES = ['Run', 'TrailRun', 'VirtualRun'];
 
@@ -29,7 +31,7 @@ export interface IStorage {
   getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined>;
   updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<User | undefined>;
   updateStripeSubscriptionId(userId: number, stripeSubscriptionId: string): Promise<User | undefined>;
-  updateSubscriptionStatus(userId: number, status: string, plan?: string): Promise<User | undefined>;
+  updateSubscriptionStatus(userId: number, status: string, plan?: string, subscriptionId?: string): Promise<User | undefined>;
   
   createActivity(activity: InsertActivity): Promise<Activity>;
   getMostRecentActivityByUserId(userId: number): Promise<Activity | undefined>;
@@ -114,8 +116,8 @@ export interface IStorage {
   getGoalsByUserId(userId: number, status?: string): Promise<Goal[]>;
   getGoalById(goalId: number): Promise<Goal | undefined>;
   updateGoalProgress(goalId: number, progress: number): Promise<Goal | undefined>;
-  completeGoal(goalId: number): Promise<Goal | undefined>;
-  deleteGoal(goalId: number): Promise<void>;
+  completeGoal(goalId: number, userId: number): Promise<Goal | undefined>;
+  deleteGoal(goalId: number, userId: number): Promise<void>;
   
   // Performance log methods
   createPerformanceLog(log: InsertPerformanceLog): Promise<PerformanceLog>;
@@ -478,8 +480,9 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
-  async updateSubscriptionStatus(userId: number, status: string, plan?: string): Promise<User | undefined> {
+  async updateSubscriptionStatus(userId: number, status: string, plan?: string, subscriptionId?: string): Promise<User | undefined> {
     const updates: Partial<User> = { subscriptionStatus: status as any };
+    if (subscriptionId !== undefined) updates.stripeSubscriptionId = subscriptionId;
     if (plan) {
       updates.subscriptionPlan = plan as any;
     }
@@ -629,7 +632,7 @@ export class DatabaseStorage implements IStorage {
 
     // Get total count
     const [countResult] = await db
-      .select({ count: sql<number>`count(*)::int` })
+      .select({ count: sql<number>`count(*)`.mapWith(Number) })
       .from(activities)
       .where(and(...conditions));
     
@@ -686,15 +689,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteActivity(activityId: number): Promise<void> {
-    await db.transaction(async (tx) => {
-      await tx.delete(coachRecaps).where(eq(coachRecaps.activityId, activityId));
-      await tx.execute(sql`DELETE FROM activity_route_map WHERE activity_id = ${activityId}`);
-      await tx.execute(sql`DELETE FROM activity_features WHERE activity_id = ${activityId}`);
-      await tx.execute(sql`DELETE FROM similar_runs_cache WHERE activity_id = ${activityId}`);
-      await tx.execute(sql`UPDATE plan_days SET linked_activity_id = NULL WHERE linked_activity_id = ${activityId}`);
-      await tx.execute(sql`UPDATE agent_runs SET activity_id = NULL WHERE activity_id = ${activityId}`);
-      await tx.delete(activities).where(eq(activities.id, activityId));
-    });
+    await deleteActivityAtomic(activityId);
   }
 
   async getActivityStreams(activityId: number): Promise<any | null> {
@@ -790,9 +785,10 @@ export class DatabaseStorage implements IStorage {
 
   // Keep only the most recent N insights per type for timeline history
   async cleanupOldAIInsights(userId: number, type: string, keepCount: number = 10): Promise<void> {
+    if (!Number.isSafeInteger(keepCount) || keepCount < 0) throw new Error('Invalid insight retention count');
     // Get all insights of this type for this user, ordered by creation date
     const insights = await db
-      .select()
+      .select({ id: aiInsights.id })
       .from(aiInsights)
       .where(and(
         eq(aiInsights.userId, userId),
@@ -803,13 +799,13 @@ export class DatabaseStorage implements IStorage {
     // If we have more than keepCount, delete the oldest ones
     if (insights.length > keepCount) {
       const idsToDelete = insights.slice(keepCount).map(insight => insight.id);
-      if (idsToDelete.length > 0) {
+      for (let offset = 0; offset < idsToDelete.length; offset += 95) {
         await db
           .delete(aiInsights)
           .where(and(
             eq(aiInsights.userId, userId),
             eq(aiInsights.type, type),
-            inArray(aiInsights.id, idsToDelete)
+            inArray(aiInsights.id, idsToDelete.slice(offset, offset + 95))
           ));
       }
     }
@@ -1224,20 +1220,20 @@ export class DatabaseStorage implements IStorage {
     return goal || undefined;
   }
 
-  async completeGoal(goalId: number): Promise<Goal | undefined> {
+  async completeGoal(goalId: number, userId: number): Promise<Goal | undefined> {
     const [goal] = await db
       .update(goals)
       .set({ 
         status: 'completed',
         completedAt: new Date()
       })
-      .where(eq(goals.id, goalId))
+      .where(and(eq(goals.id, goalId), eq(goals.userId, userId)))
       .returning();
     return goal || undefined;
   }
 
-  async deleteGoal(goalId: number): Promise<void> {
-    await db.delete(goals).where(eq(goals.id, goalId));
+  async deleteGoal(goalId: number, userId: number): Promise<void> {
+    await db.delete(goals).where(and(eq(goals.id, goalId), eq(goals.userId, userId)));
   }
 
   // Performance log methods
@@ -1388,36 +1384,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteConversation(conversationId: number, userId: number): Promise<boolean> {
-    return db.transaction(async (tx) => {
-      const [owned] = await tx
-        .select({ id: aiConversations.id })
-        .from(aiConversations)
-        .where(and(eq(aiConversations.id, conversationId), eq(aiConversations.userId, userId)))
-        .limit(1);
-      if (!owned) return false;
-      await tx.delete(aiMessages).where(eq(aiMessages.conversationId, owned.id));
-      await tx.delete(aiConversations).where(and(
-        eq(aiConversations.id, owned.id),
-        eq(aiConversations.userId, userId),
-      ));
-      return true;
-    });
+    return deleteConversationAtomic(conversationId,userId);
   }
 
   async addMessage(message: InsertAIMessage, userId: number): Promise<AIMessage | undefined> {
-    return db.transaction(async (tx) => {
-      const [owned] = await tx
-        .select({ id: aiConversations.id })
-        .from(aiConversations)
-        .where(and(eq(aiConversations.id, message.conversationId), eq(aiConversations.userId, userId)))
-        .limit(1);
-      if (!owned) return undefined;
-      const [newMessage] = await tx
-        .insert(aiMessages)
-        .values({ ...message, conversationId: owned.id })
-        .returning();
-      return newMessage;
-    });
+    return addMessageAtomic(message,userId);
   }
 
   async getMessagesByConversationId(conversationId: number, userId: number, limit = 50): Promise<AIMessage[] | undefined> {
@@ -1625,33 +1596,16 @@ export class DatabaseStorage implements IStorage {
   async claimPendingEmailJobs(limit: number, workerId: string, leaseSeconds = 300): Promise<EmailJob[]> {
     const safeLimit = Math.max(1, Math.min(100, Math.floor(limit)));
     const safeLease = Math.max(60, Math.min(900, Math.floor(leaseSeconds)));
-    const result = await db.execute(sql`
-      WITH candidates AS (
-        SELECT id
-        FROM email_jobs
-        WHERE scheduled_at <= NOW()
-          AND (next_attempt_at IS NULL OR next_attempt_at <= NOW())
-          AND (
-            status IN ('pending', 'retry_scheduled')
-            OR (status = 'processing' AND lease_expires_at < NOW())
-          )
-        ORDER BY scheduled_at ASC
-        FOR UPDATE SKIP LOCKED
-        LIMIT ${safeLimit}
-      )
-      UPDATE email_jobs AS jobs
-      SET status = 'processing',
-          claimed_at = NOW(),
-          claimed_by = ${workerId},
-          lease_expires_at = NOW() + (${safeLease} * INTERVAL '1 second')
-      FROM candidates
-      WHERE jobs.id = candidates.id
-      RETURNING jobs.id
-    `);
-    const rawRows = Array.isArray((result as any)?.rows) ? (result as any).rows : (Array.isArray(result) ? result : []);
-    const ids = rawRows.map((row: any) => Number(row.id)).filter(Number.isInteger);
+    const ids = await claimEmailJobIds(safeLimit,workerId,safeLease);
     if (!ids.length) return [];
-    return db.select().from(emailJobs).where(and(inArray(emailJobs.id, ids), eq(emailJobs.claimedBy, workerId))).orderBy(emailJobs.scheduledAt);
+    const claimed: EmailJob[] = [];
+    // Leave room for the owner parameter under D1's per-statement binding limit.
+    for (let offset = 0; offset < ids.length; offset += 95) {
+      claimed.push(...await db.select().from(emailJobs).where(and(
+        inArray(emailJobs.id, ids.slice(offset, offset + 95)), eq(emailJobs.claimedBy, workerId),
+      )));
+    }
+    return claimed.sort((left, right) => left.scheduledAt.getTime() - right.scheduledAt.getTime());
   }
 
   async getEmailJobByDedupeKey(dedupeKey: string): Promise<EmailJob | undefined> {
@@ -2350,9 +2304,9 @@ export class DatabaseStorage implements IStorage {
 
     const metricsResult = await db.execute(sql`
       SELECT
-        COUNT(*)::int AS request_count,
-        COALESCE(AVG(elapsed_time), 0)::float AS avg_response_time,
-        COUNT(*) FILTER (WHERE status_code >= 500)::int AS server_error_count
+        CAST(COUNT(*) AS INTEGER) AS request_count,
+        CAST(COALESCE(AVG(elapsed_time), 0) AS DOUBLE PRECISION) AS avg_response_time,
+        CAST(COUNT(*) FILTER (WHERE status_code >= 500) AS INTEGER) AS server_error_count
       FROM performance_logs
       WHERE timestamp >= ${hourAgo}
     `);
@@ -2461,13 +2415,13 @@ export class DatabaseStorage implements IStorage {
     const trendStart = new Date(now.getTime() - 6 * 60 * 60 * 1000);
     const trendResult = await db.execute(sql`
       SELECT
-        date_trunc('hour', timestamp) AS bucket,
-        COUNT(*)::int AS request_count,
-        COALESCE(AVG(elapsed_time), 0)::float AS avg_response_time,
-        COUNT(*) FILTER (WHERE status_code >= 500)::int AS error_count
+        substr(CAST(timestamp AS TEXT),1,13) || ':00:00Z' AS bucket,
+        CAST(COUNT(*) AS INTEGER) AS request_count,
+        CAST(COALESCE(AVG(elapsed_time), 0) AS DOUBLE PRECISION) AS avg_response_time,
+        CAST(COUNT(*) FILTER (WHERE status_code >= 500) AS INTEGER) AS error_count
       FROM performance_logs
       WHERE timestamp >= ${trendStart}
-      GROUP BY date_trunc('hour', timestamp)
+      GROUP BY substr(CAST(timestamp AS TEXT),1,13) || ':00:00Z'
       ORDER BY bucket
     `);
     const trendByHour = new Map((trendResult.rows as any[]).map((row) => [
@@ -2523,14 +2477,14 @@ export class DatabaseStorage implements IStorage {
 
     // Total runs
     const [totalResult] = await db
-      .select({ count: sql<number>`count(*)::int` })
+      .select({ count: sql<number>`count(*)`.mapWith(Number) })
       .from(agentRuns);
 
     // By status
     const byStatusResult = await db
       .select({
         status: agentRuns.status,
-        count: sql<number>`count(*)::int`
+        count: sql<number>`count(*)`.mapWith(Number)
       })
       .from(agentRuns)
       .groupBy(agentRuns.status);
@@ -2539,7 +2493,7 @@ export class DatabaseStorage implements IStorage {
     const byTypeResult = await db
       .select({
         runType: agentRuns.runType,
-        count: sql<number>`count(*)::int`
+        count: sql<number>`count(*)`.mapWith(Number)
       })
       .from(agentRuns)
       .groupBy(agentRuns.runType);
@@ -2553,7 +2507,7 @@ export class DatabaseStorage implements IStorage {
 
     // Last 24 hours
     const [last24HoursResult] = await db
-      .select({ count: sql<number>`count(*)::int` })
+      .select({ count: sql<number>`count(*)`.mapWith(Number) })
       .from(agentRuns)
       .where(gte(agentRuns.createdAt, twentyFourHoursAgo));
 
@@ -2582,10 +2536,10 @@ export class DatabaseStorage implements IStorage {
     // Single optimized query instead of 4 separate queries
     const result = await db.execute(sql`
       SELECT 
-        (SELECT count(*)::int FROM ai_insights) as total_insights,
-        (SELECT count(*)::int FROM activities) as total_activities,
-        (SELECT COALESCE(sum(distance), 0)::numeric FROM activities) as total_distance,
-        (SELECT count(*)::int FROM users) as total_users
+        (SELECT CAST(count(*) AS INTEGER) FROM ai_insights) as total_insights,
+        (SELECT CAST(count(*) AS INTEGER) FROM activities) as total_activities,
+        (SELECT CAST(COALESCE(sum(distance), 0) AS NUMERIC) FROM activities) as total_distance,
+        (SELECT CAST(count(*) AS INTEGER) FROM users) as total_users
     `);
 
     const row = result.rows[0] as any;
@@ -3082,7 +3036,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUnviewedCoachRecapsCount(userId: number): Promise<number> {
-    const result = await db.select({ count: sql<number>`count(*)::int` })
+    const result = await db.select({ count: sql<number>`count(*)`.mapWith(Number) })
       .from(coachRecaps)
       .where(and(
         eq(coachRecaps.userId, userId),
@@ -3140,7 +3094,7 @@ export class DatabaseStorage implements IStorage {
       .from(notificationOutbox)
       .where(and(
         eq(notificationOutbox.status, "pending"),
-        sql`${notificationOutbox.scheduledFor} <= NOW()`
+        sql`${notificationOutbox.scheduledFor} <= ${new Date()}`
       ))
       .orderBy(notificationOutbox.scheduledFor)
       .limit(limit);
@@ -3177,7 +3131,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUnreadNotificationsCount(userId: number): Promise<number> {
-    const result = await db.select({ count: sql<number>`count(*)::int` })
+    const result = await db.select({ count: sql<number>`count(*)`.mapWith(Number) })
       .from(notificationOutbox)
       .where(and(
         eq(notificationOutbox.userId, userId),
@@ -3243,14 +3197,14 @@ export class DatabaseStorage implements IStorage {
     const result = await db.execute(sql`
       SELECT
         n.type AS type,
-        COUNT(*)::int AS queued,
-        COUNT(*) FILTER (WHERE n.status = 'sent')::int AS sent,
-        COUNT(*) FILTER (WHERE n.read_at IS NOT NULL)::int AS read,
-        COUNT(*) FILTER (WHERE f.rating = 'helpful')::int AS helpful,
-        COUNT(*) FILTER (WHERE f.rating = 'not_helpful')::int AS not_helpful
+        CAST(COUNT(*) AS INTEGER) AS queued,
+        CAST(COUNT(*) FILTER (WHERE n.status = 'sent') AS INTEGER) AS sent,
+        CAST(COUNT(*) FILTER (WHERE n.read_at IS NOT NULL) AS INTEGER) AS read,
+        CAST(COUNT(*) FILTER (WHERE f.rating = 'helpful') AS INTEGER) AS helpful,
+        CAST(COUNT(*) FILTER (WHERE f.rating = 'not_helpful') AS INTEGER) AS not_helpful
       FROM notification_outbox n
       LEFT JOIN coach_message_feedback f ON f.notification_id = n.id
-      WHERE n.created_at >= NOW() - (${days} || ' days')::interval
+      WHERE n.created_at >= ${new Date(Date.now()-days*86400000)}
         AND n.type IN ('activity_recap','next_step','weekly_summary','plan_reminder','morning_briefing','daily_checkin','missed_workout','race_week')
       GROUP BY n.type
       ORDER BY n.type
@@ -3420,10 +3374,11 @@ class DatabaseStorageWithDemo extends DatabaseStorage {
     return super.updateStripeSubscriptionId(userId, stripeSubscriptionId);
   }
 
-  async updateSubscriptionStatus(userId: number, status: string, plan?: string): Promise<User | undefined> {
+  async updateSubscriptionStatus(userId: number, status: string, plan?: string, subscriptionId?: string): Promise<User | undefined> {
     await this.initializeDemoUser();
-    return super.updateSubscriptionStatus(userId, status, plan);
+    return super.updateSubscriptionStatus(userId, status, plan, subscriptionId);
   }
 }
 
-export const storage = new DatabaseStorageWithDemo();
+// Real deployments must never create a demo account or synthetic activities on a read.
+export const storage = isCloudflareRuntime() ? new DatabaseStorage() : new DatabaseStorageWithDemo();
