@@ -56,7 +56,7 @@ export class PerformanceAnalyticsService {
       return null;
     }
 
-    const activities = await storage.getActivitiesByUserId(userId, 50);
+    const activities = await storage.getActivitiesByUserId(userId, 50, undefined, { summaryOnly: true });
     const runningActivities = activities.filter(a => 
       RUNNING_TYPES.includes(a.type) && a.distance > 1000
     );
@@ -236,7 +236,7 @@ export class PerformanceAnalyticsService {
     
     // If not provided manually, try to calculate from user's actual activity data
     if (!estimatedMaxHR || !estimatedRestingHR) {
-      const activities = await storage.getActivitiesByUserId(userId, 100);
+      const activities = await storage.getActivitiesByUserId(userId, 100, undefined, { summaryOnly: true });
       const activitiesWithHR = activities.filter(a => a.maxHeartrate && a.averageHeartrate);
       
       if (activitiesWithHR.length === 0) {
@@ -323,7 +323,7 @@ export class PerformanceAnalyticsService {
       return null;
     }
 
-    const activities = await storage.getActivitiesByUserId(userId, 50);
+    const activities = await storage.getActivitiesByUserId(userId, 50, undefined, { summaryOnly: true });
     const runningActivities = activities.filter(a =>
       RUNNING_TYPES.includes(a.type) &&
       a.distance > 1000 &&
@@ -375,7 +375,7 @@ export class PerformanceAnalyticsService {
    * Calculate comprehensive performance metrics
    */
   async getPerformanceMetrics(userId: number): Promise<PerformanceMetrics | null> {
-    const activities = await storage.getActivitiesByUserId(userId, 50);
+    const activities = await storage.getActivitiesByUserId(userId, 50, undefined, { summaryOnly: true });
     const runningActivities = activities.filter(a => a.distance > 1000);
     
     const vo2MaxData = await this.calculateVO2Max(userId);

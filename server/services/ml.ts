@@ -227,7 +227,7 @@ export class MLService {
     const user = await storage.getUser(userId);
     if (!user) throw new Error('User not found');
 
-    const allActivities = await storage.getActivitiesByUserId(userId, 100);
+    const allActivities = await storage.getActivitiesByUserId(userId, 100, undefined, { summaryOnly: true });
     const activities = allActivities.filter(a => RUNNING_TYPES.includes(a.type));
     if (activities.length < 5) {
       return [{
@@ -502,7 +502,7 @@ export class MLService {
     
     const [user, allActivities, racePredictions, vo2Data, runnerScore] = await Promise.all([
       storage.getUser(userId),
-      storage.getActivitiesByUserId(userId, 50),
+      storage.getActivitiesByUserId(userId, 50, undefined, { summaryOnly: true }),
       this.predictRacePerformance(userId).catch(() => []),
       performanceService.calculateVO2Max(userId).catch(() => null),
       runnerScoreService.calculateRunnerScore(userId).catch(() => null)
@@ -855,7 +855,7 @@ CRITICAL REQUIREMENTS:
     riskFactors: string[];
     recommendations: string[];
   }> {
-    const activities = await storage.getActivitiesByUserId(userId, 20);
+    const activities = await storage.getActivitiesByUserId(userId, 20, undefined, { summaryOnly: true });
     const metrics = this.analyzeTrainingData(activities);
     
     const riskFactors: string[] = [];

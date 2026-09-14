@@ -751,7 +751,7 @@ export default function CoachInsightsPage() {
   const { canAccessAICoachChat, canAccessAdvancedInsights } = useFeatureAccess();
   const [activeTab, setActiveTab] = useState("insights");
   
-  const { data: batchData, isLoading: isDataLoading } = useQuery({
+  const { data: batchData, isLoading: isDataLoading, isError: insightsError, refetch: retryInsights } = useQuery({
     queryKey: ['/api/analytics/batch', user?.id],
     queryFn: () => apiRequest(`/api/analytics/batch/${user!.id}`),
     enabled: !!user?.id,
@@ -793,6 +793,12 @@ export default function CoachInsightsPage() {
       <AppHeader />
       
       <main className="max-w-7xl mx-auto px-6 py-8">
+        {(insightsError || batchData?.unavailable?.length > 0) && (
+          <div role="alert" className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <p>Some insights could not load. This does not mean your running data is missing.</p>
+            <Button variant="outline" className="mt-2" onClick={() => retryInsights()}>Try again</Button>
+          </div>
+        )}
         {/* Page Header */}
         <div className="mb-6">
           <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

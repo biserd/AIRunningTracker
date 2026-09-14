@@ -6856,41 +6856,50 @@ ${allPages.map(page => `  <url>
       }
 
       console.log(`[Batch Analytics] Starting batch calculation for user ${userId}`);
+      const unavailable: string[] = [];
 
       // Execute all calculations in parallel (include user for unit preference)
       const [user, predictions, injuryRisk, trainingPlan, vo2Max, efficiency, hrZones] = await Promise.all([
         storage.getUser(userId).catch(err => {
           console.error('[Batch] User error:', err.message);
+          unavailable.push('profile');
           return null;
         }),
         mlService.predictRacePerformance(userId).catch(err => {
           console.error('[Batch] Predictions error:', err.message);
+          unavailable.push('predictions');
           return null;
         }),
         mlService.analyzeInjuryRisk(userId).catch(err => {
           console.error('[Batch] Injury risk error:', err.message);
+          unavailable.push('injuryRisk');
           return null;
         }),
         storage.getLatestTrainingPlan(userId).catch(err => {
           console.error('[Batch] Training plan error:', err.message);
+          unavailable.push('trainingPlan');
           return null;
         }),
         performanceService.calculateVO2Max(userId).catch(err => {
           console.error('[Batch] VO2 Max error:', err.message);
+          unavailable.push('vo2Max');
           return null;
         }),
         performanceService.analyzeRunningEfficiency(userId).catch(err => {
           console.error('[Batch] Efficiency error:', err.message);
+          unavailable.push('efficiency');
           return null;
         }),
         performanceService.calculateHeartRateZones(userId).catch(err => {
           console.error('[Batch] HR Zones error:', err.message);
+          unavailable.push('hrZones');
           return null;
         })
       ]);
 
       const response = {
         predictions: predictions || [],
+        unavailable,
         injuryRisk,
         trainingPlan: trainingPlan?.planData || null,
         vo2Max,
@@ -6900,7 +6909,7 @@ ${allPages.map(page => `  <url>
       };
 
       // Cache the result
-      setCachedResponse(cacheKey, response);
+      if (unavailable.length === 0) setCachedResponse(cacheKey, response);
       
       const totalTime = Date.now() - startTime;
       console.log(`[Batch Analytics] Completed all calculations in ${totalTime}ms`);

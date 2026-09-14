@@ -96,6 +96,19 @@ try {
   }
   assert.equal((await request('/api/runner-score/2')).status,403);
   assert.equal((await request('/api/runner-score/2/history')).status,403);
+  sqlite.exec("UPDATE users SET strava_connected=1 WHERE id=1; UPDATE activities SET average_cadence=85,average_heartrate=145,max_heartrate=175 WHERE user_id=1");
+  const efficiencyResponse=await request('/api/performance/efficiency/1');
+  assert.equal(efficiencyResponse.status,200);
+  const efficiency=await efficiencyResponse.json();
+  assert.ok(efficiency.runsAnalyzed>=3);
+  assert.ok(efficiency.averageCadence>0);
+  const batchResponse=await request('/api/analytics/batch/1');
+  assert.equal(batchResponse.status,200);
+  const batch=await batchResponse.json();
+  assert.ok(batch.efficiency?.runsAnalyzed>=3);
+  assert.ok(batch.hrZones?.heartRateZones);
+  assert.equal((await request('/api/performance/efficiency/2')).status,404);
+  assert.equal((await request('/api/analytics/batch/2')).status,404);
   // Calendar's existing free-user lock filter must still be enforced.
   sqlite.exec("UPDATE users SET subscription_plan='free',subscription_status=NULL WHERE id=1; UPDATE activities SET locked_for_free=1 WHERE id=10");
   const calendar=await (await request('/api/activities/heatmap')).json();

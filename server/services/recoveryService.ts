@@ -83,7 +83,7 @@ async function calculateRecoveryState(user: User, userId: number): Promise<Recov
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   
-  const recentActivities = await storage.getActivitiesByUserId(userId, 100, thirtyDaysAgo);
+  const recentActivities = await storage.getActivitiesByUserId(userId, 100, thirtyDaysAgo, { summaryOnly: true });
   
   const runningActivities = recentActivities.filter(a => 
     a.type?.toLowerCase().includes("run")
