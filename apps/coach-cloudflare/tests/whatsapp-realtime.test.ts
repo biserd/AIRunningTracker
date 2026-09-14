@@ -41,7 +41,7 @@ test('Same-runner replies serialize in inbox order; other runners do not wait',a
  globalThis.fetch=async(url,init)=>{
   if(String(url).includes('/Indicators/Typing.json')){typingCalls++;return Response.json({success:true});}
   if(String(url).includes('openai.com')){
-   aiCalls++;const body=JSON.parse(String(init?.body));assert.deepEqual(body.tools,[]);assert.equal(body.tool_choice,'none');
+   aiCalls++;const body=JSON.parse(String(init?.body));assert.equal(body.model,'gpt-5.6-luna');assert.deepEqual(body.reasoning,{effort:'low'});assert.deepEqual(body.tools,[]);assert.equal(body.tool_choice,'none');
    const question=body.input.at(-1).content;
    if(question==='first'){start();await blocked;}
    if(question==='second')assert.ok(body.input.some((x:{role:string;content:string})=>x.role==='assistant'&&x.content==='reply-first'));

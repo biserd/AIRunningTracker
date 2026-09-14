@@ -23,7 +23,7 @@ test('Workers runtime sends a signed webhook through a real Queue consumer witho
    if(url.pathname.includes('/Indicators/Typing.json'))return Response.json({success:true});
    if(url.hostname==='api.openai.com'){
     const body=await request.json();
-    if(body.tools.length || body.tool_choice!=='none' || !body.input[0].content.includes('activityEvidence'))return new Response('',{status:400});
+    if(body.model!=='gpt-5.6-luna' || body.reasoning.effort!=='low' || body.tools.length || body.tool_choice!=='none' || !body.input[0].content.includes('activityEvidence'))return new Response('',{status:400});
     await env.DB.prepare("INSERT INTO test_calls(kind) VALUES ('ai')").run();
     return Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text:'Keep your next run easy.'}]}]});
    }

@@ -2,6 +2,8 @@
 
 This integration belongs to `codex/cloudflare-coach` / `new.aitracker.run`. Real running data is authorized through the main site's dedicated read-only MCP OAuth service. The main deployment is unchanged. No iMessage or SMS integration is included.
 
+WhatsApp replies use `gpt-5.6-luna` with low reasoning effort, one Responses API request and the full existing authorized context. Browser chat and voice models are unchanged. Compare live AI timings and answer quality after a model change; queue, context-loading and handset delivery delays are separate. No additional secret or database migration is required for this model switch.
+
 ## Configure and deploy
 
 Add these encrypted secrets to Worker `aitracker-coach-preview` in Cloudflare Settings > Variables and Secrets. Do not put credentials in Git or chat:
