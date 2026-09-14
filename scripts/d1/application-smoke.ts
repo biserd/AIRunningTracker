@@ -83,7 +83,7 @@ try {
   // Realistic hydrated histories must not overflow the private transport's 8 MB cap.
   const insert=sqlite.prepare("INSERT INTO activities(id,user_id,strava_id,name,type,distance,moving_time,total_elevation_gain,average_speed,max_speed,start_date) VALUES(?,1,?,'Synthetic hydrated run','Run',5000,1800,20,2.77,4,?)");
   for(let id=10;id<30;id++) insert.run(id,String(1000+id),new Date(Date.now()-(id-9)*86400000).toISOString());
-  const paths=['/api/activities/heatmap','/api/runner-score/1','/api/runner-score/1/history'];
+  const paths=['/api/activities/heatmap','/api/activities/heatmap?range=6m','/api/runner-score/1','/api/runner-score/1/history'];
   const before=[];
   for(const path of paths){const r=await request(path);assert.equal(r.status,200);before.push(await r.json());}
   sqlite.prepare('UPDATE activities SET streams_data=?,laps_data=?,detailed_polyline=? WHERE user_id=1')
