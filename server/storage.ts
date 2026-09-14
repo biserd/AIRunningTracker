@@ -215,8 +215,6 @@ export interface IStorage {
     totalUsers: number;
     connectedUsers: number;
     totalActivities: number;
-    recentUsers: User[];
-    recentActivities: Activity[];
   }>;
   getAllUsers(limit?: number): Promise<User[]>;
   getUserAnalytics(): Promise<{
@@ -1436,32 +1434,15 @@ export class DatabaseStorage implements IStorage {
     totalUsers: number;
     connectedUsers: number;
     totalActivities: number;
-    recentUsers: User[];
-    recentActivities: Activity[];
   }> {
-    const [totalUsersResult] = await db.select({ count: sql<number>`count(*)` }).from(users);
-    const [connectedUsersResult] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.stravaConnected, true));
-    const [totalActivitiesResult] = await db.select({ count: sql<number>`count(*)` }).from(activities);
-
-    const recentUsers = await db
-      .select()
-      .from(users)
-      .orderBy(desc(users.createdAt))
-      .limit(10);
-
-    const recentActivities = await db
-      .select()
-      .from(activities)
-      .orderBy(desc(activities.createdAt))
-      .limit(10);
-
-    return {
-      totalUsers: totalUsersResult.count,
-      connectedUsers: connectedUsersResult.count,
-      totalActivities: totalActivitiesResult.count,
-      recentUsers,
-      recentActivities
-    };
+    // The admin summary renders counts only. Never hydrate runner records or
+    // transfer credentials/GPS payloads for this endpoint.
+    const result = await db.execute(sql`SELECT
+      (SELECT COUNT(*) FROM users) AS total_users,
+      (SELECT COUNT(*) FROM users WHERE strava_connected = true) AS connected_users,
+      (SELECT COUNT(*) FROM activities) AS total_activities`);
+    const row = result.rows[0] as any;
+    return { totalUsers: Number(row.total_users), connectedUsers: Number(row.connected_users), totalActivities: Number(row.total_activities) };
   }
 
   async getAllUsers(limit = 100): Promise<User[]> {
@@ -2368,7 +2349,7 @@ export class DatabaseStorage implements IStorage {
       .from(performanceLogs)
       .where(
         sql`${performanceLogs.statusCode} >= 400
-          AND ${performanceLogs.timestamp} >= ${twentyFourHoursAgo}
+          AND ${gte(performanceLogs.timestamp, twentyFourHoursAgo)}
           AND NOT (${performanceLogs.endpoint} = '/api/auth/user' AND ${performanceLogs.statusCode} = 401)
           AND NOT (${performanceLogs.endpoint} = '/mcp' AND ${performanceLogs.statusCode} = 401 AND ${performanceLogs.errorMessage} = 'invalid_token')
           AND NOT (${performanceLogs.endpoint} = '/mcp/oauth/token' AND ${performanceLogs.statusCode} = 400 AND ${performanceLogs.errorMessage} = 'invalid_grant')`
@@ -3360,8 +3341,6 @@ class DatabaseStorageWithDemo extends DatabaseStorage {
     totalUsers: number;
     connectedUsers: number;
     totalActivities: number;
-    recentUsers: User[];
-    recentActivities: Activity[];
   }> {
     await this.initializeDemoUser();
     return super.getAdminStats();

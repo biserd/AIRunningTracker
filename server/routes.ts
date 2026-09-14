@@ -9006,7 +9006,7 @@ ${allPages.map(page => `  <url>
   // Admin: Get campaign analytics
   app.get("/api/admin/campaigns/analytics", authenticateAdmin, async (req: any, res) => {
     try {
-      const delivery = await db.execute(sql`
+      const [delivery, clicks, trials] = await Promise.all([db.execute(sql`
         SELECT campaign, experiment_variant,
           CAST(COUNT(*) FILTER (WHERE status = 'sent') AS INTEGER) AS sent,
           CAST(COUNT(*) FILTER (WHERE delivered_at IS NOT NULL) AS INTEGER) AS delivered,
@@ -9016,17 +9016,15 @@ ${allPages.map(page => `  <url>
         WHERE job_type = 'drip' AND campaign_version = 2
           AND campaign IN ('signup_no_strava', 'preview_ready_unseen', 'preview_engaged_no_trial', 'checkout_abandoned', 'trial_needs_activation', 'trial_engaged', 'trial_ending', 'trial_expired_winback', 'inactive_free')
         GROUP BY campaign, experiment_variant
-      `);
-      const clicks = await db.execute(sql`
+      `), db.execute(sql`
         SELECT campaign, CAST(COUNT(DISTINCT job_id) AS INTEGER) AS clicked
         FROM email_clicks WHERE job_id IS NOT NULL GROUP BY campaign
-      `);
-      const trials = await db.execute(sql`
+      `), db.execute(sql`
         SELECT properties->>'lifecycleCampaign' AS campaign, CAST(COUNT(*) AS INTEGER) AS trials
         FROM funnel_events
         WHERE event = 'trial_started' AND properties->>'lifecycleCampaign' IS NOT NULL
         GROUP BY properties->>'lifecycleCampaign'
-      `);
+      `)]);
       const clickMap = new Map((clicks.rows as any[]).map((row) => [row.campaign, Number(row.clicked)]));
       const trialMap = new Map((trials.rows as any[]).map((row) => [row.campaign, Number(row.trials)]));
       const rows = (delivery.rows as any[]).map((row) => ({ campaign: row.campaign, variant: row.experiment_variant, sent: Number(row.sent), delivered: Number(row.delivered), clicked: clickMap.get(row.campaign) || 0, trials: trialMap.get(row.campaign) || 0, bounced: Number(row.bounced), complained: Number(row.complained) }));
@@ -9143,9 +9141,11 @@ ${allPages.map(page => `  <url>
   // Admin: Get segment stats for campaigns (reads from user_campaigns table)
   app.get("/api/admin/campaigns/segment-stats", authenticateAdmin, async (req: any, res) => {
     try {
-      const result = await dripCampaignService.getSegmentStats();
-      const userCounts = await storage.getUserCountsBySubscription();
-      const audienceResult = await db.execute(sql`SELECT CAST(COUNT(*) AS INTEGER) AS count FROM users WHERE email IS NOT NULL AND marketing_consent_status = 'consented' AND marketing_opt_out = false`);
+      const [result, userCounts, audienceResult] = await Promise.all([
+        dripCampaignService.getSegmentStats(),
+        storage.getUserCountsBySubscription(),
+        db.execute(sql`SELECT CAST(COUNT(*) AS INTEGER) AS count FROM users WHERE email IS NOT NULL AND marketing_consent_status = 'consented' AND marketing_opt_out = false`),
+      ]);
       res.json({
         segments: result.bySegment,
         eligible: result.eligible,

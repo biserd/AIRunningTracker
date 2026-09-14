@@ -190,7 +190,9 @@ export class DripCampaignService {
           MAX(occurred_at) FILTER (WHERE event = 'preview_cta_clicked') AS preview_clicked_at,
           MAX(occurred_at) FILTER (WHERE event IN ('checkout_started', 'checkout_session_created')) AS checkout_at,
           MAX(occurred_at) FILTER (WHERE event = 'trial_started') AS trial_at
-        FROM funnel_events GROUP BY user_id
+        FROM funnel_events
+        WHERE event IN ('preview_viewed', 'preview_cta_clicked', 'checkout_started', 'checkout_session_created', 'trial_started')
+        GROUP BY user_id
       ), categorized AS (
         SELECT users.id,
           CASE

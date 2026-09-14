@@ -116,15 +116,18 @@ export default function AdminPage() {
 
   useEffect(() => { if (!authLoading && user && !user.isAdmin) setLocation("/dashboard"); }, [authLoading, user, setLocation]);
 
-  const stats = useQuery<AdminStats>({ queryKey: ["/api/admin/stats"], enabled: adminEnabled });
-  const growth = useQuery<GrowthData>({ queryKey: [`/api/admin/growth?days=${days}`], enabled: adminEnabled });
-  const campaign = useQuery<CampaignStatus>({ queryKey: ["/api/admin/campaigns/worker-status"], enabled: adminEnabled, refetchInterval: 15000 });
-  const segments = useQuery<SegmentStats>({ queryKey: ["/api/admin/campaigns/segment-stats"], enabled: adminEnabled, refetchInterval: 30000 });
-  const lifecycle = useQuery<LifecycleAnalytics>({ queryKey: ["/api/admin/campaigns/analytics"], enabled: adminEnabled, refetchInterval: 30000 });
-  const agent = useQuery<AgentStats>({ queryKey: ["/api/admin/agent-stats"], enabled: adminEnabled, refetchInterval: 30000 });
-  const performance = useQuery<SystemPerformance>({ queryKey: ["/api/admin/performance"], enabled: adminEnabled, refetchInterval: 30000 });
-  const welcome = useQuery<{ total: number; sent: number; pending: number }>({ queryKey: ["/api/admin/welcome-campaign/stats"], enabled: adminEnabled });
-  const launch = useQuery<{ count: number }>({ queryKey: ["/api/admin/launch-emails/pending"], enabled: adminEnabled });
+  // Fetch only the active section's dependencies. Keep overview health checks,
+  // but do not poll hidden campaign/catalog panels or refetch on every tab switch.
+  const needs = (...sections: SectionKey[]) => adminEnabled && sections.includes(section);
+  const stats = useQuery<AdminStats>({ queryKey: ["/api/admin/stats"], enabled: needs("overview"), staleTime: 30000 });
+  const growth = useQuery<GrowthData>({ queryKey: [`/api/admin/growth?days=${days}`], enabled: needs("overview", "growth"), staleTime: 30000 });
+  const campaign = useQuery<CampaignStatus>({ queryKey: ["/api/admin/campaigns/worker-status"], enabled: needs("overview", "campaigns"), staleTime: 15000, refetchInterval: 30000 });
+  const segments = useQuery<SegmentStats>({ queryKey: ["/api/admin/campaigns/segment-stats"], enabled: needs("overview", "campaigns"), staleTime: 30000, refetchInterval: 60000 });
+  const lifecycle = useQuery<LifecycleAnalytics>({ queryKey: ["/api/admin/campaigns/analytics"], enabled: needs("campaigns"), staleTime: 30000, refetchInterval: 60000 });
+  const agent = useQuery<AgentStats>({ queryKey: ["/api/admin/agent-stats"], enabled: needs("overview", "coach"), staleTime: 30000, refetchInterval: 30000 });
+  const performance = useQuery<SystemPerformance>({ queryKey: ["/api/admin/performance"], enabled: needs("overview", "system"), staleTime: 30000, refetchInterval: 30000 });
+  const welcome = useQuery<{ total: number; sent: number; pending: number }>({ queryKey: ["/api/admin/welcome-campaign/stats"], enabled: needs("campaigns"), staleTime: 30000 });
+  const launch = useQuery<{ count: number }>({ queryKey: ["/api/admin/launch-emails/pending"], enabled: needs("campaigns"), staleTime: 30000 });
   const userUrl = `/api/admin/users?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}&plan=${planFilter}&strava=${stravaFilter}&consent=${consentFilter}`;
   const users = useQuery<{ users: AdminUser[]; total: number; page: number; pageSize: number }>({ queryKey: [userUrl], enabled: adminEnabled && section === "users" });
 

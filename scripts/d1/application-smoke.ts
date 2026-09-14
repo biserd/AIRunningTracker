@@ -103,4 +103,24 @@ try {
   assert.ok(ids.includes(11));assert.ok(!ids.includes(10));
   console.log(JSON.stringify({test:'hydrated_dashboard_summaries_and_ownership',passed:true}));
 } catch(error) { failures++;console.error('DASHBOARD_SUMMARY_ASSERTION_FAILED',error); }
+try {
+  // Admin reads must work through the strict D1 parameter boundary, not just PG.
+  assert.equal((await request('/api/admin/performance')).status,403);
+  sqlite.exec('UPDATE users SET is_admin=1 WHERE id=1');
+  sqlite.prepare("INSERT INTO performance_logs(user_id,endpoint,method,status_code,elapsed_time,timestamp,error_message) VALUES(1,'/synthetic','GET',500,12001,?,'Synthetic error')").run(new Date().toISOString());
+  const statsResponse=await request('/api/admin/stats');assert.equal(statsResponse.status,200);
+  const stats=await statsResponse.json();
+  assert.deepEqual(Object.keys(stats).sort(),['connectedUsers','totalActivities','totalUsers']);
+  assert.equal(stats.totalUsers,2);assert.equal(stats.totalActivities,21);
+  const perfResponse=await request('/api/admin/performance');assert.equal(perfResponse.status,200);
+  const perf=await perfResponse.json();assert.equal(perf.telemetryAvailable,true);
+  assert.ok(perf.recentErrors.some((row:any)=>row.endpoint==='/synthetic'));
+  assert.ok(perf.slowRequests.some((row:any)=>row.endpoint==='/synthetic'));
+  assert.equal(perf.performanceTrend.length,6);
+  assert.ok(perf.performanceTrend.every((row:any)=>Number.isFinite(Date.parse(row.timestamp))));
+  for(const path of ['/api/admin/campaigns/analytics','/api/admin/campaigns/segment-stats']){
+    const r=await request(path);assert.equal(r.status,200,path);await r.body?.cancel();
+  }
+  console.log(JSON.stringify({test:'admin_d1_performance_and_bounded_stats',passed:true}));
+} catch(error) { failures++;console.error('ADMIN_ASSERTION_FAILED',error); }
 process.exit(failures?1:0);
