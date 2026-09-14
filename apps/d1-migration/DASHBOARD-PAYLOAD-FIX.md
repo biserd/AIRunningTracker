@@ -24,4 +24,13 @@ Verification:
 Application commit: `16435c1`.
 Cloudflare build: `a61684bb-1dec-42b5-a1e7-1dae8a866f51`.
 Production image: `sha256:441991101b84e4dc1e858458386e48ff6db178ef826ee8ae4d340a261d34e39f`.
-Production Worker deployment: `d05c2d9f-f53b-4327-a888-3753ff1c4e7d`.
+Production image deployment: `d05c2d9f-f53b-4327-a888-3753ff1c4e7d`.
+Final Worker deployment: `cf7c127e-2fac-4ee2-a72d-148412d722c7`.
+
+After the completed image rollout, the existing container process still served
+the old application. The existing one-time runtime restart marker was advanced
+only after the new immutable image was confirmed active. Production dashboard
+verification after restart showed Runner Score 54/100 with all four components,
+and the six-month calendar rendered populated activity cells. Health and public
+platform-stat endpoints also returned HTTP 200. Worker type checking passed;
+the repository-wide type check still reports unrelated existing storage errors.
