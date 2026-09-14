@@ -1,6 +1,9 @@
 import { changePlan, evidence, type Change, type State } from "../shared/coach";
 import type { ReminderIntent } from "../shared/reminders";
 import { ReminderError } from "./reminders";
+import {realCoachInstructions} from './coach-instructions';
+import type {PlanIntent} from '../shared/training';
+export type PlanTools={validate:(input:unknown)=>PlanIntent};
 export type ReminderTools = {
   context: unknown;
   validate: (intent: unknown) => Promise<ReminderIntent>;
@@ -136,6 +139,12 @@ const reminderTools = [
     },
   },
 ];
+const planTool=(name:string,description:string,properties:Record<string,unknown>)=>({type:'function',name,description,strict:true,parameters:{type:'object',properties,required:Object.keys(properties),additionalProperties:false}});
+const realPlanTools=[
+  planTool('preview_create_plan','Prepare a new plan for on-screen approval. Ask for all missing details first.',{goalType:{type:'string',enum:['5k','10k','half_marathon','marathon','50k','50_mile','100k','100_mile','general_fitness']},raceDate:{type:'string'},preferredRunDays:{type:'array',items:{type:'string'}},maxWeeklyHours:{type:'number'},constraints:{type:'string'}}),
+  planTool('preview_adjust_plan','Prepare the existing whole-week easier or progressive adjustment, not a single workout edit.',{planId:{type:'integer'},feeling:{type:'string',enum:['tired','strong']}}),
+  planTool('preview_plan_settings','Prepare a race-date and target-time settings update; this does not rebuild workouts.',{planId:{type:'integer'},raceDate:{type:'string'},targetTime:{type:'string'}}),
+];
 export function validateChange(raw: unknown, state: State): Change {
   if (!raw || typeof raw !== "object" || Array.isArray(raw))
     throw new Error("Invalid change");
@@ -177,10 +186,12 @@ export async function coach(
   message: string,
   signal: AbortSignal,
   reminders?: ReminderTools,
+  plans?: PlanTools,
 ) {
   const input: unknown[] = [...history, { role: "user", content: message }];
   let change: Change | undefined;
   let reminder: ReminderIntent | undefined;
+  let planIntent: PlanIntent | undefined;
   for (let round = 0; round < 3; round++) {
     const raw = (await openai(
       key,
@@ -188,17 +199,14 @@ export async function coach(
       {
         model: "gpt-6-astra",
         store: false,
-        instructions:
-          instructions.replace("This is a fictional sample runner, NOT the user's real training history. All supplied activity and plan data is SAMPLE DATA. Never imply Strava, weather, heart rate, recovery measurements or real accounts are connected.",
-            state.source === "production_account" ? "This is the authenticated runner's real account. Use only the bounded server-provided running history and current plan. Respect its date range and freshness timestamp. No weather, heart-rate or recovery measurements are supplied. Never invent those. Real plan edits are unavailable here: direct the runner to aitracker.run/training-plans. Never propose or claim to save a real plan change." :
-              "This is fictional sample data, not the runner's real history.") +
+        instructions: (state.source==='production_account'?realCoachInstructions(state):instructions) +
           (reminders
             ? " You can also PREPARE a one-time email reminder or cancellation for separate on-screen confirmation. A draft is not scheduled. Read reminder context including actual current time, verified timezone and existing reminders. The sample plan date is not the actual date for reminders. Ask the runner to verify email in the reminders panel if unverified, and clarify missing dates or times. Never request or choose a recipient: the server controls it. Never say a reminder is set, cancelled, or an email was sent; tell the runner to review and confirm on screen. Recurring reminders are not supported."
             : " This channel is read-only. You cannot create or cancel reminders here. For scheduling or changes, ask the runner to open the preview and confirm there. Never claim an action has been performed."),
         reasoning: { effort: "low" },
         max_output_tokens: 1800,
         input,
-        tools: reminders ? [...tools, ...reminderTools] : tools,
+        tools: [...(state.source==='production_account'?[tools[0]]:tools),...(reminders?reminderTools:[]),...(plans?realPlanTools:[])],
         parallel_tool_calls: false,
         tool_choice:
           round === 0
@@ -222,7 +230,7 @@ export async function coach(
         .trim();
       if (!text || text.length > 8000)
         throw new AIError("The coach returned an incomplete answer.");
-      return { message: text, change, reminder };
+      return { message: text, change, reminder, planIntent };
     }
     if (calls.length > 1)
       throw new AIError(
@@ -246,6 +254,10 @@ export async function coach(
             realWeatherAvailable: false,
             ...(reminders ? { emailReminders: reminders.context } : {}),
           };
+        } else if (plans && ['preview_create_plan','preview_adjust_plan','preview_plan_settings'].includes(call.name || '')) {
+          if(!args || typeof args!=='object' || Array.isArray(args) || 'kind' in args)throw new Error('Invalid action');
+          planIntent=plans.validate({...args,kind:call.name==='preview_create_plan'?'create':call.name==='preview_adjust_plan'?'adjust':'settings'});
+          result={status:'review_only',intent:planIntent,requiresOnScreenConfirmation:true};
         } else if (call.name === "preview_plan_change") {
           const candidate = validateChange(args, state);
           const preview = changePlan(state, candidate);
@@ -280,7 +292,7 @@ export async function coach(
       } catch (error) {
         result = {
           error:
-            error instanceof ReminderError
+            error instanceof ReminderError || error instanceof AIError
               ? error.message
               : "That adjustment is not valid. Ask the runner to choose an eligible workout and change.",
         };

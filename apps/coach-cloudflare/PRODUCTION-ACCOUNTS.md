@@ -29,9 +29,25 @@ and actual completion status are included. No plan means an empty schedule.
 Timezone comes from the runner's coach settings. Distances are explicitly km.
 No GPS streams, credentials, email address or unrestricted records are exposed.
 
-Chat/voice, charts and poster statistics use this snapshot. AI calls retain
-existing trial/subscription entitlements. Real plan changes are blocked here;
-manage them on the main site's Training Plans page.
+Charts and poster statistics use this summary snapshot. Chat refreshes profile,
+athlete profile, goals, fitness/recovery/runner scores, up to 30 plan summaries,
+and up to 3 full active plans (52 weeks each), with workouts and intervals.
+Voice receives the same expanded context in its startup instructions, then
+delegates questions for fresh context. Failed sections are labeled unavailable.
+Credentials, contact addresses and raw sensor/GPS streams are not model context.
+AI calls retain existing trial/subscription entitlements.
+
+The server checks the current authenticated /api/user identity. Only
+biserd@gmail.com with AI entitlement may prepare/confirm real plan actions:
+new race-targeted plans, race date/target-time settings, or the legacy
+easier/progressive week adjustment. Reviews expire after ten minutes and require
+an explicit on-screen confirmation. The server compares current plan data,
+claims the proposal once and never retries an uncertain write. No account ID,
+arbitrary route or additional request fields can be supplied by the model.
+Week adjustment is refused if the selected weeks contain past/completed workouts,
+because the existing backend does not protect those days. Exact workout edits
+are not supported. Race setting updates do not rebuild the workout schedule.
+No new main-site deployment, database migration or secret was needed.
 
 The existing coach D1 holds private per-runner conversations, reminder/channel
 settings and a last-loaded snapshot, not a second account authority.
@@ -49,7 +65,8 @@ is disabled. Existing demo channel bindings are not silently moved to an account
 Run the primary D1 application smoke test for authentication, foreign-ID
 rejection, bounded hydrated histories and current-plan mapping.
 Run the coach unit tests for host-only cookies, fixed backend routing,
-expired authentication, sample-cookie rejection and read-only real plans.
+expired authentication, sample-cookie rejection, plan ownership, stale reviews,
+explicit confirmation, duplicate submission and uncertain-write handling.
 Set TEST_BASE_URL explicitly for the anonymous deployed API checks.
 Finish with interactive real-account sign-in on /preview.
 
@@ -62,3 +79,8 @@ Finish with interactive real-account sign-in on /preview.
 - Deployed: anonymous/legacy-session rejection checks passed.
 - Interactive sign-in and real-account UI verification await the account owner.
 - No database migration or new application secrets were required.
+
+Expanded-context deployment: local coach tests and Workers runtime test pass.
+The controlled browser is not signed into the user's new-site account, so live
+voice preload and plan-write confirmation still need an owner-run acceptance test.
+No live plan was created or changed as a test.

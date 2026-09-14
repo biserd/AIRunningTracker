@@ -13,6 +13,7 @@ export type State = {
   timezone?: string;
   historyLimit?: number;
   historyDays?: number;
+  trainingContext?: import('./training').TrainingContext;
   days: Day[];
   activities: Activity[];
   today: string;

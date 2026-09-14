@@ -16,12 +16,12 @@ export function accountToken(request: Request) {
 function sessionCookie(token: string, maxAge = 604800) {
   return `${cookie}=${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
 }
-async function backend(env: Env, path: string, body?: unknown, token?: string) {
+export async function backend(env: Env, path: string, body?: unknown, token?: string, method?: 'PATCH') {
   let response: Response;
   try { response = await env.BACKEND.fetch(origin+path, {
     // Workers supports manual/follow only. Reject non-2xx below instead of
     // following redirects, which could forward credentials to another origin.
-    method: body === undefined ? "GET" : "POST", redirect: "manual",
+    method: method || (body === undefined ? "GET" : "POST"), redirect: "manual",
     headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     ...(body === undefined ? {} : {body: JSON.stringify(body)}),
     signal: AbortSignal.timeout(15000),

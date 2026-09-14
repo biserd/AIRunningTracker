@@ -2,11 +2,13 @@ import React, { useEffect, useRef, useState } from "react";
 import { Mic, Send, Square, ImagePlus, Download } from "lucide-react";
 import type { State, Proposal } from "../shared/coach";
 import type { ReminderProposal } from "../shared/reminders";
+import type {PlanReview} from '../shared/training';
 import { ReminderPanel } from "./Reminders";
 import { renderPoster, type PosterEvidence } from "./poster";
 import { RunningChart } from "./RunningChart";
 type Message = { role: string; content: string };
 type Answer = {
+  planReview?: PlanReview;
   message: string;
   proposal?: Proposal;
   reminderProposal?: ReminderProposal;
@@ -58,6 +60,16 @@ export function CoachAI({
     [art, setArt] = useState(""),
     [imageBusy, setImageBusy] = useState(false);
   const [pending, setPending] = useState<Proposal>();
+  const [planReview,setPlanReview]=useState<PlanReview>();
+  const [savingPlan,setSavingPlan]=useState(false);
+  async function savePlan(){
+    if(!planReview || savingPlan)return;
+    setSavingPlan(true);setError('');
+    try {const result=await request<{message:string}>('plan-confirm',{id:planReview.id,confirm:true});
+      setPlanReview(undefined);receive({message:result.message});
+    }catch(e){setError(e instanceof Error?e.message:'Check your main-site plan before trying again.');}
+    finally {setSavingPlan(false);}
+  }
   const [reminderProposal, setReminderProposal] = useState<ReminderProposal>();
   useEffect(() => setPending(undefined), [version]);
   const connection = useRef<RTCPeerConnection | null>(null),
@@ -120,6 +132,7 @@ export function CoachAI({
       [...m, { role: "assistant", content: answer.message }].slice(-12),
     );
     if (answer.proposal) setPending(answer.proposal);
+    if (answer.planReview) setPlanReview(answer.planReview);
     if (answer.reminderProposal) setReminderProposal(answer.reminderProposal);
   }
   async function ask(e: React.FormEvent) {
@@ -276,6 +289,7 @@ export function CoachAI({
               receive(answer);
               answerBack(
                 answer.message +
+                  (answer.planReview?' Review the plan action on screen and tap Save to AITracker to apply it. Nothing is saved yet.':'')+
                   (answer.proposal
                     ? " A proposed change is ready on screen. It is not saved. Tap Review adjustment to confirm."
                     : "") +
@@ -397,6 +411,7 @@ export function CoachAI({
           <button className="text-button" onClick={()=>setCard(null)}>Close {card==="chart"?"chart":"plan"}</button>
           {card==="chart"?<RunningChart state={state}/>:<><h3>Your week</h3>{!state.days.length && <p>No workouts scheduled this week.</p>}{state.days.map(day=><p key={day.id}><strong>{day.date}</strong> · {day.title} · {day.minutes} min{day.completed?" · Completed":""}</p>)}<button className="secondary" onClick={onWeek}>Review my week</button></>}
         </section>}
+        {planReview && <section className="inline-reminder" aria-label="Review plan action"><h3>Review your plan change</h3><p>{planReview.description}</p>{planReview.details.kind==='create' && <><p>Run days: {planReview.details.preferredRunDays.join(', ')}. Up to {planReview.details.maxWeeklyHours} hours per week.</p><p>{planReview.details.constraints || 'No additional constraints supplied.'}</p></>}<p>This updates your real AITracker account. Nothing is saved until you confirm.</p><button className="primary" disabled={savingPlan} onClick={()=>void savePlan()}>{savingPlan?'Saving…':'Save to AITracker'}</button><button className="text-button" disabled={savingPlan} onClick={()=>setPlanReview(undefined)}>Cancel</button><a href="https://aitracker.run/training-plans" target="_blank" rel="noopener noreferrer">View current plan</a></section>}
         {reminderProposal && <div className="inline-reminder"><ReminderPanel proposal={reminderProposal} reviewOnly/><button className="text-button" onClick={onSettings}>Manage connections in Settings</button></div>}
         <div className="coach-composer">
         <div className="ai-actions voice-primary">

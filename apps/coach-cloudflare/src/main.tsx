@@ -193,7 +193,7 @@ function App() {
                         ? "A plan is a starting point. Adjust it when life happens."
                         : tab === "Progress"
                           ? "Useful context, without a wall of numbers."
-                          : "Nothing here changes your existing account."}
+                          : "Real plan changes require your confirmation."}
                   </p>
                 </div>
                 <span className="date-tag">

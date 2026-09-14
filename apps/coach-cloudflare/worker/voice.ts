@@ -1,9 +1,11 @@
 import { DurableObject } from "cloudflare:workers";
 import { AIError, instructions, openai } from "./openai";
+import {voiceInstructions} from './coach-instructions';
+import type {State} from '../shared/coach';
 
 // One durable lease per browser session. The provider ID never comes from the client.
 export class VoiceLease extends DurableObject<Env> {
-  async start(sdp: string) {
+  async start(sdp: string, state: State) {
     if (await this.ctx.storage.get("active"))
       throw new AIError("End your existing call before starting another.", 409);
     await this.ctx.storage.put("active", true);
@@ -16,7 +18,7 @@ export class VoiceLease extends DurableObject<Env> {
           session: {
             model: "gpt-live-1",
             store: false,
-            instructions:
+            instructions: state.source==='production_account'?voiceInstructions(state):
               instructions.replace("This is a fictional sample runner, NOT the user's real training history. All supplied activity and plan data is SAMPLE DATA. Never imply Strava, weather, heart rate, recovery measurements or real accounts are connected.", "The client coach retrieves the authenticated runner's data. Use its returned source and freshness information. Never invent missing measurements.") +
               " You are the AI voice interface. Delegate all training questions and reminder requests to the client coach. Do not invent answers before a delegation result arrives. Speak briefly. Spoken agreement never confirms a reminder. Real training plan edits must be made on aitracker.run/training-plans.",
             delegation: { type: "client" },

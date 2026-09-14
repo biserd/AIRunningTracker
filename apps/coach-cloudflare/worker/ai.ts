@@ -1,6 +1,7 @@
 import { changePlan, evidence, type State } from "../shared/coach";
 import { AIError, coach, openai } from "./openai";
 import { reminderContext, validateReminder, draftReminder } from "./reminders";
+import {draftPlan,validatePlanIntent} from './plan-actions';
 type RunnerRow = { id: string; state: string; version: number };
 type Limit = (
   env: Env,
@@ -142,6 +143,7 @@ export async function aiRoute(
           context: await reminderContext(env, row.id),
           validate: (intent) => validateReminder(env, row.id, intent),
         },
+        state.trainingContext?.canWritePlans ? {validate:intent=>validatePlanIntent(intent,state.trainingContext!)} : undefined,
       );
       let proposal;
       if (generated.change) {
@@ -169,6 +171,7 @@ export async function aiRoute(
       }
       result = {
         message: generated.message,
+        ...(generated.planIntent && state.trainingContext ? {planReview:await draftPlan(env,row.id,state.trainingContext,generated.planIntent)} : {}),
         ...(proposal ? { proposal } : {}),
         ...(generated.reminder
           ? {
@@ -192,6 +195,7 @@ export async function aiRoute(
     } else if (kind === "voice") {
       result = await env.VOICE_LEASE.getByName(row.id).start(
         input.sdp as string,
+        state,
       );
     } else {
       const raw = (await openai(
