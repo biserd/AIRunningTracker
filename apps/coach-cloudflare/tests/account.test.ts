@@ -12,6 +12,7 @@ test("login stays server-side, uses a fixed backend and a secure host-only cooki
   const response=await accountAction(env,"/api/account/login",{email:"runner@example.test",password:"synthetic",userId:999});
   assert.deepEqual(await response.json(),{ok:true});
   assert.equal(calls[0].url,"https://aitracker.run/api/auth/login");
+  assert.equal(calls[0].redirect,"manual");
   assert.deepEqual(await calls[0].json(),{email:"runner@example.test",password:"synthetic"});
   assert.equal(calls[1].url,"https://aitracker.run/api/coach/experience");
   assert.equal(calls[1].headers.get("Authorization"),"Bearer synthetic.signed.jwt");

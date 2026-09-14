@@ -17,18 +17,28 @@ function sessionCookie(token: string, maxAge = 604800) {
   return `${cookie}=${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
 }
 async function backend(env: Env, path: string, body?: unknown, token?: string) {
-  const response = await env.BACKEND.fetch(origin+path, {
-    method: body === undefined ? "GET" : "POST", redirect: "error",
+  let response: Response;
+  try { response = await env.BACKEND.fetch(origin+path, {
+    // Workers supports manual/follow only. Reject non-2xx below instead of
+    // following redirects, which could forward credentials to another origin.
+    method: body === undefined ? "GET" : "POST", redirect: "manual",
     headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     ...(body === undefined ? {} : {body: JSON.stringify(body)}),
     signal: AbortSignal.timeout(15000),
-  });
+  }); } catch(e) {
+    const name=e instanceof Error ? e.name : 'unknown';
+    console.error(JSON.stringify({event:'coach_auth_transport_failed',errorType:['TypeError','TimeoutError','AbortError'].includes(name)?name:'other'}));
+    throw new AIError('AITracker sign-in could not connect. Please retry.',503);
+  }
   if (!response.ok) {
     await response.body?.cancel();
     throw new AIError(response.status === 401 || response.status === 400 ? "Sign-in failed. Check your details or request a new email link." : "AITracker is temporarily unavailable. Please retry.",
       response.status === 401 || response.status === 400 ? 401 : 503);
   }
-  return boundedJSON(response, 300000);
+  try {return await boundedJSON(response, 300000);} catch {
+    console.error(JSON.stringify({event:'coach_auth_response_invalid',status:response.status,json:response.headers.get('content-type')?.includes('application/json')===true,encoded:response.headers.has('content-encoding')}));
+    throw new AIError('AITracker returned an invalid sign-in response. Please retry.',503);
+  }
 }
 export async function loadAccount(env: Env, token: string): Promise<AccountSnapshot> {
   const data = await backend(env, "/api/coach/experience", undefined, token) as AccountSnapshot;
