@@ -5413,7 +5413,7 @@ ${allPages.map(page => `  <url>
       // webhook-ingested locked runs in the heatmap: those are paid-only.
       const { isPaidPlan: heatmapIsPaid } = await import("./rateLimits");
       const heatmapIsPaidUser = heatmapIsPaid(user?.subscriptionPlan ?? null, user?.subscriptionStatus ?? null);
-      const activities = await storage.getActivitiesByUserId(userId, 1000, startDate, { excludeLockedForFree: !heatmapIsPaidUser });
+      const activities = await storage.getActivitiesByUserId(userId, 1000, startDate, { excludeLockedForFree: !heatmapIsPaidUser, summaryOnly: true });
       
       // Aggregate activities by day
       const dailyData: Map<string, { totalDistanceKm: number; activities: Array<{ id: number; name: string; distanceKm: number; grade?: string }> }> = new Map();

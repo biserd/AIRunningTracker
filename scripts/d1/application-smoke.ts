@@ -79,4 +79,28 @@ try {
   assert.equal((await request('/api/strava/connect','POST',{userId:2,code:'not-a-real-code'})).status,403);
   console.log(JSON.stringify({test:'application_mutations_and_tenant_isolation',passed:true}));
 } catch(error) { failures++;console.error('APPLICATION_ASSERTION_FAILED',error); }
+try {
+  // Realistic hydrated histories must not overflow the private transport's 8 MB cap.
+  const insert=sqlite.prepare("INSERT INTO activities(id,user_id,strava_id,name,type,distance,moving_time,total_elevation_gain,average_speed,max_speed,start_date) VALUES(?,1,?,'Synthetic hydrated run','Run',5000,1800,20,2.77,4,?)");
+  for(let id=10;id<30;id++) insert.run(id,String(1000+id),new Date(Date.now()-(id-9)*86400000).toISOString());
+  const paths=['/api/activities/heatmap','/api/runner-score/1','/api/runner-score/1/history'];
+  const before=[];
+  for(const path of paths){const r=await request(path);assert.equal(r.status,200);before.push(await r.json());}
+  sqlite.prepare('UPDATE activities SET streams_data=?,laps_data=?,detailed_polyline=? WHERE user_id=1')
+    .run(JSON.stringify({data:'x'.repeat(500000)}),JSON.stringify({laps:'y'.repeat(100000)}),'p'.repeat(10000));
+  const bytes=sqlite.prepare('SELECT sum(length(streams_data)+length(laps_data)) AS bytes FROM activities WHERE user_id=1').get()?.bytes;
+  assert.ok(Number(bytes)>8_000_000);
+  for(const [index,path] of paths.entries()){
+    const r=await request(path);assert.equal(r.status,200,path);
+    assert.deepEqual(await r.json(),before[index],`${path} must not change with hydration`);
+  }
+  assert.equal((await request('/api/runner-score/2')).status,403);
+  assert.equal((await request('/api/runner-score/2/history')).status,403);
+  // Calendar's existing free-user lock filter must still be enforced.
+  sqlite.exec("UPDATE users SET subscription_plan='free',subscription_status=NULL WHERE id=1; UPDATE activities SET locked_for_free=1 WHERE id=10");
+  const calendar=await (await request('/api/activities/heatmap')).json();
+  const ids=calendar.days.flatMap((day:any)=>day.activities.map((a:any)=>a.id));
+  assert.ok(ids.includes(11));assert.ok(!ids.includes(10));
+  console.log(JSON.stringify({test:'hydrated_dashboard_summaries_and_ownership',passed:true}));
+} catch(error) { failures++;console.error('DASHBOARD_SUMMARY_ASSERTION_FAILED',error); }
 process.exit(failures?1:0);

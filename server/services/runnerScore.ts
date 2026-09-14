@@ -82,7 +82,7 @@ export class RunnerScoreService {
   async calculateRunnerScore(userId: number): Promise<RunnerScoreData> {
     // Use the same history window as the historical endpoint so the current
     // value is exactly the final point on the history chart.
-    const allActivities = await storage.getActivitiesByUserId(userId, 500);
+    const allActivities = await storage.getActivitiesByUserId(userId, 500, undefined, { summaryOnly: true });
     const activities = filterRunningActivities(allActivities);
     
     if (activities.length === 0) {
@@ -379,7 +379,7 @@ export class RunnerScoreService {
    * Generates weekly data points for 6 months of granular progression tracking
    */
   async calculateHistoricalRunnerScore(userId: number): Promise<HistoricalScorePoint[]> {
-    const allActivities = await storage.getActivitiesByUserId(userId, 500); // Get more activities for history
+    const allActivities = await storage.getActivitiesByUserId(userId, 500, undefined, { summaryOnly: true });
     // Consistently filter to running activities, matching the current-score path.
     const activities = filterRunningActivities(allActivities);
     
