@@ -1,5 +1,10 @@
 # AITracker Cloudflare coach preview
 
+**Current account integration:** see [PRODUCTION-ACCOUNTS.md](PRODUCTION-ACCOUNTS.md).
+Existing runners now authenticate through the main backend and use real data.
+Anonymous preview creation is disabled. The original prototype notes below
+describe its earlier sample-data architecture, not the current login contract.
+
 An independent coach experience on `new.aitracker.run`. Hosting and application state run on Cloudflare Workers, Static Assets, SQLite D1 and Durable Objects. AI inference calls OpenAI directly from the Worker. There is no runtime dependency on Replit, the original Express backend, PostgreSQL or Sites hosting.
 
 Branch: `codex/cloudflare-coach`, based on `origin/main` at `c6f490f`. All code is additive under this directory. Do not merge this as a replacement for the current app or connect its deployment to the main branch.

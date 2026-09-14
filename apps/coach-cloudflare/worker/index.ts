@@ -187,7 +187,7 @@ async function api(request: Request, env: Env): Promise<Response> {
   const state = JSON.parse(row.state) as State;
   if (["/api/proposals","/api/confirm","/api/undo-proposal"].includes(url.pathname))
     return json({error:"Manage your training plan on aitracker.run/training-plans. No changes were made here."},403);
-  if (url.pathname.startsWith("/api/ai/") && !account.canUseAI)
+  if (url.pathname.startsWith("/api/ai/") && url.pathname !== "/api/ai/voice/stop" && !account.canUseAI)
     return json({error:"AI coaching requires an active trial or subscription. Your running data remains available."},403);
   if (url.pathname.startsWith('/api/whatsapp/')) {
     try { return json(await whatsappAction(env,id,url.pathname.slice('/api/whatsapp/'.length),input)); }

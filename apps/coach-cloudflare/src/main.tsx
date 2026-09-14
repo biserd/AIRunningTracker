@@ -355,6 +355,7 @@ function App() {
                 <section className="settings-card">
                   <h2>Connections & reminders</h2>
                   <ReminderPanel />
+                  <p>WhatsApp reminders are available. For live-data coaching, use chat or voice here; WhatsApp coaching replies are not connected to your account yet.</p>
                   <p>Your account, runs and training plan come from AITracker. Chat, reminder and WhatsApp preferences are private to your account in this experience.</p>
                   <dl>
                     <dt>Runner data</dt>

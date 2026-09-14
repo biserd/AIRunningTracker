@@ -78,7 +78,7 @@ export async function whatsappWebhook(request:Request,env:Env) {
   const existing=await env.DB.prepare('SELECT session_id FROM whatsapp_links WHERE address=?').bind(from).first();
   if(existing) return xml('This number is already connected. Disconnect it in your preview Settings first.');
   const linked=await env.DB.prepare("UPDATE whatsapp_links SET address=?,last_inbound=?,token_hash=NULL WHERE token_hash=? AND token_expires>? AND address IS NULL AND disabled=0 AND EXISTS(SELECT 1 FROM sessions s JOIN reminder_contacts c ON c.session_id=s.id WHERE s.id=whatsapp_links.session_id AND s.expires_at>? AND c.verified_at IS NOT NULL AND c.disabled=0) RETURNING session_id").bind(from,now(),await hash(body.slice(5)),now(),now()).first();
-  return xml(linked?'Connected to your AITracker sample-data preview. Confirm reminders in your browser and select WhatsApp. Text questions here; replies may take a minute. Send STOP to disconnect.':'This link expired or was already used. Create a new link in the preview.');
+  return xml(linked?'Connected to your private AITracker coach. Confirm reminders in your browser and select WhatsApp. Text questions here; replies may take a minute. Send STOP to disconnect.':'This link expired or was already used. Create a new link in Settings.');
  }
  const link=await env.DB.prepare('SELECT w.* FROM whatsapp_links w JOIN sessions s ON s.id=w.session_id WHERE w.address=? AND w.disabled=0 AND s.expires_at>?').bind(from,now()).first<Link>();
  if(!link) return xml();
@@ -116,9 +116,15 @@ export async function processWhatsApp(env:Env) {
    if(!link || link.generation!==item.generation) throw new Error('Disconnected');
    const row=await env.DB.prepare('SELECT state FROM sessions WHERE id=? AND expires_at>?').bind(item.session_id,now()).first<{state:string}>();
    if(!row) throw new Error('Expired');
-   const result=await coach(env.OPENAI_API_KEY,JSON.parse(row.state) as State,await history(env,item.session_id),item.body,AbortSignal.timeout(25000));
+   const contextState=JSON.parse(row.state) as State;
+   // No durable production credential is stored here. Fail closed rather than
+   // serving stale private data or bypassing a changed subscription in a job.
+   const result=contextState.source==='production_account'
+     ? {message:'Your WhatsApp reminders are connected. For coaching with your latest running data, open your AITracker coach below.',change:undefined,reminder:undefined}
+     : await coach(env.OPENAI_API_KEY,contextState,await history(env,item.session_id),item.body,AbortSignal.timeout(25000));
    const reply=result.change || result.reminder ? 'Please open your preview to request and confirm plan changes or reminders. Nothing has been changed.' : result.message;
-   await sendWhatsApp(env,item.session_id,item.generation,'AITracker sample-data preview\n\n'+reply.slice(0,1100)+'\n\n'+env.PUBLIC_ORIGIN+'/preview\nSend STOP to disconnect.');
+   const contextLabel=contextState.source==='production_account' ? 'AITracker coach' : 'AITracker sample-data preview';
+   await sendWhatsApp(env,item.session_id,item.generation,contextLabel+'\n\n'+reply.slice(0,1100)+'\n\n'+env.PUBLIC_ORIGIN+'/preview\nSend STOP to disconnect.');
    await env.DB.batch([
     env.DB.prepare("INSERT INTO coach_messages(session_id,role,content,created_at) VALUES (?,'user',?,?)").bind(item.session_id,item.body,now()),
     env.DB.prepare("INSERT INTO coach_messages(session_id,role,content,created_at) VALUES (?,'assistant',?,?)").bind(item.session_id,reply,now()),

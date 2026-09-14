@@ -393,7 +393,7 @@ export function CoachAI({
             Review adjustment
           </button>
         )}
-        {card && <section className="chat-attachment" aria-label={card==="chart"?"Running chart":"Sample week"}>
+        {card && <section className="chat-attachment" aria-label={card==="chart"?"Running chart":"Your week"}>
           <button className="text-button" onClick={()=>setCard(null)}>Close {card==="chart"?"chart":"plan"}</button>
           {card==="chart"?<RunningChart state={state}/>:<><h3>Your week</h3>{!state.days.length && <p>No workouts scheduled this week.</p>}{state.days.map(day=><p key={day.id}><strong>{day.date}</strong> · {day.title} · {day.minutes} min{day.completed?" · Completed":""}</p>)}<button className="secondary" onClick={onWeek}>Review my week</button></>}
         </section>}

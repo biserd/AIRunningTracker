@@ -117,6 +117,15 @@ try {
   assert.equal(coach.state.activities.length,21);
   assert.ok(coach.state.activities.every((a:any)=>!('streamsData' in a) && !('userId' in a)));
   assert.deepEqual(coach.state.days,[]);
+  sqlite.exec("INSERT INTO training_plans_v2(id,user_id,goal_type,total_weeks,status) VALUES(1,1,'5k',1,'active'),(2,2,'marathon',1,'active')");
+  const dayDate=new Date().toISOString().slice(0,10)+"T00:00:00.000Z";
+  sqlite.prepare("INSERT INTO plan_weeks(id,plan_id,week_number,week_start_date,week_end_date,planned_distance_km,week_type) VALUES(1,1,1,?,?,5,'base')").run(dayDate,dayDate);
+  sqlite.prepare("INSERT INTO plan_days(id,week_id,plan_id,date,day_of_week,workout_type,title,planned_duration_mins,status) VALUES(1,1,1,?,'monday','easy','Own planned run',30,'completed')").run(dayDate);
+  const withPlan=await (await request('/api/coach/experience?userId=2')).json();
+  assert.equal(withPlan.state.days.length,1);
+  assert.equal(withPlan.state.days[0].title,'Own planned run');
+  assert.equal(withPlan.state.days[0].completed,true);
+  assert.equal(withPlan.state.days[0].minutes,30);
   assert.ok(!JSON.stringify(coach).includes('test-password'));
   assert.equal((await fetch(base+'/api/coach/experience')).status,401);
   // Calendar's existing free-user lock filter must still be enforced.

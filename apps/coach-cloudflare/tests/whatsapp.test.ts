@@ -38,6 +38,20 @@ test('Queued coaching replies use the linked sample session and are not sent twi
  assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM coach_messages WHERE session_id=?').get('b')!.n,0);
  assert.equal(f.db.prepare('SELECT body FROM whatsapp_inbox').get()!.body,'');
 });
+test('Real-account background replies do not expose stale data or bypass entitlements',async(t)=>{
+ const f=setup();t.after(()=>f.db.close());await whatsappWebhook(await pair(f),f.env);
+ f.env.OPENAI_API_KEY='test-only';
+ f.db.exec(readFileSync(new URL('../migrations/0002_ai.sql',import.meta.url),'utf8'));
+ f.db.prepare('UPDATE sessions SET state=? WHERE id=?').run(JSON.stringify({source:'production_account',activities:[{private:'must not leak'}]}),'a');
+ await whatsappWebhook(request(f.env,'Tell me my latest run'),f.env);
+ let sends=0;const original=globalThis.fetch;t.after(()=>{globalThis.fetch=original;});
+ globalThis.fetch=async(url,init)=>{
+   assert.ok(!String(url).includes('openai.com'));sends++;
+   assert.ok(!String(init?.body).includes('must not leak'));
+   return Response.json({sid:'SM'+'f'.repeat(32)});
+ };
+ await processWhatsApp(f.env);assert.equal(sends,1);
+});
 test('Pairing requires verified owner, expires, is single-use and number cannot cross sessions',async(t)=>{
  const f=setup();t.after(()=>f.db.close());
  await assert.rejects(whatsappAction(f.env,'a','connect',{confirm:true}),/Verify/);
