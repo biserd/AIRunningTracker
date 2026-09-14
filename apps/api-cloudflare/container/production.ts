@@ -5,6 +5,7 @@ export { ContainerProxy };
 import { servePublicAsset } from './public-assets';
 import { privateAssets } from './private-assets';
 import { productionEnvironment } from './production-environment';
+import {consentPage} from '../../../shared/mcpConsentPage';
 
 // Promoted after Replit was paused. The old preflight instance has APP_ROLE=web.
 // Keep this identity stable across subsequent deployments for caches and SSE.
@@ -37,6 +38,14 @@ export default {
     if (!['aitracker.run','www.aitracker.run'].includes(url.hostname)) return new Response('Not found',{status:404});
     if (url.hostname === 'www.aitracker.run') { url.hostname='aitracker.run'; return Response.redirect(url.toString(),308); }
     if (url.pathname.startsWith('/internal/')) return new Response('Not found',{status:404});
+    // Render only the consent shell at the edge. All authentication, request
+    // ownership and approval remain enforced by the existing OAuth backend.
+    if(url.pathname==='/mcp/consent'&&request.method==='GET'){
+      const id=url.searchParams.get('request')||'';
+      if(!/^ra_mcp_req_[A-Za-z0-9_-]{40,80}$/.test(id))return new Response('Invalid authorization request',{status:400});
+      const {html,policy}=consentPage(id);
+      return new Response(html,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Referrer-Policy':'no-referrer','Content-Security-Policy':policy,'X-Content-Type-Options':'nosniff'}});
+    }
     try {
       const asset = await servePublicAsset(request,env.PUBLIC_ASSETS);
       if (asset) return asset;

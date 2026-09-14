@@ -1,4 +1,5 @@
 import type { Express, Request, Response } from "express";
+import {consentPage} from '../../shared/mcpConsentPage';
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { authService } from "../services/auth";
 import { mayInitializeSchema } from '../config/runtime';
@@ -74,42 +75,6 @@ function bearerChallenge(res: Response, error = "invalid_token", description = "
   return res.status(401).set("Cache-Control", "no-store").json({ error, error_description: description });
 }
 
-function consentHtml(rawRequest: string): string {
-  const requestLiteral = JSON.stringify(rawRequest).replace(/</g, "\\u003c");
-  return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex,nofollow"><title>Authorize MCP access | RunAnalytics</title>
-<style>body{margin:0;background:#f4f7fa;color:#102235;font:16px/1.55 system-ui,sans-serif}.card{max-width:680px;margin:7vh auto;background:#fff;border:1px solid #dbe4ec;border-radius:18px;padding:32px;box-shadow:0 18px 48px #1232}.brand{color:#fc4c02;font-weight:800}.scope{padding:12px 14px;background:#f7fafc;border-radius:10px;margin:9px 0}.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}button,a.button{border:0;border-radius:9px;padding:12px 18px;font-weight:700;cursor:pointer;text-decoration:none}.approve{background:#fc4c02;color:white}.deny{background:#e8edf2;color:#24384b}.fine{color:#607487;font-size:13px}.notice{margin-top:20px;padding:16px;border:1px solid #fed7aa;border-radius:12px;background:#fff7ed;color:#7c2d12}.error{color:#a61b1b}</style></head>
-<body><main class="card"><div class="brand">RunAnalytics</div><h1>Authorize read-only access</h1><div id="content"><p>Loading authorization request…</p></div></main>
-<script>
-const requestId=${requestLiteral};
-const esc=(v)=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-async function load(){
- const token=localStorage.getItem('auth_token');
- if(!token){location.href='/auth?redirect='+encodeURIComponent(location.pathname+location.search);return;}
- const response=await fetch('/mcp/oauth/authorization-request?request='+encodeURIComponent(requestId),{headers:{Authorization:'Bearer '+token}});
- if(response.status===401){localStorage.removeItem('auth_token');location.href='/auth?redirect='+encodeURIComponent(location.pathname+location.search);return;}
- const data=await response.json();
- if(!response.ok){document.getElementById('content').innerHTML='<p class="error">'+esc(data.error_description||'This authorization request is unavailable.')+'</p>';return;}
- const scopeHtml='<p><strong>'+esc(data.clientName)+'</strong> is requesting access to:</p>'+data.scopes.map(s=>'<div class="scope"><strong>'+esc(s.scope)+'</strong><br>'+esc(s.description)+'</div>').join('')+'<p class="fine">This connection cannot edit your account, sync Strava, trigger processing, send email, or change billing. Access expires after 15 minutes and refresh access can be revoked.</p>';
- if(!data.eligible){
-   const returnTo='/mcp/consent?request='+encodeURIComponent(requestId);
-   const upgrade='/pricing?source=mcp_consent&capability=mcp_access&benefitKey=mcp_access&returnTo='+encodeURIComponent(returnTo);
-   document.getElementById('content').innerHTML=scopeHtml+'<div class="notice"><strong>Private MCP access is included with Premium.</strong><br>Start your 14-day trial, then return here to approve this connection. Card required; $0 today.</div><div class="actions"><a class="button approve" href="'+upgrade+'">Start 14-day free trial</a><button class="deny" onclick="decide(false)">Deny</button></div>';
-   return;
- }
- document.getElementById('content').innerHTML=scopeHtml+'<div class="actions"><button class="approve" onclick="decide(true)">Allow read-only access</button><button class="deny" onclick="decide(false)">Deny</button></div>';
-}
-async function decide(approved){
- const token=localStorage.getItem('auth_token');
- const response=await fetch('/mcp/oauth/authorize/decision',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({request:requestId,approved})});
- const data=await response.json();
- if(response.ok&&data.redirectTo){location.href=data.redirectTo;return;}
- document.getElementById('content').innerHTML='<p class="error">'+esc(data.error_description||'Authorization could not be completed.')+'</p>';
-}
-load().catch(()=>{document.getElementById('content').innerHTML='<p class="error">Authorization could not be loaded.</p>'});
-</script></body></html>`;
-}
 
 async function handleMcpRequest(req: Request, res: Response, isPublic: boolean) {
   if (!validateOrigin(req, res)) return;
@@ -207,7 +172,10 @@ export async function registerMcpRoutes(app: Express): Promise<void> {
   app.get("/mcp/consent", (req, res) => {
     const request = typeof req.query.request === "string" ? req.query.request : "";
     if (!/^ra_mcp_req_[A-Za-z0-9_-]{40,80}$/.test(request)) return res.status(400).type("html").send("Invalid authorization request");
-    res.set("Cache-Control", "no-store").set("Content-Security-Policy", "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'").type("html").send(consentHtml(request));
+    const {html,policy}=consentPage(request);
+    // Exact-script authorization survives an intermediary adding a nonce. Unlike
+    // unsafe-inline, a CSP hash is not disabled by a nonce elsewhere in the policy.
+    res.set("Cache-Control", "no-store").set("Referrer-Policy","no-referrer").set("Content-Security-Policy", policy).type("html").send(html);
   });
 
   app.get("/mcp/oauth/authorization-request", async (req, res) => {
