@@ -4,6 +4,17 @@
   "account_id": "73d71a2bef58f7469ecb48e2b8e84c0e",
   "main": "worker/index.ts",
   "services": [{ "binding": "BACKEND", "service": "aitracker-main" }],
+  "queues": {
+    "producers": [{ "binding": "WHATSAPP_QUEUE", "queue": "aitracker-coach-whatsapp" }],
+    "consumers": [{
+      "queue": "aitracker-coach-whatsapp",
+      "max_batch_size": 1,
+      "max_batch_timeout": 0,
+      "max_concurrency": 10,
+      "max_retries": 10,
+      "retry_delay": 5
+    }]
+  },
   "secrets": { "required": ["OPENAI_API_KEY", "TWILIO_AUTH_TOKEN", "TWILIO_ACCOUNT_SID", "TWILIO_WHATSAPP_FROM", "TWILIO_WHATSAPP_CONTENT_SID", "WHATSAPP_GRANT_KEY"] },
   "send_email": [
     {

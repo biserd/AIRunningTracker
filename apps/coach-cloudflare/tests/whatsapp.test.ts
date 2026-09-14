@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createHmac} from 'node:crypto';
 import {fixture} from './reminder-fixture';
-import {whatsappAction,whatsappWebhook,whatsappStatus,sendWhatsApp,validSignature,processWhatsApp} from '../worker/whatsapp';
+import {whatsappAction,whatsappWebhook,whatsappStatus,sendWhatsApp,validSignature,processWhatsApp,consumeWhatsApp,recoverWhatsApp} from '../worker/whatsapp';
 import {readFileSync} from 'node:fs';
 import {seed} from '../shared/coach';
 import {draftReminder,reminderAction,deliverReminders} from '../worker/reminders';
@@ -30,10 +30,11 @@ test('Queued coaching replies use the linked sample session and are not sent twi
  await whatsappWebhook(await pair(f),f.env);await whatsappWebhook(request(f.env,'What is next?'),f.env);
  let sends=0;const original=globalThis.fetch;t.after(()=>{globalThis.fetch=original;});
  globalThis.fetch=async(url,init)=>{
+  if(String(url).includes('/Indicators/Typing.json'))return Response.json({success:true});
   if(String(url).startsWith('https://api.openai.com/')) return Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text:'Keep the sample run easy.'}]}]});
   sends++;assert.equal(new URLSearchParams(String(init?.body)).get('To'),'whatsapp:+14155550111');return Response.json({sid:'SM'+'c'.repeat(32)});
  };
- await processWhatsApp(f.env);await processWhatsApp(f.env);assert.equal(sends,1);
+ await processWhatsApp(f.env,'a');await processWhatsApp(f.env,'a');assert.equal(sends,1);
  assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM coach_messages WHERE session_id=?').get('a')!.n,2);
  assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM coach_messages WHERE session_id=?').get('b')!.n,0);
  assert.equal(f.db.prepare('SELECT body FROM whatsapp_inbox').get()!.body,'');
@@ -46,16 +47,17 @@ test('Real-account background replies do not expose stale data or bypass entitle
  await whatsappWebhook(request(f.env,'Tell me my latest run'),f.env);
  let sends=0;const original=globalThis.fetch;t.after(()=>{globalThis.fetch=original;});
  globalThis.fetch=async(url,init)=>{
+   if(String(url).includes('/Indicators/Typing.json'))return Response.json({success:true});
    assert.ok(!String(url).includes('openai.com'));sends++;
    assert.ok(!String(init?.body).includes('must not leak'));
    return Response.json({sid:'SM'+'f'.repeat(32)});
  };
- await processWhatsApp(f.env);assert.equal(sends,1);
+ await processWhatsApp(f.env,'a');assert.equal(sends,1);
 });
 test('Pairing requires verified owner, expires, is single-use and number cannot cross sessions',async(t)=>{
  const f=setup();t.after(()=>f.db.close());
  await assert.rejects(whatsappAction(f.env,'a','connect',{confirm:true}),/Verify/);
- const req=await pair(f);const replay=req.clone() as Request;assert.match(await (await whatsappWebhook(req,f.env)).text(),/Connected/);
+ const req=await pair(f);const replay=req.clone() as Request;assert.match(await (await whatsappWebhook(req,f.env)).text(),/connected/i);
  assert.equal((await whatsappStatus(f.env,'a')).connected,true);assert.equal((await whatsappStatus(f.env,'b')).connected,false);
  assert.equal(await (await whatsappWebhook(replay,f.env)).text(),'<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
  const second=await pair(f,'b');assert.match(await (await whatsappWebhook(second,f.env)).text(),/already connected/);
@@ -88,4 +90,20 @@ test('Forged webhook has no effect; inbound retries queue only once; callbacks c
  f.db.prepare("UPDATE email_reminders SET channel='whatsapp',provider_id=?,delivery_status='read' WHERE id=?").run('SM'+'d'.repeat(32),draft.id);
  await whatsappWebhook(request(f.env,'',{MessageSid:'SM'+'d'.repeat(32),MessageStatus:'sent'},'/api/whatsapp/status'),f.env);
  assert.equal(f.db.prepare('SELECT delivery_status FROM email_reminders WHERE id=?').get(draft.id)!.delivery_status,'read');
+});
+
+test('Signed inbound publishes immediately; failed publishing is recovered without duplicating the inbox',async(t)=>{
+ const f=setup();t.after(()=>f.db.close());await whatsappWebhook(await pair(f),f.env);
+ const chat=request(f.env,'Test immediate delivery'),retry=chat.clone() as Request;
+ const queue=f.env.WHATSAPP_QUEUE;
+ Object.assign(f.env,{WHATSAPP_QUEUE:{async send(){throw new Error('Queue unavailable');}}});
+ await assert.rejects(whatsappWebhook(chat,f.env));
+ assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM whatsapp_inbox').get()!.n,1);
+ f.env.WHATSAPP_QUEUE=queue;
+ await whatsappWebhook(retry,f.env);
+ const row=f.db.prepare('SELECT sid FROM whatsapp_inbox').get()!;
+ assert.deepEqual(f.queued,[{sid:row.sid}]);
+ await recoverWhatsApp(f.env);assert.equal(f.queued.length,2);
+ assert.ok(!JSON.stringify(f.queued).includes('Test immediate delivery'));
+ assert.ok(!JSON.stringify(f.queued).includes('14155550111'));
 });

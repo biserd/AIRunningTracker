@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { reminderAction } from '../worker/reminders';
 export function fixture() {
   const db = new DatabaseSync(":memory:");
-  for (const file of ["0001_preview.sql", "0003_reminders.sql", "0005_whatsapp.sql", "0006_whatsapp_oauth.sql"])
+  for (const file of ["0001_preview.sql", "0003_reminders.sql", "0005_whatsapp.sql", "0006_whatsapp_oauth.sql", "0007_whatsapp_realtime.sql"])
     db.exec(
       readFileSync(new URL("../migrations/" + file, import.meta.url), "utf8"),
     );
@@ -51,6 +51,8 @@ export function fixture() {
     REMINDER_FROM: "reminders@aitracker.run",
     PUBLIC_ORIGIN: "https://new.aitracker.run",
   });
+  const queued: unknown[]=[];
+  Object.assign(env,{WHATSAPP_QUEUE:{async send(body:unknown){queued.push(body);},async sendBatch(items:{body:unknown}[]){queued.push(...items.map(x=>x.body));}}});
   async function verify(id = "a") {
     await reminderAction(
       env,
@@ -70,5 +72,5 @@ export function fixture() {
         "UPDATE email_reminders SET due_at=?,next_attempt_at=? WHERE id=?",
       )
       .run(now - 1, now - 1, id);
-  return { db, env, emails, email, verify, future, due };
+  return { db, env, emails, email, verify, future, due, queued };
 }

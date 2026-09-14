@@ -63,17 +63,17 @@ test('Live-account reply reads the full plan, stays read-only, and rechecks auth
  Object.assign(f.env,{OPENAI_API_KEY:'test',TWILIO_ACCOUNT_SID:'AC'+'a'.repeat(32),TWILIO_AUTH_TOKEN:'test',TWILIO_WHATSAPP_FROM:'whatsapp:+14155550100'});
  let aiCalls=0,sends=0;const original=globalThis.fetch;t.after(()=>globalThis.fetch=original);
  globalThis.fetch=async(url,init)=>{
+  if(String(url).includes('/Indicators/Typing.json'))return Response.json({success:true});
   if(String(url).startsWith('https://api.openai.com/')){
    const body=JSON.parse(String(init?.body));assert.ok(!JSON.stringify(body).includes('stale-do-not-use'));assert.ok(!JSON.stringify(body).includes('private-access'));
-   assert.deepEqual(body.tools.map((x:{name:string})=>x.name),['get_training_context']);aiCalls++;
-   if(aiCalls===1)return Response.json({status:'completed',output:[{type:'function_call',name:'get_training_context',call_id:'ctx',arguments:'{}'}]});
+   assert.deepEqual(body.tools,[]);assert.equal(body.tool_choice,'none');aiCalls++;
    assert.ok(JSON.stringify(body).includes('Race day'));
    return Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text:'Your plan includes race day in week 18.'}]}]});
   }
   sends++;return Response.json({sid:'SM'+'a'.repeat(32)});
  };
- enqueue('first');await processWhatsApp(f.env);assert.equal(sends,1);assert.equal(aiCalls,2);
- globalThis.fetch=async()=>{f.deny();return Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text:'Must not be delivered after revocation'}]}]});};
- enqueue('second');await processWhatsApp(f.env);assert.equal(f.db.prepare('SELECT status FROM whatsapp_inbox WHERE sid=?').get('second')!.status,'failed');
+ enqueue('first');await processWhatsApp(f.env,'a');assert.equal(sends,1);assert.equal(aiCalls,1);
+ globalThis.fetch=async(url)=>{if(String(url).includes('/Indicators/Typing.json'))return Response.json({success:true});assert.ok(String(url).includes('openai.com'));f.deny();return Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text:'Must not be delivered after revocation'}]}]});};
+ enqueue('second');await processWhatsApp(f.env,'a');assert.equal(f.db.prepare('SELECT status FROM whatsapp_inbox WHERE sid=?').get('second')!.status,'failed');
  await disconnectWhatsApp(f.env,'a');assert.equal(await hasGrant(f.env,'a'),false);
 });

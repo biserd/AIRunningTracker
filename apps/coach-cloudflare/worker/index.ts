@@ -4,7 +4,7 @@ import { accountAction, accountToken, loadAccount } from "./account";
 import {trainingContext} from './training-context';
 import {confirmPlan} from './plan-actions';
 import {startAuthorization,finishAuthorization} from './whatsapp-oauth';
-import { whatsappWebhook, whatsappStatus, whatsappAction, processWhatsApp } from './whatsapp';
+import { whatsappWebhook, whatsappStatus, whatsappAction, consumeWhatsApp, recoverWhatsApp } from './whatsapp';
 import { AIError, boundedJSON } from "./openai";
 import { waitlistInput, joinWaitlist, leaveWaitlist, deliverLaunch } from "./waitlist";
 import {
@@ -380,9 +380,9 @@ export default {
     return safe;
   },
   async scheduled(_event, env) {
+    await recoverWhatsApp(env);
     await deliverReminders(env);
     await deliverLaunch(env);
-    await processWhatsApp(env);
     const now = Math.floor(Date.now() / 1000);
     // Retention cleanup runs daily; delivery polling runs every minute.
     if (
@@ -394,5 +394,8 @@ export default {
       env.DB.prepare("DELETE FROM sessions WHERE expires_at<?").bind(now),
       env.DB.prepare("DELETE FROM request_limits WHERE expires_at<?").bind(now),
     ]);
+  },
+  async queue(batch,env) {
+    await consumeWhatsApp(batch,env);
   },
 } satisfies ExportedHandler<Env>;
