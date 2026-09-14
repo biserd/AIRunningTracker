@@ -15,6 +15,15 @@ export class RunAnalyticsProduction extends Container<ProductionEnv> {
   sleepAfter = '10m';
   entrypoint = ['node', 'dist/d1-index.mjs'];
   envVars = productionEnvironment(this.env);
+  async ensureD1Runtime(): Promise<void> {
+    await this.ctx.blockConcurrencyWhile(async () => {
+      if (await this.ctx.storage.get('d1-runtime-f0cbcde9')) return;
+      // An image rollout can retain an already-running process and its old env.
+      // Stop it once before accepting D1 traffic; external database data is untouched.
+      await this.destroy();
+      await this.ctx.storage.put('d1-runtime-f0cbcde9', true);
+    });
+  }
 }
 
 RunAnalyticsProduction.outboundByHost = {
@@ -32,6 +41,7 @@ export default {
       const asset = await servePublicAsset(request,env.PUBLIC_ASSETS);
       if (asset) return asset;
       const container = getContainer(env.WEB,productionInstance);
+      await container.ensureD1Runtime();
       const uploaded = await privateAssets(request,env.PUBLIC_ASSETS,async () => {
         const authorization = request.headers.get('authorization');
         if (!authorization?.startsWith('Bearer ')) return null;
@@ -74,7 +84,9 @@ export default {
   },
   async scheduled(_event,env): Promise<void> {
     // Keeps the single scheduler process alive without exposing a public execution endpoint.
-    const response = await getContainer(env.WEB,productionInstance).fetch('http://container/health');
+    const container = getContainer(env.WEB,productionInstance);
+    await container.ensureD1Runtime();
+    const response = await container.fetch('http://container/health');
     await response.body?.cancel();
     if (!response.ok) throw new Error('Production scheduler health failed');
   },

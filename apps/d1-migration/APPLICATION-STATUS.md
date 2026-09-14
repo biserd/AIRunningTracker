@@ -1,6 +1,7 @@
 # Application migration verification
 
-Status: local implementation in progress. Not a production cutover certificate.
+Historical pre-cutover implementation status. See CUTOVER.md for the subsequent
+production deployment and explicit waiver of the remaining release gates.
 
 The isolated `scripts/d1/build-application.ts` build bundles the existing Express
 application against the generated SQLite schema and D1 transport. It does not
