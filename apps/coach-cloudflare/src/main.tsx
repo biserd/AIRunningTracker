@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import {WhatsAppCallback} from './WhatsApp';
 import { createRoot } from "react-dom/client";
 import {
   ArrowUpRight,
@@ -355,7 +356,7 @@ function App() {
                 <section className="settings-card">
                   <h2>Connections & reminders</h2>
                   <ReminderPanel />
-                  <p>WhatsApp reminders are available. For live-data coaching, use chat or voice here; WhatsApp coaching replies are not connected to your account yet.</p>
+                  <p>Connect WhatsApp below to chat with your coach using your running data.</p>
                   <p>Your account, runs and training plan come from AITracker. Chat, reminder and WhatsApp preferences are private to your account in this experience.</p>
                   <dl>
                     <dt>Runner data</dt>
@@ -538,6 +539,7 @@ function App() {
   );
 }
 createRoot(document.getElementById("root")!).render(
+  location.pathname === "/whatsapp/callback" ? <WhatsAppCallback/> :
   location.pathname === "/auth/magic-link" ? <AccountLogin/> :
   location.pathname === "/waitlist/unsubscribe" ? <WaitlistUnsubscribe/> :
   location.pathname === "/" ? <Landing/> : <App />

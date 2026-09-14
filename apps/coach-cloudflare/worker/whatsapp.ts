@@ -2,6 +2,7 @@ import { budget, hash, ReminderError } from './reminders';
 import { boundedJSON, coach } from './openai';
 import { history } from './ai';
 import type { State } from '../shared/coach';
+import {hasGrant,oauthConfigured,revokeGrant,whatsappContext,validateGrant} from './whatsapp-oauth';
 
 const now = () => Math.floor(Date.now()/1000);
 const addressPattern = /^whatsapp:\+[1-9][0-9]{7,14}$/;
@@ -13,7 +14,7 @@ export async function activeLink(env:Env, id:string) {
 }
 export async function whatsappStatus(env:Env,id:string) {
  const link = await activeLink(env,id);
- return { configured:whatsappConfigured(env), connected:!!link, destination:link?.address ? 'WhatsApp ending '+link.address.slice(-4) : null, templateReady:templateReady(env) };
+ return { configured:whatsappConfigured(env)&&oauthConfigured(env), authorized:await hasGrant(env,id), connected:!!link, destination:link?.address ? 'WhatsApp ending '+link.address.slice(-4) : null, templateReady:templateReady(env) };
 }
 export async function disconnectWhatsApp(env:Env,id:string) {
  await env.DB.batch([
@@ -21,14 +22,20 @@ export async function disconnectWhatsApp(env:Env,id:string) {
   env.DB.prepare("UPDATE email_reminders SET status='cancelled' WHERE session_id=? AND channel='whatsapp' AND status IN ('draft','scheduled')").bind(id),
   env.DB.prepare("UPDATE whatsapp_inbox SET status='failed',body='' WHERE session_id=? AND status='pending'").bind(id),
  ]);
+ await revokeGrant(env,id);
 }
 export async function whatsappAction(env:Env,id:string,path:string,input:Record<string,unknown>) {
  if (input.confirm!==true || Object.keys(input).some(k=>k!=='confirm')) throw new ReminderError('Explicit confirmation is required.');
  if(path==='disconnect') { await disconnectWhatsApp(env,id); return {ok:true}; }
  if(path!=='connect') throw new ReminderError('Not found.',404);
  if(!whatsappConfigured(env)) throw new ReminderError('WhatsApp is waiting for site-owner setup.',503);
- const c=await env.DB.prepare('SELECT session_id FROM reminder_contacts WHERE session_id=? AND verified_at IS NOT NULL AND disabled=0').bind(id).first();
- if(!c) throw new ReminderError('Verify your email first to connect this private preview.',409);
+ const session=await env.DB.prepare('SELECT state FROM sessions WHERE id=?').bind(id).first<{state:string}>();
+ if(JSON.parse(session?.state||'{}').source==='production_account'){
+  await validateGrant(env,id);
+ }else{
+  const c=await env.DB.prepare('SELECT session_id FROM reminder_contacts WHERE session_id=? AND verified_at IS NOT NULL AND disabled=0').bind(id).first();
+  if(!c)throw new ReminderError('Verify your email first.',409);
+ }
  if(await activeLink(env,id)) throw new ReminderError('Disconnect WhatsApp before linking another number.',409);
  if(!await budget(env,'wa-pair:'+id,5,3600)) throw new ReminderError('Please wait before creating another link.',429);
  const token=Array.from(crypto.getRandomValues(new Uint8Array(24)),b=>b.toString(16).padStart(2,'0')).join('');
@@ -77,7 +84,7 @@ export async function whatsappWebhook(request:Request,env:Env) {
   // A number cannot be rebound to another live preview by presenting another token.
   const existing=await env.DB.prepare('SELECT session_id FROM whatsapp_links WHERE address=?').bind(from).first();
   if(existing) return xml('This number is already connected. Disconnect it in your preview Settings first.');
-  const linked=await env.DB.prepare("UPDATE whatsapp_links SET address=?,last_inbound=?,token_hash=NULL WHERE token_hash=? AND token_expires>? AND address IS NULL AND disabled=0 AND EXISTS(SELECT 1 FROM sessions s JOIN reminder_contacts c ON c.session_id=s.id WHERE s.id=whatsapp_links.session_id AND s.expires_at>? AND c.verified_at IS NOT NULL AND c.disabled=0) RETURNING session_id").bind(from,now(),await hash(body.slice(5)),now(),now()).first();
+  const linked=await env.DB.prepare("UPDATE whatsapp_links SET address=?,last_inbound=?,token_hash=NULL WHERE token_hash=? AND token_expires>? AND address IS NULL AND disabled=0 AND EXISTS(SELECT 1 FROM sessions s WHERE s.id=whatsapp_links.session_id AND s.expires_at>? AND (EXISTS(SELECT 1 FROM whatsapp_oauth_grants g WHERE g.session_id=s.id AND g.expires_at>?) OR (COALESCE(json_extract(s.state,'$.source'),'')!='production_account' AND EXISTS(SELECT 1 FROM reminder_contacts c WHERE c.session_id=s.id AND c.verified_at IS NOT NULL AND c.disabled=0)))) RETURNING session_id").bind(from,now(),await hash(body.slice(5)),now(),now(),now()).first();
   return xml(linked?'Connected to your private AITracker coach. Confirm reminders in your browser and select WhatsApp. Text questions here; replies may take a minute. Send STOP to disconnect.':'This link expired or was already used. Create a new link in Settings.');
  }
  const link=await env.DB.prepare('SELECT w.* FROM whatsapp_links w JOIN sessions s ON s.id=w.session_id WHERE w.address=? AND w.disabled=0 AND s.expires_at>?').bind(from,now()).first<Link>();
@@ -116,12 +123,15 @@ export async function processWhatsApp(env:Env) {
    if(!link || link.generation!==item.generation) throw new Error('Disconnected');
    const row=await env.DB.prepare('SELECT state FROM sessions WHERE id=? AND expires_at>?').bind(item.session_id,now()).first<{state:string}>();
    if(!row) throw new Error('Expired');
-   const contextState=JSON.parse(row.state) as State;
-   // No durable production credential is stored here. Fail closed rather than
-   // serving stale private data or bypassing a changed subscription in a job.
-   const result=contextState.source==='production_account'
-     ? {message:'Your WhatsApp reminders are connected. For coaching with your latest running data, open your AITracker coach below.',change:undefined,reminder:undefined}
-     : await coach(env.OPENAI_API_KEY,contextState,await history(env,item.session_id),item.body,AbortSignal.timeout(25000));
+   let contextState=JSON.parse(row.state) as State;
+   if(contextState.source==='production_account'){
+    try{contextState=await whatsappContext(env,item.session_id);}catch{
+     await sendWhatsApp(env,item.session_id,item.generation,'I could not securely load your running data. Please reconnect WhatsApp in Settings: '+env.PUBLIC_ORIGIN+'/preview');
+     throw new Error('Authorization unavailable');
+    }
+   }
+   const result=await coach(env.OPENAI_API_KEY,contextState,await history(env,item.session_id),item.body,AbortSignal.timeout(25000));
+   if(contextState.source==='production_account')await validateGrant(env,item.session_id);
    const reply=result.change || result.reminder ? 'Please open your preview to request and confirm plan changes or reminders. Nothing has been changed.' : result.message;
    const contextLabel=contextState.source==='production_account' ? 'AITracker coach' : 'AITracker sample-data preview';
    await sendWhatsApp(env,item.session_id,item.generation,contextLabel+'\n\n'+reply.slice(0,1100)+'\n\n'+env.PUBLIC_ORIGIN+'/preview\nSend STOP to disconnect.');

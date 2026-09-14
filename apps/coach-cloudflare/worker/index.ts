@@ -3,6 +3,7 @@ import { aiRoute, history } from "./ai";
 import { accountAction, accountToken, loadAccount } from "./account";
 import {trainingContext} from './training-context';
 import {confirmPlan} from './plan-actions';
+import {startAuthorization,finishAuthorization} from './whatsapp-oauth';
 import { whatsappWebhook, whatsappStatus, whatsappAction, processWhatsApp } from './whatsapp';
 import { AIError, boundedJSON } from "./openai";
 import { waitlistInput, joinWaitlist, leaveWaitlist, deliverLaunch } from "./waitlist";
@@ -122,7 +123,7 @@ async function api(request: Request, env: Env): Promise<Response> {
     account.state.trainingContext=await trainingContext(env,token,account);
   }
   if(url.pathname==='/api/ai/context' && request.method==='GET')return account.canUseAI?json(account.state.trainingContext):json({error:'An active trial or subscription is required.'},403);
-  await env.DB.prepare("INSERT INTO sessions(id,state,expires_at) VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state,expires_at=excluded.expires_at")
+  await env.DB.prepare("INSERT INTO sessions(id,state,expires_at) VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state,expires_at=MAX(sessions.expires_at,excluded.expires_at)")
     .bind(id,JSON.stringify(account.state),now+lifetime).run();
   const row = await env.DB.prepare(
     "SELECT id,state,version,last_action FROM sessions WHERE id=? AND expires_at>?",
@@ -201,7 +202,11 @@ async function api(request: Request, env: Env): Promise<Response> {
     catch(e){return json({error:e instanceof AIError?e.message:'Plan action could not be completed.'},e instanceof AIError?e.status:503);}
   }
   if (url.pathname.startsWith('/api/whatsapp/')) {
-    try { return json(await whatsappAction(env,id,url.pathname.slice('/api/whatsapp/'.length),input)); }
+    try {
+      if(url.pathname!=='/api/whatsapp/disconnect'&&!account.canUseAI)return json({error:'An active trial or subscription is required for WhatsApp coaching.'},403);
+      if(url.pathname==='/api/whatsapp/authorize'&&input.confirm===true)return json(await startAuthorization(env,id,token));
+      if(url.pathname==='/api/whatsapp/finish')return json(await finishAuthorization(env,id,input));
+      return json(await whatsappAction(env,id,url.pathname.slice('/api/whatsapp/'.length),input)); }
     catch(e) { return json({error:e instanceof ReminderError?e.message:'WhatsApp unavailable.'},e instanceof ReminderError?e.status:503); }
   }
   if (url.pathname.startsWith("/api/reminders/")) {
