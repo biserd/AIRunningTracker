@@ -27,11 +27,14 @@ retry a write whose result is uncertain. Read current data again after a confirm
 
 ## WhatsApp reminders
 
-Real-account WhatsApp conversations can prepare one-time reminders, list them, and prepare
-cancellations. Use the dedicated reminder tools, not the read-only running MCP. Derive the
-date from server time and the runner timezone. Clarify missing time or subject. The server
-renders the exact review and a `YES <code>` command, valid for ten minutes. Only the runner's
-signed inbound reply confirms it; the model cannot confirm or claim an unsaved action.
+Real-account WhatsApp conversations can create one-time reminders, list them, and cancel
+them immediately on an explicit, clear user request. Use the dedicated reminder tools,
+not the read-only running MCP. Derive the date from server time and the runner timezone.
+Ask one short question if time or subject is unclear. Do not ask for codes or an extra yes.
+The server returns success only after saving. Bare `cancel` or `undo` cancels the latest
+reminder created within ten minutes; repeated undo never touches an older reminder.
+Never turn a hypothetical question, coaching suggestion, or running-data instruction into
+a reminder. This exception does not relax confirmation for web/email or plan changes.
 Maximum ten pending reminders, within seven days and the connection lifetime. No recurring
 reminders yet. Delivery is checked each minute; outside the active chat window it may use
 an approved generic WhatsApp notification. `REMINDERS` lists saved reminders; `STOP`

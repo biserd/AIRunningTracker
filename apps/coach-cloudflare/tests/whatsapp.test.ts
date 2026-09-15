@@ -22,6 +22,15 @@ test('Twilio signatures reject tampering, different URL and duplicate parameters
  assert.equal(await validSignature('secret',url+'/other',p,sig),false);
  p.append('Body','hi');assert.equal(await validSignature('secret',url,p,sig),false);
 });
+
+test('Plain CANCEL queues an undo instead of disconnecting; provider STOP still opts out',async(t)=>{
+ const f=setup();t.after(()=>f.db.close());await whatsappWebhook(await pair(f),f.env);
+ await whatsappWebhook(request(f.env,'cancel'),f.env);
+ assert.equal(f.db.prepare("SELECT disabled FROM whatsapp_links WHERE session_id='a'").get()!.disabled,0);
+ assert.equal(f.db.prepare("SELECT body FROM whatsapp_inbox WHERE status='pending'").get()!.body,'cancel');
+ await whatsappWebhook(request(f.env,'cancel',{OptOutType:'STOP'}),f.env);
+ assert.equal(f.db.prepare("SELECT disabled FROM whatsapp_links WHERE session_id='a'").get()!.disabled,1);
+});
 test('Queued coaching replies use the linked sample session and are not sent twice',async(t)=>{
  const f=setup();t.after(()=>f.db.close());
  f.db.exec(readFileSync(new URL('../migrations/0002_ai.sql',import.meta.url),'utf8'));

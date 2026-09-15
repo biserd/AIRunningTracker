@@ -86,7 +86,7 @@ export async function whatsappWebhook(request:Request,env:Env,ctx?:Pick<Executio
   if(pending)await wakeWhatsApp(env,sid);
   return xml();
  }
- if(/^(STOP|UNSUBSCRIBE|CANCEL|END|QUIT)$/i.test(body) || form.get('OptOutType')==='STOP') {
+ if(/^(STOP|UNSUBSCRIBE|END|QUIT)$/i.test(body) || form.get('OptOutType')==='STOP') {
   const link=await env.DB.prepare('SELECT session_id FROM whatsapp_links WHERE address=?').bind(from).first<{session_id:string}>();
   if(link) await disconnectWhatsApp(env,link.session_id);
   return xml();
@@ -228,7 +228,7 @@ export async function processWhatsApp(env:Env,id:string,warmGeneration?:string,p
     ]);
     contextMs=Date.now()-started;stage='ai';const aiStart=Date.now();
     const action=state.source==='production_account'?async(name:string,args:unknown)=>{
-     try{return await reminderTool(env,id,item.generation,state.timezone||'',name,args);}
+     try{return await reminderTool(env,id,item.generation,state.timezone||'',name,args,item.sid);}
      catch(error){if(error instanceof ReminderError)return error.message;throw error;}
     }:undefined;
     const confirmed=action?await confirmWhatsAppReminder(env,id,item.generation,item.body):null;

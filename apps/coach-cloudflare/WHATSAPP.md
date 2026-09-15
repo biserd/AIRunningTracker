@@ -11,24 +11,29 @@ WhatsApp replies use `gpt-5.6-luna` with low reasoning effort, one Responses API
 Apply `0010_whatsapp_reminders.sql` to the **coach** D1 database before deploying.
 No new secret, main-site schema change, or MCP write scope is required.
 
-Real-account chats expose only `prepare_whatsapp_reminder`, `list_whatsapp_reminders`,
-and `prepare_whatsapp_reminder_cancellation`. Try “Remind me to get ready for my run
-tomorrow at 7am.” The server displays the title, full date, timezone, delivery channel,
-and an exact `YES <code>` confirmation command. Reply within ten minutes. A plain yes,
-model-generated confirmation, duplicate confirmation, or another runner's code cannot
-schedule anything. `REMINDERS` lists chat-created reminders; request cancellation using
-the listed ID and confirm its separate review. These reminders are separate from web/email reminders.
+Real-account chats expose only `create_whatsapp_reminder`, `list_whatsapp_reminders`,
+and `cancel_whatsapp_reminder`. Try “Remind me to get ready for my run tomorrow at 7am.”
+Clear requests save immediately, with a brief receipt showing the title, date and timezone.
+No code or extra yes is needed. Unclear requests get one short question. Reply `cancel`
+or `undo` within ten minutes to cancel the latest reminder; repeated undo never cancels
+older reminders. `REMINDERS` lists chat-created reminders for specific cancellation requests.
+These reminders are separate from web/email reminders. Plan changes still require review.
+
+The signed inbound message reference determines a stable reminder primary key, preventing
+duplicate creation even during concurrent retries. No new migration is needed beyond 0010.
+Existing unconfirmed drafts are not silently activated; already-issued explicit codes remain
+valid until their original expiry. Running context is read-only and cannot choose identity.
 
 Limits: one-time only, ten pending, at least one minute ahead, at most seven days and
 within the active session/OAuth lifetime. Without an approved template, creation is
 limited to the next 23 hours. Outside the active chat window an approved generic
 notification is used, not arbitrary private text. Reply `REMINDERS` to view its content.
 Cron checks due reminders each minute. Authorization and link generations are checked
-at preparation, confirmation, and dispatch; STOP cancels pending reminders. Claims are
+at creation, cancellation, and dispatch; STOP cancels pending reminders. Claims are
 atomic and uncertain provider outcomes are not resent. Status callbacks record delivery
 separately from Twilio API acceptance. No provider secrets or reminder text enter logs.
 
-Test a reminder five minutes ahead, confirm, list it, and verify delivery on the phone.
+Test a reminder five minutes ahead, list it, and verify delivery on the phone.
 Then test a cancellation. Automated tests mock providers and cannot verify handset delivery.
 To roll back, retain the additive table and deploy the preceding coach version; pending
 chat reminders will not dispatch until a compatible version is restored. Do not disable
@@ -88,6 +93,10 @@ Approval/category is determined by Meta, not this app. Outside a conservative 23
 - Cron now only republishes stranded pending work and expires stale claims; it is not the normal WhatsApp path. Queue publication failures return an error so a webhook retry can republish the existing inbox row. Duplicate wakeups cannot repeat a completed send. Queue retry exhaustion leaves the D1 outbox available for recovery. The existing email/launch scheduler remains separate and unchanged.
 - `whatsapp_inbox` stores dispatch/context/AI/delivery milliseconds, start/finish timestamps, processing path (`direct` or `queue`) and a fixed failure stage. `queue_ms` now measures webhook receipt to processing start using millisecond timestamps, including ingress checks; older rows used second-resolution insertion timestamps. Typing attempts store accepted counts, HTTP status, allowlisted numeric error code, outcome and duration. Structured logs never contain runner IDs, phone numbers, messages, bearer tokens or provider response bodies. Accepted typing means Twilio returned `success:true`, not that handset display was verified. Reply timings measure Twilio API acceptance, not delivery to the handset. Sampled Worker logs are supplementary; D1 timings cover every processed inbox row.
 - STOP must remain supported. Disable automatic START opt-in for the app: reconnect through the browser instead. A stale STOP cannot be replayed after reconnection because its SID is recorded.
+- Plain CANCEL is an application reminder undo, not an application disconnect command.
+  Provider-reported `OptOutType=STOP` is always honored. If Twilio Advanced Opt-Out is
+  configured to treat CANCEL as STOP, use UNDO for reminders or adjust that provider keyword
+  configuration; the app must never override a provider unsubscribe.
 - To disable WhatsApp only, remove TWILIO_WHATSAPP_FROM and redeploy. Do not disable the shared cron, which also handles email and the separately controlled waitlist. No launch campaign is enabled by this integration.
 
 Live end-to-end delivery must be tested after credentials and sender/template setup. Automated tests use fake Twilio and do not send messages.

@@ -98,7 +98,7 @@ test('Live-account reply reads the full plan, stays read-only, and rechecks auth
   if(String(url).includes('/Indicators/Typing.json'))return Response.json({success:true});
   if(String(url).startsWith('https://api.openai.com/')){
    const body=JSON.parse(String(init?.body));assert.ok(!JSON.stringify(body).includes('stale-do-not-use'));assert.ok(!JSON.stringify(body).includes('private-access'));
-   assert.deepEqual(body.tools.map((x:{name:string})=>x.name),['prepare_whatsapp_reminder','list_whatsapp_reminders','prepare_whatsapp_reminder_cancellation']);assert.equal(body.tool_choice,'auto');aiCalls++;
+   assert.deepEqual(body.tools.map((x:{name:string})=>x.name),['create_whatsapp_reminder','list_whatsapp_reminders','cancel_whatsapp_reminder']);assert.equal(body.tool_choice,'auto');aiCalls++;
    assert.ok(JSON.stringify(body).includes('Race day'));
    return Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text:'Your plan includes race day in week 18.'}]}]});
   }
