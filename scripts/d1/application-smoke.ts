@@ -90,6 +90,17 @@ try {
     .run(JSON.stringify({data:'x'.repeat(500000)}),JSON.stringify({laps:'y'.repeat(100000)}),'p'.repeat(10000));
   const bytes=sqlite.prepare('SELECT sum(length(streams_data)+length(laps_data)) AS bytes FROM activities WHERE user_id=1').get()?.bytes;
   assert.ok(Number(bytes)>8_000_000);
+  // Use uncached periods so hydration cannot be masked by the five-minute cache.
+  for (const days of [30,180]) {
+    const fitnessResponse=await request(`/api/fitness/1?days=${days}`);
+    assert.equal(fitnessResponse.status,200,'Hydrated fitness reads must fit the D1 transport');
+    const fitness=await fitnessResponse.json();
+    assert.ok(fitness.metrics.length>=days);
+    assert.ok(fitness.metrics.every((m:any)=>Number.isFinite(m.ctl)&&Number.isFinite(m.atl)&&Number.isFinite(m.tsb)));
+    assert.deepEqual(fitness.currentForm,fitness.metrics.at(-1));
+  }
+  assert.equal((await request('/api/fitness/2?days=30')).status,403);
+  assert.equal((await request('/api/fitness/1?days=999')).status,400);
   for(const [index,path] of paths.entries()){
     const r=await request(path);assert.equal(r.status,200,path);
     assert.deepEqual(await r.json(),before[index],`${path} must not change with hydration`);

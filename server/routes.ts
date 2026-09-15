@@ -1686,7 +1686,8 @@ ${allPages.map(page => `  <url>
       }
       
       // Get all activities for the specified time period
-      const activities = await storage.getActivitiesByUserId(userId, days * 2); // Get more to have historical context
+      // Fitness needs summary fields only, not GPS streams, laps or polylines.
+      const activities = await storage.getActivitiesByUserId(userId, days * 2, undefined, { summaryOnly: true });
       const metrics = await fitnessService.calculateFitnessMetrics(activities, days);
       
       const response = {
