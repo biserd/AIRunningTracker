@@ -6,6 +6,34 @@ WhatsApp replies use `gpt-5.6-luna` with low reasoning effort, one Responses API
 
 ## Configure and deploy
 
+### Chat reminders
+
+Apply `0010_whatsapp_reminders.sql` to the **coach** D1 database before deploying.
+No new secret, main-site schema change, or MCP write scope is required.
+
+Real-account chats expose only `prepare_whatsapp_reminder`, `list_whatsapp_reminders`,
+and `prepare_whatsapp_reminder_cancellation`. Try “Remind me to get ready for my run
+tomorrow at 7am.” The server displays the title, full date, timezone, delivery channel,
+and an exact `YES <code>` confirmation command. Reply within ten minutes. A plain yes,
+model-generated confirmation, duplicate confirmation, or another runner's code cannot
+schedule anything. `REMINDERS` lists chat-created reminders; request cancellation using
+the listed ID and confirm its separate review. These reminders are separate from web/email reminders.
+
+Limits: one-time only, ten pending, at least one minute ahead, at most seven days and
+within the active session/OAuth lifetime. Without an approved template, creation is
+limited to the next 23 hours. Outside the active chat window an approved generic
+notification is used, not arbitrary private text. Reply `REMINDERS` to view its content.
+Cron checks due reminders each minute. Authorization and link generations are checked
+at preparation, confirmation, and dispatch; STOP cancels pending reminders. Claims are
+atomic and uncertain provider outcomes are not resent. Status callbacks record delivery
+separately from Twilio API acceptance. No provider secrets or reminder text enter logs.
+
+Test a reminder five minutes ahead, confirm, list it, and verify delivery on the phone.
+Then test a cancellation. Automated tests mock providers and cannot verify handset delivery.
+To roll back, retain the additive table and deploy the preceding coach version; pending
+chat reminders will not dispatch until a compatible version is restored. Do not disable
+the shared cron or change the main-site deployment.
+
 Add these encrypted secrets to Worker `aitracker-coach-preview` in Cloudflare Settings > Variables and Secrets. Do not put credentials in Git or chat:
 
 | Name | Value |

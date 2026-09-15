@@ -5,6 +5,7 @@ import { history } from './ai';
 import type { State } from '../shared/coach';
 import {hasGrant,oauthConfigured,revokeGrant,whatsappContext,validateGrant} from './whatsapp-oauth';
 import {typing,maintainTyping} from './whatsapp-typing';
+import {confirmWhatsAppReminder,reminderTool} from './whatsapp-reminders';
 
 const now = () => Math.floor(Date.now()/1000);
 const addressPattern = /^whatsapp:\+[1-9][0-9]{7,14}$/;
@@ -22,6 +23,7 @@ export async function disconnectWhatsApp(env:Env,id:string) {
  await env.DB.batch([
   env.DB.prepare("UPDATE whatsapp_links SET disabled=1,address=NULL,token_hash=NULL WHERE session_id=?").bind(id),
   env.DB.prepare("UPDATE email_reminders SET status='cancelled' WHERE session_id=? AND channel='whatsapp' AND status IN ('draft','scheduled')").bind(id),
+  env.DB.prepare("UPDATE whatsapp_reminders SET status='cancelled',confirmation_hash=NULL WHERE session_id=? AND status IN ('draft','scheduled')").bind(id),
   env.DB.prepare("UPDATE whatsapp_inbox SET status='failed',body='' WHERE session_id=? AND status='pending'").bind(id),
  ]);
  await revokeGrant(env,id);
@@ -71,6 +73,7 @@ export async function whatsappWebhook(request:Request,env:Env,ctx?:Pick<Executio
   const rank:Record<string,number>={queued:1,sending:2,sent:3,failed:4,undelivered:4,delivered:5,read:6};
   if(!rank[status]) return xml();
   await env.DB.prepare("UPDATE email_reminders SET delivery_status=? WHERE provider_id=? AND channel='whatsapp' AND CASE delivery_status WHEN 'queued' THEN 1 WHEN 'sending' THEN 2 WHEN 'sent' THEN 3 WHEN 'failed' THEN 4 WHEN 'undelivered' THEN 4 WHEN 'delivered' THEN 5 WHEN 'read' THEN 6 ELSE 0 END < ?").bind(status,sid,rank[status]).run();
+  await env.DB.prepare("UPDATE whatsapp_reminders SET delivery_status=? WHERE provider_id=? AND CASE delivery_status WHEN 'queued' THEN 1 WHEN 'sending' THEN 2 WHEN 'sent' THEN 3 WHEN 'failed' THEN 4 WHEN 'undelivered' THEN 4 WHEN 'delivered' THEN 5 WHEN 'read' THEN 6 ELSE 0 END < ?").bind(status,sid,rank[status]).run();
   return xml();
  }
  const from=form.get('From')||'', body=(form.get('Body')||'').trim();
@@ -224,7 +227,12 @@ export async function processWhatsApp(env:Env,id:string,warmGeneration?:string,p
      history(env,id),
     ]);
     contextMs=Date.now()-started;stage='ai';const aiStart=Date.now();
-    const reply=await whatsappCoach(env.OPENAI_API_KEY,state,conversation,item.body,AbortSignal.timeout(25000));
+    const action=state.source==='production_account'?async(name:string,args:unknown)=>{
+     try{return await reminderTool(env,id,item.generation,state.timezone||'',name,args);}
+     catch(error){if(error instanceof ReminderError)return error.message;throw error;}
+    }:undefined;
+    const confirmed=action?await confirmWhatsAppReminder(env,id,item.generation,item.body):null;
+    const reply=confirmed??await whatsappCoach(env.OPENAI_API_KEY,state,conversation,item.body,AbortSignal.timeout(25000),action);
     aiMs=Date.now()-aiStart;stage='authorization';
     if(state.source==='production_account')await validateGrant(env,id);
     // A suspended old consumer must not send after another worker acquired its lease.

@@ -47,7 +47,7 @@ for(const direct of [false,true])test('Workers runtime signed webhook uses '+(di
  ]}));
  try {
   const db=await mf.getD1Database('DB','coach');
-  for(const name of ['0001_preview.sql','0002_ai.sql','0003_reminders.sql','0005_whatsapp.sql','0006_whatsapp_oauth.sql','0007_whatsapp_realtime.sql','0008_whatsapp_context.sql','0009_whatsapp_immediate.sql']){
+  for(const name of ['0001_preview.sql','0002_ai.sql','0003_reminders.sql','0005_whatsapp.sql','0006_whatsapp_oauth.sql','0007_whatsapp_realtime.sql','0008_whatsapp_context.sql','0009_whatsapp_immediate.sql','0010_whatsapp_reminders.sql']){
    const sql=readFileSync(new URL('../migrations/'+name,import.meta.url),'utf8').replace(/^--.*$/gm,'');
    for(const statement of sql.split(';').map(x=>x.trim()).filter(Boolean))await db.prepare(statement).run();
   }

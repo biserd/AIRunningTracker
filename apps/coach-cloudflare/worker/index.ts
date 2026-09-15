@@ -7,6 +7,7 @@ import {startAuthorization,finishAuthorization} from './whatsapp-oauth';
 import { whatsappWebhook, whatsappStatus, whatsappAction, consumeWhatsApp, recoverWhatsApp } from './whatsapp';
 import { AIError, boundedJSON } from "./openai";
 import { waitlistInput, joinWaitlist, leaveWaitlist, deliverLaunch } from "./waitlist";
+import {deliverWhatsAppReminders} from './whatsapp-reminders';
 import {
   reminderAction,
   reminderStatus,
@@ -382,6 +383,7 @@ export default {
   },
   async scheduled(_event, env) {
     await recoverWhatsApp(env);
+    await deliverWhatsAppReminders(env);
     await deliverReminders(env);
     await deliverLaunch(env);
     const now = Math.floor(Date.now() / 1000);
