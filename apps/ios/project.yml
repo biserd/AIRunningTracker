@@ -1,0 +1,38 @@
+name: AITracker
+options:
+  deploymentTarget:
+    iOS: '17.0'
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    GENERATE_INFOPLIST_FILE: YES
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 0.1.0
+targets:
+  AITracker:
+    type: application
+    platform: iOS
+    sources: [Sources]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: run.aitracker.coach
+        INFOPLIST_KEY_CFBundleDisplayName: AITrackerRunning
+        DEVELOPMENT_TEAM: DB5JRGGB6A
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: Speak with your running coach when you start a voice conversation.
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        TARGETED_DEVICE_FAMILY: '1,2'
+        CODE_SIGN_STYLE: Automatic
+  AITrackerTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests]
+    dependencies:
+      - target: AITracker
+schemes:
+  AITracker:
+    build:
+      targets:
+        AITracker: all
+    test:
+      targets: [AITrackerTests]
