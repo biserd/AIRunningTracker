@@ -75,7 +75,7 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
             let error = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
             throw APIError.server(http.statusCode, error?["error"] as? String ?? "Could not complete the request. Please retry.")
         }
-        if path == "/api/account/login" || path == "/api/account/verify" {
+        if path == "/api/account/verify" {
             var fields: [String: String] = [:]
             for (key, value) in http.allHeaderFields { fields[String(describing: key)] = String(describing: value) }
             guard let cookie = HTTPCookie.cookies(withResponseHeaderFields: fields, for: Self.origin).first(where: {

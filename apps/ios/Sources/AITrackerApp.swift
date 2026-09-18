@@ -10,55 +10,19 @@ import SwiftUI
                 else { CoachTabs() }
             }
             .environmentObject(store)
-            .tint(Color(red: 0.82, green: 0.23, blue: 0.02))
-            .task { await store.restore() }
-            .alert("AITracker", isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })) {
+            .tint(RunBrand.orange)
+            .task {
+                #if DEBUG
+                if ProcessInfo.processInfo.arguments.contains("--test-sign-in-screen") {
+                    store.loading = false
+                    return
+                }
+                #endif
+                await store.restore()
+            }
+            .alert("Run Analytics", isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })) {
                 Button("OK") { store.error = nil }
             } message: { Text(store.error ?? "") }
-        }
-    }
-}
-
-struct SignInView: View {
-    @EnvironmentObject var store: CoachStore
-    @State private var email = ""
-    @State private var password = ""
-    @State private var link = ""
-    @State private var emailSent = false
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    Text("Your running. Your coach.").font(.largeTitle.bold())
-                    Text("Use your existing AITracker account.").foregroundStyle(.secondary)
-                }
-                Section("Sign in") {
-                    TextField("Email", text: $email).textContentType(.username).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
-                    SecureField("Password", text: $password).textContentType(.password)
-                    Button("Sign in") {
-                        Task { await store.signIn(email: email, password: password); password = "" }
-                    }.buttonStyle(.borderedProminent).disabled(store.busy || email.isEmpty || password.isEmpty)
-                }
-                Section("Prefer an email link?") {
-                    Button("Email me a sign-in link") {
-                        Task {
-                            store.busy = true
-                            defer { store.busy = false }
-                            do {
-                                let _: OK = try await store.api.request("/api/account/email", body: ["email": email])
-                                emailSent = true
-                            } catch { store.report(error) }
-                        }
-                    }.disabled(store.busy || email.isEmpty)
-                    if emailSent {
-                        Text("Copy the link from your email without opening it, then paste it below. Links work once.").font(.callout)
-                        TextField("Paste sign-in link", text: $link).textInputAutocapitalization(.never).autocorrectionDisabled().privacySensitive()
-                        Button("Continue") { Task { await store.verify(link: link); link = "" } }
-                            .buttonStyle(.borderedProminent).disabled(store.busy || link.isEmpty)
-                    }
-                }
-                if store.busy { ProgressView("Signing in…") }
-            }.navigationTitle("AITracker")
         }
     }
 }
@@ -127,7 +91,7 @@ struct ChatView: View {
                                     Text("Review plan change").font(.headline)
                                     Text(review.description)
                                     Text("Nothing changes until you confirm.").font(.caption).foregroundStyle(.secondary)
-                                    Button("Save to AITracker") { Task { await store.confirmPlan() } }.buttonStyle(.borderedProminent).disabled(store.busy)
+                                    Button("Save my plan") { Task { await store.confirmPlan() } }.buttonStyle(.borderedProminent).disabled(store.busy)
                                     Button("Dismiss", role: .cancel) { store.review = nil }.disabled(store.busy)
                                 }.padding().background(Color.orange.opacity(0.1)).clipShape(RoundedRectangle(cornerRadius: 18))
                             }
@@ -190,7 +154,7 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section("Your account") {
-                    Text(store.snapshot?.runner.name ?? "AITracker runner").font(.headline)
+                    Text(store.snapshot?.runner.name ?? "Run Analytics runner").font(.headline)
                     LabeledContent("Units", value: store.snapshot?.runner.unitPreference ?? "")
                     LabeledContent("Timezone", value: store.snapshot?.runner.timezone ?? "")
                 }
@@ -203,7 +167,7 @@ struct SettingsView: View {
                 Section {
                     Button("Refresh running data") { Task { await store.refresh() } }.disabled(store.busy)
                     Button("Sign out", role: .destructive) { confirmLogout = true }.disabled(store.busy)
-                } footer: { Text("Same AITracker account and running data. No separate subscription.") }
+                } footer: { Text("Same Run Analytics account and running data. No separate subscription.") }
             }.navigationTitle("Settings")
                 .confirmationDialog("Sign out of this device?", isPresented: $confirmLogout) {
                     Button("Sign out", role: .destructive) { Task { await store.signOut() } }

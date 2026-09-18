@@ -28,14 +28,17 @@ import SwiftUI
         do { try api.restore(); if api.credential != nil { needsSignIn = false; await refresh() } }
         catch { report(error) }
     }
-    func signIn(email: String, password: String) async {
+    func requestSignInLink(email: String) async -> Bool {
+        guard !busy else { return false }
         busy = true; error = nil; defer { busy = false }
         do {
-            let _: OK = try await api.request("/api/account/login", body: ["email":email,"password":password])
-            needsSignIn = false; await refresh()
-        } catch { report(error) }
+            let normalized = try SignInEmail.normalize(email)
+            let _: OK = try await api.request("/api/account/email", body: ["email": normalized])
+            return true
+        } catch { report(error); return false }
     }
     func verify(link: String) async {
+        guard !busy else { return }
         busy = true; error = nil; defer { busy = false }
         do {
             let token = try SignInLink.token(from: link)

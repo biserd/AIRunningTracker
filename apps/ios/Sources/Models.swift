@@ -56,3 +56,14 @@ enum SignInLink {
         return token
     }
 }
+
+enum SignInEmail {
+    static func normalize(_ text: String) throws -> String {
+        let email = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard email.count <= 254,
+              email.range(of: #"^[^\s@]+@[^\s@]+\.[^\s@]+$"#, options: .regularExpression) != nil else {
+            throw APIError.server(400, "Enter a valid email address to receive your sign-in link.")
+        }
+        return email
+    }
+}
