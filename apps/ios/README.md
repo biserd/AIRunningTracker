@@ -2,12 +2,29 @@
 
 SwiftUI app for the existing coach backend. No new APIs, database, provider secrets,
 subscription or server permissions. Existing `apps/mobile` (Expo/classic UI) is
-left untouched. This is an initial implementation, not a signed/TestFlight build.
+left untouched. The first simulator build and contract tests passed on GitHub's
+macOS runner. Device validation remains required before public release.
+
+## TestFlight cloud builds (no local Mac required)
+
+Work is isolated on `codex/ios-testflight`. The `iOS simulator check` workflow runs
+on app changes. The `iOS TestFlight upload` workflow runs only when an
+`ios-testflight-*` tag is explicitly pushed. It tests first, signs using encrypted
+repository secrets, then uploads an internal-only TestFlight build. It never
+submits an App Store release or deploys either website. Build numbers use the
+release workflow's increasing run number; use a new tag for a new upload.
+
+Apple team: `DB5JRGGB6A`; bundle: `run.aitracker.coach`; App Store ID: `6813680941`.
+Signing secrets: `IOS_DISTRIBUTION_P12`, `IOS_DISTRIBUTION_PASSWORD`,
+`IOS_PROVISIONING_PROFILE`, and the three `APP_STORE_CONNECT_*` secrets.
+Private keys and profiles must never be committed. The runner removes temporary
+credentials even when a build fails. Provisioning expires September 18, 2027.
 
 ## Run on a Mac
 
 1. Install Xcode with iOS 17+ SDK support and XcodeGen (`brew install xcodegen`).
-2. From `apps/ios`, run `xcodegen generate` and open `AITracker.xcodeproj`.
+2. From `apps/ios`, run `swift scripts/prepare-icon.swift ../mobile/assets/icon.png Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png`,
+   then `xcodegen generate` and open `AITracker.xcodeproj`.
 3. Select your Apple development team under Signing & Capabilities. Confirm that
    `run.aitracker.coach` is available in your account, or change it in project.yml.
 4. Choose an iPhone simulator and run the AITracker scheme. Test microphone and
@@ -57,7 +74,8 @@ replace account authentication or server authorization.
 
 ## Known gaps before public release
 
-- Compile/run in Xcode: this Windows workspace cannot validate SwiftUI or WebKit.
+- Cloud simulator compilation/tests pass; actual-device WebKit and microphone
+  validation is still required.
 - Native WebRTC voice controls and native WhatsApp/email setup are later work;
   the first version deliberately reuses the validated web flows.
 - Automatic email-link opening needs Apple Team ID + Associated Domains/AASA
@@ -70,7 +88,7 @@ replace account authentication or server authorization.
 - Chat endpoint returns one JSON answer, not streaming text. The app shows a
   thinking indicator and does not simulate streaming.
 - Account deletion, privacy disclosures/manifests, App Store subscription policy,
-  artwork/screenshots and release signing still need release preparation.
+  screenshots and public-release preparation remain outstanding.
 
 ## Required device checks
 

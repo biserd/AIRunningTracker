@@ -3,3 +3,4 @@ DerivedData/
 *.xcuserstate
 *.xcarchive/
 *.ipa
+Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png

@@ -16,6 +16,7 @@ jobs:
         working-directory: apps/ios
         run: |
           brew install xcodegen
+          swift scripts/prepare-icon.swift ../mobile/assets/icon.png Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png
           xcodegen generate
       - name: Build and test without signing
         working-directory: apps/ios
