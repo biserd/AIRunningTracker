@@ -43,7 +43,8 @@ The generated Xcode project is ignored; project.yml is the source of truth.
 ## Implemented
 
 - Native Coach, Schedule and Settings tabs, Dynamic Type, orange primary actions.
-- Existing email/password sign-in; Keychain session persistence, device-local logout.
+- Email-link-only sign-in; no password field or password-login call in the client.
+  Keychain session persistence and device-local logout are unchanged.
 - Existing email-link request/verification with a manual paste flow for this build.
   Copy the email link WITHOUT opening it first, since it is single use.
 - Native real-account schedule, chat history, thinking state and message submission.
@@ -60,7 +61,6 @@ The generated Xcode project is ignored; project.yml is the source of truth.
 
 | Existing route on new.aitracker.run | iOS use |
 | --- | --- |
-| POST /api/account/login | Existing account password sign-in |
 | POST /api/account/email, /api/account/verify | Existing magic-link flow |
 | POST /api/account/logout | Existing cookie logout, plus local Keychain removal |
 | GET /api/state | Runner, entitlement and current week |
@@ -101,7 +101,7 @@ replace account authentication or server authorization.
 Use a dedicated runner account. These calls use live data, so approve plan or
 reminder changes only when intended.
 
-1. Password login, cold restart, expired session, sign out, then a second account.
+1. Email-link login, cold restart, expired session, sign out, then a second account.
    No data from the previous runner may remain visible.
 2. Single-use email-link verification; expired/reused/wrong-host link rejection.
 3. Chat success, timeout, offline, entitlement denied, no automatic POST retries.
