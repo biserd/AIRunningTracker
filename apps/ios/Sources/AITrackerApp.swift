@@ -11,6 +11,12 @@ import SwiftUI
             }
             .environmentObject(store)
             .tint(RunBrand.orange)
+            .onOpenURL { store.receiveSignInLink($0) }
+            .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+                if let url = activity.webpageURL { store.receiveSignInLink(url) }
+            }
+            .onChange(of: store.loading) { _, _ in store.processPendingSignIn() }
+            .onChange(of: store.busy) { _, _ in store.processPendingSignIn() }
             .task {
                 #if DEBUG
                 if ProcessInfo.processInfo.arguments.contains("--test-sign-in-screen") {

@@ -50,7 +50,7 @@ struct SignInView: View {
 
                     if let sentTo {
                         Label("Check your inbox", systemImage: "envelope.badge").font(.headline).foregroundStyle(RunBrand.orange)
-                        Text("If \(sentTo) has an account, your link is on its way. Check spam too.")
+                        Text("If \(sentTo) has an account, your link is on its way. Tap it on this device to open your coach. Check spam too.")
                             .font(.callout).foregroundStyle(.secondary)
                     } else {
                         Text("Use the email for your existing account.").font(.callout).foregroundStyle(.secondary)
@@ -59,7 +59,7 @@ struct SignInView: View {
 
                 DisclosureGroup(isExpanded: $showLink) {
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("In this test build, press and hold the sign-in button in your email and copy its link. Paste it here without opening it first.")
+                        Text("If your email opens a browser instead, request a fresh link. Press and hold its sign-in button, copy the link, and paste it here without opening it first.")
                             .font(.callout).foregroundStyle(.secondary)
                         TextField("Paste your sign-in link", text: $link, axis: .vertical)
                             .lineLimit(2...3).textInputAutocapitalization(.never).autocorrectionDisabled()
@@ -75,7 +75,7 @@ struct SignInView: View {
                         }.buttonStyle(.borderedProminent).disabled(store.busy || link.isEmpty)
                     }.padding(.top, 16)
                 } label: {
-                    Text("Already have your link?").font(.headline)
+                    Text("Trouble signing in?").font(.headline)
                 }.padding(24).background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 24))
 
                 Label("Your account. Your running data.", systemImage: "lock.shield")
@@ -95,7 +95,6 @@ struct SignInView: View {
             defer { sending = false }
             if await store.requestSignInLink(email: requestedEmail) {
                 sentTo = requestedEmail.trimmingCharacters(in: .whitespacesAndNewlines)
-                showLink = true
             }
         }
     }

@@ -48,8 +48,9 @@ enum SignInLink {
               url.user == nil, url.password == nil, url.path == "/auth/magic-link" else {
             throw APIError.server(400, "Paste the AITracker coach sign-in link from your email.")
         }
-        let items = url.fragment.flatMap { URLComponents(string: "?" + $0)?.queryItems } ?? url.queryItems
-        guard let token = items?.first(where: { $0.name == "token" })?.value,
+        let items = (url.fragment.flatMap { URLComponents(string: "?" + $0)?.queryItems } ?? []) + (url.queryItems ?? [])
+        let tokens = items.filter { $0.name == "token" }
+        guard tokens.count == 1, let token = tokens.first?.value,
               !token.isEmpty, token.count <= 4000 else {
             throw APIError.server(400, "Paste the AITracker coach sign-in link from your email.")
         }

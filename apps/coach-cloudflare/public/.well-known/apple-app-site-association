@@ -1,0 +1,10 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["DB5JRGGB6A.run.aitracker.coach"],
+        "components": [{"/": "/auth/magic-link", "comment": "Email sign-in only"}]
+      }
+    ]
+  }
+}

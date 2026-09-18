@@ -1,9 +1,13 @@
 import SwiftUI
+import CryptoKit
 
 @MainActor final class CoachStore: ObservableObject {
     let api = CoachAPI()
     private var sessionGeneration = UUID()
     private var conversationGeneration = 0
+    private var didRestore = false
+    private var pendingSignIn: String?
+    private var lastLinkDigest: String?
     @Published var snapshot: Snapshot?
     @Published var messages: [Message] = []
     @Published var reminders: [Reminder] = []
@@ -24,9 +28,27 @@ import SwiftUI
         }
     }
     func restore() async {
+        guard !didRestore else { return }
+        didRestore = true
         defer { loading = false }
         do { try api.restore(); if api.credential != nil { needsSignIn = false; await refresh() } }
         catch { report(error) }
+    }
+    func receiveSignInLink(_ url: URL) {
+        do {
+            let token = try SignInLink.token(from: url.absoluteString)
+            let digest = SHA256.hash(data: Data(token.utf8)).map { String(format: "%02x", $0) }.joined()
+            // iOS can deliver the same link through both lifecycle callbacks.
+            guard digest != lastLinkDigest else { return }
+            lastLinkDigest = digest
+            pendingSignIn = url.absoluteString
+            processPendingSignIn()
+        } catch { report(error) }
+    }
+    func processPendingSignIn() {
+        guard !loading, !busy, let link = pendingSignIn else { return }
+        pendingSignIn = nil
+        Task { await verify(link: link) }
     }
     func requestSignInLink(email: String) async -> Bool {
         guard !busy else { return false }
@@ -43,6 +65,8 @@ import SwiftUI
         do {
             let token = try SignInLink.token(from: link)
             let _: OK = try await api.request("/api/account/verify", body: ["token":token])
+            sessionGeneration = UUID()
+            snapshot = nil; messages = []; reminders = []; whatsapp = nil; review = nil; reminderReview = nil; verifiedEmail = ""; web = nil
             needsSignIn = false; await refresh()
         } catch { report(error) }
     }

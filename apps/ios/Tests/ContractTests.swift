@@ -2,6 +2,20 @@ import XCTest
 @testable import AITracker
 
 final class ContractTests: XCTestCase {
+    func testSignInRejectsAmbiguousOrEmptyTokens() {
+        for suffix in ["", "?token=", "?token=a&token=b", "?token=a#token=b", "#token=a&token=b"] {
+            XCTAssertThrowsError(try SignInLink.token(from: "https://new.aitracker.run/auth/magic-link" + suffix))
+        }
+    }
+    @MainActor func testColdStartQueuesLinkAndRejectsForeignURL() {
+        let store = CoachStore()
+        store.receiveSignInLink(URL(string: "https://new.aitracker.run/auth/magic-link#token=test")!)
+        XCTAssertTrue(store.loading)
+        XCTAssertFalse(store.busy)
+        XCTAssertNil(store.error)
+        store.receiveSignInLink(URL(string: "https://example.com/auth/magic-link#token=test")!)
+        XCTAssertNotNil(store.error)
+    }
     func testEmailIsNormalizedBeforeRequest() throws {
         XCTAssertEqual(try SignInEmail.normalize("  Runner@Example.com\n"), "runner@example.com")
         for email in ["", "runner", "runner@", "runner @example.com", "runner@@example.com"] {

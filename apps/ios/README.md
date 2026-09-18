@@ -84,8 +84,11 @@ replace account authentication or server authorization.
   validation is still required.
 - Native WebRTC voice controls and native WhatsApp/email setup are later work;
   the first version deliberately reuses the validated web flows.
-- Automatic email-link opening needs Apple Team ID + Associated Domains/AASA
-  setup. Manual paste is temporary, not the final onboarding experience.
+- Email links use Universal Links on `new.aitracker.run/auth/magic-link`.
+  The app queues cold-start links until session restoration finishes and validates
+  the host, scheme, path and single token before verification. Paste-link recovery
+  remains under “Trouble signing in?”. Real-device link routing must be checked
+  after installing the updated TestFlight build and requesting a fresh email.
 - Existing logout does not revoke a stolen server token. Mobile refresh/revocation
   requirements need a separate backend security review before public distribution.
 - APNs device registration/delivery is not implemented. No push permission is
@@ -111,4 +114,8 @@ reminder changes only when intended.
 6. WhatsApp OAuth return and wa.me link; email verification; refresh after dismissal.
 7. Dynamic Type, VoiceOver, dark mode, keyboard and smaller iPhone layouts.
 
-No deployment to either website is required by these changes.
+The association file is served as JSON without redirects at
+`https://new.aitracker.run/.well-known/apple-app-site-association`.
+Only this sign-in path is associated with `DB5JRGGB6A.run.aitracker.coach`.
+The main domain is unchanged. Regenerate the Apple distribution profile whenever
+Associated Domains changes and replace `IOS_PROVISIONING_PROFILE` before upload.

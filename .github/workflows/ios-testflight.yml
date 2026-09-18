@@ -45,6 +45,8 @@ jobs:
           security cms -D -i "$RUNNER_TEMP/aitracker.mobileprovision" > "$RUNNER_TEMP/profile.plist"
           /usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' "$RUNNER_TEMP/profile.plist" | grep -Fx 'DB5JRGGB6A.run.aitracker.coach'
           PROFILE_UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$RUNNER_TEMP/profile.plist")
+          /usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.developer.associated-domains' "$RUNNER_TEMP/profile.plist" >/dev/null
+          echo "IOS_PROFILE_UUID=$PROFILE_UUID" >> "$GITHUB_ENV"
           mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
           cp "$RUNNER_TEMP/aitracker.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
@@ -75,5 +77,7 @@ jobs:
         run: |
           security delete-keychain "$RUNNER_TEMP/aitracker-signing.keychain-db" 2>/dev/null || true
           rm -f "$RUNNER_TEMP/distribution.p12" "$RUNNER_TEMP/aitracker.mobileprovision" "$RUNNER_TEMP/profile.plist"
-          rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/00aea90e-a9f4-4980-9f7f-b61956162437.mobileprovision"
+          if [[ "${IOS_PROFILE_UUID:-}" =~ ^[0-9A-Fa-f-]{36}$ ]]; then
+            rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/$IOS_PROFILE_UUID.mobileprovision"
+          fi
           rm -f "$HOME/.appstoreconnect/private_keys/AuthKey_A28N8G2C32.p8"
