@@ -20,6 +20,12 @@ Signing secrets: `IOS_DISTRIBUTION_P12`, `IOS_DISTRIBUTION_PASSWORD`,
 Private keys and profiles must never be committed. The runner removes temporary
 credentials even when a build fails. Provisioning expires September 18, 2027.
 
+First signed upload: version `1.0`, build `2`, tag `ios-testflight-1.0-2`.
+GitHub run `35403956674` passed tests, archive, export and Apple upload on
+September 18, 2026 using Xcode 26.3. Apple processing and tester availability are
+separate from successful upload. App Store Connect currently labels this app
+`Run Analytics`; its bundle ID remains `run.aitracker.coach`.
+
 ## Run on a Mac
 
 1. Install Xcode with iOS 17+ SDK support and XcodeGen (`brew install xcodegen`).
