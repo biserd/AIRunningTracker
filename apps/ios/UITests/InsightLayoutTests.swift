@@ -14,6 +14,9 @@ final class InsightLayoutTests:XCTestCase {
         }
         let insights=app.buttons["Coach insights"]
         XCTAssertTrue(insights.waitForExistence(timeout:10))
+        XCTAssertTrue(app.staticTexts["Runner Score"].waitForExistence(timeout:5))
+        XCTAssertTrue(app.staticTexts["54 / 100"].exists)
+        capture("Progress overview")
         insights.tap()
         XCTAssertTrue(app.navigationBars["Coach insights"].waitForExistence(timeout:5))
         XCTAssertTrue(app.staticTexts["A little easier today."].exists)

@@ -98,7 +98,7 @@ struct RunningProgressView:View {
                     Divider()
                     NavigationLink { CoachInsightsView().id(store.snapshot?.runner.id) } label: { progressLink("Coach insights", symbol: "sparkles") }
                 }.padding(.horizontal).background(RunBrand.surface, in: RoundedRectangle(cornerRadius: 18))
-                if store.snapshot == nil && !loading {
+                if store.snapshot == nil && score == nil && calendar == nil && !loading {
                     ContentUnavailableView("Progress not loaded", systemImage: "chart.bar.xaxis", description: Text("Pull down to refresh your running data."))
                 }
                 if loading { ProgressView("Reading your progress…") }
@@ -166,6 +166,19 @@ struct RunningProgressView:View {
         VStack { HStack { Text(name); Spacer(); Text("\(Int(value))/25") }; ProgressView(value:min(25,max(0,value)),total:25).tint(RunBrand.orange) }
     }
     @MainActor private func load() async {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--test-insights") {
+            score = NativeRunnerScore(totalScore: 54, isProvisional: false, recentRunCount: 12,
+                components: .init(consistency: 15, performance: 10, volume: 19, improvement: 10),
+                trends: .init(weeklyChange: 1, monthlyChange: 2))
+            calendar = NativeActivityCalendar(days: (1...30).map { day in
+                .init(date: String(format: "2026-09-%02d", day), totalDistanceKm: day % 3 == 0 ? 5 : 0,
+                    activities: day % 3 == 0 ? [.init(id: day, name: "Easy run", distanceKm: 5)] : [])
+            }, maxDistance: 5, unitPreference: "miles")
+            month = "2026-09"
+            return
+        }
+        #endif
         guard !loading,let id=store.snapshot?.runner.id else { return }
         loading=true; failures=[]; score=nil; calendar=nil; selected=nil
         defer { loading=false }
