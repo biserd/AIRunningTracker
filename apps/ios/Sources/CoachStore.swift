@@ -31,7 +31,7 @@ import Combine
     @Published var scheduleError: String?
     @Published var refreshingSchedule = false
     @Published var savingCheckIn = false
-    private var refreshedAt: Date?
+    @Published private(set) var refreshedAt: Date?
     private var reminderClarification:String?
 
     init() {

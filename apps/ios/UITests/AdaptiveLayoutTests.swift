@@ -30,6 +30,8 @@ final class AdaptiveLayoutTests: XCTestCase {
             app.tabBars.buttons["Settings"].tap()
         }
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["Refresh running data"].exists)
+        XCTAssertTrue(app.staticTexts["Running data not loaded yet."].exists)
         app.buttons["Notifications & reminders"].tap()
         XCTAssertTrue(app.navigationBars["Notifications"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Enable notifications"].exists)

@@ -290,6 +290,24 @@ struct SettingsView: View {
                     LabeledContent("Units", value: store.snapshot?.runner.unitPreference ?? "")
                     LabeledContent("Timezone", value: store.snapshot?.runner.timezone ?? "")
                 }
+                Section("Running data") {
+                    if store.refreshingSchedule {
+                        ProgressView("Refreshing running data…").accessibilityIdentifier("running-data-refreshing")
+                    } else if let error = store.scheduleError {
+                        Label(error,systemImage:"exclamationmark.triangle").foregroundStyle(.red)
+                    } else if let date = store.refreshedAt {
+                        HStack {
+                            Label("Running data updated",systemImage:"checkmark.circle.fill").foregroundStyle(RunBrand.teal)
+                            Spacer()
+                            Text(date,style:.time).foregroundStyle(.secondary)
+                        }
+                    } else {
+                        Text("Running data not loaded yet.").foregroundStyle(.secondary)
+                    }
+                    if let error=store.companionError { Text(error).font(.footnote).foregroundStyle(.red) }
+                } footer: {
+                    Text("Pull down to refresh your saved runs and plan. This does not start a new Strava sync.")
+                }
                 Section("Stay connected") {
                     Button("Coaching preferences") { store.settingsSheet = .coaching }.buttonStyle(.borderedProminent)
                     LabeledContent("Apple notifications", value: store.push.status)
@@ -300,12 +318,12 @@ struct SettingsView: View {
                     Button("Email & reminders") { store.settingsSheet = .reminders }.buttonStyle(.borderedProminent)
                 }
                 Section {
-                    Button("Refresh running data") { Task { await store.refresh() } }.disabled(store.busy)
                     Button("Sign out", role: .destructive) { confirmLogout = true }
                 } footer: { Text("Same Run Analytics account and running data. No separate subscription.") }
             }.frame(maxWidth: 760).frame(maxWidth: .infinity)
                 .scrollContentBackground(.hidden).background(RunBrand.canvas)
                 .navigationTitle("Settings")
+                .refreshable { await store.refreshSchedule(force:true) }
                 .confirmationDialog("Sign out of this device?", isPresented: $confirmLogout) {
                     Button("Sign out", role: .destructive) { Task { await store.signOut() } }.accessibilityIdentifier("confirm-sign-out")
                 }
