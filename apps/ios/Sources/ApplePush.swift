@@ -191,7 +191,6 @@ struct NativePushSettings: View {
                     TextField("Reminder", text: $title)
                     DatePicker("When", selection: $date, in: Date().addingTimeInterval(60)...Date().addingTimeInterval(6 * 86400))
                     Picker("Repeat",selection:$recurrence) { Text("Once").tag("none");Text("Daily").tag("daily");Text("Weekly").tag("weekly") }
-                    Button("Set reminder") { perform { try await push.schedule(title: title, date: date, recurrence:recurrence); saved = true } }.buttonStyle(.borderedProminent)
                 }
                 Section("Your reminders") {
                     ForEach(push.items) { item in
@@ -205,6 +204,14 @@ struct NativePushSettings: View {
                 }
             }
         }.navigationTitle("Notifications").disabled(push.busy)
+            .toolbar {
+                if push.enabled && push.reminders {
+                    ToolbarItem(placement:.confirmationAction) {
+                        Button("Set reminder") { perform { try await push.schedule(title:title,date:date,recurrence:recurrence); saved=true } }
+                            .buttonStyle(.borderedProminent).disabled(push.busy || title.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty)
+                    }
+                }
+            }
             .alert("Saved", isPresented: $saved) { Button("OK", role: .cancel) {} } message: { Text("Your request is saved. Notifications are checked every 30 seconds.") }
     }
     private func perform(_ action: @escaping @MainActor () async throws -> Void) {

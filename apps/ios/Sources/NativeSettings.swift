@@ -216,13 +216,6 @@ struct NativeReminderSettings: View {
                         }
                         Text(channel == "email" ? "To: \(status?.email ?? "")" : "To: \(store.whatsapp?.destination ?? "WhatsApp")").font(.footnote)
                     }
-                    Button(review.kind == "cancel" ? "Confirm cancellation" : "Schedule reminder") {
-                        run {
-                            let _: OK = try await store.api.request("/api/reminders/confirm", body: ["id": review.id, "kind": review.kind, "confirm": true, "channel": channel])
-                            self.review = nil; title = ""
-                            message = review.kind == "cancel" ? "Reminder cancelled." : "Reminder scheduled."
-                        }
-                    }.buttonStyle(.borderedProminent)
                     Button("Not now") { self.review = nil }
                 }
             }
@@ -251,6 +244,19 @@ struct NativeReminderSettings: View {
         }
         .disabled(busy)
         .navigationTitle("Email & reminders")
+        .toolbar {
+            if let review {
+                ToolbarItem(placement:.confirmationAction) {
+                    Button(review.kind == "cancel" ? "Confirm cancellation" : "Schedule") {
+                        run {
+                            let _:OK = try await store.api.request("/api/reminders/confirm",body:["id":review.id,"kind":review.kind,"confirm":true,"channel":channel])
+                            self.review=nil; title=""
+                            message=review.kind == "cancel" ? "Reminder cancelled." : "Reminder scheduled."
+                        }
+                    }.buttonStyle(.borderedProminent).disabled(busy)
+                }
+            }
+        }
         .accessibilityIdentifier("native-reminder-settings")
         .interactiveDismissDisabled(busy)
         .task {

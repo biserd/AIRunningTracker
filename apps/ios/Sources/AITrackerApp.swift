@@ -102,7 +102,11 @@ struct CoachTabs: View {
                     }
                 }
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { store.settingsSheet = nil }.disabled(store.busy) } }
+                .toolbar {
+                    if destination != .coaching {
+                        ToolbarItem(placement: .cancellationAction) { Button("Close") { store.settingsSheet = nil }.disabled(store.busy || store.push.busy) }
+                    }
+                }
             }
         }
     }

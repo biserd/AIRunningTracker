@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct CompanionPreferences: Codable {
+struct CompanionPreferences: Codable, Equatable {
     var notes:String
     var evening,weekly:Bool
     var followup:Bool? = false
@@ -101,11 +101,16 @@ struct CoachingPreferencesView:View {
     @EnvironmentObject var store:CoachStore
     @State private var preferences=CompanionPreferences(notes:"",evening:false,weekly:false,hour:18,quietStart:21,quietEnd:7)
     @State private var saving=false
-    @State private var saved=false
+    @State private var original:CompanionPreferences?
+    @State private var discard=false
+    private var dirty:Bool { original.map { $0 != preferences } ?? false }
     var body:some View {
         Form {
             Section("What your coach should remember") {
-                TextEditor(text:$preferences.notes).frame(minHeight:110)
+                ZStack(alignment:.topLeading) {
+                    if preferences.notes.isEmpty { Text("Your goals and preferred running days…").foregroundStyle(.secondary).padding(.top,8).padding(.leading,5).allowsHitTesting(false) }
+                    TextEditor(text:$preferences.notes).scrollContentBackground(.hidden).frame(minHeight:80)
+                }
                 Text("Preferred running days, upcoming races and time constraints. These notes inform advice but do not change your plan. Avoid private medical details.").font(.caption).foregroundStyle(.secondary)
             }
             Section("Helpful check-ins") {
@@ -129,17 +134,33 @@ struct CoachingPreferencesView:View {
                 Stepper("Until \(preferences.quietEnd):00",value:$preferences.quietEnd,in:0...23)
                 Text("Applies to proactive coaching, not reminders you explicitly schedule. Equal times turn quiet hours off.").font(.caption).foregroundStyle(.secondary)
             }
-            Button(saved ? "Saved" : "Save preferences") {
+        }.navigationTitle("Your coach")
+        .disabled(saving)
+        .interactiveDismissDisabled(dirty || saving)
+        .toolbar {
+            ToolbarItem(placement:.cancellationAction) {
+                Button("Cancel") { if dirty { discard=true } else { store.settingsSheet=nil } }.disabled(saving)
+            }
+            ToolbarItem(placement:.confirmationAction) {
+            Button(saving ? "Saving…" : "Save") {
                 Task {
                     saving=true; defer { saving=false }
                     do {
                         let data=try JSONEncoder().encode(preferences)
                         let body=try JSONSerialization.jsonObject(with:data) as! [String:Any]
                         let _:OK=try await store.api.companion("preferences",body:body)
-                        await store.refreshSchedule(force:true); saved=true
+                        original=preferences
+                        store.settingsSheet=nil
+                        await store.refreshSchedule(force:true)
                     } catch { store.report(error) }
                 }
-            }.buttonStyle(.borderedProminent).disabled(saving || preferences.notes.count>1500 || store.companion==nil)
-        }.navigationTitle("Your coach").onAppear { if let current=store.companion?.preferences { preferences=current } }
+            }.buttonStyle(.borderedProminent).disabled(saving || preferences.notes.count>1500 || original==nil)
+            }
+        }
+        .onAppear { if let current=store.companion?.preferences { preferences=current; original=current } }
+        .confirmationDialog("Discard unsaved changes?",isPresented:$discard) {
+            Button("Discard changes",role:.destructive) { store.settingsSheet=nil }
+            Button("Keep editing",role:.cancel) {}
+        }
     }
 }
