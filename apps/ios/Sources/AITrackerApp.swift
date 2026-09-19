@@ -92,6 +92,7 @@ struct ChatView: View {
     @EnvironmentObject var store: CoachStore
     @Binding var text: String
     @Binding var channel: String
+    @FocusState private var composerFocused: Bool
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -146,11 +147,19 @@ struct ChatView: View {
                 HStack(alignment: .bottom) {
                     TextField("Ask your coach", text: $text, axis: .vertical).lineLimit(1...5).textFieldStyle(.roundedBorder)
                         .accessibilityIdentifier("coach-composer")
+                        .focused($composerFocused)
                     Button { let message = text; text = ""; Task { await store.send(message) } } label: {
                         Image(systemName: "arrow.up.circle.fill").font(.largeTitle)
                     }.accessibilityLabel("Send message").disabled(store.busy || store.voice.active || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || text.count > 2000 || store.snapshot?.canUseAI != true)
                 }.padding().frame(maxWidth: 820)
             }.navigationTitle("Let’s talk running")
+                .toolbar {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button("Done") { composerFocused = false }
+                            .accessibilityIdentifier("dismiss-coach-keyboard")
+                    }
+                }
         }
     }
 }

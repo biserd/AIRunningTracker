@@ -16,6 +16,7 @@ final class AdaptiveLayoutTests: XCTestCase {
         composer.typeText("My next run")
         let typed = expectation(for: NSPredicate(format: "value == %@", "My next run"), evaluatedWith: composer)
         wait(for: [typed], timeout: 5)
+        app.buttons["dismiss-coach-keyboard"].tap()
         XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(composer.waitForExistence(timeout: 5))
         XCTAssertEqual(composer.value as? String, "My next run")
