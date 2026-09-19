@@ -19,10 +19,11 @@ export class ApplePushService {
     const generation=same?prior.generation:randomUUID();
     await this.db.batch([
       this.db.prepare('DELETE FROM apple_push_devices WHERE token=? AND environment=? AND installation<>?').bind(value.token,value.environment,value.installation),
-      this.db.prepare(`INSERT INTO apple_push_devices(installation,user_id,token,environment,generation,reminders,runs,enabled_at,expires_at) VALUES (?,?,?,?,?,?,?,?,?)
+      this.db.prepare(`INSERT INTO apple_push_devices(installation,user_id,token,environment,generation,reminders,runs,enabled_at,expires_at) SELECT ?,?,?,?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM apple_push_devices WHERE user_id=?)<10 OR EXISTS(SELECT 1 FROM apple_push_devices WHERE installation=? AND user_id=?)
         ON CONFLICT(installation) DO UPDATE SET user_id=excluded.user_id,token=excluded.token,environment=excluded.environment,generation=excluded.generation,reminders=excluded.reminders,runs=excluded.runs,enabled_at=excluded.enabled_at,expires_at=excluded.expires_at`)
-        .bind(value.installation,user,value.token,value.environment,generation,value.reminders,value.runs,same&&prior.runs?prior.enabled_at:time,Math.min(sessionExpiry,time+7*86400)),
+        .bind(value.installation,user,value.token,value.environment,generation,value.reminders,value.runs,same&&prior.runs?prior.enabled_at:time,Math.min(sessionExpiry,time+7*86400),user,value.installation,user),
     ]);
+    if(!await this.db.prepare('SELECT 1 FROM apple_push_devices WHERE installation=? AND user_id=? AND generation=?').bind(value.installation,user,generation).first())throw new ApplePushError('Ten devices are already connected. Disconnect an unused device first.',409);
     return {ok:true,generation};
   }
   async unregister(user:number,installation:unknown){

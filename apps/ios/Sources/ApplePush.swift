@@ -171,6 +171,7 @@ struct NativePushSettings: View {
             Section {
                 LabeledContent("Notifications", value: push.status)
                 if push.enabled {
+                    if push.status != "Connected" { Button("Retry connection") { Task { await push.resume() } } }
                     Toggle("Running reminders", isOn: $push.reminders).onChange(of: push.reminders) { _, _ in perform { try await push.save() } }
                     Toggle("New synced runs", isOn: $push.runs).onChange(of: push.runs) { _, _ in perform { try await push.save() } }
                     Button("Send a test notification") { perform { try await push.test(); saved = true } }
