@@ -2,6 +2,8 @@ import XCTest
 import UIKit
 final class InsightLayoutTests:XCTestCase {
     func testReadOnlyInsightsStayNative() {
+        XCUIDevice.shared.orientation = UIDevice.current.userInterfaceIdiom == .pad ? .landscapeLeft : .portrait
+        defer { XCUIDevice.shared.orientation = .portrait }
         let app=XCUIApplication()
         app.launchArguments=["--test-adaptive-layout","--test-insights"]
         app.launch()

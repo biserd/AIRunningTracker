@@ -69,6 +69,7 @@ struct CoachTabs: View {
                     }
                     .listStyle(.sidebar)
                     .navigationTitle("Run Analytics")
+                    .navigationBarTitleDisplayMode(.inline)
                     .navigationSplitViewColumnWidth(min: 220, ideal: 250, max: 300)
                 } detail: {
                     switch selected {

@@ -94,9 +94,9 @@ struct RunningProgressView:View {
         ScrollView {
             VStack(spacing:20) {
                 VStack(spacing: 0) {
-                    NavigationLink { RunHistoryView() } label: { progressLink("Run history", symbol: "figure.run") }
+                    NavigationLink { RunHistoryView() } label: { progressLink("Run history", symbol: "figure.run") }.buttonStyle(.plain)
                     Divider()
-                    NavigationLink { CoachInsightsView().id(store.snapshot?.runner.id) } label: { progressLink("Coach insights", symbol: "sparkles") }
+                    NavigationLink { CoachInsightsView().id(store.snapshot?.runner.id) } label: { progressLink("Coach insights", symbol: "sparkles") }.buttonStyle(.plain)
                 }.padding(.horizontal).background(RunBrand.surface, in: RoundedRectangle(cornerRadius: 18))
                 if store.snapshot == nil && score == nil && calendar == nil && !loading {
                     ContentUnavailableView("Progress not loaded", systemImage: "chart.bar.xaxis", description: Text("Pull down to refresh your running data."))
@@ -160,7 +160,7 @@ struct RunningProgressView:View {
             Label(title, systemImage: symbol).font(.headline).foregroundStyle(.primary)
             Spacer()
             Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.secondary)
-        }.frame(minHeight: 52)
+        }.frame(minHeight: 52).contentShape(Rectangle())
     }
     private func component(_ name:String,_ value:Double)->some View {
         VStack { HStack { Text(name); Spacer(); Text("\(Int(value))/25") }; ProgressView(value:min(25,max(0,value)),total:25).tint(RunBrand.orange) }
