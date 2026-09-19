@@ -22,6 +22,7 @@ import Combine
     @Published var verifiedEmail = ""
     @Published var error: String?
     @Published var busy = false
+    @Published var requestedCoach = UUID()
     @Published var loading = true
     @Published var needsSignIn = true
     @Published var settingsSheet: SettingsDestination?

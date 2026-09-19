@@ -108,6 +108,7 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
         return try await issuerRequest("/api/coach/companion/" + action, body:body)
     }
     func runningSnapshot() async throws -> Snapshot { try await issuerRequest("/api/coach/experience") }
+    func runDetail(_ id:Int) async throws -> RunDetailResponse { try await issuerRequest("/api/activities/\(id)") }
     // Read-only access to the exact APIs used by the main Coach Insights page.
     func analytics(userID:Int) async throws -> InsightAnalytics {
         guard userID > 0 else { throw APIError.invalidResponse }
@@ -119,7 +120,7 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
     }
     func coachRecaps() async throws -> InsightRecaps { try await issuerRequest("/api/coach-recaps") }
     static func isInsightReadPath(_ path:String)->Bool {
-        path == "/api/coach-recaps" || path.range(of:"^/api/(analytics/batch|performance/recovery)/[1-9][0-9]*$",options:.regularExpression) != nil
+        path == "/api/coach-recaps" || path.range(of:"^/api/(activities|analytics/batch|performance/recovery)/[1-9][0-9]*$",options:.regularExpression) != nil
     }
     private func issuerRequest<T: Decodable>(_ path: String, query: [URLQueryItem] = [], body: [String: Any]? = nil) async throws -> T {
         let current = generation
@@ -143,7 +144,7 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
             let response = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
             throw APIError.server(http.statusCode, response?["message"] as? String ?? "Could not complete the request. Please retry.")
         }
-        guard data.count < 300_000 else { throw APIError.invalidResponse }
+        guard data.count < (path.hasPrefix("/api/activities/") ? 8_000_000 : 300_000) else { throw APIError.invalidResponse }
         return try JSONDecoder().decode(T.self, from: data)
     }
     func request<T: Decodable>(_ path: String, body: [String: Any]? = nil) async throws -> T {

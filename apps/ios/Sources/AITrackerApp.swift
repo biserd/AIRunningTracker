@@ -87,6 +87,7 @@ struct CoachTabs: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .applePushOpen)) { _ in openPush() }
         .onAppear { openPush() }
+        .onChange(of: store.requestedCoach) { _, _ in selected = .coach }
         .onChange(of: store.settingsSheet) { _, destination in
             if destination != nil { Task { await store.voice.end() } }
         }
@@ -231,9 +232,9 @@ struct ScheduleView: View {
                     NavigationLink { RunHistoryView() } label: { Label("Run history",systemImage:"figure.run").foregroundStyle(RunBrand.blue).font(.headline) }
                     NavigationLink { CoachInsightsView().id(store.snapshot?.runner.id) } label: { Label("Coach insights",systemImage:"sparkles").foregroundStyle(RunBrand.teal).font(.headline) }
                 }
-                Section("This week and what’s next") {
-                    if store.snapshot?.state.days.isEmpty != false { Text("No scheduled workouts available.").foregroundStyle(.secondary) }
-                    ForEach(store.snapshot?.state.days ?? []) { day in
+                Section("Today and what’s next") {
+                    if store.snapshot?.state.upcomingDays.isEmpty != false { Text("No upcoming workouts available.").foregroundStyle(.secondary) }
+                    ForEach(store.snapshot?.state.upcomingDays ?? []) { day in
                         HStack {
                             VStack(alignment: .leading, spacing: 5) {
                                 Text(day.date + (day.date == store.snapshot?.state.today ? " · Today" : "")).font(.caption).foregroundStyle(.secondary)

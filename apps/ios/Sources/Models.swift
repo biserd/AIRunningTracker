@@ -17,6 +17,7 @@ struct RunningState: Decodable {
     var updatedAt:String? = nil
     var activities:[RunSummary]? = nil
     var plan:PlanSummary? = nil
+    var upcomingDays:[Workout] { days.filter { $0.date >= today }.sorted { $0.date < $1.date } }
 }
 struct Snapshot: Decodable { let runner: Runner; let state: RunningState; let canUseAI: Bool; let version: Int? }
 struct Message: Decodable, Identifiable {

@@ -76,11 +76,7 @@ struct RunHistoryView:View {
         List {
             Section { Text("Recorded runs from the last 90 days, up to 200 and subject to your plan.").font(.caption).foregroundStyle(.secondary) }
             ForEach((store.snapshot?.state.activities ?? []).reversed()) { run in
-                DisclosureGroup("\(run.date) · \(run.name ?? "Run")") {
-                    Text("\(runnerDistance(run.km,units:store.snapshot?.runner.unitPreference ?? "km")) · \(Int(run.minutes)) min")
-                    Button("Ask coach about this run") { Task { await store.send("Explain my run ID \(run.id) on \(run.date). Use actual data and relate it to my training plan.") } }.disabled(store.busy || store.voice.active)
-                    Text("Your answer appears in Coach.").font(.caption).foregroundStyle(.secondary)
-                }
+                NavigationLink("\(run.date) · \(run.name ?? "Run")") { RunDetailView(run:run) }
             }
             if store.snapshot?.state.activities?.isEmpty != false { Text("No recorded runs available.") }
         }.navigationTitle("Run history").refreshable { await store.refreshSchedule(force:true) }
