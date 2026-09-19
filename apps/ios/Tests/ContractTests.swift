@@ -1,20 +1,27 @@
 import XCTest
 @testable import AITracker
 
+private enum MemorySessionVault: SessionStorage {
+    static var saved: SavedSession?
+    static func load() throws -> SavedSession? { saved }
+    static func save(_ session: SavedSession) throws { saved = session }
+    static func clear() throws { saved = nil }
+}
+
 final class ContractTests: XCTestCase {
     @MainActor func testSignOutCleanupCannotClearANewerLogin() throws {
-        defer { try? SessionVault.clear() }
-        try SessionVault.save(SavedSession(token: "old-test-session", expires: Date().addingTimeInterval(300)))
-        let api = CoachAPI()
+        defer { try? MemorySessionVault.clear() }
+        try MemorySessionVault.save(SavedSession(token: "old-test-session", expires: Date().addingTimeInterval(300)))
+        let api = CoachAPI(vault: MemorySessionVault.self)
         try api.restore()
         let cleanup = api.signOutCleanupClient()
         try api.clear()
         XCTAssertNil(api.credential)
-        XCTAssertNil(try SessionVault.load())
+        XCTAssertNil(try MemorySessionVault.load())
         XCTAssertEqual(cleanup.credential?.token, "old-test-session")
-        try SessionVault.save(SavedSession(token: "new-test-session", expires: Date().addingTimeInterval(300)))
+        try MemorySessionVault.save(SavedSession(token: "new-test-session", expires: Date().addingTimeInterval(300)))
         try cleanup.clear()
-        XCTAssertEqual(try SessionVault.load()?.token, "new-test-session")
+        XCTAssertEqual(try MemorySessionVault.load()?.token, "new-test-session")
     }
     func testSignInRejectsAmbiguousOrEmptyTokens() {
         for suffix in ["", "?token=", "?token=a&token=b", "?token=a#token=b", "#token=a&token=b"] {

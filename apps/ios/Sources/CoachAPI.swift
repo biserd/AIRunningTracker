@@ -6,7 +6,13 @@ struct SavedSession: Codable {
     let expires: Date
 }
 
-enum SessionVault {
+protocol SessionStorage {
+    static func load() throws -> SavedSession?
+    static func save(_ session: SavedSession) throws
+    static func clear() throws
+}
+
+enum SessionVault: SessionStorage {
     static let key: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
         kSecAttrService as String: "run.aitracker.coach.session", kSecAttrAccount as String: "new.aitracker.run"]
     static func load() throws -> SavedSession? {
@@ -46,8 +52,10 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
     private let session: URLSession
     private var generation = UUID()
     private var managesVault = true
+    private let vault: SessionStorage.Type
     private(set) var credential: SavedSession?
-    init(timeout: TimeInterval = 120) {
+    init(timeout: TimeInterval = 120, vault: SessionStorage.Type = SessionVault.self) {
+        self.vault = vault
         let config = URLSessionConfiguration.ephemeral
         config.httpShouldSetCookies = false
         config.httpCookieStorage = nil
@@ -56,10 +64,10 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
         config.timeoutIntervalForResource = timeout
         session = URLSession(configuration: config, delegate: RejectRedirects(), delegateQueue: nil)
     }
-    func restore() throws { credential = try SessionVault.load() }
-    func clear() throws { generation = UUID(); credential = nil; if managesVault { try SessionVault.clear() } }
+    func restore() throws { credential = try vault.load() }
+    func clear() throws { generation = UUID(); credential = nil; if managesVault { try vault.clear() } }
     func signOutCleanupClient() -> CoachAPI {
-        let client = CoachAPI(timeout: 5)
+        let client = CoachAPI(timeout: 5, vault: vault)
         client.credential = credential
         client.managesVault = false
         return client
@@ -167,7 +175,7 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
                 $0.name == Self.cookieName && $0.domain == Self.origin.host && $0.path == "/" && $0.isSecure
             }), !cookie.value.isEmpty else { throw APIError.missingSession }
             let saved = SavedSession(token: cookie.value, expires: cookie.expiresDate ?? Date().addingTimeInterval(604800))
-            try SessionVault.save(saved)
+            try vault.save(saved)
             credential = saved
         }
         return try JSONDecoder().decode(T.self, from: data)

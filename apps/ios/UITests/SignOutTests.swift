@@ -6,9 +6,13 @@ final class SignOutTests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--test-adaptive-layout", "--test-pending-coach-request"]
         app.launch()
+        defer { XCUIDevice.shared.orientation = .portrait }
         XCTAssertTrue(app.navigationBars["Let’s talk running"].waitForExistence(timeout: 10))
         if UIDevice.current.userInterfaceIdiom == .pad {
-            app.descendants(matching: .any)["sidebar-settings"].firstMatch.tap()
+            XCUIDevice.shared.orientation = .landscapeLeft
+            let settings = app.descendants(matching: .any)["sidebar-settings"].firstMatch
+            XCTAssertTrue(settings.waitForExistence(timeout: 5))
+            settings.tap()
         } else {
             app.tabBars.buttons["Settings"].tap()
         }
