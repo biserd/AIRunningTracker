@@ -457,7 +457,7 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByStravaId(stravaAthleteId: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.stravaAthleteId, stravaAthleteId));
-    return user || undefined;
+    return user ? this.getUser(user.id) : undefined;
   }
 
   async getUserByStravaAthleteId(stravaAthleteId: string): Promise<User | null> {

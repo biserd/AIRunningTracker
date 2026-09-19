@@ -2,7 +2,7 @@ name: Cloudflare migration safety
 on:
   push:
     branches: [codex/cloudflare-coach]
-    paths: ['apps/api-cloudflare/**', 'server/**', 'shared/**', 'migrations/**', '.github/workflows/cloudflare-migration.yml']
+    paths: ['apps/api-cloudflare/**', 'server/**', 'shared/**', 'migrations/**', 'package.json', 'package-lock.json', 'scripts/d1/**', '.github/workflows/cloudflare-migration.yml']
   pull_request:
     paths: ['apps/api-cloudflare/**', 'server/**', 'shared/**', 'migrations/**', '.github/workflows/cloudflare-migration.yml']
 permissions:
@@ -26,7 +26,7 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Test Apple notification delivery
         working-directory: .
-        run: npx tsx --test scripts/d1/apple-push.test.ts scripts/d1/coach-companion.test.ts scripts/d1/native-reminder-draft.test.ts scripts/d1/coach-workout-edit.test.ts scripts/d1/coach-recurrence.test.ts scripts/d1/coach-notifications.test.ts
+        run: npx tsx --test scripts/d1/apple-push.test.ts scripts/d1/coach-companion.test.ts scripts/d1/native-reminder-draft.test.ts scripts/d1/coach-workout-edit.test.ts scripts/d1/coach-recurrence.test.ts scripts/d1/coach-notifications.test.ts scripts/d1/native-onboarding.test.ts
       - run: npm run check
       - run: npx tsc --noEmit -p container/tsconfig.json
       - run: npx tsc --noEmit -p container/tsconfig.production.json
