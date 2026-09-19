@@ -35,7 +35,8 @@ final class ContractTests: XCTestCase {
         XCTAssertFalse(store.busy)
         XCTAssertNil(store.error)
         store.receiveSignInLink(URL(string: "https://example.com/auth/magic-link#token=test")!)
-        XCTAssertNotNil(store.error)
+        XCTAssertNotNil(store.signInFailure)
+        XCTAssertNil(store.error) // Recovery is inline, not a blocking generic alert.
     }
     func testEmailIsNormalizedBeforeRequest() throws {
         XCTAssertEqual(try SignInEmail.normalize("  Runner@Example.com\n"), "runner@example.com")

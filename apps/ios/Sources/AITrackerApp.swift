@@ -338,7 +338,7 @@ struct SettingsView: View {
                 Spacer()
                 if let status { Text(status).font(.caption).foregroundStyle(.secondary) }
                 Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary)
-            }.frame(minHeight: 44)
+            }.frame(minHeight: 44).contentShape(Rectangle())
         }.buttonStyle(.plain).accessibilityIdentifier("settings-\(title)")
     }
 }
