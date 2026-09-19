@@ -145,6 +145,7 @@ struct ChatView: View {
                 }
                 HStack(alignment: .bottom) {
                     TextField("Ask your coach", text: $text, axis: .vertical).lineLimit(1...5).textFieldStyle(.roundedBorder)
+                        .accessibilityIdentifier("coach-composer")
                     Button { let message = text; text = ""; Task { await store.send(message) } } label: {
                         Image(systemName: "arrow.up.circle.fill").font(.largeTitle)
                     }.accessibilityLabel("Send message").disabled(store.busy || store.voice.active || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || text.count > 2000 || store.snapshot?.canUseAI != true)
