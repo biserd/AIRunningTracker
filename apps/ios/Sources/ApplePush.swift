@@ -166,6 +166,7 @@ struct AppleReminder: Decodable, Identifiable {
 struct NativePushSettings: View {
     @EnvironmentObject var store: CoachStore
     @ObservedObject var push: ApplePush
+    var reminderOnly = false
     @Environment(\.openURL) private var openURL
     @State private var title = "Time for your run"
     @State private var date = Date().addingTimeInterval(3600)
@@ -173,7 +174,7 @@ struct NativePushSettings: View {
     @State private var recurrence = "none"
     var body: some View {
         Form {
-            Section {
+            if !reminderOnly || !push.enabled || !push.reminders { Section {
                 LabeledContent("Notifications", value: push.status)
                 if push.enabled {
                     if push.status != "Connected" { Button("Retry connection") { Task { await push.resume() } } }
@@ -185,27 +186,17 @@ struct NativePushSettings: View {
                     Button("Enable notifications") { perform { try await push.enable() } }.buttonStyle(.borderedProminent)
                 }
                 Button("Open iOS notification settings") { if let url = URL(string: UIApplication.openNotificationSettingsURLString) { openURL(url) } }
-            } footer: { Text("Private alerts on this device. Run details and reminder text stay inside the app. Delivery may be delayed by Focus or network conditions.") }
-            if push.enabled && push.reminders {
+            } footer: { Text("Private alerts on this device. Delivery may be delayed by Focus or network conditions.") } }
+            if reminderOnly && push.enabled && push.reminders {
                 Section("New reminder") {
                     TextField("Reminder", text: $title)
                     DatePicker("When", selection: $date, in: Date().addingTimeInterval(60)...Date().addingTimeInterval(6 * 86400))
                     Picker("Repeat",selection:$recurrence) { Text("Once").tag("none");Text("Daily").tag("daily");Text("Weekly").tag("weekly") }
                 }
-                Section("Your reminders") {
-                    ForEach(push.items) { item in
-                        VStack(alignment: .leading) {
-                            Text(item.title)
-                            if let recurrence=item.recurrence { Text("Repeats \(recurrence)").font(.caption).foregroundStyle(.secondary) }
-                            Text(Date(timeIntervalSince1970: item.due_at), format: .dateTime.month().day().hour().minute()).foregroundStyle(.secondary)
-                            Button("Cancel", role: .destructive) { perform { try await push.cancel(item.id) } }
-                        }
-                    }
-                }
             }
-        }.navigationTitle("Notifications").disabled(push.busy)
+        }.navigationTitle(reminderOnly ? "Apple reminder" : "Notifications").disabled(push.busy)
             .toolbar {
-                if push.enabled && push.reminders {
+                if reminderOnly && push.enabled && push.reminders {
                     ToolbarItem(placement:.confirmationAction) {
                         Button("Set reminder") { perform { try await push.schedule(title:title,date:date,recurrence:recurrence); saved=true } }
                             .buttonStyle(.borderedProminent).disabled(push.busy || title.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty)

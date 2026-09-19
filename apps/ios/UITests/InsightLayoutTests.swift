@@ -1,10 +1,18 @@
 import XCTest
+import UIKit
 final class InsightLayoutTests:XCTestCase {
     func testReadOnlyInsightsStayNative() {
         let app=XCUIApplication()
         app.launchArguments=["--test-adaptive-layout","--test-insights"]
         app.launch()
-        let insights=app.descendants(matching:.any)["open-running-insights"].firstMatch
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            let progress = app.descendants(matching: .any)["sidebar-progress"].firstMatch
+            XCTAssertTrue(progress.waitForExistence(timeout: 10)); progress.tap()
+        } else {
+            XCTAssertTrue(app.tabBars.buttons["Progress"].waitForExistence(timeout: 10))
+            app.tabBars.buttons["Progress"].tap()
+        }
+        let insights=app.buttons["Coach insights"]
         XCTAssertTrue(insights.waitForExistence(timeout:10))
         insights.tap()
         XCTAssertTrue(app.navigationBars["Coach insights"].waitForExistence(timeout:5))

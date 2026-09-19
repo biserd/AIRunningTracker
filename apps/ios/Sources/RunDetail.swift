@@ -62,7 +62,7 @@ struct RunDetailView:View {
     private var miles:Bool { store.snapshot?.runner.unitPreference == "miles" }
     var body:some View {
         List {
-            Section(run.date) {
+            Section(runnerDay(run.date, today: store.snapshot?.state.today)) {
                 LabeledContent("Distance",value:runnerDistance(run.km,units:miles ? "miles" : "km"))
                 LabeledContent("Moving time",value:detail?.formattedDuration ?? "\(Int(run.minutes)) min")
                 LabeledContent("Average pace",value:runPace(minutes:run.minutes,km:run.km,miles:miles))

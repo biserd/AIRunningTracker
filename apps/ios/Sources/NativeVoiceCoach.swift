@@ -221,9 +221,11 @@ struct NativeVoiceControls: View {
                 Button { voice.start(store: store) } label: {
                     Label("Talk to your coach", systemImage: "mic.fill").font(.title3.bold()).frame(maxWidth: .infinity).padding(8)
                 }.buttonStyle(.borderedProminent).disabled(store.snapshot?.canUseAI != true || store.busy)
+                if store.busy { Text("Voice will be ready when your coach finishes replying.").font(.caption).foregroundStyle(.secondary) }
+                else if store.snapshot == nil { Text("Loading your coaching access…").font(.caption).foregroundStyle(.secondary) }
             }
-            if let error = voice.error { Text(error).font(.callout).foregroundStyle(.secondary) }
-        }.padding(20).background(LinearGradient(colors:[RunBrand.orange.opacity(0.13),RunBrand.teal.opacity(0.07)],startPoint:.topLeading,endPoint:.bottomTrailing), in: RoundedRectangle(cornerRadius: 24))
+            if let error = voice.error { Text(error).font(.callout).foregroundStyle(.red) }
+        }.padding(16).background(RunBrand.surface, in: RoundedRectangle(cornerRadius: 24))
             .overlay(RoundedRectangle(cornerRadius:24).strokeBorder(RunBrand.orange.opacity(0.12),lineWidth:1)).padding()
     }
 }

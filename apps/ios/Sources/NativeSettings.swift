@@ -21,7 +21,7 @@ struct NativeWhatsAppSettings: View {
             } else if store.whatsapp?.connected == true && store.whatsapp?.authorized == true {
                 Section {
                     Text("Your coach is ready in WhatsApp.")
-                    Button("Disconnect WhatsApp") { confirmDisconnect = true }.buttonStyle(.borderedProminent)
+                    Button("Disconnect WhatsApp", role: .destructive) { confirmDisconnect = true }.buttonStyle(.bordered)
                 }
             } else {
                 Section("1. Connect your running data") {
@@ -73,7 +73,7 @@ struct NativeWhatsAppSettings: View {
                     Text("For reminders, message your coach in WhatsApp within the last 23 hours.").font(.footnote)
                 }
                 if store.whatsapp?.authorized != true {
-                    Button("Disconnect WhatsApp") { confirmDisconnect = true }.buttonStyle(.borderedProminent)
+                    Button("Disconnect WhatsApp", role: .destructive) { confirmDisconnect = true }.buttonStyle(.bordered)
                 }
             }
             if busy { ProgressView("Updating connection…") }
@@ -142,6 +142,8 @@ struct NativeWhatsAppSettings: View {
 
 struct NativeReminderSettings: View {
     @EnvironmentObject private var store: CoachStore
+    var connectionOnly = false
+    var initialReview: ReminderReview? = nil
     @State private var status: ReminderStatus?
     @State private var email = ""
     @State private var zone = TimeZone.current.identifier
@@ -158,11 +160,12 @@ struct NativeReminderSettings: View {
 
     var body: some View {
         Form {
-            Section("Email connection") {
+            if connectionOnly || status?.verified != true {
+              Section("Email connection") {
                 if let status, status.verified {
                     Label(status.email, systemImage: "checkmark.circle.fill").privacySensitive()
                     Text(status.timezone).foregroundStyle(.secondary)
-                    Button("Disconnect email") { confirmDisconnect = true }.buttonStyle(.borderedProminent)
+                    Button("Disconnect email & WhatsApp", role: .destructive) { confirmDisconnect = true }.buttonStyle(.bordered)
                 } else {
                     TextField("Email address", text: $email).textContentType(.emailAddress).keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never).autocorrectionDisabled()
@@ -186,8 +189,9 @@ struct NativeReminderSettings: View {
                     }
                     if status?.configured == false { Text("Email reminders are not available yet.") }
                 }
+              }
             }
-            if status?.verified == true {
+            if !connectionOnly && status?.verified == true && review == nil {
                 Section("New reminder") {
                     TextField("Remind me to…", text: $title)
                     DatePicker("When", selection: $date, in: Date()..., displayedComponents: [.date, .hourAndMinute])
@@ -219,31 +223,14 @@ struct NativeReminderSettings: View {
                     Button("Not now") { self.review = nil }
                 }
             }
-            Section("Your reminders") {
-                if status?.reminders.isEmpty != false { Text("No reminders yet.").foregroundStyle(.secondary) }
-                ForEach(status?.reminders ?? []) { item in
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(item.title).font(.headline)
-                        Text("\(item.local_time.replacingOccurrences(of: "T", with: " ")) · \(item.timezone)").font(.caption)
-                        Text("\(item.channel == "whatsapp" ? "WhatsApp" : "Email") · \(item.status.capitalized)").font(.caption)
-                        if let delivery = item.delivery_status { Text(delivery.capitalized).font(.caption) }
-                        if ["draft", "scheduled"].contains(item.status) {
-                            HStack {
-                                if item.status == "draft" { Button("Review") { reviewItem(item, kind: "create") } }
-                                Button("Cancel reminder") { reviewItem(item, kind: "cancel") }
-                            }.buttonStyle(.borderedProminent)
-                        }
-                    }.padding(.vertical, 4)
-                }
-            }
             if busy { ProgressView("Updating reminders…") }
             if let message { Text(message).foregroundStyle(.secondary) }
             if let error { Text(error).foregroundStyle(.red) }
-            Button("Refresh reminders") { run {} }
-            Section { Text("One-time reminders. Delivery is checked every minute and may be delayed. No marketing emails.").font(.footnote) }
+            if !connectionOnly { Section { Text("Email and WhatsApp reminders are one-time. Delivery may be delayed.").font(.footnote).foregroundStyle(.secondary) } }
         }
         .disabled(busy)
-        .navigationTitle("Email & reminders")
+        .navigationTitle(connectionOnly ? "Email" : "Email or WhatsApp reminder")
+        .refreshable { do { try await refresh() } catch { self.error = error.localizedDescription } }
         .toolbar {
             if let review {
                 ToolbarItem(placement:.confirmationAction) {
@@ -260,6 +247,7 @@ struct NativeReminderSettings: View {
         .accessibilityIdentifier("native-reminder-settings")
         .interactiveDismissDisabled(busy)
         .task {
+            review = initialReview
             #if DEBUG
             if ProcessInfo.processInfo.arguments.contains("--test-adaptive-layout") { return }
             #endif
@@ -296,5 +284,76 @@ struct NativeReminderSettings: View {
             defer { busy = false; store.busy = false }
             do { try await action(); try await refresh() } catch { self.error = error.localizedDescription }
         }
+    }
+}
+
+/// All delivery channels share one destination; connection screens only manage connections.
+struct UnifiedRemindersView: View {
+    @EnvironmentObject private var store: CoachStore
+    @State private var pendingCancel: Reminder?
+    @State private var pendingPushCancel: String?
+    @State private var failure: String?
+    @State private var working = false
+    var body: some View {
+        List {
+            Section("Create a reminder") {
+                NavigationLink { NativePushSettings(push: store.push, reminderOnly: true) } label: { Label("Apple notification", systemImage: "bell") }
+                NavigationLink { NativeReminderSettings() } label: { Label("Email or WhatsApp", systemImage: "message") }
+            }
+            Section("Your reminders") {
+                if store.push.items.isEmpty && store.reminders.isEmpty { Text("No reminders yet.").foregroundStyle(.secondary) }
+                ForEach(store.push.items) { item in
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(item.title).font(.headline)
+                        Text(Date(timeIntervalSince1970: item.due_at), format: .dateTime.month().day().hour().minute())
+                        Text("Apple notification\(item.recurrence.map { " · \($0)" } ?? "")").font(.caption).foregroundStyle(.secondary)
+                        Button("Cancel reminder", role: .destructive) { pendingPushCancel = item.id }
+                    }.padding(.vertical, 4)
+                }
+                ForEach(store.reminders) { item in
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(item.title).font(.headline)
+                        Text("\(item.local_time.replacingOccurrences(of: "T", with: " ")) · \(item.timezone)").font(.callout)
+                        Text("\(item.channel == "whatsapp" ? "WhatsApp" : "Email") · \(item.status.capitalized)").font(.caption).foregroundStyle(.secondary)
+                        if item.status == "draft" {
+                            NavigationLink("Review draft") { NativeReminderSettings(initialReview: ReminderReview(id: item.id, kind: "create", title: item.title, localTime: item.local_time, timezone: item.timezone)) }
+                        }
+                        if ["draft", "scheduled"].contains(item.status) { Button("Cancel reminder", role: .destructive) { pendingCancel = item } }
+                    }.padding(.vertical, 4)
+                }
+            }
+            if working { ProgressView("Updating reminders…") }
+            if let failure { Text(failure).foregroundStyle(.red) }
+        }.navigationTitle("Reminders").disabled(working)
+            .task { await refresh() }.refreshable { await refresh() }
+            .confirmationDialog("Cancel this reminder?", isPresented: Binding(get: { pendingCancel != nil || pendingPushCancel != nil }, set: { if !$0 { pendingCancel = nil; pendingPushCancel = nil } })) {
+                Button("Cancel reminder", role: .destructive) {
+                    let reminder = pendingCancel; let pushID = pendingPushCancel
+                    pendingCancel = nil; pendingPushCancel = nil
+                    Task {
+                        working = true; defer { working = false }
+                        do {
+                            if let pushID { try await store.push.cancel(pushID) }
+                            if let reminder {
+                                let _: OK = try await store.api.request("/api/reminders/confirm", body: ["id": reminder.id, "kind": "cancel", "confirm": true, "channel": reminder.channel ?? "email"])
+                            }
+                            await refresh()
+                        } catch { failure = error.localizedDescription }
+                    }
+                }
+            }
+    }
+    private func refresh() async {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--test-adaptive-layout") { return }
+        #endif
+        let account = store.api.credential?.token
+        failure = nil
+        do {
+            let status: ReminderStatus = try await store.api.request("/api/reminders")
+            guard account != nil, account == store.api.credential?.token, !store.needsSignIn else { return }
+            store.reminders = status.reminders
+            try await store.push.refresh()
+        } catch { failure = "Could not refresh all reminders. Pull down to retry." }
     }
 }

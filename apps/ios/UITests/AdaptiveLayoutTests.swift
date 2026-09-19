@@ -32,24 +32,47 @@ final class AdaptiveLayoutTests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["Refresh running data"].exists)
         XCTAssertTrue(app.staticTexts["Running data not loaded yet."].exists)
-        app.buttons["Notifications & reminders"].tap()
+        tapSetting("Apple notifications", app: app)
         XCTAssertTrue(app.navigationBars["Notifications"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Enable notifications"].exists)
         XCTAssertEqual(app.webViews.count, 0)
         app.navigationBars.buttons["Close"].tap()
-        app.buttons["Coaching preferences"].tap()
+        tapSetting("Coaching preferences", app: app)
         XCTAssertTrue(app.navigationBars["Your coach"].waitForExistence(timeout:5))
         XCTAssertTrue(app.navigationBars.buttons["Save"].exists)
         XCTAssertTrue(app.navigationBars.buttons["Cancel"].exists)
         XCTAssertFalse(app.navigationBars.buttons["Done"].exists)
         app.navigationBars.buttons["Cancel"].tap()
-        app.buttons["Connect WhatsApp"].tap()
+        tapSetting("WhatsApp", app: app)
         XCTAssertTrue(app.navigationBars["WhatsApp"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.webViews.count, 0)
         app.navigationBars.buttons["Close"].tap()
-        app.buttons["Email & reminders"].tap()
-        XCTAssertTrue(app.navigationBars["Email & reminders"].waitForExistence(timeout: 5))
+        tapSetting("Email", app: app)
+        XCTAssertTrue(app.navigationBars["Email"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.textFields["Email address"].exists)
         XCTAssertEqual(app.webViews.count, 0)
+        app.navigationBars.buttons["Close"].tap()
+        tapSetting("All reminders", app: app)
+        XCTAssertTrue(app.navigationBars["Reminders"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["No reminders yet."].exists)
+        app.navigationBars.buttons["Close"].tap()
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            app.descendants(matching: .any)["sidebar-progress"].firstMatch.tap()
+        } else { app.tabBars.buttons["Progress"].tap() }
+        XCTAssertTrue(app.navigationBars["Progress"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Run history"].exists)
+        XCTAssertTrue(app.buttons["Coach insights"].exists)
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            app.descendants(matching: .any)["sidebar-schedule"].firstMatch.tap()
+        } else { app.tabBars.buttons["Plan"].tap() }
+        XCTAssertTrue(app.navigationBars["Plan"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["Run history"].exists)
+    }
+    private func tapSetting(_ title: String, app: XCUIApplication) {
+        let button = app.buttons["settings-\(title)"]
+        for _ in 0..<5 { if button.isHittable { break }; app.swipeUp() }
+        if !button.isHittable { for _ in 0..<5 { if button.isHittable { break }; app.swipeDown() } }
+        XCTAssertTrue(button.isHittable)
+        button.tap()
     }
 }

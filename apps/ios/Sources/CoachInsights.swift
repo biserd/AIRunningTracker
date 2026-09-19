@@ -59,8 +59,7 @@ struct CoachInsightsView:View {
             VStack(alignment:.leading,spacing:22) {
                 VStack(alignment:.leading,spacing:12) {
                     Label("YOUR RUNNING, IN FOCUS",systemImage:"sparkles").font(.caption.bold()).tracking(1.5).foregroundStyle(RunBrand.orange)
-                    Text("Find your next\nbreakthrough.").font(.system(.largeTitle,design:.rounded).bold())
-                    Text("The same insights as Run Analytics. Made easier to explore.").font(.callout).foregroundStyle(.secondary)
+                    Text("Recovery, fitness & your next run.").font(.title3).foregroundStyle(.secondary)
                     if let loaded { Label("Fetched \(loaded.formatted(date:.omitted,time:.shortened)) · Read only",systemImage:"arrow.clockwise").font(.caption).foregroundStyle(.secondary) }
                 }.padding(22).frame(maxWidth:.infinity,alignment:.leading)
                     .background(LinearGradient(colors:[RunBrand.orange.opacity(0.13),RunBrand.teal.opacity(0.07)],startPoint:.topLeading,endPoint:.bottomTrailing),in:RoundedRectangle(cornerRadius:26))

@@ -93,6 +93,14 @@ struct RunningProgressView:View {
     var body:some View {
         ScrollView {
             VStack(spacing:20) {
+                VStack(spacing: 0) {
+                    NavigationLink { RunHistoryView() } label: { progressLink("Run history", symbol: "figure.run") }
+                    Divider()
+                    NavigationLink { CoachInsightsView().id(store.snapshot?.runner.id) } label: { progressLink("Coach insights", symbol: "sparkles") }
+                }.padding(.horizontal).background(RunBrand.surface, in: RoundedRectangle(cornerRadius: 18))
+                if store.snapshot == nil && !loading {
+                    ContentUnavailableView("Progress not loaded", systemImage: "chart.bar.xaxis", description: Text("Pull down to refresh your running data."))
+                }
                 if loading { ProgressView("Reading your progress…") }
                 if !failures.isEmpty {
                     Text(failures.joined(separator:"\n")).foregroundStyle(.secondary)
@@ -118,21 +126,23 @@ struct RunningProgressView:View {
                     InsightCard(title:"Activity calendar",symbol:"calendar",color:RunBrand.teal) {
                         if calendar.days.isEmpty { Text("No calendar data available yet.") }
                         else {
-                            Picker("Month",selection:$month) { ForEach(calendar.months,id:\.self) { Text($0).tag($0) } }.pickerStyle(.menu)
+                            Picker("Month",selection:$month) { ForEach(calendar.months,id:\.self) { Text(runnerMonth($0)).tag($0) } }.pickerStyle(.menu)
                             Text("Tap a day to see its runs. Darker means more distance.").font(.caption).foregroundStyle(.secondary)
-                            LazyVGrid(columns:Array(repeating:GridItem(.flexible(),spacing:4),count:7),spacing:6) {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                            LazyVGrid(columns:Array(repeating:GridItem(.flexible(minimum:44),spacing:2),count:7),spacing:4) {
                                 ForEach(Array(["M","T","W","T","F","S","S"].enumerated()),id:\.offset) { _,day in Text(day).font(.caption).foregroundStyle(.secondary) }
-                                ForEach(0..<offset,id:\.self) { _ in Color.clear.frame(height:36) }
+                                ForEach(0..<offset,id:\.self) { _ in Color.clear.frame(height:44) }
                                 ForEach(visibleDays) { day in
                                     Button { selected=day } label: {
-                                        Text(String(day.date.suffix(2))).font(.callout.monospacedDigit()).frame(maxWidth:.infinity,minHeight:36)
+                                        Text(String(day.date.suffix(2))).font(.callout.monospacedDigit()).frame(minWidth:44,maxWidth:.infinity,minHeight:44)
                                             .background(RunBrand.teal.opacity(day.totalDistanceKm>0 ? 0.2+0.55*min(1,day.totalDistanceKm/max(1,calendar.maxDistance)) : 0.06),in:RoundedRectangle(cornerRadius:7))
                                             .overlay(RoundedRectangle(cornerRadius:7).strokeBorder(selected?.id==day.id ? RunBrand.orange : .clear,lineWidth:2))
                                     }.buttonStyle(.plain).accessibilityLabel("\(day.date), \(runnerDistance(day.totalDistanceKm,units:calendar.unitPreference)), \(day.activities.count) runs")
                                 }
+                            }.frame(minWidth:320)
                             }
                             if let selected {
-                                Text(selected.date).font(.headline)
+                                Text(runnerDay(selected.date, today: store.snapshot?.state.today)).font(.headline)
                                 if selected.activities.isEmpty { Text("No recorded runs.").foregroundStyle(.secondary) }
                                 ForEach(selected.activities) { run in
                                     HStack { Text(run.name); Spacer(); Text(runnerDistance(run.distanceKm,units:calendar.unitPreference)).foregroundStyle(.secondary) }
@@ -142,8 +152,15 @@ struct RunningProgressView:View {
                     }.onChange(of:month) { _,_ in selected=nil }
                 }
             }.padding(20).frame(maxWidth:760).frame(maxWidth:.infinity)
-        }.background(RunBrand.canvas).navigationTitle("Running progress").navigationBarTitleDisplayMode(.inline)
-            .task(id:store.snapshot?.runner.id) { await load() }.refreshable { await load() }
+        }.background(RunBrand.canvas).navigationTitle("Progress")
+            .task(id:store.snapshot?.runner.id) { await load() }.refreshable { await store.refreshSchedule(force: true); await load() }
+    }
+    private func progressLink(_ title: String, symbol: String) -> some View {
+        HStack {
+            Label(title, systemImage: symbol).font(.headline).foregroundStyle(.primary)
+            Spacer()
+            Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.secondary)
+        }.frame(minHeight: 52)
     }
     private func component(_ name:String,_ value:Double)->some View {
         VStack { HStack { Text(name); Spacer(); Text("\(Int(value))/25") }; ProgressView(value:min(25,max(0,value)),total:25).tint(RunBrand.orange) }

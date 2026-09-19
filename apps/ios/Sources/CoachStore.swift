@@ -13,6 +13,10 @@ import Combine
     private var didRestore = false
     private var pendingSignIn: String?
     private var lastLinkDigest: String?
+    private var retrySignInLink: String?
+    @Published var signInFailure: String?
+    @Published private(set) var verifyingSignIn = false
+    @Published private(set) var canRetrySignIn = false
     @Published var snapshot: Snapshot?
     @Published var messages: [Message] = []
     @Published var reminders: [Reminder] = []
@@ -65,26 +69,32 @@ import Combine
             lastLinkDigest = digest
             pendingSignIn = url.absoluteString
             processPendingSignIn()
-        } catch { report(error) }
+        } catch { signInFailure = error.localizedDescription }
     }
     func processPendingSignIn() {
-        guard !loading, !busy, let link = pendingSignIn else { return }
+        guard !loading, !busy, !verifyingSignIn, let link = pendingSignIn else { return }
         pendingSignIn = nil
         Task { await verify(link: link) }
     }
     func requestSignInLink(email: String, signup:Bool = false) async -> Bool {
         guard !busy else { return false }
-        busy = true; error = nil; defer { busy = false }
+        busy = true; error = nil; signInFailure = nil; defer { busy = false }
         do {
             let normalized = try SignInEmail.normalize(email)
             let _: OK = try await api.request("/api/account/email", body: ["email": normalized,"signup":signup])
+            retrySignInLink = nil; canRetrySignIn = false; lastLinkDigest = nil
             return true
-        } catch { report(error); return false }
+        } catch { signInFailure = error.localizedDescription; return false }
+    }
+    func retrySignIn() async {
+        guard let retrySignInLink, canRetrySignIn else { return }
+        await verify(link: retrySignInLink)
     }
     func verify(link: String) async {
-        guard !busy else { return }
+        guard !busy, !verifyingSignIn else { return }
         let generation = sessionGeneration
-        busy = true; error = nil; defer { busy = false }
+        busy = true; verifyingSignIn = true; error = nil; signInFailure = nil; canRetrySignIn = false
+        defer { busy = false; verifyingSignIn = false }
         await voice.end()
         guard generation == sessionGeneration else { return }
         do {
@@ -93,11 +103,22 @@ import Combine
             let token = try SignInLink.token(from: link)
             let _: OK = try await api.request("/api/account/verify", body: ["token":token])
             guard generation == sessionGeneration else { return }
+            retrySignInLink = nil; canRetrySignIn = false
             sessionGeneration = UUID()
             subscriptions?.stop(); subscriptions=nil; onboarding=nil
             snapshot = nil; companion=nil; refreshedAt=nil; reminderClarification=nil; messages = []; reminders = []; whatsapp = nil; review = nil; reminderReview = nil; verifiedEmail = ""; settingsSheet = nil
             needsSignIn = false; await refresh()
-        } catch { report(error) }
+        } catch {
+            guard generation == sessionGeneration else { return }
+            // Failed transport must not permanently suppress the same universal link.
+            lastLinkDigest = nil
+            canRetrySignIn = SignInRecovery.canRetry(error)
+            retrySignInLink = canRetrySignIn ? link : nil
+            signInFailure = canRetrySignIn
+                ? "We couldn’t finish signing you in. Check your connection and try again. If the link has already been used, request a new one."
+                : "This link couldn’t sign you in. Send a new link to continue."
+            if !needsSignIn { self.error = signInFailure }
+        }
     }
     func refresh() async {
         let generation = sessionGeneration
@@ -217,6 +238,7 @@ import Combine
         sessionGeneration = UUID()
         conversationGeneration += 1
         pendingSignIn = nil; lastLinkDigest = nil
+        retrySignInLink = nil; canRetrySignIn = false; signInFailure = nil; verifyingSignIn = false
         busy = false; loading = false; error = nil
         companionError = nil; scheduleError = nil
         // Local sign-out must not depend on connectivity or provider cleanup.

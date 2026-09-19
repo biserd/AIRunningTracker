@@ -74,6 +74,7 @@ struct CoachTabs: View {
                     switch selected {
                     case .coach: ChatView(text: $draft, channel: $reminderChannel)
                     case .schedule: ScheduleView()
+                    case .progress: NavigationStack { RunningProgressView() }
                     case .settings: SettingsView()
                     }
                 }.navigationSplitViewStyle(.balanced)
@@ -81,7 +82,9 @@ struct CoachTabs: View {
                 TabView(selection: $selected) {
                     ChatView(text: $draft, channel: $reminderChannel)
                         .tabItem { Label("Coach", systemImage: CoachSection.coach.symbol) }.tag(CoachSection.coach)
-                    ScheduleView().tabItem { Label("Schedule", systemImage: CoachSection.schedule.symbol) }.tag(CoachSection.schedule)
+                    ScheduleView().tabItem { Label("Plan", systemImage: CoachSection.schedule.symbol) }.tag(CoachSection.schedule)
+                    NavigationStack { RunningProgressView() }
+                        .tabItem { Label("Progress", systemImage: CoachSection.progress.symbol) }.tag(CoachSection.progress)
                     SettingsView().tabItem { Label("Settings", systemImage: CoachSection.settings.symbol) }.tag(CoachSection.settings)
                 }
             }
@@ -97,7 +100,8 @@ struct CoachTabs: View {
                 Group {
                     switch destination {
                     case .whatsapp: NativeWhatsAppSettings()
-                    case .reminders: NativeReminderSettings()
+                    case .reminders: UnifiedRemindersView()
+                    case .email: NativeReminderSettings(connectionOnly: true)
                     case .notifications: NativePushSettings(push: store.push)
                     case .coaching: CoachingPreferencesView()
                     }
@@ -142,9 +146,13 @@ struct ChatView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 16) {
-                            CoachCompanionCards()
-                            InsightShortcut()
-                            if store.messages.isEmpty { Text("How are you feeling today?").font(.title2).foregroundStyle(.secondary) }
+                            if store.messages.isEmpty {
+                                if let briefing = store.companion?.briefings.first {
+                                    Text(briefing.title).font(.headline)
+                                    Text(briefing.body).font(.body)
+                                } else { Text("How are you feeling today?").font(.title2).foregroundStyle(.secondary) }
+                            }
+                            DisclosureGroup("Check in & running context") { CoachCompanionCards() }
                             ForEach(store.messages) { message in
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(message.role == "user" ? "You" : "Coach").font(.caption.bold()).foregroundStyle(.secondary)
@@ -234,16 +242,18 @@ struct ScheduleView: View {
                     }
                     if let updated=store.snapshot?.state.updatedAt { Text("Updated \(coachTimestamp(updated))").font(.caption).foregroundStyle(.secondary) }
                     if let failure=store.scheduleError { Text(failure).foregroundStyle(.red) }
-                    NavigationLink { RunHistoryView() } label: { Label("Run history",systemImage:"figure.run").foregroundStyle(RunBrand.blue).font(.headline) }
-                    NavigationLink { CoachInsightsView().id(store.snapshot?.runner.id) } label: { Label("Coach insights",systemImage:"sparkles").foregroundStyle(RunBrand.teal).font(.headline) }
+                    Button("Adjust my plan with coach") {
+                        store.requestedCoach = UUID()
+                        Task { await store.send("Help me review my upcoming training plan. Ask what I want to change before proposing an update.") }
+                    }.buttonStyle(.borderedProminent).disabled(store.busy || store.voice.active || store.snapshot?.canUseAI != true)
                 }
                 Section("Today and what’s next") {
                     if store.snapshot?.state.upcomingDays.isEmpty != false { Text("No upcoming workouts available.").foregroundStyle(.secondary) }
                     ForEach(store.snapshot?.state.upcomingDays ?? []) { day in
                         HStack {
                             VStack(alignment: .leading, spacing: 5) {
-                                Text(day.date + (day.date == store.snapshot?.state.today ? " · Today" : "")).font(.caption).foregroundStyle(.secondary)
-                                Text(day.title).font(.title3.bold()).foregroundStyle(day.kind == "rest" ? RunBrand.teal : RunBrand.orange)
+                                Text(runnerDay(day.date, today: store.snapshot?.state.today)).font(.callout).foregroundStyle(.secondary)
+                                Text(day.title).font(.title3.bold())
                                 Text(workoutSummary(day,units:store.snapshot?.runner.unitPreference ?? "km")).foregroundStyle(.secondary)
                                 if let detail=day.description, !detail.isEmpty { Text(detail).font(.callout).foregroundStyle(.secondary) }
                                 if let pace=day.targetPace, !pace.isEmpty { Text("Target pace: \(pace)").font(.caption) }
@@ -254,27 +264,11 @@ struct ScheduleView: View {
                     }
                 }
                 Section("Reminders") {
-                    ForEach(store.push.items) { item in
-                        VStack(alignment: .leading) {
-                            Text(item.title).font(.headline)
-                            Text(Date(timeIntervalSince1970: item.due_at), format: .dateTime.month().day().hour().minute())
-                            Text("Apple notification").font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
-                    if store.reminders.isEmpty && store.push.items.isEmpty { Text("No reminders yet.").foregroundStyle(.secondary) }
-                    ForEach(store.reminders) { reminder in
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text(reminder.title).font(.headline)
-                            Text("\(reminder.local_time) · \(reminder.timezone)").font(.caption)
-                            Text(reminder.status.capitalized).font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
-                    Button("Manage reminders") { store.settingsSheet = .reminders }.buttonStyle(.borderedProminent)
-                    Button("Apple notifications") { store.settingsSheet = .notifications }.buttonStyle(.borderedProminent)
+                    NavigationLink { UnifiedRemindersView() } label: { Label("All reminders", systemImage: "bell") }
                 }
             }.frame(maxWidth: 900).frame(maxWidth: .infinity)
                 .scrollContentBackground(.hidden).background(RunBrand.canvas)
-                .navigationTitle("Schedule").refreshable { await store.refreshSchedule(force:true) }
+                .navigationTitle("Plan").refreshable { await store.refreshSchedule(force:true) }
                 .task { await store.refreshSchedule() }
         }
     }
@@ -288,8 +282,8 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section("Your account") {
-                    Button("Subscription & Strava") { accountSheet=true }.buttonStyle(.borderedProminent)
                     Text(store.snapshot?.runner.name ?? "Run Analytics runner").font(.headline)
+                    settingsRow("Subscription & Strava", symbol: "person.crop.circle") { accountSheet=true }
                     LabeledContent("Units", value: store.snapshot?.runner.unitPreference ?? "")
                     LabeledContent("Timezone", value: store.snapshot?.runner.timezone ?? "")
                 }
@@ -313,14 +307,16 @@ struct SettingsView: View {
                 } footer: {
                     Text("Pull down to refresh your saved runs and plan. This does not start a new Strava sync.")
                 }
-                Section("Stay connected") {
-                    Button("Coaching preferences") { store.settingsSheet = .coaching }.buttonStyle(.borderedProminent)
-                    LabeledContent("Apple notifications", value: store.push.status)
-                    Button("Notifications & reminders") { store.settingsSheet = .notifications }.buttonStyle(.borderedProminent)
-                    LabeledContent("WhatsApp", value: store.whatsapp.map { $0.connected && $0.authorized ? "Connected" : "Not connected" } ?? "Unavailable")
-                    Button(store.whatsapp?.connected == true ? "Manage WhatsApp" : "Connect WhatsApp") { store.settingsSheet = .whatsapp }
-                        .buttonStyle(.borderedProminent)
-                    Button("Email & reminders") { store.settingsSheet = .reminders }.buttonStyle(.borderedProminent)
+                Section("Connections") {
+                    settingsRow("WhatsApp", symbol: "message", status: store.whatsapp.map { $0.connected && $0.authorized ? "Connected" : "Not connected" } ?? "Not loaded") { store.settingsSheet = .whatsapp }
+                    settingsRow("Email", symbol: "envelope", status: store.verifiedEmail.isEmpty ? "Not connected" : "Connected") { store.settingsSheet = .email }
+                }
+                Section("Coaching") {
+                    settingsRow("Coaching preferences", symbol: "slider.horizontal.3") { store.settingsSheet = .coaching }
+                }
+                Section("Notifications") {
+                    settingsRow("Apple notifications", symbol: "bell.badge", status: store.push.status) { store.settingsSheet = .notifications }
+                    settingsRow("All reminders", symbol: "clock") { store.settingsSheet = .reminders }
                 }
                 Section {
                     Button("Sign out", role: .destructive) { confirmLogout = true }
@@ -335,15 +331,26 @@ struct SettingsView: View {
                 }
         }
     }
+    private func settingsRow(_ title: String, symbol: String, status: String? = nil, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Label(title, systemImage: symbol).foregroundStyle(.primary)
+                Spacer()
+                if let status { Text(status).font(.caption).foregroundStyle(.secondary) }
+                Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary)
+            }.frame(minHeight: 44)
+        }.buttonStyle(.plain).accessibilityIdentifier("settings-\(title)")
+    }
 }
 
 enum CoachSection: String, CaseIterable, Identifiable {
-    case coach, schedule, settings
+    case coach, schedule, progress, settings
     var id: String { rawValue }
     var title: String {
         switch self {
         case .coach: return "Coach"
-        case .schedule: return "Schedule"
+        case .schedule: return "Plan"
+        case .progress: return "Progress"
         case .settings: return "Settings"
         }
     }
@@ -351,6 +358,7 @@ enum CoachSection: String, CaseIterable, Identifiable {
         switch self {
         case .coach: return "bubble.left.and.bubble.right"
         case .schedule: return "calendar"
+        case .progress: return "chart.bar.xaxis"
         case .settings: return "slider.horizontal.3"
         }
     }

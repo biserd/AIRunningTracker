@@ -20,6 +20,33 @@ struct CompanionData:Decodable {
     let checkins:[CoachCheckIn]
 }
 func runnerDistance(_ km:Double,units:String)->String { String(format:"%.1f %@",units == "miles" ? km*0.621371 : km,units == "miles" ? "mi" : "km") }
+// Treat date-only values as calendar days, never UTC instants that shift a day locally.
+func runnerDay(_ value: String, today: String? = nil) -> String {
+    let parser = DateFormatter()
+    parser.locale = Locale(identifier: "en_US_POSIX")
+    parser.calendar = Calendar(identifier: .gregorian)
+    parser.timeZone = TimeZone(secondsFromGMT: 0)
+    parser.dateFormat = "yyyy-MM-dd"
+    guard let day = parser.date(from: value) else { return value }
+    if let today, let reference = parser.date(from: today) {
+        if value == today { return "Today" }
+        if day == reference.addingTimeInterval(-86400) { return "Yesterday" }
+        if day == reference.addingTimeInterval(86400) { return "Tomorrow" }
+    }
+    parser.locale = .current
+    parser.setLocalizedDateFormatFromTemplate("EEE MMM d")
+    return parser.string(from: day)
+}
+func runnerMonth(_ value: String) -> String {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.timeZone = TimeZone(secondsFromGMT: 0)
+    formatter.dateFormat = "yyyy-MM"
+    guard let date = formatter.date(from: value) else { return value }
+    formatter.locale = .current
+    formatter.setLocalizedDateFormatFromTemplate("MMMM yyyy")
+    return formatter.string(from: date)
+}
 func coachTimestamp(_ value:String)->String {
     let formatter=ISO8601DateFormatter(); formatter.formatOptions=[.withInternetDateTime,.withFractionalSeconds]
     if let date=formatter.date(from:value) { return date.formatted(date:.abbreviated,time:.shortened) }
@@ -50,7 +77,7 @@ struct CoachCompanionCards:View {
                 Text("Today: \(saved.feeling.replacingOccurrences(of:"_",with:" "))").font(.caption).foregroundStyle(.secondary)
             }
             if let run=store.snapshot?.state.activities?.last {
-                DisclosureGroup("Your latest run · \(run.date)") {
+                DisclosureGroup("Your latest run · \(runnerDay(run.date, today: store.snapshot?.state.today))") {
                     VStack(alignment:.leading,spacing:10) {
                         Text("\(run.name ?? "Run") · \(runnerDistance(run.km,units:store.snapshot?.runner.unitPreference ?? "km"))")
                         Button("Talk about this run") { Task { await store.send("Review my run ID \(run.id) on \(run.date), using my actual running data. Ask how the final part felt and connect it to my next planned session.") } }.buttonStyle(.borderedProminent).disabled(store.busy || store.voice.active)
@@ -67,21 +94,21 @@ struct CoachCompanionCards:View {
                     Button("Discuss with coach") { Task { await store.send("Discuss my saved \(briefing.kind) briefing for \(briefing.reference), using fresh training data.") } }.buttonStyle(.bordered).disabled(store.busy || store.voice.active)
                 }
             }
-        }.padding().background(Color.orange.opacity(0.07)).clipShape(RoundedRectangle(cornerRadius:16))
+        }.padding(.vertical, 8)
     }
 }
 struct RunHistoryView:View {
     @EnvironmentObject var store:CoachStore
     var body:some View {
         List {
-            Section {
-                NavigationLink { RunningProgressView() } label: {
-                    Label("Runner Score & activity calendar",systemImage:"chart.bar.xaxis").foregroundStyle(RunBrand.orange)
-                }
-            }
-            Section { Text("Recorded runs from the last 90 days, up to 200 and subject to your plan.").font(.caption).foregroundStyle(.secondary) }
+            Section { Text("Your recent runs · last 90 days").font(.caption).foregroundStyle(.secondary) }
             ForEach((store.snapshot?.state.activities ?? []).reversed()) { run in
-                NavigationLink("\(run.date) · \(run.name ?? "Run")") { RunDetailView(run:run) }
+                NavigationLink { RunDetailView(run:run) } label: {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(run.name ?? "Run").font(.headline)
+                        Text("\(runnerDay(run.date, today: store.snapshot?.state.today)) · \(runnerDistance(run.km, units: store.snapshot?.runner.unitPreference ?? "km"))").font(.callout).foregroundStyle(.secondary)
+                    }.padding(.vertical, 4)
+                }
             }
             if store.snapshot?.state.activities?.isEmpty != false { Text("No recorded runs available.") }
         }.navigationTitle("Run history").refreshable { await store.refreshSchedule(force:true) }

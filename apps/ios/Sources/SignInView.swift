@@ -1,5 +1,14 @@
 import SwiftUI
 
+enum SignInRecovery {
+    static func canRetry(_ error: Error) -> Bool {
+        if error is URLError { return true }
+        if case APIError.server(let status, _) = error { return status >= 500 }
+        if case APIError.invalidResponse = error { return true }
+        return false
+    }
+}
+
 enum RunBrand {
     static let orange = Color(red: 200 / 255, green: 59 / 255, blue: 10 / 255)
     static let teal = Color(UIColor { $0.userInterfaceStyle == .dark ? UIColor(red:0.30,green:0.83,blue:0.73,alpha:1) : UIColor(red:0.04,green:0.43,blue:0.39,alpha:1) })
@@ -38,6 +47,18 @@ struct SignInView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 18) {
+                    if store.verifyingSignIn {
+                        ProgressView("Signing you in…").font(.headline)
+                            .accessibilityIdentifier("sign-in-verifying")
+                    }
+                    if let failure = store.signInFailure {
+                        Label(failure, systemImage: "exclamationmark.triangle").foregroundStyle(.red).font(.callout)
+                            .accessibilityIdentifier("sign-in-recovery-message")
+                        if store.canRetrySignIn {
+                            Button("Try again") { Task { await store.retrySignIn() } }
+                                .buttonStyle(.borderedProminent).disabled(store.busy)
+                        }
+                    }
                     Picker("Account",selection:$signup) {
                         Text("Sign in").tag(false)
                         Text("Create account").tag(true)
@@ -60,13 +81,13 @@ struct SignInView: View {
                     Button(action: sendLink) {
                         HStack {
                             if sending { ProgressView().tint(.white) }
-                            Text(sending ? "Sending your link…" : sentTo == nil ? "Email me a sign-in link" : "Send a new link")
+                            Text(sending ? "Sending your link…" : sentTo == nil && store.signInFailure == nil ? "Email me a sign-in link" : "Send a new link")
                                 .font(.headline)
                         }.frame(maxWidth: .infinity).padding(.vertical, 12)
                     }.buttonStyle(.borderedProminent).buttonBorderShape(.roundedRectangle(radius: 12))
                         .disabled(store.busy || (signup && !acceptedTerms) || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
-                    if let sentTo {
+                    if let sentTo, store.signInFailure == nil && !store.verifyingSignIn {
                         Label("Check your inbox", systemImage: "envelope.badge").font(.headline).foregroundStyle(RunBrand.orange)
                         Text("Check \(sentTo) for your secure link. Tap it on this device to continue. Check spam too.")
                             .font(.callout).foregroundStyle(.secondary)
@@ -100,7 +121,7 @@ struct SignInView: View {
                     .font(.callout).foregroundStyle(.secondary).frame(maxWidth: .infinity)
             }.frame(maxWidth: 480).padding(24).frame(maxWidth: .infinity)
         }
-        .background(scheme == .dark ? Color(.systemGroupedBackground) : Color(red: 248 / 255, green: 250 / 255, blue: 252 / 255))
+        .background(RunBrand.canvas)
         .scrollDismissesKeyboard(.interactively)
     }
 
