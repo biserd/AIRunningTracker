@@ -39,6 +39,20 @@ test('weekly summary uses complete local days and correct distance units',()=>{
  const result=service.weeklyStory([{date:'2026-09-18',km:10},{date:'2026-09-10',km:5},{date:'2026-09-19',km:100}],'2026-09-19','miles');
  assert.match(result,/1 runs and 6.2 mi/);assert.match(result,/3.1 mi more/);assert.doesNotMatch(result,/100/);
 });
+test('weekly story connects the actual goal and next workout without inventing adherence',()=>{
+ const result=service.weeklyStory([{date:'2026-09-18',km:10}],'2026-09-19','km',{goal:'half_marathon',raceDate:'2026-10-19',days:[{date:'2026-09-21',title:'Easy 30 minutes',kind:'easy',completed:false}]});
+ assert.match(result,/half marathon, 30 days from race day/);
+ assert.match(result,/Easy 30 minutes on 2026-09-21/);
+ assert.doesNotMatch(result,/missed workout|completed your plan/);
+});
+test('follow-up is bounded to yesterday and respects a new check-in',()=>{
+ assert.match(service.followupStory([{date:'2026-09-18',feeling:'tired'}],'2026-09-19'),/nothing in your plan has changed/);
+ assert.equal(service.followupStory([{date:'2026-09-18',feeling:'sore'},{date:'2026-09-19',feeling:'good'}],'2026-09-19'),null);
+ assert.equal(service.followupStory([{date:'2026-09-17',feeling:'sore'}],'2026-09-19'),null);
+ assert.equal(service.followupStory([{date:'2026-09-18',feeling:'good'}],'2026-09-19'),null);
+ assert.equal(service.validateCompanionPreferences({notes:'',evening:false,weekly:false,hour:18,quietStart:21,quietEnd:7}).followup,false);
+ assert.throws(()=>service.validateCompanionPreferences({...service.defaultCompanionPreferences,followup:'yes'}));
+});
 test('briefings are tenant isolated and deduplicated by date',async()=>{
  await service.companionAction(1,'preferences',{...service.defaultCompanionPreferences,weekly:true});
  await service.buildCompanionBriefings(1,new Date('2026-09-20T18:00:00Z'));

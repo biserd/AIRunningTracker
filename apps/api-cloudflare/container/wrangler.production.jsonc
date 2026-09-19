@@ -3,6 +3,7 @@
   "name": "aitracker-main",
   "account_id": "73d71a2bef58f7469ecb48e2b8e84c0e",
   "main": "production.ts",
+  "services": [{"binding":"COACH_NOTIFICATIONS","service":"aitracker-coach-preview","entrypoint":"CoachNotifications"}],
   "compatibility_date": "2026-09-13",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,

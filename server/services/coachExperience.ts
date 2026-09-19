@@ -36,7 +36,7 @@ export async function coachExperience(userId: number, now = new Date()) {
       timezone,
       today,
       companion,
-      plan: plan ? {id:plan.id,name:plan.goalType.replaceAll('_',' ')+' training',totalWeeks:plan.totalWeeks,weekNumber:week?.weekNumber ?? null} : null,
+      plan: plan ? {id:plan.id,name:plan.goalType.replaceAll('_',' ')+' training',raceDate:plan.raceDate?new Date(plan.raceDate).toISOString().slice(0,10):null,totalWeeks:plan.totalWeeks,weekNumber:week?.weekNumber ?? null} : null,
       goal: plan?.goalType || user.coachGoal || "No running goal set",
       historyLimit: freeLimit ?? 200,
       historyDays: 90,

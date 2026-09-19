@@ -324,6 +324,10 @@ export class StravaWebhookService {
 
       // Threshold gate computed above (willEmail). We already stored the activity
       // so history stays accurate even when we skip the email.
+      if(activityDbId){
+        const {permitCoachNotification}=await import('./coachNotifications');
+        if(!await permitCoachNotification(user.id,'run:'+activityDbId,'email',undefined,willEmail))return 'stored_no_email:preferred_coach_channel';
+      }
       if (!meetsDistanceThreshold) {
         console.log(`[Strava Webhook] Activity ${event.object_id} too short (${activity.distance}m < ${minDistanceMeters}m): stored but skipping email`);
         return `stored_no_email:below_min_distance(${Math.round(activity.distance ?? 0)}m)`;

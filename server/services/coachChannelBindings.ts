@@ -320,6 +320,8 @@ async function deliverSignedCoachEvent(bindingId: string, payload: Record<string
 
 export async function emitBoundCoachActivityEvent(userId: number, activityId: number): Promise<boolean> {
   if (!isMultiRunnerCoachEnabled()) return false;
+  const {hasUnifiedCoachDelivery}=await import('./coachNotifications');
+  if(await hasUnifiedCoachDelivery(userId))return false;
   const [binding] = await db.select({ bindingId: coachChannelBindings.bindingId, runner: users })
     .from(coachChannelBindings)
     .innerJoin(users, eq(users.id, coachChannelBindings.userId))

@@ -6,6 +6,7 @@ import { servePublicAsset } from './public-assets';
 import { privateAssets } from './private-assets';
 import { productionEnvironment } from './production-environment';
 import {consentPage} from '../../../shared/mcpConsentPage';
+import {privateCoachNotifications} from './coach-notification-bridge';
 
 // Promoted after Replit was paused. The old preflight instance has APP_ROLE=web.
 // Keep this identity stable across subsequent deployments for caches and SSE.
@@ -28,6 +29,7 @@ export class RunAnalyticsProduction extends Container<ProductionEnv> {
 }
 
 RunAnalyticsProduction.outboundByHost = {
+  'aitracker.coach.internal': async(request,env:ProductionEnv)=>privateCoachNotifications(env.D1_TRANSPORT_SECRET,env.COACH_NOTIFICATIONS as unknown as Parameters<typeof privateCoachNotifications>[1])(request),
   'aitracker.database.internal': async (request, env: ProductionEnv) =>
     privateDatabaseHandler(nativeD1Transport(env.DB), env.D1_TRANSPORT_SECRET)(request),
 };

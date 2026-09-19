@@ -8846,6 +8846,18 @@ ${allPages.map(page => `  <url>
       return res.json(await companionAction(req.user.id,req.params.action,req.body));
     } catch {return res.status(400).json({message:'Could not load or save coaching details. Please retry.'});}
   });
+  const coachOptOut=async(req:any,res:any)=>{
+    const {verifyCoachUnsubscribe}=await import('./services/coachUnsubscribe');
+    const user=verifyCoachUnsubscribe(req.query.token);
+    res.set('Cache-Control','no-store');
+    if(!user)return res.status(400).send('Invalid unsubscribe link.');
+    if(req.method==='GET')return res.type('html').send(`<h1>Stop proactive coaching alerts?</h1><form method="post" action="/api/coach/notifications/unsubscribe?token=${req.query.token}"><button>Stop alerts</button></form>`);
+    const {applicationSqlDatabase}=await import('./d1/runtimeDatabase');
+    await applicationSqlDatabase.prepare("UPDATE coach_companion_preferences SET settings=json_set(settings,'$.delivery','none'),updated_at=? WHERE user_id=?").bind(new Date().toISOString(),user).run();
+    return res.type('html').send('<h1>Coaching alerts stopped</h1><p>Your conversations and reminders you explicitly scheduled are unchanged.</p>');
+  };
+  app.get('/api/coach/notifications/unsubscribe',coachOptOut);
+  app.post('/api/coach/notifications/unsubscribe',coachOptOut);
   app.post('/api/apple-push/:action', authenticateJWT, async (req: any,res) => {
     const {applePushService,ApplePushError}=await import('./services/applePush');
     try {

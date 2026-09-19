@@ -243,6 +243,8 @@ export async function runMorningBriefings(now = new Date()) {
 }
 
 export async function emitSignedCoachEvent(event: { activityId: number; userId: number; occurredAt?: Date }): Promise<boolean> {
+  const {hasUnifiedCoachDelivery}=await import('./coachNotifications');
+  if(await hasUnifiedCoachDelivery(event.userId))return false;
   const url = process.env.COACH_AGENT_WEBHOOK_URL;
   const secret = process.env.COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2;
   if (!url || !secret) return false;

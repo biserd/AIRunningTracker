@@ -13,6 +13,7 @@ function setup(status=200){
   const db=new DatabaseSync(':memory:');
   db.exec('CREATE TABLE users(id INTEGER PRIMARY KEY); INSERT INTO users VALUES(1),(2); CREATE TABLE activities(id INTEGER PRIMARY KEY,user_id INTEGER,type TEXT,start_date TEXT,created_at TEXT);');
   db.exec(readFileSync('migrations/20260919_apple_push.sql','utf8'));
+  db.exec(readFileSync('migrations/20260919_coach_automation.sql','utf8'));
   const adapter:AtomicSqlDatabase={prepare(sql){let values:(string|number|null)[]=[];const s:SqlStatement={bind(...v){values=v;return s;},async first<T>(){return (db.prepare(sql).get(...values)??null) as T|null;},async all<T>(){return {results:db.prepare(sql).all(...values) as T[]};},async run(){return {meta:{changes:Number(db.prepare(sql).run(...values).changes)}};}};return s;},async batch(statements){db.exec('BEGIN');try{const r=[];for(const s of statements)r.push(await s.run());db.exec('COMMIT');return r;}catch(e){db.exec('ROLLBACK');throw e;}}};
   const sent:ApplePushMessage[]=[];
   const service=new ApplePushService(adapter,{keyId:'test',teamId:'test',privateKey:'test'},async msg=>{sent.push(msg);return {status,reason:status===410?'Unregistered':''};});
@@ -46,6 +47,21 @@ test('new run notification dedupes and excludes another runner and old imports',
   const {service,db,sent}=setup();await service.register(1,input,time()+3600);
   db.exec("INSERT INTO activities VALUES(1,1,'Run',datetime('now'),datetime('now')), (2,2,'Run',datetime('now'),datetime('now')), (3,1,'Run',datetime('now','-2 days'),datetime('now'))");
   await service.tick();await service.tick();assert.equal(sent.length,1);assert.equal(sent[0].kind,'run');
+});
+test('recurring schedules materialize once, remain account scoped, and cancel queued occurrences',async()=>{
+ const {service,db,sent}=setup();await service.register(1,input,time()+3600);
+ await service.reminder(1,{id:'daily-run',title:'Easy run',dueAt:time()+120,recurrence:'daily',timezone:'America/New_York'});
+ assert.equal((await service.reminders(1))[0].recurrence,'daily');
+ assert.equal((await service.reminders(2)).length,0);
+ const due=time()-60;
+ db.prepare('UPDATE coach_reminder_schedules SET next_at=?,anchor_at=?').run(due,due);
+ await service.tick();await service.tick();assert.equal(sent.length,1);
+ assert.ok(Number(db.prepare('SELECT next_at FROM coach_reminder_schedules').get()?.next_at)>time());
+ await service.reminder(2,{id:'daily-run',cancel:true});
+ assert.equal(db.prepare('SELECT cancelled FROM coach_reminder_schedules').get()?.cancelled,0);
+ await service.reminder(1,{id:'daily-run',cancel:true});
+ assert.equal(db.prepare('SELECT cancelled FROM coach_reminder_schedules').get()?.cancelled,1);
+ assert.equal(db.prepare('SELECT cancelled FROM apple_push_reminders').get()?.cancelled,1);
 });
 test('reminder ownership, cancellation and expired devices',async()=>{
   const {service,db,sent}=setup();await service.register(1,input,time()+3600);

@@ -337,10 +337,12 @@ export async function readRunnerTrainingPlan(userId: number, planId: number) {
     Promise.all(weeks.map(async (week: any) => ({
       weekId: week.id,
       weekNumber: week.weekNumber,
-      phase: week.phase,
-      title: week.title,
-      description: week.description,
-      targetMileageKm: week.targetMileageKm,
+      phase: week.weekType,
+      title: week.phaseName,
+      description: week.whyThisWeek,
+      weekStartDate:week.weekStartDate,
+      weekEndDate:week.weekEndDate,
+      targetMileageKm: week.plannedDistanceKm,
       days: (await storage.getPlanDays(week.id)).slice(0, 7).map((day: any) => ({
         dayId: day.id,
         dayOfWeek: day.dayOfWeek,
@@ -348,11 +350,12 @@ export async function readRunnerTrainingPlan(userId: number, planId: number) {
         workoutType: day.workoutType,
         title: day.title,
         description: day.description,
-        targetDistanceKm: day.targetDistanceKm,
-        targetDurationMins: day.targetDurationMins,
+        targetDistanceKm: day.plannedDistanceKm,
+        targetDurationMins: day.plannedDurationMins,
         targetPace: day.targetPace,
         intensity: day.intensity,
-        completed: day.completed,
+        completed: day.status==='completed',
+        status:day.status,
       })),
     }))),
     storage.getPlanGoals(planId),
@@ -370,6 +373,9 @@ export async function readRunnerTrainingPlan(userId: number, planId: number) {
  * existing ownership-enforcing readers instead of exposing raw records.
  */
 export async function readRunnerCoachSnapshot(userId: number, daysInput = 28) {
+  const {companionContext,companionLocal}=await import('../services/coachCompanion');
+  const runner=await storage.getUser(userId);
+  const companion=await companionContext(userId,companionLocal(new Date(),runner?.coachTimezone||'UTC').date);
   const days = clampInteger(daysInput, 28, 7, 90);
   const startDate = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
   const [profile, activities, trends, recovery, score, goals, plans] = await Promise.all([
@@ -395,6 +401,7 @@ export async function readRunnerCoachSnapshot(userId: number, daysInput = 28) {
   return {
     generatedAt: new Date().toISOString(),
     periodDays: days,
+    companion,
     profile,
     recentActivities: activities.activities,
     recentActivitiesTruncatedByPlan: activities.truncatedByPlan,
