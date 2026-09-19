@@ -36,6 +36,7 @@ import SwiftUI
                     // Offline UI fixture only. Never restore a real account in layout tests.
                     store.loading = false
                     store.needsSignIn = false
+                    store.busy = ProcessInfo.processInfo.arguments.contains("--test-pending-coach-request")
                     return
                 }
                 #endif

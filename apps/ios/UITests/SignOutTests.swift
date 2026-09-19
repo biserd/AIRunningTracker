@@ -4,7 +4,7 @@ import UIKit
 final class SignOutTests: XCTestCase {
     func testSignOutImmediatelyReturnsToEmailLogin() {
         let app = XCUIApplication()
-        app.launchArguments = ["--test-adaptive-layout"]
+        app.launchArguments = ["--test-adaptive-layout", "--test-pending-coach-request"]
         app.launch()
         XCTAssertTrue(app.navigationBars["Let’s talk running"].waitForExistence(timeout: 10))
         if UIDevice.current.userInterfaceIdiom == .pad {
@@ -13,7 +13,10 @@ final class SignOutTests: XCTestCase {
             app.tabBars.buttons["Settings"].tap()
         }
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
-        app.buttons["Sign out"].tap()
+        let signOut = app.buttons["Sign out"]
+        for _ in 0..<3 { if signOut.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(signOut.isEnabled)
+        signOut.tap()
         let confirm = app.buttons["confirm-sign-out"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 3))
         confirm.tap()
