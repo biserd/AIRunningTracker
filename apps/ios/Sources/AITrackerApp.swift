@@ -147,33 +147,7 @@ struct ChatView: View {
                                     .clipShape(RoundedRectangle(cornerRadius: 18)).id(message.id)
                             }
                             if store.busy { ProgressView("Coach is thinking…").accessibilityLabel("Coach is preparing a reply") }
-                            if let reminder = store.reminderReview {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Text(reminder.kind == "cancel" ? "Cancel reminder?" : "Schedule reminder?").font(.headline)
-                                    Text(reminder.title)
-                                    Text("\(reminder.localTime) · \(reminder.timezone)").font(.callout)
-                                    if reminder.appleOnly == true { Text("To your Apple devices").font(.caption) } else {
-                                    Picker("Send through", selection: $channel) {
-                                        Text("Email").tag("email")
-                                        if store.push.enabled && store.push.reminders && reminder.kind == "create" { Text("Apple notification").tag("push") }
-                                        if store.whatsapp?.connected == true && store.whatsapp?.authorized == true { Text("WhatsApp").tag("whatsapp") }
-                                    }
-                                    Text(channel == "push" ? "To your Apple devices" : channel == "email" ? "To: \(store.verifiedEmail)" : "To: \(store.whatsapp?.destination ?? "WhatsApp")").font(.caption)
-                                    }
-                                    Button("Confirm") { Task { await store.confirmReminder(channel: reminder.appleOnly == true ? "push" : channel) } }
-                                        .buttonStyle(.borderedProminent).disabled(store.busy || (reminder.appleOnly != true && channel != "push" && store.verifiedEmail.isEmpty))
-                                    Button("Not now") { store.reminderReview = nil }.disabled(store.busy)
-                                }.padding().background(Color.orange.opacity(0.1)).clipShape(RoundedRectangle(cornerRadius: 18))
-                            }
-                            if let review = store.review {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Text("Review plan change").font(.headline)
-                                    Text(review.description)
-                                    Text("Nothing changes until you confirm.").font(.caption).foregroundStyle(.secondary)
-                                    Button("Save my plan") { Task { await store.confirmPlan() } }.buttonStyle(.borderedProminent).disabled(store.busy)
-                                    Button("Dismiss", role: .cancel) { store.review = nil }.disabled(store.busy)
-                                }.padding().background(Color.orange.opacity(0.1)).clipShape(RoundedRectangle(cornerRadius: 18))
-                            }
+                            ChatReviewCards(channel:$channel)
                         }.padding().frame(maxWidth: 820).frame(maxWidth: .infinity)
                     }
                     .onChange(of: store.messages.count) { _, _ in
@@ -197,6 +171,46 @@ struct ChatView: View {
                     }
                 }
         }
+    }
+}
+
+struct ChatReviewCards:View {
+    @EnvironmentObject var store:CoachStore
+    @Binding var channel:String
+    var body:some View {
+        if let reminder=store.reminderReview {
+            VStack(alignment:.leading,spacing:12) {
+                Text(reminder.kind == "cancel" ? "Cancel reminder?" : "Schedule reminder?").font(.headline)
+                Text(reminder.title)
+                Text("\(reminder.localTime) · \(reminder.timezone)").font(.callout)
+                if reminder.appleOnly == true { Text("To your Apple devices").font(.caption) }
+                else {
+                    Picker("Send through",selection:$channel) {
+                        Text("Email").tag("email")
+                        if store.push.enabled && store.push.reminders && reminder.kind == "create" { Text("Apple notification").tag("push") }
+                        if store.whatsapp?.connected == true && store.whatsapp?.authorized == true { Text("WhatsApp").tag("whatsapp") }
+                    }
+                    Text(destination).font(.caption)
+                }
+                Button("Confirm") { Task { await store.confirmReminder(channel:reminder.appleOnly == true ? "push" : channel) } }
+                    .buttonStyle(.borderedProminent).disabled(store.busy || (reminder.appleOnly != true && channel != "push" && store.verifiedEmail.isEmpty))
+                Button("Not now") { store.reminderReview=nil }.disabled(store.busy)
+            }.padding().background(RunBrand.orange.opacity(0.1),in:RoundedRectangle(cornerRadius:18))
+        }
+        if let review=store.review {
+            VStack(alignment:.leading,spacing:12) {
+                Text("Review plan change").font(.headline)
+                Text(review.description)
+                Text("Nothing changes until you confirm.").font(.caption).foregroundStyle(.secondary)
+                Button("Save my plan") { Task { await store.confirmPlan() } }.buttonStyle(.borderedProminent).disabled(store.busy)
+                Button("Dismiss",role:.cancel) { store.review=nil }.disabled(store.busy)
+            }.padding().background(RunBrand.orange.opacity(0.1),in:RoundedRectangle(cornerRadius:18))
+        }
+    }
+    private var destination:String {
+        if channel == "push" { return "To your Apple devices" }
+        if channel == "email" { return "To: \(store.verifiedEmail)" }
+        return "To: \(store.whatsapp?.destination ?? "WhatsApp")"
     }
 }
 
