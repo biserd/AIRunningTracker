@@ -91,8 +91,21 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
         return try await issuerRequest("/api/coach/companion/" + action, body:body)
     }
     func runningSnapshot() async throws -> Snapshot { try await issuerRequest("/api/coach/experience") }
+    // Read-only access to the exact APIs used by the main Coach Insights page.
+    func analytics(userID:Int) async throws -> InsightAnalytics {
+        guard userID > 0 else { throw APIError.invalidResponse }
+        return try await issuerRequest("/api/analytics/batch/\(userID)")
+    }
+    func recovery(userID:Int) async throws -> InsightRecovery {
+        guard userID > 0 else { throw APIError.invalidResponse }
+        return try await issuerRequest("/api/performance/recovery/\(userID)")
+    }
+    func coachRecaps() async throws -> InsightRecaps { try await issuerRequest("/api/coach-recaps") }
+    static func isInsightReadPath(_ path:String)->Bool {
+        path == "/api/coach-recaps" || path.range(of:"^/api/(analytics/batch|performance/recovery)/[1-9][0-9]*$",options:.regularExpression) != nil
+    }
     private func issuerRequest<T: Decodable>(_ path: String, query: [URLQueryItem] = [], body: [String: Any]? = nil) async throws -> T {
-        guard ["/api/coach/experience","/api/coach/companion/reminder-draft","/api/coach/companion/read","/api/coach/companion/preferences","/api/coach/companion/checkin","/mcp/oauth/authorization-request", "/mcp/oauth/authorize/decision", "/api/apple-push/register", "/api/apple-push/unregister", "/api/apple-push/reminders", "/api/apple-push/reminder", "/api/apple-push/test"].contains(path),
+        guard (Self.isInsightReadPath(path) && body == nil) || ["/api/coach/experience","/api/coach/companion/reminder-draft","/api/coach/companion/read","/api/coach/companion/preferences","/api/coach/companion/checkin","/mcp/oauth/authorization-request", "/mcp/oauth/authorize/decision", "/api/apple-push/register", "/api/apple-push/unregister", "/api/apple-push/reminders", "/api/apple-push/reminder", "/api/apple-push/test"].contains(path),
               let credential, credential.expires > Date() else { throw APIError.missingSession }
         var url = URLComponents(string: "https://aitracker.run" + path)!
         if !query.isEmpty { url.queryItems = query }

@@ -136,13 +136,24 @@ struct ChatView: View {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 16) {
                             CoachCompanionCards()
+                            NavigationLink { CoachInsightsView().id(store.snapshot?.runner.id) } label: {
+                                HStack(spacing:14) {
+                                    Image(systemName:"chart.xyaxis.line").font(.title2).foregroundStyle(RunBrand.teal)
+                                    VStack(alignment:.leading,spacing:4) {
+                                        Text("Your running insights").font(.headline).foregroundStyle(.primary)
+                                        Text("Recovery, race outlook & more").font(.caption).foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    Image(systemName:"chevron.right").foregroundStyle(RunBrand.orange)
+                                }.padding(18).background(RunBrand.surface,in:RoundedRectangle(cornerRadius:20))
+                            }.buttonStyle(.plain)
                             if store.messages.isEmpty { Text("How are you feeling today?").font(.title2).foregroundStyle(.secondary) }
                             ForEach(store.messages) { message in
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(message.role == "user" ? "You" : "Coach").font(.caption.bold()).foregroundStyle(.secondary)
                                     Text(message.content).font(.body).textSelection(.enabled)
                                 }.padding().frame(maxWidth: .infinity, alignment: .leading)
-                                    .background(message.role == "user" ? Color.orange.opacity(0.10) : Color(.secondarySystemBackground))
+                                    .background(message.role == "user" ? RunBrand.orange.opacity(0.10) : RunBrand.surface)
                                     .clipShape(RoundedRectangle(cornerRadius: 18)).id(message.id)
                             }
                             if store.busy { ProgressView("Coach is thinking…").accessibilityLabel("Coach is preparing a reply") }
@@ -187,7 +198,7 @@ struct ChatView: View {
                         Image(systemName: "arrow.up.circle.fill").font(.largeTitle)
                     }.accessibilityLabel("Send message").disabled(store.busy || store.voice.active || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || text.count > 2000 || store.snapshot?.canUseAI != true)
                 }.padding().frame(maxWidth: 820)
-            }.navigationTitle("Let’s talk running")
+            }.background(RunBrand.canvas).navigationTitle("Let’s talk running")
                 .toolbar {
                     ToolbarItemGroup(placement: .keyboard) {
                         Spacer()
@@ -211,8 +222,8 @@ struct ScheduleView: View {
                     }
                     if let updated=store.snapshot?.state.updatedAt { Text("Updated \(coachTimestamp(updated))").font(.caption).foregroundStyle(.secondary) }
                     if let failure=store.scheduleError { Text(failure).foregroundStyle(.red) }
-                    NavigationLink("Run history") { RunHistoryView() }
-                    NavigationLink("Coach insights") { CoachInsightsView() }
+                    NavigationLink { RunHistoryView() } label: { Label("Run history",systemImage:"figure.run").foregroundStyle(RunBrand.blue).font(.headline) }
+                    NavigationLink { CoachInsightsView().id(store.snapshot?.runner.id) } label: { Label("Coach insights",systemImage:"sparkles").foregroundStyle(RunBrand.teal).font(.headline) }
                 }
                 Section("This week and what’s next") {
                     if store.snapshot?.state.days.isEmpty != false { Text("No scheduled workouts available.").foregroundStyle(.secondary) }
@@ -220,7 +231,7 @@ struct ScheduleView: View {
                         HStack {
                             VStack(alignment: .leading, spacing: 5) {
                                 Text(day.date + (day.date == store.snapshot?.state.today ? " · Today" : "")).font(.caption).foregroundStyle(.secondary)
-                                Text(day.title).font(.headline)
+                                Text(day.title).font(.title3.bold()).foregroundStyle(day.kind == "rest" ? RunBrand.teal : RunBrand.orange)
                                 Text(workoutSummary(day,units:store.snapshot?.runner.unitPreference ?? "km")).foregroundStyle(.secondary)
                                 if let detail=day.description, !detail.isEmpty { Text(detail).font(.callout).foregroundStyle(.secondary) }
                                 if let pace=day.targetPace, !pace.isEmpty { Text("Target pace: \(pace)").font(.caption) }
@@ -250,7 +261,7 @@ struct ScheduleView: View {
                     Button("Apple notifications") { store.settingsSheet = .notifications }.buttonStyle(.borderedProminent)
                 }
             }.frame(maxWidth: 900).frame(maxWidth: .infinity)
-                .background(Color(.systemGroupedBackground))
+                .scrollContentBackground(.hidden).background(RunBrand.canvas)
                 .navigationTitle("Schedule").refreshable { await store.refreshSchedule(force:true) }
                 .task { await store.refreshSchedule() }
         }
@@ -282,7 +293,7 @@ struct SettingsView: View {
                     Button("Sign out", role: .destructive) { confirmLogout = true }.disabled(store.busy)
                 } footer: { Text("Same Run Analytics account and running data. No separate subscription.") }
             }.frame(maxWidth: 760).frame(maxWidth: .infinity)
-                .background(Color(.systemGroupedBackground))
+                .scrollContentBackground(.hidden).background(RunBrand.canvas)
                 .navigationTitle("Settings")
                 .confirmationDialog("Sign out of this device?", isPresented: $confirmLogout) {
                     Button("Sign out", role: .destructive) { Task { await store.signOut() } }

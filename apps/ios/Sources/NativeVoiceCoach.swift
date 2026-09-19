@@ -223,6 +223,7 @@ struct NativeVoiceControls: View {
                 }.buttonStyle(.borderedProminent).disabled(store.snapshot?.canUseAI != true || store.busy)
             }
             if let error = voice.error { Text(error).font(.callout).foregroundStyle(.secondary) }
-        }.padding().background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20)).padding()
+        }.padding(20).background(LinearGradient(colors:[RunBrand.orange.opacity(0.13),RunBrand.teal.opacity(0.07)],startPoint:.topLeading,endPoint:.bottomTrailing), in: RoundedRectangle(cornerRadius: 24))
+            .overlay(RoundedRectangle(cornerRadius:24).strokeBorder(RunBrand.orange.opacity(0.12),lineWidth:1)).padding()
     }
 }

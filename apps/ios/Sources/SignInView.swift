@@ -2,6 +2,11 @@ import SwiftUI
 
 enum RunBrand {
     static let orange = Color(red: 200 / 255, green: 59 / 255, blue: 10 / 255)
+    static let teal = Color(UIColor { $0.userInterfaceStyle == .dark ? UIColor(red:0.30,green:0.83,blue:0.73,alpha:1) : UIColor(red:0.04,green:0.43,blue:0.39,alpha:1) })
+    static let blue = Color(UIColor { $0.userInterfaceStyle == .dark ? UIColor(red:0.48,green:0.70,blue:1,alpha:1) : UIColor(red:0.17,green:0.36,blue:0.68,alpha:1) })
+    static let rose = Color(UIColor { $0.userInterfaceStyle == .dark ? UIColor(red:1,green:0.55,blue:0.65,alpha:1) : UIColor(red:0.68,green:0.19,blue:0.32,alpha:1) })
+    static let canvas = Color(UIColor { $0.userInterfaceStyle == .dark ? UIColor.systemGroupedBackground : UIColor(red:0.98,green:0.97,blue:0.95,alpha:1) })
+    static let surface = Color(UIColor.secondarySystemGroupedBackground)
 }
 
 struct SignInView: View {

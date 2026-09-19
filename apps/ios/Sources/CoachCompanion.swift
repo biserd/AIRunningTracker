@@ -84,7 +84,7 @@ struct RunHistoryView:View {
         }.navigationTitle("Run history").refreshable { await store.refreshSchedule(force:true) }
     }
 }
-struct CoachInsightsView:View {
+struct SavedCoachNotesView:View {
     @EnvironmentObject var store:CoachStore
     var body:some View {
         List {
