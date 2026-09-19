@@ -2,7 +2,7 @@ import {connect} from 'node:http2';
 import {createPrivateKey, sign} from 'node:crypto';
 
 export type ApplePushConfig = {keyId:string; teamId:string; privateKey:string};
-export type ApplePushMessage = {id:string; token:string; environment:'production'|'sandbox'; expires:number; kind:'run'|'reminder'|'test'; generation:string};
+export type ApplePushMessage = {id:string; token:string; environment:'production'|'sandbox'; expires:number; kind:'run'|'reminder'|'test'; generation:string; reference?:string};
 export type ApplePushResult = {status:number; reason:string};
 // This cache contains only provider authentication, never runner data or tokens.
 let cached:{identity:string; issued:number; jwt:string}|undefined;
@@ -15,8 +15,10 @@ export function providerToken(config:ApplePushConfig, now=Math.floor(Date.now()/
   cached={identity,issued:now,jwt:payload+'.'+signature};return cached.jwt;
 }
 export function applePayload(message:ApplePushMessage) {
-  return {aps:{alert:{title:'Run Analytics',body:message.kind==='run'?'Your new run has synced. Open your coach to review it.':message.kind==='reminder'?'Your running reminder is ready. Open your schedule.':'Notifications are connected.'},sound:'default'},
-    destination:message.kind==='reminder'?'schedule':'coach',generation:message.generation};
+  const briefing=message.reference?.startsWith('coach:');
+  return {aps:{alert:{title:'Run Analytics',body:briefing?'Your coaching briefing is ready.':message.kind==='run'?'Your new run has synced. How did it feel?':message.kind==='reminder'?'Your running reminder is ready. Open your schedule.':'Notifications are connected.'},sound:'default'},
+    destination:message.kind==='reminder'&&!briefing?'schedule':'coach',generation:message.generation,
+    ...(message.kind==='run'&&/^\d+$/.test(message.reference||'')?{activityId:message.reference}:{} )};
 }
 export function sendApplePush(config:ApplePushConfig,message:ApplePushMessage):Promise<ApplePushResult> {
   const authorization=providerToken(config);

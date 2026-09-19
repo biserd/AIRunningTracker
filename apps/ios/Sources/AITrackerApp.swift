@@ -17,7 +17,7 @@ import SwiftUI
             }
             .onReceive(NotificationCenter.default.publisher(for: .applePushFailure)) { _ in store.push.status = "Could not connect to Apple. Please retry." }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active && !store.needsSignIn { Task { await store.push.resume() } }
+                if phase == .active && !store.needsSignIn { Task { await store.push.resume(); await store.refreshSchedule() } }
             }
             .tint(RunBrand.orange)
             .onOpenURL { store.receiveSignInLink($0) }
@@ -96,6 +96,7 @@ struct CoachTabs: View {
                     case .whatsapp: NativeWhatsAppSettings()
                     case .reminders: NativeReminderSettings()
                     case .notifications: NativePushSettings(push: store.push)
+                    case .coaching: CoachingPreferencesView()
                     }
                 }
                 .navigationBarTitleDisplayMode(.inline)
@@ -107,7 +108,14 @@ struct CoachTabs: View {
         guard !store.needsSignIn, let target = UserDefaults.standard.string(forKey: "pushDestination") else { return }
         UserDefaults.standard.removeObject(forKey: "pushDestination")
         selected = target == "schedule" ? .schedule : .coach
-        Task { await store.refresh(); try? await store.push.refresh() }
+        let activity=UserDefaults.standard.integer(forKey:"pushActivity")
+        UserDefaults.standard.removeObject(forKey:"pushActivity")
+        Task {
+            await store.refresh(); try? await store.push.refresh()
+            if activity>0, store.snapshot?.state.activities?.contains(where:{$0.id==activity})==true {
+                await store.send("Review my newly synced run ID \(activity), using actual data. Ask how it felt and explain how it relates to my next planned run.")
+            }
+        }
     }
 }
 
@@ -127,6 +135,7 @@ struct ChatView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 16) {
+                            CoachCompanionCards()
                             if store.messages.isEmpty { Text("How are you feeling today?").font(.title2).foregroundStyle(.secondary) }
                             ForEach(store.messages) { message in
                                 VStack(alignment: .leading, spacing: 4) {
@@ -142,14 +151,16 @@ struct ChatView: View {
                                     Text(reminder.kind == "cancel" ? "Cancel reminder?" : "Schedule reminder?").font(.headline)
                                     Text(reminder.title)
                                     Text("\(reminder.localTime) · \(reminder.timezone)").font(.callout)
+                                    if reminder.appleOnly == true { Text("To your Apple devices").font(.caption) } else {
                                     Picker("Send through", selection: $channel) {
                                         Text("Email").tag("email")
                                         if store.push.enabled && store.push.reminders && reminder.kind == "create" { Text("Apple notification").tag("push") }
                                         if store.whatsapp?.connected == true && store.whatsapp?.authorized == true { Text("WhatsApp").tag("whatsapp") }
                                     }
                                     Text(channel == "push" ? "To your Apple devices" : channel == "email" ? "To: \(store.verifiedEmail)" : "To: \(store.whatsapp?.destination ?? "WhatsApp")").font(.caption)
-                                    Button("Confirm") { Task { await store.confirmReminder(channel: channel) } }
-                                        .buttonStyle(.borderedProminent).disabled(store.busy || (channel != "push" && store.verifiedEmail.isEmpty))
+                                    }
+                                    Button("Confirm") { Task { await store.confirmReminder(channel: reminder.appleOnly == true ? "push" : channel) } }
+                                        .buttonStyle(.borderedProminent).disabled(store.busy || (reminder.appleOnly != true && channel != "push" && store.verifiedEmail.isEmpty))
                                     Button("Not now") { store.reminderReview = nil }.disabled(store.busy)
                                 }.padding().background(Color.orange.opacity(0.1)).clipShape(RoundedRectangle(cornerRadius: 18))
                             }
@@ -193,14 +204,26 @@ struct ScheduleView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("Your current week") {
+                Section {
+                    if let plan=store.snapshot?.state.plan {
+                        Text(plan.name ?? "Your training plan").font(.headline)
+                        if let week=plan.weekNumber { Text("Week \(week) of \(plan.totalWeeks)").foregroundStyle(.secondary) }
+                    }
+                    if let updated=store.snapshot?.state.updatedAt { Text("Updated \(updated)").font(.caption).foregroundStyle(.secondary) }
+                    if let failure=store.scheduleError { Text(failure).foregroundStyle(.red) }
+                    NavigationLink("Run history") { RunHistoryView() }
+                    NavigationLink("Coach insights") { CoachInsightsView() }
+                }
+                Section("This week and what’s next") {
                     if store.snapshot?.state.days.isEmpty != false { Text("No scheduled workouts available.").foregroundStyle(.secondary) }
                     ForEach(store.snapshot?.state.days ?? []) { day in
                         HStack {
                             VStack(alignment: .leading, spacing: 5) {
-                                Text(day.date).font(.caption).foregroundStyle(.secondary)
+                                Text(day.date + (day.date == store.snapshot?.state.today ? " · Today" : "")).font(.caption).foregroundStyle(.secondary)
                                 Text(day.title).font(.headline)
-                                Text(day.minutes > 0 ? "\(Int(day.minutes)) min · \(day.kind)" : "Rest day").foregroundStyle(.secondary)
+                                Text(workoutSummary(day,units:store.snapshot?.runner.unitPreference ?? "km")).foregroundStyle(.secondary)
+                                if let detail=day.description, !detail.isEmpty { Text(detail).font(.callout).foregroundStyle(.secondary) }
+                                if let pace=day.targetPace, !pace.isEmpty { Text("Target pace: \(pace)").font(.caption) }
                             }
                             Spacer()
                             if day.completed { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green).accessibilityLabel("Completed") }
@@ -215,7 +238,7 @@ struct ScheduleView: View {
                             Text("Apple notification").font(.caption).foregroundStyle(.secondary)
                         }
                     }
-                    if store.reminders.isEmpty { Text("No reminders yet.").foregroundStyle(.secondary) }
+                    if store.reminders.isEmpty && store.push.items.isEmpty { Text("No reminders yet.").foregroundStyle(.secondary) }
                     ForEach(store.reminders) { reminder in
                         VStack(alignment: .leading, spacing: 5) {
                             Text(reminder.title).font(.headline)
@@ -228,7 +251,8 @@ struct ScheduleView: View {
                 }
             }.frame(maxWidth: 900).frame(maxWidth: .infinity)
                 .background(Color(.systemGroupedBackground))
-                .navigationTitle("Schedule").refreshable { await store.refresh() }
+                .navigationTitle("Schedule").refreshable { await store.refreshSchedule(force:true) }
+                .task { await store.refreshSchedule() }
         }
     }
 }
@@ -245,6 +269,7 @@ struct SettingsView: View {
                     LabeledContent("Timezone", value: store.snapshot?.runner.timezone ?? "")
                 }
                 Section("Stay connected") {
+                    Button("Coaching preferences") { store.settingsSheet = .coaching }.buttonStyle(.borderedProminent)
                     LabeledContent("Apple notifications", value: store.push.status)
                     Button("Notifications & reminders") { store.settingsSheet = .notifications }.buttonStyle(.borderedProminent)
                     LabeledContent("WhatsApp", value: store.whatsapp.map { $0.connected && $0.authorized ? "Connected" : "Not connected" } ?? "Unavailable")

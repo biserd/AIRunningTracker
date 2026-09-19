@@ -11,7 +11,7 @@ export function registration(input:Record<string,unknown>) {
   return {installation:input.installation.toLowerCase(),token:input.token.toLowerCase(),environment:String(input.environment),reminders:Number(input.reminders),runs:Number(input.runs)};
 }
 export class ApplePushService {
-  constructor(private db:AtomicSqlDatabase,private config:ApplePushConfig,private send=(message:ApplePushMessage)=>sendApplePush(config,message)){}
+  constructor(private db:AtomicSqlDatabase,private config:ApplePushConfig,private send=(message:ApplePushMessage)=>sendApplePush(config,message),private companion?:{prepare:(user:number)=>Promise<void>;allowed:(user:number,reference?:string)=>Promise<boolean>}){}
   async register(user:number,input:Record<string,unknown>,sessionExpiry:number){
     const value=registration(input),time=now();
     const prior=await this.db.prepare('SELECT * FROM apple_push_devices WHERE installation=?').bind(value.installation).first<Device>();
@@ -57,12 +57,17 @@ export class ApplePushService {
     // Durable reconciliation covers webhook and manual sync without changing either.
     // Bound by recent dates and scalar columns; never fetch activity stream payloads.
     const devices=(await this.db.prepare('SELECT * FROM apple_push_devices WHERE expires_at>?').bind(time).all<Device>()).results;
+    for(const user of new Set(devices.map(d=>d.user_id)))await this.companion?.prepare(user);
     for(const d of devices){
-      if(d.runs){
+      if(d.runs && (!this.companion||await this.companion.allowed(d.user_id))){
         const runs=(await this.db.prepare(`SELECT id FROM activities WHERE user_id=? AND type IN ('Run','VirtualRun','TrailRun') AND julianday(start_date)>=julianday('now','-1 day') AND julianday(created_at)>=julianday(?,'unixepoch') ORDER BY start_date DESC LIMIT 1`).bind(d.user_id,d.enabled_at).all<{id:number}>()).results;
         for(const run of runs)await this.enqueue(d,'run',String(run.id),time+3600);
       }
       if(d.reminders){
+        if(this.companion){
+          const briefings=(await this.db.prepare("SELECT kind,reference FROM coach_companion_briefings WHERE user_id=? AND julianday(created_at)>julianday('now','-1 hour') ORDER BY created_at DESC LIMIT 1").bind(d.user_id).all<{kind:string;reference:string}>()).results;
+          for(const b of briefings)if(await this.companion.allowed(d.user_id,'coach:'+b.kind+':'+b.reference))await this.enqueue(d,'reminder','coach:'+b.kind+':'+b.reference,time+3600);
+        }
         const reminders=(await this.db.prepare('SELECT id,due_at FROM apple_push_reminders WHERE user_id=? AND cancelled=0 AND due_at<=? AND due_at>?').bind(d.user_id,time,time-3600).all<{id:string;due_at:number}>()).results;
         for(const r of reminders)await this.enqueue(d,'reminder',r.id,r.due_at+3600);
       }
@@ -72,12 +77,16 @@ export class ApplePushService {
     for(const item of items){
       if(!(await this.db.prepare("UPDATE apple_push_outbox SET state='sending',claimed_at=?,attempts=attempts+1 WHERE id=? AND state='pending' RETURNING id").bind(time,item.id).first()))continue;
       const d=await this.db.prepare('SELECT * FROM apple_push_devices WHERE installation=? AND user_id=? AND generation=? AND expires_at>?').bind(item.installation,item.user_id,item.generation,now()).first<Device>();
-      const cancelled=item.kind==='reminder'&&!await this.db.prepare('SELECT 1 FROM apple_push_reminders WHERE user_id=? AND id=? AND cancelled=0').bind(item.user_id,item.reference).first();
+      const briefing=item.reference.startsWith('coach:');
+      const cancelled=item.kind==='reminder'&&!briefing&&!await this.db.prepare('SELECT 1 FROM apple_push_reminders WHERE user_id=? AND id=? AND cancelled=0').bind(item.user_id,item.reference).first();
+      if(d && (item.kind==='run'||briefing) && this.companion && !await this.companion.allowed(d.user_id,briefing?item.reference:undefined)){
+        await this.finish(item.id,'cancelled');continue;
+      }
       if(!d||item.expires_at<=now()||cancelled||(item.kind==='run'&&!d.runs)||(item.kind==='reminder'&&!d.reminders)){
         await this.finish(item.id,'cancelled');continue;
       }
       let result:ApplePushResult;
-      try{result=await this.send({id:item.id,token:d.token,environment:d.environment,expires:item.expires_at,kind:item.kind,generation:d.generation});}
+      try{result=await this.send({id:item.id,token:d.token,environment:d.environment,expires:item.expires_at,kind:item.kind,generation:d.generation,reference:item.reference});}
       catch{await this.finish(item.id,'unknown','OUTCOME_UNKNOWN');continue;}
       if(result.status===200)await this.finish(item.id,'sent');
       else {
@@ -97,7 +106,8 @@ export function applePushConfigured(){return !!(process.env.APNS_KEY_ID&&process
 export async function applePushService(){
   if(!applePushConfigured())throw new ApplePushError('Apple notifications are not configured yet.',503);
   const {applicationSqlDatabase}=await import('../d1/runtimeDatabase');
-  return new ApplePushService(applicationSqlDatabase,{keyId:process.env.APNS_KEY_ID!,teamId:process.env.APNS_TEAM_ID!,privateKey:process.env.APNS_PRIVATE_KEY!});
+  const {buildCompanionBriefings,companionAllowed}=await import('./coachCompanion');
+  return new ApplePushService(applicationSqlDatabase,{keyId:process.env.APNS_KEY_ID!,teamId:process.env.APNS_TEAM_ID!,privateKey:process.env.APNS_PRIVATE_KEY!},undefined,{prepare:buildCompanionBriefings,allowed:companionAllowed});
 }
 let active=false;
 export function startApplePush(){

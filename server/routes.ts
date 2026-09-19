@@ -8832,6 +8832,20 @@ ${allPages.map(page => `  <url>
   // ============================================
   // Push notifications (web push)
   // ============================================
+  app.post('/api/coach/companion/:action', authenticateJWT, async (req:any,res) => {
+    res.set('Cache-Control','no-store');
+    try {
+      if(!req.body||typeof req.body!=='object'||Array.isArray(req.body))return res.status(400).json({message:'Invalid request.'});
+      if(req.params.action==='reminder-draft'){
+        const {nativeReminderDraft}=await import('./services/nativeReminderDraft');
+        const claims=JSON.parse(Buffer.from(req.headers.authorization.split(' ')[1].split('.')[1],'base64url').toString());
+        if(!Number.isSafeInteger(claims.exp))return res.status(401).json({message:'Sign in again.'});
+        return res.json(await nativeReminderDraft(req.user.id,req.body,claims.exp));
+      }
+      const {companionAction}=await import('./services/coachCompanion');
+      return res.json(await companionAction(req.user.id,req.params.action,req.body));
+    } catch {return res.status(400).json({message:'Could not load or save coaching details. Please retry.'});}
+  });
   app.post('/api/apple-push/:action', authenticateJWT, async (req: any,res) => {
     const {applePushService,ApplePushError}=await import('./services/applePush');
     try {

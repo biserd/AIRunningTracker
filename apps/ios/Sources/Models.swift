@@ -6,9 +6,19 @@ struct Workout: Decodable, Identifiable {
     let id, date, title, kind: String
     let minutes: Double
     let completed: Bool
+    var distanceKm: Double? = nil
+    var description: String? = nil
+    var targetPace: String? = nil
 }
-struct RunningState: Decodable { let today, goal: String; let days: [Workout] }
-struct Snapshot: Decodable { let runner: Runner; let state: RunningState; let canUseAI: Bool; let version: Int }
+struct PlanSummary: Decodable { let id:Int; let name:String?; let totalWeeks:Int; let weekNumber:Int? }
+struct RunSummary: Decodable, Identifiable { let id:Int; let name:String?; let date:String; let km,minutes:Double }
+struct RunningState: Decodable {
+    let today, goal: String; let days: [Workout]
+    var updatedAt:String? = nil
+    var activities:[RunSummary]? = nil
+    var plan:PlanSummary? = nil
+}
+struct Snapshot: Decodable { let runner: Runner; let state: RunningState; let canUseAI: Bool; let version: Int? }
 struct Message: Decodable, Identifiable {
     var id = UUID()
     let role, content: String
@@ -17,7 +27,7 @@ struct Message: Decodable, Identifiable {
 struct CoachStatus: Decodable { let configured: Bool; let history: [Message] }
 struct Review: Decodable, Identifiable { let id, description: String }
 struct Answer: Decodable { let message: String; let planReview: Review?; let reminderProposal: ReminderReview? }
-struct ReminderReview: Decodable { let id, kind, title, localTime, timezone: String }
+struct ReminderReview: Decodable { let id, kind, title, localTime, timezone: String; var dueAt:Double? = nil; var appleOnly:Bool? = nil }
 struct Confirmation: Decodable { let message: String }
 struct OK: Decodable { let ok: Bool? }
 struct WhatsAppStatus: Decodable {
@@ -32,7 +42,7 @@ struct Reminder: Decodable, Identifiable {
 struct ReminderStatus: Decodable { let configured, verified: Bool; let email, timezone: String; let reminders: [Reminder] }
 
 enum SettingsDestination: String, Identifiable {
-    case whatsapp, reminders, notifications
+    case whatsapp, reminders, notifications, coaching
     var id: String { rawValue }
 }
 struct WhatsAppConsent {

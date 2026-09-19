@@ -86,8 +86,13 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
         guard ["register", "unregister", "reminders", "reminder", "test"].contains(action) else { throw APIError.invalidResponse }
         return try await issuerRequest("/api/apple-push/" + action, body: body)
     }
+    func companion<T:Decodable>(_ action:String, body:[String:Any] = [:]) async throws -> T {
+        guard ["read","preferences","checkin","reminder-draft"].contains(action) else { throw APIError.invalidResponse }
+        return try await issuerRequest("/api/coach/companion/" + action, body:body)
+    }
+    func runningSnapshot() async throws -> Snapshot { try await issuerRequest("/api/coach/experience") }
     private func issuerRequest<T: Decodable>(_ path: String, query: [URLQueryItem] = [], body: [String: Any]? = nil) async throws -> T {
-        guard ["/mcp/oauth/authorization-request", "/mcp/oauth/authorize/decision", "/api/apple-push/register", "/api/apple-push/unregister", "/api/apple-push/reminders", "/api/apple-push/reminder", "/api/apple-push/test"].contains(path),
+        guard ["/api/coach/experience","/api/coach/companion/reminder-draft","/api/coach/companion/read","/api/coach/companion/preferences","/api/coach/companion/checkin","/mcp/oauth/authorization-request", "/mcp/oauth/authorize/decision", "/api/apple-push/register", "/api/apple-push/unregister", "/api/apple-push/reminders", "/api/apple-push/reminder", "/api/apple-push/test"].contains(path),
               let credential, credential.expires > Date() else { throw APIError.missingSession }
         var url = URLComponents(string: "https://aitracker.run" + path)!
         if !query.isEmpty { url.queryItems = query }

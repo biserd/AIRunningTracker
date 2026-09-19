@@ -31,6 +31,9 @@ final class PushAppDelegate: NSObject, UIApplicationDelegate, UNUserNotification
            let destination = data["destination"] as? String, ["coach", "schedule"].contains(destination) {
             // Persist only the allowlisted screen, never a URL or runner data.
             UserDefaults.standard.set(destination, forKey: "pushDestination")
+            if let value=data["activityId"] as? String, let id=Int(value),id>0 {
+                UserDefaults.standard.set(id,forKey:"pushActivity")
+            } else { UserDefaults.standard.removeObject(forKey:"pushActivity") }
             NotificationCenter.default.post(name: .applePushOpen, object: destination)
         }
         completion()
