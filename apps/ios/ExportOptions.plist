@@ -7,7 +7,7 @@
   <key>teamID</key><string>DB5JRGGB6A</string>
   <key>signingCertificate</key><string>Apple Distribution</string>
   <key>manageAppVersionAndBuildNumber</key><false/>
-  <key>testFlightInternalTestingOnly</key><true/>
+  <key>testFlightInternalTestingOnly</key><false/>
   <key>provisioningProfiles</key><dict>
     <key>run.aitracker.coach</key><string>AITrackerRunning TestFlight</string>
   </dict>

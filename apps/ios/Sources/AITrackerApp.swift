@@ -9,6 +9,7 @@ import SwiftUI
             Group {
                 if store.loading { ProgressView("Opening your coach…") }
                 else if store.needsSignIn { SignInView() }
+                else if store.onboarding?.ready != true && !ProcessInfo.processInfo.arguments.contains("--test-adaptive-layout") { NativeOnboardingView() }
                 else { CoachTabs() }
             }
             .environmentObject(store)
@@ -282,10 +283,12 @@ struct ScheduleView: View {
 struct SettingsView: View {
     @EnvironmentObject var store: CoachStore
     @State private var confirmLogout = false
+    @State private var accountSheet = false
     var body: some View {
         NavigationStack {
             Form {
                 Section("Your account") {
+                    Button("Subscription & Strava") { accountSheet=true }.buttonStyle(.borderedProminent)
                     Text(store.snapshot?.runner.name ?? "Run Analytics runner").font(.headline)
                     LabeledContent("Units", value: store.snapshot?.runner.unitPreference ?? "")
                     LabeledContent("Timezone", value: store.snapshot?.runner.timezone ?? "")
@@ -325,6 +328,7 @@ struct SettingsView: View {
             }.frame(maxWidth: 760).frame(maxWidth: .infinity)
                 .scrollContentBackground(.hidden).background(RunBrand.canvas)
                 .navigationTitle("Settings")
+                .sheet(isPresented:$accountSheet) { NativeOnboardingView(managing:true) }
                 .refreshable { await store.refreshSchedule(force:true) }
                 .confirmationDialog("Sign out of this device?", isPresented: $confirmLogout) {
                     Button("Sign out", role: .destructive) { Task { await store.signOut() } }.accessibilityIdentifier("confirm-sign-out")

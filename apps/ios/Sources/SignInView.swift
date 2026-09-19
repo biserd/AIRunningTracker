@@ -17,6 +17,8 @@ struct SignInView: View {
     @State private var sentTo: String?
     @State private var showLink = false
     @State private var sending = false
+    @State private var signup = false
+    @State private var acceptedTerms = false
     @FocusState private var emailFocused: Bool
 
     var body: some View {
@@ -36,6 +38,10 @@ struct SignInView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 18) {
+                    Picker("Account",selection:$signup) {
+                        Text("Sign in").tag(false)
+                        Text("Create account").tag(true)
+                    }.pickerStyle(.segmented)
                     Text("Email address").font(.headline)
                     TextField("you@example.com", text: $email)
                         .textContentType(.emailAddress).keyboardType(.emailAddress)
@@ -44,6 +50,13 @@ struct SignInView: View {
                         .padding(16).background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
                         .accessibilityLabel("Email address")
                         .onSubmit { sendLink() }
+                    if signup {
+                        Toggle("I agree to the terms and privacy policy",isOn:$acceptedTerms).font(.callout)
+                        HStack {
+                            Link("Terms",destination:URL(string:"https://aitracker.run/terms")!)
+                            Link("Privacy",destination:URL(string:"https://aitracker.run/privacy")!)
+                        }.font(.caption)
+                    }
                     Button(action: sendLink) {
                         HStack {
                             if sending { ProgressView().tint(.white) }
@@ -51,14 +64,14 @@ struct SignInView: View {
                                 .font(.headline)
                         }.frame(maxWidth: .infinity).padding(.vertical, 12)
                     }.buttonStyle(.borderedProminent).buttonBorderShape(.roundedRectangle(radius: 12))
-                        .disabled(store.busy || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .disabled(store.busy || (signup && !acceptedTerms) || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
                     if let sentTo {
                         Label("Check your inbox", systemImage: "envelope.badge").font(.headline).foregroundStyle(RunBrand.orange)
-                        Text("If \(sentTo) has an account, your link is on its way. Tap it on this device to open your coach. Check spam too.")
+                        Text("Check \(sentTo) for your secure link. Tap it on this device to continue. Check spam too.")
                             .font(.callout).foregroundStyle(.secondary)
                     } else {
-                        Text("Use the email for your existing account.").font(.callout).foregroundStyle(.secondary)
+                        Text(signup ? "Verify your email, then connect Strava. No charge to create an account." : "Use the email for your existing account.").font(.callout).foregroundStyle(.secondary)
                     }
                 }.padding(24).background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 24))
 
@@ -92,13 +105,13 @@ struct SignInView: View {
     }
 
     private func sendLink() {
-        guard !store.busy, !sending else { return }
+        guard !store.busy, !sending, !signup || acceptedTerms else { return }
         emailFocused = false
         let requestedEmail = email
         sending = true
         Task {
             defer { sending = false }
-            if await store.requestSignInLink(email: requestedEmail) {
+            if await store.requestSignInLink(email: requestedEmail,signup:signup) {
                 sentTo = requestedEmail.trimmingCharacters(in: .whitespacesAndNewlines)
             }
         }

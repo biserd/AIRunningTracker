@@ -108,6 +108,10 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
         return try await issuerRequest("/api/coach/companion/" + action, body:body)
     }
     func runningSnapshot() async throws -> Snapshot { try await issuerRequest("/api/coach/experience") }
+    func onboarding() async throws -> NativeOnboarding { try await issuerRequest("/api/native/onboarding") }
+    func startStrava() async throws -> NativeStravaStart { try await issuerRequest("/api/native/strava/start",body:[:]) }
+    func deliverApple(_ signed:String) async throws { let _:OK = try await issuerRequest("/api/native/apple/transaction",body:["signedTransaction":signed]) }
+    func deleteAccount() async throws { let _:OK = try await issuerRequest("/api/user/delete-with-feedback",body:["reason":"other","details":"Deleted from the iOS app"]) }
     func runDetail(_ id:Int) async throws -> RunDetailResponse { try await issuerRequest("/api/activities/\(id)") }
     // Read-only access to the exact APIs used by the main Coach Insights page.
     func analytics(userID:Int) async throws -> InsightAnalytics {
@@ -127,7 +131,8 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
     }
     private func issuerRequest<T: Decodable>(_ path: String, query: [URLQueryItem] = [], body: [String: Any]? = nil) async throws -> T {
         let current = generation
-        guard (Self.isInsightReadPath(path) && body == nil) || ["/api/coach/experience","/api/coach/companion/reminder-draft","/api/coach/companion/read","/api/coach/companion/preferences","/api/coach/companion/checkin","/mcp/oauth/authorization-request", "/mcp/oauth/authorize/decision", "/api/apple-push/register", "/api/apple-push/unregister", "/api/apple-push/reminders", "/api/apple-push/reminder", "/api/apple-push/test"].contains(path),
+        let native = (path == "/api/native/onboarding" && body == nil) || (["/api/native/strava/start","/api/native/apple/transaction","/api/user/delete-with-feedback"].contains(path) && body != nil)
+        guard native || (Self.isInsightReadPath(path) && body == nil) || ["/api/coach/experience","/api/coach/companion/reminder-draft","/api/coach/companion/read","/api/coach/companion/preferences","/api/coach/companion/checkin","/mcp/oauth/authorization-request", "/mcp/oauth/authorize/decision", "/api/apple-push/register", "/api/apple-push/unregister", "/api/apple-push/reminders", "/api/apple-push/reminder", "/api/apple-push/test"].contains(path),
               let credential, credential.expires > Date() else { throw APIError.missingSession }
         var url = URLComponents(string: "https://aitracker.run" + path)!
         if !query.isEmpty { url.queryItems = query }

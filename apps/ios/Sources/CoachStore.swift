@@ -25,6 +25,8 @@ import Combine
     @Published var requestedCoach = UUID()
     @Published var loading = true
     @Published var needsSignIn = true
+    @Published var onboarding:NativeOnboarding?
+    @Published var subscriptions:AppleSubscriptions?
     @Published var settingsSheet: SettingsDestination?
     @Published var companion: CompanionData?
     @Published var companionError:String?
@@ -70,12 +72,12 @@ import Combine
         pendingSignIn = nil
         Task { await verify(link: link) }
     }
-    func requestSignInLink(email: String) async -> Bool {
+    func requestSignInLink(email: String, signup:Bool = false) async -> Bool {
         guard !busy else { return false }
         busy = true; error = nil; defer { busy = false }
         do {
             let normalized = try SignInEmail.normalize(email)
-            let _: OK = try await api.request("/api/account/email", body: ["email": normalized])
+            let _: OK = try await api.request("/api/account/email", body: ["email": normalized,"signup":signup])
             return true
         } catch { report(error); return false }
     }
@@ -92,6 +94,7 @@ import Combine
             let _: OK = try await api.request("/api/account/verify", body: ["token":token])
             guard generation == sessionGeneration else { return }
             sessionGeneration = UUID()
+            subscriptions?.stop(); subscriptions=nil; onboarding=nil
             snapshot = nil; companion=nil; refreshedAt=nil; reminderClarification=nil; messages = []; reminders = []; whatsapp = nil; review = nil; reminderReview = nil; verifiedEmail = ""; settingsSheet = nil
             needsSignIn = false; await refresh()
         } catch { report(error) }
@@ -100,6 +103,9 @@ import Combine
         let generation = sessionGeneration
         let conversation = conversationGeneration
         do {
+            try await refreshOnboarding()
+            guard generation == sessionGeneration, !needsSignIn else { return }
+            if onboarding?.ready != true { return }
             await refreshSchedule(force:true)
             let status: CoachStatus = try await api.request("/api/ai/status")
             guard generation == sessionGeneration, !needsSignIn else { return }
@@ -108,6 +114,24 @@ import Combine
         if let next:WhatsAppStatus = try? await api.request("/api/whatsapp"), generation == sessionGeneration, !needsSignIn { whatsapp=next }
         if let next:ReminderStatus = try? await api.request("/api/reminders"), generation == sessionGeneration, !needsSignIn {
             reminders=next.reminders; verifiedEmail=next.verified ? next.email : ""
+        }
+    }
+    func refreshOnboarding() async throws {
+        let generation=sessionGeneration
+        let next=try await api.onboarding()
+        guard generation==sessionGeneration,!needsSignIn else { throw CancellationError() }
+        onboarding=next
+        if subscriptions == nil, let token=UUID(uuidString:next.appAccountToken) {
+            let manager=AppleSubscriptions(accountToken:token) { [weak self] signed in
+                guard let self,generation==self.sessionGeneration,!self.needsSignIn else { throw CancellationError() }
+                try await self.api.deliverApple(signed)
+                let updated=try await self.api.onboarding()
+                guard generation==self.sessionGeneration,!self.needsSignIn else { throw CancellationError() }
+                self.onboarding=updated
+                if updated.ready { await self.refreshSchedule(force:true) }
+            }
+            subscriptions=manager
+            await manager.start()
         }
     }
     func refreshSchedule(force:Bool = false) async {
@@ -187,6 +211,7 @@ import Combine
     }
     func signOut() async {
         let cleanup = api.signOutCleanupClient()
+        subscriptions?.stop(); subscriptions=nil; onboarding=nil
         sessionGeneration = UUID()
         conversationGeneration += 1
         pendingSignIn = nil; lastLinkDigest = nil
