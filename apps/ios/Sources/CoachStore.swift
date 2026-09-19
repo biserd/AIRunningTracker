@@ -201,7 +201,7 @@ import Combine
                     formatter.timeZone = TimeZone(identifier: reminderReview.timezone)
                     formatter.dateFormat = "yyyy-MM-dd'T'HH:mm"
                     guard let date = reminderReview.dueAt.map({Date(timeIntervalSince1970:$0)}) ?? formatter.date(from: reminderReview.localTime) else { throw APIError.invalidResponse }
-                    try await push.schedule(title: reminderReview.title, date: date, id: reminderReview.id)
+                    try await push.schedule(title: reminderReview.title, date: date, id: reminderReview.id, recurrence:reminderReview.recurrence ?? "none", timezone:reminderReview.timezone)
                 }
                 self.reminderReview = nil
                 messages.append(Message(role: "assistant", content: reminderReview.kind == "cancel" ? "Apple reminder cancelled." : "Apple notification scheduled. You can manage it in Notifications."))

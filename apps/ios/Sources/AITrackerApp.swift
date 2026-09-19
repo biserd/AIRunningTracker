@@ -183,6 +183,7 @@ struct ChatReviewCards:View {
                 Text(reminder.kind == "cancel" ? "Cancel reminder?" : "Schedule reminder?").font(.headline)
                 Text(reminder.title)
                 Text("\(reminder.localTime) · \(reminder.timezone)").font(.callout)
+                if let recurrence=reminder.recurrence,recurrence != "none" { Text("Repeats \(recurrence) until cancelled").font(.callout).bold() }
                 if reminder.appleOnly == true { Text("To your Apple devices").font(.caption) }
                 else {
                     Picker("Send through",selection:$channel) {

@@ -3,6 +3,8 @@ import SwiftUI
 struct CompanionPreferences: Codable {
     var notes:String
     var evening,weekly:Bool
+    var followup:Bool? = false
+    var delivery:String? = "auto"
     var hour,quietStart,quietEnd:Int
 }
 struct SavedInsight:Decodable,Identifiable { let id:Int; let title,content:String; let date:String? }
@@ -111,15 +113,25 @@ struct CoachingPreferencesView:View {
                 Text("Preferred running days, upcoming races and time constraints. These notes inform advice but do not change your plan. Avoid private medical details.").font(.caption).foregroundStyle(.secondary)
             }
             Section("Helpful check-ins") {
+                Picker("Send coaching updates to",selection:Binding(get:{preferences.delivery ?? "auto"},set:{preferences.delivery=$0})) {
+                    Text("Automatic: app, then email").tag("auto")
+                    Text("App notifications").tag("push")
+                    Text("WhatsApp").tag("whatsapp")
+                    Text("Email").tag("email")
+                    Text("No proactive alerts").tag("none")
+                }
+                Text("One channel per update. Connect your selected channel first. Reminders you explicitly schedule keep their chosen channel.").font(.caption).foregroundStyle(.secondary)
                 Toggle("Tomorrow’s run briefing",isOn:$preferences.evening)
                 Toggle("Sunday progress story",isOn:$preferences.weekly)
+                Toggle("Follow up on my check-ins",isOn:Binding(get:{preferences.followup ?? false},set:{preferences.followup=$0}))
+                Text("A short next-day check-in when you reported tired legs or a busy day. Plan changes still need your approval.").font(.caption).foregroundStyle(.secondary)
                 Stepper("Briefing hour: \(preferences.hour):00",value:$preferences.hour,in:0...23)
                 Text("Uses your account timezone. Briefings appear in the app; Apple alerts require notifications enabled. Weather uses your existing opted-in location.").font(.caption).foregroundStyle(.secondary)
             }
             Section("Quiet hours") {
                 Stepper("From \(preferences.quietStart):00",value:$preferences.quietStart,in:0...23)
                 Stepper("Until \(preferences.quietEnd):00",value:$preferences.quietEnd,in:0...23)
-                Text("Applies to proactive Apple coaching, not reminders you explicitly schedule. Equal times turn quiet hours off.").font(.caption).foregroundStyle(.secondary)
+                Text("Applies to proactive coaching, not reminders you explicitly schedule. Equal times turn quiet hours off.").font(.caption).foregroundStyle(.secondary)
             }
             Button(saved ? "Saved" : "Save preferences") {
                 Task {

@@ -43,6 +43,7 @@ final class PushAppDelegate: NSObject, UIApplicationDelegate, UNUserNotification
 struct AppleReminder: Decodable, Identifiable {
     let id, title: String
     let due_at: Double
+    var recurrence:String? = nil
 }
 
 @MainActor final class ApplePush: ObservableObject {
@@ -147,9 +148,9 @@ struct AppleReminder: Decodable, Identifiable {
         UserDefaults.standard.removeObject(forKey: "pushActivity")
         UNUserNotificationCenter.current().removeAllDeliveredNotifications()
     }
-    func schedule(title: String, date: Date, id: String = UUID().uuidString) async throws {
+    func schedule(title: String, date: Date, id: String = UUID().uuidString, recurrence:String = "none", timezone:String = TimeZone.current.identifier) async throws {
         guard let api else { throw APIError.missingSession }
-        let _: OK = try await api.applePush("reminder", body: ["id": id, "title": title, "dueAt": Int(date.timeIntervalSince1970)])
+        let _: OK = try await api.applePush("reminder", body: ["id": id, "title": title, "dueAt": Int(date.timeIntervalSince1970), "recurrence":recurrence, "timezone":timezone])
         try await refresh()
     }
     func cancel(_ id: String) async throws {
@@ -170,6 +171,7 @@ struct NativePushSettings: View {
     @State private var title = "Time for your run"
     @State private var date = Date().addingTimeInterval(3600)
     @State private var saved = false
+    @State private var recurrence = "none"
     var body: some View {
         Form {
             Section {
@@ -189,12 +191,14 @@ struct NativePushSettings: View {
                 Section("New reminder") {
                     TextField("Reminder", text: $title)
                     DatePicker("When", selection: $date, in: Date().addingTimeInterval(60)...Date().addingTimeInterval(6 * 86400))
-                    Button("Set reminder") { perform { try await push.schedule(title: title, date: date); saved = true } }.buttonStyle(.borderedProminent)
+                    Picker("Repeat",selection:$recurrence) { Text("Once").tag("none");Text("Daily").tag("daily");Text("Weekly").tag("weekly") }
+                    Button("Set reminder") { perform { try await push.schedule(title: title, date: date, recurrence:recurrence); saved = true } }.buttonStyle(.borderedProminent)
                 }
                 Section("Your reminders") {
                     ForEach(push.items) { item in
                         VStack(alignment: .leading) {
                             Text(item.title)
+                            if let recurrence=item.recurrence { Text("Repeats \(recurrence)").font(.caption).foregroundStyle(.secondary) }
                             Text(Date(timeIntervalSince1970: item.due_at), format: .dateTime.month().day().hour().minute()).foregroundStyle(.secondary)
                             Button("Cancel", role: .destructive) { perform { try await push.cancel(item.id) } }
                         }
