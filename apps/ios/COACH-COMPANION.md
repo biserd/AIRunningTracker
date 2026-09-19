@@ -5,7 +5,15 @@ independently of WhatsApp/email availability. It refreshes on foreground and tab
 entry (60-second throttle), pull-to-refresh and confirmed plan changes. It shows
 the current plan week plus up to 20 days ahead. Missing duration is not a rest day.
 History is the existing entitlement-bounded, 90-day, 200-activity summary feed.
-Insights are existing dated records, not regenerated on every view.
+Coach Insights reads the same authenticated GET APIs as the main site's page:
+analytics batch, recovery and coach recaps. Overview, Performance and Recaps show
+the existing analysis without edit controls or marking recaps viewed. Saved coach
+notes remain separately labeled. The existing backend owns access checks and
+calculation caching; the app does not create a second analytics engine.
+Requests load in parallel on entry and pull-to-refresh, independently of chat.
+Partial failures retain successful sections and offer retry. Displayed fetch time
+is not claimed as the underlying activity freshness. Missing metrics are not zero.
+Shared warm surfaces and orange, teal, blue and rose accents adapt to dark mode.
 
 ## Coaching loop
 

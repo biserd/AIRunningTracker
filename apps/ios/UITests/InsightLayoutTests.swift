@@ -4,7 +4,7 @@ final class InsightLayoutTests:XCTestCase {
         let app=XCUIApplication()
         app.launchArguments=["--test-adaptive-layout","--test-insights"]
         app.launch()
-        let insights=app.buttons.matching(NSPredicate(format:"label CONTAINS %@","Your running insights")).firstMatch
+        let insights=app.descendants(matching:.any)["open-running-insights"].firstMatch
         XCTAssertTrue(insights.waitForExistence(timeout:10))
         insights.tap()
         XCTAssertTrue(app.navigationBars["Coach insights"].waitForExistence(timeout:5))

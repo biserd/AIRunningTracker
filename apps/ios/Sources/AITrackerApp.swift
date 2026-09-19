@@ -136,17 +136,7 @@ struct ChatView: View {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 16) {
                             CoachCompanionCards()
-                            NavigationLink { CoachInsightsView().id(store.snapshot?.runner.id) } label: {
-                                HStack(spacing:14) {
-                                    Image(systemName:"chart.xyaxis.line").font(.title2).foregroundStyle(RunBrand.teal)
-                                    VStack(alignment:.leading,spacing:4) {
-                                        Text("Your running insights").font(.headline).foregroundStyle(.primary)
-                                        Text("Recovery, race outlook & more").font(.caption).foregroundStyle(.secondary)
-                                    }
-                                    Spacer()
-                                    Image(systemName:"chevron.right").foregroundStyle(RunBrand.orange)
-                                }.padding(18).background(RunBrand.surface,in:RoundedRectangle(cornerRadius:20))
-                            }.buttonStyle(.plain)
+                            InsightShortcut()
                             if store.messages.isEmpty { Text("How are you feeling today?").font(.title2).foregroundStyle(.secondary) }
                             ForEach(store.messages) { message in
                                 VStack(alignment: .leading, spacing: 4) {

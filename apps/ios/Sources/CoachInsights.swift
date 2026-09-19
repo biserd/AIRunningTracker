@@ -1,5 +1,22 @@
 import SwiftUI
 
+struct InsightShortcut:View {
+    @EnvironmentObject var store:CoachStore
+    var body:some View {
+        NavigationLink { CoachInsightsView().id(store.snapshot?.runner.id) } label: {
+            HStack(spacing:14) {
+                Image(systemName:"chart.xyaxis.line").font(.title2).foregroundStyle(RunBrand.teal)
+                VStack(alignment:.leading,spacing:4) {
+                    Text("Your running insights").font(.headline).foregroundStyle(.primary)
+                    Text("Recovery, race outlook & more").font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName:"chevron.right").foregroundStyle(RunBrand.orange)
+            }.padding(18).background(RunBrand.surface,in:RoundedRectangle(cornerRadius:20))
+        }.buttonStyle(.plain).accessibilityIdentifier("open-running-insights")
+    }
+}
+
 struct InsightAnalytics:Decodable {
     struct Prediction:Decodable { let distance,predictedTime:String; let confidence:Double?; let recommendation:String? }
     struct Fitness:Decodable { let current:Double?; let trend,comparison:String? }
