@@ -14,9 +14,10 @@ final class AdaptiveLayoutTests: XCTestCase {
         XCTAssertTrue(composer.waitForExistence(timeout: 5))
         composer.tap()
         composer.typeText("My next run")
+        // Commit the keyboard's marked text before asserting the accessibility value.
+        app.buttons["dismiss-coach-keyboard"].tap()
         let typed = expectation(for: NSPredicate(format: "value == %@", "My next run"), evaluatedWith: composer)
         wait(for: [typed], timeout: 20)
-        app.buttons["dismiss-coach-keyboard"].tap()
         XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(composer.waitForExistence(timeout: 5))
         XCTAssertEqual(composer.value as? String, "My next run")
