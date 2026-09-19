@@ -45,17 +45,22 @@ The generated Xcode project is ignored; project.yml is the source of truth.
 - Native Coach, Schedule and Settings tabs, Dynamic Type, orange primary actions.
 - Email-link-only sign-in; no password field or password-login call in the client.
   Keychain session persistence and device-local logout are unchanged.
-- Existing email-link request/verification with a manual paste flow for this build.
-  Copy the email link WITHOUT opening it first, since it is single use.
+- Universal Links open email sign-in directly in the app; paste-link recovery is
+  available under “Trouble signing in?”.
 - Native real-account schedule, chat history, thinking state and message submission.
 - Native plan and reminder reviews with explicit server confirmation. Existing
   entitlement and test-runner write restrictions remain authoritative.
 - Reminder list and WhatsApp connection status.
-- Voice and connection setup reuse the working website inside an isolated,
-  authenticated WKWebView sheet. They are **not yet native voice/setup screens**.
-  The voice sheet currently shows the web Coach page: tap Talk to your coach there.
-  Microphone access requires user permission and is denied to other origins.
-  Closing/backgrounding ends the voice session; it is not background audio.
+- Native WebRTC voice runs inline in the Coach tab, with mute/end controls,
+  connection state, transcript captions and a bounded call duration. It uses the
+  existing voice SDP handshake and chat delegation API with the same runner context.
+  End, background, audio interruption and headset removal shut off local audio.
+  Pending startup is finalized before another call can begin; the server's existing
+  durable alarm remains the final safety net when offline. No provider key reaches
+  the device. Plan/reminder proposals still require on-screen confirmation.
+- Only connection setup uses an isolated, authenticated WKWebView sheet.
+- WebRTC is pinned to the community distribution `stasel/WebRTC` 153.0.0, whose
+  Swift package checksums its binary. No camera or background-audio entitlement.
 
 ## API audit: reuse, not replacement
 
@@ -69,7 +74,7 @@ The generated Xcode project is ignored; project.yml is the source of truth.
 | POST /api/ai/plan-confirm | Explicit reviewed plan write |
 | GET /api/reminders, POST /api/reminders/confirm | Existing reminders/reviews |
 | GET /api/whatsapp | Connection status |
-| POST /api/ai/voice, /api/ai/voice/stop | Reused by the existing web voice surface |
+| POST /api/ai/voice, /api/ai/voice/stop | Native audio SDP handshake and finalization |
 
 The API accepts a secure host-only account cookie, not an additional mobile token
 scheme. URLSession uses ephemeral storage; only the account cookie is persisted in
@@ -82,8 +87,9 @@ replace account authentication or server authorization.
 
 - Cloud simulator compilation/tests pass; actual-device WebKit and microphone
   validation is still required.
-- Native WebRTC voice controls and native WhatsApp/email setup are later work;
-  the first version deliberately reuses the validated web flows.
+- Native WhatsApp/email setup is later work; those connections reuse web flows.
+- Native voice requires device validation for Bluetooth/speaker routing, microphone
+  permission, interruptions, offline teardown and actual audio quality.
 - Email links use Universal Links on `new.aitracker.run/auth/magic-link`.
   The app queues cold-start links until session restoration finishes and validates
   the host, scheme, path and single token before verification. Paste-link recovery

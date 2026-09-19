@@ -41,6 +41,9 @@ struct CoachTabs: View {
             ScheduleView().tabItem { Label("Schedule", systemImage: "calendar") }
             SettingsView().tabItem { Label("Settings", systemImage: "slider.horizontal.3") }
         }
+        .onChange(of: store.web) { _, destination in
+            if destination != nil { Task { await store.voice.end() } }
+        }
         .sheet(item: $store.web, onDismiss: { Task { await store.refresh() } }) { destination in
             NavigationStack {
                 ExistingCoachFlow(destination: destination, api: store.api)
