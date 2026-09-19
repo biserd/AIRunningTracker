@@ -210,7 +210,7 @@ function PremiumAnalysisUpsell({ activityId }: { activityId: number }) {
                 data-testid="activity-premium-upsell-cta"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
-                Unlock this run for 14 days free
+                Unlock this run for 7 days free
               </Button>
             </DirectCheckoutButton>
             <p className="text-xs text-gray-500 text-center mt-2">
@@ -346,7 +346,7 @@ function PremiumPreviewCard({ preview, createdAt, unitPreference }: { preview: P
             </Button>
           </DirectCheckoutButton>
         </div>
-        <p className="text-xs text-gray-500">14 days free · Card required · $0 today · Then $7.99/month · Cancel anytime</p>
+        <p className="text-xs text-gray-500">7 days free · Card required · $0 today · Then $7.99/month · Cancel anytime</p>
       </CardContent>
     </Card>
   );
@@ -788,7 +788,7 @@ export default function ActivityPage() {
                   })}>
                     <Button className="bg-yellow-500 hover:bg-yellow-600 text-white w-full" data-testid="button-upgrade-locked-activity">
                       <Sparkles className="h-4 w-4 mr-2" />
-                      Start 14-day Premium trial
+                      Start 7-day Premium trial
                     </Button>
                   </DirectCheckoutButton>
                   <p className="text-xs text-gray-500 mt-3">Card required · $0 today · Cancel before the trial ends to avoid a charge.</p>

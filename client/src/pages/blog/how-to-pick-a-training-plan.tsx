@@ -682,7 +682,7 @@ export default function HowToPickTrainingPlan() {
               <CardContent className="py-8 text-center">
                 <h3 className="text-2xl font-bold mb-4">Ready to Train Smarter?</h3>
                 <p className="text-white/90 mb-6 max-w-2xl mx-auto">
-                  Stop guessing with generic plans. Get a personalized training program built from your actual running data: try it free for 14 days.
+                  Stop guessing with generic plans. Get a personalized training program built from your actual running data: try it free for 7 days.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link href="/auth">
@@ -827,7 +827,7 @@ export default function HowToPickTrainingPlan() {
                 Stop Guessing. Start Training Smarter.
               </CardTitle>
               <CardDescription className="text-white/90 text-lg mb-6 max-w-2xl mx-auto">
-                Get your personalized AI training plan built from your Strava data. Start your 14-day free trial today.
+                Get your personalized AI training plan built from your Strava data. Start your 7-day free trial today.
               </CardDescription>
               <Link href="/auth">
                 <Button size="lg" className="bg-white text-purple-600 hover:bg-gray-100 font-bold" data-testid="button-final-cta">

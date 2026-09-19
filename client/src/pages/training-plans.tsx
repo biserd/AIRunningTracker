@@ -419,7 +419,7 @@ export default function TrainingPlans() {
               {wizardStep === "goal" && !canAccessTrainingPlans && (
                 <div className="mb-5 rounded-lg border border-blue-200 bg-blue-50 p-4" data-testid="training-plan-trial-disclosure">
                   <p className="font-semibold text-gray-900">Preview your recommended first week before starting a trial.</p>
-                  <p className="mt-1 text-sm leading-6 text-gray-600">Your goal and schedule create a free Week 1 preview. A 14-day Premium trial is required only to build every week and adapt the plan over time.</p>
+                  <p className="mt-1 text-sm leading-6 text-gray-600">Your goal and schedule create a free Week 1 preview. A 7-day Premium trial is required only to build every week and adapt the plan over time.</p>
                 </div>
               )}
               {/* Step 1: Goal */}
@@ -825,7 +825,7 @@ export default function TrainingPlans() {
                           <Crown className="w-4 h-4 mr-2" /> Unlock my training plan
                         </Button>
                       </DirectCheckoutButton>
-                      <p className="text-xs text-gray-500 mt-2">14 days free · Card required · $0 today · Then $7.99/month · Cancel anytime</p>
+                      <p className="text-xs text-gray-500 mt-2">7 days free · Card required · $0 today · Then $7.99/month · Cancel anytime</p>
                     </div>
                   </>
                 )}

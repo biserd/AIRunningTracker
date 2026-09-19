@@ -367,7 +367,7 @@ export async function registerRoutes(app: Express, runtime?: { schedulerDatabase
     },
     "/ai-running-coaching-guide": {
       title: "Free AI Running Coaching Ebook | RunAnalytics",
-      description: "Start a 14-day RunAnalytics Premium trial and get the $49 Runner's Guide to AI Coaching free. Learn what AI does well and where it fails.",
+      description: "Start a 7-day RunAnalytics Premium trial and get the $49 Runner's Guide to AI Coaching free. Learn what AI does well and where it fails.",
       keywords: "AI running coaching ebook, AI running coach guide, running analytics guide",
       ogImage: "https://aitracker.run/ebook/ai-coaching-guide-cover.webp"
     },
@@ -384,7 +384,7 @@ export async function registerRoutes(app: Express, runtime?: { schedulerDatabase
     },
     "/proactive-running-coach": {
       title: "Proactive Running Coach on Telegram | RunAnalytics",
-      description: "Get concise, runner-specific post-run coaching in Telegram through a private, read-only connection. Available with Premium and the 14-day trial.",
+      description: "Get concise, runner-specific post-run coaching in Telegram through a private, read-only connection. Available with Premium and the 7-day trial.",
       keywords: "Telegram running coach, proactive running coach, WhatsApp running coach, Strava Telegram coach"
     },
     // Additional pages from sitemap
@@ -1221,6 +1221,13 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "User not found" });
       }
 
+      if(process.env.D1_TRANSPORT_SECRET) {
+        const {applicationSqlDatabase}=await import('./d1/runtimeDatabase');
+        const {AppleSubscriptionLedger}=await import('./services/appleSubscriptions');
+        if(await new AppleSubscriptionLedger(applicationSqlDatabase).access(userId)) {
+          return res.status(409).json({message:'You already have an Apple subscription. Manage it in Apple subscription settings.'});
+        }
+      }
       // High-intent feature gates can request a billing period instead of
       // making a separate client-side products request. The server resolves
       // only the tagged Premium price; explicit price IDs remain supported by
@@ -1252,7 +1259,7 @@ ${allPages.map(page => `  <url>
         customerId = customer.id;
       }
 
-      // Decide whether to grant a 14-day free trial. Only first-time
+      // Decide whether to grant a 7-day free trial. Only first-time
       // subscribers get the trial: anyone who has ever held a Stripe
       // subscription on this customer (even canceled) does NOT get
       // another trial. We also re-check Stripe directly to catch users
@@ -1261,7 +1268,7 @@ ${allPages.map(page => `  <url>
       // never get another trial. For users with no Stripe sub on file, we
       // double-check Stripe directly to catch DB drift; if that lookup
       // fails transiently, fail OPEN: grant the trial: so a Stripe
-      // hiccup never silently denies a real new user their 14-day trial.
+      // hiccup never silently denies a real new user their 7-day trial.
       let trialEligible = !user.stripeSubscriptionId;
       if (trialEligible) {
         try {
@@ -1337,7 +1344,7 @@ ${allPages.map(page => `  <url>
           ...(attributionJob?.campaignVersion ? { lifecycleCampaignVersion: String(attributionJob.campaignVersion) } : {}),
         },
         subscription_data: {
-          ...(trialEligible ? { trial_period_days: 14 } : {}),
+          ...(trialEligible ? { trial_period_days: 7 } : {}),
           metadata: {
             app: appSlug,
             userId: String(userId),
@@ -1897,11 +1904,18 @@ ${allPages.map(page => `  <url>
 
   app.post("/api/auth/magic-link/request", async (req, res) => {
     try {
-      const { email, redirect, client } = z.object({
+      const { email, redirect, client, signup } = z.object({
         email: z.string().email(),
         redirect: z.string().max(300).optional(),
         client: z.literal("coach").optional(),
+        signup: z.boolean().optional(),
       }).parse(req.body);
+      if (signup && client === "coach") {
+        const {NativeSignup}=await import('./services/nativeSignup');
+        const {applicationSqlDatabase}=await import('./d1/runtimeDatabase');
+        await new NativeSignup(applicationSqlDatabase,(to,token)=>emailService.sendMagicLinkEmail(to,token,'https://new.aitracker.run').then(()=>undefined)).request(email);
+        return res.json({message:"Check your inbox to continue."});
+      }
       const safeRedirect = sanitizeReturnTo(redirect);
       const token = await authService.generateMagicLinkToken(email);
       if (token) {
@@ -1927,6 +1941,14 @@ ${allPages.map(page => `  <url>
   app.post("/api/auth/magic-link/verify", async (req, res) => {
     try {
       const { token } = z.object({ token: z.string().min(1) }).parse(req.body);
+      if (token.startsWith('signup_')) {
+        const {NativeSignup}=await import('./services/nativeSignup');
+        const {applicationSqlDatabase}=await import('./d1/runtimeDatabase');
+        const userId=await new NativeSignup(applicationSqlDatabase,async()=>{}).verify(token);
+        const user=await storage.getUser(userId);
+        if(!user)return res.status(401).json({message:'Request a new sign-in link.'});
+        return res.json({token:authService.generateToken(user),user:{id:user.id,email:user.email},accountReactivated:false});
+      }
       const result = await authService.verifyMagicLinkToken(token);
       const reactivation = await reactivateDormantAccount(result.user.id);
       res.json({ ...result, accountReactivated: reactivation.reactivated });
@@ -2066,7 +2088,7 @@ ${allPages.map(page => `  <url>
 
       // New user: create account silently, no email or password required.
       // New Strava signups go through the onboarding wizard and start the
-      // 14-day PAID trial (credit card required) via Stripe checkout.
+      // 7-day PAID trial (credit card required) via Stripe checkout.
       const newUser = await storage.createUser({
         firstName,
         lastName,
@@ -8845,6 +8867,77 @@ ${allPages.map(page => `  <url>
       const {companionAction}=await import('./services/coachCompanion');
       return res.json(await companionAction(req.user.id,req.params.action,req.body));
     } catch {return res.status(400).json({message:'Could not load or save coaching details. Please retry.'});}
+  });
+
+  app.post('/api/native/strava/start',authenticateJWT,async(req:any,res)=>{
+    try {
+      const {NativeStrava}=await import('./services/nativeStrava');
+      const {applicationSqlDatabase}=await import('./d1/runtimeDatabase');
+      res.setHeader('Cache-Control','no-store');
+      res.json(await new NativeStrava(applicationSqlDatabase,process.env.VITE_STRAVA_CLIENT_ID||'').start(req.user.id));
+    } catch {res.status(503).json({message:'Strava connection is temporarily unavailable.'});}
+  });
+  app.get('/api/native/onboarding',authenticateJWT,async(req:any,res)=>{
+    res.setHeader('Cache-Control','no-store');
+    try {
+      const {applicationSqlDatabase}=await import('./d1/runtimeDatabase');
+      const {AppleSubscriptionLedger,APPLE_PRODUCTS}=await import('./services/appleSubscriptions');
+      const ledger=new AppleSubscriptionLedger(applicationSqlDatabase);
+      const user=await storage.getUser(req.user.id);
+      if(!user)return res.sendStatus(401);
+      const apple=await ledger.access(user.id) || (process.env.APPLE_SUBSCRIPTIONS_ALLOW_SANDBOX==='true' ? await ledger.access(user.id,'Sandbox') : null);
+      res.json({stravaConnected:user.stravaConnected===true,syncStatus:user.syncStatus,hasAccess:canAccessCapability(user,'ai_coach'),
+        billingProvider:apple?'apple':user.stripeSubscriptionId?'stripe':null,
+        appAccountToken:await ledger.accountToken(user.id),productIDs:APPLE_PRODUCTS,
+        purchasesAvailable:true});
+    }catch{res.status(503).json({message:'Account setup is temporarily unavailable.'});}
+  });
+  app.post('/api/native/apple/transaction',authenticateJWT,async(req:any,res)=>{
+    try {
+      const signed=z.string().min(1).max(30000).parse(req.body.signedTransaction);
+      const {applicationSqlDatabase}=await import('./d1/runtimeDatabase');
+      const {AppleSubscriptionLedger,verifyAppleTransaction}=await import('./services/appleSubscriptions');
+      await new AppleSubscriptionLedger(applicationSqlDatabase).record(await verifyAppleTransaction(signed),req.user.id);
+      res.setHeader('Cache-Control','no-store');res.json({ok:true});
+    }catch{res.status(400).json({message:'The Apple purchase could not be verified for this account.'});}
+  });
+  app.post('/api/native/apple/notifications',async(req,res)=>{
+    res.setHeader('Cache-Control','no-store');
+    try {
+      const signed=z.string().min(1).max(60000).parse(req.body?.signedPayload);
+      const {applicationSqlDatabase}=await import('./d1/runtimeDatabase');
+      const {receiveAppleNotification}=await import('./services/appleSubscriptions');
+      await receiveAppleNotification(applicationSqlDatabase,signed);
+      res.json({ok:true});
+    }catch{
+      console.error(JSON.stringify({event:'apple_subscription_notification_failed'}));
+      res.status(503).json({message:'Notification could not be processed.'});
+    }
+  });
+  app.get('/api/native/strava/callback',async(req,res)=>{
+    res.setHeader('Cache-Control','no-store');res.setHeader('Referrer-Policy','no-referrer');
+    const state=typeof req.query.state==='string'?req.query.state:'';
+    if(!/^[a-f0-9]{64}$/.test(state))return res.status(400).send('Invalid connection. Return to the app and retry.');
+    let status='failed';
+    try {
+      const {NativeStrava}=await import('./services/nativeStrava');
+      const {applicationSqlDatabase}=await import('./d1/runtimeDatabase');
+      const userId=await new NativeStrava(applicationSqlDatabase,process.env.VITE_STRAVA_CLIENT_ID||'').consume(state);
+      if(req.query.error)status='cancelled';
+      else {
+        if(typeof req.query.code!=='string'||req.query.code.length>1000||typeof req.query.scope!=='string'||!req.query.scope.split(',').includes('activity:read_all'))throw new Error('MISSING_PERMISSION');
+        const data=await stravaService.exchangeCodeForTokens(req.query.code);
+        const owner=await storage.getUserByStravaId(String(data.athlete.id));
+        if(owner&&owner.id!==userId)throw new Error('STRAVA_ALREADY_LINKED');
+        const linked=await applicationSqlDatabase.prepare('UPDATE users SET strava_access_token=?,strava_refresh_token=?,strava_athlete_id=?,strava_connected=1 WHERE id=? AND NOT EXISTS(SELECT 1 FROM users WHERE strava_athlete_id=? AND id<>?) RETURNING id')
+          .bind(data.access_token,data.refresh_token,String(data.athlete.id),userId,String(data.athlete.id),userId).first();
+        if(!linked)throw new Error('STRAVA_ALREADY_LINKED');
+        const user=await storage.getUser(userId);
+        await jobQueue.addJob(createListActivitiesJob(userId,1,200,getInitialSyncCap(user?.subscriptionPlan??null,user?.subscriptionStatus??null,50)));
+        status='connected';
+      }
+    } catch {console.error(JSON.stringify({event:'native_strava_connection_failed'}));}
+    return res.redirect(302,`runanalytics://strava?${new URLSearchParams({state,status})}`);
   });
   const coachOptOut=async(req:any,res:any)=>{
     const {verifyCoachUnsubscribe}=await import('./services/coachUnsubscribe');

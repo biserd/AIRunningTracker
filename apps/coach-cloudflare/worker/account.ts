@@ -53,7 +53,7 @@ export async function accountAction(env: Env, path: string, input: Record<string
   });
   if (path === "/api/account/email") {
     if (typeof input.email !== "string" || input.email.length > 254) throw new AIError("Enter your account email.",400);
-    await backend(env, "/api/auth/magic-link/request", {email:input.email,client:"coach"});
+    await backend(env, "/api/auth/magic-link/request", {email:input.email,client:"coach",signup:input.signup===true});
     return Response.json({ok:true}, {headers:{"Cache-Control":"no-store"}});
   }
   let result: {token?: string};

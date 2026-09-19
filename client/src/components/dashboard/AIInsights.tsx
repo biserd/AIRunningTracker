@@ -139,7 +139,7 @@ export default function AIInsights({ insights, userId, insightsStatus = 'ready' 
                   })}>
                     <Button size="sm" className="bg-strava-orange hover:bg-strava-orange/90" data-testid="button-unlock-insights">
                       <Crown className="h-3 w-3 mr-1" />
-                      Start 14-day free trial
+                      Start 7-day free trial
                     </Button>
                   </DirectCheckoutButton>
                 </div>

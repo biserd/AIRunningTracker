@@ -438,7 +438,7 @@ export default function AIRunningCoachGuide() {
               <CardContent className="pt-6">
                 <h3 className="text-xl font-bold mb-3">Ready to Transform Your Running?</h3>
                 <p className="mb-4">
-                  Create a free account to sync a limited activity history and preview the analysis. Full AI coaching is available during the 14-day Premium trial and on Premium afterward.
+                  Create a free account to sync a limited activity history and preview the analysis. Full AI coaching is available during the 7-day Premium trial and on Premium afterward.
                 </p>
                 <Link href="/auth">
                   <Button className="bg-white text-strava-orange hover:bg-gray-100" data-testid="cta-get-started-ai-coach">
@@ -605,7 +605,7 @@ export default function AIRunningCoachGuide() {
             <CardContent className="py-12 text-center">
               <h2 className="text-3xl font-bold mb-4">Experience AI Coaching Today</h2>
               <p className="text-xl mb-6 max-w-2xl mx-auto">
-                Connect Strava for a limited free preview, or start the 14-day Premium trial for the complete AI coaching workflow.
+                Connect Strava for a limited free preview, or start the 7-day Premium trial for the complete AI coaching workflow.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/auth">

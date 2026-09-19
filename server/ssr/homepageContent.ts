@@ -64,7 +64,7 @@ export const homepageContent: HomepageContent = {
     description: "Don't just log your runs, learn from them. Sync your history instantly to unlock the AI coaching, race predictions, and deep insights that your dashboard is missing.",
     cta: { text: "Start Free Trial", href: "/auth" },
     trustIndicators: [
-      "14-day free trial",
+      "7-day free trial",
       "Instant access with Strava"
     ],
   },
@@ -124,12 +124,12 @@ export const homepageContent: HomepageContent = {
   ],
   pricing: {
     title: "Simple, Transparent Pricing",
-    subtitle: "One plan. Everything included. Try it free for 14 days.",
+    subtitle: "One plan. Everything included. Try it free for 7 days.",
     plans: [
       {
         name: "Premium",
         price: "$7.99/month",
-        description: "Full access to every feature. 14-day free trial, then $7.99/month or $79.99/year.",
+        description: "Full access to every feature. 7-day free trial, then $7.99/month or $79.99/year.",
         features: [
           "Full activity history & analytics",
           "AI training plans & race predictions",

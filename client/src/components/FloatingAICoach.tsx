@@ -118,7 +118,7 @@ export function FloatingAICoach({ userId, className, pageContext, isOpen: contro
                       data-testid="button-upgrade-to-premium"
                     >
                       <Crown className="w-4 h-4 mr-2" />
-                      Start 14-day free trial
+                      Start 7-day free trial
                     </Button>
                   </DirectCheckoutButton>
                   

@@ -244,7 +244,7 @@ export default function ActivitiesPage() {
                 </p>
                 <p className="text-sm text-gray-600">
                   Upgrade to Premium to unlock your full Strava history, AI
-                  insights, training plans, and the Coach Chat. Start a 14-day
+                  insights, training plans, and the Coach Chat. Start a 7-day
                   free trial. Card required; you pay $0 today.
                 </p>
               </div>
@@ -258,7 +258,7 @@ export default function ActivitiesPage() {
                   className="bg-orange-600 hover:bg-orange-700 text-white whitespace-nowrap"
                   data-testid="button-upgrade-from-cap"
                 >
-                  Start 14-day Premium trial
+                  Start 7-day Premium trial
                 </Button>
               </DirectCheckoutButton>
             </CardContent>

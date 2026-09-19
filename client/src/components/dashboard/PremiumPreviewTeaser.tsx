@@ -243,7 +243,7 @@ export default function PremiumPreviewTeaser() {
           <Button className="bg-amber-500 hover:bg-amber-600 text-white">Unlock my complete run analysis</Button>
         </DirectCheckoutButton>
       </div>
-      <p className="text-xs text-gray-500 mt-3">14 days free · Card required · $0 today · Then $7.99/month · Cancel anytime</p>
+      <p className="text-xs text-gray-500 mt-3">7 days free · Card required · $0 today · Then $7.99/month · Cancel anytime</p>
     </PreviewShell>
   );
 }

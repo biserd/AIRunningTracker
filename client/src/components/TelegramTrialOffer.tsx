@@ -56,7 +56,7 @@ export function TelegramTrialOffer({ source, compact = false }: TelegramTrialOff
                 <SiTelegram className="h-3.5 w-3.5" /> Telegram coaching
               </span>
               <span className="rounded-full border border-orange-200 bg-white px-3 py-1 text-xs font-bold text-orange-700">
-                14 days free
+                7 days free
               </span>
             </div>
 

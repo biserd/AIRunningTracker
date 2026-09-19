@@ -415,6 +415,16 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
+    if(user && process.env.D1_TRANSPORT_SECRET) {
+      const {applicationSqlDatabase}=await import('./d1/runtimeDatabase');
+      const {AppleSubscriptionLedger}=await import('./services/appleSubscriptions');
+      const ledger=new AppleSubscriptionLedger(applicationSqlDatabase);
+      const apple=await ledger.access(id) || (process.env.APPLE_SUBSCRIPTIONS_ALLOW_SANDBOX==='true' ? await ledger.access(id,'Sandbox') : null);
+      if(apple && !(['premium','pro'].includes(user.subscriptionPlan??'') && ['active','trialing'].includes(user.subscriptionStatus??''))) {
+        // Derived access only. Never overwrite Stripe's persisted subscription.
+        return {...user,subscriptionPlan:'premium',subscriptionStatus:'active',subscriptionEndsAt:new Date(apple.expires_at)};
+      }
+    }
     return user || undefined;
   }
 
@@ -1457,6 +1467,10 @@ export class DatabaseStorage implements IStorage {
     if(process.env.D1_TRANSPORT_SECRET){
       const {applicationSqlDatabase}=await import('./d1/runtimeDatabase');
       await applicationSqlDatabase.batch([
+        applicationSqlDatabase.prepare('DELETE FROM apple_subscriptions WHERE user_id=?').bind(userId),
+        applicationSqlDatabase.prepare('DELETE FROM apple_purchase_accounts WHERE user_id=?').bind(userId),
+        applicationSqlDatabase.prepare('DELETE FROM native_strava_connections WHERE user_id=?').bind(userId),
+        applicationSqlDatabase.prepare('DELETE FROM native_signup_challenges WHERE lower(email)=(SELECT lower(email) FROM users WHERE id=?)').bind(userId),
         applicationSqlDatabase.prepare('DELETE FROM coach_companion_preferences WHERE user_id=?').bind(userId),
         applicationSqlDatabase.prepare('DELETE FROM coach_companion_checkins WHERE user_id=?').bind(userId),
         applicationSqlDatabase.prepare('DELETE FROM coach_companion_briefings WHERE user_id=?').bind(userId),

@@ -42,7 +42,7 @@ const structuredData = {
         "@type": "Offer",
         price: "7.99",
         priceCurrency: "USD",
-        description: "Included with RunAnalytics Premium after a 14-day trial",
+        description: "Included with RunAnalytics Premium after a 7-day trial",
       },
     },
     {
@@ -177,7 +177,7 @@ function CoachMessagePreview() {
 export default function ProactiveRunningCoachLanding() {
   const { isAuthenticated } = useAuth();
   const primaryHref = isAuthenticated ? "/coach/settings" : PRICING_URL;
-  const primaryLabel = isAuthenticated ? "Connect or manage Telegram" : "Start 14 days free";
+  const primaryLabel = isAuthenticated ? "Connect or manage Telegram" : "Start 7 days free";
 
   useEffect(() => {
     trackFunnelEvent(
@@ -197,11 +197,11 @@ export default function ProactiveRunningCoachLanding() {
     <div className="min-h-screen bg-[#f7f8f6] text-slate-950">
       <SEO
         title="Proactive Running Coach on Telegram | RunAnalytics"
-        description="Get concise, runner-specific post-run coaching in Telegram through a private, read-only RunAnalytics connection. Available with Premium and the 14-day trial."
+        description="Get concise, runner-specific post-run coaching in Telegram through a private, read-only RunAnalytics connection. Available with Premium and the 7-day trial."
         keywords="Telegram running coach, proactive running coach, WhatsApp running coach, AI running coach messages, Strava Telegram coach, post-run coaching"
         url="https://aitracker.run/proactive-running-coach"
         ogTitle="Your running coach, already in your messages"
-        ogDescription="Run, sync, and receive one useful next step in Telegram. Available with Premium and the 14-day trial; WhatsApp is planned next."
+        ogDescription="Run, sync, and receive one useful next step in Telegram. Available with Premium and the 7-day trial; WhatsApp is planned next."
         structuredData={structuredData}
       />
       <PublicHeader />
@@ -238,7 +238,7 @@ export default function ProactiveRunningCoachLanding() {
               </div>
 
               <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
-                <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-600" /> 14-day Premium trial</span>
+                <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-600" /> 7-day Premium trial</span>
                 <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-600" /> Runner-scoped access</span>
                 <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-600" /> Disconnect anytime</span>
               </div>
@@ -364,7 +364,7 @@ export default function ProactiveRunningCoachLanding() {
           <div className="mx-auto max-w-5xl overflow-hidden rounded-[2rem] bg-[#FC4C02] px-7 py-12 text-center text-white shadow-2xl sm:px-12 sm:py-16">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15"><Sparkles className="h-7 w-7" /></div>
             <h2 className="mx-auto mt-6 max-w-3xl text-3xl font-black tracking-tight sm:text-5xl">Your next useful coaching moment should find you.</h2>
-            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-orange-50">Start the 14-day Premium trial, connect Strava, then opt in to Telegram from AI Coach Settings. Premium remains $7.99/month after the trial.</p>
+            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-orange-50">Start the 7-day Premium trial, connect Strava, then opt in to Telegram from AI Coach Settings. Premium remains $7.99/month after the trial.</p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Link href={primaryHref} onClick={trackPrimaryClick}>
                 <Button size="lg" className="h-14 w-full bg-white px-7 text-base font-bold text-[#C63B00] hover:bg-orange-50 sm:w-auto" data-testid="proactive-coach-bottom-cta">

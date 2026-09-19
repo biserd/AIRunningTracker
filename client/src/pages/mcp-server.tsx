@@ -36,7 +36,7 @@ export default function McpServerLandingPage() {
                 <h1 className="text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">Let your AI coach understand your running without giving it control.</h1>
                 <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">RunAnalytics MCP gives an authorized client a narrow view of your own training data. It cannot edit activities, change plans, start a Strava sync, send email, or touch billing.</p>
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                  <Button asChild size="lg" className="bg-strava-orange text-white hover:bg-orange-600"><Link href={upgradeUrl}>Start 14 days free <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+                  <Button asChild size="lg" className="bg-strava-orange text-white hover:bg-orange-600"><Link href={upgradeUrl}>Start 7 days free <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
                   <Button asChild size="lg" variant="outline" className="border-slate-500 bg-transparent text-white hover:bg-white/10"><Link href="/developers/mcp">Read the MCP documentation</Link></Button>
                 </div>
                 <p className="mt-3 text-xs text-slate-400">Private runner access is included with Premium and the trial. Card required · $0 today · Then $7.99/month.</p>

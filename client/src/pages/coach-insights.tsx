@@ -175,7 +175,7 @@ function FreeInsightsPreview() {
 
       <div className="rounded-xl border border-gray-200 bg-white p-5 sm:flex sm:items-center sm:justify-between sm:gap-5">
         <div>
-          <p className="font-semibold text-charcoal">Unlock the complete picture for 14 days</p>
+          <p className="font-semibold text-charcoal">Unlock the complete picture for 7 days</p>
           <p className="mt-1 text-sm text-gray-600">Card required · $0 today · Then $7.99/month · Cancel anytime</p>
         </div>
         <DirectCheckoutButton upgradeUrl={upgradeUrl}>
@@ -583,7 +583,7 @@ function AIAgentCoachTab({ user, canAccessAICoachChat }: { user: User; canAccess
           })}>
             <Button className="bg-strava-orange text-white hover:bg-orange-600" data-testid="btn-upgrade-premium">
               <Sparkles className="mr-2 h-4 w-4" />
-              Start 14 days free
+              Start 7 days free
             </Button>
           </DirectCheckoutButton>
           <Button asChild variant="outline" data-testid="btn-learn-more">

@@ -21,7 +21,7 @@ async function load(){
  if(!data.eligible){
    const returnTo='/mcp/consent?request='+encodeURIComponent(requestId);
    const upgrade='/pricing?source=mcp_consent&capability=mcp_access&benefitKey=mcp_access&returnTo='+encodeURIComponent(returnTo);
-   document.getElementById('content').innerHTML=scopeHtml+'<div class="notice"><strong>Private MCP access is included with Premium.</strong><br>Start your 14-day trial, then return here to approve this connection. Card required; $0 today.</div><div class="actions"><a class="button approve" href="'+upgrade+'">Start 14-day free trial</a><button class="deny" id="deny">Deny</button></div>';
+   document.getElementById('content').innerHTML=scopeHtml+'<div class="notice"><strong>Private MCP access is included with Premium.</strong><br>Start your 7-day trial, then return here to approve this connection. Card required; $0 today.</div><div class="actions"><a class="button approve" href="'+upgrade+'">Start 7-day free trial</a><button class="deny" id="deny">Deny</button></div>';
    bindActions();
    return;
  }

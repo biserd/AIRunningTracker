@@ -51,7 +51,7 @@ export default function LandingPage() {
           "@type": "Offer",
           "price": "7.99",
           "priceCurrency": "USD",
-          "description": "14-day free trial, then $7.99/month or $79.99/year. Cancel anytime."
+          "description": "7-day free trial, then $7.99/month or $79.99/year. Cancel anytime."
         },
         "description": "AI-powered running analytics platform with Runner Score, race predictions, and personalized training insights"
       },
@@ -73,7 +73,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
       <SEO
         title="RunAnalytics - AI Running Coach & Performance Analytics"
-        description="Chat with your personal Running Coach powered by GPT-5.5. Get instant training advice, race predictions, Runner Score (0-100), and comprehensive performance analytics. 14-day free trial."
+        description="Chat with your personal Running Coach powered by GPT-5.5. Get instant training advice, race predictions, Runner Score (0-100), and comprehensive performance analytics. 7-day free trial."
         keywords="AI running coach, running analytics, Strava analytics, runner score, race predictions, VO2 max, running performance, training insights, running app, marathon training, AI coach chat"
         structuredData={structuredData}
       />
@@ -170,7 +170,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm text-gray-600 px-4">
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
-              <span>14-day free trial</span>
+              <span>7-day free trial</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
@@ -910,7 +910,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm text-gray-600 mt-6 px-4">
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
-              <span>14-day free trial</span>
+              <span>7-day free trial</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />

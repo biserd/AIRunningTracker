@@ -175,7 +175,7 @@ function PremiumUpgradePrompt({ message, activityId }: { message: string; activi
             returnTo: `/activity/${activityId}`,
           })}>
             <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600">
-              Start 14-day free trial
+              Start 7-day free trial
               <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </DirectCheckoutButton>

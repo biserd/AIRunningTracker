@@ -215,7 +215,7 @@ export default function PricingPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
       <SEO
         title="Pricing | RunAnalytics"
-        description="Start your 14-day free trial of RunAnalytics Premium. AI coaching, race predictions, training plans, and deep performance analytics. Cancel anytime."
+        description="Start your 7-day free trial of RunAnalytics Premium. AI coaching, race predictions, training plans, and deep performance analytics. Cancel anytime."
       />
       <PublicHeader />
 
@@ -251,7 +251,7 @@ export default function PricingPage() {
                         data-testid="upgrade-intent-subscribe"
                       >
                         <Sparkles className="h-4 w-4 mr-2" />
-                        {checkout.isPending ? 'Processing...' : 'Start 14 days free: $0 today'}
+                        {checkout.isPending ? 'Processing...' : 'Start 7 days free: $0 today'}
                       </Button>
                       <p className="text-xs text-gray-500 mt-2">
                         Card required · $0 today · {billingCycle === 'monthly' ? 'Then $7.99/month' : 'Then $79.99/year'} · Cancel anytime
@@ -325,7 +325,7 @@ export default function PricingPage() {
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 shadow-xl text-white relative">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                 <span className="bg-strava-orange text-white px-4 py-1 rounded-full text-sm font-bold">
-                  14-Day Free Trial
+                  7-Day Free Trial
                 </span>
               </div>
 
@@ -390,7 +390,7 @@ export default function PricingPage() {
                   disabled={checkout.isPending}
                   data-testid="subscribe-premium"
                 >
-                  {checkout.isPending ? 'Processing...' : 'Start 14 days free: $0 today'}
+                  {checkout.isPending ? 'Processing...' : 'Start 7 days free: $0 today'}
                 </Button>
               )}
               {!isPremium && (
@@ -429,7 +429,7 @@ export default function PricingPage() {
             </div>
             <div className="flex items-center gap-2 bg-white/80 backdrop-blur px-4 py-2 rounded-full shadow-sm">
               <Sparkles className="h-4 w-4 text-strava-orange" />
-              <span className="text-sm text-gray-700 font-medium">14 days free · Cancel anytime</span>
+              <span className="text-sm text-gray-700 font-medium">7 days free · Cancel anytime</span>
             </div>
           </div>
 

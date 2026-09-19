@@ -37,7 +37,7 @@ const STRUCTURED_DATA = {
       name: "The Runner's Guide to AI Coaching",
       url: "https://aitracker.run/ai-running-coaching-guide",
       description:
-        "Get the 33-page Runner's Guide to AI Coaching free when you start a 14-day RunAnalytics Premium trial.",
+        "Get the 33-page Runner's Guide to AI Coaching free when you start a 7-day RunAnalytics Premium trial.",
     },
     {
       "@type": "Book",
@@ -81,7 +81,7 @@ const FAQS = [
   {
     question: "Is the ebook really included free?",
     answer:
-      "Yes. Start an eligible 14-day RunAnalytics Premium trial and the complete 33-page PDF is included at no additional cost.",
+      "Yes. Start an eligible 7-day RunAnalytics Premium trial and the complete 33-page PDF is included at no additional cost.",
   },
   {
     question: "Do I need a payment card for the trial?",
@@ -211,7 +211,7 @@ export default function AICoachingGuidePage() {
           className={`bg-[#FC4C02] text-white hover:bg-[#df4302] shadow-lg shadow-orange-950/15 ${compact ? "w-full sm:w-auto" : "w-full sm:w-auto px-7 py-6 text-base"}`}
           data-testid="ebook-trial-cta"
         >
-          Start 14 days free + get the ebook
+          Start 7 days free + get the ebook
           <ArrowRight className="ml-2 h-5 w-5" />
         </Button>
       </Link>
@@ -222,13 +222,13 @@ export default function AICoachingGuidePage() {
     <div className="min-h-screen bg-white text-slate-950">
       <SEO
         title="Free AI Running Coaching Ebook | RunAnalytics"
-        description="Start a 14-day RunAnalytics Premium trial and get the $49 Runner's Guide to AI Coaching free. Learn what AI does well, where it fails, and how to train safely with your data."
+        description="Start a 7-day RunAnalytics Premium trial and get the $49 Runner's Guide to AI Coaching free. Learn what AI does well, where it fails, and how to train safely with your data."
         keywords="AI running coaching ebook, AI running coach guide, running analytics guide, AI training plan, Strava coaching"
         url="https://aitracker.run/ai-running-coaching-guide"
         ogImage="https://aitracker.run/ebook/ai-coaching-guide-cover.webp"
         structuredData={STRUCTURED_DATA}
         ogTitle="Get the $49 AI Running Coaching Guide Free"
-        ogDescription="Start your 14-day RunAnalytics Premium trial and receive the complete 33-page guide at no additional cost."
+        ogDescription="Start your 7-day RunAnalytics Premium trial and receive the complete 33-page guide at no additional cost."
       />
       <PublicHeader />
 
@@ -242,7 +242,7 @@ export default function AICoachingGuidePage() {
             <div>
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-orange-300/30 bg-orange-400/10 px-4 py-2 text-sm font-semibold text-orange-100">
                 <Sparkles className="h-4 w-4 text-[#FC4C02]" />
-                $49 ebook included with your 14-day Premium trial
+                $49 ebook included with your 7-day Premium trial
               </div>
               <h1 className="max-w-3xl text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
                 Use AI to train smarter.
@@ -387,7 +387,7 @@ export default function AICoachingGuidePage() {
             <div className="mt-12 grid gap-6 md:grid-cols-3">
               {[
                 ["01", "Create your account", "Register with Strava or email so RunAnalytics can preserve your ebook offer."],
-                ["02", "Activate the 14-day trial", "Complete secure Stripe checkout. You pay $0 today and can cancel anytime."],
+                ["02", "Activate the 7-day trial", "Complete secure Stripe checkout. You pay $0 today and can cancel anytime."],
                 ["03", "Download and apply the guide", "Get the PDF and use its scorecard, runner brief, and weekly review with your own data."],
               ].map(([number, title, text]) => (
                 <article key={number} className="rounded-2xl border border-slate-200 bg-white p-7">
@@ -424,7 +424,7 @@ export default function AICoachingGuidePage() {
             <BookOpen className="mx-auto h-10 w-10 text-cyan-300" />
             <h2 className="mt-5 text-3xl font-bold tracking-tight sm:text-4xl">Start the trial. Keep the guide.</h2>
             <p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-slate-300">
-              Connect your training to RunAnalytics for 14 days and receive the complete $49 ebook at no additional cost.
+              Connect your training to RunAnalytics for 7 days and receive the complete $49 ebook at no additional cost.
             </p>
             <div className="mt-8 flex flex-col items-center gap-4">
               <PrimaryAction compact />

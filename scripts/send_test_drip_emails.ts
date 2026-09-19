@@ -5,9 +5,9 @@ const BASE_URL = "https://aitracker.run";
 
 const ALL_EMAILS = [
   // Segment A
-  { step: "A1", segment: "segment_a", subject: "Start your free 14-day Premium trial", previewText: "Connect Strava to unlock AI coaching and personalized insights", ctaText: "Start My Free Trial", ctaUrl: "/auth?tab=signup&connect=strava&source=emailA1" },
+  { step: "A1", segment: "segment_a", subject: "Start your free 7-day Premium trial", previewText: "Connect Strava to unlock AI coaching and personalized insights", ctaText: "Start My Free Trial", ctaUrl: "/auth?tab=signup&connect=strava&source=emailA1" },
   { step: "A2", segment: "segment_a", subject: "Your AI running coach is waiting", previewText: "30 seconds to connect Strava and get personalized training insights", ctaText: "Connect Strava Now", ctaUrl: "/auth?tab=signup&connect=strava&source=emailA2" },
-  { step: "A3", segment: "segment_a", subject: "Don't miss out on free Premium features", previewText: "Your 14-day trial includes AI coaching, race predictions, and training plans", ctaText: "Claim My Free Trial", ctaUrl: "/auth?tab=signup&connect=strava&source=emailA3" },
+  { step: "A3", segment: "segment_a", subject: "Don't miss out on free Premium features", previewText: "Your 7-day trial includes AI coaching, race predictions, and training plans", ctaText: "Claim My Free Trial", ctaUrl: "/auth?tab=signup&connect=strava&source=emailA3" },
   // Segment B
   { step: "B1", segment: "segment_b", subject: "Your Runner Score is ready", previewText: "See your personalized performance analysis", ctaText: "View My Runner Score", ctaUrl: "/dashboard?source=B1" },
   { step: "B2", segment: "segment_b", subject: "Meet your AI Running Coach", previewText: "Ask anything about your training - your coach knows your data", ctaText: "Chat with Coach", ctaUrl: "/chat?source=B2" },

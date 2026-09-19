@@ -18,6 +18,7 @@
   "r2_buckets": [{ "binding": "PUBLIC_ASSETS", "bucket_name": "aitracker-main-assets" }],
   "ratelimits": [{ "name": "UPLOAD_LIMITER", "namespace_id": "1002", "simple": { "limit": 30, "period": 60 } }],
   "vars": {
+    "APPLE_SUBSCRIPTIONS_ALLOW_SANDBOX": "true",
     "CLOUDFLARE_EMAIL_ACCOUNT_ID": "73d71a2bef58f7469ecb48e2b8e84c0e",
     "EMAIL_FROM": "RunAnalytics <hello@aitracker.run>",
     "APP_ROLE": "jobs",

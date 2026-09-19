@@ -94,7 +94,7 @@ export function FitnessChart({ userId }: FitnessChartProps) {
               returnTo: "/dashboard",
             })}>
               <Button className="bg-gradient-to-r from-strava-orange to-orange-500 hover:from-orange-600 hover:to-orange-600">
-                Start 14-day free trial
+                Start 7-day free trial
               </Button>
             </DirectCheckoutButton>
           </div>

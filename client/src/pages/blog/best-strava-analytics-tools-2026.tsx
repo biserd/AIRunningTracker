@@ -218,7 +218,7 @@ export default function BestStravaTools() {
             <Card className="mt-8 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
               <CardContent className="pt-6">
                 <p className="text-gray-800 dark:text-gray-200 text-lg">
-                  <strong>Want AI-powered coaching?</strong> Learn more about our <Link href="/ai-running-coach" className="text-purple-600 dark:text-purple-400 hover:underline font-semibold" data-testid="link-inline-ai-coach">AI Running Coach</Link> that provides personalized training insights based on your Strava data: included in your 14-day free trial.
+                  <strong>Want AI-powered coaching?</strong> Learn more about our <Link href="/ai-running-coach" className="text-purple-600 dark:text-purple-400 hover:underline font-semibold" data-testid="link-inline-ai-coach">AI Running Coach</Link> that provides personalized training insights based on your Strava data: included in your 7-day free trial.
                 </p>
               </CardContent>
             </Card>
@@ -243,14 +243,14 @@ export default function BestStravaTools() {
                   <Badge className="bg-green-600 text-white">Recommended</Badge>
                 </div>
                 <CardDescription className="text-lg dark:text-gray-300">
-                  AI-powered analytics platform with personalized coaching: 14-day free trial
+                  AI-powered analytics platform with personalized coaching: 7-day free trial
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="mb-6">
                   <h3 className="font-bold text-lg mb-3 dark:text-white">Overview</h3>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                    RunAnalytics is a modern AI-powered platform that brings deep coaching insights to every runner. It automatically syncs with Strava and provides personalized coaching, performance predictions, and comprehensive analytics. Try it free for 14 days, then $7.99/month. The platform's standout feature is its <Link href="/ai-running-coach" className="text-blue-600 dark:text-blue-400 hover:underline">AI Running Coach</Link>, which answers questions and provides tailored training advice based on your actual running data.
+                    RunAnalytics is a modern AI-powered platform that brings deep coaching insights to every runner. It automatically syncs with Strava and provides personalized coaching, performance predictions, and comprehensive analytics. Try it free for 7 days, then $7.99/month. The platform's standout feature is its <Link href="/ai-running-coach" className="text-blue-600 dark:text-blue-400 hover:underline">AI Running Coach</Link>, which answers questions and provides tailored training advice based on your actual running data.
                   </p>
                 </div>
 
@@ -261,7 +261,7 @@ export default function BestStravaTools() {
                       Pros
                     </h4>
                     <ul className="space-y-2 text-gray-700 dark:text-gray-300">
-                      <li>• 14-day free trial, then $7.99/month: great value</li>
+                      <li>• 7-day free trial, then $7.99/month: great value</li>
                       <li>• AI Coach provides personalized training guidance</li>
                       <li>• Proprietary Runner Score tracks overall fitness</li>
                       <li>• Accurate race time predictions</li>
@@ -319,8 +319,8 @@ export default function BestStravaTools() {
                 </div>
 
                 <div className="bg-gradient-to-r from-strava-orange to-orange-600 p-6 rounded-lg text-white">
-                  <p className="font-bold mb-2">💰 Pricing: 14-day free trial, then $7.99/mo</p>
-                  <p className="mb-4">Full Premium access free for 14 days. Cancel anytime.</p>
+                  <p className="font-bold mb-2">💰 Pricing: 7-day free trial, then $7.99/mo</p>
+                  <p className="mb-4">Full Premium access free for 7 days. Cancel anytime.</p>
                   <Link href="/auth">
                     <Button className="bg-white text-strava-orange hover:bg-gray-100" data-testid="cta-runanalytics-signup">
                       Start Free Trial <ArrowRight className="ml-2" size={16} />
@@ -646,20 +646,20 @@ export default function BestStravaTools() {
               The Bottom Line
             </h2>
             <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-              For most runners, <strong className="text-strava-orange">RunAnalytics</strong> offers the best combination of powerful features, ease of use, and value: at just $7.99/month after a 14-day free trial. The AI coaching capability sets it apart from competitors and provides personalized insights that would typically require a human coach.
+              For most runners, <strong className="text-strava-orange">RunAnalytics</strong> offers the best combination of powerful features, ease of use, and value: at just $7.99/month after a 7-day free trial. The AI coaching capability sets it apart from competitors and provides personalized insights that would typically require a human coach.
             </p>
             <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
               TrainingPeaks remains the gold standard for professional athletes and those working with coaches, but its complexity and cost make it overkill for recreational runners. Strava Summit is convenient if you're already deeply invested in Strava's ecosystem, but it doesn't offer the analytical depth of dedicated platforms.
             </p>
             <p className="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
-              The beauty of most these platforms is that you can try them risk-free. We recommend starting with RunAnalytics since the 14-day free trial gives you full access to every feature with no commitment. You can always explore other options later if you have specific needs.
+              The beauty of most these platforms is that you can try them risk-free. We recommend starting with RunAnalytics since the 7-day free trial gives you full access to every feature with no commitment. You can always explore other options later if you have specific needs.
             </p>
 
             <Card className="bg-gradient-to-r from-purple-600 to-blue-600 text-white border-0">
               <CardContent className="py-8 text-center">
                 <h3 className="text-2xl font-bold mb-3">Ready to Elevate Your Running?</h3>
                 <p className="text-lg mb-6 max-w-2xl mx-auto">
-                  Start analyzing your Strava data with RunAnalytics today. Get AI-powered insights, race predictions, and personalized coaching: try it free for 14 days.
+                  Start analyzing your Strava data with RunAnalytics today. Get AI-powered insights, race predictions, and personalized coaching: try it free for 7 days.
                 </p>
                 <Link href="/auth">
                   <Button size="lg" className="bg-white text-purple-600 hover:bg-gray-100" data-testid="cta-signup-conclusion">
@@ -682,7 +682,7 @@ export default function BestStravaTools() {
                   <CardTitle className="text-lg dark:text-white">Is RunAnalytics really free?</CardTitle>
                 </CardHeader>
                 <CardContent className="text-gray-700 dark:text-gray-300">
-                  RunAnalytics offers a 14-day free trial with full access to all Premium features: AI coaching, race predictions, Runner Score, training plans, and advanced analytics. After the trial, Premium is $7.99/month or $79.99/year. Cancel anytime.
+                  RunAnalytics offers a 7-day free trial with full access to all Premium features: AI coaching, race predictions, Runner Score, training plans, and advanced analytics. After the trial, Premium is $7.99/month or $79.99/year. Cancel anytime.
                 </CardContent>
               </Card>
               <Card className="dark:border-slate-700">

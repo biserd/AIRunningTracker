@@ -1130,7 +1130,7 @@ export function renderFaqPage(): string {
   const faqItems = [
     { q: "What is RunAnalytics?", a: "RunAnalytics is an AI-powered running analytics platform that integrates with Strava to provide personalized insights, performance tracking, and training recommendations. We use advanced machine learning algorithms to analyze your running data and help you improve your performance." },
     { q: "Do I need a Strava account?", a: "While you can create an account without Strava, connecting your Strava account unlocks the full potential of our platform. Strava integration provides access to your historical running data, which enables more accurate AI insights and personalized recommendations." },
-    { q: "Is RunAnalytics free to use?", a: "RunAnalytics offers a 14-day free trial with full access to all Premium features: AI coaching, race predictions, training plans, and advanced analytics. After the trial, Premium is $7.99/month or $79.99/year. You can cancel anytime before the trial ends and you won't be charged." },
+    { q: "Is RunAnalytics free to use?", a: "RunAnalytics offers a 7-day free trial with full access to all Premium features: AI coaching, race predictions, training plans, and advanced analytics. After the trial, Premium is $7.99/month or $79.99/year. You can cancel anytime before the trial ends and you won't be charged." },
     { q: "What kind of insights do you provide?", a: "Our AI analyzes your running data to provide insights on performance trends, pace analysis, training load, recovery recommendations, race predictions, injury risk assessment, and personalized training plans. Each insight is tailored to your specific running patterns and goals." },
     { q: "How accurate are the race time predictions?", a: "Race predictions are modeled estimates based on the activity data available. Weather, terrain, pacing, distance from the input effort and data quality can materially change the result; the displayed range is not a calibrated probability interval." },
     { q: "What is the Runner Score?", a: "The Runner Score is our comprehensive fitness metric that evaluates multiple aspects of your running performance including endurance, speed, consistency, and efficiency. It's displayed on a radar chart with scores from 0-100 across different categories." },
@@ -1304,7 +1304,7 @@ export function renderPricingPage(): string {
           <h2>Frequently Asked Questions about Pricing</h2>
           <details>
             <summary><strong>Is there a free trial?</strong></summary>
-            <p>Yes: eligible new accounts can start a 14-day Premium trial. A payment card is required, you pay $0 today, and you can cancel before the trial ends to avoid a charge.</p>
+            <p>Yes: eligible new accounts can start a 7-day Premium trial. A payment card is required, you pay $0 today, and you can cancel before the trial ends to avoid a charge.</p>
           </details>
           <details>
             <summary><strong>Can I cancel anytime?</strong></summary>
@@ -1316,7 +1316,7 @@ export function renderPricingPage(): string {
           </details>
         </section>
         <div class="ssr-cta">
-          <h3>Start your free 14-day trial</h3>
+          <h3>Start your free 7-day trial</h3>
           <p>Card required. $0 today. Full Premium access during the trial; cancel before it ends to avoid a charge.</p>
           <a href="/auth">Get Started Free &rarr;</a>
         </div>
@@ -1331,7 +1331,7 @@ export function renderProactiveRunningCoachPage(): string {
   const url = '/proactive-running-coach';
   const meta: PageMeta = {
     title: "Proactive Running Coach on Telegram | RunAnalytics",
-    description: "Get concise, runner-specific post-run coaching in Telegram through a private, read-only connection. Available with Premium and the 14-day trial.",
+    description: "Get concise, runner-specific post-run coaching in Telegram through a private, read-only connection. Available with Premium and the 7-day trial.",
     keywords: "Telegram running coach, proactive running coach, WhatsApp running coach, Strava Telegram coach"
   };
   const structuredData = JSON.stringify({
@@ -1347,7 +1347,7 @@ export function renderProactiveRunningCoachPage(): string {
           "@type": "Offer",
           "price": "7.99",
           "priceCurrency": "USD",
-          "description": "Included with RunAnalytics Premium after a 14-day trial"
+          "description": "Included with RunAnalytics Premium after a 7-day trial"
         }
       },
       {
@@ -1434,8 +1434,8 @@ export function renderProactiveRunningCoachPage(): string {
         </section>
         <div class="ssr-cta">
           <h2>Start with your own training data</h2>
-          <p>Try RunAnalytics Premium for 14 days, connect Strava, then opt in to Telegram from AI Coach Settings. Premium is $7.99/month after the trial.</p>
-          <a href="/pricing?source=proactive_coach_landing&amp;capability=ai_coach&amp;benefitKey=coach_chat">Start 14 days free &rarr;</a>
+          <p>Try RunAnalytics Premium for 7 days, connect Strava, then opt in to Telegram from AI Coach Settings. Premium is $7.99/month after the trial.</p>
+          <a href="/pricing?source=proactive_coach_landing&amp;capability=ai_coach&amp;benefitKey=coach_chat">Start 7 days free &rarr;</a>
         </div>
         <p style="margin-top:24px;text-align:center;"><a href="/blog/ai-agent-coach-proactive-coaching">Read how proactive AI coaching works</a> &bull; <a href="/ai-agent-coach">Explore AI Agent Coach</a></p>
       </article>
@@ -1516,7 +1516,7 @@ export function renderFeaturesPage(): string {
           </ul>
         </section>
         <div class="ssr-cta">
-          <h3>Try all features free for 14 days</h3>
+          <h3>Try all features free for 7 days</h3>
           <p>Connect Strava, review your current data, and inspect the trial terms before starting.</p>
           <a href="/auth">Get Started Free &rarr;</a>
         </div>
@@ -1594,7 +1594,7 @@ export function renderEbookLandingPage(): string {
   const url = '/ai-running-coaching-guide';
   const meta: PageMeta = {
     title: "Free AI Running Coaching Ebook | RunAnalytics",
-    description: "Start a 14-day RunAnalytics Premium trial and get the $49 Runner's Guide to AI Coaching free. Learn what AI does well and where it fails.",
+    description: "Start a 7-day RunAnalytics Premium trial and get the $49 Runner's Guide to AI Coaching free. Learn what AI does well and where it fails.",
     keywords: "AI running coaching ebook, AI running coach guide, running analytics guide"
   };
   const bookSchema = JSON.stringify({
@@ -1627,7 +1627,7 @@ export function renderEbookLandingPage(): string {
     <header class="ssr-header">
       <div class="ssr-meta">33 pages &bull; 17 chapters &bull; 15 research sources</div>
       <h1>The Runner's Guide to AI Coaching</h1>
-      <p style="opacity:0.9;margin-top:10px;">Start a 14-day Premium trial and get the $49 ebook free.</p>
+      <p style="opacity:0.9;margin-top:10px;">Start a 7-day Premium trial and get the $49 ebook free.</p>
     </header>
     <main class="ssr-container">
       <article class="ssr-content">
@@ -1654,14 +1654,14 @@ export function renderEbookLandingPage(): string {
           <h2>How the offer works</h2>
           <ol>
             <li>Create a RunAnalytics account with Strava or email.</li>
-            <li>Activate the 14-day Premium trial through secure Stripe checkout.</li>
+            <li>Activate the 7-day Premium trial through secure Stripe checkout.</li>
             <li>Download the complete PDF and apply it to your own training.</li>
           </ol>
         </section>
         <div class="ssr-cta">
           <h3>Start the trial. Keep the guide.</h3>
           <p>Get the complete $49 ebook at no additional cost.</p>
-          <a href="/auth?mode=signup&amp;redirect=%2Fpricing%3Fsource%3Debook_landing%26capability%3Debook_bundle%26benefitKey%3Debook_bundle%26returnTo%3D%252Fai-running-coaching-guide%253Fdownload%253D1%26pendingResourceId%3Dai-coaching-ebook%26experimentVariant%3Debook_bundle_v1">Start 14 days free &rarr;</a>
+          <a href="/auth?mode=signup&amp;redirect=%2Fpricing%3Fsource%3Debook_landing%26capability%3Debook_bundle%26benefitKey%3Debook_bundle%26returnTo%3D%252Fai-running-coaching-guide%253Fdownload%253D1%26pendingResourceId%3Dai-coaching-ebook%26experimentVariant%3Debook_bundle_v1">Start 7 days free &rarr;</a>
         </div>
         <p style="text-align:center;margin-top:24px;">Prefer the ebook without a trial? <a href="https://airunning.gumroad.com/l/the_running_guide_to_ai_coaching" rel="nofollow noopener noreferrer">Buy the standalone edition for $49 on Gumroad</a>.</p>
       </article>
@@ -1801,7 +1801,7 @@ export function renderMcpLandingPage(): string {
 <section><h2>Private runner tools</h2><ul><li>Profile and preferences</li><li>Paginated activities and bounded activity details</li><li>Dashboard trends, fitness, recovery, and Runner Score</li><li>Goals and training-plan summaries or details</li><li>Coach snapshots and post-run briefs</li></ul><p>Private access requires an active Premium subscription or trial.</p></section>
 <section><h2>Open public catalog</h2><p>The separate <code>https://aitracker.run/mcp/public</code> endpoint requires no private-account access. It can search the running-shoe database, read shoe specifications, list catalog filters, compare two to four shoes, and discover public RunAnalytics tools.</p></section>
 <section><h2>A strict read-only boundary</h2><p>No MCP tool can create, update, delete, sync, email, change billing, invoke arbitrary routes, or execute arbitrary SQL. Tokens are short-lived, refresh grants rotate, responses are bounded, and access can be revoked.</p></section>
-<div class="ssr-cta"><h2>Connect your running data</h2><p>Start a 14-day Premium trial, then authorize your preferred MCP client.</p><a href="/pricing?source=mcp_landing&amp;capability=mcp_access&amp;benefitKey=mcp_access&amp;returnTo=%2Fmcp-server">Start 14 days free &rarr;</a><p><a href="/developers/mcp">Read the MCP documentation</a></p></div>
+<div class="ssr-cta"><h2>Connect your running data</h2><p>Start a 7-day Premium trial, then authorize your preferred MCP client.</p><a href="/pricing?source=mcp_landing&amp;capability=mcp_access&amp;benefitKey=mcp_access&amp;returnTo=%2Fmcp-server">Start 7 days free &rarr;</a><p><a href="/developers/mcp">Read the MCP documentation</a></p></div>
 </article></main></div></body></html>`;
 }
 
@@ -1821,7 +1821,7 @@ export function renderMcpDocsPage(): string {
 <section><h2>Private scopes</h2><ul><li><code>mcp:profile.read</code></li><li><code>mcp:activities.read</code></li><li><code>mcp:analytics.read</code></li><li><code>mcp:goals.read</code></li><li><code>mcp:plans.read</code></li></ul></section>
 <section><h2>Public running-shoe tools</h2><ul><li><code>search_running_shoes</code></li><li><code>get_running_shoe</code></li><li><code>list_running_shoe_filters</code></li><li><code>compare_running_shoes</code></li><li><code>list_runanalytics_tools</code></li></ul></section>
 <section><h2>Operational limits</h2><p>Activity ranges are capped at 365 days, pages at 100 records, plan details at 32 weeks, shoe search at 50 results, comparison at four shoes, and tool execution at eight seconds. Private and public requests have separate distributed rate limits.</p></section>
-<div class="ssr-cta"><h2>Get private runner access</h2><p>Private MCP access is included during the trial and with Premium.</p><a href="/pricing?source=mcp_docs&amp;capability=mcp_access&amp;benefitKey=mcp_access&amp;returnTo=%2Fdevelopers%2Fmcp">Start 14 days free &rarr;</a><p><a href="/mcp-server">See the runner-friendly overview</a></p></div>
+<div class="ssr-cta"><h2>Get private runner access</h2><p>Private MCP access is included during the trial and with Premium.</p><a href="/pricing?source=mcp_docs&amp;capability=mcp_access&amp;benefitKey=mcp_access&amp;returnTo=%2Fdevelopers%2Fmcp">Start 7 days free &rarr;</a><p><a href="/mcp-server">See the runner-friendly overview</a></p></div>
 </article></main></div></body></html>`;
 }
 

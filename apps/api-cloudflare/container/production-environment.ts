@@ -20,7 +20,7 @@ export function productionEnvironment(values: object): Record<string, string> {
   }
   for (const name of ['STRAVA_VERIFY_TOKEN','VAPID_PRIVATE_KEY','VAPID_PUBLIC_KEY','VAPID_SUBJECT',
     'ENABLE_PROACTIVE_COACH_WORKER','ENABLE_NOTIFICATION_DELIVERY','RESEND_WEBHOOK_SECRET','STRIPE_WEBHOOK_SECRET',
-    'APNS_KEY_ID','APNS_TEAM_ID','APNS_PRIVATE_KEY']) {
+    'APNS_KEY_ID','APNS_TEAM_ID','APNS_PRIVATE_KEY','APPLE_SUBSCRIPTIONS_ALLOW_SANDBOX']) {
     const value: unknown = Reflect.get(values, name);
     if (typeof value === 'string') output[name] = value;
   }

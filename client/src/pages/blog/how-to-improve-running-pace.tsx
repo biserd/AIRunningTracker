@@ -830,7 +830,7 @@ export default function ImproveRunningPace() {
                 <Brain className="mx-auto mb-4" size={48} />
                 <h3 className="text-3xl font-bold mb-4">Train Smarter with AI Guidance</h3>
                 <p className="text-xl mb-6 max-w-2xl mx-auto">
-                  Preview personalized analysis with a free account, then use the 14-day Premium trial for complete coaching and planning features from <Link href="/ai-running-coach" className="underline font-bold hover:text-gray-100">RunAnalytics AI Coach</Link>.
+                  Preview personalized analysis with a free account, then use the 7-day Premium trial for complete coaching and planning features from <Link href="/ai-running-coach" className="underline font-bold hover:text-gray-100">RunAnalytics AI Coach</Link>.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link href="/auth">
