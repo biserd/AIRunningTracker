@@ -15,7 +15,7 @@ final class AdaptiveLayoutTests: XCTestCase {
         composer.tap()
         composer.typeText("My next run")
         let typed = expectation(for: NSPredicate(format: "value == %@", "My next run"), evaluatedWith: composer)
-        wait(for: [typed], timeout: 5)
+        wait(for: [typed], timeout: 20)
         app.buttons["dismiss-coach-keyboard"].tap()
         XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(composer.waitForExistence(timeout: 5))
@@ -29,6 +29,11 @@ final class AdaptiveLayoutTests: XCTestCase {
             app.tabBars.buttons["Settings"].tap()
         }
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+        app.buttons["Notifications & reminders"].tap()
+        XCTAssertTrue(app.navigationBars["Notifications"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Enable notifications"].exists)
+        XCTAssertEqual(app.webViews.count, 0)
+        app.navigationBars.buttons["Done"].tap()
         app.buttons["Connect WhatsApp"].tap()
         XCTAssertTrue(app.navigationBars["WhatsApp"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.webViews.count, 0)

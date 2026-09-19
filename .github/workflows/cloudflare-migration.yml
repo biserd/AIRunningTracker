@@ -21,6 +21,12 @@ jobs:
           cache: npm
           cache-dependency-path: apps/api-cloudflare/package-lock.json
       - run: npm ci
+      - name: Install shared application type dependencies
+        working-directory: .
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Test Apple notification delivery
+        working-directory: .
+        run: npx tsx --test scripts/d1/apple-push.test.ts
       - run: npm run check
       - run: npx tsc --noEmit -p container/tsconfig.json
       - run: npx tsc --noEmit -p container/tsconfig.production.json

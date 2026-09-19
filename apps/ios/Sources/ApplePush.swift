@@ -75,7 +75,11 @@ struct AppleReminder: Decodable, Identifiable {
         guard enabled, runner != nil else { return }
         if settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional {
             UIApplication.shared.registerForRemoteNotifications()
-        } else { status = "Notifications are off in iOS Settings" }
+        } else {
+            if let api { let _: OK? = try? await api.applePush("unregister", body: ["installation": installation]) }
+            clearLocalDelivery()
+            status = "Notifications are off in iOS Settings"
+        }
     }
     func enable() async throws {
         guard runner != nil else { throw APIError.missingSession }
@@ -126,10 +130,12 @@ struct AppleReminder: Decodable, Identifiable {
     }
     func detach() async {
         epoch = UUID()
+        let current = epoch
         // Disable OS delivery immediately, including when logout is offline.
         UIApplication.shared.unregisterForRemoteNotifications()
         clearLocalDelivery()
         if let api { let _: OK? = try? await api.applePush("unregister", body: ["installation": installation]) }
+        guard current == epoch else { return }
         runner = nil; api = nil; token = nil; enabled = false; status = "Off"; items = []
     }
     private func clearLocalDelivery() {
