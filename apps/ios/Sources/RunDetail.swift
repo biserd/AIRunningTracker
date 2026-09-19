@@ -76,6 +76,7 @@ struct RunDetailView:View {
                     Task { await store.send("Explain my run ID \(run.id) on \(run.date). Use actual data and relate it to my training plan.") }
                 }.buttonStyle(.borderedProminent).disabled(store.busy || store.voice.active)
             }
+            Section("Coach analysis") { RunAnalysisView(activityID:run.id) }
             if loading { ProgressView("Loading run details…") }
             if let failure { Section { Text(failure); Button("Retry") { Task { await load() } } } }
             if let detail {

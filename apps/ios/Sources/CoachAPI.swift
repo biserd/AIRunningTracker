@@ -119,8 +119,11 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
         return try await issuerRequest("/api/performance/recovery/\(userID)")
     }
     func coachRecaps() async throws -> InsightRecaps { try await issuerRequest("/api/coach-recaps") }
+    func runRecap(_ id:Int) async throws -> RunRecapResponse { try await issuerRequest("/api/activities/\(id)/coach-recap") }
+    func runnerScore(_ id:Int) async throws -> NativeRunnerScore { try await issuerRequest("/api/runner-score/\(id)") }
+    func activityCalendar() async throws -> NativeActivityCalendar { try await issuerRequest("/api/activities/heatmap",query:[URLQueryItem(name:"range",value:"6m")]) }
     static func isInsightReadPath(_ path:String)->Bool {
-        path == "/api/coach-recaps" || path.range(of:"^/api/(activities|analytics/batch|performance/recovery)/[1-9][0-9]*$",options:.regularExpression) != nil
+        path == "/api/coach-recaps" || path == "/api/activities/heatmap" || path.range(of:"^/api/(activities|runner-score|analytics/batch|performance/recovery)/[1-9][0-9]*$",options:.regularExpression) != nil || path.range(of:"^/api/activities/[1-9][0-9]*/coach-recap$",options:.regularExpression) != nil
     }
     private func issuerRequest<T: Decodable>(_ path: String, query: [URLQueryItem] = [], body: [String: Any]? = nil) async throws -> T {
         let current = generation

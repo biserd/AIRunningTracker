@@ -74,6 +74,11 @@ struct RunHistoryView:View {
     @EnvironmentObject var store:CoachStore
     var body:some View {
         List {
+            Section {
+                NavigationLink { RunningProgressView() } label: {
+                    Label("Runner Score & activity calendar",systemImage:"chart.bar.xaxis").foregroundStyle(RunBrand.orange)
+                }
+            }
             Section { Text("Recorded runs from the last 90 days, up to 200 and subject to your plan.").font(.caption).foregroundStyle(.secondary) }
             ForEach((store.snapshot?.state.activities ?? []).reversed()) { run in
                 NavigationLink("\(run.date) · \(run.name ?? "Run")") { RunDetailView(run:run) }
