@@ -295,7 +295,7 @@ struct SettingsView: View {
                 }
                 Section {
                     Button("Refresh running data") { Task { await store.refresh() } }.disabled(store.busy)
-                    Button("Sign out", role: .destructive) { confirmLogout = true }.disabled(store.busy)
+                    Button("Sign out", role: .destructive) { confirmLogout = true }
                 } footer: { Text("Same Run Analytics account and running data. No separate subscription.") }
             }.frame(maxWidth: 760).frame(maxWidth: .infinity)
                 .scrollContentBackground(.hidden).background(RunBrand.canvas)
