@@ -83,3 +83,11 @@
 .whatsapp-setup .primary:hover { background:#a92f06; }
 .whatsapp-setup .primary:disabled { opacity:.6; }
 .whatsapp-setup li { margin:16px 0; font-size:18px; }
+.coach-preferences label { display: grid; gap: .5rem; }
+.coach-preferences label:has(input[type="checkbox"]) { grid-template-columns: 24px 1fr; align-items: center; }
+.coach-preferences input[type="checkbox"] { width: 20px; height: 20px; accent-color: #c73d08; margin: 0; }
+.coach-preferences select,
+.coach-preferences input[type="number"],
+.coach-preferences textarea { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; background: #fff; color: #334155; font: inherit; box-sizing: border-box; }
+.coach-preferences details[open] { display: grid; gap: 16px; }
+.coach-preferences :is(select,input,textarea):focus-visible { outline: 2px solid #c73d08; outline-offset: 2px; }

@@ -9,7 +9,7 @@ export function CoachingPreferences(){
  const [value,setValue]=useState<Preferences>(),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
  useEffect(()=>{let active=true;call('read',{}).then(data=>{if(active)setValue(data.preferences)}).catch(e=>{if(active)setMessage(e.message)});return()=>{active=false}},[]);
  const update=(patch:Partial<Preferences>)=>{setValue(v=>v?{...v,...patch}:v);setMessage('')};
- return <section className="settings-group" aria-label="Coaching preferences"><h3>Your coach</h3>
+ return <section className="settings-group coach-preferences" aria-label="Coaching preferences"><h3>Your coach</h3>
  {!value?<p role="status">{message||'Loading preferences…'}</p>:<form onSubmit={async event=>{event.preventDefault();setBusy(true);setMessage('');try{await call('preferences',value);setMessage('Saved. Your coach uses these preferences across your account.')}catch(e){setMessage((e as Error).message)}finally{setBusy(false)}}}>
  <fieldset disabled={busy} style={{border:0,padding:0,display:'grid',gap:16}}>
  <label>Send coaching updates to<select value={value.delivery??'auto'} onChange={e=>update({delivery:e.target.value})}>
