@@ -15,7 +15,6 @@ struct ExistingCoachFlow: UIViewRepresentable {
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
-        context.coordinator.observeBackground(webView)
         Task { @MainActor in
             guard let credential = api.credential, credential.expires > Date(),
                   let cookie = HTTPCookie(properties: [.name: CoachAPI.cookieName, .value: credential.token,
@@ -31,22 +30,10 @@ struct ExistingCoachFlow: UIViewRepresentable {
         uiView.setMicrophoneCaptureState(.none, completionHandler: nil)
         uiView.stopLoading()
         uiView.loadHTMLString("", baseURL: nil)
-        coordinator.stopVoice()
     }
     @MainActor final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
         let api: CoachAPI
-        var observer: NSObjectProtocol?
         init(api: CoachAPI) { self.api = api }
-        deinit { if let observer { NotificationCenter.default.removeObserver(observer) } }
-        func stopVoice() { Task { let _: OK? = try? await api.request("/api/ai/voice/stop", body: [:]) } }
-        func observeBackground(_ webView: WKWebView) {
-            observer = NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self, weak webView] _ in
-                Task { @MainActor in
-                    webView?.setMicrophoneCaptureState(.none, completionHandler: nil)
-                    self?.stopVoice()
-                }
-            }
-        }
         func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             guard let url = action.request.url else { decisionHandler(.cancel); return }
             if url.absoluteString == "about:blank" { decisionHandler(.allow); return }
@@ -68,7 +55,8 @@ struct ExistingCoachFlow: UIViewRepresentable {
         func webView(_ webView: WKWebView, requestMediaCapturePermissionFor origin: WKSecurityOrigin,
                      initiatedByFrame frame: WKFrameInfo, type: WKMediaCaptureType,
                      decisionHandler: @escaping (WKPermissionDecision) -> Void) {
-            decisionHandler(origin.protocol == "https" && origin.host == "new.aitracker.run" && frame.isMainFrame && type == .microphone ? .prompt : .deny)
+            // Connections never need capture; all coaching audio is native.
+            decisionHandler(.deny)
         }
     }
 }

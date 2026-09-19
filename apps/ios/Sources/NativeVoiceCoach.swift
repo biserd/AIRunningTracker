@@ -105,14 +105,14 @@ enum VoiceEvent {
                     }
                     guard phase == .live else {
                         error = "Your coach could not connect. Please try again."
-                        await end(); return
+                        Task { await self.end() }; return
                     }
                     while remaining > 0 {
                         try? await Task.sleep(nanoseconds: 1_000_000_000)
                         guard !Task.isCancelled, call == generation else { return }
                         remaining -= 1
                     }
-                    await end()
+                    Task { await self.end() }
                 }
             } catch {
                 guard call == generation else { return }

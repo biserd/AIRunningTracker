@@ -22,9 +22,9 @@ import WebRTC
         let audio = RTCAudioSession.sharedInstance()
         audio.lockForConfiguration()
         defer { audio.unlockForConfiguration() }
-        try audio.setCategory(AVAudioSession.Category.playAndRecord.rawValue,
+        try audio.setCategory(AVAudioSession.Category.playAndRecord,
                               with: [.defaultToSpeaker, .allowBluetooth])
-        try audio.setMode(AVAudioSession.Mode.voiceChat.rawValue)
+        try audio.setMode(AVAudioSession.Mode.voiceChat)
     }
     private func createOffer() async throws -> String {
         let configuration = RTCConfiguration()
