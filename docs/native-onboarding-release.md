@@ -32,7 +32,7 @@
 - Both frontend builds, Worker typechecks, container typecheck and D1 application bundle passed.
 - Production homepage returns 200; native onboarding without authentication returns 401. Unsigned Apple notification requests are rejected without granting access.
 - Final iPhone/iPad simulator run `35471032342` passed for `e23c1cb`.
-- TestFlight tag: `ios-testflight-20260919-native-onboarding`, source `e23c1cb`; upload run `35471035189` succeeded. Apple received version 1.0 build 21 and is processing it; tester assignment is not yet confirmed.
+- TestFlight tag: `ios-testflight-20260919-native-onboarding`, source `e23c1cb`; upload run `35471035189` succeeded. Apple processed version 1.0 build 21; it is assigned to AITracker Internal (2 testers). External beta review and public App Store release have not been submitted.
 - Deployed native signup email request returned 200 for the designated test inbox; the hashed challenge was confirmed in D1 without exposing the token. The email link has not been consumed as part of this acceptance check.
 
 ## Device acceptance checklist (not yet completed)
