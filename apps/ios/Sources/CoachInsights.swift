@@ -13,7 +13,8 @@ struct InsightAnalytics:Decodable {
     let efficiency:Efficiency?
     let hrZones:Zones?
     let unavailable:[String]?
-    let entitlements:[String:Bool]?
+    struct Entitlements:Decodable { let capabilities:[String:Bool]? }
+    let entitlements:Entitlements?
 }
 struct InsightRecovery:Decodable {
     let readyToRun:Bool?
@@ -54,7 +55,7 @@ struct CoachInsightsView:View {
                         Button("Try again") { Task { await load() } }.buttonStyle(.borderedProminent).disabled(loading)
                     }
                 }
-                if analytics?.entitlements?["advanced_insights"] == false {
+                if analytics?.entitlements?.capabilities?["advancedInsights"] == false {
                     InsightCard(title:"More insight with your plan",symbol:"lock",color:RunBrand.orange) {
                         Text("Advanced analysis requires an eligible trial or subscription. Your existing account access applies here.").foregroundStyle(.secondary)
                     }
@@ -155,6 +156,14 @@ struct CoachInsightsView:View {
     private func metric(_ value:String,caption:String,color:Color)->some View { VStack(alignment:.leading,spacing:4) { Text(value).font(.system(.largeTitle,design:.rounded).bold()).foregroundStyle(color); Text(caption).font(.caption).foregroundStyle(.secondary) } }
     private func loadLabel(_ risk:String?)->String { switch risk?.lowercased() { case "low":return "Within your baseline"; case "medium":return "Watch your load"; case "high":return "Load elevated"; default:return "Training load" } }
     @MainActor private func load() async {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--test-insights") {
+            // Offline UI fixture only. No account, network or health-data access.
+            analytics=try? JSONDecoder().decode(InsightAnalytics.self,from:Data(#"{"predictions":[{"distance":"5K","predictedTime":"24:12","confidence":75},{"distance":"10K","predictedTime":"50:20","confidence":72}],"vo2Max":{"current":46.2,"trend":"stable","comparison":"Based on recent running data"},"injuryRisk":{"riskLevel":"Low","riskFactors":["Your recent mileage is within your usual range."],"recommendations":["Keep your easy runs comfortable."]},"efficiency":{"averageCadence":168,"efficiency":76,"runsAnalyzed":8,"dataConfidence":"moderate"},"hrZones":{"heartRateZones":{"zone1":{"min":100,"max":120,"name":"Active recovery","description":"Easy conversational effort"},"zone2":{"min":120,"max":140,"name":"Aerobic base","description":"Comfortable and sustainable"}}}}"#.utf8))
+            recovery=try? JSONDecoder().decode(InsightRecovery.self,from:Data(#"{"statusMessage":"A little easier today.","recoveryMessage":"Your last run was a harder effort. Keep the next one relaxed.","recommendedNextStep":"easy"}"#.utf8))
+            return
+        }
+        #endif
         guard !loading,let id=store.snapshot?.runner.id else { return }
         loading=true; failures=[]; defer { loading=false }
         async let a=fetch { try await store.api.analytics(userID:id) }

@@ -10,8 +10,8 @@ final class InsightTests:XCTestCase {
         XCTAssertEqual(value.hrZones?.heartRateZones?["zone1"]?.min,100)
     }
     func testFreeAccountResponseAndNullableRecaps() throws {
-        let value=try JSONDecoder().decode(InsightAnalytics.self,from:Data(#"{"predictions":[],"entitlements":{"advanced_insights":false}}"#.utf8))
-        XCTAssertEqual(value.entitlements?["advanced_insights"],false)
+        let value=try JSONDecoder().decode(InsightAnalytics.self,from:Data(#"{"predictions":[],"entitlements":{"state":"free","capabilities":{"advancedInsights":false}}}"#.utf8))
+        XCTAssertEqual(value.entitlements?.capabilities?["advancedInsights"],false)
         let recaps=try JSONDecoder().decode(InsightRecaps.self,from:Data(#"{"recaps":[{"id":1,"activityName":null,"coachingCue":null}]}"#.utf8))
         XCTAssertNil(recaps.recaps.first?.coachingCue)
     }
