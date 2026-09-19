@@ -26,6 +26,7 @@ import Combine
     @Published var needsSignIn = true
     @Published var settingsSheet: SettingsDestination?
     @Published var companion: CompanionData?
+    @Published var companionError:String?
     @Published var scheduleError: String?
     @Published var refreshingSchedule = false
     @Published var savingCheckIn = false
@@ -119,8 +120,8 @@ import Combine
         } catch { if generation==sessionGeneration { scheduleError="Could not refresh. Showing the last loaded schedule."; report(error) } }
         do {
             let next:CompanionData=try await api.companion("read")
-            guard generation==sessionGeneration, !needsSignIn else { return }; companion=next
-        } catch { /* A companion outage must not hide the training schedule. */ }
+            guard generation==sessionGeneration, !needsSignIn else { return }; companion=next; companionError=nil
+        } catch { if generation==sessionGeneration { companionError="Could not refresh coaching details. Pull down to retry." } }
         try? await push.refresh()
     }
     func checkIn(_ feeling:String,activity:Int=0) async {

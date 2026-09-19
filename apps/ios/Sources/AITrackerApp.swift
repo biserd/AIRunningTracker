@@ -209,7 +209,7 @@ struct ScheduleView: View {
                         Text(plan.name ?? "Your training plan").font(.headline)
                         if let week=plan.weekNumber { Text("Week \(week) of \(plan.totalWeeks)").foregroundStyle(.secondary) }
                     }
-                    if let updated=store.snapshot?.state.updatedAt { Text("Updated \(updated)").font(.caption).foregroundStyle(.secondary) }
+                    if let updated=store.snapshot?.state.updatedAt { Text("Updated \(coachTimestamp(updated))").font(.caption).foregroundStyle(.secondary) }
                     if let failure=store.scheduleError { Text(failure).foregroundStyle(.red) }
                     NavigationLink("Run history") { RunHistoryView() }
                     NavigationLink("Coach insights") { CoachInsightsView() }

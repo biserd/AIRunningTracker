@@ -1454,6 +1454,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteAccount(userId: number): Promise<void> {
+    if(process.env.D1_TRANSPORT_SECRET){
+      const {applicationSqlDatabase}=await import('./d1/runtimeDatabase');
+      await applicationSqlDatabase.batch([
+        applicationSqlDatabase.prepare('DELETE FROM coach_companion_preferences WHERE user_id=?').bind(userId),
+        applicationSqlDatabase.prepare('DELETE FROM coach_companion_checkins WHERE user_id=?').bind(userId),
+        applicationSqlDatabase.prepare('DELETE FROM coach_companion_briefings WHERE user_id=?').bind(userId),
+        applicationSqlDatabase.prepare('DELETE FROM apple_push_outbox WHERE user_id=?').bind(userId),
+      ]);
+    }
     // Delete all user data in the correct order (cascade deletion)
     // Delete from tables with foreign keys first, then the user record
     

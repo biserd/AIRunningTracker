@@ -18,6 +18,12 @@ struct CompanionData:Decodable {
     let checkins:[CoachCheckIn]
 }
 func runnerDistance(_ km:Double,units:String)->String { String(format:"%.1f %@",units == "miles" ? km*0.621371 : km,units == "miles" ? "mi" : "km") }
+func coachTimestamp(_ value:String)->String {
+    let formatter=ISO8601DateFormatter(); formatter.formatOptions=[.withInternetDateTime,.withFractionalSeconds]
+    if let date=formatter.date(from:value) { return date.formatted(date:.abbreviated,time:.shortened) }
+    formatter.formatOptions=[.withInternetDateTime]
+    return formatter.date(from:value)?.formatted(date:.abbreviated,time:.shortened) ?? value
+}
 func workoutSummary(_ day:Workout,units:String)->String {
     if day.kind == "rest" { return "Rest day" }
     var parts:[String]=[]
@@ -55,7 +61,7 @@ struct CoachCompanionCards:View {
             if let briefing=store.companion?.briefings.first {
                 DisclosureGroup(briefing.title) {
                     Text(briefing.body).frame(maxWidth:.infinity,alignment:.leading).padding(.top,8)
-                    Text(briefing.date).font(.caption).foregroundStyle(.secondary)
+                    Text(coachTimestamp(briefing.date)).font(.caption).foregroundStyle(.secondary)
                     Button("Discuss with coach") { Task { await store.send("Discuss my saved \(briefing.kind) briefing for \(briefing.reference), using fresh training data.") } }.buttonStyle(.bordered).disabled(store.busy || store.voice.active)
                 }
             }
@@ -85,10 +91,11 @@ struct CoachInsightsView:View {
             ForEach(store.companion?.insights ?? []) { insight in
                 Section(insight.title) {
                     Text(insight.content)
-                    if let date=insight.date { Text("Saved \(date)").font(.caption).foregroundStyle(.secondary) }
+                    if let date=insight.date { Text("Saved \(coachTimestamp(date))").font(.caption).foregroundStyle(.secondary) }
                 }
             }
-            if store.companion?.insights.isEmpty != false { Text("No saved insights available. AI insights require an eligible subscription.") }
+            if let error=store.companionError { Text(error).foregroundStyle(.red) }
+            else if store.companion?.insights.isEmpty != false { Text("No saved insights available. AI insights require an eligible subscription.") }
         }.navigationTitle("Coach insights").refreshable { await store.refreshSchedule(force:true) }
     }
 }
