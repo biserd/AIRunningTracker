@@ -132,6 +132,8 @@ import Combine
             }
             subscriptions=manager
             await manager.start()
+        } else if let subscriptions, subscriptions.products.isEmpty {
+            await subscriptions.reloadProducts()
         }
     }
     func refreshSchedule(force:Bool = false) async {

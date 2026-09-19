@@ -28,9 +28,13 @@ import StoreKit
                 catch { self.error="Your purchase needs to finish syncing. Please restore purchases." }
             }
         }
+        await reloadProducts()
+        await reconcile()
+    }
+    func reloadProducts() async {
+        error=nil
         do { products=try await Product.products(for:Self.productIDs).sorted { $0.price < $1.price } }
         catch { self.error="Apple subscription options could not load. Please retry." }
-        await reconcile()
     }
     func stop() { updates?.cancel(); updates=nil; products=[]; state = .idle; error=nil }
     deinit { updates?.cancel() }
