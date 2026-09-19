@@ -123,7 +123,7 @@ enum VoiceEvent {
         }
     }
 
-    func end() async {
+    func end(cleanupAPI: CoachAPI? = nil) async {
         guard phase != .off, phase != .ending else { return }
         phase = .ending
         generation = UUID()
@@ -139,7 +139,7 @@ enum VoiceEvent {
         await pending?.value
         startup = nil
         if providerRequested, let store {
-            do { let _: OK = try await store.api.request("/api/ai/voice/stop", body: [:]) }
+            do { let _: OK = try await (cleanupAPI ?? store.api).request("/api/ai/voice/stop", body: [:]) }
             catch { self.error = "Microphone off. The server is finishing the call; wait a moment before trying again." }
         }
         providerRequested = false

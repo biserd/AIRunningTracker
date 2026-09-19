@@ -132,15 +132,14 @@ struct AppleReminder: Decodable, Identifiable {
         UIApplication.shared.unregisterForRemoteNotifications()
         clearLocalDelivery()
     }
-    func detach() async {
+    func detach(cleanupAPI: CoachAPI? = nil) async {
         epoch = UUID()
-        let current = epoch
+        let oldAPI = cleanupAPI ?? api
         // Disable OS delivery immediately, including when logout is offline.
         UIApplication.shared.unregisterForRemoteNotifications()
         clearLocalDelivery()
-        if let api { let _: OK? = try? await api.applePush("unregister", body: ["installation": installation]) }
-        guard current == epoch else { return }
         runner = nil; api = nil; token = nil; enabled = false; status = "Off"; items = []
+        if let oldAPI { let _: OK? = try? await oldAPI.applePush("unregister", body: ["installation": installation]) }
     }
     private func clearLocalDelivery() {
         UserDefaults.standard.removeObject(forKey: "pushGeneration")

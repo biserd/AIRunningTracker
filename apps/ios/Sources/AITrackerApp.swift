@@ -301,7 +301,7 @@ struct SettingsView: View {
                 .scrollContentBackground(.hidden).background(RunBrand.canvas)
                 .navigationTitle("Settings")
                 .confirmationDialog("Sign out of this device?", isPresented: $confirmLogout) {
-                    Button("Sign out", role: .destructive) { Task { await store.signOut() } }
+                    Button("Sign out", role: .destructive) { Task { await store.signOut() } }.accessibilityIdentifier("confirm-sign-out")
                 }
         }
     }

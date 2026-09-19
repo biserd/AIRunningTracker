@@ -44,17 +44,26 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
     static let origin = URL(string: "https://new.aitracker.run")!
     static let cookieName = "__Host-coach_account"
     private let session: URLSession
+    private var generation = UUID()
+    private var managesVault = true
     private(set) var credential: SavedSession?
-    init() {
+    init(timeout: TimeInterval = 120) {
         let config = URLSessionConfiguration.ephemeral
         config.httpShouldSetCookies = false
         config.httpCookieStorage = nil
         config.urlCache = nil
-        config.timeoutIntervalForRequest = 120
+        config.timeoutIntervalForRequest = timeout
+        config.timeoutIntervalForResource = timeout
         session = URLSession(configuration: config, delegate: RejectRedirects(), delegateQueue: nil)
     }
     func restore() throws { credential = try SessionVault.load() }
-    func clear() throws { credential = nil; try SessionVault.clear() }
+    func clear() throws { generation = UUID(); credential = nil; if managesVault { try SessionVault.clear() } }
+    func signOutCleanupClient() -> CoachAPI {
+        let client = CoachAPI(timeout: 5)
+        client.credential = credential
+        client.managesVault = false
+        return client
+    }
 
     // The native app is a first-party consent UI. Use the existing issuer APIs;
     // never send the account token to authorization redirects or WhatsApp.
@@ -105,6 +114,7 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
         path == "/api/coach-recaps" || path.range(of:"^/api/(analytics/batch|performance/recovery)/[1-9][0-9]*$",options:.regularExpression) != nil
     }
     private func issuerRequest<T: Decodable>(_ path: String, query: [URLQueryItem] = [], body: [String: Any]? = nil) async throws -> T {
+        let current = generation
         guard (Self.isInsightReadPath(path) && body == nil) || ["/api/coach/experience","/api/coach/companion/reminder-draft","/api/coach/companion/read","/api/coach/companion/preferences","/api/coach/companion/checkin","/mcp/oauth/authorization-request", "/mcp/oauth/authorize/decision", "/api/apple-push/register", "/api/apple-push/unregister", "/api/apple-push/reminders", "/api/apple-push/reminder", "/api/apple-push/test"].contains(path),
               let credential, credential.expires > Date() else { throw APIError.missingSession }
         var url = URLComponents(string: "https://aitracker.run" + path)!
@@ -119,6 +129,7 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
         }
         let (data, response) = try await session.data(for: request)
+        guard current == generation else { throw CancellationError() }
         guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }
         guard (200..<300).contains(http.statusCode) else {
             let response = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
@@ -128,6 +139,7 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
         return try JSONDecoder().decode(T.self, from: data)
     }
     func request<T: Decodable>(_ path: String, body: [String: Any]? = nil) async throws -> T {
+        let current = generation
         guard path.hasPrefix("/api/"), !path.contains(".."), !path.contains("?") else { throw APIError.invalidResponse }
         var request = URLRequest(url: Self.origin.appendingPathComponent(String(path.dropFirst())))
         request.httpMethod = body == nil ? "GET" : "POST"
@@ -141,6 +153,7 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
             request.setValue("\(Self.cookieName)=\(credential.token)", forHTTPHeaderField: "Cookie")
         }
         let (data, response) = try await session.data(for: request)
+        guard current == generation else { throw CancellationError() }
         guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }
         guard (200..<300).contains(http.statusCode) else {
             if http.statusCode == 401 { try clear() }

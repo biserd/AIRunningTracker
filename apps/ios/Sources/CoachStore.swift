@@ -39,6 +39,7 @@ import Combine
     }
 
     func report(_ failure: Error) {
+        if failure is CancellationError { return }
         error = failure.localizedDescription
         if case APIError.server(401, _) = failure {
             Task { await push.detach() }
@@ -79,12 +80,16 @@ import Combine
     }
     func verify(link: String) async {
         guard !busy else { return }
+        let generation = sessionGeneration
         busy = true; error = nil; defer { busy = false }
         await voice.end()
+        guard generation == sessionGeneration else { return }
         do {
             await push.detach()
+            guard generation == sessionGeneration else { return }
             let token = try SignInLink.token(from: link)
             let _: OK = try await api.request("/api/account/verify", body: ["token":token])
+            guard generation == sessionGeneration else { return }
             sessionGeneration = UUID()
             snapshot = nil; companion=nil; refreshedAt=nil; reminderClarification=nil; messages = []; reminders = []; whatsapp = nil; review = nil; reminderReview = nil; verifiedEmail = ""; settingsSheet = nil
             needsSignIn = false; await refresh()
@@ -180,14 +185,19 @@ import Combine
         } catch { report(error) }
     }
     func signOut() async {
-        await voice.end()
-        await push.detach()
+        let cleanup = api.signOutCleanupClient()
         sessionGeneration = UUID()
-        busy = true; defer { busy = false }
-        // Clear this device even when offline. Existing server logout only clears cookies.
-        let _: OK? = try? await api.request("/api/account/logout", body: [:])
-        do { try api.clear() } catch { report(error) }
+        conversationGeneration += 1
+        pendingSignIn = nil; lastLinkDigest = nil
+        busy = false; loading = false; error = nil
+        companionError = nil; scheduleError = nil
+        // Local sign-out must not depend on connectivity or provider cleanup.
+        do { try api.clear() } catch { self.error = error.localizedDescription }
         snapshot = nil; companion=nil; refreshedAt=nil; reminderClarification=nil; messages = []; reminders = []; whatsapp = nil; review = nil; reminderReview = nil; verifiedEmail = ""; settingsSheet = nil; needsSignIn = true
+        async let endVoice: Void = voice.end(cleanupAPI: cleanup)
+        async let detachPush: Void = push.detach(cleanupAPI: cleanup)
+        let _: OK? = try? await cleanup.request("/api/account/logout", body: [:])
+        _ = await (endVoice, detachPush)
     }
     func confirmReminder(channel: String) async {
         guard let reminderReview, !busy else { return }

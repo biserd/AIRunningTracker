@@ -2,6 +2,20 @@ import XCTest
 @testable import AITracker
 
 final class ContractTests: XCTestCase {
+    @MainActor func testSignOutCleanupCannotClearANewerLogin() throws {
+        defer { try? SessionVault.clear() }
+        try SessionVault.save(SavedSession(token: "old-test-session", expires: Date().addingTimeInterval(300)))
+        let api = CoachAPI()
+        try api.restore()
+        let cleanup = api.signOutCleanupClient()
+        try api.clear()
+        XCTAssertNil(api.credential)
+        XCTAssertNil(try SessionVault.load())
+        XCTAssertEqual(cleanup.credential?.token, "old-test-session")
+        try SessionVault.save(SavedSession(token: "new-test-session", expires: Date().addingTimeInterval(300)))
+        try cleanup.clear()
+        XCTAssertEqual(try SessionVault.load()?.token, "new-test-session")
+    }
     func testSignInRejectsAmbiguousOrEmptyTokens() {
         for suffix in ["", "?token=", "?token=a&token=b", "?token=a#token=b", "#token=a&token=b"] {
             XCTAssertThrowsError(try SignInLink.token(from: "https://new.aitracker.run/auth/magic-link" + suffix))
