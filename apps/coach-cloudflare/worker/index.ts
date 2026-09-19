@@ -1,11 +1,12 @@
 import { changePlan, type State, type Change } from "../shared/coach";
 import { aiRoute, history } from "./ai";
-import { accountAction, accountToken, loadAccount } from "./account";
+import { accountAction, accountToken, loadAccount, backend } from "./account";
 import {trainingContext} from './training-context';
 import {confirmPlan} from './plan-actions';
 import {startAuthorization,finishAuthorization} from './whatsapp-oauth';
 import { whatsappWebhook, whatsappStatus, whatsappAction, consumeWhatsApp, recoverWhatsApp } from './whatsapp';
 import { AIError, boundedJSON } from "./openai";
+import {voiceDiagnostic} from './voice-diagnostics';
 import { waitlistInput, joinWaitlist, leaveWaitlist, deliverLaunch } from "./waitlist";
 import {deliverWhatsAppReminders} from './whatsapp-reminders';
 import {
@@ -116,12 +117,23 @@ async function api(request: Request, env: Env, ctx:ExecutionContext): Promise<Re
   if (!token) return json({error:"Sign in with your AITracker account."},401);
   if (!await limit(env,"account-read:"+await digest(token),120,60)) return json({error:"Please wait before trying again."},429);
   let account;
+  const voiceStarted = Date.now();
   try { account = await loadAccount(env,token); }
-  catch(e) { return json({error:e instanceof AIError ? e.message : "Your running data could not load."},e instanceof AIError ? e.status : 503); }
+  catch(e) {
+    if(url.pathname==='/api/ai/voice')voiceDiagnostic('account_context',voiceStarted,e);
+    return json({error:e instanceof AIError ? e.message : "Your running data could not load."},e instanceof AIError ? e.status : 503);
+  }
   const id = await digest("production-runner:"+account.runner.id);
+  // The same account key is used by native, web and the verified WhatsApp link.
+  // Refresh memory independently of the training-data cache.
+  if(url.pathname==='/api/ai/voice')account.state.recentConversation=await history(env,id);
   if (['/api/ai/chat','/api/ai/voice','/api/ai/plan-confirm','/api/ai/context'].includes(url.pathname) && account.canUseAI) {
     if(!await limit(env,'coach-context:'+id,10,60))return json({error:'Please wait a minute before asking again.'},429);
-    account.state.trainingContext=await trainingContext(env,token,account);
+    try { account.state.trainingContext=await trainingContext(env,token,account); }
+    catch(e) {
+      if(url.pathname==='/api/ai/voice')voiceDiagnostic('training_context',voiceStarted,e);
+      throw e;
+    }
   }
   if(url.pathname==='/api/ai/context' && request.method==='GET')return account.canUseAI?json(account.state.trainingContext):json({error:'An active trial or subscription is required.'},403);
   await env.DB.prepare("INSERT INTO sessions(id,state,expires_at) VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state,expires_at=MAX(sessions.expires_at,excluded.expires_at)")
@@ -145,7 +157,6 @@ async function api(request: Request, env: Env, ctx:ExecutionContext): Promise<Re
       models: {
         text: "gpt-6-astra",
         voice: "gpt-live-1",
-        image: "gpt-image-2.5-sunburst",
       },
       source: "production_account",
       canUseAI: account.canUseAI,
@@ -176,7 +187,9 @@ async function api(request: Request, env: Env, ctx:ExecutionContext): Promise<Re
           ? 26000
           : url.pathname === "/api/ai/chat"
             ? 12000
-            : 2048)
+            : url.pathname === "/api/companion/preferences"
+              ? 8000
+              : 2048)
       ) {
         await reader.cancel();
         return json({ error: "Request too large" }, 413);
@@ -194,6 +207,7 @@ async function api(request: Request, env: Env, ctx:ExecutionContext): Promise<Re
     return json({ error: "Invalid request" }, 400);
   }
   const state = JSON.parse(row.state) as State;
+  if(['/api/companion/read','/api/companion/preferences','/api/companion/checkin'].includes(url.pathname))return json(await backend(env,'/api/coach/companion/'+url.pathname.split('/').pop(),input,token));
   if (["/api/proposals","/api/confirm","/api/undo-proposal"].includes(url.pathname))
     return json({error:"Manage your training plan on aitracker.run/training-plans. No changes were made here."},403);
   if (url.pathname.startsWith("/api/ai/") && url.pathname !== "/api/ai/voice/stop" && !account.canUseAI)
@@ -237,6 +251,7 @@ async function api(request: Request, env: Env, ctx:ExecutionContext): Promise<Re
     try {
       return json(await aiRoute(request, env, row, input, limit));
     } catch (e) {
+      if(url.pathname==='/api/ai/voice')voiceDiagnostic('dispatch',voiceStarted,e);
       return json(
         {
           error:
@@ -354,6 +369,7 @@ async function api(request: Request, env: Env, ctx:ExecutionContext): Promise<Re
   return json({ error: "Not found" }, 404);
 }
 export {WhatsAppDispatch} from './whatsapp-dispatch';
+export {CoachNotifications} from './notifications';
 export default {
   async fetch(request, env, ctx) {
     let response: Response;

@@ -87,6 +87,12 @@ async function authorized(env:Env,id:string){
    t=tokens(await post(env,'/mcp/oauth/token',new URLSearchParams({grant_type:'refresh_token',client_id:g.client_id,refresh_token:t.refresh_token,resource})));
    const saved=await env.DB.prepare('UPDATE whatsapp_oauth_grants SET credentials=?,access_expires=?,refresh_lock=0 WHERE session_id=? AND generation=? RETURNING session_id').bind(await crypt(env,id,JSON.stringify(t)),now()+t.expires_in,id,g.generation).first();
    if(!saved){await post(env,'/mcp/oauth/revoke',new URLSearchParams({client_id:g.client_id,token:t.refresh_token})).catch(()=>{});throw fail();}
+   // Continue a live, refreshable consent without tying reminders to a browser
+   // session. Revocation and identity are still checked on every operation.
+   await env.DB.batch([
+    env.DB.prepare('UPDATE whatsapp_oauth_grants SET expires_at=? WHERE session_id=? AND generation=?').bind(now()+30*86400,id,g.generation),
+    env.DB.prepare('UPDATE sessions SET expires_at=MAX(expires_at,?) WHERE id=?').bind(now()+30*86400,id),
+   ]);
   }catch(e){await env.DB.prepare('DELETE FROM whatsapp_oauth_grants WHERE session_id=? AND generation=?').bind(id,g.generation).run();throw e;}
  }
  await checkIdentity(env,t,g.email_hash);
@@ -116,6 +122,7 @@ export async function whatsappContext(env:Env,id:string,refresh=false):Promise<S
  let today=new Date().toISOString().slice(0,10);try{today=new Intl.DateTimeFormat('en-CA',{timeZone:timezone,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}catch{}
  const activities=(Array.isArray(snapshot.recentActivities)?snapshot.recentActivities:[]).map(obj).filter(a=>typeof a.startDate==='string'&&Number.isFinite(Date.parse(a.startDate))&&typeof a.distanceMeters==='number'&&typeof a.movingTimeSeconds==='number').map(a=>({date:String(a.startDate).slice(0,10),km:Number(a.distanceMeters)/1000,minutes:Number(a.movingTimeSeconds)/60})).sort((a,b)=>a.date.localeCompare(b.date));
  const state:State={source:'production_account',updatedAt:loadedAt,timezone,today,historyLimit:20,historyDays:90,goal:String(plan.goalType||prefs.coachGoal||'Discuss your running goals'),days:[],activities,
+  companion:obj(snapshot.companion),
   trainingContext:{loadedAt,canWritePlans:false,profile,plans:Object.keys(plan).length?[plan]:[],goals:Array.isArray(snapshot.activeGoals)?snapshot.activeGoals as Facts[]:[],metrics:{snapshot},unavailable:[],coverage:'Read-only MCP snapshot, loaded at loadedAt and reused for at most two minutes. Up to 20 runs in 90 days and up to 32 weeks of the active plan. Full details are in metrics.snapshot and plans. Missing fields are unknown, not zero. Send /refresh to reload immediately after a sync or plan change. WhatsApp cannot change plans. Separate WhatsApp reminder tools save or cancel on explicit clear requests without codes.'}};
  const serialized=JSON.stringify(state);
  // Bounded below D1 row limits, including encryption overhead. A revoked or

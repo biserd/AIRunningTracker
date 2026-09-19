@@ -123,52 +123,9 @@ test("quota blocks calls before provider execution and failures cannot silently 
   );
   assert.equal(count, 1);
 });
-test("image request is fixed-scope, counted once and not stored as a D1 blob", async (t) => {
-  const { sqlite, env, row } = fixture();
-  t.after(() => sqlite.close());
-  let count = 0;
-  t.mock.method(
-    globalThis,
-    "fetch",
-    async (url: unknown, options: RequestInit) => {
-      count++;
-      assert.equal(url, "https://api.openai.com/v1/images/generations");
-      const body = JSON.parse(options.body as string);
-      assert.equal(body.model, "gpt-image-2.5-sunburst");
-      assert.equal(body.quality, "high");
-      assert.equal(body.size, "1440x1808");
-      assert.equal(body.n, 1);
-      return Response.json({ data: [{ b64_json: "YQ==" }] });
-    },
-  );
-  const request = new Request("https://test.example/api/ai/image"),
-    body = { id: crypto.randomUUID() };
-  const result = (await aiRoute(request, env, row, body, async (_env, key, max, seconds) => {
-    assert.ok(key.startsWith("ai-burst:image:"));
-    assert.equal(seconds, 60);
-    assert.equal(max, key.endsWith(":global") ? 30 : 5);
-    return true;
-  })) as {
-    image: string;
-  };
-  assert.equal(result.image, "data:image/webp;base64,YQ==");
-  assert.equal(
-    sqlite.prepare("SELECT result FROM ai_jobs").get()?.result,
-    '{"completed":true}',
-  );
-  await assert.rejects(
-    aiRoute(request, env, row, body, async () => true),
-    /already finished/,
-  );
-  assert.equal(count, 1);
-  await assert.rejects(
-    aiRoute(
-      request,
-      env,
-      row,
-      { id: crypto.randomUUID(), prompt: "unrestricted" },
-      async () => true,
-    ),
-    /Invalid/,
-  );
+test("removed poster endpoint cannot call a provider or create a job", async (t) => {
+ const {sqlite,env,row}=fixture();t.after(()=>sqlite.close());
+ t.mock.method(globalThis,"fetch",async()=>{throw new Error("Provider must not be called");});
+ await assert.rejects(aiRoute(new Request("https://test.example/api/ai/image"),env,row,{id:crypto.randomUUID()},async()=>{throw new Error("No budget should be spent");}),/Not found/);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM ai_jobs").get()?.n,0);
 });

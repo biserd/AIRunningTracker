@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {fixture} from './reminder-fixture';
 import {crypt} from '../worker/whatsapp-oauth';
 import {hash} from '../worker/reminders';
-import {confirmWhatsAppReminder,reminderTool,deliverWhatsAppReminders,whatsappReminderTools} from '../worker/whatsapp-reminders';
+import {confirmWhatsAppReminder,reminderTool,deliverWhatsAppReminders,whatsappReminderTools,materializeWhatsAppSchedules} from '../worker/whatsapp-reminders';
 import {disconnectWhatsApp,processWhatsApp} from '../worker/whatsapp';
 import {whatsappCoach} from '../worker/whatsapp-coach';
 import type {State} from '../shared/coach';
@@ -37,6 +37,21 @@ test('A clear request saves immediately without a code; concurrent/replayed inbo
  assert.match((await confirmWhatsAppReminder(f.env,'a','link-a','REMINDERS'))!,/Get ready/);
  assert.doesNotMatch((await confirmWhatsAppReminder(f.env,'b','link-b','REMINDERS'))!,/Get ready/);
  assert.equal(f.db.prepare('SELECT COUNT(*) n FROM reminder_contacts').get()!.n,0);
+});
+test('daily schedules are scoped, deduped, materialized once and cancelled on STOP',async(t)=>{
+ const f=await setup();t.after(()=>f.db.close());f.env.TWILIO_WHATSAPP_CONTENT_SID='HX'+'d'.repeat(32);
+ const sid=f.inbound(),args={title:'Run time',localTime:f.future(),recurrence:'daily'};
+ await reminderTool(f.env,'a','link-a','UTC','create_whatsapp_reminder',args,sid);
+ await reminderTool(f.env,'a','link-a','UTC','create_whatsapp_reminder',args,sid);
+ assert.equal(f.db.prepare('SELECT COUNT(*) n FROM whatsapp_schedules').get()!.n,1);
+ assert.match((await confirmWhatsAppReminder(f.env,'a','link-a','REMINDERS'))!,/daily/);
+ assert.doesNotMatch((await confirmWhatsAppReminder(f.env,'b','link-b','REMINDERS'))!,/Run time/);
+ const due=Math.floor(Date.now()/1000)-60;f.db.prepare('UPDATE whatsapp_schedules SET next_at=?,anchor_at=?').run(due,due);
+ await materializeWhatsAppSchedules(f.env);await materializeWhatsAppSchedules(f.env);
+ assert.equal(f.db.prepare('SELECT COUNT(*) n FROM whatsapp_reminders').get()!.n,1);
+ await disconnectWhatsApp(f.env,'a');
+ assert.equal(f.db.prepare('SELECT cancelled FROM whatsapp_schedules').get()!.cancelled,1);
+ assert.equal(f.row().status,'cancelled');
 });
 test('Immediate cancellation rejects cross-runner IDs, foreign message references and caller identity fields',async(t)=>{
  const f=await setup();t.after(()=>f.db.close());await f.create();const id=String(f.row().id);

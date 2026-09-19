@@ -46,6 +46,7 @@ const labels: Record<string, string> = {
   expired: "Expired without sending",
 };
 export function ReminderPanel({ proposal, reviewOnly=false }: { proposal?: ReminderProposal; reviewOnly?:boolean }) {
+  const [creating, setCreating] = useState(false);
   const [whatsapp,setWhatsapp]=useState<WhatsAppStatus>();
   const [channel,setChannel]=useState<'email'|'whatsapp'>('email');
   const [data, setData] = useState<Status>(),
@@ -93,15 +94,17 @@ export function ReminderPanel({ proposal, reviewOnly=false }: { proposal?: Remin
     }
   }
   return (
-    <section className={"reminder-panel"+(reviewOnly?' review-only':'')} aria-label="Email reminders">
+    <section className={"reminder-panel"+(reviewOnly?' review-only':'')} aria-label="Connections and reminders">
+      {!reviewOnly && <WhatsAppPanel verified={!!data?.verified} onStatus={setWhatsapp}/>}
+      <section className={reviewOnly ? '' : 'settings-group'} aria-label="Email reminders">
       {!reviewOnly && <>
       <div className="section-heading">
         <h3>
-          <Bell size={18} /> A nudge when you need it
+          <Bell size={18} /> Email reminders
         </h3>
       </div>
-      <p>One-time reminders you choose. No marketing emails.</p>
-      <WhatsAppPanel verified={!!data?.verified} onStatus={setWhatsapp}/>
+      <p>{data?.verified ? 'Ask your coach for a reminder, or create one here.' : 'Want reminders by email? Verify your inbox to get started.'}</p>
+      {data && <span className="connection-status">{data.verified ? 'Connected' : 'Not connected · Optional'}</span>}
       {!data ? (
         <p>Loading reminder settings…</p>
       ) : !data.verified ? (
@@ -184,12 +187,12 @@ export function ReminderPanel({ proposal, reviewOnly=false }: { proposal?: Remin
       ) : (
         <>
           <p className="reminder-address">
-            Verified: {data.email}
+            {data.email}
             <br />
             <small>{data.timezone}</small>
           </p>
-          <details>
-            <summary>Create a reminder yourself</summary>
+          <button type="button" aria-expanded={creating} aria-controls="email-reminder-create" onClick={()=>setCreating(!creating)}>{creating ? 'Close reminder form' : 'Create a reminder'}</button>
+          {creating && <div id="email-reminder-create">
             <form
               className="reminder-form"
               onSubmit={(e) => {
@@ -228,9 +231,9 @@ export function ReminderPanel({ proposal, reviewOnly=false }: { proposal?: Remin
                 Review reminder
               </button>
             </form>
-          </details>
+          </div>}
           <button className="text-button" onClick={() => setDisconnect(true)}>
-            Disconnect email and stop reminders
+            Disconnect email
           </button>
         </>
       )}
@@ -367,15 +370,14 @@ export function ReminderPanel({ proposal, reviewOnly=false }: { proposal?: Remin
         </p>
       )}
       {message && <p role="status">{message}</p>}
-      {!reviewOnly && <p className="footnote">
-        Reminders stop when this seven-day preview expires
+      {!reviewOnly && <details className="settings-details"><summary>Delivery & privacy</summary><p className="footnote">
+        Email reminders stop when this connection expires
         {data?.expiresAt
           ? ` (${new Date(data.expiresAt * 1000).toLocaleString()})`
           : ""}
-        . Verification connects only this browser’s reminder inbox, not your
-        AITracker account. Delivery is checked every minute and may be delayed.
-        Recurring reminders are not available yet.
-      </p>}
+        . Delivery is checked every minute and may be delayed. One-time reminders only. No marketing emails.
+      </p></details>}
+      </section>
     </section>
   );
 }

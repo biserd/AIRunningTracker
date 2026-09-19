@@ -24,6 +24,7 @@ export async function disconnectWhatsApp(env:Env,id:string) {
   env.DB.prepare("UPDATE whatsapp_links SET disabled=1,address=NULL,token_hash=NULL WHERE session_id=?").bind(id),
   env.DB.prepare("UPDATE email_reminders SET status='cancelled' WHERE session_id=? AND channel='whatsapp' AND status IN ('draft','scheduled')").bind(id),
   env.DB.prepare("UPDATE whatsapp_reminders SET status='cancelled',confirmation_hash=NULL WHERE session_id=? AND status IN ('draft','scheduled')").bind(id),
+  env.DB.prepare('UPDATE whatsapp_schedules SET cancelled=1 WHERE session_id=?').bind(id),
   env.DB.prepare("UPDATE whatsapp_inbox SET status='failed',body='' WHERE session_id=? AND status='pending'").bind(id),
  ]);
  await revokeGrant(env,id);

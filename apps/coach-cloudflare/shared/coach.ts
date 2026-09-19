@@ -14,6 +14,8 @@ export type State = {
   historyLimit?: number;
   historyDays?: number;
   trainingContext?: import('./training').TrainingContext;
+  companion?: {preferences?: {notes?:string};checkins?:unknown[];briefings?:unknown[]};
+  recentConversation?: {role:string;content:string}[];
   days: Day[];
   activities: Activity[];
   today: string;

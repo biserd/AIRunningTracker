@@ -31,6 +31,7 @@ import "./style.css";
 import "./chat-first.css";
 import { CoachAI } from "./CoachAI";
 import { ReminderPanel, ReminderUnsubscribe } from "./Reminders";
+import {CoachingPreferences} from './CoachingPreferences';
 import { Landing, WaitlistUnsubscribe } from "./Landing";
 import { AccountLogin, signOut } from "./Account";
 async function api<T>(path: string, body?: unknown): Promise<T> {
@@ -62,7 +63,7 @@ function App() {
     [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
-  const [tab, setTab] = useState("Coach"),
+  const [tab, setTab] = useState(location.hash === "#whatsapp" ? "Settings" : "Coach"),
     [adjust, setAdjust] = useState<Day | null>(null),
     [kind, setKind] = useState("shorten"),
     [minutes, setMinutes] = useState(20),
@@ -354,28 +355,21 @@ function App() {
               )}
               {tab === "Settings" && (
                 <section className="settings-card">
-                  <h2>Connections & reminders</h2>
+                  <h2>Settings</h2>
+                  <p>Choose where your coach can reach you.</p>
                   <ReminderPanel />
-                  <p>Connect WhatsApp below to chat with your coach using your running data.</p>
-                  <p>Your account, runs and training plan come from AITracker. Chat, reminder and WhatsApp preferences are private to your account in this experience.</p>
-                  <dl>
-                    <dt>Runner data</dt>
-                    <dd>Your recorded runs, up to {data.state.historyLimit} in the last {data.state.historyDays} days</dd>
-                    <dt>Storage</dt>
-                    <dd>Secure sign-in. Your existing subscription applies.</dd>
-                    <dt>Strava, billing and Telegram</dt>
-                    <dd><a href="https://aitracker.run/coach/settings">Manage on AITracker</a></dd>
-                    <dt>AI and voice</dt>
-                    <dd>
-                      OpenAI integration. Availability is shown in the Coach
-                      tab. Uses your recorded runs and current plan.
-                    </dd>
-                  </dl>
-                  <button className="outline" onClick={()=>void signOut().catch(()=>setError("Could not sign out. Please retry."))}>Sign out</button>
-                  <p className="footnote">
-                    Do not enter private or medical information. This is a
-                    product preview, not training or medical advice.
-                  </p>
+                  <CoachingPreferences />
+                  <section className="settings-group" aria-label="Account">
+                    <h3>Account</h3>
+                    <p>Manage Strava, your subscription and account preferences on AITracker.</p>
+                    <a className="primary" href="https://aitracker.run/coach/settings">Manage account</a>
+                    <button onClick={()=>void signOut().catch(()=>setError("Could not sign out. Please retry."))}>Sign out</button>
+                  </section>
+                  <details className="settings-details">
+                    <summary>About your data & AI</summary>
+                    <p>Your runs and training plan come from your AITracker account. Your existing subscription applies.</p>
+                    <p>Run summaries include up to {data.state.historyLimit} runs from the last {data.state.historyDays} days. AI replies can be wrong and are not medical advice.</p>
+                  </details>
                 </section>
               )}
             </>

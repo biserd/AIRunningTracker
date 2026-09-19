@@ -5,6 +5,7 @@ export type TrainingContext = {
   coverage: string;
 };
 export type PlanIntent =
+  | {kind:'workout';planId:number;dayId:number;operation:'shorten'|'rest'|'move';minutes:number|null;date:string|null}
   | {kind:'create';goalType:string;raceDate:string;preferredRunDays:string[];maxWeeklyHours:number;constraints:string}
   | {kind:'adjust';planId:number;feeling:'tired'|'strong'}
   | {kind:'settings';planId:number;raceDate:string;targetTime:string};

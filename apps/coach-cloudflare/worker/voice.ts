@@ -2,15 +2,39 @@ import { DurableObject } from "cloudflare:workers";
 import { AIError, instructions, openai } from "./openai";
 import {voiceInstructions} from './coach-instructions';
 import type {State} from '../shared/coach';
+import {voiceDiagnostic, type VoiceStage} from './voice-diagnostics';
 
 // One durable lease per browser session. The provider ID never comes from the client.
 export class VoiceLease extends DurableObject<Env> {
   async start(sdp: string, state: State) {
+    const diagnostic={stage:'lease_storage' as VoiceStage};
+    try {
+      return {ok:true as const,...await this.startSession(sdp,state,diagnostic)};
+    } catch(error) {
+      // RPC does not preserve custom Error prototypes. Return only safe fields.
+      return {ok:false as const,status:error instanceof AIError ? error.status : 503,
+        upstreamStatus:error instanceof AIError ? error.upstreamStatus : undefined,
+        stage:diagnostic.stage,
+        message:error instanceof AIError && error.status===409
+          ? 'End your existing call before starting another.'
+          : 'Voice could not connect. Please try again shortly.'};
+    }
+  }
+  private async startSession(sdp: string, state: State, diagnostic:{stage:VoiceStage}) {
+    const started = Date.now();
+    let stage: VoiceStage = 'lease_storage';
+    try {
     if (await this.ctx.storage.get("active"))
       throw new AIError("End your existing call before starting another.", 409);
     await this.ctx.storage.put("active", true);
     await this.ctx.storage.setAlarm(Date.now() + 180_000);
+    } catch(error) {
+      diagnostic.stage=stage;
+      voiceDiagnostic(stage,started,error);
+      throw error;
+    }
     try {
+      stage = 'provider_session';
       const result = (await openai(
         this.env.OPENAI_API_KEY,
         "live/sessions",
@@ -39,22 +63,29 @@ export class VoiceLease extends DurableObject<Env> {
         },
         AbortSignal.timeout(25_000),
       )) as { session?: { id?: string }; transport?: { sdp?: string } };
+      stage = 'provider_response';
       if (!result.session?.id || !result.transport?.sdp)
         throw new AIError("Voice could not connect.");
       await this.ctx.storage.put("providerId", result.session.id);
       // Check that server control is available before exposing media to the browser.
+      stage = 'control_attach';
       const socket = await this.attach(result.session.id);
       if (!socket) throw new AIError("Voice session ended during setup.");
       socket.close(1000, "Control verified");
+      voiceDiagnostic('ready', started);
       return { sdp: result.transport.sdp, seconds: 180 };
-    } catch {
+    } catch (error) {
+      diagnostic.stage=stage;
+      voiceDiagnostic(stage, started, error);
       // A provider session may exist even if setup failed. Keep the alarm to close it.
       if (!(await this.ctx.storage.get("providerId"))) {
         await this.ctx.storage.deleteAlarm();
         await this.ctx.storage.deleteAll();
       }
       throw new AIError(
-        "Voice could not connect. Check the server key and GPT-Live-1 access.",
+        "Voice could not connect. Please try again shortly.",
+        503,
+        error instanceof AIError ? error.upstreamStatus : undefined,
       );
     }
   }
@@ -75,7 +106,7 @@ export class VoiceLease extends DurableObject<Env> {
     }
     if (!response.webSocket) {
       await response.body?.cancel();
-      throw new Error("Voice control unavailable");
+      throw new AIError("Voice control unavailable", 503, response.status);
     }
     response.webSocket.accept();
     return response.webSocket;

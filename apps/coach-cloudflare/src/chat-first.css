@@ -1,7 +1,31 @@
 /* Conversation is the home screen. Supporting data appears on request. */
-.chat-first .coach-shortcuts { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:24px 0 8px; }
-.chat-first .coach-shortcuts button { background:white; color:#273444; border:1px solid #cbd5e1; border-radius:14px; padding:16px 10px; font-size:16px; min-height:56px; }
-.chat-first .coach-shortcuts button:hover:not(:disabled) { border-color:#d9400c; background:#fff4ed; }
+.chat-first .settings-card .reminder-panel { padding:0; border:0; background:transparent; }
+.chat-first .settings-group, .chat-first .settings-card .whatsapp-setup { padding:24px; margin:20px 0; border:1px solid #dce3ec; border-radius:18px; background:#fff; }
+.chat-first .settings-group h3, .chat-first .whatsapp-setup h3 { margin:0 0 8px; font-size:24px; color:#273444; }
+.chat-first .connection-status { display:inline-block; border-radius:24px; padding:6px 12px; margin:8px 0; background:#fff0e8; color:#92300b; font-size:15px; font-weight:600; }
+.chat-first .settings-details { margin:18px 0; border-top:1px solid #e2e8f0; padding-top:16px; }
+.chat-first .settings-details summary { cursor:pointer; font-size:16px; color:#475569; }
+.chat-first .settings-details p { font-size:15px; line-height:1.6; }
+@media(max-width:700px) { .chat-first .settings-group, .chat-first .settings-card .whatsapp-setup { padding:18px; } }
+.chat-first .settings-card button, .chat-first .settings-card a.primary {
+ display:inline-flex; align-items:center; justify-content:center; gap:8px;
+ background:#c83b0a; color:#fff; border:1px solid #c83b0a; border-radius:12px;
+ padding:12px 18px; min-height:48px; font-size:18px; font-weight:600;
+ text-decoration:none; margin:6px 4px 6px 0; white-space:normal;
+}
+.chat-first .settings-card button:hover:not(:disabled), .chat-first .settings-card a.primary:hover { background:#a92f06; color:#fff; }
+.chat-first .settings-card button:disabled { opacity:.55; cursor:not-allowed; }
+.coach-typing .typing-line { display:flex; align-items:center; gap:12px; min-height:36px; font-size:18px; }
+.typing-dots { display:inline-flex; gap:5px; align-items:center; }
+.typing-dots i { width:7px; height:7px; border-radius:50%; background:#c83b0a; animation:coach-typing 1.2s ease-in-out infinite; }
+.typing-dots i:nth-child(2) { animation-delay:.15s; }
+.typing-dots i:nth-child(3) { animation-delay:.3s; }
+.coach-typing .text-button { min-height:44px; margin-top:4px; }
+@keyframes coach-typing { 0%,60%,100% { transform:translateY(0); opacity:.5; } 30% { transform:translateY(-4px); opacity:1; } }
+@media(prefers-reduced-motion:reduce) { .typing-dots i { animation:none; opacity:1; } }
+.chat-first .coach-shortcuts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:24px 0 8px; }
+.chat-first .coach-shortcuts button { background:#c83b0a; color:white; border:1px solid #c83b0a; border-radius:14px; padding:16px 10px; font-size:16px; min-height:56px; }
+.chat-first .coach-shortcuts button:hover:not(:disabled) { border-color:#a92f06; background:#a92f06; }
 .chat-first p,.chat-first label,.chat-first input,.chat-first select,.chat-first button { font-size:17px; }
 .chat-first .chat-message p { font-size:19px; line-height:1.6; }
 .chat-first .settings-card h2 { font-size:28px; }
@@ -55,3 +79,7 @@
  .chat-first .conversation .section-heading > span { display:none; }
  .distance-row { grid-template-columns:76px 1fr 60px; gap:6px; font-size:11px; }
 }
+.whatsapp-setup .primary { display:inline-flex; align-items:center; justify-content:center; background:#c83b0a; color:#fff; border:1px solid #c83b0a; border-radius:12px; padding:14px 20px; min-height:48px; font-size:18px; font-weight:600; text-decoration:none; margin:8px 0; }
+.whatsapp-setup .primary:hover { background:#a92f06; }
+.whatsapp-setup .primary:disabled { opacity:.6; }
+.whatsapp-setup li { margin:16px 0; font-size:18px; }

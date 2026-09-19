@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Mic, Send, Square, ImagePlus, Download } from "lucide-react";
+import { Mic, Send, Square } from "lucide-react";
 import type { State, Proposal } from "../shared/coach";
 import type { ReminderProposal } from "../shared/reminders";
 import type {PlanReview} from '../shared/training';
 import { ReminderPanel } from "./Reminders";
-import { renderPoster, type PosterEvidence } from "./poster";
 import { RunningChart } from "./RunningChart";
+import { CoachTyping } from "./CoachTyping";
+import { whatsappCall, type WhatsAppStatus } from './WhatsApp';
 type Message = { role: string; content: string };
 type Answer = {
   planReview?: PlanReview;
@@ -56,10 +57,20 @@ export function CoachAI({
     [error, setError] = useState("");
   const [voice, setVoice] = useState("off"),
     [muted, setMuted] = useState(false),
-    [caption, setCaption] = useState(""),
-    [art, setArt] = useState(""),
-    [imageBusy, setImageBusy] = useState(false);
+    [caption, setCaption] = useState("");
   const [pending, setPending] = useState<Proposal>();
+  const [whatsapp, setWhatsapp] = useState<WhatsAppStatus>();
+  useEffect(() => {
+    let active = true;
+    const refresh = () => {
+      void whatsappCall<WhatsAppStatus>().then(status => {
+        if (active) setWhatsapp(status);
+      }).catch(() => { if (active) setWhatsapp(undefined); });
+    };
+    refresh();
+    window.addEventListener('focus', refresh);
+    return () => { active = false; window.removeEventListener('focus', refresh); };
+  }, []);
   const [planReview,setPlanReview]=useState<PlanReview>();
   const [savingPlan,setSavingPlan]=useState(false);
   async function savePlan(){
@@ -124,7 +135,6 @@ export function CoachAI({
   function showRequested(message:string) {
     if (/\b(chart|graph|plot)\b/i.test(message)) { setCard("chart"); return "Here is your recorded distance by week. Distance alone is not a fitness score."; }
     if (/^(show|view|open) (me )?(my |the )?(week|plan|schedule)[.!?]*$/i.test(message.trim())) { setCard("week"); return "Here is your current week. Nothing has been changed."; }
-    if (/\b(create|make|generate)\b.*\bposter\b/i.test(message)) { void generateImage(); return "I’m creating a poster from your available running totals. It may take up to three minutes."; }
     return null;
   }
   function receive(answer: Answer) {
@@ -357,21 +367,6 @@ export function CoachAI({
         }),
       );
   }
-  async function generateImage() {
-    setImageBusy(true);
-    setError("");
-    try {
-      const result = await request<{
-        image: string;
-        evidence: PosterEvidence;
-      }>("image", { id: crypto.randomUUID() }, AbortSignal.timeout(165_000));
-      setArt(await renderPoster(result.image, result.evidence));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Image generation failed.");
-    } finally {
-      setImageBusy(false);
-    }
-  }
   return (
     <>
       <section className="conversation ai-coach">
@@ -390,17 +385,17 @@ export function CoachAI({
         )}
         <nav className="coach-shortcuts" aria-label="Coach tools">
           <button onClick={onWeek}>My schedule</button>
-          <button disabled={!configured || imageBusy || busy} onClick={()=>void generateImage()}>{imageBusy ? "Creating poster…" : "Create a poster"}</button>
-          <button onClick={onSettings}>Connect WhatsApp</button>
+          <button onClick={onSettings}>{!whatsapp ? 'WhatsApp settings' : whatsapp.connected && whatsapp.authorized ? 'Manage WhatsApp' : whatsapp.connected ? 'Reconnect WhatsApp' : 'Connect WhatsApp'}</button>
           <button onClick={onSettings}>Reminders</button>
         </nav>
-        <div className="chat-history" aria-live="polite" aria-busy={busy}>
+        <div className="chat-history" aria-live="polite" aria-label="Conversation with your coach">
           {messages.map((m, i) => (
             <div key={i} className={"chat-message " + m.role}>
               <small>{m.role === "user" ? "You" : "Coach"}</small>
               <p>{m.content}</p>
             </div>
           ))}
+          {busy && <CoachTyping onStop={() => abort.current?.abort()}/>}
         </div>
         {pending && (
           <button className="secondary" onClick={() => onProposal(pending)}>
@@ -463,13 +458,6 @@ export function CoachAI({
           </button>
         </form>
         </div>
-        {imageBusy && <p role="status">Creating your poster. Up to 3 minutes.</p>}
-        {busy && (
-          <div className="voice-note" role="status">
-            Checking your running data…{" "}
-            <button onClick={() => abort.current?.abort()}>Stop waiting</button>
-          </div>
-        )}
         {error && (
           <p className="ai-error" role="alert">
             {error}
@@ -485,24 +473,7 @@ export function CoachAI({
           limited to three minutes. No real Strava or weather connection yet.
         </p>
         </details>
-        {art && (
-          <figure className="generated-art">
-            <img
-              src={art}
-              alt="AI-generated running illustration with recorded activity totals"
-            />
-            <figcaption>
-              <a
-                className="secondary"
-                href={art}
-                download="aitracker-running-poster.png"
-              >
-                <Download size={16} /> Download poster
-              </a>
-              <p>Save before leaving. Artwork is not stored on the server.</p>
-            </figcaption>
-          </figure>
-        )}
+
       </section>
 
     </>

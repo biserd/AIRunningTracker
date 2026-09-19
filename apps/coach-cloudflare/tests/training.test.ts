@@ -24,8 +24,19 @@ test('full active plan context is owner-scoped, preloaded for voice, and omits s
   assert.ok(JSON.stringify(result).includes('Race day'));assert.ok(result.unavailable.includes('recovery'));
   assert.ok(!JSON.stringify(result).includes('SECRET'));assert.ok(!JSON.stringify(result).includes('biserd@gmail.com'));assert.ok(!JSON.stringify(result).includes('FOREIGN'));
   assert.ok(!urls.some(u=>u.includes('999')||u.endsWith('/99')));
-  const prompt=voiceInstructions({...account.state,trainingContext:result});assert.ok(prompt.includes('Full race strategy'));
+  const prompt=voiceInstructions({...account.state,trainingContext:result});assert.ok(prompt.includes('Delegate detailed training'));assert.ok(JSON.stringify(result).includes('Full race strategy'));
   const other=await trainingContext(env,'synthetic',{...account,runner:{...account.runner,id:106}});assert.equal(other.canWritePlans,false);
+});
+test('precise workout edits validate operation, duration, ownership and occupied dates',()=>{
+ const day=new Date(Date.now()+86400000).toISOString().slice(0,10),rest=new Date(Date.now()+2*86400000).toISOString().slice(0,10);
+ const c={...context,plans:[{id:76,status:'active',weeks:[{days:[{id:1,date:day,workoutType:'easy',status:'pending',plannedDurationMins:40},{id:2,date:rest,workoutType:'rest',status:'pending'}]}]}]};
+ const intent={kind:'workout',planId:76,dayId:1,operation:'shorten',minutes:25,date:null};
+ assert.deepEqual(validatePlanIntent(intent,c),intent);
+ assert.throws(()=>validatePlanIntent({...intent,minutes:50},c));
+ assert.throws(()=>validatePlanIntent({...intent,dayId:3},c));
+ assert.throws(()=>validatePlanIntent({...intent,userId:105},c));
+ assert.equal(validatePlanIntent({...intent,operation:'move',minutes:null,date:rest},c).kind,'workout');
+ assert.throws(()=>validatePlanIntent({...intent,operation:'move',minutes:null,date:day},c));
 });
 test('plan actions reject other accounts, foreign plans and caller IDs',()=>{
   assert.throws(()=>validatePlanIntent({kind:'adjust',planId:76,feeling:'tired'},{...context,canWritePlans:false}));

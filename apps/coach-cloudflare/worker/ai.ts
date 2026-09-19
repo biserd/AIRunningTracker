@@ -1,7 +1,8 @@
-import { changePlan, evidence, type State } from "../shared/coach";
-import { AIError, coach, openai } from "./openai";
+import { changePlan, type State } from "../shared/coach";
+import { AIError, coach } from "./openai";
 import { reminderContext, validateReminder, draftReminder } from "./reminders";
 import {draftPlan,validatePlanIntent} from './plan-actions';
+import {voiceDiagnostic, type VoiceStage} from './voice-diagnostics';
 type RunnerRow = { id: string; state: string; version: number };
 type Limit = (
   env: Env,
@@ -25,6 +26,15 @@ export async function aiRoute(
   input: Record<string, unknown>,
   limit: Limit,
 ) {
+  const started=Date.now();
+  const diagnostic={stage:'job_lookup' as VoiceStage};
+  try { return await runAIRoute(request,env,row,input,limit,diagnostic); }
+  catch(error) {
+    if(new URL(request.url).pathname==='/api/ai/voice')voiceDiagnostic(diagnostic.stage,started,error);
+    throw error;
+  }
+}
+async function runAIRoute(request:Request,env:Env,row:RunnerRow,input:Record<string,unknown>,limit:Limit,diagnostic:{stage:VoiceStage}) {
   const path = new URL(request.url).pathname;
   if (path === "/api/ai/voice/stop") {
     if (Object.keys(input).length) throw new AIError("Invalid request", 400);
@@ -33,9 +43,7 @@ export async function aiRoute(
   const kind =
     path === "/api/ai/chat"
       ? "chat"
-      : path === "/api/ai/image"
-        ? "image"
-        : path === "/api/ai/voice"
+      : path === "/api/ai/voice"
           ? "voice"
           : null;
   if (!kind) throw new AIError("Not found", 404);
@@ -96,6 +104,7 @@ export async function aiRoute(
     );
   }
   const now = Math.floor(Date.now() / 1000);
+  diagnostic.stage='job_claim';
   await env.DB.prepare(
     "UPDATE ai_jobs SET status='failed' WHERE session_id=? AND status='running' AND created_at<?",
   )
@@ -109,6 +118,7 @@ export async function aiRoute(
   if (!claimed.meta.changes)
     throw new AIError("This request is already running.", 409);
   try {
+    diagnostic.stage='burst_limit';
     // Testing preview has no daily budget. Retain short burst protection.
     if (
       !(await limit(
@@ -128,7 +138,8 @@ export async function aiRoute(
         "Too many AI requests at once. Please wait a minute and try again.",
         429,
       );
-    const signal = AbortSignal.timeout(kind === "image" ? 150_000 : 80_000);
+    const signal = AbortSignal.timeout(80_000);
+    diagnostic.stage='state_decode';
     const state = JSON.parse(row.state) as State;
     let result: unknown;
     if (kind === "chat") {
@@ -193,40 +204,19 @@ export async function aiRoute(
         ).bind(row.id, generated.message, now),
       ]);
     } else if (kind === "voice") {
-      result = await env.VOICE_LEASE.getByName(row.id).start(
+      diagnostic.stage='lease_rpc';
+      const voiceResult = await env.VOICE_LEASE.getByName(row.id).start(
         input.sdp as string,
         state,
       );
-    } else {
-      const raw = (await openai(
-        env.OPENAI_API_KEY,
-        "images/generations",
-        {
-          model: "gpt-image-2.5-sunburst",
-          n: 1,
-          size: "1440x1808",
-          quality: "high",
-          output_format: "webp",
-          prompt:
-            "Art-direct a collectible premium endurance-running campaign poster, portrait 4:5 composition. Full-bleed cinematic landscape with a tiny anonymous runner at the right-hand middle third, on a sweeping terracotta running track that curves into a misty forest. Rich photographic detail, tactile fine-grain print finish, dramatic golden rim light, deep pine-green shadows, warm copper highlights, sophisticated restrained color grading. Strong sculptural curves, subtle atmospheric depth, beautiful negative space. The runner and track should dominate the middle 25-55% of the canvas. Keep the top 22% and bottom 45% very dark pine green and low-detail for ivory editorial typography and numerical statistics added by the application. The entire image is a unified art print, not a website, infographic, card layout or stock vector illustration. NO TEXT, NO NUMBERS, NO LOGOS, NO fake route maps, graphs or achievement badges. This is fictional conceptual artwork, not a photograph of the user's run.",
-        },
-        signal,
-        8_000_000,
-      )) as { data?: { b64_json?: string }[] };
-      const image = raw.data?.[0]?.b64_json;
-      if (
-        !image ||
-        image.length > 7_000_000 ||
-        !/^[A-Za-z0-9+/=]+$/.test(image)
-      )
-        throw new AIError("The image could not be generated.");
-      result = {
-        image: `data:image/webp;base64,${image}`,
-        evidence: evidence(state),
-        source: state.source || "fictional_sample",
-      };
+      if(!voiceResult.ok){
+        diagnostic.stage=voiceResult.stage;
+        throw new AIError(voiceResult.message,voiceResult.status,voiceResult.upstreamStatus);
+      }
+      result={sdp:voiceResult.sdp,seconds:voiceResult.seconds};
     }
-    // Images are intentionally ephemeral, never multi-megabyte D1 blobs. A replay cannot bill twice.
+    // A replay cannot bill twice.
+    diagnostic.stage='job_complete';
     await env.DB.prepare(
       "UPDATE ai_jobs SET status='done',result=? WHERE session_id=? AND id=?",
     )
@@ -238,6 +228,8 @@ export async function aiRoute(
       .run();
     return result;
   } catch (error) {
+    if(kind==='voice')voiceDiagnostic(diagnostic.stage,Date.now(),error);
+    diagnostic.stage='job_cleanup';
     await env.DB.prepare(
       "UPDATE ai_jobs SET status='failed' WHERE session_id=? AND id=?",
     )

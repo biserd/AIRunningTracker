@@ -29,7 +29,7 @@ and actual completion status are included. No plan means an empty schedule.
 Timezone comes from the runner's coach settings. Distances are explicitly km.
 No GPS streams, credentials, email address or unrestricted records are exposed.
 
-Charts and poster statistics use this summary snapshot. Chat refreshes profile,
+Charts use this summary snapshot. Chat refreshes profile,
 athlete profile, goals, fitness/recovery/runner scores, up to 30 plan summaries,
 and up to 3 full active plans (52 weeks each), with workouts and intervals.
 Voice receives the same expanded context in its startup instructions, then
