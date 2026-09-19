@@ -110,8 +110,10 @@ struct NativeWhatsAppSettings: View {
         return status.authorized ? "Ready to link your number" : "Not connected"
     }
     private func refresh() async throws {
+        let account = store.api.credential?.token
         let status: WhatsAppStatus = try await store.api.request("/api/whatsapp")
         try Task.checkCancellation()
+        guard account != nil, store.api.credential?.token == account, !store.needsSignIn else { throw CancellationError() }
         store.whatsapp = status
         if status.connected { link = nil }
     }
@@ -271,9 +273,11 @@ struct NativeReminderSettings: View {
         review = ReminderReview(id: item.id, kind: kind, title: item.title, localTime: item.local_time, timezone: item.timezone)
     }
     private func refresh() async throws {
+        let account = store.api.credential?.token
         let next: ReminderStatus = try await store.api.request("/api/reminders")
         let whatsapp: WhatsAppStatus = try await store.api.request("/api/whatsapp")
         try Task.checkCancellation()
+        guard account != nil, store.api.credential?.token == account, !store.needsSignIn else { throw CancellationError() }
         status = next; store.reminders = next.reminders
         store.verifiedEmail = next.verified ? next.email : ""; store.whatsapp = whatsapp
         if !next.timezone.isEmpty { zone = next.timezone }
