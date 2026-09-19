@@ -23,6 +23,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: run.aitracker.coach
         INFOPLIST_KEY_CFBundleDisplayName: Run Analytics
+        # Exempt encryption declaration; revisit if encryption or distribution changes.
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: 'NO'
         DEVELOPMENT_TEAM: DB5JRGGB6A
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait

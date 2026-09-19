@@ -61,6 +61,11 @@ jobs:
           set -euo pipefail
           xcodebuild -quiet -project AITracker.xcodeproj -scheme AITracker -configuration Release -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/AITracker.xcarchive" CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' DEVELOPMENT_TEAM=DB5JRGGB6A PROVISIONING_PROFILE_SPECIFIER='AITrackerRunning TestFlight' archive
           xcodebuild -quiet -exportArchive -archivePath "$RUNNER_TEMP/AITracker.xcarchive" -exportPath "$RUNNER_TEMP/ios-export" -exportOptionsPlist ExportOptions.plist
+      - name: Verify archived encryption declaration
+        run: |
+          set -euo pipefail
+          DECLARATION=$(/usr/libexec/PlistBuddy -c 'Print :ITSAppUsesNonExemptEncryption' "$RUNNER_TEMP/AITracker.xcarchive/Products/Applications/AITracker.app/Info.plist")
+          test "$DECLARATION" = 'false'
       - name: Upload to App Store Connect for TestFlight only
         env:
           API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}

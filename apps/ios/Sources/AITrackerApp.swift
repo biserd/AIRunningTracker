@@ -290,7 +290,7 @@ struct SettingsView: View {
                     LabeledContent("Units", value: store.snapshot?.runner.unitPreference ?? "")
                     LabeledContent("Timezone", value: store.snapshot?.runner.timezone ?? "")
                 }
-                Section("Running data") {
+                Section {
                     if store.refreshingSchedule {
                         ProgressView("Refreshing running data…").accessibilityIdentifier("running-data-refreshing")
                     } else if let error = store.scheduleError {
@@ -305,6 +305,8 @@ struct SettingsView: View {
                         Text("Running data not loaded yet.").foregroundStyle(.secondary)
                     }
                     if let error=store.companionError { Text(error).font(.footnote).foregroundStyle(.red) }
+                } header: {
+                    Text("Running data")
                 } footer: {
                     Text("Pull down to refresh your saved runs and plan. This does not start a new Strava sync.")
                 }
