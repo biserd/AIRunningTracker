@@ -34,6 +34,10 @@ targets:
         TARGETED_DEVICE_FAMILY: '1,2'
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: AITracker.entitlements
+        APNS_ENVIRONMENT: production
+      configs:
+        Debug:
+          APNS_ENVIRONMENT: development
   AITrackerTests:
     type: bundle.unit-test
     platform: iOS

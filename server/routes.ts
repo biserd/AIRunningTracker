@@ -8832,6 +8832,28 @@ ${allPages.map(page => `  <url>
   // ============================================
   // Push notifications (web push)
   // ============================================
+  app.post('/api/apple-push/:action', authenticateJWT, async (req: any,res) => {
+    const {applePushService,ApplePushError}=await import('./services/applePush');
+    try {
+      const service=await applePushService(),input=req.body;
+      if(!input||typeof input!=='object'||Array.isArray(input))throw new ApplePushError('Invalid notification request.');
+      let result:unknown;
+      switch(req.params.action){
+        case 'register': {
+          // Signature and runner were verified by authenticateJWT above.
+          const claims=JSON.parse(Buffer.from(req.headers.authorization.split(' ')[1].split('.')[1],'base64url').toString());
+          if(!Number.isSafeInteger(claims.exp))throw new ApplePushError('Sign in again.',401);
+          result=await service.register(req.user.id,input,claims.exp);break;
+        }
+        case 'unregister': result=await service.unregister(req.user.id,input.installation);break;
+        case 'reminders': result={reminders:await service.reminders(req.user.id)};break;
+        case 'reminder': result=await service.reminder(req.user.id,input);break;
+        case 'test': result=await service.test(req.user.id,input.installation);break;
+        default: throw new ApplePushError('Not found.',404);
+      }
+      res.set('Cache-Control','no-store').json(result);
+    }catch(error){res.status(error instanceof ApplePushError?error.status:503).json({message:error instanceof ApplePushError?error.message:'Notifications are temporarily unavailable.'});}
+  });
   app.get("/api/push/vapid-public-key", async (_req, res) => {
     try {
       const { getPublicVapidKey } = await import("./services/pushService");
@@ -9494,6 +9516,8 @@ ${allPages.map(page => `  <url>
     console.warn("[ProactiveCoach] Worker disabled; set ENABLE_PROACTIVE_COACH_WORKER=true to enable");
   }
   notificationDeliveryWorker.start();
+  const {startApplePush}=await import('./services/applePush');
+  startApplePush();
   };
   if (runtime?.schedulerDatabase) runAsD1SchedulerLeader(runtime.schedulerDatabase, startWorkers);
   else if (isCloudflareRuntime()) startRuntimeScheduler(startWorkers);

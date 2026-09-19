@@ -82,8 +82,12 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
         let _: OK = try await request("/api/whatsapp/finish", body: ["code": code, "state": consent.state])
     }
 
+    func applePush<T: Decodable>(_ action: String, body: [String: Any] = [:]) async throws -> T {
+        guard ["register", "unregister", "reminders", "reminder", "test"].contains(action) else { throw APIError.invalidResponse }
+        return try await issuerRequest("/api/apple-push/" + action, body: body)
+    }
     private func issuerRequest<T: Decodable>(_ path: String, query: [URLQueryItem] = [], body: [String: Any]? = nil) async throws -> T {
-        guard ["/mcp/oauth/authorization-request", "/mcp/oauth/authorize/decision"].contains(path),
+        guard ["/mcp/oauth/authorization-request", "/mcp/oauth/authorize/decision", "/api/apple-push/register", "/api/apple-push/unregister", "/api/apple-push/reminders", "/api/apple-push/reminder", "/api/apple-push/test"].contains(path),
               let credential, credential.expires > Date() else { throw APIError.missingSession }
         var url = URLComponents(string: "https://aitracker.run" + path)!
         if !query.isEmpty { url.queryItems = query }
@@ -99,7 +103,8 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }
         guard (200..<300).contains(http.statusCode) else {
-            throw APIError.server(http.statusCode, "Running data access could not be approved. Please try connecting again.")
+            let response = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            throw APIError.server(http.statusCode, response?["message"] as? String ?? "Could not complete the request. Please retry.")
         }
         guard data.count < 300_000 else { throw APIError.invalidResponse }
         return try JSONDecoder().decode(T.self, from: data)

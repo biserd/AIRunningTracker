@@ -19,7 +19,8 @@ export function productionEnvironment(values: object): Record<string, string> {
     throw new Error('Production requires live Stripe keys');
   }
   for (const name of ['STRAVA_VERIFY_TOKEN','VAPID_PRIVATE_KEY','VAPID_PUBLIC_KEY','VAPID_SUBJECT',
-    'ENABLE_PROACTIVE_COACH_WORKER','ENABLE_NOTIFICATION_DELIVERY','RESEND_WEBHOOK_SECRET','STRIPE_WEBHOOK_SECRET']) {
+    'ENABLE_PROACTIVE_COACH_WORKER','ENABLE_NOTIFICATION_DELIVERY','RESEND_WEBHOOK_SECRET','STRIPE_WEBHOOK_SECRET',
+    'APNS_KEY_ID','APNS_TEAM_ID','APNS_PRIVATE_KEY']) {
     const value: unknown = Reflect.get(values, name);
     if (typeof value === 'string') output[name] = value;
   }

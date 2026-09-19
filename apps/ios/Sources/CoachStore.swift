@@ -5,6 +5,8 @@ import Combine
 @MainActor final class CoachStore: ObservableObject {
     let api = CoachAPI()
     let voice = NativeVoiceCoach()
+    let push = ApplePush()
+    private var pushObservation: AnyCancellable?
     private var voiceObservation: AnyCancellable?
     private var sessionGeneration = UUID()
     private var conversationGeneration = 0
@@ -26,11 +28,13 @@ import Combine
 
     init() {
         voiceObservation = voice.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
+        pushObservation = push.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
     }
 
     func report(_ failure: Error) {
         error = failure.localizedDescription
         if case APIError.server(401, _) = failure {
+            Task { await push.detach() }
             snapshot = nil; messages = []; reminders = []; whatsapp = nil; review = nil; reminderReview = nil; verifiedEmail = ""; needsSignIn = true
         }
     }
@@ -71,6 +75,7 @@ import Combine
         busy = true; error = nil; defer { busy = false }
         await voice.end()
         do {
+            await push.detach()
             let token = try SignInLink.token(from: link)
             let _: OK = try await api.request("/api/account/verify", body: ["token":token])
             sessionGeneration = UUID()
@@ -92,6 +97,7 @@ import Combine
             whatsapp = nextWhatsApp
             reminders = reminderStatus.reminders
             verifiedEmail = reminderStatus.verified ? reminderStatus.email : ""
+            await push.attach(api: api, runner: nextSnapshot.runner.id)
         } catch { if generation == sessionGeneration { report(error) } }
     }
     func send(_ text: String) async {
@@ -130,6 +136,7 @@ import Combine
     }
     func signOut() async {
         await voice.end()
+        await push.detach()
         sessionGeneration = UUID()
         busy = true; defer { busy = false }
         // Clear this device even when offline. Existing server logout only clears cookies.
@@ -141,6 +148,20 @@ import Combine
         guard let reminderReview, !busy else { return }
         busy = true; error = nil; defer { busy = false }
         do {
+            if channel == "push" {
+                if reminderReview.kind == "cancel" { try await push.cancel(reminderReview.id) }
+                else {
+                    let formatter = DateFormatter()
+                    formatter.locale = Locale(identifier: "en_US_POSIX")
+                    formatter.timeZone = TimeZone(identifier: reminderReview.timezone)
+                    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm"
+                    guard let date = formatter.date(from: reminderReview.localTime) else { throw APIError.invalidResponse }
+                    try await push.schedule(title: reminderReview.title, date: date, id: reminderReview.id)
+                }
+                self.reminderReview = nil
+                messages.append(Message(role: "assistant", content: reminderReview.kind == "cancel" ? "Apple reminder cancelled." : "Apple notification scheduled. You can manage it in Notifications."))
+                return
+            }
             let _: OK = try await api.request("/api/reminders/confirm", body: ["id":reminderReview.id,"kind":reminderReview.kind,"confirm":true,"channel":channel])
             self.reminderReview = nil
             await refresh()

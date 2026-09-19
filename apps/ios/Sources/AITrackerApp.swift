@@ -1,6 +1,8 @@
 import SwiftUI
 
 @main struct AITrackerApp: App {
+    @UIApplicationDelegateAdaptor(PushAppDelegate.self) private var appDelegate
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var store = CoachStore()
     var body: some Scene {
         WindowGroup {
@@ -10,6 +12,13 @@ import SwiftUI
                 else { CoachTabs() }
             }
             .environmentObject(store)
+            .onReceive(NotificationCenter.default.publisher(for: .applePushToken)) { event in
+                if let token = event.object as? String { Task { do { try await store.push.received(token: token) } catch { store.report(error) } } }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .applePushFailure)) { _ in store.push.status = "Could not connect to Apple. Please retry." }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active && !store.needsSignIn { Task { await store.push.resume() } }
+            }
             .tint(RunBrand.orange)
             .onOpenURL { store.receiveSignInLink($0) }
             .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
@@ -75,6 +84,8 @@ struct CoachTabs: View {
                 }
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .applePushOpen)) { _ in openPush() }
+        .onAppear { openPush() }
         .onChange(of: store.settingsSheet) { _, destination in
             if destination != nil { Task { await store.voice.end() } }
         }
@@ -84,12 +95,19 @@ struct CoachTabs: View {
                     switch destination {
                     case .whatsapp: NativeWhatsAppSettings()
                     case .reminders: NativeReminderSettings()
+                    case .notifications: NativePushSettings(push: store.push)
                     }
                 }
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { store.settingsSheet = nil }.disabled(store.busy) } }
             }
         }
+    }
+    private func openPush() {
+        guard !store.needsSignIn, let target = UserDefaults.standard.string(forKey: "pushDestination") else { return }
+        UserDefaults.standard.removeObject(forKey: "pushDestination")
+        selected = target == "schedule" ? .schedule : .coach
+        Task { await store.refresh(); try? await store.push.refresh() }
     }
 }
 
@@ -126,11 +144,12 @@ struct ChatView: View {
                                     Text("\(reminder.localTime) · \(reminder.timezone)").font(.callout)
                                     Picker("Send through", selection: $channel) {
                                         Text("Email").tag("email")
+                                        if store.push.enabled && store.push.reminders && reminder.kind == "create" { Text("Apple notification").tag("push") }
                                         if store.whatsapp?.connected == true && store.whatsapp?.authorized == true { Text("WhatsApp").tag("whatsapp") }
                                     }
-                                    Text(channel == "email" ? "To: \(store.verifiedEmail)" : "To: \(store.whatsapp?.destination ?? "WhatsApp")").font(.caption)
+                                    Text(channel == "push" ? "To your Apple devices" : channel == "email" ? "To: \(store.verifiedEmail)" : "To: \(store.whatsapp?.destination ?? "WhatsApp")").font(.caption)
                                     Button("Confirm") { Task { await store.confirmReminder(channel: channel) } }
-                                        .buttonStyle(.borderedProminent).disabled(store.busy || store.verifiedEmail.isEmpty)
+                                        .buttonStyle(.borderedProminent).disabled(store.busy || (channel != "push" && store.verifiedEmail.isEmpty))
                                     Button("Not now") { store.reminderReview = nil }.disabled(store.busy)
                                 }.padding().background(Color.orange.opacity(0.1)).clipShape(RoundedRectangle(cornerRadius: 18))
                             }
@@ -189,6 +208,13 @@ struct ScheduleView: View {
                     }
                 }
                 Section("Reminders") {
+                    ForEach(store.push.items) { item in
+                        VStack(alignment: .leading) {
+                            Text(item.title).font(.headline)
+                            Text(Date(timeIntervalSince1970: item.due_at), format: .dateTime.month().day().hour().minute())
+                            Text("Apple notification").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
                     if store.reminders.isEmpty { Text("No reminders yet.").foregroundStyle(.secondary) }
                     ForEach(store.reminders) { reminder in
                         VStack(alignment: .leading, spacing: 5) {
@@ -198,6 +224,7 @@ struct ScheduleView: View {
                         }
                     }
                     Button("Manage reminders") { store.settingsSheet = .reminders }.buttonStyle(.borderedProminent)
+                    Button("Apple notifications") { store.settingsSheet = .notifications }.buttonStyle(.borderedProminent)
                 }
             }.frame(maxWidth: 900).frame(maxWidth: .infinity)
                 .background(Color(.systemGroupedBackground))
@@ -218,6 +245,8 @@ struct SettingsView: View {
                     LabeledContent("Timezone", value: store.snapshot?.runner.timezone ?? "")
                 }
                 Section("Stay connected") {
+                    LabeledContent("Apple notifications", value: store.push.status)
+                    Button("Notifications & reminders") { store.settingsSheet = .notifications }.buttonStyle(.borderedProminent)
                     LabeledContent("WhatsApp", value: store.whatsapp.map { $0.connected && $0.authorized ? "Connected" : "Not connected" } ?? "Unavailable")
                     Button(store.whatsapp?.connected == true ? "Manage WhatsApp" : "Connect WhatsApp") { store.settingsSheet = .whatsapp }
                         .buttonStyle(.borderedProminent)

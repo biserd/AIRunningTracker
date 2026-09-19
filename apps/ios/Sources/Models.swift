@@ -32,7 +32,7 @@ struct Reminder: Decodable, Identifiable {
 struct ReminderStatus: Decodable { let configured, verified: Bool; let email, timezone: String; let reminders: [Reminder] }
 
 enum SettingsDestination: String, Identifiable {
-    case whatsapp, reminders
+    case whatsapp, reminders, notifications
     var id: String { rawValue }
 }
 struct WhatsAppConsent {
