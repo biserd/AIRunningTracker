@@ -15,11 +15,13 @@ export function companionLocal(now:Date,timezone:string){
 }
 export function quiet(p:CompanionPreferences,hour:number){return p.quietStart===p.quietEnd?false:p.quietStart<p.quietEnd?hour>=p.quietStart&&hour<p.quietEnd:hour>=p.quietStart||hour<p.quietEnd;}
 export async function companionContext(user:number,today:string){
- const row=await db.prepare('SELECT settings FROM coach_companion_preferences WHERE user_id=?').bind(user).first<{settings:string}>();
+ const [row,checkinRows,briefingRows]=await Promise.all([
+ db.prepare('SELECT settings FROM coach_companion_preferences WHERE user_id=?').bind(user).first<{settings:string}>(),
+ db.prepare('SELECT date,activity_id AS activityId,feeling FROM coach_companion_checkins WHERE user_id=? AND date>=? ORDER BY date DESC LIMIT 14').bind(user,new Date(new Date(today+'T12:00:00Z').getTime()-7*86400000).toISOString().slice(0,10)).all(),
+ db.prepare('SELECT kind,reference,title,body,created_at AS date FROM coach_companion_briefings WHERE user_id=? ORDER BY created_at DESC LIMIT 3').bind(user).all(),
+ ]);
  const preferences=row?validateCompanionPreferences(JSON.parse(row.settings)):defaultCompanionPreferences;
- const checkins=(await db.prepare('SELECT date,activity_id AS activityId,feeling FROM coach_companion_checkins WHERE user_id=? AND date>=? ORDER BY date DESC LIMIT 14').bind(user,new Date(new Date(today+'T12:00:00Z').getTime()-7*86400000).toISOString().slice(0,10)).all()).results;
- const briefings=(await db.prepare('SELECT kind,reference,title,body,created_at AS date FROM coach_companion_briefings WHERE user_id=? ORDER BY created_at DESC LIMIT 3').bind(user).all()).results;
- return {preferences,checkins,briefings};
+ return {preferences,checkins:checkinRows.results,briefings:briefingRows.results};
 }
 export async function companionAction(user:number,action:string,input:Record<string,unknown>){
  const runner=await storage.getUser(user);if(!runner)throw new Error('Account unavailable.');

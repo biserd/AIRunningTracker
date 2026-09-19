@@ -144,6 +144,7 @@ struct AppleReminder: Decodable, Identifiable {
     private func clearLocalDelivery() {
         UserDefaults.standard.removeObject(forKey: "pushGeneration")
         UserDefaults.standard.removeObject(forKey: "pushDestination")
+        UserDefaults.standard.removeObject(forKey: "pushActivity")
         UNUserNotificationCenter.current().removeAllDeliveredNotifications()
     }
     func schedule(title: String, date: Date, id: String = UUID().uuidString) async throws {

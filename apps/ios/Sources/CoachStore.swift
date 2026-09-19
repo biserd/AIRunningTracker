@@ -28,6 +28,7 @@ import Combine
     @Published var companion: CompanionData?
     @Published var scheduleError: String?
     @Published var refreshingSchedule = false
+    @Published var savingCheckIn = false
     private var refreshedAt: Date?
     private var reminderClarification:String?
 
@@ -123,9 +124,14 @@ import Combine
         try? await push.refresh()
     }
     func checkIn(_ feeling:String,activity:Int=0) async {
+        guard !savingCheckIn, !busy, !voice.active else { return }
+        savingCheckIn=true; defer { savingCheckIn=false }
+        let generation=sessionGeneration
         do {
             let _:OK=try await api.companion("checkin",body:["feeling":feeling,"activityId":activity])
+            guard generation==sessionGeneration,!needsSignIn else { return }
             await refreshSchedule(force:true)
+            guard generation==sessionGeneration,!needsSignIn else { return }
             await send("I feel \(feeling.replacingOccurrences(of: "_", with: " "))\(activity>0 ? " after run ID \(activity)" : " today"). Use my saved check-in and actual plan. Suggest one next step; do not change my plan without confirmation.")
         } catch { report(error) }
     }
@@ -149,11 +155,11 @@ import Combine
         return try await coachAnswer(text)
     }
     private func coachAnswer(_ text:String) async throws -> Answer {
-        if push.enabled && (reminderClarification != nil || text.range(of:"\\b(remind|reminder|reminders|notify|notification)\\b",options:[.regularExpression,.caseInsensitive]) != nil) {
+        if push.enabled && (reminderClarification != nil || text.range(of:"\\b(remind|reminder|reminders|notify|notification|alarm|ping me|wake me)\\b",options:[.regularExpression,.caseInsensitive]) != nil) {
             let request=[reminderClarification,text].compactMap{$0}.joined(separator:"\nFollow-up: ")
             let answer:Answer=try await api.companion("reminder-draft",body:["message":String(request.suffix(2000))])
-            reminderClarification=answer.reminderProposal == nil ? String(request.suffix(1400)) : nil
-            return answer
+            reminderClarification=answer.handled != false && answer.reminderProposal == nil ? String(request.suffix(1400)) : nil
+            if answer.handled != false { return answer }
         }
         return try await api.request("/api/ai/chat",body:["id":UUID().uuidString,"message":text])
     }

@@ -26,7 +26,7 @@ struct Message: Decodable, Identifiable {
 }
 struct CoachStatus: Decodable { let configured: Bool; let history: [Message] }
 struct Review: Decodable, Identifiable { let id, description: String }
-struct Answer: Decodable { let message: String; let planReview: Review?; let reminderProposal: ReminderReview? }
+struct Answer: Decodable { let message: String; let planReview: Review?; let reminderProposal: ReminderReview?; var handled:Bool? = nil }
 struct ReminderReview: Decodable { let id, kind, title, localTime, timezone: String; var dueAt:Double? = nil; var appleOnly:Bool? = nil }
 struct Confirmation: Decodable { let message: String }
 struct OK: Decodable { let ok: Bool? }

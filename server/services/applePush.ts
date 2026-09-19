@@ -57,7 +57,9 @@ export class ApplePushService {
     // Durable reconciliation covers webhook and manual sync without changing either.
     // Bound by recent dates and scalar columns; never fetch activity stream payloads.
     const devices=(await this.db.prepare('SELECT * FROM apple_push_devices WHERE expires_at>?').bind(time).all<Device>()).results;
-    for(const user of new Set(devices.map(d=>d.user_id)))await this.companion?.prepare(user);
+    for(const user of Array.from(new Set(devices.map(d=>d.user_id)))){
+      try{await this.companion?.prepare(user);}catch{console.error(JSON.stringify({event:'coach_briefing_failed'}));}
+    }
     for(const d of devices){
       if(d.runs && (!this.companion||await this.companion.allowed(d.user_id))){
         const runs=(await this.db.prepare(`SELECT id FROM activities WHERE user_id=? AND type IN ('Run','VirtualRun','TrailRun') AND julianday(start_date)>=julianday('now','-1 day') AND julianday(created_at)>=julianday(?,'unixepoch') ORDER BY start_date DESC LIMIT 1`).bind(d.user_id,d.enabled_at).all<{id:number}>()).results;
