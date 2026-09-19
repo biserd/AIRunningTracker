@@ -23,6 +23,12 @@ import SwiftUI
                     store.loading = false
                     return
                 }
+                if ProcessInfo.processInfo.arguments.contains("--test-adaptive-layout") {
+                    // Offline UI fixture only. Never restore a real account in layout tests.
+                    store.loading = false
+                    store.needsSignIn = false
+                    return
+                }
                 #endif
                 await store.restore()
             }
@@ -35,11 +41,39 @@ import SwiftUI
 
 struct CoachTabs: View {
     @EnvironmentObject var store: CoachStore
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @State private var selected: CoachSection = .coach
+    @State private var draft = ""
+    @State private var reminderChannel = "email"
     var body: some View {
-        TabView {
-            ChatView().tabItem { Label("Coach", systemImage: "bubble.left.and.bubble.right") }
-            ScheduleView().tabItem { Label("Schedule", systemImage: "calendar") }
-            SettingsView().tabItem { Label("Settings", systemImage: "slider.horizontal.3") }
+        Group {
+            if sizeClass == .regular {
+                NavigationSplitView {
+                    List(CoachSection.allCases, selection: Binding<CoachSection?>(
+                        get: { selected }, set: { if let section = $0 { selected = section } }
+                    )) { section in
+                        NavigationLink(value: section) {
+                            Label(section.title, systemImage: section.symbol)
+                        }.accessibilityIdentifier("sidebar-\(section.rawValue)")
+                    }
+                    .listStyle(.sidebar)
+                    .navigationTitle("Run Analytics")
+                    .navigationSplitViewColumnWidth(min: 220, ideal: 250, max: 300)
+                } detail: {
+                    switch selected {
+                    case .coach: ChatView(text: $draft, channel: $reminderChannel)
+                    case .schedule: ScheduleView()
+                    case .settings: SettingsView()
+                    }
+                }.navigationSplitViewStyle(.balanced)
+            } else {
+                TabView(selection: $selected) {
+                    ChatView(text: $draft, channel: $reminderChannel)
+                        .tabItem { Label("Coach", systemImage: CoachSection.coach.symbol) }.tag(CoachSection.coach)
+                    ScheduleView().tabItem { Label("Schedule", systemImage: CoachSection.schedule.symbol) }.tag(CoachSection.schedule)
+                    SettingsView().tabItem { Label("Settings", systemImage: CoachSection.settings.symbol) }.tag(CoachSection.settings)
+                }
+            }
         }
         .onChange(of: store.web) { _, destination in
             if destination != nil { Task { await store.voice.end() } }
@@ -56,12 +90,13 @@ struct CoachTabs: View {
 
 struct ChatView: View {
     @EnvironmentObject var store: CoachStore
-    @State private var text = ""
-    @State private var channel = "email"
+    @Binding var text: String
+    @Binding var channel: String
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 NativeVoiceControls(voice: store.voice, store: store)
+                    .frame(maxWidth: 820)
                 if store.snapshot?.canUseAI == false {
                     Text("Your running data is available. AI coaching needs an active trial or subscription.").font(.callout).padding()
                 }
@@ -102,7 +137,7 @@ struct ChatView: View {
                                     Button("Dismiss", role: .cancel) { store.review = nil }.disabled(store.busy)
                                 }.padding().background(Color.orange.opacity(0.1)).clipShape(RoundedRectangle(cornerRadius: 18))
                             }
-                        }.padding()
+                        }.padding().frame(maxWidth: 820).frame(maxWidth: .infinity)
                     }
                     .onChange(of: store.messages.count) { _, _ in
                         if let id = store.messages.last?.id { withAnimation { proxy.scrollTo(id, anchor: .bottom) } }
@@ -113,7 +148,7 @@ struct ChatView: View {
                     Button { let message = text; text = ""; Task { await store.send(message) } } label: {
                         Image(systemName: "arrow.up.circle.fill").font(.largeTitle)
                     }.accessibilityLabel("Send message").disabled(store.busy || store.voice.active || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || text.count > 2000 || store.snapshot?.canUseAI != true)
-                }.padding()
+                }.padding().frame(maxWidth: 820)
             }.navigationTitle("Let’s talk running")
         }
     }
@@ -149,7 +184,9 @@ struct ScheduleView: View {
                     }
                     Button("Manage reminders") { store.web = .settings }.buttonStyle(.borderedProminent)
                 }
-            }.navigationTitle("Schedule").refreshable { await store.refresh() }
+            }.frame(maxWidth: 900).frame(maxWidth: .infinity)
+                .background(Color(.systemGroupedBackground))
+                .navigationTitle("Schedule").refreshable { await store.refresh() }
         }
     }
 }
@@ -175,10 +212,31 @@ struct SettingsView: View {
                     Button("Refresh running data") { Task { await store.refresh() } }.disabled(store.busy)
                     Button("Sign out", role: .destructive) { confirmLogout = true }.disabled(store.busy)
                 } footer: { Text("Same Run Analytics account and running data. No separate subscription.") }
-            }.navigationTitle("Settings")
+            }.frame(maxWidth: 760).frame(maxWidth: .infinity)
+                .background(Color(.systemGroupedBackground))
+                .navigationTitle("Settings")
                 .confirmationDialog("Sign out of this device?", isPresented: $confirmLogout) {
                     Button("Sign out", role: .destructive) { Task { await store.signOut() } }
                 }
+        }
+    }
+}
+
+enum CoachSection: String, CaseIterable, Identifiable {
+    case coach, schedule, settings
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .coach: return "Coach"
+        case .schedule: return "Schedule"
+        case .settings: return "Settings"
+        }
+    }
+    var symbol: String {
+        switch self {
+        case .coach: return "bubble.left.and.bubble.right"
+        case .schedule: return "calendar"
+        case .settings: return "slider.horizontal.3"
         }
     }
 }
