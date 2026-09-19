@@ -29,5 +29,13 @@ final class AdaptiveLayoutTests: XCTestCase {
             app.tabBars.buttons["Settings"].tap()
         }
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+        app.buttons["Connect WhatsApp"].tap()
+        XCTAssertTrue(app.navigationBars["WhatsApp"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.webViews.count, 0)
+        app.navigationBars.buttons["Done"].tap()
+        app.buttons["Email & reminders"].tap()
+        XCTAssertTrue(app.navigationBars["Email & reminders"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.textFields["Email address"].exists)
+        XCTAssertEqual(app.webViews.count, 0)
     }
 }

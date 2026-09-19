@@ -58,7 +58,12 @@ The generated Xcode project is ignored; project.yml is the source of truth.
   Pending startup is finalized before another call can begin; the server's existing
   durable alarm remains the final safety net when offline. No provider key reaches
   the device. Plan/reminder proposals still require on-screen confirmation.
-- Only connection setup uses an isolated, authenticated WKWebView sheet.
+- Native WhatsApp consent, pairing status and disconnect controls. Existing issuer
+  APIs handle consent and PKCE exchange; tokens never go to redirect destinations.
+  Only an explicit pairing button opens the WhatsApp app, with no browser fallback.
+- Native email-code verification and one-time reminder creation, review and cancel.
+  Email disconnect clearly warns that the existing backend also disconnects WhatsApp.
+  No settings screen uses WKWebView.
 - WebRTC is pinned to the community distribution `stasel/WebRTC` 153.0.0, whose
   Swift package checksums its binary. No camera or background-audio entitlement.
 
@@ -87,7 +92,7 @@ replace account authentication or server authorization.
 
 - Cloud simulator compilation/tests pass; actual-device WebKit and microphone
   validation is still required.
-- Native WhatsApp/email setup is later work; those connections reuse web flows.
+- Actual-device WhatsApp pairing and email verification still require validation.
 - Native voice requires device validation for Bluetooth/speaker routing, microphone
   permission, interruptions, offline teardown and actual audio quality.
 - Email links use Universal Links on `new.aitracker.run/auth/magic-link`.
@@ -117,7 +122,8 @@ reminder changes only when intended.
 4. Plan/reminder preview does not write; confirm writes only the intended action.
 5. Voice permission denied/granted, interruption, background, sheet dismissal.
    Check provider finalization and microphone indicator after leaving.
-6. WhatsApp OAuth return and wa.me link; email verification; refresh after dismissal.
+6. Native WhatsApp consent, app handoff and return; email verification; reminder
+   create/cancel, expired pairing link, missing WhatsApp installation, disconnect.
 7. Dynamic Type, VoiceOver, dark mode, keyboard and smaller iPhone layouts.
 
 The association file is served as JSON without redirects at

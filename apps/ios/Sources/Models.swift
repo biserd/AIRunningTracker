@@ -23,11 +23,24 @@ struct OK: Decodable { let ok: Bool? }
 struct WhatsAppStatus: Decodable {
     let configured, authorized, connected: Bool
     let destination: String?
+    let templateReady: Bool?
 }
 struct Reminder: Decodable, Identifiable {
     let id, title, local_time, timezone, status: String
+    let channel, delivery_status: String?
 }
-struct ReminderStatus: Decodable { let verified: Bool; let email, timezone: String; let reminders: [Reminder] }
+struct ReminderStatus: Decodable { let configured, verified: Bool; let email, timezone: String; let reminders: [Reminder] }
+
+enum SettingsDestination: String, Identifiable {
+    case whatsapp, reminders
+    var id: String { rawValue }
+}
+struct WhatsAppConsent {
+    struct Scope: Decodable { let scope, description: String }
+    struct Details: Decodable { let clientName: String; let eligible: Bool; let scopes: [Scope] }
+    let request, state: String
+    let details: Details
+}
 
 enum APIError: LocalizedError {
     case server(Int, String), invalidResponse, missingSession, keychain(OSStatus)

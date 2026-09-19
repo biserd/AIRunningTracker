@@ -55,6 +55,55 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
     }
     func restore() throws { credential = try SessionVault.load() }
     func clear() throws { credential = nil; try SessionVault.clear() }
+
+    // The native app is a first-party consent UI. Use the existing issuer APIs;
+    // never send the account token to authorization redirects or WhatsApp.
+    func whatsappConsent() async throws -> WhatsAppConsent {
+        struct Start: Decodable { let authorizationUrl: String }
+        let start: Start = try await request("/api/whatsapp/authorize", body: ["confirm": true])
+        let authorization = try NativeConnectionLinks.authorization(start.authorizationUrl)
+        let (data, response) = try await session.data(for: URLRequest(url: authorization.url))
+        _ = data
+        guard let http = response as? HTTPURLResponse, http.statusCode == 302,
+              let location = http.value(forHTTPHeaderField: "Location") else { throw APIError.invalidResponse }
+        let requestID = try NativeConnectionLinks.consentRequest(location)
+        let details: WhatsAppConsent.Details = try await issuerRequest(
+            "/mcp/oauth/authorization-request", query: [URLQueryItem(name: "request", value: requestID)])
+        guard details.eligible else { throw APIError.server(403, "An active trial or subscription is required for WhatsApp coaching.") }
+        guard Set(details.scopes.map(\.scope)) == NativeConnectionLinks.readScopes else { throw APIError.invalidResponse }
+        return WhatsAppConsent(request: requestID, state: authorization.state, details: details)
+    }
+
+    func approveWhatsApp(_ consent: WhatsAppConsent) async throws {
+        struct Decision: Decodable { let redirectTo: String }
+        let result: Decision = try await issuerRequest("/mcp/oauth/authorize/decision",
+            body: ["request": consent.request, "approved": true])
+        let code = try NativeConnectionLinks.callback(result.redirectTo, state: consent.state)
+        let _: OK = try await request("/api/whatsapp/finish", body: ["code": code, "state": consent.state])
+    }
+
+    private func issuerRequest<T: Decodable>(_ path: String, query: [URLQueryItem] = [], body: [String: Any]? = nil) async throws -> T {
+        guard ["/mcp/oauth/authorization-request", "/mcp/oauth/authorize/decision"].contains(path),
+              let credential, credential.expires > Date() else { throw APIError.missingSession }
+        var url = URLComponents(string: "https://aitracker.run" + path)!
+        if !query.isEmpty { url.queryItems = query }
+        var request = URLRequest(url: url.url!)
+        request.httpMethod = body == nil ? "GET" : "POST"
+        request.setValue("Bearer \(credential.token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let body {
+            request.setValue("https://aitracker.run", forHTTPHeaderField: "Origin")
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        }
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }
+        guard (200..<300).contains(http.statusCode) else {
+            throw APIError.server(http.statusCode, "Running data access could not be approved. Please try connecting again.")
+        }
+        guard data.count < 300_000 else { throw APIError.invalidResponse }
+        return try JSONDecoder().decode(T.self, from: data)
+    }
     func request<T: Decodable>(_ path: String, body: [String: Any]? = nil) async throws -> T {
         guard path.hasPrefix("/api/"), !path.contains(".."), !path.contains("?") else { throw APIError.invalidResponse }
         var request = URLRequest(url: Self.origin.appendingPathComponent(String(path.dropFirst())))

@@ -75,14 +75,19 @@ struct CoachTabs: View {
                 }
             }
         }
-        .onChange(of: store.web) { _, destination in
+        .onChange(of: store.settingsSheet) { _, destination in
             if destination != nil { Task { await store.voice.end() } }
         }
-        .sheet(item: $store.web, onDismiss: { Task { await store.refresh() } }) { destination in
+        .sheet(item: $store.settingsSheet) { destination in
             NavigationStack {
-                ExistingCoachFlow(destination: destination, api: store.api)
-                    .navigationTitle(destination.title).navigationBarTitleDisplayMode(.inline)
-                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { store.web = nil } } }
+                Group {
+                    switch destination {
+                    case .whatsapp: NativeWhatsAppSettings()
+                    case .reminders: NativeReminderSettings()
+                    }
+                }
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { store.settingsSheet = nil }.disabled(store.busy) } }
             }
         }
     }
@@ -192,7 +197,7 @@ struct ScheduleView: View {
                             Text(reminder.status.capitalized).font(.caption).foregroundStyle(.secondary)
                         }
                     }
-                    Button("Manage reminders") { store.web = .settings }.buttonStyle(.borderedProminent)
+                    Button("Manage reminders") { store.settingsSheet = .reminders }.buttonStyle(.borderedProminent)
                 }
             }.frame(maxWidth: 900).frame(maxWidth: .infinity)
                 .background(Color(.systemGroupedBackground))
@@ -214,9 +219,9 @@ struct SettingsView: View {
                 }
                 Section("Stay connected") {
                     LabeledContent("WhatsApp", value: store.whatsapp.map { $0.connected && $0.authorized ? "Connected" : "Not connected" } ?? "Unavailable")
-                    Button(store.whatsapp?.connected == true ? "Manage WhatsApp" : "Connect WhatsApp") { store.web = .settings }
+                    Button(store.whatsapp?.connected == true ? "Manage WhatsApp" : "Connect WhatsApp") { store.settingsSheet = .whatsapp }
                         .buttonStyle(.borderedProminent)
-                    Button("Email & reminders") { store.web = .settings }.buttonStyle(.borderedProminent)
+                    Button("Email & reminders") { store.settingsSheet = .reminders }.buttonStyle(.borderedProminent)
                 }
                 Section {
                     Button("Refresh running data") { Task { await store.refresh() } }.disabled(store.busy)

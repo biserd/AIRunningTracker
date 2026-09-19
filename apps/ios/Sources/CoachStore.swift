@@ -22,7 +22,7 @@ import Combine
     @Published var busy = false
     @Published var loading = true
     @Published var needsSignIn = true
-    @Published var web: WebDestination?
+    @Published var settingsSheet: SettingsDestination?
 
     init() {
         voiceObservation = voice.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
@@ -74,7 +74,7 @@ import Combine
             let token = try SignInLink.token(from: link)
             let _: OK = try await api.request("/api/account/verify", body: ["token":token])
             sessionGeneration = UUID()
-            snapshot = nil; messages = []; reminders = []; whatsapp = nil; review = nil; reminderReview = nil; verifiedEmail = ""; web = nil
+            snapshot = nil; messages = []; reminders = []; whatsapp = nil; review = nil; reminderReview = nil; verifiedEmail = ""; settingsSheet = nil
             needsSignIn = false; await refresh()
         } catch { report(error) }
     }
@@ -135,7 +135,7 @@ import Combine
         // Clear this device even when offline. Existing server logout only clears cookies.
         let _: OK? = try? await api.request("/api/account/logout", body: [:])
         do { try api.clear() } catch { report(error) }
-        snapshot = nil; messages = []; reminders = []; whatsapp = nil; review = nil; reminderReview = nil; verifiedEmail = ""; web = nil; needsSignIn = true
+        snapshot = nil; messages = []; reminders = []; whatsapp = nil; review = nil; reminderReview = nil; verifiedEmail = ""; settingsSheet = nil; needsSignIn = true
     }
     func confirmReminder(channel: String) async {
         guard let reminderReview, !busy else { return }
@@ -147,11 +147,4 @@ import Combine
             messages.append(Message(role: "assistant", content: reminderReview.kind == "cancel" ? "Reminder cancelled." : "Reminder scheduled."))
         } catch { report(error) }
     }
-}
-
-enum WebDestination: String, Identifiable {
-    case settings
-    var id: String { rawValue }
-    var title: String { "Connections & reminders" }
-    var url: URL { URL(string: "https://new.aitracker.run/preview#whatsapp")! }
 }
