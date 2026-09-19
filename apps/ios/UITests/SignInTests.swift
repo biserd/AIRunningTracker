@@ -10,7 +10,9 @@ final class SignInTests: XCTestCase {
         XCTAssertTrue(email.isHittable)
         email.tap()
         email.typeText("runner@example.com")
-        XCTAssertEqual(email.value as? String, "runner@example.com")
+        // Allow the keyboard's final text-change event to reach SwiftUI.
+        let typed = expectation(for: NSPredicate(format: "value == %@", "runner@example.com"), evaluatedWith: email)
+        wait(for: [typed], timeout: 5)
         XCTAssertTrue(app.buttons["Email me a sign-in link"].isEnabled)
         XCTAssertEqual(app.secureTextFields.count, 0)
         // Never request a real email or access runner data from UI tests.
