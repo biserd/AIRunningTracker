@@ -1,7 +1,7 @@
 import SwiftUI
 import WebKit
 
-// Transitional reuse of the proven web voice/OAuth flows, not a web-only app.
+// Connections/OAuth only. Voice runs natively in the Coach tab.
 // Cookies live in a nonpersistent WK store, scoped only to the coach hostname.
 struct ExistingCoachFlow: UIViewRepresentable {
     let destination: WebDestination

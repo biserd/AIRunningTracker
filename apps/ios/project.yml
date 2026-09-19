@@ -1,4 +1,8 @@
 name: AITracker
+packages:
+  WebRTC:
+    url: https://github.com/stasel/WebRTC.git
+    exactVersion: 153.0.0
 options:
   deploymentTarget:
     iOS: '17.0'
@@ -13,6 +17,8 @@ targets:
     type: application
     platform: iOS
     sources: [Sources, Resources]
+    dependencies:
+      - package: WebRTC
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: run.aitracker.coach

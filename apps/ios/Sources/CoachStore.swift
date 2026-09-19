@@ -1,8 +1,11 @@
 import SwiftUI
 import CryptoKit
+import Combine
 
 @MainActor final class CoachStore: ObservableObject {
     let api = CoachAPI()
+    let voice = NativeVoiceCoach()
+    private var voiceObservation: AnyCancellable?
     private var sessionGeneration = UUID()
     private var conversationGeneration = 0
     private var didRestore = false
@@ -20,6 +23,10 @@ import CryptoKit
     @Published var loading = true
     @Published var needsSignIn = true
     @Published var web: WebDestination?
+
+    init() {
+        voiceObservation = voice.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
+    }
 
     func report(_ failure: Error) {
         error = failure.localizedDescription
@@ -62,6 +69,7 @@ import CryptoKit
     func verify(link: String) async {
         guard !busy else { return }
         busy = true; error = nil; defer { busy = false }
+        await voice.end()
         do {
             let token = try SignInLink.token(from: link)
             let _: OK = try await api.request("/api/account/verify", body: ["token":token])
@@ -88,7 +96,7 @@ import CryptoKit
     }
     func send(_ text: String) async {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !busy, !text.isEmpty, text.count <= 2000 else { return }
+        guard !busy, !voice.active, !text.isEmpty, text.count <= 2000 else { return }
         conversationGeneration += 1
         busy = true; error = nil; defer { busy = false }
         messages.append(Message(role: "user", content: text))
@@ -98,6 +106,17 @@ import CryptoKit
             review = answer.planReview
             reminderReview = answer.reminderProposal
         } catch { report(error) }
+    }
+    func voiceAnswer(_ text: String) async throws -> Answer {
+        guard !needsSignIn, !busy else { throw APIError.missingSession }
+        conversationGeneration += 1
+        messages.append(Message(role: "user", content: text))
+        return try await api.request("/api/ai/chat", body: ["id": UUID().uuidString, "message": text])
+    }
+    func receiveVoiceAnswer(_ answer: Answer) {
+        messages.append(Message(role: "assistant", content: answer.message))
+        review = answer.planReview
+        reminderReview = answer.reminderProposal
     }
     func confirmPlan() async {
         guard let review, !busy else { return }
@@ -110,6 +129,7 @@ import CryptoKit
         } catch { report(error) }
     }
     func signOut() async {
+        await voice.end()
         sessionGeneration = UUID()
         busy = true; defer { busy = false }
         // Clear this device even when offline. Existing server logout only clears cookies.
@@ -130,8 +150,8 @@ import CryptoKit
 }
 
 enum WebDestination: String, Identifiable {
-    case voice, settings
+    case settings
     var id: String { rawValue }
-    var title: String { self == .voice ? "Voice coach" : "Connections & reminders" }
-    var url: URL { URL(string: "https://new.aitracker.run/preview" + (self == .settings ? "#whatsapp" : ""))! }
+    var title: String { "Connections & reminders" }
+    var url: URL { URL(string: "https://new.aitracker.run/preview#whatsapp")! }
 }

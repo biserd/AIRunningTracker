@@ -58,9 +58,7 @@ struct ChatView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                Button { store.web = .voice } label: {
-                    Label("Talk to your coach", systemImage: "mic.fill").font(.title3.bold()).frame(maxWidth: .infinity).padding(8)
-                }.buttonStyle(.borderedProminent).padding().disabled(store.snapshot?.canUseAI != true || store.busy)
+                NativeVoiceControls(voice: store.voice, store: store)
                 if store.snapshot?.canUseAI == false {
                     Text("Your running data is available. AI coaching needs an active trial or subscription.").font(.callout).padding()
                 }
@@ -111,7 +109,7 @@ struct ChatView: View {
                     TextField("Ask your coach", text: $text, axis: .vertical).lineLimit(1...5).textFieldStyle(.roundedBorder)
                     Button { let message = text; text = ""; Task { await store.send(message) } } label: {
                         Image(systemName: "arrow.up.circle.fill").font(.largeTitle)
-                    }.accessibilityLabel("Send message").disabled(store.busy || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || text.count > 2000 || store.snapshot?.canUseAI != true)
+                    }.accessibilityLabel("Send message").disabled(store.busy || store.voice.active || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || text.count > 2000 || store.snapshot?.canUseAI != true)
                 }.padding()
             }.navigationTitle("Let’s talk running")
         }
