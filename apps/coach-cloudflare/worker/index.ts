@@ -5,7 +5,7 @@ import {invalidateRunnerState,resolveRunnerState} from './runner-context';
 import {confirmPlan} from './plan-actions';
 import {startAuthorization,finishAuthorization} from './whatsapp-oauth';
 import { whatsappWebhook, whatsappStatus, whatsappAction, consumeWhatsApp, recoverWhatsApp } from './whatsapp';
-import { AIError, boundedJSON } from "./openai";
+import { AIError, boundedJSON, coachTextModel } from "./openai";
 import {voiceDiagnostic} from './voice-diagnostics';
 import { waitlistInput, joinWaitlist, leaveWaitlist, deliverLaunch } from "./waitlist";
 import {deliverWhatsAppReminders} from './whatsapp-reminders';
@@ -159,7 +159,7 @@ async function api(request: Request, env: Env, ctx:ExecutionContext): Promise<Re
       configured: !!env.OPENAI_API_KEY,
       history: await history(env, id),
       models: {
-        text: "gpt-6-astra",
+        text: coachTextModel,
         voice: "gpt-live-1",
       },
       source: "production_account",

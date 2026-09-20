@@ -96,7 +96,7 @@ test("agent reads scoped context, validates proposal and never applies it", asyn
     "fetch",
     async (_url: unknown, options: RequestInit) => {
       const body = JSON.parse(options.body as string);
-      assert.equal(body.model, "gpt-6-astra");
+      assert.equal(body.model, "gpt-5.6-luna");
       assert.equal(body.store, false);
       assert.equal(
         body.tools.some((tool: { name: string }) =>

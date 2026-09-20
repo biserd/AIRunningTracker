@@ -235,12 +235,19 @@ async function runAIRoute(request:Request,env:Env,row:RunnerRow,input:Record<str
   } catch (error) {
     const failure = kind==='voice'
       ? voiceDiagnostic(diagnostic.stage,routeStarted,error)
-      : undefined;
+      : error instanceof AIError
+        ? {
+            stage:'provider_response',
+            reason:error.upstreamStatus?'provider_rejection':error.status===429?'rate_limited':'application_error',
+            ...(error.upstreamStatus && error.upstreamStatus>=400 && error.upstreamStatus<=599 ? {upstreamStatus:error.upstreamStatus} : {}),
+            ...(error.providerCode ? {providerCode:error.providerCode} : {}),
+          }
+        : {stage:'application',reason:error instanceof DOMException?'timeout_or_abort':error instanceof SyntaxError?'invalid_json':'transport_or_type_error'};
     diagnostic.stage='job_cleanup';
     await env.DB.prepare(
       "UPDATE ai_jobs SET status='failed',result=? WHERE session_id=? AND id=?",
     )
-      .bind(failure ? JSON.stringify(failure) : null,row.id, input.id)
+      .bind(JSON.stringify(failure),row.id, input.id)
       .run();
     if (error instanceof AIError) throw error;
     throw new AIError(

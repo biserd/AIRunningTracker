@@ -29,6 +29,21 @@ test('provider HTTP status is preserved without exposing error body',async t=>{
   });
 });
 
+test('text provider failures log only safe normalized metadata',async t=>{
+  const logs:string[]=[];
+  t.mock.method(console,'error',(text:string)=>logs.push(text));
+  t.mock.method(globalThis,'fetch',async()=>Response.json({error:{code:'insufficient_quota',message:'PRIVATE billing detail'}},{status:403}));
+  await assert.rejects(openai('test','responses',{},AbortSignal.timeout(1000)),e=>{
+    assert.ok(e instanceof AIError);
+    assert.equal(e.upstreamStatus,403);
+    assert.equal(e.providerCode,'insufficient_quota');
+    return true;
+  });
+  assert.match(logs.join(''),/ai_provider_rejection/);
+  assert.match(logs.join(''),/billing_or_quota/);
+  assert.doesNotMatch(logs.join(''),/PRIVATE|billing detail/);
+});
+
 test('provider classification never retains private message or arbitrary metadata',()=>{
   assert.deepEqual(voiceProviderError({error:{code:'invalid_request_error',param:'session.instructions',message:'instructions too long: PRIVATE'}}),{code:'invalid_request_error',param:'session.instructions',category:'instructions_or_context'});
   assert.deepEqual(voiceProviderError({error:{code:'PRIVATE',param:'PRIVATE',message:'PRIVATE'}}),{code:'other',param:'other',category:'unclassified'});

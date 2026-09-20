@@ -11,6 +11,8 @@ export type ReminderTools = {
   validate: (intent: unknown) => Promise<ReminderIntent>;
 };
 
+export const coachTextModel = "gpt-5.6-luna";
+
 export class AIError extends Error {
   constructor(
     message: string,
@@ -83,15 +85,17 @@ export async function openai(
     signal,
   });
   if (!response.ok) {
-    let provider: ReturnType<typeof voiceProviderError> | undefined;
-    if(path==='live/sessions') {
-      // Read a bounded error solely to classify it. Never log provider messages,
-      // which can echo private instructions, SDP, or account identifiers.
-      let details: unknown;
-      try { details=await boundedJSON(response,16_384); } catch { /* Keep HTTP failure. */ }
-      provider=voiceProviderError(details);
-      console.error(JSON.stringify({event:'voice_provider_rejection',status:response.status,...provider}));
-    } else await response.body?.cancel();
+    // Read a bounded error solely to classify it. Never log provider messages,
+    // which can echo private instructions, SDP, or account identifiers.
+    let details: unknown;
+    try { details=await boundedJSON(response,16_384); } catch { /* Keep HTTP failure. */ }
+    const provider=voiceProviderError(details);
+    console.error(JSON.stringify({
+      event:path==='live/sessions'?'voice_provider_rejection':'ai_provider_rejection',
+      endpoint:path==='live/sessions'?'live_sessions':path==='responses'?'responses':'other',
+      status:response.status,
+      ...provider,
+    }));
     // Never expose provider bodies, prompts, credentials or account identifiers.
     throw new AIError(
       response.status === 429
@@ -108,7 +112,7 @@ export async function openai(
 export function voiceProviderError(value:unknown) {
   const error=value && typeof value==='object' && 'error' in value ? value.error : undefined;
   const data=error && typeof error==='object'?error as Record<string,unknown>:{};
-  const codes=['invalid_request_error','invalid_value','invalid_parameter','unknown_parameter','missing_required_parameter','context_length_exceeded','model_not_found','unsupported_value','permission_denied','rate_limit_exceeded','slow_down','credit_balance_exhausted','organization_spend_limit_exceeded','project_spend_limit_exceeded','organization_usage_limit_exceeded'];
+  const codes=['invalid_request_error','invalid_value','invalid_parameter','unknown_parameter','missing_required_parameter','context_length_exceeded','model_not_found','unsupported_value','permission_denied','rate_limit_exceeded','slow_down','credit_balance_exhausted','insufficient_quota','billing_hard_limit_reached','invalid_api_key','organization_spend_limit_exceeded','project_spend_limit_exceeded','organization_usage_limit_exceeded'];
   const code=typeof data.code==='string' && codes.includes(data.code)?data.code:'other';
   const fields=['session','model','instructions','store','audio','output','voice','client','data_channel','allowed_client_events','allowed_server_events','delegation','type','transport','sdp','input'];
   const param=typeof data.param==='string' && data.param.length<160 && data.param.split('.').every(p=>fields.includes(p))?data.param:'other';
@@ -116,6 +120,7 @@ export function voiceProviderError(value:unknown) {
   const category=/instruction|token|context.{0,20}(length|limit)/i.test(message)?'instructions_or_context'
     : /sdp|offer|codec|ice|media section/i.test(message)?'webrtc_offer'
     : /model|access|permission|verif/i.test(message)?'model_or_access'
+    : /bill|quota|credit|spend|usage.{0,20}limit/i.test(message)?'billing_or_quota'
     : /voice/i.test(message)?'voice'
     : /unknown|unsupported|unrecognized/i.test(message)?'unsupported_parameter'
     : 'unclassified';
@@ -252,7 +257,7 @@ export async function coach(
       key,
       "responses",
       {
-        model: "gpt-6-astra",
+        model: coachTextModel,
         store: false,
         instructions: (state.source==='production_account'?realCoachInstructions(state):instructions) +
           (reminders
