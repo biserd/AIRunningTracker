@@ -44,3 +44,12 @@ Unit coverage: retry classification, date boundaries, push route compatibility.
 Offline iPhone/iPad UI coverage: navigation and rotation, native connection screens,
 unified reminders, direct Progress entry, score fixture and insights. Production
 API access and real email delivery are not exercised by these UI fixtures.
+
+## Release evidence
+
+- Source: `618802a`, tag `ios-testflight-20260919-ux-refinement`.
+- iPhone and iPad validation passed: GitHub Actions run `35477093613`.
+- Test-gated signed upload passed: run `35477102709`; Apple upload reported no errors.
+- App Store Connect processed **1.0 (22)** and the build was assigned to the
+  existing **AITracker Internal** group (2 testers). Testing notes saved.
+- No external beta review or public App Store release was submitted.
