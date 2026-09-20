@@ -25,7 +25,6 @@
   "vars": {
     "REMINDER_FROM": "reminders@aitracker.run",
     "PUBLIC_ORIGIN": "https://new.aitracker.run",
-    "AI_GATEWAY_BASE": "https://gateway.ai.cloudflare.com/v1/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-coach/openai",
   },
   "durable_objects": {
     "bindings": [{ "name": "VOICE_LEASE", "class_name": "VoiceLease" }, { "name": "WHATSAPP_DISPATCH", "class_name": "WhatsAppDispatch" }, { "name": "RUNNER_COACH", "class_name": "RunnerCoachAgent" }],
