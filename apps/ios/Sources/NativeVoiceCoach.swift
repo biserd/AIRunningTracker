@@ -43,6 +43,36 @@ enum VoiceEvent {
     private var providerRequested = false
     private var transcript = ""
     private var seen = Set<String>()
+    private var cuePlayer: AVAudioPlayer?
+
+    private static let connectedCue: Data = {
+        let sampleRate = 22_050
+        let duration = 0.13
+        let count = Int(Double(sampleRate) * duration)
+        var samples = Data(capacity: count * 2)
+        var phase = 0.0
+        for index in 0..<count {
+            let time = Double(index) / Double(sampleRate)
+            let progress = time / duration
+            let attack = min(1, time / 0.012)
+            let release = min(1, (duration - time) / 0.045)
+            let envelope = max(0, attack * release)
+            let frequency = 660 + (220 * progress)
+            phase += 2 * Double.pi * frequency / Double(sampleRate)
+            var sample = Int16(sin(phase) * Double(Int16.max) * 0.16 * envelope).littleEndian
+            Swift.withUnsafeBytes(of: &sample) { samples.append(contentsOf: $0) }
+        }
+        var wav = Data()
+        func append<T: FixedWidthInteger>(_ value: T) {
+            var little = value.littleEndian
+            Swift.withUnsafeBytes(of: &little) { wav.append(contentsOf: $0) }
+        }
+        wav.append(contentsOf: "RIFF".utf8); append(UInt32(36 + samples.count))
+        wav.append(contentsOf: "WAVEfmt ".utf8); append(UInt32(16)); append(UInt16(1)); append(UInt16(1))
+        append(UInt32(sampleRate)); append(UInt32(sampleRate * 2)); append(UInt16(2)); append(UInt16(16))
+        wav.append(contentsOf: "data".utf8); append(UInt32(samples.count)); wav.append(samples)
+        return wav
+    }()
 
     init() {
         observers.append(NotificationCenter.default.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { [weak self] note in
@@ -156,7 +186,13 @@ enum VoiceEvent {
     private func receive(_ data: Data, call: UUID) {
         guard call == generation, let event = VoiceEvent.parse(data) else { return }
         switch event {
-        case .started: if phase == .connecting { phase = .live }
+        case .started:
+            if phase == .connecting {
+                phase = .live
+                cuePlayer = try? AVAudioPlayer(data: Self.connectedCue)
+                cuePlayer?.prepareToPlay()
+                cuePlayer?.play()
+            }
         case .closed: Task { await end() }
         case .failure:
             error = "Voice encountered a problem. Please try again."

@@ -9,14 +9,18 @@ test('real voice Durable Object RPC starts with a synthetic provider and runner 
     resolveDir:fileURLToPath(new URL('..',import.meta.url)),loader:'ts',contents:`
       export {VoiceLease} from './worker/voice';
       import {AIError} from './worker/openai';
+      let transientAttempts=0;
       globalThis.fetch=async (url,options)=>{
         if(String(url).endsWith('/attach'))throw new Error('startup must not attach a control socket');
-        if(JSON.parse(options.body).transport.sdp.includes('reject'))return new Response('synthetic private provider error',{status:403});
+        const offer=JSON.parse(options.body).transport.sdp;
+        if(offer.includes('reject'))return new Response('synthetic private provider error',{status:403});
+        if(offer.includes('retry') && transientAttempts++===0)return Response.json({error:{code:'rate_limit_exceeded'}},{status:429,headers:{'Retry-After':'0.01'}});
         return Response.json({session:{id:'synthetic'},transport:{sdp:'v=0 synthetic answer'}});
       };
       export default {async fetch(request,env){try {
-        const reject=new URL(request.url).pathname==='/reject';
-        const result=await env.VOICE_LEASE.getByName(reject?'rejected-runner':'synthetic-runner').start(reject?'v=0 reject':'v=0 synthetic offer',{
+        const path=new URL(request.url).pathname;
+        const reject=path==='/reject',retry=path==='/retry';
+        const result=await env.VOICE_LEASE.getByName(reject?'rejected-runner':retry?'retry-runner':'synthetic-runner').start(reject?'v=0 reject':retry?'v=0 retry':'v=0 synthetic offer',{
           source:'production_account',today:'2026-09-18',goal:'Run consistently',days:[],activities:[],trainingContext:{canWritePlans:false,profile:{},plans:[],goals:[],metrics:{},unavailable:[],loadedAt:'2026-09-18T20:00:00Z',coverage:'synthetic'}
         });
         return Response.json(result);
@@ -41,5 +45,7 @@ test('real voice Durable Object RPC starts with a synthetic provider and runner 
     assert.equal(failure.stage,'provider_session');
     assert.match(failure.message,/Voice could not connect/);
     assert.doesNotMatch(JSON.stringify(failure),/synthetic private provider error/);
+    const retried=await (await mf.dispatchFetch('https://test.local/retry')).json();
+    assert.equal(retried.ok,true,JSON.stringify(retried));
   } finally {await mf.dispose();}
 });

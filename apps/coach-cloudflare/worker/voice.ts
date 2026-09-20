@@ -5,6 +5,12 @@ import type {State} from '../shared/coach';
 import {voiceDiagnostic, type VoiceStage} from './voice-diagnostics';
 
 const VOICE_SESSION_SECONDS = 5 * 60;
+const NON_RETRYABLE_PROVIDER_CODES = new Set([
+  'credit_balance_exhausted',
+  'organization_spend_limit_exceeded',
+  'project_spend_limit_exceeded',
+  'organization_usage_limit_exceeded',
+]);
 
 // One durable lease per browser session. The provider ID never comes from the client.
 export class VoiceLease extends DurableObject<Env> {
@@ -16,9 +22,13 @@ export class VoiceLease extends DurableObject<Env> {
       // RPC does not preserve custom Error prototypes. Return only safe fields.
       return {ok:false as const,status:error instanceof AIError ? error.status : 503,
         upstreamStatus:error instanceof AIError ? error.upstreamStatus : undefined,
+        providerCode:error instanceof AIError ? error.providerCode : undefined,
+        retryAfterMs:error instanceof AIError ? error.retryAfterMs : undefined,
         stage:diagnostic.stage,
         message:error instanceof AIError && error.status===409
           ? 'End your existing call before starting another.'
+          : error instanceof AIError && NON_RETRYABLE_PROVIDER_CODES.has(error.providerCode || '')
+            ? 'Voice needs an OpenAI billing or usage-limit update before it can connect.'
           : 'Voice could not connect. Please try again shortly.'};
     }
   }
@@ -37,10 +47,7 @@ export class VoiceLease extends DurableObject<Env> {
     }
     try {
       stage = 'provider_session';
-      const result = (await openai(
-        this.env.OPENAI_API_KEY,
-        "live/sessions",
-        {
+      const body = {
           session: {
             model: "gpt-live-1",
             store: false,
@@ -62,11 +69,28 @@ export class VoiceLease extends DurableObject<Env> {
             },
           },
           transport: { type: "webrtc", sdp },
-        },
-        AbortSignal.timeout(25_000),
-      )) as { session?: { id?: string }; transport?: { sdp?: string } };
+        };
+      let result: { session?: { id?: string }; transport?: { sdp?: string } } | undefined;
+      for (let attempt=0; attempt<2; attempt++) {
+        try {
+          result = (await openai(
+            this.env.OPENAI_API_KEY,
+            "live/sessions",
+            body,
+            AbortSignal.timeout(25_000),
+          )) as typeof result;
+          break;
+        } catch(error) {
+          const delay = error instanceof AIError ? error.retryAfterMs ?? 600 : 0;
+          const transient = error instanceof AIError && error.upstreamStatus===429
+            && !NON_RETRYABLE_PROVIDER_CODES.has(error.providerCode || '')
+            && delay <= 2_500;
+          if(attempt || !transient) throw error;
+          await new Promise(resolve=>setTimeout(resolve,delay));
+        }
+      }
       stage = 'provider_response';
-      if (!result.session?.id || !result.transport?.sdp)
+      if (!result?.session?.id || !result.transport?.sdp)
         throw new AIError("Voice could not connect.");
       await this.ctx.storage.put("providerId", result.session.id);
       // The provider's SDP is the readiness contract. Attaching a second control
@@ -89,6 +113,8 @@ export class VoiceLease extends DurableObject<Env> {
         "Voice could not connect. Please try again shortly.",
         503,
         error instanceof AIError ? error.upstreamStatus : undefined,
+        error instanceof AIError ? error.providerCode : undefined,
+        error instanceof AIError ? error.retryAfterMs : undefined,
       );
     }
   }

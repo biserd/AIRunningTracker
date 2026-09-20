@@ -33,4 +33,6 @@ test('provider classification never retains private message or arbitrary metadat
   assert.deepEqual(voiceProviderError({error:{code:'invalid_request_error',param:'session.instructions',message:'instructions too long: PRIVATE'}}),{code:'invalid_request_error',param:'session.instructions',category:'instructions_or_context'});
   assert.deepEqual(voiceProviderError({error:{code:'PRIVATE',param:'PRIVATE',message:'PRIVATE'}}),{code:'other',param:'other',category:'unclassified'});
   assert.equal(voiceProviderError(null).category,'unclassified');
+  assert.equal(voiceProviderError({error:{code:'credit_balance_exhausted'}}).code,'credit_balance_exhausted');
+  assert.equal(voiceProviderError({error:{code:'rate_limit_exceeded'}}).code,'rate_limit_exceeded');
 });

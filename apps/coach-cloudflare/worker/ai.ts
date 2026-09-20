@@ -212,7 +212,7 @@ async function runAIRoute(request:Request,env:Env,row:RunnerRow,input:Record<str
       );
       if(!voiceResult.ok){
         diagnostic.stage=voiceResult.stage;
-        throw new AIError(voiceResult.message,voiceResult.status,voiceResult.upstreamStatus);
+        throw new AIError(voiceResult.message,voiceResult.status,voiceResult.upstreamStatus,voiceResult.providerCode,voiceResult.retryAfterMs);
       }
       result={sdp:voiceResult.sdp,seconds:voiceResult.seconds};
     }

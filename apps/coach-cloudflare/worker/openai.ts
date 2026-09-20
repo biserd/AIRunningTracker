@@ -14,9 +14,22 @@ export class AIError extends Error {
     message: string,
     public status = 503,
     public upstreamStatus?: number,
+    public providerCode?: string,
+    public retryAfterMs?: number,
   ) {
     super(message);
   }
+}
+
+function safeRetryAfter(value: string | null) {
+  if (!value) return undefined;
+  const seconds = Number(value);
+  const delay = Number.isFinite(seconds)
+    ? seconds * 1_000
+    : Date.parse(value) - Date.now();
+  return Number.isFinite(delay) && delay >= 0
+    ? Math.min(Math.ceil(delay), 10_000)
+    : undefined;
 }
 export async function boundedJSON(
   response: Response,
@@ -61,12 +74,14 @@ export async function openai(
     signal,
   });
   if (!response.ok) {
+    let provider: ReturnType<typeof voiceProviderError> | undefined;
     if(path==='live/sessions') {
       // Read a bounded error solely to classify it. Never log provider messages,
       // which can echo private instructions, SDP, or account identifiers.
       let details: unknown;
       try { details=await boundedJSON(response,16_384); } catch { /* Keep HTTP failure. */ }
-      console.error(JSON.stringify({event:'voice_provider_rejection',status:response.status,...voiceProviderError(details)}));
+      provider=voiceProviderError(details);
+      console.error(JSON.stringify({event:'voice_provider_rejection',status:response.status,...provider}));
     } else await response.body?.cancel();
     // Never expose provider bodies, prompts, credentials or account identifiers.
     throw new AIError(
@@ -75,6 +90,8 @@ export async function openai(
         : "The AI service could not complete this request. Check model access and billing in the OpenAI project.",
       503,
       response.status,
+      provider?.code,
+      safeRetryAfter(response.headers.get('retry-after')),
     );
   }
   return boundedJSON(response, max);
@@ -82,7 +99,7 @@ export async function openai(
 export function voiceProviderError(value:unknown) {
   const error=value && typeof value==='object' && 'error' in value ? value.error : undefined;
   const data=error && typeof error==='object'?error as Record<string,unknown>:{};
-  const codes=['invalid_request_error','invalid_value','invalid_parameter','unknown_parameter','missing_required_parameter','context_length_exceeded','model_not_found','unsupported_value','permission_denied'];
+  const codes=['invalid_request_error','invalid_value','invalid_parameter','unknown_parameter','missing_required_parameter','context_length_exceeded','model_not_found','unsupported_value','permission_denied','rate_limit_exceeded','slow_down','credit_balance_exhausted','organization_spend_limit_exceeded','project_spend_limit_exceeded','organization_usage_limit_exceeded'];
   const code=typeof data.code==='string' && codes.includes(data.code)?data.code:'other';
   const fields=['session','model','instructions','store','audio','output','voice','client','data_channel','allowed_client_events','allowed_server_events','delegation','type','transport','sdp','input'];
   const param=typeof data.param==='string' && data.param.length<160 && data.param.split('.').every(p=>fields.includes(p))?data.param:'other';
