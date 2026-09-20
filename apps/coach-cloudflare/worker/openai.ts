@@ -112,12 +112,13 @@ export async function openai(
 export function voiceProviderError(value:unknown) {
   const error=value && typeof value==='object' && 'error' in value ? value.error : undefined;
   const data=error && typeof error==='object'?error as Record<string,unknown>:{};
-  const codes=['invalid_request_error','invalid_value','invalid_parameter','unknown_parameter','missing_required_parameter','context_length_exceeded','model_not_found','unsupported_value','permission_denied','rate_limit_exceeded','slow_down','credit_balance_exhausted','insufficient_quota','billing_hard_limit_reached','invalid_api_key','organization_spend_limit_exceeded','project_spend_limit_exceeded','organization_usage_limit_exceeded'];
+  const codes=['invalid_request_error','invalid_function_parameters','invalid_value','invalid_parameter','unknown_parameter','missing_required_parameter','context_length_exceeded','model_not_found','unsupported_value','permission_denied','rate_limit_exceeded','slow_down','credit_balance_exhausted','insufficient_quota','billing_hard_limit_reached','invalid_api_key','organization_spend_limit_exceeded','project_spend_limit_exceeded','organization_usage_limit_exceeded'];
   const code=typeof data.code==='string' && codes.includes(data.code)?data.code:'other';
   const fields=['session','model','instructions','store','audio','output','voice','client','data_channel','allowed_client_events','allowed_server_events','delegation','type','transport','sdp','input'];
   const param=typeof data.param==='string' && data.param.length<160 && data.param.split('.').every(p=>fields.includes(p))?data.param:'other';
   const message=typeof data.message==='string'?data.message:'';
-  const category=/instruction|token|context.{0,20}(length|limit)/i.test(message)?'instructions_or_context'
+  const category=/schema|not permitted|function parameters/i.test(message)?'invalid_tool_schema'
+    : /instruction|token|context.{0,20}(length|limit)/i.test(message)?'instructions_or_context'
     : /sdp|offer|codec|ice|media section/i.test(message)?'webrtc_offer'
     : /model|access|permission|verif/i.test(message)?'model_or_access'
     : /bill|quota|credit|spend|usage.{0,20}limit/i.test(message)?'billing_or_quota'
@@ -199,7 +200,10 @@ const planTool=(name:string,description:string,properties:Record<string,unknown>
 const weekdayNames=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
 const realPlanTools=[
   planTool('preview_workout_edit','Review one pending workout: shorten a timed easy/long/recovery run, replace with rest, or move onto a pending rest day. Never writes without confirmation.',{planId:{type:'integer'},dayId:{type:'integer'},operation:{type:'string',enum:['shorten','rest','move']},minutes:{type:['integer','null']},date:{type:['string','null']}}),
-  planTool('preview_create_plan','Prepare a new plan for on-screen approval. Ask for all missing details first. Use lowercase weekday names and include each selected day once.',{goalType:{type:'string',enum:['5k','10k','half_marathon','marathon','50k','50_mile','100k','100_mile','general_fitness']},raceDate:{type:'string'},preferredRunDays:{type:'array',items:{type:'string',enum:weekdayNames},minItems:2,maxItems:6,uniqueItems:true},maxWeeklyHours:{type:'number',minimum:1,maximum:15},constraints:{type:'string',maxLength:500}}),
+  // OpenAI strict function schemas do not support JSON Schema `uniqueItems`.
+  // Enforce uniqueness in validatePlanIntent instead of rejecting every coach
+  // request before inference starts.
+  planTool('preview_create_plan','Prepare a new plan for on-screen approval. Ask for all missing details first. Use lowercase weekday names and include each selected day once.',{goalType:{type:'string',enum:['5k','10k','half_marathon','marathon','50k','50_mile','100k','100_mile','general_fitness']},raceDate:{type:'string'},preferredRunDays:{type:'array',items:{type:'string',enum:weekdayNames},minItems:2,maxItems:6},maxWeeklyHours:{type:'number',minimum:1,maximum:15},constraints:{type:'string',maxLength:500}}),
   planTool('preview_adjust_plan','Prepare the existing whole-week easier or progressive adjustment, not a single workout edit.',{planId:{type:'integer'},feeling:{type:'string',enum:['tired','strong']}}),
   planTool('preview_plan_settings','Prepare a race-date and target-time settings update; this does not rebuild workouts.',{planId:{type:'integer'},raceDate:{type:'string'},targetTime:{type:'string'}}),
 ];

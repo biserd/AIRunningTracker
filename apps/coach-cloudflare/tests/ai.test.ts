@@ -186,6 +186,37 @@ test("optional knowledge tools fall back to the proven coaching tool set when re
   assert.equal((bodies[0].tools as {name:string}[]).some(x=>x.name==='search_running_shoes'),true);
   assert.equal((bodies[1].tools as {name:string}[]).some(x=>x.name==='search_running_shoes'),false);
 });
+test("production plan tools use OpenAI-compatible strict schemas", async (t) => {
+  let body: Record<string, unknown> | undefined;
+  t.mock.method(
+    globalThis,
+    "fetch",
+    async (_url: unknown, options: RequestInit) => {
+      body = JSON.parse(String(options.body));
+      return Response.json({
+        status: "completed",
+        output: [
+          {
+            type: "message",
+            content: [{ type: "output_text", text: "Ready to plan." }],
+          },
+        ],
+      });
+    },
+  );
+  await coach(
+    "test",
+    { ...seed(), source: "production_account" },
+    [],
+    "Help me plan",
+    AbortSignal.timeout(1000),
+    undefined,
+    { validate: () => { throw new Error("not called"); } },
+  );
+  const serialized = JSON.stringify(body?.tools);
+  assert.equal(serialized.includes("uniqueItems"), false);
+  assert.equal(serialized.includes("preview_create_plan"), true);
+});
 test("tool validation blocks IDOR-like identifiers, extra user IDs and completed workouts", () => {
   assert.throws(() =>
     validateChange({ dayId: "another-runner", kind: "rest" }, state),
