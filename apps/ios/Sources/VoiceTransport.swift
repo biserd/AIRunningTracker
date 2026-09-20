@@ -11,6 +11,7 @@ import WebRTC
     private var peer: RTCPeerConnection?
     private var channel: RTCDataChannel?
     private var track: RTCAudioTrack?
+    private var disconnectCheck: Task<Void, Never>?
     var onEvent: ((Data) -> Void)?
     var onFailure: (() -> Void)?
 
@@ -25,6 +26,7 @@ import WebRTC
         try audio.setCategory(AVAudioSession.Category.playAndRecord,
                               with: [.defaultToSpeaker, .allowBluetooth])
         try audio.setMode(AVAudioSession.Mode.voiceChat)
+        try audio.setActive(true)
     }
     private func createOffer() async throws -> String {
         let configuration = RTCConfiguration()
@@ -79,6 +81,15 @@ import WebRTC
         track?.isEnabled = !muted
         send(["type": muted ? "session.input_audio.mute" : "session.input_audio.unmute"])
     }
+    func resumeAudio() {
+        let audio = RTCAudioSession.sharedInstance()
+        audio.lockForConfiguration()
+        defer { audio.unlockForConfiguration() }
+        try? audio.setCategory(AVAudioSession.Category.playAndRecord,
+                               with: [.defaultToSpeaker, .allowBluetooth])
+        try? audio.setMode(AVAudioSession.Mode.voiceChat)
+        try? audio.setActive(true)
+    }
     @discardableResult func send(_ event: [String: Any]) -> Bool {
         guard let channel, channel.readyState == .open else { return false }
         var event = event
@@ -87,6 +98,8 @@ import WebRTC
         return channel.sendData(RTCDataBuffer(data: data, isBinary: false))
     }
     func close() {
+        disconnectCheck?.cancel()
+        disconnectCheck = nil
         track?.isEnabled = false
         track = nil
         channel?.delegate = nil
@@ -100,6 +113,26 @@ import WebRTC
         try? audio.setActive(false)
         audio.unlockForConfiguration()
     }
+    private func handleIceState(_ state: RTCIceConnectionState, peerConnection: RTCPeerConnection) {
+        guard peer === peerConnection else { return }
+        if state == .connected || state == .completed {
+            disconnectCheck?.cancel()
+            disconnectCheck = nil
+        } else if state == .failed {
+            disconnectCheck?.cancel()
+            disconnectCheck = nil
+            onFailure?()
+        } else if state == .disconnected, disconnectCheck == nil {
+            disconnectCheck = Task { [weak self, weak peerConnection] in
+                try? await Task.sleep(for: .seconds(10))
+                guard !Task.isCancelled, let self, let peerConnection,
+                      self.peer === peerConnection,
+                      peerConnection.iceConnectionState == .disconnected || peerConnection.iceConnectionState == .failed else { return }
+                self.disconnectCheck = nil
+                self.onFailure?()
+            }
+        }
+    }
 }
 
 extension VoiceTransport: RTCPeerConnectionDelegate, RTCDataChannelDelegate {
@@ -108,12 +141,7 @@ extension VoiceTransport: RTCPeerConnectionDelegate, RTCDataChannelDelegate {
     nonisolated func peerConnection(_ peerConnection: RTCPeerConnection, didRemove stream: RTCMediaStream) {}
     nonisolated func peerConnectionShouldNegotiate(_ peerConnection: RTCPeerConnection) {}
     nonisolated func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceConnectionState) {
-        if newState == .failed || newState == .disconnected {
-            Task { @MainActor [weak self] in
-                guard let self, self.peer === peerConnection else { return }
-                self.onFailure?()
-            }
-        }
+        Task { @MainActor [weak self] in self?.handleIceState(newState, peerConnection: peerConnection) }
     }
     nonisolated func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceGatheringState) {}
     nonisolated func peerConnection(_ peerConnection: RTCPeerConnection, didGenerate candidate: RTCIceCandidate) {}

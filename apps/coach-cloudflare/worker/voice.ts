@@ -4,6 +4,8 @@ import {voiceInstructions} from './coach-instructions';
 import type {State} from '../shared/coach';
 import {voiceDiagnostic, type VoiceStage} from './voice-diagnostics';
 
+const VOICE_SESSION_SECONDS = 5 * 60;
+
 // One durable lease per browser session. The provider ID never comes from the client.
 export class VoiceLease extends DurableObject<Env> {
   async start(sdp: string, state: State) {
@@ -27,7 +29,7 @@ export class VoiceLease extends DurableObject<Env> {
     if (await this.ctx.storage.get("active"))
       throw new AIError("End your existing call before starting another.", 409);
     await this.ctx.storage.put("active", true);
-    await this.ctx.storage.setAlarm(Date.now() + 180_000);
+    await this.ctx.storage.setAlarm(Date.now() + VOICE_SESSION_SECONDS * 1_000);
     } catch(error) {
       diagnostic.stage=stage;
       voiceDiagnostic(stage,started,error);
@@ -73,7 +75,7 @@ export class VoiceLease extends DurableObject<Env> {
       if (!socket) throw new AIError("Voice session ended during setup.");
       socket.close(1000, "Control verified");
       voiceDiagnostic('ready', started);
-      return { sdp: result.transport.sdp, seconds: 180 };
+      return { sdp: result.transport.sdp, seconds: VOICE_SESSION_SECONDS };
     } catch (error) {
       diagnostic.stage=stage;
       voiceDiagnostic(stage, started, error);

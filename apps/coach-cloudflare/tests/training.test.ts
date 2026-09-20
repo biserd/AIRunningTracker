@@ -77,3 +77,16 @@ test('new plan creation sends only reviewed fields to the existing generator',as
   assert.throws(()=>validatePlanIntent({...intent,userId:999},context));
   assert.throws(()=>validatePlanIntent({...intent,raceDate:'2026-99-99'},context));
 });
+test('new ultra plan accepts spoken weekday capitalization and weekend back-to-backs',()=>{
+  const raceDate=new Date(Date.now()+80*86400000).toISOString().slice(0,10);
+  const result=validatePlanIntent({
+    kind:'create',goalType:'50_mile',raceDate,
+    preferredRunDays:['Monday','Tuesday','Wednesday','Thursday','Saturday','Sunday'],
+    maxWeeklyHours:12,
+    constraints:'Road race. Protect recovery after the current marathon and build weekend back-to-backs gradually.',
+  },context);
+  assert.equal(result.kind,'create');
+  if(result.kind!=='create')throw new Error('Expected create intent');
+  assert.deepEqual(result.preferredRunDays,['monday','tuesday','wednesday','thursday','saturday','sunday']);
+  assert.equal(result.goalType,'50_mile');
+});

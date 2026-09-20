@@ -30,4 +30,7 @@ final class VoiceTests: XCTestCase {
         XCTAssertEqual(voice.phase, .off)
         XCTAssertFalse(voice.muted)
     }
+    @MainActor func testVoiceSessionAllowsFiveMinutes() {
+        XCTAssertEqual(NativeVoiceCoach.maximumDuration, 300)
+    }
 }

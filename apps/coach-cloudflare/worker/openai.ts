@@ -165,9 +165,10 @@ const reminderTools = [
   },
 ];
 const planTool=(name:string,description:string,properties:Record<string,unknown>)=>({type:'function',name,description,strict:true,parameters:{type:'object',properties,required:Object.keys(properties),additionalProperties:false}});
+const weekdayNames=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
 const realPlanTools=[
   planTool('preview_workout_edit','Review one pending workout: shorten a timed easy/long/recovery run, replace with rest, or move onto a pending rest day. Never writes without confirmation.',{planId:{type:'integer'},dayId:{type:'integer'},operation:{type:'string',enum:['shorten','rest','move']},minutes:{type:['integer','null']},date:{type:['string','null']}}),
-  planTool('preview_create_plan','Prepare a new plan for on-screen approval. Ask for all missing details first.',{goalType:{type:'string',enum:['5k','10k','half_marathon','marathon','50k','50_mile','100k','100_mile','general_fitness']},raceDate:{type:'string'},preferredRunDays:{type:'array',items:{type:'string'}},maxWeeklyHours:{type:'number'},constraints:{type:'string'}}),
+  planTool('preview_create_plan','Prepare a new plan for on-screen approval. Ask for all missing details first. Use lowercase weekday names and include each selected day once.',{goalType:{type:'string',enum:['5k','10k','half_marathon','marathon','50k','50_mile','100k','100_mile','general_fitness']},raceDate:{type:'string'},preferredRunDays:{type:'array',items:{type:'string',enum:weekdayNames},minItems:2,maxItems:6,uniqueItems:true},maxWeeklyHours:{type:'number',minimum:1,maximum:15},constraints:{type:'string',maxLength:500}}),
   planTool('preview_adjust_plan','Prepare the existing whole-week easier or progressive adjustment, not a single workout edit.',{planId:{type:'integer'},feeling:{type:'string',enum:['tired','strong']}}),
   planTool('preview_plan_settings','Prepare a race-date and target-time settings update; this does not rebuild workouts.',{planId:{type:'integer'},raceDate:{type:'string'},targetTime:{type:'string'}}),
 ];
@@ -316,6 +317,12 @@ export async function coach(
           };
         } else result = { error: "Tool not permitted" };
       } catch (error) {
+        if (call.name?.startsWith('preview_') && call.name.includes('plan')) {
+          console.warn('coach_plan_preview_rejected', {
+            tool: call.name,
+            reason: error instanceof AIError ? error.message : 'invalid_payload',
+          });
+        }
         result = {
           error:
             error instanceof ReminderError || error instanceof AIError

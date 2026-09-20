@@ -37,12 +37,15 @@ export function validatePlanIntent(raw:unknown,context:TrainingContext):PlanInte
     if(typeof v.targetTime!=='string' || !/^\d{1,2}:[0-5]\d:[0-5]\d$/.test(v.targetTime))throw new AIError('Specify your target time as HH:MM:SS.',400);
     return {kind:'settings',planId:v.planId as number,raceDate:v.raceDate,targetTime:v.targetTime};
   }
+  const preferredRunDays=Array.isArray(v.preferredRunDays)
+    ? v.preferredRunDays.map(day=>typeof day==='string'?day.trim().toLowerCase():day)
+    : [];
   if(!['5k','10k','half_marathon','marathon','50k','50_mile','100k','100_mile','general_fitness'].includes(String(v.goalType)) ||
-     !Array.isArray(v.preferredRunDays) || v.preferredRunDays.length<2 || v.preferredRunDays.length>6 || new Set(v.preferredRunDays).size!==v.preferredRunDays.length ||
-     v.preferredRunDays.some(d=>!['monday','tuesday','wednesday','thursday','friday','saturday','sunday'].includes(d)) ||
+     preferredRunDays.length<2 || preferredRunDays.length>6 || new Set(preferredRunDays).size!==preferredRunDays.length ||
+     preferredRunDays.some(d=>typeof d!=='string'||!['monday','tuesday','wednesday','thursday','friday','saturday','sunday'].includes(d)) ||
      typeof v.maxWeeklyHours!=='number' || !Number.isFinite(v.maxWeeklyHours) || v.maxWeeklyHours<1 || v.maxWeeklyHours>15 ||
      typeof v.constraints!=='string' || v.constraints.length>500)throw new AIError('Specify the goal, race date, 2 to 6 running days, weekly hours and constraints.',400);
-  return {kind:'create',goalType:String(v.goalType),raceDate:v.raceDate,preferredRunDays:v.preferredRunDays as string[],maxWeeklyHours:v.maxWeeklyHours,constraints:v.constraints};
+  return {kind:'create',goalType:String(v.goalType),raceDate:v.raceDate,preferredRunDays:preferredRunDays as string[],maxWeeklyHours:v.maxWeeklyHours,constraints:v.constraints};
 }
 function planDays(context:TrainingContext,planId:number):Record<string,unknown>[]{
  const plan=context.plans.find(p=>p.id===planId);

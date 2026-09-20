@@ -24,12 +24,13 @@ enum VoiceEvent {
 }
 
 @MainActor final class NativeVoiceCoach: ObservableObject {
+    static let maximumDuration = 5 * 60
     enum Phase { case off, connecting, live, ending }
     @Published private(set) var phase: Phase = .off
     @Published private(set) var muted = false
     @Published private(set) var checking = false
     @Published private(set) var caption = ""
-    @Published private(set) var remaining = 180
+    @Published private(set) var remaining = maximumDuration
     @Published private(set) var error: String?
     var active: Bool { phase != .off }
     private var transport: VoiceTransport?
@@ -44,18 +45,17 @@ enum VoiceEvent {
     private var seen = Set<String>()
 
     init() {
-        observers.append(NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
-            Task { @MainActor in await self?.end() }
-        })
         observers.append(NotificationCenter.default.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { [weak self] note in
             guard let type = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
-                  type == AVAudioSession.InterruptionType.began.rawValue else { return }
-            Task { @MainActor in await self?.end() }
+                  type == AVAudioSession.InterruptionType.ended.rawValue,
+                  let optionsValue = note.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt,
+                  AVAudioSession.InterruptionOptions(rawValue: optionsValue).contains(.shouldResume) else { return }
+            Task { @MainActor in self?.transport?.resumeAudio() }
         })
         observers.append(NotificationCenter.default.addObserver(forName: AVAudioSession.routeChangeNotification, object: nil, queue: .main) { [weak self] note in
             guard let reason = note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
                   reason == AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue else { return }
-            Task { @MainActor in await self?.end() }
+            Task { @MainActor in self?.transport?.resumeAudio() }
         })
     }
     deinit { observers.forEach { NotificationCenter.default.removeObserver($0) } }
@@ -64,7 +64,7 @@ enum VoiceEvent {
         guard !active, !store.busy, store.snapshot?.canUseAI == true else { return }
         self.store = store
         phase = .connecting; error = nil; muted = false; checking = false
-        caption = ""; transcript = ""; seen.removeAll(); remaining = 180
+        caption = ""; transcript = ""; seen.removeAll(); remaining = Self.maximumDuration
         generation = UUID()
         let call = generation
         startup = Task { [weak self] in
@@ -94,7 +94,7 @@ enum VoiceEvent {
                 }
                 guard call == generation, phase == .connecting else { return }
                 try await transport.accept(result.sdp)
-                remaining = max(1, min(result.seconds, 180))
+                remaining = max(1, min(result.seconds, Self.maximumDuration))
                 timer = Task { [weak self] in
                     guard let self else { return }
                     // A media connection alone is not a ready Live session.
