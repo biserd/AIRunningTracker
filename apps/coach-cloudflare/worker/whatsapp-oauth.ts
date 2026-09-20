@@ -3,6 +3,7 @@ import {boundedJSON} from './openai';
 import {hash, budget, ReminderError} from './reminders';
 import type {State} from '../shared/coach';
 import type {Facts} from '../shared/training';
+import {cacheRunnerState,latestRunnerState} from './runner-context';
 
 const issuer='https://aitracker.run', resource=issuer+'/mcp';
 const scopes='mcp:profile.read mcp:activities.read mcp:analytics.read mcp:goals.read mcp:plans.read';
@@ -110,8 +111,15 @@ export async function whatsappContext(env:Env,id:string,refresh=false):Promise<S
  const {t,g}=await authorized(env,id);
  const aad='context:'+id+':'+g.generation;
  if(!refresh){
+  const shared=await latestRunnerState(env,id);
+  if(shared?.source==='production_account'){
+   const state=structuredClone(shared);
+   if(state.trainingContext)state.trainingContext.canWritePlans=false;
+   delete state.recentConversation;
+   return state;
+  }
   const cached=await env.DB.prepare('SELECT payload FROM whatsapp_context_cache WHERE session_id=? AND generation=? AND expires_at>?').bind(id,g.generation,now()).first<{payload:string}>();
-  if(cached){try{return JSON.parse(await crypt(env,aad,cached.payload,true)) as State;}catch{/* Corrupt or incompatible cache: reload, never use another grant. */}}
+  if(cached){try{const state=JSON.parse(await crypt(env,aad,cached.payload,true)) as State;await cacheRunnerState(env,id,state);return state;}catch{/* Corrupt or incompatible cache: reload, never use another grant. */}}
  }
  const loadedAt=new Date().toISOString();
  const snapshot=obj(clean(await read(env,t.access_token,'get_runner_coach_snapshot',{days:90})));
@@ -131,5 +139,6 @@ export async function whatsappContext(env:Env,id:string,refresh=false):Promise<S
   const payload=await crypt(env,aad,serialized);
   await env.DB.prepare('INSERT INTO whatsapp_context_cache(session_id,generation,payload,expires_at) SELECT session_id,generation,?,? FROM whatsapp_oauth_grants WHERE session_id=? AND generation=? AND expires_at>? ON CONFLICT(session_id) DO UPDATE SET generation=excluded.generation,payload=excluded.payload,expires_at=excluded.expires_at').bind(payload,Math.floor(Date.parse(loadedAt)/1000)+120,id,g.generation,now()).run();
  }
+ await cacheRunnerState(env,id,state);
  return state;
 }

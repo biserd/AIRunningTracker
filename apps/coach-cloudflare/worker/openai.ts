@@ -3,7 +3,9 @@ import type { ReminderIntent } from "../shared/reminders";
 import { ReminderError } from "./reminders";
 import {realCoachInstructions} from './coach-instructions';
 import type {PlanIntent} from '../shared/training';
+import {coachKnowledgeTools} from './coach-knowledge';
 export type PlanTools={validate:(input:unknown)=>PlanIntent};
+export type KnowledgeTools={run:(name:string,args:unknown)=>Promise<unknown>};
 export type ReminderTools = {
   context: unknown;
   validate: (intent: unknown) => Promise<ReminderIntent>;
@@ -59,12 +61,19 @@ export async function openai(
   body: unknown,
   signal: AbortSignal,
   max?: number,
+  gatewayBase?: string,
 ) {
   if (!key)
     throw new AIError(
       "AI is waiting for the server API key. Your saved week is unchanged.",
     );
-  const response = await fetch("https://api.openai.com/v1/" + path, {
+  const configuredGateway = gatewayBase?.replace(/\/+$/, "");
+  const base =
+    path !== "live/sessions" &&
+    configuredGateway?.startsWith("https://gateway.ai.cloudflare.com/v1/")
+      ? configuredGateway
+      : "https://api.openai.com/v1";
+  const response = await fetch(base + "/" + path, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${key}`,
@@ -231,12 +240,14 @@ export async function coach(
   signal: AbortSignal,
   reminders?: ReminderTools,
   plans?: PlanTools,
+  gatewayBase?: string,
+  knowledge?: KnowledgeTools,
 ) {
   const input: unknown[] = [...history, { role: "user", content: message }];
   let change: Change | undefined;
   let reminder: ReminderIntent | undefined;
   let planIntent: PlanIntent | undefined;
-  for (let round = 0; round < 3; round++) {
+  for (let round = 0; round < 4; round++) {
     const raw = (await openai(
       key,
       "responses",
@@ -250,16 +261,18 @@ export async function coach(
         reasoning: { effort: "low" },
         max_output_tokens: 1800,
         input,
-        tools: [...(state.source==='production_account'?[tools[0]]:tools),...(reminders?reminderTools:[]),...(plans?realPlanTools:[])],
+        tools: [...(state.source==='production_account'?[tools[0]]:tools),...(reminders?reminderTools:[]),...(plans?realPlanTools:[]),...(knowledge?coachKnowledgeTools:[])],
         parallel_tool_calls: false,
         tool_choice:
           round === 0
             ? { type: "function", name: "get_training_context" }
-            : round === 2
+            : round === 3
               ? "none"
               : "auto",
       },
       signal,
+      undefined,
+      gatewayBase,
     )) as { output?: Output[]; status?: string };
     if (raw.status !== "completed" || !Array.isArray(raw.output))
       throw new AIError("The coach could not finish. Your week is unchanged.");
@@ -295,9 +308,11 @@ export async function coach(
             source: state.source || "fictional_sample",
             state,
             activityEvidence: evidence(state),
-            realWeatherAvailable: false,
+            realWeatherAvailable: state.trainingContext?.profile.coachWeatherEnabled === true,
             ...(reminders ? { emailReminders: reminders.context } : {}),
           };
+        } else if (knowledge && coachKnowledgeTools.some(tool=>tool.name===call.name)) {
+          result=await knowledge.run(call.name!,args);
         } else if (plans && ['preview_workout_edit','preview_create_plan','preview_adjust_plan','preview_plan_settings'].includes(call.name || '')) {
           if(!args || typeof args!=='object' || Array.isArray(args) || 'kind' in args)throw new Error('Invalid action');
           planIntent=plans.validate({...args,kind:call.name==='preview_workout_edit'?'workout':call.name==='preview_create_plan'?'create':call.name==='preview_adjust_plan'?'adjust':'settings'});
@@ -344,6 +359,8 @@ export async function coach(
           error:
             error instanceof ReminderError || error instanceof AIError
               ? error.message
+              : knowledge && coachKnowledgeTools.some(tool=>tool.name===call.name) && error instanceof Error
+                ? error.message
               : "That adjustment is not valid. Ask the runner to choose an eligible workout and change.",
         };
       }

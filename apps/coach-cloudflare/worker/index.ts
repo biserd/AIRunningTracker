@@ -1,7 +1,7 @@
 import { changePlan, type State, type Change } from "../shared/coach";
 import { aiRoute, history } from "./ai";
 import { accountAction, accountToken, loadAccount, backend } from "./account";
-import {trainingContext} from './training-context';
+import {invalidateRunnerState,resolveRunnerState} from './runner-context';
 import {confirmPlan} from './plan-actions';
 import {startAuthorization,finishAuthorization} from './whatsapp-oauth';
 import { whatsappWebhook, whatsappStatus, whatsappAction, consumeWhatsApp, recoverWhatsApp } from './whatsapp';
@@ -17,6 +17,7 @@ import {
   deliverReminders,
 } from "./reminders";
 export { VoiceLease } from "./voice";
+export { RunnerCoachAgent } from "./runner-agent";
 type Row = {
   id: string;
   state: string;
@@ -125,16 +126,19 @@ async function api(request: Request, env: Env, ctx:ExecutionContext): Promise<Re
   }
   const id = await digest("production-runner:"+account.runner.id);
   // The same account key is used by native, web and the verified WhatsApp link.
-  // Refresh memory independently of the training-data cache.
-  if(url.pathname==='/api/ai/voice')account.state.recentConversation=await history(env,id);
-  if (['/api/ai/chat','/api/ai/voice','/api/ai/plan-confirm','/api/ai/context'].includes(url.pathname) && account.canUseAI) {
+  // The normal app bootstrap warms the same context used by chat and voice,
+  // so the first spoken question does not pay the full multi-API load cost.
+  if (['/api/state','/api/ai/chat','/api/ai/voice','/api/ai/plan-confirm','/api/ai/context'].includes(url.pathname) && account.canUseAI) {
     if(!await limit(env,'coach-context:'+id,10,60))return json({error:'Please wait a minute before asking again.'},429);
-    try { account.state.trainingContext=await trainingContext(env,token,account); }
+    try { account.state=await resolveRunnerState(env,id,token,account,url.searchParams.get('refresh')==='1'); }
     catch(e) {
       if(url.pathname==='/api/ai/voice')voiceDiagnostic('training_context',voiceStarted,e);
       throw e;
     }
   }
+  // Conversation memory changes independently from the five-minute running
+  // snapshot and therefore never enters persistent runner context.
+  if(url.pathname==='/api/ai/voice')account.state.recentConversation=await history(env,id);
   if(url.pathname==='/api/ai/context' && request.method==='GET')return account.canUseAI?json(account.state.trainingContext):json({error:'An active trial or subscription is required.'},403);
   await env.DB.prepare("INSERT INTO sessions(id,state,expires_at) VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state,expires_at=MAX(sessions.expires_at,excluded.expires_at)")
     .bind(id,JSON.stringify(account.state),now+lifetime).run();
@@ -213,7 +217,7 @@ async function api(request: Request, env: Env, ctx:ExecutionContext): Promise<Re
   if (url.pathname.startsWith("/api/ai/") && url.pathname !== "/api/ai/voice/stop" && !account.canUseAI)
     return json({error:"AI coaching requires an active trial or subscription. Your running data remains available."},403);
   if(url.pathname==='/api/ai/plan-confirm'){
-    try {return json(await confirmPlan(env,token,id,account,account.state.trainingContext!,input));}
+    try {const result=await confirmPlan(env,token,id,account,account.state.trainingContext!,input);await invalidateRunnerState(env,id);return json(result);}
     catch(e){return json({error:e instanceof AIError?e.message:'Plan action could not be completed.'},e instanceof AIError?e.status:503);}
   }
   if (url.pathname.startsWith('/api/whatsapp/')) {
@@ -249,7 +253,7 @@ async function api(request: Request, env: Env, ctx:ExecutionContext): Promise<Re
   }
   if (url.pathname.startsWith("/api/ai/")) {
     try {
-      return json(await aiRoute(request, env, row, input, limit));
+      return json(await aiRoute(request, env, row, input, limit, token));
     } catch (e) {
       if(url.pathname==='/api/ai/voice')voiceDiagnostic('dispatch',voiceStarted,e);
       return json(

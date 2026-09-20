@@ -233,7 +233,7 @@ export async function processWhatsApp(env:Env,id:string,warmGeneration?:string,p
      catch(error){if(error instanceof ReminderError)return error.message;throw error;}
     }:undefined;
     const confirmed=action?await confirmWhatsAppReminder(env,id,item.generation,item.body):null;
-    const reply=confirmed??await whatsappCoach(env.OPENAI_API_KEY,state,conversation,item.body,AbortSignal.timeout(25000),action);
+    const reply=confirmed??await whatsappCoach(env.OPENAI_API_KEY,state,conversation,item.body,AbortSignal.timeout(25000),action,env.AI_GATEWAY_BASE);
     aiMs=Date.now()-aiStart;stage='authorization';
     if(state.source==='production_account')await validateGrant(env,id);
     // A suspended old consumer must not send after another worker acquired its lease.

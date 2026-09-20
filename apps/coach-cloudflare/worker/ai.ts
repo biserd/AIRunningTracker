@@ -3,6 +3,7 @@ import { AIError, coach } from "./openai";
 import { reminderContext, validateReminder, draftReminder } from "./reminders";
 import {draftPlan,validatePlanIntent} from './plan-actions';
 import {voiceDiagnostic, type VoiceStage} from './voice-diagnostics';
+import {runCoachKnowledgeTool} from './coach-knowledge';
 type RunnerRow = { id: string; state: string; version: number };
 type Limit = (
   env: Env,
@@ -25,16 +26,17 @@ export async function aiRoute(
   row: RunnerRow,
   input: Record<string, unknown>,
   limit: Limit,
+  token?: string,
 ) {
   const started=Date.now();
   const diagnostic={stage:'job_lookup' as VoiceStage};
-  try { return await runAIRoute(request,env,row,input,limit,diagnostic); }
+  try { return await runAIRoute(request,env,row,input,limit,diagnostic,token); }
   catch(error) {
     if(new URL(request.url).pathname==='/api/ai/voice')voiceDiagnostic(diagnostic.stage,started,error);
     throw error;
   }
 }
-async function runAIRoute(request:Request,env:Env,row:RunnerRow,input:Record<string,unknown>,limit:Limit,diagnostic:{stage:VoiceStage}) {
+async function runAIRoute(request:Request,env:Env,row:RunnerRow,input:Record<string,unknown>,limit:Limit,diagnostic:{stage:VoiceStage},token?:string) {
   const routeStarted=Date.now();
   const path = new URL(request.url).pathname;
   if (path === "/api/ai/voice/stop") {
@@ -156,6 +158,8 @@ async function runAIRoute(request:Request,env:Env,row:RunnerRow,input:Record<str
           validate: (intent) => validateReminder(env, row.id, intent),
         },
         state.trainingContext?.canWritePlans ? {validate:intent=>validatePlanIntent(intent,state.trainingContext!)} : undefined,
+        env.AI_GATEWAY_BASE,
+        token ? {run:(name,args)=>runCoachKnowledgeTool(env,token,name,args,state)} : undefined,
       );
       let proposal;
       if (generated.change) {

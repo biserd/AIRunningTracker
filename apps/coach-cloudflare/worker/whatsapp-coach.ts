@@ -8,6 +8,7 @@ import {whatsappReminderTools} from './whatsapp-reminders';
 export async function whatsappCoach(
  key:string, state:State, history:{role:string;content:string}[], message:string, signal:AbortSignal,
  reminderAction?:(name:string,args:unknown)=>Promise<string>,
+ gatewayBase?:string,
 ):Promise<string> {
  const result=await openai(key,'responses',{
   model:'gpt-5.6-luna', store:false, reasoning:{effort:'low'}, max_output_tokens:1800,
@@ -20,7 +21,7 @@ export async function whatsappCoach(
    {role:'user',content:message},
   ],
   tools:reminderAction?whatsappReminderTools:[], tool_choice:reminderAction?'auto':'none',parallel_tool_calls:false,
- },signal) as {status?:string;output?:{type:string;name?:string;arguments?:string;content?:{type:string;text?:string}[]}[]};
+ },signal,undefined,gatewayBase) as {status?:string;output?:{type:string;name?:string;arguments?:string;content?:{type:string;text?:string}[]}[]};
  if(result.status!=='completed'||!Array.isArray(result.output))throw new AIError('The coach could not finish this reply.');
  const calls=result.output.filter(x=>x.type==='function_call');
  if(calls.length){
