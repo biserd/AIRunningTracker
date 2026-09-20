@@ -35,6 +35,7 @@ export async function aiRoute(
   }
 }
 async function runAIRoute(request:Request,env:Env,row:RunnerRow,input:Record<string,unknown>,limit:Limit,diagnostic:{stage:VoiceStage}) {
+  const routeStarted=Date.now();
   const path = new URL(request.url).pathname;
   if (path === "/api/ai/voice/stop") {
     if (Object.keys(input).length) throw new AIError("Invalid request", 400);
@@ -228,12 +229,14 @@ async function runAIRoute(request:Request,env:Env,row:RunnerRow,input:Record<str
       .run();
     return result;
   } catch (error) {
-    if(kind==='voice')voiceDiagnostic(diagnostic.stage,Date.now(),error);
+    const failure = kind==='voice'
+      ? voiceDiagnostic(diagnostic.stage,routeStarted,error)
+      : undefined;
     diagnostic.stage='job_cleanup';
     await env.DB.prepare(
-      "UPDATE ai_jobs SET status='failed' WHERE session_id=? AND id=?",
+      "UPDATE ai_jobs SET status='failed',result=? WHERE session_id=? AND id=?",
     )
-      .bind(row.id, input.id)
+      .bind(failure ? JSON.stringify(failure) : null,row.id, input.id)
       .run();
     if (error instanceof AIError) throw error;
     throw new AIError(

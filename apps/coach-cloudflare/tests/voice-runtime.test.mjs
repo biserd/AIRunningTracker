@@ -10,10 +10,7 @@ test('real voice Durable Object RPC starts with a synthetic provider and runner 
       export {VoiceLease} from './worker/voice';
       import {AIError} from './worker/openai';
       globalThis.fetch=async (url,options)=>{
-        if(String(url).endsWith('/attach')){
-          const pair=new WebSocketPair(); pair[1].accept();
-          return new Response(null,{status:101,webSocket:pair[0]});
-        }
+        if(String(url).endsWith('/attach'))throw new Error('startup must not attach a control socket');
         if(JSON.parse(options.body).transport.sdp.includes('reject'))return new Response('synthetic private provider error',{status:403});
         return Response.json({session:{id:'synthetic'},transport:{sdp:'v=0 synthetic answer'}});
       };

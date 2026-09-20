@@ -69,18 +69,19 @@ export class VoiceLease extends DurableObject<Env> {
       if (!result.session?.id || !result.transport?.sdp)
         throw new AIError("Voice could not connect.");
       await this.ctx.storage.put("providerId", result.session.id);
-      // Check that server control is available before exposing media to the browser.
-      stage = 'control_attach';
-      const socket = await this.attach(result.session.id);
-      if (!socket) throw new AIError("Voice session ended during setup.");
-      socket.close(1000, "Control verified");
+      // The provider's SDP is the readiness contract. Attaching a second control
+      // socket here races the phone's WebRTC connection and closing that probe can
+      // close an otherwise healthy session. Control is attached only when stopping.
       voiceDiagnostic('ready', started);
       return { sdp: result.transport.sdp, seconds: VOICE_SESSION_SECONDS };
     } catch (error) {
       diagnostic.stage=stage;
       voiceDiagnostic(stage, started, error);
-      // A provider session may exist even if setup failed. Keep the alarm to close it.
-      if (!(await this.ctx.storage.get("providerId"))) {
+      // A provider session may exist even if setup failed. Retry cleanup promptly;
+      // do not leave the runner locked out for the full call duration.
+      if (await this.ctx.storage.get("providerId")) {
+        await this.ctx.storage.setAlarm(Date.now() + 15_000);
+      } else {
         await this.ctx.storage.deleteAlarm();
         await this.ctx.storage.deleteAll();
       }
