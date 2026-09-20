@@ -253,10 +253,7 @@ export async function coach(
   let reminder: ReminderIntent | undefined;
   let planIntent: PlanIntent | undefined;
   for (let round = 0; round < 4; round++) {
-    const raw = (await openai(
-      key,
-      "responses",
-      {
+    const requestBody = (includeKnowledge: boolean) => ({
         model: coachTextModel,
         store: false,
         instructions: (state.source==='production_account'?realCoachInstructions(state):instructions) +
@@ -266,7 +263,7 @@ export async function coach(
         reasoning: { effort: "low" },
         max_output_tokens: 1800,
         input,
-        tools: [...(state.source==='production_account'?[tools[0]]:tools),...(reminders?reminderTools:[]),...(plans?realPlanTools:[]),...(knowledge?coachKnowledgeTools:[])],
+        tools: [...(state.source==='production_account'?[tools[0]]:tools),...(reminders?reminderTools:[]),...(plans?realPlanTools:[]),...(includeKnowledge&&knowledge?coachKnowledgeTools:[])],
         parallel_tool_calls: false,
         tool_choice:
           round === 0
@@ -274,11 +271,15 @@ export async function coach(
             : round === 3
               ? "none"
               : "auto",
-      },
-      signal,
-      undefined,
-      gatewayBase,
-    )) as { output?: Output[]; status?: string };
+      });
+    let raw: { output?: Output[]; status?: string };
+    try {
+      raw = await openai(key,"responses",requestBody(true),signal,undefined,gatewayBase) as typeof raw;
+    } catch (error) {
+      if (!(knowledge && error instanceof AIError && error.upstreamStatus === 400)) throw error;
+      console.warn(JSON.stringify({event:'coach_optional_tools_rejected',status:400}));
+      raw = await openai(key,"responses",requestBody(false),signal,undefined,gatewayBase) as typeof raw;
+    }
     if (raw.status !== "completed" || !Array.isArray(raw.output))
       throw new AIError("The coach could not finish. Your week is unchanged.");
     const calls = raw.output.filter((x) => x.type === "function_call");

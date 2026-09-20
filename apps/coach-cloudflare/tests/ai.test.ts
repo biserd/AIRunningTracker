@@ -171,6 +171,21 @@ test("agent reads scoped context, validates proposal and never applies it", asyn
   assert.equal(JSON.stringify(state), original);
   assert.equal(count, 3);
 });
+
+test("optional knowledge tools fall back to the proven coaching tool set when rejected",async t=>{
+  const bodies:Record<string,unknown>[]=[];
+  t.mock.method(console,'error',()=>{});
+  t.mock.method(console,'warn',()=>{});
+  t.mock.method(globalThis,'fetch',async(_url:unknown,options:RequestInit)=>{
+    const body=JSON.parse(String(options.body));bodies.push(body);
+    if(bodies.length===1)return Response.json({error:{message:'unsupported schema'}},{status:400});
+    return Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text:'Ready to help.'}]}]});
+  });
+  const result=await coach('test',seed(),[],'Hi',AbortSignal.timeout(1000),undefined,undefined,undefined,{run:async()=>({})});
+  assert.equal(result.message,'Ready to help.');
+  assert.equal((bodies[0].tools as {name:string}[]).some(x=>x.name==='search_running_shoes'),true);
+  assert.equal((bodies[1].tools as {name:string}[]).some(x=>x.name==='search_running_shoes'),false);
+});
 test("tool validation blocks IDOR-like identifiers, extra user IDs and completed workouts", () => {
   assert.throws(() =>
     validateChange({ dayId: "another-runner", kind: "rest" }, state),
