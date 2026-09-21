@@ -80,13 +80,14 @@ struct CoachTabs: View {
                     }
                 }.navigationSplitViewStyle(.balanced)
             } else {
-                TabView(selection: $selected) {
-                    ChatView(text: $draft, channel: $reminderChannel)
-                        .tabItem { Label("Coach", systemImage: CoachSection.coach.symbol) }.tag(CoachSection.coach)
-                    ScheduleView().tabItem { Label("Plan", systemImage: CoachSection.schedule.symbol) }.tag(CoachSection.schedule)
-                    NavigationStack { RunningProgressView() }
-                        .tabItem { Label("Progress", systemImage: CoachSection.progress.symbol) }.tag(CoachSection.progress)
-                    SettingsView().tabItem { Label("Settings", systemImage: CoachSection.settings.symbol) }.tag(CoachSection.settings)
+                if #available(iOS 26.0, *) {
+                    compactTabs
+                        .tabBarMinimizeBehavior(.onScrollDown)
+                        .tabViewBottomAccessory {
+                            CoachVoiceAccessory(selected: $selected)
+                        }
+                } else {
+                    compactTabs
                 }
             }
         }
@@ -116,6 +117,16 @@ struct CoachTabs: View {
             }
         }
     }
+    private var compactTabs: some View {
+        TabView(selection: $selected) {
+            ChatView(text: $draft, channel: $reminderChannel)
+                .tabItem { Label("Coach", systemImage: CoachSection.coach.symbol) }.tag(CoachSection.coach)
+            ScheduleView().tabItem { Label("Plan", systemImage: CoachSection.schedule.symbol) }.tag(CoachSection.schedule)
+            NavigationStack { RunningProgressView() }
+                .tabItem { Label("Progress", systemImage: CoachSection.progress.symbol) }.tag(CoachSection.progress)
+            SettingsView().tabItem { Label("Settings", systemImage: CoachSection.settings.symbol) }.tag(CoachSection.settings)
+        }
+    }
     private func openPush() {
         guard !store.needsSignIn, let target = UserDefaults.standard.string(forKey: "pushDestination") else { return }
         UserDefaults.standard.removeObject(forKey: "pushDestination")
@@ -127,6 +138,47 @@ struct CoachTabs: View {
             if activity>0, store.snapshot?.state.activities?.contains(where:{$0.id==activity})==true {
                 await store.send("Review my newly synced run ID \(activity), using actual data. Ask how it felt and explain how it relates to my next planned run.")
             }
+        }
+    }
+}
+
+@available(iOS 26.0, *)
+private struct CoachVoiceAccessory: View {
+    @EnvironmentObject private var store: CoachStore
+    @Binding var selected: CoachSection
+
+    var body: some View {
+        Button {
+            selected = .coach
+            if !store.voice.active { store.voice.start(store: store) }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: store.voice.active ? "waveform" : "mic.fill")
+                    .symbolEffect(.variableColor, isActive: store.voice.phase == .live && !store.voice.muted)
+                    .foregroundStyle(RunBrand.orange)
+                Text(accessoryTitle).font(.subheadline.bold()).lineLimit(1)
+                Spacer(minLength: 8)
+                if store.voice.phase == .live {
+                    Text("\(store.voice.remaining / 60):\(String(format: "%02d", store.voice.remaining % 60))")
+                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                } else {
+                    Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 4)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!store.voice.active && (store.snapshot?.canUseAI != true || store.busy))
+        .accessibilityLabel(store.voice.active ? "Return to active voice coach" : "Talk to your coach")
+    }
+
+    private var accessoryTitle: String {
+        switch store.voice.phase {
+        case .connecting: return "Connecting to coach…"
+        case .live: return store.voice.muted ? "Coach · muted" : "Coach is listening"
+        case .ending: return "Ending voice session…"
+        case .off: return "Talk to your coach"
         }
     }
 }
@@ -170,15 +222,24 @@ struct ChatView: View {
                         if let id = store.messages.last?.id { withAnimation { proxy.scrollTo(id, anchor: .bottom) } }
                     }
                 }
-                HStack(alignment: .bottom) {
+                HStack(alignment: .bottom, spacing: 10) {
                     TextField("Ask your coach", text: $text, axis: .vertical).lineLimit(1...5).textFieldStyle(.roundedBorder)
                         .accessibilityIdentifier("coach-composer")
                         .focused($composerFocused)
                     Button { let message = text; text = ""; Task { await store.send(message) } } label: {
-                        Image(systemName: "arrow.up.circle.fill").font(.largeTitle)
-                    }.accessibilityLabel("Send message").disabled(store.busy || store.voice.active || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || text.count > 2000 || store.snapshot?.canUseAI != true)
-                }.padding().frame(maxWidth: 820)
-            }.background(RunBrand.canvas).navigationTitle("Let’s talk running")
+                        Image(systemName: "arrow.up").font(.headline.bold()).frame(width: 28, height: 28)
+                    }
+                    .runPrimaryActionStyle()
+                    .buttonBorderShape(.circle)
+                    .accessibilityLabel("Send message")
+                    .disabled(store.busy || store.voice.active || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || text.count > 2000 || store.snapshot?.canUseAI != true)
+                }
+                .padding(12)
+                .frame(maxWidth: 820)
+                .runGlassSurface(cornerRadius: 22)
+                .padding(.horizontal)
+                .padding(.bottom, 8)
+            }.background { RunAmbientBackdrop() }.navigationTitle("Let’s talk running")
                 .toolbar {
                     ToolbarItemGroup(placement: .keyboard) {
                         Spacer()

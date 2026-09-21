@@ -248,20 +248,19 @@ struct NativeVoiceControls: View {
                 }
                 HStack {
                     Button { voice.toggleMute() } label: { Label(voice.muted ? "Unmute" : "Mute", systemImage: voice.muted ? "mic.fill" : "mic.slash.fill") }
-                        .buttonStyle(.bordered).disabled(voice.phase != .live)
+                        .runSecondaryActionStyle().disabled(voice.phase != .live)
                     Button(role: .destructive) { Task { await voice.end() } } label: { Label("End call", systemImage: "phone.down.fill") }
-                        .buttonStyle(.borderedProminent).disabled(voice.phase == .ending)
+                        .runPrimaryActionStyle(tint: .red).disabled(voice.phase == .ending)
                 }
                 if !voice.caption.isEmpty { Text(voice.caption).font(.callout).foregroundStyle(.secondary).lineLimit(3).privacySensitive() }
             } else {
                 Button { voice.start(store: store) } label: {
                     Label("Talk to your coach", systemImage: "mic.fill").font(.title3.bold()).frame(maxWidth: .infinity).padding(8)
-                }.buttonStyle(.borderedProminent).disabled(store.snapshot?.canUseAI != true || store.busy)
+                }.runPrimaryActionStyle().disabled(store.snapshot?.canUseAI != true || store.busy)
                 if store.busy { Text("Voice will be ready when your coach finishes replying.").font(.caption).foregroundStyle(.secondary) }
                 else if store.snapshot == nil { Text("Loading your coaching access…").font(.caption).foregroundStyle(.secondary) }
             }
             if let error = voice.error { Text(error).font(.callout).foregroundStyle(.red) }
-        }.padding(16).background(RunBrand.surface, in: RoundedRectangle(cornerRadius: 24))
-            .overlay(RoundedRectangle(cornerRadius:24).strokeBorder(RunBrand.orange.opacity(0.12),lineWidth:1)).padding()
+        }.padding(16).runGlassSurface().padding()
     }
 }

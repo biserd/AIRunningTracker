@@ -94,7 +94,7 @@ struct SignInView: View {
                     } else {
                         Text(signup ? "Verify your email, then connect Strava. No charge to create an account." : "Use the email for your existing account.").font(.callout).foregroundStyle(.secondary)
                     }
-                }.padding(24).background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 24))
+                }.padding(24).runGlassSurface()
 
                 DisclosureGroup(isExpanded: $showLink) {
                     VStack(alignment: .leading, spacing: 16) {
@@ -115,13 +115,13 @@ struct SignInView: View {
                     }.padding(.top, 16)
                 } label: {
                     Text("Trouble signing in?").font(.headline)
-                }.padding(24).background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 24))
+                }.padding(24).runGlassSurface()
 
                 Label("Your account. Your running data.", systemImage: "lock.shield")
                     .font(.callout).foregroundStyle(.secondary).frame(maxWidth: .infinity)
             }.frame(maxWidth: 480).padding(24).frame(maxWidth: .infinity)
         }
-        .background(RunBrand.canvas)
+        .background { RunAmbientBackdrop() }
         .scrollDismissesKeyboard(.interactively)
     }
 

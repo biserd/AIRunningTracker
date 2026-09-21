@@ -43,6 +43,9 @@ The generated Xcode project is ignored; project.yml is the source of truth.
 ## Implemented
 
 - Native Coach, Schedule and Settings tabs, Dynamic Type, orange primary actions.
+- iOS 26 Liquid Glass adoption for navigation chrome, a minimizing tab bar,
+  persistent voice-coach accessory, voice controls, chat composer and sign-in
+  surfaces. iOS 17–25 retain the existing high-contrast material fallbacks.
 - Email-link-only sign-in; no password field or password-login call in the client.
   Keychain session persistence and device-local logout are unchanged.
 - Universal Links open email sign-in directly in the app; paste-link recovery is
