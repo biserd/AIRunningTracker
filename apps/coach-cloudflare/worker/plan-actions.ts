@@ -54,7 +54,7 @@ function planDays(context:TrainingContext,planId:number):Record<string,unknown>[
 function workout(context:TrainingContext,planId:number,dayId:number){return planDays(context,planId).find(d=>d.id===dayId);}
 export async function draftPlan(env:Env,sessionId:string,context:TrainingContext,raw:unknown):Promise<PlanReview>{
   const details=validatePlanIntent(raw,context),id=crypto.randomUUID();
-  const description=details.kind==='workout'?`${details.operation==='move'?`Move to ${details.date}`:details.operation==='rest'?'Replace with rest':`Shorten to ${details.minutes} minutes`}: ${workout(context,details.planId,details.dayId)?.title}. Only this workout${details.operation==='move'?' and the destination rest day':''} changes.`:details.kind==='create'?`Create a ${details.goalType.replaceAll('_',' ')} plan for ${details.raceDate}. Your existing plans will not be deleted.`:
+  const description=details.kind==='workout'?`${details.operation==='move'?`Move to ${details.date}`:details.operation==='rest'?'Replace with rest':`Shorten to ${details.minutes} minutes`}: ${workout(context,details.planId,details.dayId)?.title}. Only this workout${details.operation==='move'?' and the destination rest day':''} changes.`:details.kind==='create'?`Create a ${details.goalType.replaceAll('_',' ')} plan for ${details.raceDate}, running ${details.preferredRunDays.join(', ')}, up to ${details.maxWeeklyHours} hours per week. Constraints: ${details.constraints||'none'}. Your existing plans will not be deleted.`:
     details.kind==='settings'?`Set plan ${details.planId} race date to ${details.raceDate} and target time to ${details.targetTime}. This changes settings, not the workout schedule.`:
     `Apply the main site's ${details.feeling==='tired'?'easier (~15% less volume)':'progressive (~8% more volume)'} adjustment to eligible upcoming weeks in plan ${details.planId}.`;
   await env.DB.prepare('INSERT INTO proposals(id,session_id,expected_version,before_state,after_state,description,expires_at) VALUES (?,?,1,?,?,?,?)')
@@ -82,6 +82,9 @@ export async function confirmPlan(env:Env,token:string,sessionId:string,account:
       backend(env,`/api/training/plans/${intent.planId}/adjust`,{feeling:intent.feeling,skipSync:true},token));
     const value=result as Record<string,unknown>;
     if(value.success===false)throw new Error('rejected');
-    return {ok:true,message:'Saved on AITracker. Refresh your plan to see the result.',planId:intent.kind==='create'?value.planId:intent.planId};
+    const validation=value.validation && typeof value.validation==='object' && !Array.isArray(value.validation)?value.validation as Record<string,unknown>:null;
+    const warnings=validation && Array.isArray(validation.warnings)?validation.warnings.filter((warning):warning is string=>typeof warning==='string'):[];
+    const warningMessage=warnings.length?` Note: ${warnings.join(' ')}`:'';
+    return {ok:true,message:`Saved on AITracker. Refresh your plan to see the result.${warningMessage}`,planId:intent.kind==='create'?value.planId:intent.planId};
   }catch {throw new AIError('The result could not be confirmed. Check your plan on AITracker before requesting another change. This action will not be retried.',503);}
 }

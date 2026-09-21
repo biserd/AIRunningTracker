@@ -8010,6 +8010,7 @@ ${allPages.map(page => `  <url>
         planId: result.planId,
         totalWeeks: result.totalWeeks,
         enrichmentStatus: result.enrichmentStatus,
+        validation: result.validation,
       });
     } catch (error: any) {
       console.error("Generate training plan error:", error);

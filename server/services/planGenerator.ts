@@ -4,7 +4,7 @@ import { athleteProfileService } from "./athleteProfile";
 import { trainingGuardrails, type GeneratedPlan, type PlanWeekInput, type PlanDayInput } from "./trainingGuardrails";
 import { generateSkeleton, type PlanSkeleton, type SkeletonWeek, type SkeletonDay } from "./skeletonGenerator";
 import type { AthleteProfile, TrainingPlan, InsertTrainingPlan, InsertPlanWeek, InsertPlanDay, GoalType, TerrainType } from "@shared/schema";
-import { selectSafePreferredRunDays } from "@shared/trainingPlanSafety";
+import { getRunFrequencyWarnings, normalizePreferredRunDays } from "@shared/trainingPlanSafety";
 import { instantDateKey, planDateKey } from "@shared/trainingPlanProgress";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -48,7 +48,20 @@ export interface InstantPlanResult {
   plan?: TrainingPlan;
   totalWeeks?: number;
   enrichmentStatus?: "pending" | "enriching" | "complete" | "partial" | "failed";
+  validation?: {
+    warnings: string[];
+    corrections: string[];
+  };
   error?: string;
+}
+
+function preserveApprovedRunDays(request: PlanGenerationRequest): PlanGenerationRequest {
+  if (!request.preferredRunDays?.length) return request;
+  const normalized = normalizePreferredRunDays(request.preferredRunDays);
+  if (normalized.length !== request.preferredRunDays.length) {
+    throw new Error("Running days must be unique valid weekday names.");
+  }
+  return { ...request, preferredRunDays: normalized };
 }
 
 // SSE event emitter for enrichment progress
@@ -87,13 +100,8 @@ export class PlanGeneratorService {
     try {
       // 1. Get or compute athlete profile
       const profile = await athleteProfileService.getOrComputeProfile(request.userId);
-      if (request.preferredRunDays?.length) {
-        request = {
-          ...request,
-          preferredRunDays: selectSafePreferredRunDays(request.preferredRunDays, profile.avgRunsPerWeek),
-          includeSpeedwork: (profile.avgRunsPerWeek ?? 0) >= 2 && request.includeSpeedwork !== false,
-        };
-      }
+      request = preserveApprovedRunDays(request);
+      const frequencyWarnings = getRunFrequencyWarnings(request.preferredRunDays, profile.avgRunsPerWeek);
       
       // 2. Calculate plan duration
       const raceDate = request.raceDate ? new Date(request.raceDate) : undefined;
@@ -132,7 +140,7 @@ export class PlanGeneratorService {
           success: true,
           plan: savedPlan,
           validation: {
-            warnings: ["Coaching content was auto-generated due to AI service issues."],
+            warnings: [...frequencyWarnings, "Coaching content was auto-generated due to AI service issues."],
             corrections: [],
           },
         };
@@ -145,7 +153,7 @@ export class PlanGeneratorService {
         success: true,
         plan: savedPlan,
         validation: {
-          warnings: [],
+          warnings: frequencyWarnings,
           corrections: [],
         },
       };
@@ -168,13 +176,8 @@ export class PlanGeneratorService {
     try {
       // 1. Get or compute athlete profile
       const profile = await athleteProfileService.getOrComputeProfile(request.userId);
-      if (request.preferredRunDays?.length) {
-        request = {
-          ...request,
-          preferredRunDays: selectSafePreferredRunDays(request.preferredRunDays, profile.avgRunsPerWeek),
-          includeSpeedwork: (profile.avgRunsPerWeek ?? 0) >= 2 && request.includeSpeedwork !== false,
-        };
-      }
+      request = preserveApprovedRunDays(request);
+      const frequencyWarnings = getRunFrequencyWarnings(request.preferredRunDays, profile.avgRunsPerWeek);
       
       // 2. Calculate plan duration
       const raceDate = request.raceDate ? new Date(request.raceDate) : undefined;
@@ -220,6 +223,10 @@ export class PlanGeneratorService {
         plan: savedPlan,
         totalWeeks: skeleton.weeks.length,
         enrichmentStatus: "enriching",
+        validation: {
+          warnings: frequencyWarnings,
+          corrections: [],
+        },
       };
     } catch (error) {
       console.error(`[PlanGenerator] Instant generation error:`, error);

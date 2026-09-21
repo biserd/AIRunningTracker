@@ -14,7 +14,7 @@
     "test:dashboard-periods": "tsx server/services/dashboardPeriods.test.ts",
     "test:account-dormancy": "tsx server/services/accountDormancy.test.ts",
     "test:strava-webhook": "tsx --test server/services/stravaWebhook.test.ts",
-    "test:training-plan-safety": "tsx shared/__tests__/trainingPlanSafety.test.ts",
+    "test:training-plan-safety": "tsx --test shared/__tests__/trainingPlanSafety.test.ts server/services/skeletonGenerator.test.ts",
     "test:today-run-decision": "tsx --test shared/__tests__/todayRunDecision.test.ts",
     "test:run-formatting": "tsx --test shared/__tests__/runFormatting.test.ts",
     "test:upgrade-intent": "tsx shared/__tests__/upgradeIntent.test.ts",
