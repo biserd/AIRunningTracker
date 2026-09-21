@@ -93,6 +93,8 @@ const premiumFeatures: FeatureSection[] = [
       "Fitness / fatigue / form charts",
       "AI Coach Chat (across your training)",
       "AI Agent Coach: proactive post-run recaps",
+      "Voice coaching and private WhatsApp chat",
+      "RunAnalytics iOS app access when released",
     ],
   },
   {
@@ -367,7 +369,7 @@ export default function PricingPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-strava-orange mt-0.5 flex-shrink-0" />
-                  <span>AI Coach Chat & post-run recaps</span>
+                  <span>Voice, chat & WhatsApp AI coaching</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-strava-orange mt-0.5 flex-shrink-0" />
@@ -402,17 +404,17 @@ export default function PricingPage() {
           </div>
 
           <Link href="/proactive-running-coach" data-testid="pricing-proactive-coach-link">
-            <div className="mx-auto -mt-8 mb-14 flex max-w-2xl cursor-pointer flex-col gap-4 rounded-2xl border border-sky-200 bg-gradient-to-r from-sky-50 to-emerald-50 p-5 transition hover:border-sky-300 hover:shadow-md sm:flex-row sm:items-center sm:justify-between">
+            <div className="mx-auto -mt-8 mb-14 flex max-w-2xl cursor-pointer flex-col gap-4 rounded-2xl border border-orange-200 bg-gradient-to-r from-orange-50 to-emerald-50 p-5 transition hover:border-orange-300 hover:shadow-md sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#229ED9] text-white">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#FC4C02] text-white">
                   <MessageCircle className="h-5 w-5" />
                 </div>
                 <div>
                   <p className="font-bold text-slate-900">Want the coach to come to you?</p>
-                  <p className="mt-1 text-sm leading-6 text-slate-600">Connect private Telegram coaching with Premium or during your trial. WhatsApp is coming next.</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">Chat privately with your coach on WhatsApp today. The iOS app is coming soon; Telegram remains supported.</p>
                 </div>
               </div>
-              <span className="inline-flex shrink-0 items-center gap-2 font-bold text-[#167ca9]">
+              <span className="inline-flex shrink-0 items-center gap-2 font-bold text-[#C63B00]">
                 See how it works <ArrowRight className="h-4 w-4" />
               </span>
             </div>

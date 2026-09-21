@@ -53,7 +53,7 @@ export default function LandingPage() {
           "priceCurrency": "USD",
           "description": "7-day free trial, then $7.99/month or $79.99/year. Cancel anytime."
         },
-        "description": "AI-powered running analytics platform with Runner Score, race predictions, and personalized training insights"
+        "description": "AI running coach with voice and chat, WhatsApp coaching, Runner Score, race predictions, and personalized training insights"
       },
       {
         "@type": "Organization",
@@ -73,8 +73,8 @@ export default function LandingPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
       <SEO
         title="RunAnalytics - AI Running Coach & Performance Analytics"
-        description="Chat with your personal Running Coach powered by GPT-5.5. Get instant training advice, race predictions, Runner Score (0-100), and comprehensive performance analytics. 7-day free trial."
-        keywords="AI running coach, running analytics, Strava analytics, runner score, race predictions, VO2 max, running performance, training insights, running app, marathon training, AI coach chat"
+        description="Talk with an attentive AI running coach by voice or chat, continue on WhatsApp, and get personalized guidance from your Strava data. iOS app coming soon. 7-day free trial."
+        keywords="AI running coach, WhatsApp running coach, iOS running app, running analytics, Strava analytics, runner score, race predictions, running performance, training insights, voice coach"
         structuredData={structuredData}
       />
       
@@ -86,19 +86,19 @@ export default function LandingPage() {
           <div className="flex justify-center mb-4">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 border border-orange-200">
               <Star className="h-3 w-3 fill-orange-500 text-orange-500" />
-              New: sign up in one tap with Strava
+              WhatsApp coach available now · iOS coming soon
             </span>
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-charcoal mb-4 sm:mb-6 leading-tight">
-            The Missing Analytics Layer
-            <span className="text-strava-orange"> for Runners</span>
+            Your AI running coach,
+            <span className="text-strava-orange"> wherever you run.</span>
           </h1>
           
           <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4 mb-3">
-            Your watch tracks your miles. We tell you how to run them faster and stay healthy.
+            Always available. Always attentive. Ready to talk when you are.
           </p>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
-            Don't just log your runs, learn from them. Sync your history instantly to unlock the AI coaching, race predictions, and deep insights that your dashboard is missing.
+            Talk by voice or chat, continue with your coach on WhatsApp, and receive useful guidance after every synced run. The RunAnalytics iOS app is coming soon.
           </p>
 
           {/* Social Proof with Real Stats */}
@@ -315,11 +315,14 @@ export default function LandingPage() {
         <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
           <div className="px-1 sm:px-4">
             <div className="mb-5 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-2 rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-sky-200">
-                <Send className="h-3.5 w-3.5" /> Telegram available now
+              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-emerald-200">
+                <Send className="h-3.5 w-3.5" /> WhatsApp available now
               </span>
-              <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-200">
-                WhatsApp coming next
+              <span className="rounded-full border border-orange-400/30 bg-orange-400/10 px-3 py-1.5 text-xs font-semibold text-orange-200">
+                iOS app coming soon
+              </span>
+              <span className="rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1.5 text-xs font-semibold text-sky-200">
+                Telegram also supported
               </span>
             </div>
 
@@ -343,15 +346,15 @@ export default function LandingPage() {
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <Shield className="mb-3 h-5 w-5 text-emerald-300" />
-                <p className="font-bold">Private by design</p>
-                <p className="mt-1 text-sm leading-6 text-slate-400">Read-only access is scoped to the connected runner.</p>
+                <p className="font-bold">You stay in control</p>
+                <p className="mt-1 text-sm leading-6 text-slate-400">Only your data is used, and plan changes require your approval.</p>
               </div>
             </div>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Link href="/proactive-running-coach" className="w-full sm:w-auto">
                 <Button
-                  className="h-12 w-full bg-[#229ED9] px-7 font-bold text-white hover:bg-[#1d8fc4] sm:w-auto"
+                  className="h-12 w-full bg-[#FC4C02] px-7 font-bold text-white hover:bg-[#d94200] sm:w-auto"
                   data-testid="homepage-proactive-coach-link"
                   onClick={() => trackFunnelEvent("offer_clicked", {
                     source: "homepage_proactive_coach",
@@ -359,24 +362,24 @@ export default function LandingPage() {
                     experimentVariant: "messaging_coach_v1",
                   })}
                 >
-                  See the messaging coach <ArrowRight className="ml-2 h-4 w-4" />
+                  See the AI coach <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
               <p className="text-xs leading-5 text-slate-400 sm:max-w-xs">
-                Available to Premium and trial runners. Connecting Telegram is an explicit runner-owned opt-in.
+                Available to Premium and trial runners. WhatsApp is opt-in and can be disconnected anytime.
               </p>
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-sky-300/20 bg-gradient-to-b from-[#229ED9] to-[#1679a8] p-3 shadow-2xl shadow-sky-950/50 sm:p-5">
-            <div className="rounded-[1.35rem] bg-[#e5f2ec] p-4 text-slate-900 sm:p-6" aria-label="Example proactive Telegram coaching message">
+          <div className="rounded-[2rem] border border-emerald-300/20 bg-gradient-to-b from-[#25D366] to-[#128C7E] p-3 shadow-2xl shadow-emerald-950/40 sm:p-5">
+            <div className="rounded-[1.35rem] bg-[#e5f2ec] p-4 text-slate-900 sm:p-6" aria-label="Example proactive WhatsApp coaching message">
               <div className="mb-5 flex items-center gap-3 border-b border-slate-900/10 pb-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#229ED9] text-white">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366] text-white">
                   <Bot className="h-5 w-5" />
                 </div>
                 <div>
                   <p className="font-bold">RunAnalytics Coach</p>
-                  <p className="text-xs text-slate-500">runner-scoped · read-only</p>
+                  <p className="text-xs text-slate-500">runner-scoped · approval required for changes</p>
                 </div>
               </div>
               <div className="rounded-2xl rounded-tl-sm bg-white p-5 shadow-sm">
@@ -384,7 +387,7 @@ export default function LandingPage() {
                 <p className="mt-3 text-sm leading-6 text-slate-600">
                   Pace stayed controlled through 14 km while heart-rate drift increased late. That looks like accumulated fatigue, not a reason to add more work.
                 </p>
-                <div className="mt-4 border-l-2 border-[#229ED9] pl-3 text-sm leading-6">
+                <div className="mt-4 border-l-2 border-[#25D366] pl-3 text-sm leading-6">
                   <strong>Do this:</strong> Rest, or run 25–35 minutes conversationally if your legs feel normal.
                 </div>
               </div>

@@ -14,6 +14,7 @@ import {
   Moon,
   Route,
   ShieldCheck,
+  Smartphone,
   Sparkles,
   TimerReset,
   TrendingUp,
@@ -36,8 +37,8 @@ const structuredData = {
       "@type": "SoftwareApplication",
       name: "RunAnalytics Proactive Running Coach",
       applicationCategory: "HealthApplication",
-      operatingSystem: "Web, Telegram",
-      description: "A read-only AI running coach that uses authorized RunAnalytics data to deliver concise post-run guidance in Telegram, with WhatsApp planned.",
+      operatingSystem: "Web",
+      description: "An AI running coach that uses authorized RunAnalytics data to deliver concise post-run guidance on WhatsApp, with an iOS app coming soon.",
       offers: {
         "@type": "Offer",
         price: "7.99",
@@ -50,18 +51,18 @@ const structuredData = {
       mainEntity: [
         {
           "@type": "Question",
-          name: "Is the proactive running coach available on Telegram?",
+          name: "Is the proactive running coach available on WhatsApp?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Telegram is available to runners with an active Premium subscription or trial. Connect from AI Coach Settings.",
+            text: "Yes. Runners with an active Premium subscription or trial can connect WhatsApp from the RunAnalytics coach experience.",
           },
         },
         {
           "@type": "Question",
-          name: "Is WhatsApp available?",
+          name: "Is the RunAnalytics iOS app available?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "WhatsApp is the next planned messaging channel and is not yet generally available.",
+            text: "The iOS app is currently in limited testing and is coming soon. WhatsApp and the web coach are available now.",
           },
         },
         {
@@ -69,7 +70,7 @@ const structuredData = {
           name: "Can the coach change my RunAnalytics or Strava data?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "No. The messaging coach receives a runner-scoped, read-only connection and cannot edit activities, plans, goals, accounts, or subscriptions.",
+            text: "The coach cannot edit activities, accounts, or subscriptions. It can prepare a training-plan change only for the signed-in runner, and nothing is saved without that runner's explicit approval.",
           },
         },
       ],
@@ -103,12 +104,16 @@ const roadmapCapabilities = [
 
 const faqs = [
   {
-    question: "How do I connect Telegram?",
-    answer: "Sign in with an active Premium subscription or trial, open AI Coach Settings, and choose Connect Telegram. The single-use link opens a private bot conversation and records your runner-owned opt-in.",
+    question: "How do I connect WhatsApp?",
+    answer: "Sign in with an active Premium subscription or trial, open the coach Settings tab, and follow the numbered WhatsApp connection steps. Your approval binds your phone number to your RunAnalytics account.",
   },
   {
-    question: "What about WhatsApp?",
-    answer: "WhatsApp is planned as the next channel. It is shown here so runners can understand the direction, but we are not calling it live before the connection, isolation, and delivery flow is production-ready.",
+    question: "What about the iOS app?",
+    answer: "The native RunAnalytics app is in limited TestFlight testing and is coming soon. Voice, chat, schedules, progress, and reminders are being brought together in one focused coach experience.",
+  },
+  {
+    question: "Is Telegram still supported?",
+    answer: "Yes. Existing Telegram connections continue to work, but WhatsApp is now the primary messaging experience we promote.",
   },
   {
     question: "Does the coach see another runner's data?",
@@ -116,7 +121,7 @@ const faqs = [
   },
   {
     question: "Can it edit my plan or activities?",
-    answer: "No. The messaging connection is deliberately read-only. It cannot create, update, delete, sync, email, bill, or change your account.",
+    answer: "The coach cannot silently change anything. It may prepare a plan or adjustment for your review, but saving it requires your explicit approval. Activities, account details, and subscriptions remain protected.",
   },
   {
     question: "Is this a medical or emergency service?",
@@ -124,32 +129,40 @@ const faqs = [
   },
 ];
 
-function ChannelPill({ channel, status }: { channel: "telegram" | "whatsapp"; status: string }) {
+function ChannelPill({ channel, status }: { channel: "telegram" | "whatsapp" | "ios"; status: string }) {
   const telegram = channel === "telegram";
-  const Icon = telegram ? SiTelegram : SiWhatsapp;
+  const whatsapp = channel === "whatsapp";
+  const Icon = telegram ? SiTelegram : whatsapp ? SiWhatsapp : Smartphone;
+  const palette = telegram
+    ? "border-sky-200 bg-sky-50 text-sky-900"
+    : whatsapp
+      ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+      : "border-orange-200 bg-orange-50 text-orange-900";
+  const iconColor = telegram ? "text-[#229ED9]" : whatsapp ? "text-[#25D366]" : "text-[#FC4C02]";
+  const statusColor = telegram ? "bg-sky-200/70 text-sky-900" : whatsapp ? "bg-emerald-200/70 text-emerald-900" : "bg-orange-200/70 text-orange-900";
   return (
-    <div className={`inline-flex items-center gap-3 rounded-full border px-4 py-2 shadow-sm ${telegram ? "border-sky-200 bg-sky-50 text-sky-900" : "border-emerald-200 bg-emerald-50 text-emerald-900"}`}>
-      <Icon className={`h-5 w-5 ${telegram ? "text-[#229ED9]" : "text-[#25D366]"}`} />
-      <span className="font-semibold capitalize">{channel}</span>
-      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${telegram ? "bg-sky-200/70 text-sky-900" : "bg-emerald-200/70 text-emerald-900"}`}>{status}</span>
+    <div className={`inline-flex items-center gap-3 rounded-full border px-4 py-2 shadow-sm ${palette}`}>
+      <Icon className={`h-5 w-5 ${iconColor}`} />
+      <span className="font-semibold">{channel === "ios" ? "iOS app" : channel.charAt(0).toUpperCase() + channel.slice(1)}</span>
+      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusColor}`}>{status}</span>
     </div>
   );
 }
 
 function CoachMessagePreview() {
   return (
-    <div className="relative mx-auto max-w-[390px]" aria-label="Example Telegram post-run coaching message">
-      <div className="absolute -inset-8 rounded-full bg-sky-300/20 blur-3xl" />
+    <div className="relative mx-auto max-w-[390px]" aria-label="Example WhatsApp post-run coaching message">
+      <div className="absolute -inset-8 rounded-full bg-emerald-300/20 blur-3xl" />
       <div className="relative overflow-hidden rounded-[2rem] border-[7px] border-slate-900 bg-[#dce9e2] shadow-2xl">
-        <div className="flex items-center gap-3 bg-[#2AABEE] px-5 py-4 text-white">
+        <div className="flex items-center gap-3 bg-[#128C7E] px-5 py-4 text-white">
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/20">
             <Sparkles className="h-5 w-5" />
           </div>
           <div className="min-w-0">
             <p className="font-bold">RunAnalytics Coach</p>
-            <p className="text-xs text-sky-100">runner-scoped · read-only</p>
+            <p className="text-xs text-emerald-100">runner-scoped · changes require approval</p>
           </div>
-          <ShieldCheck className="ml-auto h-5 w-5 text-sky-100" />
+          <ShieldCheck className="ml-auto h-5 w-5 text-emerald-100" />
         </div>
 
         <div className="space-y-3 p-4 text-[14px] leading-relaxed">
@@ -157,7 +170,7 @@ function CoachMessagePreview() {
           <div className="max-w-[92%] rounded-2xl rounded-tl-sm bg-white p-4 text-slate-800 shadow-sm">
             <p className="mb-2 font-bold text-slate-950">Good long run. Keep tomorrow easy.</p>
             <p>Your 18.2 km stayed controlled through 14 km. Pace held steady while heart-rate drift increased late, which points to normal accumulated fatigue, not a reason to add more work.</p>
-            <div className="my-3 border-l-2 border-[#2AABEE] pl-3 text-slate-600">
+            <div className="my-3 border-l-2 border-[#25D366] pl-3 text-slate-600">
               <p><strong>Do this:</strong> Rest, or run 25–35 minutes conversationally if your legs feel normal.</p>
             </div>
             <p className="text-xs text-slate-500">Based on this run, your recent load, and your current goal.</p>
@@ -176,8 +189,8 @@ function CoachMessagePreview() {
 
 export default function ProactiveRunningCoachLanding() {
   const { isAuthenticated } = useAuth();
-  const primaryHref = isAuthenticated ? "/coach/settings" : PRICING_URL;
-  const primaryLabel = isAuthenticated ? "Connect or manage Telegram" : "Start 7 days free";
+  const primaryHref = isAuthenticated ? "https://new.aitracker.run/preview" : PRICING_URL;
+  const primaryLabel = isAuthenticated ? "Open your coach" : "Start 7 days free";
 
   useEffect(() => {
     trackFunnelEvent(
@@ -196,12 +209,12 @@ export default function ProactiveRunningCoachLanding() {
   return (
     <div className="min-h-screen bg-[#f7f8f6] text-slate-950">
       <SEO
-        title="Proactive Running Coach on Telegram | RunAnalytics"
-        description="Get concise, runner-specific post-run coaching in Telegram through a private, read-only RunAnalytics connection. Available with Premium and the 7-day trial."
-        keywords="Telegram running coach, proactive running coach, WhatsApp running coach, AI running coach messages, Strava Telegram coach, post-run coaching"
+        title="AI Running Coach on WhatsApp | RunAnalytics"
+        description="Get concise, runner-specific post-run coaching on WhatsApp through a private RunAnalytics connection. Voice and web chat are available now; the iOS app is coming soon."
+        keywords="WhatsApp running coach, proactive running coach, iOS running coach, Telegram running coach, AI running coach messages, Strava coach, post-run coaching"
         url="https://aitracker.run/proactive-running-coach"
         ogTitle="Your running coach, already in your messages"
-        ogDescription="Run, sync, and receive one useful next step in Telegram. Available with Premium and the 7-day trial; WhatsApp is planned next."
+        ogDescription="Run, sync, and receive one useful next step on WhatsApp. Voice and web chat are available now; the iOS app is coming soon."
         structuredData={structuredData}
       />
       <PublicHeader />
@@ -222,16 +235,17 @@ export default function ProactiveRunningCoachLanding() {
               </p>
 
               <div className="mt-7 flex flex-wrap gap-3">
-                <ChannelPill channel="telegram" status="Available now" />
-                <ChannelPill channel="whatsapp" status="Coming next" />
+                <ChannelPill channel="whatsapp" status="Available now" />
+                <ChannelPill channel="ios" status="Coming soon" />
+                <ChannelPill channel="telegram" status="Also supported" />
               </div>
 
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <Link href={primaryHref} onClick={trackPrimaryClick}>
+                <a href={primaryHref} onClick={trackPrimaryClick}>
                   <Button size="lg" className="h-14 w-full bg-slate-950 px-7 text-base text-white hover:bg-slate-800 sm:w-auto" data-testid="proactive-coach-primary-cta">
                     {primaryLabel} <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
-                </Link>
+                </a>
                 <a href="#how-it-works" className="inline-flex h-14 items-center justify-center rounded-md border border-slate-300 bg-white px-7 text-base font-semibold text-slate-800 transition hover:bg-slate-50">
                   See how it works <ChevronRight className="ml-1 h-5 w-5" />
                 </a>
@@ -243,7 +257,7 @@ export default function ProactiveRunningCoachLanding() {
                 <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-600" /> Disconnect anytime</span>
               </div>
               <p className="mt-4 max-w-xl text-xs leading-5 text-slate-500">
-                Telegram can be connected by Premium and trial runners from AI Coach Settings. Connecting is an explicit, runner-owned opt-in. WhatsApp is not yet generally available.
+                WhatsApp can be connected by Premium and trial runners from the coach Settings tab. Connecting is an explicit, runner-owned opt-in.
               </p>
             </div>
 
@@ -289,13 +303,13 @@ export default function ProactiveRunningCoachLanding() {
             <div>
               <p className="text-sm font-bold uppercase tracking-[0.18em] text-sky-300">One-click connection</p>
               <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">A private coach, not a shared chatbot.</h2>
-              <p className="mt-5 max-w-xl text-lg leading-8 text-slate-300">The smooth experience happens behind the chat. Your Telegram identity is securely bound to your signed-in RunAnalytics account, and every private request is checked on the server.</p>
+              <p className="mt-5 max-w-xl text-lg leading-8 text-slate-300">The smooth experience happens behind the chat. Your WhatsApp number is securely bound to your signed-in RunAnalytics account, and every private request is checked on the server.</p>
 
               <ol className="mt-8 space-y-5">
                 {[
-                  ["1", "Connect in AI Coach Settings", "RunAnalytics creates a short-lived, single-use Telegram link."],
-                  ["2", "Open the bot privately", "Group and channel connections are rejected. The link binds one private chat to one runner."],
-                  ["3", "Run and receive context", "The coach uses a dedicated read-only connection scoped to your account."],
+                  ["1", "Open coach Settings", "Choose WhatsApp and approve access to your own RunAnalytics data."],
+                  ["2", "Send the prepared message", "RunAnalytics securely binds that private WhatsApp chat to your runner account."],
+                  ["3", "Start coaching", "Ask about your runs and plan. Any proposed plan change waits for your approval."],
                 ].map(([number, title, copy]) => (
                   <li key={number} className="flex gap-4">
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-400 font-black text-slate-950">{number}</span>
@@ -313,8 +327,9 @@ export default function ProactiveRunningCoachLanding() {
               <ul className="mt-6 space-y-4">
                 {[
                   "Read another runner's profile, activities, goals, analytics, or plans",
-                  "Change activities, goals, training plans, preferences, or account details",
-                  "Start a Strava sync, send email, or alter a subscription",
+                  "Change activities, account details, or subscription settings",
+                  "Silently save or replace a training plan without your explicit approval",
+                  "Start a Strava sync or send messages to an unconnected channel",
                   "See Stripe, Strava, session, magic-link, or internal provider credentials",
                   "Use a user ID supplied by the model or by a chat message",
                 ].map((item) => <li key={item} className="flex gap-3 text-slate-300"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" /><span>{item}</span></li>)}
@@ -364,13 +379,13 @@ export default function ProactiveRunningCoachLanding() {
           <div className="mx-auto max-w-5xl overflow-hidden rounded-[2rem] bg-[#FC4C02] px-7 py-12 text-center text-white shadow-2xl sm:px-12 sm:py-16">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15"><Sparkles className="h-7 w-7" /></div>
             <h2 className="mx-auto mt-6 max-w-3xl text-3xl font-black tracking-tight sm:text-5xl">Your next useful coaching moment should find you.</h2>
-            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-orange-50">Start the 7-day Premium trial, connect Strava, then opt in to Telegram from AI Coach Settings. Premium remains $7.99/month after the trial.</p>
+            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-orange-50">Start the 7-day Premium trial, connect Strava, then opt in to WhatsApp from coach Settings. Premium remains $7.99/month after the trial; the iOS app is coming soon.</p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-              <Link href={primaryHref} onClick={trackPrimaryClick}>
+              <a href={primaryHref} onClick={trackPrimaryClick}>
                 <Button size="lg" className="h-14 w-full bg-white px-7 text-base font-bold text-[#C63B00] hover:bg-orange-50 sm:w-auto" data-testid="proactive-coach-bottom-cta">
                   {primaryLabel} <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-              </Link>
+              </a>
               <Link href="/blog/ai-agent-coach-proactive-coaching">
                 <Button size="lg" variant="outline" className="h-14 w-full border-white/60 bg-transparent px-7 text-base text-white hover:bg-white/10 hover:text-white sm:w-auto">
                   Read the coaching guide
@@ -379,7 +394,7 @@ export default function ProactiveRunningCoachLanding() {
             </div>
             <div className="mt-7 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-orange-50">
               <span className="flex items-center gap-2"><Check className="h-4 w-4" /> No separate activity logging</span>
-              <span className="flex items-center gap-2"><Check className="h-4 w-4" /> Read-only private connection</span>
+              <span className="flex items-center gap-2"><Check className="h-4 w-4" /> Private, runner-scoped connection</span>
               <span className="flex items-center gap-2"><Check className="h-4 w-4" /> Cancel or disconnect anytime</span>
             </div>
           </div>

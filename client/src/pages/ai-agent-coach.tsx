@@ -113,7 +113,7 @@ export default function AIAgentCoachLanding() {
                 </div>
                 <div>
                   <p className="font-bold text-slate-900 dark:text-white">Prefer coaching in the chat you already check?</p>
-                  <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">See staged Telegram access, privacy boundaries, and the WhatsApp roadmap.</p>
+                  <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">See WhatsApp access, runner-controlled privacy, and the upcoming iOS app.</p>
                 </div>
               </div>
               <ArrowRight className="h-5 w-5 shrink-0 text-[#229ED9]" />

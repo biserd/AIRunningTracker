@@ -622,7 +622,7 @@ export default function AICoachLanding() {
               <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full dark:border-slate-700">
                 <CardHeader>
                   <Smartphone className="text-[#229ED9] mb-3" size={32} />
-                  <CardTitle className="text-lg dark:text-white">Proactive Coach on Telegram</CardTitle>
+                  <CardTitle className="text-lg dark:text-white">Your Coach on WhatsApp</CardTitle>
                   <CardDescription className="dark:text-gray-400">
                     See how private, runner-scoped coaching can reach you after a run
                   </CardDescription>
