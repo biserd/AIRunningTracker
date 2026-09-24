@@ -157,9 +157,12 @@ struct CoachTabs: View {
         let legacyBriefingAt=UserDefaults.standard.double(forKey:"pushLegacyBriefingAt")
         UserDefaults.standard.removeObject(forKey:"pushLegacyBriefingAt")
         store.settingsSheet = nil
-        openingBriefing = briefing != nil || legacyBriefingAt > 0
+        let wantsBriefing = briefing != nil || legacyBriefingAt > 0
+        openingBriefing = wantsBriefing
         Task {
-            await store.refresh(); try? await store.push.refresh()
+            if wantsBriefing { await store.refreshCompanion() }
+            else { await store.refresh() }
+            try? await store.push.refresh()
             if let briefing {
                 if let saved = store.companion?.briefings.first(where: briefing.matches) {
                     openedBriefing = saved

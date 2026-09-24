@@ -171,11 +171,16 @@ import Combine
             snapshot=next; scheduleError=nil; refreshedAt=Date()
             await push.attach(api:api,runner:next.runner.id)
         } catch { if generation==sessionGeneration { scheduleError="Could not refresh. Showing the last loaded schedule."; report(error) } }
+        await refreshCompanion()
+        try? await push.refresh()
+    }
+    func refreshCompanion() async {
+        let generation=sessionGeneration
         do {
             let next:CompanionData=try await api.companion("read")
-            guard generation==sessionGeneration, !needsSignIn else { return }; companion=next; companionError=nil
+            guard generation==sessionGeneration, !needsSignIn else { return }
+            companion=next; companionError=nil
         } catch { if generation==sessionGeneration { companionError="Could not refresh coaching details. Pull down to retry." } }
-        try? await push.refresh()
     }
     func checkIn(_ feeling:String,activity:Int=0) async {
         guard !savingCheckIn, !busy, !voice.active else { return }
