@@ -33,6 +33,16 @@ test('invalid registration rejected; payload has no runner details or URLs',()=>
   const payload=applePayload({id:'x',token:'secret',generation:'opaque',environment:'production',expires:1,kind:'run'});
   assert.equal(payload.destination,'coach');assert.equal(JSON.stringify(payload).includes('secret'),false);
 });
+test('coaching push names the update and carries only its saved briefing reference',()=>{
+  for(const [kind,body] of [['evening','Tomorrow’s run briefing'],['weekly','weekly running review'],['followup','check-in']] as const){
+    const reference=`coach:${kind}:2026-09-23`;
+    const payload=applePayload({id:'x',token:'secret',generation:'opaque',environment:'production',expires:1,kind:'reminder',reference});
+    assert.equal(payload.destination,'coach');
+    assert.equal(payload.briefingReference,reference);
+    assert.match(payload.aps.alert.body,new RegExp(body));
+    assert.equal(JSON.stringify(payload).includes('secret'),false);
+  }
+});
 test('device reassignment and unregister are tenant-scoped',async()=>{
   const {service,db}=setup();
   const first=await service.register(1,input,time()+3600);

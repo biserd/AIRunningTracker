@@ -21,4 +21,12 @@ final class UXRecoveryTests: XCTestCase {
         XCTAssertEqual(CoachSection.allCases.map(\.title), ["Coach", "Plan", "Progress", "Settings"])
         XCTAssertEqual(CoachSection.schedule.rawValue, "schedule")
     }
+    func testPushBriefingOpensOnlyItsMatchingSavedUpdate() {
+        let reference = PushBriefingReference("coach:weekly:2026-09-23")
+        let saved = CoachBriefing(kind: "weekly", reference: "2026-09-23", title: "Your week in running", body: "A saved review", date: "2026-09-23T18:00:00Z")
+        XCTAssertTrue(reference?.matches(saved) == true)
+        XCTAssertNotNil(saved.createdAt)
+        XCTAssertFalse(reference?.matches(CoachBriefing(kind: "evening", reference: saved.reference, title: saved.title, body: saved.body, date: saved.date)) == true)
+        XCTAssertNil(PushBriefingReference("coach:weekly:../../other-account"))
+    }
 }

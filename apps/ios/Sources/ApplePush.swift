@@ -7,6 +7,21 @@ extension Notification.Name {
     static let applePushFailure = Notification.Name("applePushFailure")
 }
 
+struct PushBriefingReference: Equatable {
+    let kind: String
+    let date: String
+
+    init?(_ value: String) {
+        let parts = value.split(separator: ":", omittingEmptySubsequences: false)
+        guard parts.count == 3, parts[0] == "coach",
+              ["evening", "weekly", "followup"].contains(String(parts[1])),
+              String(parts[2]).range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil else { return nil }
+        kind = String(parts[1]); date = String(parts[2])
+    }
+
+    func matches(_ briefing: CoachBriefing) -> Bool { briefing.kind == kind && briefing.reference == date }
+}
+
 final class PushAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions options: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         UNUserNotificationCenter.current().delegate = self
@@ -34,6 +49,17 @@ final class PushAppDelegate: NSObject, UIApplicationDelegate, UNUserNotification
             if let value=data["activityId"] as? String, let id=Int(value),id>0 {
                 UserDefaults.standard.set(id,forKey:"pushActivity")
             } else { UserDefaults.standard.removeObject(forKey:"pushActivity") }
+            if destination == "coach", let value = data["briefingReference"] as? String,
+               PushBriefingReference(value) != nil {
+                UserDefaults.standard.set(value, forKey: "pushBriefing")
+                UserDefaults.standard.removeObject(forKey: "pushLegacyBriefingAt")
+            } else { UserDefaults.standard.removeObject(forKey: "pushBriefing") }
+            if destination == "coach", data["briefingReference"] == nil,
+               response.notification.request.content.body == "Your coaching briefing is ready." {
+                // Older notifications did not carry an identifier. Match only a briefing
+                // created near delivery time, so a later update cannot be opened instead.
+                UserDefaults.standard.set(response.notification.date.timeIntervalSince1970, forKey: "pushLegacyBriefingAt")
+            } else { UserDefaults.standard.removeObject(forKey: "pushLegacyBriefingAt") }
             NotificationCenter.default.post(name: .applePushOpen, object: destination)
         }
         completion()
@@ -145,6 +171,8 @@ struct AppleReminder: Decodable, Identifiable {
         UserDefaults.standard.removeObject(forKey: "pushGeneration")
         UserDefaults.standard.removeObject(forKey: "pushDestination")
         UserDefaults.standard.removeObject(forKey: "pushActivity")
+        UserDefaults.standard.removeObject(forKey: "pushBriefing")
+        UserDefaults.standard.removeObject(forKey: "pushLegacyBriefingAt")
         UNUserNotificationCenter.current().removeAllDeliveredNotifications()
     }
     func schedule(title: String, date: Date, id: String = UUID().uuidString, recurrence:String = "none", timezone:String = TimeZone.current.identifier) async throws {

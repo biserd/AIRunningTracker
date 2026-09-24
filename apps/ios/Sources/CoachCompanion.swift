@@ -11,6 +11,13 @@ struct SavedInsight:Decodable,Identifiable { let id:Int; let title,content:Strin
 struct CoachBriefing:Decodable,Identifiable {
     let kind,reference,title,body,date:String
     var id:String { kind+reference }
+    var createdAt:Date? {
+        let formatter=ISO8601DateFormatter()
+        formatter.formatOptions=[.withInternetDateTime,.withFractionalSeconds]
+        if let date=formatter.date(from:date) { return date }
+        formatter.formatOptions=[.withInternetDateTime]
+        return formatter.date(from:date)
+    }
 }
 struct CoachCheckIn:Decodable { let date,feeling:String; let activityId:Int }
 struct CompanionData:Decodable {
@@ -95,6 +102,37 @@ struct CoachCompanionCards:View {
                 }
             }
         }.padding(.vertical, 8)
+    }
+}
+struct CoachBriefingView: View {
+    @EnvironmentObject private var store: CoachStore
+    @Environment(\.dismiss) private var dismiss
+    let briefing: CoachBriefing
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text(briefing.title).font(.largeTitle.bold())
+                    Text(coachTimestamp(briefing.date)).font(.subheadline).foregroundStyle(.secondary)
+                    Text(briefing.body).font(.body).textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Button("Discuss with coach") {
+                        dismiss()
+                        Task { await store.send("Discuss my saved \(briefing.kind) briefing for \(briefing.reference), using fresh training data.") }
+                    }
+                    .runPrimaryActionStyle()
+                    .disabled(store.busy || store.voice.active || store.snapshot?.canUseAI != true)
+                }
+                .padding(24)
+                .frame(maxWidth: 640)
+                .frame(maxWidth: .infinity)
+            }
+            .background { RunAmbientBackdrop() }
+            .navigationTitle("Coaching update")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+        }
     }
 }
 struct RunHistoryView:View {

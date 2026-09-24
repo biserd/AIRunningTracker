@@ -56,6 +56,9 @@ struct CoachTabs: View {
     @State private var selected: CoachSection = .coach
     @State private var draft = ""
     @State private var reminderChannel = "email"
+    @State private var openedBriefing: CoachBriefing?
+    @State private var briefingUnavailable = false
+    @State private var openingBriefing = false
     var body: some View {
         Group {
             if sizeClass == .regular {
@@ -116,6 +119,22 @@ struct CoachTabs: View {
                 }
             }
         }
+        .sheet(item: $openedBriefing) { briefing in
+            CoachBriefingView(briefing: briefing)
+        }
+        .alert("Briefing unavailable", isPresented: $briefingUnavailable) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("This coaching update could not be loaded. Your latest updates are in Coach.")
+        }
+        .overlay(alignment: .top) {
+            if openingBriefing {
+                ProgressView("Opening coaching update…")
+                    .padding(14)
+                    .runGlassSurface(cornerRadius: 16)
+                    .padding(.top, 12)
+            }
+        }
     }
     private var compactTabs: some View {
         TabView(selection: $selected) {
@@ -133,8 +152,32 @@ struct CoachTabs: View {
         selected = target == "schedule" ? .schedule : .coach
         let activity=UserDefaults.standard.integer(forKey:"pushActivity")
         UserDefaults.standard.removeObject(forKey:"pushActivity")
+        let briefing=UserDefaults.standard.string(forKey:"pushBriefing").flatMap(PushBriefingReference.init)
+        UserDefaults.standard.removeObject(forKey:"pushBriefing")
+        let legacyBriefingAt=UserDefaults.standard.double(forKey:"pushLegacyBriefingAt")
+        UserDefaults.standard.removeObject(forKey:"pushLegacyBriefingAt")
+        store.settingsSheet = nil
+        openingBriefing = briefing != nil || legacyBriefingAt > 0
         Task {
             await store.refresh(); try? await store.push.refresh()
+            if let briefing {
+                if let saved = store.companion?.briefings.first(where: briefing.matches) {
+                    openedBriefing = saved
+                } else {
+                    briefingUnavailable = true
+                }
+            } else if legacyBriefingAt > 0 {
+                if let saved = store.companion?.briefings.first(where: { item in
+                    guard let created = item.createdAt else { return false }
+                    let interval = legacyBriefingAt - created.timeIntervalSince1970
+                    return interval >= -60 && interval <= 7200
+                }) {
+                    openedBriefing = saved
+                } else {
+                    briefingUnavailable = true
+                }
+            }
+            openingBriefing = false
             if activity>0, store.snapshot?.state.activities?.contains(where:{$0.id==activity})==true {
                 await store.send("Review my newly synced run ID \(activity), using actual data. Ask how it felt and explain how it relates to my next planned run.")
             }

@@ -15,9 +15,11 @@ export function providerToken(config:ApplePushConfig, now=Math.floor(Date.now()/
   cached={identity,issued:now,jwt:payload+'.'+signature};return cached.jwt;
 }
 export function applePayload(message:ApplePushMessage) {
-  const briefing=message.reference?.startsWith('coach:');
-  return {aps:{alert:{title:'Run Analytics',body:briefing?'Your coaching briefing is ready.':message.kind==='run'?'Your new run has synced. How did it feel?':message.kind==='reminder'?'Your running reminder is ready. Open your schedule.':'Notifications are connected.'},sound:'default'},
+  const briefing=/^coach:(evening|weekly|followup):\d{4}-\d{2}-\d{2}$/.test(message.reference||'')?message.reference:undefined;
+  const briefingBody=briefing?.startsWith('coach:evening:')?'Tomorrow’s run briefing is ready.':briefing?.startsWith('coach:weekly:')?'Your weekly running review is ready.':briefing?'Your coach has a check-in for you.':undefined;
+  return {aps:{alert:{title:'Run Analytics',body:briefingBody|| (message.kind==='run'?'Your new run has synced. How did it feel?':message.kind==='reminder'?'Your running reminder is ready. Open your schedule.':'Notifications are connected.')},sound:'default'},
     destination:message.kind==='reminder'&&!briefing?'schedule':'coach',generation:message.generation,
+    ...(briefing?{briefingReference:briefing}:{}),
     ...(message.kind==='run'&&/^\d+$/.test(message.reference||'')?{activityId:message.reference}:{} )};
 }
 export function sendApplePush(config:ApplePushConfig,message:ApplePushMessage):Promise<ApplePushResult> {
