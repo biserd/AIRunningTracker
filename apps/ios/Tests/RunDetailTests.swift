@@ -17,6 +17,10 @@ final class RunDetailTests:XCTestCase {
         let response=try JSONDecoder().decode(RunDetailResponse.self,from:Data(#"{"activity":{"locked":true}}"#.utf8))
         XCTAssertNil(response.activity.averageHeartrate)
         XCTAssertTrue(response.activity.laps.isEmpty)
+        XCTAssertFalse(response.activity.lapsFetched)
+        let unavailable=try JSONDecoder().decode(RunDetailResponse.self,from:Data(#"{"activity":{"lapsData":"{\"status\":\"not_available\"}"}}"#.utf8))
+        XCTAssertTrue(unavailable.activity.lapsFetched)
+        XCTAssertTrue(unavailable.activity.laps.isEmpty)
     }
     func testScheduleStartsTodayAndSortsDates() throws {
         let json=#"{"today":"2026-09-19","goal":"Run","days":[{"id":"future","date":"2026-09-20","title":"Easy","kind":"easy","minutes":30,"completed":false},{"id":"past","date":"2026-09-18","title":"Rest","kind":"rest","minutes":0,"completed":true},{"id":"today","date":"2026-09-19","title":"Rest","kind":"rest","minutes":0,"completed":false}]}"#
@@ -25,7 +29,11 @@ final class RunDetailTests:XCTestCase {
     }
     @MainActor func testOnlyNumericActivityReadPathAllowed() {
         XCTAssertTrue(CoachAPI.isInsightReadPath("/api/activities/42"))
+        XCTAssertTrue(CoachAPI.isInsightReadPath("/api/activities/42/hydrate"))
         XCTAssertFalse(CoachAPI.isInsightReadPath("/api/activities/42/delete"))
         XCTAssertFalse(CoachAPI.isInsightReadPath("/api/activities/../42"))
+        XCTAssertTrue(CoachAPI.isRunPreparationPath("/api/activities/42/hydrate"))
+        XCTAssertFalse(CoachAPI.isRunPreparationPath("/api/activities/42/delete"))
+        XCTAssertFalse(CoachAPI.isRunPreparationPath("/api/activities/../42/hydrate"))
     }
 }

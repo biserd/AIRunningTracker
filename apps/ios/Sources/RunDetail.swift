@@ -2,6 +2,8 @@ import SwiftUI
 import MapKit
 
 struct RunDetailResponse:Decodable { let activity:RunDetail }
+struct RunPreparationResponse:Decodable { let success:Bool }
+struct RunPreparationStatus:Decodable { let lapsData:String?; let hydrationStatus:String? }
 struct RunDetail:Decodable {
     let formattedDistance:String?
     let formattedPace:String?
@@ -11,7 +13,7 @@ struct RunDetail:Decodable {
     let averageHeartrate:Double?
     let maxHeartrate:Double?
     let totalElevationGain:Double?
-    let lapsData:String?
+    var lapsData:String?
     let polyline:String?
     let detailedPolyline:String?
     let locked:Bool?
@@ -20,6 +22,7 @@ struct RunDetail:Decodable {
         guard let data=lapsData?.data(using:.utf8) else { return [] }
         return (try? JSONDecoder().decode([RunLap].self,from:data)) ?? []
     }
+    var lapsFetched:Bool { lapsData != nil && lapsData != "null" }
 }
 struct RunLap:Decodable {
     let distance:Double?
@@ -59,6 +62,9 @@ struct RunDetailView:View {
     @State private var detail:RunDetail?
     @State private var failure:String?
     @State private var loading=false
+    @State private var preparingLaps=false
+    @State private var preparationFailure:String?
+    @State private var analysisRefresh=0
     private var miles:Bool { store.snapshot?.runner.unitPreference == "miles" }
     var body:some View {
         List {
@@ -76,7 +82,7 @@ struct RunDetailView:View {
                     Task { await store.send("Explain my run ID \(run.id) on \(run.date). Use actual data and relate it to my training plan.") }
                 }.buttonStyle(.borderedProminent).disabled(store.busy || store.voice.active)
             }
-            Section("Coach analysis") { RunAnalysisView(activityID:run.id) }
+            Section("Coach analysis") { RunAnalysisView(activityID:run.id,refreshID:analysisRefresh) }
             if loading { ProgressView("Loading run details…") }
             if let failure { Section { Text(failure); Button("Retry") { Task { await load() } } } }
             if let detail {
@@ -84,7 +90,11 @@ struct RunDetailView:View {
                     Text("Some run details require an eligible subscription.").foregroundStyle(.secondary)
                 }
                 Section("Recorded laps") {
-                    if detail.laps.isEmpty { Text("No lap data recorded for this run.").foregroundStyle(.secondary) }
+                    if !detail.lapsFetched && preparingLaps { ProgressView("Loading laps from Strava…") }
+                    else if !detail.lapsFetched {
+                        Text(preparationFailure ?? "Laps are still being prepared. Pull down to refresh.").foregroundStyle(.secondary)
+                    }
+                    else if detail.laps.isEmpty { Text("Strava did not provide recorded laps for this run.").foregroundStyle(.secondary) }
                     ForEach(Array(detail.laps.enumerated()),id:\.offset) { index,lap in
                         VStack(alignment:.leading,spacing:6) {
                             Text("Lap \(index+1)").font(.headline)
@@ -104,12 +114,30 @@ struct RunDetailView:View {
                 }
             }
         }.navigationTitle(run.name ?? "Run").navigationBarTitleDisplayMode(.inline)
-            .task { await load() }
+            .task(id:run.id) { await load() }
+            .refreshable { await load() }
     }
     private func heartRate(_ value:Double?)->String { value.map { "\(Int($0.rounded())) bpm" } ?? "Not recorded" }
     private func load() async {
-        loading=true; failure=nil; defer { loading=false }
-        do { detail=try await store.api.runDetail(run.id).activity }
-        catch { failure="Could not load the full run details. Please retry." }
+        loading=true; failure=nil; preparationFailure=nil; preparingLaps=true
+        analysisRefresh += 1
+        do { detail=try await store.api.runDetail(run.id).activity; loading=false }
+        catch { failure="Could not load the full run details. Please retry."; loading=false; preparingLaps=false; return }
+        if detail?.locked == true || detail?.deepDiveLocked == true { preparingLaps=false; return }
+        do { _ = try await store.api.prepareRun(run.id) }
+        catch { preparationFailure="Could not prepare laps. Pull down to retry."; preparingLaps=false; return }
+        if detail?.lapsFetched == true { preparingLaps=false; return }
+        for _ in 0..<10 {
+            do { try await Task.sleep(nanoseconds:3_000_000_000) } catch { return }
+            guard !Task.isCancelled else { return }
+            if let status=try? await store.api.runPreparationStatus(run.id) {
+                if status.lapsData != nil { detail?.lapsData=status.lapsData; break }
+                if status.hydrationStatus == "failed" {
+                    preparationFailure="Laps could not be prepared. Please try again later."
+                    break
+                }
+            }
+        }
+        preparingLaps=false
     }
 }

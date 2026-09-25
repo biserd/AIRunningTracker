@@ -34,8 +34,10 @@ struct NativeActivityCalendar:Decodable {
 struct RunAnalysisView:View {
     @EnvironmentObject var store:CoachStore
     let activityID:Int
+    var refreshID=0
     @State private var recap:RunRecapResponse.Recap?
     @State private var loading=true
+    @State private var preparing=false
     @State private var failure:String?
     var body:some View {
         VStack(alignment:.leading,spacing:12) {
@@ -54,23 +56,36 @@ struct RunAnalysisView:View {
                         ForEach(recap.confidenceFlags ?? [],id:\.self) { Text($0).font(.caption).foregroundStyle(.secondary) }
                     }.padding(.vertical,8)
                 }
-            } else { Text("No saved coach analysis for this run yet.").foregroundStyle(.secondary) }
-        }.task(id:activityID) { await load() }
+            } else if preparing {
+                ProgressView("Preparing coach analysis…")
+            } else {
+                Text("Coach analysis is still preparing. Pull down to refresh.").foregroundStyle(.secondary)
+                Button("Retry") { Task { await load() } }.tint(RunBrand.orange)
+            }
+        }.task(id:"\(activityID)-\(refreshID)") { await load() }
     }
     @MainActor private func load() async {
         let runner=store.snapshot?.runner.id
-        loading=true; failure=nil; recap=nil
-        defer { loading=false }
-        do {
-            let response=try await store.api.runRecap(activityID)
-            guard !Task.isCancelled,store.snapshot?.runner.id==runner,!store.needsSignIn else { return }
-            recap=response.recap
-        } catch {
-            guard !Task.isCancelled else { return }
-            if case APIError.server(let status,_)=error, status==402 || status==403 {
-                failure="Coach analysis requires access through your current plan."
-            } else { failure="Coach analysis could not load. Your run details are still available." }
+        loading=true; preparing=false; failure=nil; recap=nil
+        for attempt in 0..<15 {
+            do {
+                let response=try await store.api.runRecap(activityID)
+                guard !Task.isCancelled,store.snapshot?.runner.id==runner,!store.needsSignIn else { return }
+                if let saved=response.recap { recap=saved; loading=false; preparing=false; return }
+                loading=false; preparing=true
+            } catch {
+                guard !Task.isCancelled else { return }
+                loading=false; preparing=false
+                if case APIError.server(let status,_)=error, status==402 || status==403 {
+                    failure="Coach analysis requires access through your current plan."
+                } else { failure="Coach analysis could not load. Your run details are still available." }
+                return
+            }
+            if attempt<14 {
+                do { try await Task.sleep(nanoseconds:4_000_000_000) } catch { return }
+            }
         }
+        preparing=false
     }
 }
 

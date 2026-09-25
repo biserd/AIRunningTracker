@@ -278,6 +278,23 @@ export class StravaWebhookService {
         console.log(`[Strava Webhook] Activity ${stravaId} already in DB for user ${user.id}, skipping insert`);
       }
 
+      // Summary fields make the run visible immediately. Fetch missing laps
+      // and prepare the saved coach recap in the durable queue, including for
+      // a run that a concurrent manual sync inserted first.
+      if (activityDbId) {
+        try {
+          const saved = await storage.getActivityByIdForUser(activityDbId, user.id);
+          if (saved) {
+            const { queueRunEnrichment } = await import("./runEnrichment");
+            await queueRunEnrichment(user, saved);
+          }
+        } catch (enrichmentError) {
+          // Email delivery and the Strava acknowledgement must not be lost if
+          // enrichment cannot be queued. Opening the run can repair it later.
+          console.error(`[Strava Webhook] Could not queue run enrichment for ${stravaId}:`, enrichmentError);
+        }
+      }
+
       // Webhook ingestion is a complete sync path of its own. Reconcile the
       // active plan immediately so the runner sees completion and the correct
       // calendar week before email or Telegram coaching is generated.

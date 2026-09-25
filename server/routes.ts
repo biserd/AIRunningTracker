@@ -5946,6 +5946,29 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Small, owner-scoped status read for native polling. Do not resend the
+  // potentially large streams/route payload on every preparation check.
+  app.get("/api/activities/:activityId/hydrate", authenticateJWT, async (req: any, res) => {
+    const activityId = Number(req.params.activityId);
+    if (!Number.isSafeInteger(activityId) || activityId <= 0) return res.status(400).json({ message: "Invalid activity ID" });
+    if (!await requireCapability(req, res, "activity_deep_dive")) return;
+    try {
+      if (isCloudflareRuntime()) {
+        const { applicationSqlDatabase } = await import("./d1/runtimeDatabase");
+        const row = await applicationSqlDatabase.prepare(
+          "SELECT laps_data,hydration_status FROM activities WHERE id=? AND user_id=?"
+        ).bind(activityId, req.user.id).first<{ laps_data: string | null; hydration_status: string | null }>();
+        if (!row) return res.status(404).json({ message: "Activity not found" });
+        return res.json({ lapsData: row.laps_data, hydrationStatus: row.hydration_status });
+      }
+      const activity = await storage.getActivityByIdForUser(activityId, req.user.id);
+      if (!activity) return res.status(404).json({ message: "Activity not found" });
+      res.json({ lapsData: activity.lapsData, hydrationStatus: activity.hydrationStatus });
+    } catch {
+      res.status(500).json({ message: "Could not read run preparation" });
+    }
+  });
+
   // On-demand activity hydration - fetches streams/laps when needed
   app.post("/api/activities/:activityId/hydrate", authenticateJWT, async (req: any, res) => {
     try {
@@ -5968,41 +5991,21 @@ ${allPages.map(page => `  <url>
 
       // Lock-gate: never hydrate streams/laps for locked free activities.
       const hydrateOwner = await storage.getUser(activity.userId);
+      if (!hydrateOwner) return res.status(404).json({ message: "User not found" });
       const { isPaidPlan: hydrateIsPaid } = await import("./rateLimits");
       if (activity.lockedForFree && !hydrateIsPaid(hydrateOwner?.subscriptionPlan ?? null, hydrateOwner?.subscriptionStatus ?? null)) {
         return res.status(402).json({ locked: true, message: "Upgrade required." });
       }
 
-      // Check if already hydrated
-      if (activity.hydrationStatus === 'complete') {
-        return res.json({ 
-          success: true, 
-          message: "Activity already hydrated",
-          activity 
-        });
-      }
-
-      // Enqueue immediate hydration with highest priority
-      const needsStreams = !activity.streamsData || activity.streamsData === 'null';
-      const needsLaps = !activity.lapsData || activity.lapsData === 'null';
-      
-      if (needsStreams || needsLaps) {
-        await jobQueue.addJob(createHydrateActivityJob(
-          activity.userId,
-          activity.id,
-          activity.stravaId,
-          needsStreams,
-          needsLaps,
-          0 // Priority 0 = highest
-        ));
-      }
-
-      res.json({ 
-        success: true, 
-        message: "Hydration queued",
-        needsStreams,
-        needsLaps,
-        queuePosition: (await jobQueue.getStats()).pending
+      const { queueRunEnrichment } = await import("./services/runEnrichment");
+      const result = await queueRunEnrichment(hydrateOwner, activity);
+      res.json({
+        success: true,
+        message: result.hydrationQueued ? "Run details are being prepared" :
+          result.recapQueued ? "Coach analysis is being prepared" : "Activity already prepared",
+        ...result,
+        queuePosition: result.hydrationQueued || result.recapQueued
+          ? (await jobQueue.getStats()).pending : 0,
       });
     } catch (error: any) {
       console.error('Activity hydration error:', error);

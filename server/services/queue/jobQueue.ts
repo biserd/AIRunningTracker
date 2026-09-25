@@ -13,6 +13,7 @@ import { deleteCachedByPrefix, deleteCachedResponse } from '../../routes';
 import { canAccessCapability } from '@shared/entitlements';
 import { isMigrationStaging, isCloudflareRuntime } from '../../config/runtime';
 import { createJobStore } from '../../runtimeServices';
+import { runRecapJobId } from '../runEnrichmentPolicy';
 import type { JobStore } from './jobStore';
 
 // Track users with active sync operations
@@ -390,14 +391,20 @@ export class JobQueue {
       throw new Error(`Transient hydration errors: ${transientErrors.join('; ')}`);
     }
 
-    if (Object.keys(updates).length > 0) {
-      await storage.updateActivity(activityId, updates);
-    }
+    const streams = updates.streamsData ?? ownedActivity.streamsData;
+    const laps = updates.lapsData ?? ownedActivity.lapsData;
+    const streamsUnavailable = !streams || streams === SENTINEL;
+    const lapsUnavailable = !laps || laps === SENTINEL;
+    updates.hydrationStatus = streamsUnavailable && lapsUnavailable ? 'not_available' :
+      streamsUnavailable || lapsUnavailable ? 'partial' : 'complete';
+    updates.hydrationMissing = { streams: streamsUnavailable, laps: lapsUnavailable };
+    updates.hydratedAt = new Date();
+    await storage.updateActivity(activityId, updates);
 
     const newJobs: Omit<Job, 'id' | 'createdAt' | 'status' | 'attempts'>[] = [];
     
     const user = await storage.getUser(job.userId);
-    if (user && canAccessCapability(user, "ai_coach") &&
+    if (user && user.coachEnabled !== false && canAccessCapability(user, "ai_coach") &&
         user?.coachOnboardingCompleted) {
       const activity = await storage.getActivityById(activityId);
       if (activity?.type?.toLowerCase().includes('run')) {
@@ -480,7 +487,10 @@ export class JobQueue {
       const result = await this.executeJob(job);
       if (!result.success) throw new Error('JOB_EXECUTION_FAILED');
       const children = (result.newJobs || []).map((child, index) => ({ ...child,
-        id: `${job.id}_${index}`, createdAt: new Date(), status: 'pending', attempts: 0 } as Job));
+        id: child.type === 'GENERATE_COACH_RECAP'
+          ? runRecapJobId(child.userId, (child.data as { activityId: number }).activityId)
+          : `${job.id}_${index}`,
+        createdAt: new Date(), status: 'pending', attempts: 0 } as Job));
       if (job.type === 'LIST_ACTIVITIES' && !children.some(child => child.type === 'LIST_ACTIVITIES')) {
         children.push({ id: `${job.id}_finalize`, type: 'FINALIZE_SYNC', userId: job.userId,
           data: {}, priority: 10, createdAt: new Date(), scheduledAt: new Date(), maxAttempts: 20, attempts: 0, status: 'pending' });

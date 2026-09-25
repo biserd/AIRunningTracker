@@ -113,6 +113,14 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
     func deliverApple(_ signed:String) async throws { let _:OK = try await issuerRequest("/api/native/apple/transaction",body:["signedTransaction":signed]) }
     func deleteAccount() async throws { let _:OK = try await issuerRequest("/api/user/delete-with-feedback",body:["reason":"other","details":"Deleted from the iOS app"]) }
     func runDetail(_ id:Int) async throws -> RunDetailResponse { try await issuerRequest("/api/activities/\(id)") }
+    func prepareRun(_ id:Int) async throws -> RunPreparationResponse {
+        guard id > 0 else { throw APIError.invalidResponse }
+        return try await issuerRequest("/api/activities/\(id)/hydrate", body:[:])
+    }
+    func runPreparationStatus(_ id:Int) async throws -> RunPreparationStatus {
+        guard id > 0 else { throw APIError.invalidResponse }
+        return try await issuerRequest("/api/activities/\(id)/hydrate")
+    }
     // Read-only access to the exact APIs used by the main Coach Insights page.
     func analytics(userID:Int) async throws -> InsightAnalytics {
         guard userID > 0 else { throw APIError.invalidResponse }
@@ -127,12 +135,15 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
     func runnerScore(_ id:Int) async throws -> NativeRunnerScore { try await issuerRequest("/api/runner-score/\(id)") }
     func activityCalendar() async throws -> NativeActivityCalendar { try await issuerRequest("/api/activities/heatmap",query:[URLQueryItem(name:"range",value:"6m")]) }
     static func isInsightReadPath(_ path:String)->Bool {
-        path == "/api/coach-recaps" || path == "/api/activities/heatmap" || path.range(of:"^/api/(activities|runner-score|analytics/batch|performance/recovery)/[1-9][0-9]*$",options:.regularExpression) != nil || path.range(of:"^/api/activities/[1-9][0-9]*/coach-recap$",options:.regularExpression) != nil
+        path == "/api/coach-recaps" || path == "/api/activities/heatmap" || path.range(of:"^/api/(activities|runner-score|analytics/batch|performance/recovery)/[1-9][0-9]*$",options:.regularExpression) != nil || path.range(of:"^/api/activities/[1-9][0-9]*/(coach-recap|hydrate)$",options:.regularExpression) != nil
+    }
+    static func isRunPreparationPath(_ path:String)->Bool {
+        path.range(of:"^/api/activities/[1-9][0-9]*/hydrate$",options:.regularExpression) != nil
     }
     private func issuerRequest<T: Decodable>(_ path: String, query: [URLQueryItem] = [], body: [String: Any]? = nil) async throws -> T {
         let current = generation
         let native = (path == "/api/native/onboarding" && body == nil) || (["/api/native/strava/start","/api/native/apple/transaction","/api/user/delete-with-feedback"].contains(path) && body != nil)
-        guard native || (Self.isInsightReadPath(path) && body == nil) || ["/api/coach/experience","/api/coach/companion/reminder-draft","/api/coach/companion/read","/api/coach/companion/preferences","/api/coach/companion/checkin","/mcp/oauth/authorization-request", "/mcp/oauth/authorize/decision", "/api/apple-push/register", "/api/apple-push/unregister", "/api/apple-push/reminders", "/api/apple-push/reminder", "/api/apple-push/test"].contains(path),
+        guard native || (Self.isInsightReadPath(path) && body == nil) || (Self.isRunPreparationPath(path) && body != nil) || ["/api/coach/experience","/api/coach/companion/reminder-draft","/api/coach/companion/read","/api/coach/companion/preferences","/api/coach/companion/checkin","/mcp/oauth/authorization-request", "/mcp/oauth/authorize/decision", "/api/apple-push/register", "/api/apple-push/unregister", "/api/apple-push/reminders", "/api/apple-push/reminder", "/api/apple-push/test"].contains(path),
               let credential, credential.expires > Date() else { throw APIError.missingSession }
         var url = URLComponents(string: "https://aitracker.run" + path)!
         if !query.isEmpty { url.queryItems = query }
