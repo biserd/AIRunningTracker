@@ -6002,7 +6002,7 @@ ${allPages.map(page => `  <url>
       res.json({
         success: true,
         message: result.hydrationQueued ? "Run details are being prepared" :
-          result.recapQueued ? "Coach analysis is being prepared" : "Activity already prepared",
+          result.recapQueued ? "Coach analysis is being prepared" : "Activity already hydrated",
         ...result,
         queuePosition: result.hydrationQueued || result.recapQueued
           ? (await jobQueue.getStats()).pending : 0,
