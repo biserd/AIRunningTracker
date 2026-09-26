@@ -121,6 +121,9 @@ struct RunningProgressView:View {
                     Text(failures.joined(separator:"\n")).foregroundStyle(.secondary)
                     Button("Retry") { Task { await load() } }.buttonStyle(.borderedProminent)
                 }
+                if let calendar {
+                    MileageProgressCard(calendar: calendar)
+                }
                 if let score {
                     InsightCard(title:"Runner Score",symbol:"trophy",color:RunBrand.orange) {
                         Text("\(Int(score.totalScore.rounded())) / 100").font(.largeTitle.bold()).foregroundStyle(RunBrand.orange)
@@ -186,9 +189,16 @@ struct RunningProgressView:View {
             score = NativeRunnerScore(totalScore: 54, isProvisional: false, recentRunCount: 12,
                 components: .init(consistency: 15, performance: 10, volume: 19, improvement: 10),
                 trends: .init(weeklyChange: 1, monthlyChange: 2))
-            calendar = NativeActivityCalendar(days: (1...30).map { day in
-                .init(date: String(format: "2026-09-%02d", day), totalDistanceKm: day % 3 == 0 ? 5 : 0,
-                    activities: day % 3 == 0 ? [.init(id: day, name: "Easy run", distanceKm: 5)] : [])
+            let formatter = DateFormatter()
+            formatter.calendar = MileageHistory.calendar
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.timeZone = MileageHistory.calendar.timeZone
+            formatter.dateFormat = "yyyy-MM-dd"
+            calendar = NativeActivityCalendar(days: (0..<183).map { offset in
+                let date = MileageHistory.calendar.date(byAdding: .day, value: offset, to: MileageHistory.date("2026-04-01")!)!
+                let day = MileageHistory.calendar.component(.day, from: date)
+                return .init(date: formatter.string(from: date), totalDistanceKm: day % 3 == 0 ? 5 : 0,
+                    activities: day % 3 == 0 ? [.init(id: offset, name: "Easy run", distanceKm: 5)] : [])
             }, maxDistance: 5, unitPreference: "miles")
             month = "2026-09"
             return
@@ -202,7 +212,7 @@ struct RunningProgressView:View {
         let results=await(s,c)
         guard !Task.isCancelled,store.snapshot?.runner.id==id,!store.needsSignIn else { return }
         switch results.0 { case .success(let value):score=value; case .failure:failures.append("Runner Score could not load.") }
-        switch results.1 { case .success(let value):calendar=value; if !value.months.contains(month) { month=value.months.last ?? "" }; case .failure:failures.append("Activity calendar could not load.") }
+        switch results.1 { case .success(let value):calendar=value; if !value.months.contains(month) { month=value.months.last ?? "" }; case .failure:failures.append("Running distance and activity calendar could not load.") }
     }
     @MainActor private func fetch<T>(_ action:() async throws -> T) async -> Result<T,Error> { do { return .success(try await action()) } catch { return .failure(error) } }
 }

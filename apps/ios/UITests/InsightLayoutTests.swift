@@ -16,6 +16,15 @@ final class InsightLayoutTests:XCTestCase {
         }
         let insights=app.buttons["Coach insights"]
         XCTAssertTrue(insights.waitForExistence(timeout:10))
+        XCTAssertTrue(app.staticTexts["Running distance"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["mileage-selected-period"].label.contains("This week so far"))
+        capture("Progress weekly distance")
+        app.segmentedControls.buttons["Monthly"].tap()
+        XCTAssertTrue(app.staticTexts["mileage-selected-period"].label.contains("This month so far"))
+        XCTAssertEqual(app.staticTexts["mileage-selected-total"].label, "31.1 mi")
+        capture("Progress monthly distance")
+        app.segmentedControls.buttons["Weekly"].tap()
+        XCTAssertEqual(app.staticTexts["mileage-selected-total"].label, "3.1 mi")
         XCTAssertTrue(app.staticTexts["Runner Score"].waitForExistence(timeout:5))
         XCTAssertTrue(app.staticTexts["54 / 100"].exists)
         capture("Progress overview")
