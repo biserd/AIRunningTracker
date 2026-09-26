@@ -64,7 +64,8 @@ export function parseSeriesFromModel(model: string): { seriesName: string; versi
 }
 
 // Calculate AI resilience score (1-100) based on durability, materials, and construction
-export function calculateResilienceScore(shoe: Partial<InsertRunningShoe>): number {
+export function calculateResilienceScore(shoe: Partial<InsertRunningShoe>): number | null {
+  if (shoe.durabilityRating == null) return null;
   let score = 0;
   
   // Base score from durability rating (1-5 scale, contributes up to 50 points)
@@ -104,7 +105,8 @@ export function calculateResilienceScore(shoe: Partial<InsertRunningShoe>): numb
 }
 
 // Generate AI mileage estimate based on durability and shoe type
-export function generateMileageEstimate(shoe: Partial<InsertRunningShoe>): string {
+export function generateMileageEstimate(shoe: Partial<InsertRunningShoe>): string | null {
+  if (shoe.durabilityRating == null) return null;
   const durability = shoe.durabilityRating || 3;
   
   // Base mileage ranges by durability
@@ -188,7 +190,7 @@ export function generateAINarrative(shoe: Partial<InsertRunningShoe>): string {
   const brand = shoe.brand || "This";
   const model = shoe.model || "shoe";
   const category = shoe.category || "daily_trainer";
-  const weight = shoe.weight || 10;
+  const weight = shoe.weight ?? null;
   const drop = shoe.heelToToeDrop || 10;
   const cushioning = shoe.cushioningLevel || "medium";
   const stability = shoe.stability || "neutral";
@@ -220,7 +222,7 @@ export function generateAINarrative(shoe: Partial<InsertRunningShoe>): string {
   
   let narrative = `The ${brand} ${model} is a ${catName} featuring ${cushDesc}. `;
   narrative += `With a ${drop}mm heel-to-toe drop and ${stabDesc}, `;
-  narrative += `it weighs ${weight} oz (${Math.round(weight * 28.35)}g) per shoe. `;
+  narrative += weight == null ? 'its weight has not been published. ' : `it weighs ${weight} oz (${Math.round(weight * 28.35)}g) per shoe. `;
   
   if (shoe.hasCarbonPlate) {
     narrative += "It features a carbon fiber plate for enhanced propulsion. ";
@@ -254,13 +256,13 @@ export function generateFAQ(shoe: Partial<InsertRunningShoe>): string {
   const brand = shoe.brand || "This";
   const model = shoe.model || "shoe";
   const mileage = generateMileageEstimate(shoe);
-  const weight = shoe.weight || 10;
+  const weight = shoe.weight ?? null;
   const drop = shoe.heelToToeDrop || 10;
   
   const faqs = [
     {
       question: `How long does the ${brand} ${model} last?`,
-      answer: `The ${brand} ${model} typically lasts ${mileage} depending on running style, terrain, and runner weight. Heavier runners or those running on rough surfaces may experience faster wear.`
+      answer: mileage == null ? "No verified mileage estimate is available for this model." : `The ${brand} ${model} typically lasts ${mileage} depending on running style, terrain, and runner weight. Heavier runners or those running on rough surfaces may experience faster wear.`
     },
     {
       question: `Is the ${brand} ${model} good for beginners?`,
@@ -270,7 +272,7 @@ export function generateFAQ(shoe: Partial<InsertRunningShoe>): string {
     },
     {
       question: `What is the weight of the ${brand} ${model}?`,
-      answer: `The ${brand} ${model} weighs ${weight} ounces (${Math.round(weight * 28.35)} grams) per shoe in men's US size 9.`
+      answer: weight == null ? 'Weight has not been published by the source.' : `The ${brand} ${model} weighs ${weight} ounces (${Math.round(weight * 28.35)} grams) per shoe in men's US size 9.`
     },
     {
       question: `What is the heel drop of the ${brand} ${model}?`,
@@ -286,8 +288,8 @@ export function enrichShoeWithAIData(shoe: InsertRunningShoe): InsertRunningShoe
   slug: string;
   seriesName: string;
   versionNumber: number | null;
-  aiResilienceScore: number;
-  aiMileageEstimate: string;
+  aiResilienceScore: number | null;
+  aiMileageEstimate: string | null;
   aiTargetUsage: string;
   aiNarrative: string;
   aiFaq: string;
@@ -356,15 +358,15 @@ export function validateShoeData(shoe: ShoeForValidation): ShoeValidationResult 
     errors.push(`Invalid category: ${shoe.category}. Must be one of: ${VALID_CATEGORIES.join(", ")}`);
   }
 
-  if (typeof shoe.weight !== "number" || shoe.weight <= 0 || shoe.weight > 20) {
+  if (shoe.weight != null && (typeof shoe.weight !== "number" || !Number.isFinite(shoe.weight) || shoe.weight <= 0 || shoe.weight > 20)) {
     errors.push(`Invalid weight: ${shoe.weight}. Must be between 0 and 20 oz`);
   }
 
-  if (typeof shoe.heelStackHeight !== "number" || shoe.heelStackHeight < 0 || shoe.heelStackHeight > 60) {
+  if (shoe.heelStackHeight != null && (typeof shoe.heelStackHeight !== "number" || shoe.heelStackHeight < 0 || shoe.heelStackHeight > 60)) {
     errors.push(`Invalid heel stack height: ${shoe.heelStackHeight}. Must be between 0 and 60mm`);
   }
 
-  if (typeof shoe.forefootStackHeight !== "number" || shoe.forefootStackHeight < 0 || shoe.forefootStackHeight > 50) {
+  if (shoe.forefootStackHeight != null && (typeof shoe.forefootStackHeight !== "number" || shoe.forefootStackHeight < 0 || shoe.forefootStackHeight > 50)) {
     errors.push(`Invalid forefoot stack height: ${shoe.forefootStackHeight}. Must be between 0 and 50mm`);
   }
 
@@ -388,7 +390,8 @@ export function validateShoeData(shoe: ShoeForValidation): ShoeValidationResult 
     errors.push("bestFor must be a non-empty array");
   }
 
-  const validateRating = (name: string, value: number | undefined) => {
+  const validateRating = (name: string, value: number | null | undefined) => {
+    if (value == null) return;
     if (typeof value !== "number" || value < 1 || value > 5) {
       errors.push(`Invalid ${name}: ${value}. Must be between 1 and 5`);
     }
@@ -398,7 +401,7 @@ export function validateShoeData(shoe: ShoeForValidation): ShoeValidationResult 
   validateRating("responsiveness rating", shoe.responsivenessRating);
   validateRating("comfort rating", shoe.comfortRating);
 
-  if (typeof shoe.releaseYear !== "number" || shoe.releaseYear < 2018 || shoe.releaseYear > 2030) {
+  if (shoe.releaseYear != null && (typeof shoe.releaseYear !== "number" || shoe.releaseYear < 2018 || shoe.releaseYear > 2030)) {
     errors.push(`Invalid release year: ${shoe.releaseYear}. Must be between 2018 and 2030`);
   }
 
@@ -408,7 +411,7 @@ export function validateShoeData(shoe: ShoeForValidation): ShoeValidationResult 
     }
   }
 
-  if (shoe.heelStackHeight !== undefined && shoe.forefootStackHeight !== undefined) {
+  if (shoe.heelStackHeight != null && shoe.forefootStackHeight != null) {
     const calculatedDrop = shoe.heelStackHeight - shoe.forefootStackHeight;
     if (shoe.heelToToeDrop !== undefined && Math.abs(calculatedDrop - shoe.heelToToeDrop) > 1) {
       warnings.push(`Drop (${shoe.heelToToeDrop}mm) doesn't match stack difference (${calculatedDrop}mm)`);
@@ -435,22 +438,24 @@ export function normalizeShoeData(shoe: Partial<InsertRunningShoe>): InsertRunni
     brand: shoe.brand?.trim() || "",
     model: shoe.model?.trim() || "",
     category: shoe.category || "daily_trainer",
-    weight: Math.round((shoe.weight || 0) * 10) / 10,
-    heelStackHeight: Math.round((shoe.heelStackHeight || 0) * 10) / 10,
-    forefootStackHeight: Math.round((shoe.forefootStackHeight || 0) * 10) / 10,
+    weight: shoe.weight == null ? null : Math.round(shoe.weight * 10) / 10,
+    availability: shoe.availability ?? 'unknown',
+    availableFrom: shoe.availableFrom ?? null,
+    heelStackHeight: shoe.heelStackHeight == null ? null : Math.round(shoe.heelStackHeight * 10) / 10,
+    forefootStackHeight: shoe.forefootStackHeight == null ? null : Math.round(shoe.forefootStackHeight * 10) / 10,
     heelToToeDrop: Math.round((shoe.heelToToeDrop || 0) * 10) / 10,
     cushioningLevel: shoe.cushioningLevel || "medium",
     stability: shoe.stability || "neutral",
-    hasCarbonPlate: shoe.hasCarbonPlate ?? false,
-    hasSuperFoam: shoe.hasSuperFoam ?? false,
+    hasCarbonPlate: shoe.hasCarbonPlate ?? null,
+    hasSuperFoam: shoe.hasSuperFoam ?? null,
     price: Math.round(shoe.price || 0),
     bestFor: shoe.bestFor || [],
     minRunnerWeight: shoe.minRunnerWeight || null,
     maxRunnerWeight: shoe.maxRunnerWeight || null,
-    durabilityRating: Math.round((shoe.durabilityRating || 3) * 10) / 10,
-    responsivenessRating: Math.round((shoe.responsivenessRating || 3) * 10) / 10,
-    comfortRating: Math.round((shoe.comfortRating || 3) * 10) / 10,
-    releaseYear: shoe.releaseYear || new Date().getFullYear(),
+    durabilityRating: shoe.durabilityRating == null ? null : Math.round(shoe.durabilityRating * 10) / 10,
+    responsivenessRating: shoe.responsivenessRating == null ? null : Math.round(shoe.responsivenessRating * 10) / 10,
+    comfortRating: shoe.comfortRating == null ? null : Math.round(shoe.comfortRating * 10) / 10,
+    releaseYear: shoe.releaseYear ?? null,
     imageUrl: shoe.imageUrl || null,
     description: shoe.description?.trim() || null
   };
@@ -530,7 +535,7 @@ export function validateAllShoes(): {
   };
 }
 
-export function findDuplicates(shoes: InsertRunningShoe[]): { brand: string; model: string; count: number }[] {
+export function findDuplicates(shoes: Pick<InsertRunningShoe, 'brand' | 'model'>[]): { brand: string; model: string; count: number }[] {
   const counts: Record<string, number> = {};
   
   shoes.forEach(shoe => {
@@ -586,6 +591,7 @@ export function categorizeByTrust(shoes: ShoeDataWithMetadata[]): {
 
   shoes.forEach(shoe => {
     switch (shoe.dataSource) {
+      case "running_warehouse":
       case "manufacturer":
         high.push(shoe);
         break;
@@ -593,7 +599,6 @@ export function categorizeByTrust(shoes: ShoeDataWithMetadata[]): {
       case "doctors_of_running":
         medium.push(shoe);
         break;
-      case "running_warehouse":
       case "curated":
       case "user_submitted":
       default:

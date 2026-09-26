@@ -26,6 +26,7 @@ import {
   Trophy
 } from "lucide-react";
 import type { RunningShoe } from "@shared/schema";
+import { shoeNumber, shoeBoolean, safeShoeSource, shoeAvailability } from "@shared/shoeEvidence";
 
 const categoryLabels: Record<string, string> = {
   daily_trainer: "Daily Trainer",
@@ -51,13 +52,14 @@ const cushioningLabels: Record<string, string> = {
 interface ComparisonSpec {
   label: string;
   key: string;
-  getValue: (shoe: RunningShoe) => string | number;
+  getValue: (shoe: RunningShoe) => string | number | null;
   unit?: string;
   isBestFn?: (values: (string | number)[]) => number; // returns index of best value
   icon?: React.ReactNode;
 }
 
 const specs: ComparisonSpec[] = [
+  { label: 'Availability', key: 'availability', getValue: shoeAvailability },
   {
     label: "Weight",
     key: "weight",
@@ -133,12 +135,12 @@ const specs: ComparisonSpec[] = [
   {
     label: "Carbon Plate",
     key: "hasCarbonPlate",
-    getValue: (shoe) => shoe.hasCarbonPlate ? "Yes" : "No",
+    getValue: (shoe) => shoeBoolean(shoe.hasCarbonPlate),
   },
   {
     label: "Super Foam",
     key: "hasSuperFoam",
-    getValue: (shoe) => shoe.hasSuperFoam ? "Yes" : "No",
+    getValue: (shoe) => shoeBoolean(shoe.hasSuperFoam),
   },
   {
     label: "Category",
@@ -329,6 +331,10 @@ export default function ShoeComparePage() {
           </Card>
         ) : (
           <div className="space-y-6">
+            <p className="text-sm text-gray-600">
+              Prices are USD snapshots, not live offers. Running Warehouse specs use men's/unisex US 9; other sources may differ. Untested is not a zero score.
+              {shoes.filter(shoe => safeShoeSource(shoe.sourceUrl)).map(shoe => <a key={shoe.id} href={safeShoeSource(shoe.sourceUrl)} target="_blank" rel="noopener noreferrer" className="ml-3 text-strava-orange underline">{shoe.model} source</a>)}
+            </p>
             {/* Comparison Grid */}
             <div className="overflow-x-auto">
               <div className="min-w-max">
@@ -367,7 +373,7 @@ export default function ShoeComparePage() {
                   <tbody>
                     {specs.map((spec, rowIndex) => {
                       const values = shoes.map(shoe => spec.getValue(shoe));
-                      const bestIndex = spec.isBestFn ? spec.isBestFn(values) : -1;
+                      const bestIndex = spec.isBestFn && values.every(value => value != null) ? spec.isBestFn(values as (string | number)[]) : -1;
                       
                       return (
                         <tr 
@@ -394,8 +400,8 @@ export default function ShoeComparePage() {
                                     <Trophy className="h-4 w-4 text-green-600" />
                                   )}
                                   <span className={`font-medium ${isBest ? 'text-green-700' : 'text-gray-900'}`}>
-                                    {spec.unit === '$' ? `$${value}` : value}
-                                    {spec.unit && spec.unit !== '$' ? ` ${spec.unit}` : ''}
+                                    {value == null ? (spec.key.endsWith('Rating') ? 'Not rated' : shoeNumber(null)) : spec.unit === '$' ? `$${value}` : value}
+                                    {value != null && spec.unit && spec.unit !== '$' ? ` ${spec.unit}` : ''}
                                   </span>
                                 </div>
                               </td>

@@ -21,6 +21,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import type { RunningShoe, ShoeComparison } from "@shared/schema";
+import { ratedHigher, shoeBoolean, safeShoeSource, shoeNumber, shoeAvailability } from "@shared/shoeEvidence";
 
 interface ComparisonWithShoes extends ShoeComparison {
   shoe1: RunningShoe;
@@ -52,8 +53,8 @@ function SpecRow({
   icon 
 }: { 
   label: string; 
-  value1: string | number; 
-  value2: string | number; 
+  value1: string | number | null;
+  value2: string | number | null;
   unit?: string; 
   isBetter1?: boolean; 
   isBetter2?: boolean;
@@ -66,11 +67,11 @@ function SpecRow({
         {label}
       </div>
       <div className={`text-center font-medium ${isBetter1 ? 'text-green-600 dark:text-green-400' : ''}`}>
-        {value1}{unit}
+        {value1 == null ? (unit === '/5' ? 'Not rated' : 'Not published') : `${value1}${unit}`}
         {isBetter1 && <Check className="inline-block ml-1 h-4 w-4" />}
       </div>
       <div className={`text-center font-medium ${isBetter2 ? 'text-green-600 dark:text-green-400' : ''}`}>
-        {value2}{unit}
+        {value2 == null ? (unit === '/5' ? 'Not rated' : 'Not published') : `${value2}${unit}`}
         {isBetter2 && <Check className="inline-block ml-1 h-4 w-4" />}
       </div>
     </div>
@@ -176,7 +177,8 @@ export default function ShoeComparisonDetail() {
             </CardHeader>
             <CardContent className="text-center">
               <p className="text-2xl font-bold text-strava-orange">${shoe1.price}</p>
-              <p className="text-sm text-gray-500">{shoe1.weight} oz</p>
+              <p className="text-sm text-gray-500">{shoeNumber(shoe1.weight, ' oz')}</p>
+              <p className="text-sm text-orange-700">{shoeAvailability(shoe1)}</p>
             </CardContent>
           </Card>
 
@@ -198,7 +200,8 @@ export default function ShoeComparisonDetail() {
             </CardHeader>
             <CardContent className="text-center">
               <p className="text-2xl font-bold text-strava-orange">${shoe2.price}</p>
-              <p className="text-sm text-gray-500">{shoe2.weight} oz</p>
+              <p className="text-sm text-gray-500">{shoeNumber(shoe2.weight, ' oz')}</p>
+              <p className="text-sm text-orange-700">{shoeAvailability(shoe2)}</p>
             </CardContent>
           </Card>
         </div>
@@ -241,6 +244,8 @@ export default function ShoeComparisonDetail() {
         <Card className="mb-8">
           <CardHeader>
             <CardTitle>Specifications Comparison</CardTitle>
+            <p className="text-sm text-gray-600">Prices are USD snapshots, not live offers. Running Warehouse specs use men's/unisex US 9. Missing ratings do not imply worse performance.</p>
+            <div className="flex flex-wrap gap-3">{[shoe1,shoe2].filter(shoe => safeShoeSource(shoe.sourceUrl)).map(shoe => <a key={shoe.id} href={safeShoeSource(shoe.sourceUrl)} target="_blank" rel="noopener noreferrer" className="text-sm text-strava-orange underline">{shoe.model} source</a>)}</div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-4 py-2 border-b font-semibold">
@@ -254,8 +259,8 @@ export default function ShoeComparisonDetail() {
               value1={shoe1.weight} 
               value2={shoe2.weight} 
               unit=" oz"
-              isBetter1={shoe1.weight < shoe2.weight}
-              isBetter2={shoe2.weight < shoe1.weight}
+              isBetter1={ratedHigher(shoe2.weight, shoe1.weight)}
+              isBetter2={ratedHigher(shoe1.weight, shoe2.weight)}
               icon={<Scale className="h-4 w-4" />}
             />
             <SpecRow 
@@ -285,8 +290,8 @@ export default function ShoeComparisonDetail() {
               value1={shoe1.comfortRating} 
               value2={shoe2.comfortRating} 
               unit="/5"
-              isBetter1={shoe1.comfortRating > shoe2.comfortRating}
-              isBetter2={shoe2.comfortRating > shoe1.comfortRating}
+              isBetter1={ratedHigher(shoe1.comfortRating, shoe2.comfortRating)}
+              isBetter2={ratedHigher(shoe2.comfortRating, shoe1.comfortRating)}
               icon={<Star className="h-4 w-4 text-yellow-500" />}
             />
             <SpecRow 
@@ -294,8 +299,8 @@ export default function ShoeComparisonDetail() {
               value1={shoe1.durabilityRating} 
               value2={shoe2.durabilityRating} 
               unit="/5"
-              isBetter1={shoe1.durabilityRating > shoe2.durabilityRating}
-              isBetter2={shoe2.durabilityRating > shoe1.durabilityRating}
+              isBetter1={ratedHigher(shoe1.durabilityRating, shoe2.durabilityRating)}
+              isBetter2={ratedHigher(shoe2.durabilityRating, shoe1.durabilityRating)}
               icon={<Star className="h-4 w-4 text-green-500" />}
             />
             <SpecRow 
@@ -303,23 +308,19 @@ export default function ShoeComparisonDetail() {
               value1={shoe1.responsivenessRating} 
               value2={shoe2.responsivenessRating} 
               unit="/5"
-              isBetter1={shoe1.responsivenessRating > shoe2.responsivenessRating}
-              isBetter2={shoe2.responsivenessRating > shoe1.responsivenessRating}
+              isBetter1={ratedHigher(shoe1.responsivenessRating, shoe2.responsivenessRating)}
+              isBetter2={ratedHigher(shoe2.responsivenessRating, shoe1.responsivenessRating)}
               icon={<Zap className="h-4 w-4 text-blue-500" />}
             />
             <SpecRow 
               label="Carbon Plate" 
-              value1={shoe1.hasCarbonPlate ? 'Yes' : 'No'} 
-              value2={shoe2.hasCarbonPlate ? 'Yes' : 'No'}
-              isBetter1={!!shoe1.hasCarbonPlate && !shoe2.hasCarbonPlate}
-              isBetter2={!!shoe2.hasCarbonPlate && !shoe1.hasCarbonPlate}
+              value1={shoeBoolean(shoe1.hasCarbonPlate)}
+              value2={shoeBoolean(shoe2.hasCarbonPlate)}
             />
             <SpecRow 
               label="Super Foam" 
-              value1={shoe1.hasSuperFoam ? 'Yes' : 'No'} 
-              value2={shoe2.hasSuperFoam ? 'Yes' : 'No'}
-              isBetter1={!!shoe1.hasSuperFoam && !shoe2.hasSuperFoam}
-              isBetter2={!!shoe2.hasSuperFoam && !shoe1.hasSuperFoam}
+              value1={shoeBoolean(shoe1.hasSuperFoam)}
+              value2={shoeBoolean(shoe2.hasSuperFoam)}
             />
           </CardContent>
         </Card>

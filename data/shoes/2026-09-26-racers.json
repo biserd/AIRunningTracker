@@ -1,0 +1,169 @@
+{
+  "verifiedAt": "2026-09-26T00:00:00.000Z",
+  "policy": "Running Warehouse men's US 9 specifications. Unknown measurements and wear-test ratings are null. Prices are observed listed USD offers (including clearance), not MSRP or stock guarantees. Upcoming order dates do not automatically become verified availability. Existing IDs and URLs are preserved by guarded refreshes. Adios Pro 3 remains historical/unverified; do not treat its old measurements as reverified.",
+  "shoes": [
+    {
+      "category": "racing",
+      "cushioningLevel": "soft",
+      "stability": "neutral",
+      "hasCarbonPlate": true,
+      "hasSuperFoam": true,
+      "bestFor": [
+        "racing",
+        "long_runs"
+      ],
+      "dataSource": "running_warehouse",
+      "brand": "Nike",
+      "model": "Alphafly 4",
+      "slug": "nike-alphafly-4",
+      "seriesName": "Alphafly",
+      "versionNumber": 4,
+      "weight": null,
+      "heelStackHeight": null,
+      "forefootStackHeight": null,
+      "heelToToeDrop": 8,
+      "price": 279.95,
+      "releaseYear": 2026,
+      "availability": "upcoming",
+      "availableFrom": "2026-10-29",
+      "description": "Upcoming marathon racer with ZoomX LT foam, a carbon Flyplate and redesigned Air Zoom units. Running Warehouse lists orders from October 29, 2026; weight and stack measurements are not yet published. Not independently wear-tested.",
+      "sourceUrl": "https://www.runningwarehouse.com/Nike_Alphafly_4/descpage-NAFL4M1.html"
+    },
+    {
+      "category": "racing",
+      "cushioningLevel": "soft",
+      "stability": "neutral",
+      "hasCarbonPlate": true,
+      "hasSuperFoam": true,
+      "bestFor": [
+        "racing",
+        "long_runs"
+      ],
+      "dataSource": "running_warehouse",
+      "brand": "Nike",
+      "model": "Alphafly 3",
+      "slug": "nike-alphafly-3",
+      "seriesName": "Alphafly",
+      "versionNumber": 3,
+      "weight": 7,
+      "heelStackHeight": 40,
+      "forefootStackHeight": 32,
+      "heelToToeDrop": 8,
+      "price": 294.95,
+      "releaseYear": 2024,
+      "availability": "available",
+      "description": "Marathon racer combining ZoomX foam, a carbon Flyplate and forefoot Air Zoom units. Running Warehouse lists a men's US 9 weight of 7.0 oz and 40/32 mm stack. Price is the checked Sail/Burg Ash/Phantom offer; other colorways may differ.",
+      "sourceUrl": "https://www.runningwarehouse.com/Nike_Alphafly_Next_3/descpage-NAFLYM2.html",
+      "refresh": {
+        "id": 670,
+        "expected": {
+          "brand": "Nike",
+          "model": "Alphafly 3",
+          "weight": 7,
+          "heelStackHeight": 40,
+          "forefootStackHeight": 32,
+          "heelToToeDrop": 8,
+          "price": 285,
+          "dataSource": "curated",
+          "lastVerified": null
+        }
+      }
+    },
+    {
+      "category": "racing",
+      "cushioningLevel": "soft",
+      "stability": "neutral",
+      "hasCarbonPlate": true,
+      "hasSuperFoam": true,
+      "bestFor": [
+        "racing",
+        "long_runs"
+      ],
+      "dataSource": "running_warehouse",
+      "brand": "Adidas",
+      "model": "Adizero Adios Pro 4",
+      "slug": "adidas-adizero-adios-pro-4",
+      "seriesName": "Adizero Adios Pro",
+      "versionNumber": 4,
+      "weight": 7.1,
+      "heelStackHeight": 39,
+      "forefootStackHeight": 33,
+      "heelToToeDrop": 6,
+      "price": 199.88,
+      "releaseYear": 2025,
+      "availability": "available",
+      "description": "Road racer using Lightstrike Pro foam and carbon EnergyRods 2.0, not a conventional solid plate. Running Warehouse lists 7.1 oz and 39/33 mm stack for men's US 9. The $199.88 checked price is a Blue/Silver/Red clearance offer, not MSRP or a guaranteed future price.",
+      "sourceUrl": "https://www.runningwarehouse.com/adidas_adizero_Adios_Pro_4/descpage-ADAP4M1.html",
+      "refresh": {
+        "id": 188,
+        "expected": {
+          "brand": "Adidas",
+          "model": "Adizero Adios Pro 4",
+          "weight": 7.1,
+          "heelStackHeight": 32,
+          "forefootStackHeight": 26,
+          "heelToToeDrop": 6,
+          "price": 300,
+          "dataSource": "curated",
+          "lastVerified": null
+        }
+      }
+    }
+  ],
+  "comparisons": [
+    {
+      "pair": [
+        "nike-alphafly-3",
+        "nike-alphafly-4"
+      ],
+      "type": "evolution",
+      "differences": [
+        "Alphafly 4 is upcoming: Running Warehouse lists October 29, 2026 ordering; Alphafly 3 was available when checked.",
+        "Alphafly 4 introduces ZoomX LT and redesigned Air Zoom units; Alphafly 3 uses ZoomX with Air Zoom units.",
+        "Both list an 8 mm drop. Alphafly 4 weight and stacks are unpublished, so a numerical weight or stack comparison is not available."
+      ],
+      "verdict": "Choose the available Alphafly 3 if you need a race shoe now. Consider the Alphafly 4 after availability, fit and independent testing are confirmed; newer does not establish better performance."
+    },
+    {
+      "pair": [
+        "adidas-adizero-adios-pro-3",
+        "adidas-adizero-adios-pro-4"
+      ],
+      "type": "evolution",
+      "differences": [
+        "Adios Pro 4 has updated Lightstrike Pro foam and an updated upper; both generations use carbon EnergyRods.",
+        "The Pro 4 source lists 7.1 oz, 39/33 mm stack and 6 mm drop.",
+        "Pro 3 measurements in this catalog remain historical and have not been reverified against a men's Running Warehouse listing. Do not use them to claim a precise improvement.",
+        "The checked Pro 4 price is a colorway-specific clearance offer, not a launch-price comparison."
+      ],
+      "verdict": "Compare fit and ride preference before upgrading. Pro 4 specifications are newly verified; Pro 3 is a historical reference, not a freshly verified measurement baseline."
+    },
+    {
+      "pair": [
+        "nike-alphafly-4",
+        "adidas-adizero-adios-pro-4"
+      ],
+      "type": "category_rival",
+      "differences": [
+        "Alphafly 4 is upcoming; Adios Pro 4 was available when checked.",
+        "Nike uses a Flyplate and Air Zoom units; adidas uses EnergyRods 2.0 without Air Zoom units.",
+        "Listed drop is 8 mm for Nike and 6 mm for adidas. Nike weight and stack remain unpublished."
+      ],
+      "verdict": "Adios Pro 4 is an option for a race purchase now. Alphafly 4 is a future alternative, not a proven upgrade. Choose by fit and training experience rather than an unsupported winner."
+    },
+    {
+      "pair": [
+        "nike-alphafly-3",
+        "adidas-adizero-adios-pro-4"
+      ],
+      "type": "category_rival",
+      "differences": [
+        "Men's US 9 source weights: Alphafly 3 7.0 oz; Adios Pro 4 7.1 oz.",
+        "Source stack/drop: Nike 40/32 mm and 8 mm; adidas 39/33 mm and 6 mm.",
+        "Nike combines a Flyplate with Air Zoom units; adidas uses EnergyRods 2.0.",
+        "Checked prices are colorway-specific offers, not comparable launch prices or live quotes."
+      ],
+      "verdict": "Both are available marathon-racing options when checked. The published specifications describe different constructions, not an overall performance winner. Try the fit and race-pace ride."
+    }
+  ]
+}

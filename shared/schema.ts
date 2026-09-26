@@ -630,9 +630,11 @@ export const runningShoes = pgTable("running_shoes", {
   category: text("category", { 
     enum: ["daily_trainer", "racing", "long_run", "recovery", "speed_training", "trail"] 
   }).notNull(),
-  weight: real("weight").notNull(), // weight in ounces
-  heelStackHeight: real("heel_stack_height").notNull(), // heel stack in mm
-  forefootStackHeight: real("forefoot_stack_height").notNull(), // forefoot stack in mm
+  weight: real("weight"), // ounces; null when not published
+  availability: text("availability").default("unknown"), // unknown | available | upcoming
+  availableFrom: text("available_from"), // source-listed order date, not an automatic stock guarantee
+  heelStackHeight: real("heel_stack_height"), // mm; null when not verified
+  forefootStackHeight: real("forefoot_stack_height"), // mm; null when not verified
   heelToToeDrop: real("heel_to_toe_drop").notNull(), // drop in mm
   cushioningLevel: text("cushioning_level", { 
     enum: ["soft", "medium", "firm"] 
@@ -646,10 +648,10 @@ export const runningShoes = pgTable("running_shoes", {
   bestFor: text("best_for").array().notNull(), // ["speed_work", "racing", "long_runs", "easy_runs", "tempo"]
   minRunnerWeight: integer("min_runner_weight"), // min recommended weight in lbs
   maxRunnerWeight: integer("max_runner_weight"), // max recommended weight in lbs
-  durabilityRating: real("durability_rating").notNull(), // 1-5 scale
-  responsivenessRating: real("responsiveness_rating").notNull(), // 1-5 scale
-  comfortRating: real("comfort_rating").notNull(), // 1-5 scale
-  releaseYear: integer("release_year").notNull(),
+  durabilityRating: real("durability_rating"), // 1-5; null means not rated, never zero
+  responsivenessRating: real("responsiveness_rating"),
+  comfortRating: real("comfort_rating"),
+  releaseYear: integer("release_year"), // null unless release timing is verified
   imageUrl: text("image_url"),
   description: text("description"),
   // AI-generated content for SEO and user insights

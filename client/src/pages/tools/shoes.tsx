@@ -13,6 +13,7 @@ import { SEO } from "@/components/SEO";
 import AppHeader from "@/components/AppHeader";
 import PublicHeader from "@/components/PublicHeader";
 import type { RunningShoe } from "@shared/schema";
+import { shoeNumber, shoeAvailability } from "@shared/shoeEvidence";
 
 const categoryLabels: Record<string, string> = {
   daily_trainer: "Daily Trainer",
@@ -88,6 +89,7 @@ function ShoeCard({ shoe, isInCompare, onToggleCompare, canAddMore }: ShoeCardPr
               <div>
                 <p className="text-sm font-medium text-strava-orange">{shoe.brand}</p>
                 <CardTitle className="text-lg mt-1">{shoe.model}</CardTitle>
+                {shoe.availability === 'upcoming' && <Badge className="mt-2 bg-orange-100 text-orange-900">{shoeAvailability(shoe)}</Badge>}
               </div>
               <Badge variant="secondary" className="bg-gray-100">
                 {categoryLabels[shoe.category] || shoe.category}
@@ -100,7 +102,7 @@ function ShoeCard({ shoe, isInCompare, onToggleCompare, canAddMore }: ShoeCardPr
             <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
               <div className="flex items-center gap-2">
                 <Scale className="h-4 w-4 text-gray-400" />
-                <span>{shoe.weight} oz</span>
+                <span>{shoeNumber(shoe.weight, ' oz')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Ruler className="h-4 w-4 text-gray-400" />
@@ -133,21 +135,21 @@ function ShoeCard({ shoe, isInCompare, onToggleCompare, canAddMore }: ShoeCardPr
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-0.5">
                     <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-                    <span className="text-sm font-medium">{shoe.comfortRating}</span>
+                    <span className="text-sm font-medium">{shoe.comfortRating ?? 'Not rated'}</span>
                   </div>
                   <p className="text-xs text-gray-500">Comfort</p>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-0.5">
                     <Star className="h-3 w-3 text-green-500 fill-green-500" />
-                    <span className="text-sm font-medium">{shoe.durabilityRating}</span>
+                    <span className="text-sm font-medium">{shoe.durabilityRating ?? 'Not rated'}</span>
                   </div>
                   <p className="text-xs text-gray-500">Durability</p>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-0.5">
                     <Star className="h-3 w-3 text-orange-500 fill-orange-500" />
-                    <span className="text-sm font-medium">{shoe.responsivenessRating}</span>
+                    <span className="text-sm font-medium">{shoe.responsivenessRating ?? 'Not rated'}</span>
                   </div>
                   <p className="text-xs text-gray-500">Response</p>
                 </div>
@@ -208,12 +210,6 @@ export default function ShoeDatabasePage() {
   const { data: brands } = useQuery<string[]>({
     queryKey: ['/api/shoes/brands']
   });
-
-  useEffect(() => {
-    if (shoes?.length === 0) {
-      fetch('/api/shoes/seed', { method: 'POST' });
-    }
-  }, [shoes]);
 
   const handleToggleCompare = (slug: string) => {
     setCompareListState(prev => {

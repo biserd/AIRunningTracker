@@ -327,6 +327,8 @@ function generateRelatedToolsForBlog(title: string, category: string): string {
 }
 
 interface ShoeData {
+  availability?: string | null;
+  availableFrom?: string | null;
   brand: string;
   model: string;
   category: string;
@@ -397,7 +399,8 @@ export function renderShoePage(slug: string, shoe: ShoeData, similarShoes?: { br
             <dd>${escapeHtml(shoe.model)}</dd>
             <dt>Category</dt>
             <dd>${escapeHtml(shoe.category.replace(/_/g, ' '))}</dd>
-            ${shoe.weight ? `<dt>Weight</dt><dd>${shoe.weight} oz</dd>` : ''}
+            <dt>Availability</dt><dd>${escapeHtml(shoe.availability === 'upcoming' ? `Upcoming${shoe.availableFrom ? ' — expected ' + shoe.availableFrom : ''}` : shoe.availability === 'available' ? 'Available when checked' : 'Not verified')}</dd>
+            <dt>Weight</dt><dd>${shoe.weight == null ? 'Not published' : shoe.weight + ' oz'}</dd>
             ${shoe.heelToToeDrop != null ? `<dt>Heel-to-Toe Drop</dt><dd>${shoe.heelToToeDrop}mm</dd>` : ''}
             ${shoe.heelStackHeight && shoe.forefootStackHeight ? `<dt>Stack Height</dt><dd>${shoe.heelStackHeight}mm / ${shoe.forefootStackHeight}mm (heel/forefoot)</dd>` : ''}
             ${shoe.cushioningLevel ? `<dt>Cushioning</dt><dd>${escapeHtml(shoe.cushioningLevel)}</dd>` : ''}
@@ -434,6 +437,9 @@ export function renderShoePage(slug: string, shoe: ShoeData, similarShoes?: { br
 }
 
 interface ComparisonShoe {
+  availability?: string | null;
+  availableFrom?: string | null;
+  dataSource?: string | null;
   brand: string;
   model: string;
   weight: number | null;
@@ -453,6 +459,7 @@ interface ComparisonShoe {
 }
 
 interface ComparisonData {
+  keyDifferences?: string | null;
   title: string;
   metaDescription: string | null;
   verdict: string | null;
@@ -650,12 +657,15 @@ export function renderComparisonPage(slug: string, comparison: ComparisonData): 
   const structuredData = generateStructuredData(meta, url, 'WebPage');
   // Spec-driven editorial copy: unique per pair, helps Google index the page
   // instead of treating it as boilerplate.
-  const narrativeHtml =
+  let evidence: string[] = [];
+  try { const parsed = JSON.parse(comparison.keyDifferences || '[]'); if (Array.isArray(parsed)) evidence = parsed.filter((item): item is string => typeof item === 'string'); } catch {}
+  const sourceReviewed = [comparison.shoe1, comparison.shoe2].some(shoe=>shoe?.dataSource === 'running_warehouse');
+  const narrativeHtml = evidence.length ? `<ul>${evidence.map(item=>`<li>${escapeHtml(item)}</li>`).join('')}</ul>` : sourceReviewed ? '<p>Compare published specifications and fit. Missing measurements are unknown, not zero. Prices are snapshots, not live offers.</p>' :
     comparison.shoe1 && comparison.shoe2
       ? generateComparisonNarrative(comparison.shoe1, comparison.shoe2)
       : "";
   const faq =
-    comparison.shoe1 && comparison.shoe2
+    !sourceReviewed && comparison.shoe1 && comparison.shoe2
       ? generateComparisonFaq(comparison.shoe1, comparison.shoe2)
       : [];
   const faqJsonLd = faq.length > 0 ? generateFaqStructuredData(faq) : "";

@@ -22,9 +22,9 @@ function createMetaDescription(shoe1: RunningShoe, shoe2: RunningShoe, type: str
 function generateKeyDifferences(shoe1: RunningShoe, shoe2: RunningShoe): string[] {
   const differences: string[] = [];
   
-  const weightDiff = Math.abs(shoe1.weight - shoe2.weight);
+  const weightDiff = shoe1.weight != null && shoe2.weight != null ? Math.abs(shoe1.weight - shoe2.weight) : 0;
   if (weightDiff >= 0.5) {
-    const lighter = shoe1.weight < shoe2.weight ? shoe1 : shoe2;
+    const lighter = (shoe1.weight ?? Infinity) < (shoe2.weight ?? Infinity) ? shoe1 : shoe2;
     differences.push(`${lighter.brand} ${lighter.model} is ${weightDiff.toFixed(1)} oz lighter`);
   }
   
@@ -39,18 +39,18 @@ function generateKeyDifferences(shoe1: RunningShoe, shoe2: RunningShoe): string[
     differences.push(`Drop differs by ${dropDiff}mm (${shoe1.heelToToeDrop}mm vs ${shoe2.heelToToeDrop}mm)`);
   }
   
-  const stackDiff = Math.abs(shoe1.heelStackHeight - shoe2.heelStackHeight);
+  const stackDiff = shoe1.heelStackHeight != null && shoe2.heelStackHeight != null ? Math.abs(shoe1.heelStackHeight - shoe2.heelStackHeight) : 0;
   if (stackDiff >= 3) {
-    const moreStack = shoe1.heelStackHeight > shoe2.heelStackHeight ? shoe1 : shoe2;
+    const moreStack = (shoe1.heelStackHeight ?? 0) > (shoe2.heelStackHeight ?? 0) ? shoe1 : shoe2;
     differences.push(`${moreStack.brand} ${moreStack.model} has ${stackDiff.toFixed(0)}mm more stack height`);
   }
   
-  if (shoe1.hasCarbonPlate !== shoe2.hasCarbonPlate) {
+  if (shoe1.hasCarbonPlate != null && shoe2.hasCarbonPlate != null && shoe1.hasCarbonPlate !== shoe2.hasCarbonPlate) {
     const withPlate = shoe1.hasCarbonPlate ? shoe1 : shoe2;
     differences.push(`Only ${withPlate.brand} ${withPlate.model} has a carbon plate`);
   }
   
-  if (shoe1.hasSuperFoam !== shoe2.hasSuperFoam) {
+  if (shoe1.hasSuperFoam != null && shoe2.hasSuperFoam != null && shoe1.hasSuperFoam !== shoe2.hasSuperFoam) {
     const withFoam = shoe1.hasSuperFoam ? shoe1 : shoe2;
     differences.push(`${withFoam.brand} ${withFoam.model} uses super foam technology`);
   }
@@ -63,13 +63,18 @@ function generateKeyDifferences(shoe1: RunningShoe, shoe2: RunningShoe): string[
 }
 
 function generateVerdict(shoe1: RunningShoe, shoe2: RunningShoe, type: string): { winner: string | null; reason: string; verdict: string } {
+  if ([shoe1, shoe2].some(shoe => [shoe.durabilityRating, shoe.comfortRating, shoe.responsivenessRating].some(value => value == null))) {
+    return { winner: null, reason: "No comparable wear-test ratings are available; specifications do not establish an overall winner.", verdict: "Compare the intended use, fit, price and published specifications. Try both where possible." };
+  }
   let score1 = 0;
   let score2 = 0;
   
-  if (shoe1.weight < shoe2.weight) score1 += 1; else if (shoe2.weight < shoe1.weight) score2 += 1;
-  if (shoe1.durabilityRating > shoe2.durabilityRating) score1 += 1; else if (shoe2.durabilityRating > shoe1.durabilityRating) score2 += 1;
-  if (shoe1.comfortRating > shoe2.comfortRating) score1 += 1; else if (shoe2.comfortRating > shoe1.comfortRating) score2 += 1;
-  if (shoe1.responsivenessRating > shoe2.responsivenessRating) score1 += 1; else if (shoe2.responsivenessRating > shoe1.responsivenessRating) score2 += 1;
+  if (shoe1.weight != null && shoe2.weight != null) {
+    if (shoe1.weight < shoe2.weight) score1 += 1; else if (shoe2.weight < shoe1.weight) score2 += 1;
+  }
+  if ((shoe1.durabilityRating ?? 0) > (shoe2.durabilityRating ?? 0)) score1 += 1; else if ((shoe2.durabilityRating ?? 0) > (shoe1.durabilityRating ?? 0)) score2 += 1;
+  if ((shoe1.comfortRating ?? 0) > (shoe2.comfortRating ?? 0)) score1 += 1; else if ((shoe2.comfortRating ?? 0) > (shoe1.comfortRating ?? 0)) score2 += 1;
+  if ((shoe1.responsivenessRating ?? 0) > (shoe2.responsivenessRating ?? 0)) score1 += 1; else if ((shoe2.responsivenessRating ?? 0) > (shoe1.responsivenessRating ?? 0)) score2 += 1;
   if (shoe1.hasCarbonPlate && !shoe2.hasCarbonPlate) score1 += 1;
   if (shoe2.hasCarbonPlate && !shoe1.hasCarbonPlate) score2 += 1;
   if (shoe1.hasSuperFoam && !shoe2.hasSuperFoam) score1 += 0.5;
@@ -80,7 +85,7 @@ function generateVerdict(shoe1: RunningShoe, shoe2: RunningShoe, type: string): 
   
   if (score1 > score2 + 1) {
     winner = "shoe1";
-    reason = `The ${shoe1.brand} ${shoe1.model} scores higher on key metrics including ${shoe1.weight < shoe2.weight ? 'weight, ' : ''}${shoe1.durabilityRating > shoe2.durabilityRating ? 'durability, ' : ''}${shoe1.comfortRating > shoe2.comfortRating ? 'comfort' : 'responsiveness'}.`.replace(/, $/, '');
+    reason = `The ${shoe1.brand} ${shoe1.model} scores higher on recorded metrics. These ratings are not a controlled head-to-head test.`;
   } else if (score2 > score1 + 1) {
     winner = "shoe2";
     reason = `The ${shoe2.brand} ${shoe2.model} outperforms in overall metrics${shoe2.hasCarbonPlate ? ', featuring a carbon plate' : ''}.`;
@@ -91,7 +96,7 @@ function generateVerdict(shoe1: RunningShoe, shoe2: RunningShoe, type: string): 
   
   let verdict = "";
   if (type === "evolution") {
-    const newer = (shoe1.versionNumber || shoe1.releaseYear) > (shoe2.versionNumber || shoe2.releaseYear) ? shoe1 : shoe2;
+    const newer = (shoe1.versionNumber ?? shoe1.releaseYear ?? 0) > (shoe2.versionNumber ?? shoe2.releaseYear ?? 0) ? shoe1 : shoe2;
     const older = newer === shoe1 ? shoe2 : shoe1;
     verdict = `The ${newer.brand} ${newer.model} is the latest evolution of the ${older.model} line. ${winner === "tie" ? "Both versions are excellent choices." : `We recommend the ${winner === "shoe1" ? shoe1.model : shoe2.model} for most runners.`}`;
   } else if (type === "category_rival") {

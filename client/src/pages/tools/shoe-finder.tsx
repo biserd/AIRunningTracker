@@ -16,6 +16,7 @@ import { SEO } from "@/components/SEO";
 import AppHeader from "@/components/AppHeader";
 import PublicHeader from "@/components/PublicHeader";
 import type { RunningShoe } from "@shared/schema";
+import { shoeNumber } from "@shared/shoeEvidence";
 
 const categoryLabels: Record<string, string> = {
   daily_trainer: "Daily Trainer",
@@ -263,7 +264,7 @@ export default function ShoeFinderPage() {
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                           <div className="flex items-center gap-2">
                             <Scale className="h-4 w-4 text-gray-400" />
-                            <span>{shoe.weight} oz</span>
+                            <span>{shoeNumber(shoe.weight, ' oz')}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Ruler className="h-4 w-4 text-gray-400" />
@@ -275,7 +276,7 @@ export default function ShoeFinderPage() {
                           </div>
                           <div className="flex items-center gap-2">
                             <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                            <span>{shoe.comfortRating} comfort</span>
+                            <span>{shoe.comfortRating == null ? 'Comfort not rated' : `${shoe.comfortRating} comfort`}</span>
                           </div>
                         </div>
 

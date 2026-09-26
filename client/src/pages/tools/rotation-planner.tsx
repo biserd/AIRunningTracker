@@ -14,6 +14,7 @@ import { SEO } from "@/components/SEO";
 import AppHeader from "@/components/AppHeader";
 import PublicHeader from "@/components/PublicHeader";
 import type { RunningShoe } from "@shared/schema";
+import { shoeNumber } from "@shared/shoeEvidence";
 
 interface RotationItem {
   role: string;
@@ -243,7 +244,7 @@ export default function RotationPlannerPage() {
                                     </div>
                                     <div className="flex items-center gap-1">
                                       <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                                      <span className="text-sm font-medium">{item.shoe.comfortRating}</span>
+                                      <span className="text-sm font-medium">{item.shoe.comfortRating ?? 'Not rated'}</span>
                                     </div>
                                   </div>
                                   
@@ -252,7 +253,7 @@ export default function RotationPlannerPage() {
                                   <div className="grid grid-cols-3 gap-3 text-sm">
                                     <div className="flex items-center gap-1.5">
                                       <Scale className="h-4 w-4 text-gray-400" />
-                                      <span>{item.shoe.weight} oz</span>
+                                      <span>{shoeNumber(item.shoe.weight, ' oz')}</span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                       <Ruler className="h-4 w-4 text-gray-400" />

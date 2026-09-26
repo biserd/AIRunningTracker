@@ -20,6 +20,7 @@ import {
   Star
 } from "lucide-react";
 import type { RunningShoe, ShoeComparison } from "@shared/schema";
+import { shoeNumber } from "@shared/shoeEvidence";
 
 interface ComparisonWithShoes extends ShoeComparison {
   shoe1: RunningShoe;
@@ -70,7 +71,7 @@ function ComparisonCard({ comparison }: { comparison: ComparisonWithShoes }) {
           </h3>
           <div className="flex justify-between text-sm text-gray-500">
             <span>${shoe1.price} vs ${shoe2.price}</span>
-            <span>{shoe1.weight}oz vs {shoe2.weight}oz</span>
+            <span>{shoeNumber(shoe1.weight, ' oz')} vs {shoeNumber(shoe2.weight, ' oz')}</span>
           </div>
           <div className="mt-3 flex items-center text-sm text-strava-orange group-hover:translate-x-1 transition-transform">
             View comparison <ArrowRight className="h-4 w-4 ml-1" />

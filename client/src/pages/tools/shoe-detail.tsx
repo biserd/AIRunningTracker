@@ -41,6 +41,7 @@ import {
   Legend,
 } from "recharts";
 import type { RunningShoe } from "@shared/schema";
+import { averageShoeRating, shoeNumber, safeShoeSource, shoeBoolean, shoeAvailability } from "@shared/shoeEvidence";
 
 const categoryLabels: Record<string, string> = {
   daily_trainer: "Daily Trainer",
@@ -241,7 +242,7 @@ function SeriesComparisonChart({ seriesShoes }: { seriesShoes: RunningShoe[] }) 
                 <p className="font-medium text-sm text-gray-900 dark:text-white">
                   {shoe.model}
                 </p>
-                <p className="text-xs text-gray-500">{shoe.weight} oz • ${shoe.price}</p>
+                <p className="text-xs text-gray-500">{shoeNumber(shoe.weight, ' oz')} • ${shoe.price}</p>
               </div>
             </Link>
           ))}
@@ -298,7 +299,7 @@ function ProductJsonLd({ shoe }: { shoe: RunningShoe }) {
       price: shoe.price,
       priceCurrency: "USD",
     },
-    weight: {
+    weight: shoe.weight == null ? undefined : {
       "@type": "QuantitativeValue",
       value: shoe.weight,
       unitCode: "OZ",
@@ -307,12 +308,12 @@ function ProductJsonLd({ shoe }: { shoe: RunningShoe }) {
       {
         "@type": "PropertyValue",
         name: "Heel Stack Height",
-        value: `${shoe.heelStackHeight}mm`,
+        value: shoeNumber(shoe.heelStackHeight, "mm"),
       },
       {
         "@type": "PropertyValue",
         name: "Forefoot Stack Height",
-        value: `${shoe.forefootStackHeight}mm`,
+        value: shoeNumber(shoe.forefootStackHeight, "mm"),
       },
       {
         "@type": "PropertyValue",
@@ -450,10 +451,7 @@ export default function ShoeDetailPage() {
   }
 
   const { shoe, seriesShoes, hasSeriesData } = data;
-  const avgRating = (
-    (shoe.comfortRating + shoe.durabilityRating + shoe.responsivenessRating) /
-    3
-  ).toFixed(1);
+  const avgRating = averageShoeRating([shoe.comfortRating, shoe.durabilityRating, shoe.responsivenessRating]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -463,7 +461,7 @@ export default function ShoeDetailPage() {
         </title>
         <meta
           name="description"
-          content={`${shoe.brand} ${shoe.model} - ${shoe.description} Weight: ${shoe.weight}oz, Drop: ${shoe.heelToToeDrop}mm, Price: $${shoe.price}. AI-powered insights and series comparison.`}
+          content={`${shoe.brand} ${shoe.model} - ${shoe.description} Weight: ${shoeNumber(shoe.weight, ' oz')}, Drop: ${shoe.heelToToeDrop}mm, Listed price: $${shoe.price}.`}
         />
         <link rel="canonical" href={`https://aitracker.run/tools/shoes/${shoe.slug}`} />
         <meta property="og:title" content={`${shoe.brand} ${shoe.model} | RunAnalytics`} />
@@ -534,6 +532,7 @@ export default function ShoeDetailPage() {
                       )}
                     </div>
                     <p className="text-gray-600 dark:text-gray-400">{shoe.description}</p>
+                    <p className="mt-3 font-semibold text-orange-700">{shoeAvailability(shoe)}</p>
                     <div className="mt-4 rounded-lg bg-gray-50 dark:bg-gray-800 p-3 text-xs text-gray-600 dark:text-gray-300">
                       <strong className="text-gray-900 dark:text-white">Data transparency:</strong>{" "}
                       {shoe.dataSource ? `Source type: ${shoe.dataSource.replace(/_/g, " ")}. ` : "Curated catalog record. "}
@@ -567,18 +566,18 @@ export default function ShoeDetailPage() {
                   <SpecCard
                     icon={Scale}
                     label="Weight"
-                    value={`${shoe.weight} oz`}
-                    subLabel={`${(shoe.weight * 28.35).toFixed(0)}g`}
+                    value={shoeNumber(shoe.weight, ' oz')}
+                    subLabel={shoe.weight == null ? 'Awaiting source measurement' : `${(shoe.weight * 28.35).toFixed(0)}g`}
                   />
                   <SpecCard
                     icon={Ruler}
                     label="Heel Stack"
-                    value={`${shoe.heelStackHeight}mm`}
+                    value={shoeNumber(shoe.heelStackHeight, "mm")}
                   />
                   <SpecCard
                     icon={Ruler}
                     label="Forefoot Stack"
-                    value={`${shoe.forefootStackHeight}mm`}
+                    value={shoeNumber(shoe.forefootStackHeight, "mm")}
                   />
                   <SpecCard
                     icon={TrendingUp}
@@ -611,24 +610,24 @@ export default function ShoeDetailPage() {
                 <div className="grid grid-cols-3 gap-6">
                   <div className="text-center">
                     <div className="mb-2">
-                      <Progress value={shoe.comfortRating * 20} className="h-3" />
+                      {shoe.comfortRating != null && <Progress value={shoe.comfortRating * 20} className="h-3" />}
                     </div>
-                    <p className="text-2xl font-bold text-yellow-600">{shoe.comfortRating}/5</p>
+                    <p className="text-lg font-bold text-yellow-600">{shoe.comfortRating == null ? 'Not rated' : `${shoe.comfortRating}/5`}</p>
                     <p className="text-sm text-gray-500">Comfort</p>
                   </div>
                   <div className="text-center">
                     <div className="mb-2">
-                      <Progress value={shoe.durabilityRating * 20} className="h-3" />
+                      {shoe.durabilityRating != null && <Progress value={shoe.durabilityRating * 20} className="h-3" />}
                     </div>
-                    <p className="text-2xl font-bold text-green-600">{shoe.durabilityRating}/5</p>
+                    <p className="text-lg font-bold text-green-600">{shoe.durabilityRating == null ? 'Not rated' : `${shoe.durabilityRating}/5`}</p>
                     <p className="text-sm text-gray-500">Durability</p>
                   </div>
                   <div className="text-center">
                     <div className="mb-2">
-                      <Progress value={shoe.responsivenessRating * 20} className="h-3" />
+                      {shoe.responsivenessRating != null && <Progress value={shoe.responsivenessRating * 20} className="h-3" />}
                     </div>
                     <p className="text-2xl font-bold text-orange-600">
-                      {shoe.responsivenessRating}/5
+                      {shoe.responsivenessRating == null ? 'Not rated' : `${shoe.responsivenessRating}/5`}
                     </p>
                     <p className="text-sm text-gray-500">Responsiveness</p>
                   </div>
@@ -705,11 +704,11 @@ export default function ShoeDetailPage() {
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
                   <span className="text-gray-600 dark:text-gray-400">Carbon Plate</span>
-                  <span className="font-medium">{shoe.hasCarbonPlate ? "Yes" : "No"}</span>
+                  <span className="font-medium">{shoeBoolean(shoe.hasCarbonPlate)}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
                   <span className="text-gray-600 dark:text-gray-400">Super Foam</span>
-                  <span className="font-medium">{shoe.hasSuperFoam ? "Yes" : "No"}</span>
+                  <span className="font-medium">{shoeBoolean(shoe.hasSuperFoam)}</span>
                 </div>
                 {shoe.releaseYear && (
                   <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800">
@@ -725,6 +724,16 @@ export default function ShoeDetailPage() {
                 )}
               </CardContent>
             </Card>
+
+            {safeShoeSource(shoe.sourceUrl) && <Card>
+              <CardHeader><CardTitle className="text-lg">Sources & specifications</CardTitle></CardHeader>
+              <CardContent className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
+                <p>Source-linked specifications. Running Warehouse entries use its men's/unisex US 9 measurements. Other sources may use different sizes. Prices are recorded US catalog prices, not live offers.</p>
+                <p>Missing ratings and measurements are left unpublished rather than estimated.</p>
+                {shoe.lastVerified && <p>Checked: {new Date(shoe.lastVerified).toLocaleDateString()}</p>}
+                <a href={safeShoeSource(shoe.sourceUrl)} target="_blank" rel="noopener noreferrer" className="inline-block rounded-lg bg-strava-orange px-4 py-2 font-medium text-white">View source</a>
+              </CardContent>
+            </Card>}
 
             {/* Similar Shoes */}
             {similarShoes && similarShoes.length > 0 && (
@@ -785,7 +794,7 @@ export default function ShoeDetailPage() {
                           <div>
                             <p className="font-medium text-sm">{relatedShoe.model}</p>
                             <p className="text-xs text-gray-500">
-                              {relatedShoe.weight} oz • ${relatedShoe.price}
+                              {shoeNumber(relatedShoe.weight, ' oz')} • ${relatedShoe.price}
                             </p>
                           </div>
                           <ChevronRight className="h-4 w-4 text-gray-400" />

@@ -454,6 +454,8 @@ function sanitizeShoe(shoe: RunningShoe) {
     versionNumber: shoe.versionNumber,
     category: shoe.category,
     weightOunces: shoe.weight,
+    availability: shoe.availability,
+    availableFrom: shoe.availableFrom,
     heelStackHeightMm: shoe.heelStackHeight,
     forefootStackHeightMm: shoe.forefootStackHeight,
     heelToToeDropMm: shoe.heelToToeDrop,
@@ -471,6 +473,8 @@ function sanitizeShoe(shoe: RunningShoe) {
     mileageEstimate: shoe.aiMileageEstimate,
     targetUsage: shoe.aiTargetUsage,
     lastVerified: shoe.lastVerified,
+    sourceUrl: shoe.sourceUrl,
+    dataSource: shoe.dataSource,
   };
 }
 
@@ -495,6 +499,7 @@ export async function searchPublicShoes(input: {
   });
   const query = input.query?.trim().toLowerCase();
   const filtered = query ? shoes.filter((shoe) => `${shoe.brand} ${shoe.model} ${shoe.seriesName || ""} ${shoe.category}`.toLowerCase().includes(query)) : shoes;
+  filtered.sort((a,b) => (b.lastVerified ? new Date(b.lastVerified).getTime() : 0) - (a.lastVerified ? new Date(a.lastVerified).getTime() : 0) || a.brand.localeCompare(b.brand) || a.model.localeCompare(b.model));
   return { shoes: filtered.slice(0, limit).map(sanitizeShoe), returned: Math.min(filtered.length, limit), totalMatches: filtered.length, truncated: filtered.length > limit };
 }
 
@@ -560,7 +565,7 @@ export async function comparePublicShoes(slugs: string[]) {
       cushioningLevel: shoe.cushioningLevel,
       bestFor: shoe.bestFor,
     })),
-    limitation: "Catalog specifications support comparison but do not replace fit testing or medical advice.",
+    limitation: "Source-linked specs. Running Warehouse entries use men's/unisex US 9; other sources may use different sizes. USD catalog prices are not live offers. Null ratings/specs mean not verified, not zero or worse performance. Fit testing still matters.",
   };
 }
 

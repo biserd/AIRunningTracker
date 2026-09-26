@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import * as fs from "fs";
 import * as path from "path";
 import { storage, RUNNING_ACTIVITY_TYPES } from "./storage";
+import { canRecommendShoe } from "@shared/shoeEvidence";
 import { stravaService } from "./services/strava";
 import { stravaClient } from "./services/stravaClient";
 import { jobQueue, createListActivitiesJob, createHydrateActivityJob, metrics } from "./services/queue";
@@ -921,6 +922,8 @@ ${allPages.map(page => `  <url>
           model: shoe.model,
           category: shoe.category,
           weight: shoe.weight,
+          availability: shoe.availability,
+          availableFrom: shoe.availableFrom,
           heelToToeDrop: shoe.heelToToeDrop,
           heelStackHeight: shoe.heelStackHeight,
           forefootStackHeight: shoe.forefootStackHeight,
@@ -1004,10 +1007,14 @@ ${allPages.map(page => `  <url>
           title: comparison.title,
           metaDescription: comparison.metaDescription,
           verdict: comparison.verdict,
+          keyDifferences: comparison.keyDifferences,
           shoe1: shoe1 ? {
             brand: shoe1.brand,
             model: shoe1.model,
             weight: shoe1.weight,
+            availability: shoe1.availability,
+            availableFrom: shoe1.availableFrom,
+            dataSource: shoe1.dataSource,
             heelToToeDrop: shoe1.heelToToeDrop,
             category: shoe1.category,
             price: shoe1.price,
@@ -1024,6 +1031,9 @@ ${allPages.map(page => `  <url>
             brand: shoe2.brand,
             model: shoe2.model,
             weight: shoe2.weight,
+            availability: shoe2.availability,
+            availableFrom: shoe2.availableFrom,
+            dataSource: shoe2.dataSource,
             heelToToeDrop: shoe2.heelToToeDrop,
             category: shoe2.category,
             price: shoe2.price,
@@ -7327,7 +7337,10 @@ ${allPages.map(page => `  <url>
       if (stability) filters.stability = stability as string;
 
       const shoes = await storage.getShoes(filters);
-      res.json(shoes);
+      const search = typeof req.query.q === 'string' ? req.query.q.trim().toLowerCase().slice(0,120) : '';
+      const matches = search ? shoes.filter(shoe => search.split(/\s+/).every(word => `${shoe.brand} ${shoe.model} ${shoe.seriesName || ''}`.toLowerCase().includes(word))) : shoes;
+      if (req.query.sort === 'verified') matches.sort((a,b) => (b.lastVerified ? new Date(b.lastVerified).getTime() : 0) - (a.lastVerified ? new Date(a.lastVerified).getTime() : 0) || a.brand.localeCompare(b.brand) || a.model.localeCompare(b.model));
+      res.json(matches);
     } catch (error: any) {
       console.error('Get shoes error:', error);
       res.status(500).json({ message: error.message || "Failed to get shoes" });
@@ -7338,7 +7351,7 @@ ${allPages.map(page => `  <url>
   app.get("/api/shoes/brands", async (req, res) => {
     try {
       const shoes = await storage.getShoes({});
-      const brands = [...new Set(shoes.map(s => s.brand))].sort();
+      const brands = Array.from(new Set(shoes.map(s => s.brand))).sort();
       res.json(brands);
     } catch (error: any) {
       console.error('Get shoe brands error:', error);
@@ -7359,6 +7372,7 @@ ${allPages.map(page => `  <url>
       
       // Filter and score shoes based on user profile
       const recommendations = allShoes
+        .filter(canRecommendShoe)
         .map(shoe => {
           let score = 0;
           
@@ -7368,7 +7382,7 @@ ${allPages.map(page => `  <url>
               score += 30;
             } else if (userWeight > shoe.maxRunnerWeight) {
               // Heavier runners need more cushion/durability
-              if (shoe.cushioningLevel === 'soft' || shoe.durabilityRating >= 4) {
+              if (shoe.cushioningLevel === 'soft') {
                 score += 15;
               }
             }
@@ -7400,10 +7414,7 @@ ${allPages.map(page => `  <url>
             score += 15;
           }
           
-          // Quality ratings bonus
-          score += shoe.comfortRating * 2;
-          score += shoe.durabilityRating * 1.5;
-          score += shoe.responsivenessRating * 1.5;
+          // Rank suitability, not mixed-source/untested performance ratings.
           
           return { shoe, score };
         })
@@ -7430,22 +7441,22 @@ ${allPages.map(page => `  <url>
       // Helper function to find best shoe for category
       const findBestForCategory = (category: string, preference: 'cushion' | 'responsive' | 'balanced') => {
         return allShoes
+          .filter(canRecommendShoe)
           .filter(s => s.category === category)
           .filter(s => {
             // For heavier runners, prefer more durable/cushioned options
             if (userWeight > 180) {
-              return s.durabilityRating >= 3.5 || s.cushioningLevel === 'soft';
+              return s.cushioningLevel === 'soft';
             }
             return true;
           })
           .sort((a, b) => {
             if (preference === 'cushion') {
-              return b.comfortRating - a.comfortRating;
+              return Number(b.cushioningLevel === 'soft') - Number(a.cushioningLevel === 'soft') || a.price - b.price;
             } else if (preference === 'responsive') {
-              return b.responsivenessRating - a.responsivenessRating;
+              return (a.weight ?? Infinity) - (b.weight ?? Infinity);
             }
-            return (b.comfortRating + b.responsivenessRating + b.durabilityRating) - 
-                   (a.comfortRating + a.responsivenessRating + a.durabilityRating);
+            return a.price - b.price || (a.weight ?? Infinity) - (b.weight ?? Infinity);
           })[0];
       };
       

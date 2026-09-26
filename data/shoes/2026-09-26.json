@@ -1,0 +1,396 @@
+{
+  "verifiedAt": "2026-09-26T00:00:00.000Z",
+  "policy": "Running Warehouse is the authoritative primary source for men's/unisex US 9 weight (single shoe with laces), stack and listed drop. Prices are its observed regular US prices, not guaranteed live offers or MSRP. Manufacturer sources are retained as cross-checks only. Category, cushioning and use tags are editorial mappings, not test scores. Unknown release years and untested ratings remain null. Colourways are not separate models.",
+  "shoes": [
+    {
+      "brand": "ASICS",
+      "model": "SUPERBLAST 3",
+      "slug": "asics-superblast-3",
+      "seriesName": "Superblast",
+      "versionNumber": 3,
+      "category": "long_run",
+      "weight": 8.1,
+      "heelStackHeight": 46,
+      "forefootStackHeight": 38,
+      "heelToToeDrop": 8,
+      "cushioningLevel": "soft",
+      "stability": "neutral",
+      "hasCarbonPlate": false,
+      "hasSuperFoam": true,
+      "price": 209.95,
+      "bestFor": [
+        "long_runs",
+        "easy_runs",
+        "tempo"
+      ],
+      "releaseYear": 2026,
+      "description": "High-stack neutral trainer with FF LEAP and FF BLAST PLUS foam. Running Warehouse specs use men's US 9, single shoe including laces. Not independently wear-tested by Run Analytics.",
+      "sourceUrl": "https://www.runningwarehouse.com/ASICS_SUPERBLAST_3/descpage-AS3SB2.html",
+      "sources": [
+        "https://www.runningwarehouse.com/ASICS_SUPERBLAST_3/descpage-AS3SB2.html",
+        "https://www.asics.com/us/en-us/superblast-3/p/ANA_1013A177-100.html",
+        "https://www.asics.com/us/en-us/blog/your-guide-to-asics-bounce-shoes/",
+        "https://corp.asics.com/en/press/article/unleash-more-energy-to-move-body-and-mind-%E2%80%93-asics-launches-the-next-generation-superblasttm-3-with-new-ff-leaptm-foam-technology"
+      ],
+      "dataSource": "running_warehouse"
+    },
+    {
+      "brand": "ASICS",
+      "model": "NOVABLAST 6",
+      "slug": "asics-novablast-6",
+      "seriesName": "Novablast",
+      "versionNumber": 6,
+      "category": "daily_trainer",
+      "weight": 8.8,
+      "heelStackHeight": 42,
+      "forefootStackHeight": 34,
+      "heelToToeDrop": 8,
+      "cushioningLevel": "soft",
+      "stability": "neutral",
+      "hasCarbonPlate": false,
+      "hasSuperFoam": true,
+      "price": 154.95,
+      "bestFor": [
+        "easy_runs",
+        "long_runs",
+        "tempo"
+      ],
+      "releaseYear": null,
+      "description": "Neutral daily trainer with FF BLAST MAX and a forefoot FF TURBO SQUARED pod. Running Warehouse specs use men's US 9, single shoe including laces. Not independently wear-tested by Run Analytics.",
+      "sourceUrl": "https://www.runningwarehouse.com/ASICS_Novablast_6/descpage-ANB6M3.html",
+      "sources": [
+        "https://www.runningwarehouse.com/ASICS_Novablast_6/descpage-ANB6M3.html",
+        "https://www.asics.com/us/en-us/novablast-6/p/ANA_1011C243-100.html",
+        "https://www.asics.com/us/en-us/blog/your-guide-to-asics-bounce-shoes/"
+      ],
+      "dataSource": "running_warehouse"
+    },
+    {
+      "brand": "Brooks",
+      "model": "Glycerin 23",
+      "slug": "brooks-glycerin-23",
+      "seriesName": "Glycerin",
+      "versionNumber": 23,
+      "category": "daily_trainer",
+      "weight": 10.9,
+      "heelStackHeight": 39,
+      "forefootStackHeight": 31,
+      "heelToToeDrop": 8,
+      "cushioningLevel": "soft",
+      "stability": "neutral",
+      "hasCarbonPlate": false,
+      "hasSuperFoam": null,
+      "price": 174.95,
+      "bestFor": [
+        "easy_runs",
+        "long_runs"
+      ],
+      "releaseYear": null,
+      "description": "Cushioned neutral daily trainer with DNA TUNED foam; distinct from Glycerin GTS. Running Warehouse specs use men's US 9, single shoe including laces. Not independently wear-tested by Run Analytics.",
+      "sourceUrl": "https://www.runningwarehouse.com/Brooks_Glycerin_23/descpage-B23GLM1.html",
+      "sources": [
+        "https://www.runningwarehouse.com/Brooks_Glycerin_23/descpage-B23GLM1.html",
+        "https://www.brooksrunning.com/en_us/mens/shoes/road-running-shoes/glycerin-23/1104761D164.110.html"
+      ],
+      "dataSource": "running_warehouse"
+    },
+    {
+      "brand": "Brooks",
+      "model": "Ghost 18",
+      "slug": "brooks-ghost-18",
+      "seriesName": "Ghost",
+      "versionNumber": 18,
+      "category": "daily_trainer",
+      "weight": 10,
+      "heelStackHeight": 36,
+      "forefootStackHeight": 26,
+      "heelToToeDrop": 10,
+      "cushioningLevel": "medium",
+      "stability": "neutral",
+      "hasCarbonPlate": false,
+      "hasSuperFoam": null,
+      "price": 149.95,
+      "bestFor": [
+        "easy_runs",
+        "long_runs"
+      ],
+      "releaseYear": null,
+      "description": "Neutral daily trainer using DNA LOFT v3 and RoadTack rubber; not Ghost Max or GTX. Running Warehouse specs use men's US 9, single shoe including laces. Not independently wear-tested by Run Analytics.",
+      "sourceUrl": "https://www.runningwarehouse.com/Brooks_Ghost_18/descpage-B18GHM1.html",
+      "sources": [
+        "https://www.runningwarehouse.com/Brooks_Ghost_18/descpage-B18GHM1.html",
+        "https://www.brooksrunning.com/en_us/mens/shoes/road-running-shoes/ghost-18/1104931D429.095.html",
+        "https://www.brooksrunning.com/en_us/mens/shoes/road-running-shoes/glycerin-23/1104761D070.070.html"
+      ],
+      "dataSource": "running_warehouse"
+    },
+    {
+      "brand": "Nike",
+      "model": "Pegasus 42",
+      "slug": "nike-pegasus-42",
+      "seriesName": "Pegasus",
+      "versionNumber": 42,
+      "category": "daily_trainer",
+      "weight": 10.3,
+      "heelStackHeight": 38,
+      "forefootStackHeight": 28,
+      "heelToToeDrop": 10,
+      "cushioningLevel": "medium",
+      "stability": "neutral",
+      "hasCarbonPlate": false,
+      "hasSuperFoam": false,
+      "price": 144.95,
+      "bestFor": [
+        "easy_runs",
+        "long_runs",
+        "tempo"
+      ],
+      "releaseYear": 2026,
+      "description": "ReactX daily trainer with a full-length Air Zoom unit. Running Warehouse specs use men's US 9, single shoe including laces. Not independently wear-tested by Run Analytics.",
+      "sourceUrl": "https://www.runningwarehouse.com/Nike_Pegasus_42/descpage-NAP42M7.html",
+      "sources": [
+        "https://www.runningwarehouse.com/Nike_Pegasus_42/descpage-NAP42M7.html",
+        "https://www.nike.com/t/pegasus-42-mens-road-running-shoes-S1bYkOza",
+        "https://about.nike.com/en/newsroom/releases/nike-pegasus-42-official-images"
+      ],
+      "dataSource": "running_warehouse"
+    },
+    {
+      "brand": "New Balance",
+      "model": "1080v15",
+      "slug": "new-balance-1080v15",
+      "seriesName": "1080",
+      "versionNumber": 15,
+      "category": "daily_trainer",
+      "weight": 9.1,
+      "heelStackHeight": 38,
+      "forefootStackHeight": 32,
+      "heelToToeDrop": 6,
+      "cushioningLevel": "soft",
+      "stability": "neutral",
+      "hasCarbonPlate": false,
+      "hasSuperFoam": null,
+      "price": 169.95,
+      "bestFor": [
+        "easy_runs",
+        "long_runs"
+      ],
+      "releaseYear": null,
+      "description": "Neutral daily trainer using Infinion TPEE/EVA foam. Running Warehouse specs use men's US 9, single shoe including laces. Not independently wear-tested by Run Analytics.",
+      "sourceUrl": "https://www.runningwarehouse.com/New_Balance_1080_v15/descpage-NM80156.html",
+      "sources": [
+        "https://www.runningwarehouse.com/New_Balance_1080_v15/descpage-NM80156.html",
+        "https://www.newbalance.com/pd/1080v15/M10802LH-D-13.html"
+      ],
+      "dataSource": "running_warehouse"
+    },
+    {
+      "brand": "Puma",
+      "model": "Deviate NITRO 4",
+      "slug": "puma-deviate-nitro-4",
+      "seriesName": "Deviate Nitro",
+      "versionNumber": 4,
+      "category": "speed_training",
+      "weight": 8.5,
+      "heelStackHeight": 35,
+      "forefootStackHeight": 27,
+      "heelToToeDrop": 8,
+      "cushioningLevel": "medium",
+      "stability": "neutral",
+      "hasCarbonPlate": true,
+      "hasSuperFoam": true,
+      "price": 169.95,
+      "bestFor": [
+        "tempo",
+        "speed_work",
+        "long_runs"
+      ],
+      "releaseYear": null,
+      "description": "Workout trainer with NITROFOAM ELITE and a carbon-composite PWRPLATE; not the Deviate Elite. Running Warehouse specs use men's US 9, single shoe including laces. Not independently wear-tested by Run Analytics.",
+      "sourceUrl": "https://www.runningwarehouse.com/PUMA_Deviate_Nitro_4/descpage-PDN4M03.html",
+      "sources": [
+        "https://www.runningwarehouse.com/PUMA_Deviate_Nitro_4/descpage-PDN4M03.html",
+        "https://us.puma.com/us/en/pd/deviate-nitro-4-mens-road-running-shoes/312123?swatch=04"
+      ],
+      "dataSource": "running_warehouse"
+    },
+    {
+      "brand": "Saucony",
+      "model": "Endorphin Azura",
+      "slug": "saucony-endorphin-azura",
+      "seriesName": "Endorphin Azura",
+      "versionNumber": null,
+      "category": "daily_trainer",
+      "weight": 8.6,
+      "heelStackHeight": 41,
+      "forefootStackHeight": 33,
+      "heelToToeDrop": 8,
+      "cushioningLevel": "soft",
+      "stability": "neutral",
+      "hasCarbonPlate": false,
+      "hasSuperFoam": true,
+      "price": 149.95,
+      "bestFor": [
+        "easy_runs",
+        "tempo"
+      ],
+      "releaseYear": null,
+      "description": "Non-plated trainer with PWRRUN PB foam and SPEEDROLL geometry. Running Warehouse specs use men's US 9, single shoe including laces. Not independently wear-tested by Run Analytics.",
+      "sourceUrl": "https://www.runningwarehouse.com/Saucony_Endorphin_Azura/descpage-SEAZM6.html",
+      "sources": [
+        "https://www.runningwarehouse.com/Saucony_Endorphin_Azura/descpage-SEAZM6.html",
+        "https://www.saucony.com/en/endorphin-azura/60807M.html",
+        "https://www.saucony.com/en/endorphin-collection/"
+      ],
+      "dataSource": "running_warehouse"
+    },
+    {
+      "brand": "Saucony",
+      "model": "Endorphin Elite 3",
+      "slug": "saucony-endorphin-elite-3",
+      "seriesName": "Endorphin Elite",
+      "versionNumber": 3,
+      "category": "racing",
+      "weight": 7.4,
+      "heelStackHeight": 40,
+      "forefootStackHeight": 32,
+      "heelToToeDrop": 8,
+      "cushioningLevel": "soft",
+      "stability": "neutral",
+      "hasCarbonPlate": true,
+      "hasSuperFoam": true,
+      "price": 289.95,
+      "bestFor": [
+        "racing"
+      ],
+      "releaseYear": null,
+      "description": "Race shoe with IncrediRUN foam and a slotted carbon plate. Running Warehouse specs use men's US 9, single shoe including laces. Not independently wear-tested by Run Analytics.",
+      "sourceUrl": "https://www.runningwarehouse.com/Saucony_Endorphin_Elite_3/descpage-SEE3U02.html",
+      "sources": [
+        "https://www.runningwarehouse.com/Saucony_Endorphin_Elite_3/descpage-SEE3U02.html",
+        "https://www.saucony.com/en/endorphin-elite-3/61243U.html",
+        "https://www.saucony.com/en/endorphin-collection/"
+      ],
+      "dataSource": "running_warehouse"
+    },
+    {
+      "brand": "Saucony",
+      "model": "Peregrine 16",
+      "slug": "saucony-peregrine-16",
+      "seriesName": "Peregrine",
+      "versionNumber": 16,
+      "category": "trail",
+      "weight": 10,
+      "heelStackHeight": 33,
+      "forefootStackHeight": 29,
+      "heelToToeDrop": 4,
+      "cushioningLevel": "medium",
+      "stability": "neutral",
+      "hasCarbonPlate": false,
+      "hasSuperFoam": false,
+      "price": 149.95,
+      "bestFor": [
+        "trails",
+        "long_runs"
+      ],
+      "releaseYear": null,
+      "description": "Standard-width trail shoe with PWRRUN foam, a rock guard and Vibram Megagrip outsole. Running Warehouse specs use men's US 9, single shoe including laces. Not independently wear-tested by Run Analytics.",
+      "sourceUrl": "https://www.runningwarehouse.com/Saucony_Peregrine_16/descpage-SP16M7.html",
+      "sources": [
+        "https://www.runningwarehouse.com/Saucony_Peregrine_16/descpage-SP16M7.html",
+        "https://www.saucony.com/en/peregrine-16-wide/60849M.html"
+      ],
+      "dataSource": "running_warehouse"
+    },
+    {
+      "brand": "Saucony",
+      "model": "Guide 19",
+      "slug": "saucony-guide-19",
+      "seriesName": "Guide",
+      "versionNumber": 19,
+      "category": "daily_trainer",
+      "weight": 10.3,
+      "heelStackHeight": 37,
+      "forefootStackHeight": 31,
+      "heelToToeDrop": 6,
+      "cushioningLevel": "soft",
+      "stability": "mild_stability",
+      "hasCarbonPlate": false,
+      "hasSuperFoam": false,
+      "price": 149.95,
+      "bestFor": [
+        "easy_runs",
+        "long_runs"
+      ],
+      "releaseYear": null,
+      "description": "Support-oriented daily trainer with PWRRUN foam and CenterPath geometry. Running Warehouse specs use men's US 9, single shoe including laces. Not independently wear-tested by Run Analytics.",
+      "sourceUrl": "https://www.runningwarehouse.com/Saucony_Guide_19/descpage-SG19M2.html",
+      "sources": [
+        "https://www.runningwarehouse.com/Saucony_Guide_19/descpage-SG19M2.html",
+        "https://www.saucony.com/en/guide-19/60838M.html",
+        "https://www.saucony.com/UK/en_GB/guide-19-prism/62408M.html"
+      ],
+      "dataSource": "running_warehouse"
+    },
+    {
+      "brand": "Hoka",
+      "model": "Mach 7",
+      "slug": "hoka-mach-7",
+      "seriesName": "Mach",
+      "versionNumber": 7,
+      "category": "daily_trainer",
+      "weight": 8.5,
+      "heelStackHeight": 37,
+      "forefootStackHeight": 32,
+      "heelToToeDrop": 5,
+      "cushioningLevel": "medium",
+      "stability": "neutral",
+      "hasCarbonPlate": false,
+      "hasSuperFoam": false,
+      "price": 144.95,
+      "bestFor": [
+        "easy_runs",
+        "tempo"
+      ],
+      "releaseYear": null,
+      "description": "Non-plated road trainer with supercritical EVA cushioning. Running Warehouse specs use men's US 9, single shoe including laces. Not independently wear-tested by Run Analytics.",
+      "sourceUrl": "https://www.runningwarehouse.com/HOKA_Mach_7/descpage-HM7M01.html",
+      "sources": [
+        "https://www.runningwarehouse.com/HOKA_Mach_7/descpage-HM7M01.html",
+        "https://www.runningwarehouse.com/reviews/HOKA-shoe-reviews/hoka-mach-7.html"
+      ],
+      "dataSource": "running_warehouse"
+    }
+  ],
+  "corrections": [],
+  "comparisons": [
+    [
+      "asics-superblast-3",
+      "asics-novablast-6"
+    ],
+    [
+      "brooks-ghost-18",
+      "nike-pegasus-42"
+    ],
+    [
+      "brooks-glycerin-23",
+      "new-balance-1080v15"
+    ],
+    [
+      "saucony-endorphin-azura",
+      "puma-deviate-nitro-4"
+    ],
+    [
+      "saucony-endorphin-elite-3",
+      "puma-deviate-nitro-4"
+    ],
+    [
+      "saucony-guide-19",
+      "brooks-ghost-18"
+    ],
+    [
+      "hoka-mach-7",
+      "saucony-endorphin-azura"
+    ]
+  ]
+}
