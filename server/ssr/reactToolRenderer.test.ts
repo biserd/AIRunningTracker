@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
+import { renderToString } from "react-dom/server";
+import { QueryClient } from "@tanstack/react-query";
+import { useParams } from "wouter";
 
 const publicToolPaths = [
   "/tools",
@@ -34,4 +37,19 @@ test("public tool routes produce server-rendered app markup", async () => {
   }
 
   assert.equal(await renderReactToolPage("/dashboard"), null);
+});
+
+test("public shoe and comparison entries provide their URL slug to the component", async () => {
+  (globalThis as typeof globalThis & { React: typeof React }).React = React;
+  const { PublicToolApp } = await import("../../client/src/publicToolApp");
+  const Probe = () => React.createElement("output", null, useParams<{slug:string}>().slug);
+  for (const [path, slug] of [
+    ["/tools/shoes/nike-alphafly-4", "nike-alphafly-4"],
+    ["/tools/shoes/compare/nike-alphafly-3-vs-nike-alphafly-4", "nike-alphafly-3-vs-nike-alphafly-4"],
+  ]) {
+    const html = renderToString(React.createElement(PublicToolApp, {
+      Component: Probe, queryClient: new QueryClient(), ssrPath: path,
+    }));
+    assert.ok(html.includes(`<output>${slug}</output>`), path);
+  }
 });

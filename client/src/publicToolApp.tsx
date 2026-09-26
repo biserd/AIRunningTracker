@@ -1,7 +1,8 @@
 import React, { type ComponentType } from "react";
 import type { QueryClient } from "@tanstack/react-query";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Router } from "wouter";
+import { Router, Route, Switch } from "wouter";
+import { useBrowserLocation } from "wouter/use-browser-location";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { ExternalLinkPolicy } from "@/components/ExternalLinkPolicy";
@@ -58,14 +59,28 @@ interface PublicToolAppProps {
   ssrPath?: string;
 }
 
+// This lightweight entry loads one tool, not the entire SPA. A new route must
+// load its own document/component instead of retaining the previous tool.
+const useToolLocation: typeof useBrowserLocation = (options) => {
+  const [location] = useBrowserLocation(options);
+  return [location, (to, navigation) => {
+    if (navigation?.replace) window.location.replace(to);
+    else window.location.assign(to);
+  }];
+};
+
 export function PublicToolApp({ Component, queryClient, ssrPath }: PublicToolAppProps) {
   return (
-    <Router ssrPath={ssrPath}>
+    <Router ssrPath={ssrPath} hook={useToolLocation}>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <ExternalLinkPolicy />
           <Toaster />
-          <Component />
+          <Switch>
+            <Route path="/tools/shoes/compare/:slug" component={Component} />
+            <Route path="/tools/shoes/:slug" component={Component} />
+            <Route component={Component} />
+          </Switch>
         </TooltipProvider>
       </QueryClientProvider>
     </Router>
