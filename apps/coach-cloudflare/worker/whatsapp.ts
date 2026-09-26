@@ -235,7 +235,7 @@ export async function processWhatsApp(env:Env,id:string,warmGeneration?:string,p
     }:undefined;
     const confirmed=action?await confirmWhatsAppReminder(env,id,item.generation,item.body):null;
     const signal=AbortSignal.timeout(60_000);
-    const knowledge=state.source==='production_account'?createCoachKnowledge(env,state,{message:item.body,signal,weatherProfile:()=>whatsappWeatherProfile(env,id)}):undefined;
+    const knowledge=state.source==='production_account'?createCoachKnowledge(env,state,{message:item.body,signal,history:conversation,weatherProfile:()=>whatsappWeatherProfile(env,id)}):undefined;
     const reply=confirmed??await whatsappCoach(env.OPENAI_API_KEY,state,conversation,item.body,signal,action,env.AI_GATEWAY_BASE,knowledge);
     aiMs=Date.now()-aiStart;stage='authorization';
     if(state.source==='production_account')await validateGrant(env,id);

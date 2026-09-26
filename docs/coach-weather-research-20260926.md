@@ -1,5 +1,53 @@
 # Shared coach weather and public research
 
+## Conversational WhatsApp weather — 2026-09-26
+
+- Coach version: `e977a65a-1950-47d7-ad00-ca651e2d6702`.
+- Weather follows an explicitly named city across a recent conversation (up to
+  12 server-loaded turns, two hours). New explicit cities take precedence. No
+  city is inferred from run coordinates, assistant guesses or private profiles;
+  no new account preference or schema is written. History remains session-scoped.
+- WhatsApp receives the resolved conversational city and instructions to answer
+  naturally, fetch the new forecast date, and give at most one useful running
+  suggestion. Weather continuity is also available to the shared chat lookup.
+- WhatsApp research answers no longer append source blocks or URLs. Plain-text
+  normalization removes malformed Markdown and legacy citation footers while
+  preserving ordinary account/help action links. Web citation rendering is unchanged.
+- Weather web research is domain-filtered to official meteorological services;
+  unofficial citations invalidate the result. Active-alert claims are rejected
+  because this tool does not verify a live alert feed. General research cannot
+  bypass the weather checks. Public cache key v2 avoids reusing older forecasts
+  that were retrieved under the previous sourcing policy.
+- TypeScript, production build, dry run and 104 unit tests passed (one skipped).
+  Workers-runtime tests passed for forecast caching, city aliases, follow-up
+  dates and isolation from another runner without conversation context.
+- Production deployment confirmed at 100%; preview and main health returned 200.
+  Mocked provider/model tests cover the reported two-turn exchange; physical
+  WhatsApp/provider delivery still needs a fresh runner test after deployment.
+- Main backend, iOS, database, secrets and consent settings are unchanged.
+  Rollback coach version: `b801a7fa-98cd-40de-b421-93828db2498e`.
+
+## NYC alias hotfix — 2026-09-26
+
+- Coach Worker deployed at 100%: `b801a7fa-98cd-40de-b421-93828db2498e`.
+- Explicit `NYc`, `NYC` and `N.Y.C.` now match `New York City`, including normal
+  NY/state/country qualifiers. The outbound forecast uses canonical New York City.
+- This is a fixed public alias mapping, not permission to infer location from
+  runs or profiles. Bare `NY`, different cities and unmentioned neighborhoods
+  remain rejected. Other cities require the supplied place phrase.
+- Structured failure logs now include an allowlisted reason, never raw queries,
+  locations, private context or upstream errors.
+- Regression suite: 98 passed, one skipped. Workers-runtime cache/alias test,
+  TypeScript, frontend build, deployment dry run and diff checks passed.
+- Mocked WhatsApp tool loop verifies `What's the weather in NYc` can invoke the
+  shared lookup and return sourced output. Cache tests verify aliases share a
+  forecast but cannot bypass explicit-location validation.
+- Cloudflare confirmed the new version at 100%; preview and main health checks
+  returned 200. A fresh physical WhatsApp request is still needed to verify real
+  provider retrieval and delivery. No successful live forecast is claimed here.
+- Main site, database, secrets and iOS build were not changed. Rollback coach
+  version: `9d82b02b-9751-46b9-99a8-a6e13b341e4d`.
+
 ## Production release — 2026-09-26
 
 - Application commit: `51e8ed41762bef475757acca580b41f1a2705370`.
@@ -71,7 +119,8 @@ private context into a query. This is intentionally conservative.
 
 Sources must come from provider citation annotations, not model-invented links.
 Known tracking parameters are removed; unsafe/private/login URLs are rejected.
-Source links are appended server-side and retained inside WhatsApp's text limit.
+Source links are appended server-side for web/iOS; WhatsApp now retains evidence
+inside the lookup only and presents concise plain text without citation blocks.
 Web renders clickable source links. The iOS source-link view requires a new
 native build; older builds still receive the plain-text URLs and lookup answers.
 
@@ -92,5 +141,5 @@ Failures return an explicit unavailable result, never a guessed fallback.
 6. Test voice on a real device and send one WhatsApp question; verify source
    links, typing feedback, and unchanged reminders/plan approval behavior.
 
-Logs expose only lookup name, duration and failure state (`coach_lookup`,
+Logs expose only lookup name, duration and a fixed failure category (`coach_lookup`,
 `coach_lookup_failed`), never queries, locations, URLs, tokens or provider bodies.

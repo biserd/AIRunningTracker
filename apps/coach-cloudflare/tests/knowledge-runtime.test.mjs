@@ -11,8 +11,8 @@ test('Workers runtime caches public forecasts without caching consent or mixing 
    export default {async fetch(request,env){
     const args=await request.json();
     const state={source:'production_account',timezone:'UTC',today:'2000-01-01',days:[],activities:[],goal:'Private training target'};
-    const tools=createCoachKnowledge(env,state,{message:'Weather in '+(args.city||'Brooklyn'),signal:AbortSignal.timeout(5000),weatherProfile:async()=>({coachWeatherEnabled:args.consent,coachWeatherLocation:{label:args.city||'Brooklyn'}})});
-    return Response.json(await tools.run('get_running_weather',{date:new Date().toISOString().slice(0,10),location:args.named?args.city:null}));
+    const tools=createCoachKnowledge(env,state,{message:args.message||'Weather in '+(args.city||'Brooklyn'),history:args.history,signal:AbortSignal.timeout(5000),weatherProfile:async()=>({coachWeatherEnabled:args.consent,coachWeatherLocation:{label:args.city||'Brooklyn'}})});
+    return Response.json(await tools.run('get_running_weather',{date:args.date||new Date().toISOString().slice(0,10),location:args.named?args.city:null}));
    }};`
  }});
  const mf=new Miniflare(convertV4MiniflareOptions({workers:[
@@ -31,11 +31,28 @@ test('Workers runtime caches public forecasts without caching consent or mixing 
   const first=await ask({city:'Brooklyn',named:true});assert.equal(first.available,true);
   const second=await ask({city:'Brooklyn',named:true});assert.equal(second.checkedAt,first.checkedAt);
   assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM calls').first()).n,1);
-  const denied=await ask({city:'Brooklyn',consent:false});assert.equal(denied.available,false);
+  const denied=await ask({city:'Brooklyn',consent:false,message:'What is the weather?'});assert.equal(denied.available,false);
   assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM calls').first()).n,1);
   const other=await ask({city:'London',named:true});assert.equal(other.available,true);assert.match(other.summary,/London/);
   assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM calls').first()).n,2);
-  const saved=await ask({city:'Brooklyn',consent:true});assert.equal(saved.available,true);
+  const saved=await ask({city:'Brooklyn',consent:true,message:'What is the weather?'});assert.equal(saved.available,true);
   assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM calls').first()).n,2);
+  const nyc=await ask({city:'New York City',named:true,message:'What’s the weather in NYc'});
+  assert.equal(nyc.available,true);assert.equal(nyc.location,'New York City');
+  assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM calls').first()).n,3);
+  const alias=await ask({city:'NYC',named:true,message:'Weather in New York City'});
+  assert.equal(alias.checkedAt,nyc.checkedAt);
+  assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM calls').first()).n,3);
+  // A cached city must not bypass explicit-location validation on a later request.
+  const inferred=await ask({city:'NYC',named:true,message:'Weather at my last run?'});
+  assert.equal(inferred.available,false);
+  assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM calls').first()).n,3);
+  const tomorrow=new Date(Date.now()+86400000).toISOString().slice(0,10);
+  const followup=await ask({message:'Will it rain tomorrow?',date:tomorrow,history:[{role:'user',content:'Weather in NYC',created_at:Math.floor(Date.now()/1000)}]});
+  assert.equal(followup.available,true);assert.equal(followup.location,'New York City');assert.equal(followup.date,tomorrow);
+  assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM calls').first()).n,4);
+  const otherRunner=await ask({message:'Will it rain tomorrow?',date:tomorrow,history:[]});
+  assert.equal(otherRunner.available,false);
+  assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM calls').first()).n,4);
  }finally{await mf.dispose();}
 });

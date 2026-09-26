@@ -14,7 +14,7 @@ const signal=()=>AbortSignal.timeout(5000);
 const message=(text:string)=>({type:'message',content:[{type:'output_text',text}]});
 const call=(name:string,args:unknown)=>({type:'function_call',name,arguments:JSON.stringify(args),call_id:'call-'+name});
 const response=(...output:unknown[])=>Response.json({status:'completed',output});
-const researched=()=>Response.json({status:'completed',output:[{type:'web_search_call'},{type:'message',content:[{type:'output_text',text:'Verified public facts.',annotations:[{type:'url_citation',url:'https://example.com/running?utm_source=chatgpt',title:'Running facts'}]}]}]});
+const researched=(url='https://weather.gov/forecast?utm_source=chatgpt',text='Verified public facts.')=>Response.json({status:'completed',output:[{type:'web_search_call'},{type:'message',content:[{type:'output_text',text,annotations:[{type:'url_citation',url,title:'Verified facts'}]}]}]});
 const lookup=(overrides:Partial<Parameters<typeof createCoachKnowledge>[2]>={},config=env)=>createCoachKnowledge(config,state,{message:'Compare Nike Pegasus shoes in Brooklyn tomorrow',signal:signal(),...overrides});
 
 test('all knowledge schemas are strict and only read-only tools are exposed',()=>{
@@ -46,7 +46,9 @@ test('named-city weather is sourced, does not save location or send private cont
     calls++; assert.equal(String(url),'https://api.openai.com/v1/responses');
     const body=JSON.parse(String(init.body));
     assert.equal(body.model,'gpt-4.1');assert.equal(body.store,false);
-    assert.deepEqual(body.tools,[{type:'web_search',search_context_size:'low'}]);
+    assert.equal(body.tools[0].type,'web_search');
+    assert.ok(body.tools[0].filters.allowed_domains.includes('weather.gov'));
+    assert.ok(!body.tools[0].filters.allowed_domains.includes('reddit.com'));
     assert.match(body.input,/Brooklyn/);assert.match(body.input,new RegExp(date()));
     assert.doesNotMatch(JSON.stringify(body),/Secretname|private@example|trainingContext|Private training target/);
     return researched();
@@ -54,7 +56,7 @@ test('named-city weather is sourced, does not save location or send private cont
   const result=await lookup({weatherProfile:async()=>{throw new Error('must not load saved location');}}).run('get_running_weather',{date:date(),location:'Brooklyn'});
   assert.equal(calls,1);assert.equal((result as {available:boolean}).available,true);
   assert.match(JSON.stringify(result),/web_forecast/);assert.match(JSON.stringify(result),/checkedAt/);
-  assert.equal((result as {sources:{url:string}[]}).sources[0].url,'https://example.com/running');
+  assert.equal((result as {sources:{url:string}[]}).sources[0].url,'https://weather.gov/forecast');
 });
 
 test('invalid, stale, distant and inferred-location forecasts never reach external services',async t=>{
@@ -63,6 +65,71 @@ test('invalid, stale, distant and inferred-location forecasts never reach extern
     const result=await lookup().run('get_running_weather',args);assert.equal((result as {available:boolean}).available,false);
   }
   assert.equal(fetches,0);
+});
+
+test('explicit NYC aliases reach weather research without reading private location',async t=>{
+  let fetches=0;
+  t.mock.method(globalThis,'fetch',async(_url:unknown,init:RequestInit)=>{
+    fetches++;
+    const body=JSON.parse(String(init.body));
+    assert.match(body.input,/Weather forecast New York City /);
+    assert.doesNotMatch(JSON.stringify(body),/Secretname|private@example|trainingContext/);
+    return researched();
+  });
+  for (const [message,location] of [
+    ['What’s the weather in NYc','New York City'],
+    ['Weather in NYC?','NYC'],
+    ['Weather in N.Y.C.?','New York City, NY'],
+    ['Forecast for New York City','nyc'],
+    ['Weather in nyc','New York City, New York, United States'],
+  ]) {
+    const result=await lookup({message,weatherProfile:async()=>{throw new Error('must not read profile');}})
+      .run('get_running_weather',{date:date(),location}) as {available:boolean;location:string};
+    assert.equal(result.available,true,`${message} -> ${location}`);
+    assert.equal(result.location,'New York City');
+  }
+  assert.equal(fetches,5);
+});
+
+test('city aliases cannot disclose a different, inferred or ambiguous location',async t=>{
+  let fetches=0;
+  const logs:string[]=[];
+  t.mock.method(globalThis,'fetch',async()=>{fetches++;return researched();});
+  t.mock.method(console,'warn',(line:string)=>logs.push(line));
+  for (const [message,location] of [
+    ['What is the weather?','New York City'],
+    ['Use my last run location','NYC'],
+    ['Weather in NY','New York City'],
+    ['Weather in NYC','Brooklyn'],
+    ['Weather in NYC','New York City Secretborough'],
+    ['Weather in xNYCx','New York City'],
+    ['New shoes for the York city race','New York City'],
+  ]) {
+    const result=await lookup({message}).run('get_running_weather',{date:date(),location});
+    assert.equal((result as {available:boolean}).available,false,`${message} -> ${location}`);
+  }
+  assert.equal(fetches,0);
+  assert.equal(logs.length,7);
+  for (const line of logs) {
+    assert.equal(JSON.parse(line).reason,'location_not_explicit');
+    assert.doesNotMatch(line,/NYC|York|Brooklyn|Secretborough|last run/);
+  }
+});
+
+test('WhatsApp NYC question executes the real shared lookup without citation clutter',async t=>{
+  let steps=0;
+  t.mock.method(globalThis,'fetch',async(_url:unknown,init:RequestInit)=>{
+    const body=JSON.parse(String(init.body));steps++;
+    if(steps===1)return response(call('get_running_weather',{date:date(),location:'New York City'}));
+    if(steps===2){assert.match(body.input,/Weather forecast New York City/);return researched();}
+    const toolResult=body.input.find((item:{type?:string})=>item.type==='function_call_output');
+    assert.equal(JSON.parse(toolResult.output).available,true);
+    return response(message('For **NYC today**, expect rain.\n\nSources: Weather service\nhttps://weather.gov/forecast'));
+  });
+  const question='What’s the weather in NYc';
+  const result=await whatsappCoach('test',state,[],question,signal(),undefined,undefined,lookup({message:question}));
+  assert.equal(steps,3);
+  assert.equal(result,'For NYC today, expect rain.');
 });
 
 test('licensed hourly forecasts use coarse coordinates, explicit units and preserve missing values',async t=>{
@@ -126,14 +193,14 @@ test('web/iOS chat executes shared research and appends verified sources',async 
   assert.equal(result.change,undefined);
 });
 
-test('WhatsApp has the same read-only tools and cites results',async t=>{
+test('WhatsApp has the same read-only tools without visible sources',async t=>{
   let step=0;t.mock.method(globalThis,'fetch',async(_url:unknown,init:RequestInit)=>{
     const body=JSON.parse(String(init.body));step++;
     if(step===1){assert.ok(body.tools.some((x:{name:string})=>x.name==='get_running_weather'));return response(call('get_running_weather',{date:date(),location:'Brooklyn'}));}
     assert.match(JSON.stringify(body.input),/forecast/);return response(message('A mild morning is forecast.'));
   });
   const result=await whatsappCoach('test',state,[],'Brooklyn weather',signal(),undefined,undefined,{run:async()=>({summary:'forecast',sources:[{title:'Weather',url:'https://weather.gov/'}]})});
-  assert.match(result,/Sources:\nhttps:\/\/weather.gov/);assert.ok(result.length<=1400);
+  assert.equal(result,'A mild morning is forecast.');assert.ok(result.length<=1400);
 });
 
 test('external research cannot trigger immediate WhatsApp reminder writes',async t=>{

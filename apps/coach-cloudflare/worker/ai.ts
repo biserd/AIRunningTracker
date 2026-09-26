@@ -14,10 +14,10 @@ type Limit = (
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 export async function history(env: Env, id: string) {
   const rows = await env.DB.prepare(
-    "SELECT role,content FROM coach_messages WHERE session_id=? ORDER BY sequence DESC LIMIT 12",
+    "SELECT role,content,created_at FROM coach_messages WHERE session_id=? ORDER BY sequence DESC LIMIT 12",
   )
     .bind(id)
-    .all<{ role: string; content: string }>();
+    .all<{ role: string; content: string; created_at: number }>();
   return rows.results.reverse();
 }
 export async function aiRoute(
@@ -147,10 +147,11 @@ async function runAIRoute(request:Request,env:Env,row:RunnerRow,input:Record<str
     let result: unknown;
     if (kind === "chat") {
       const message = (input.message as string).trim();
+      const conversation = await history(env, row.id);
       const generated = await coach(
         env.OPENAI_API_KEY,
         state,
-        await history(env, row.id),
+        conversation.map(({role,content})=>({role,content})),
         message,
         signal,
         {
@@ -159,7 +160,7 @@ async function runAIRoute(request:Request,env:Env,row:RunnerRow,input:Record<str
         },
         state.trainingContext?.canWritePlans ? {validate:intent=>validatePlanIntent(intent,state.trainingContext!)} : undefined,
         env.AI_GATEWAY_BASE,
-        token ? accountKnowledge(env,token,state,message,signal) : undefined,
+        token ? accountKnowledge(env,token,state,message,signal,conversation) : undefined,
       );
       let proposal;
       if (generated.change) {
