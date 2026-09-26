@@ -1,6 +1,17 @@
 # Native app landing page
 
-Implemented locally; not deployed by this task.
+Deployed and verified on production September 26, 2026.
+
+## Production release
+
+- Application commit: `11673136e5d0b2035a4222201cb0bf045b1ddece`.
+- Cloudflare build: `2d9cd0df-baf7-4b69-8b05-2acb570523a5`; staging Worker version `83533787-ff7a-48f5-b9fc-d712f9c9db31`.
+- Final main Worker: `908d478f-483d-4991-9096-611d359e56e6`.
+- Verified image: `aitracker-api-staging-runanalyticsweb@sha256:005142db75b219eec0ba0a1b97dbcc957d57611c4d3b18f101a9ae220779bddd` (build tag `83533787`).
+- Both public URLs return 200 with canonical metadata, Coming Soon, pricing and app privacy. CSS, social card and all six screenshots match local SHA-256 hashes. Sitemap contains both URLs; homepage, pricing, health and shoe API return 200; unauthenticated account API remains 401. Live browser render verified.
+- Rollout note: the first promotion read the old staging configuration during its active rollout and briefly used the prior metadata-only image `5783827f`. Live assertions caught the stale page. Promoted the completed build digest `005142db` and waited until production reported version 29 with no active rollout and the correct image before successful verification. Restart markers were advanced using the existing release mechanism; no database records were changed.
+- Rollback baseline: main Worker `b861103f-bdad-4570-8288-5c5cb9c79e1a`, image tag `664dfc57`. Restore both Worker and image when rolling back.
+- No migrations, secrets, billing configuration, native build, coach Worker deployment or R2 uploads. Pending training-plan entitlement and native/coach changes were excluded from this release, including non-landing hunks in `server/routes.ts`.
 
 ## Public routes
 
@@ -41,4 +52,4 @@ This is an implementation-backed privacy notice, not legal approval or an App St
 
 ## Deployment status
 
-Deploy the existing main application with its normal frontend assets. No database migration or new secret. Production availability should be checked on both new URLs after deployment. The earlier backend plan-entitlement changes remain a separate pending release concern; this page does not deploy them. The app still uses `/privacy`, which now links prominently to its app-specific notice; no new native build is needed merely to expose that link.
+The main application and normal frontend assets are live. No database migration or new secret was needed. The earlier backend plan-entitlement changes remain a separate pending release concern; this release does not deploy them. The app still uses `/privacy`, which now links prominently to its app-specific notice; no new native build is needed merely to expose that link.
