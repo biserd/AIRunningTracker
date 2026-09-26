@@ -9,7 +9,7 @@ import { Link } from "wouter";
 import { ArrowRight, ShoppingBag, Zap, Scale, Ruler, DollarSign, Star, Filter, X, Check, GitCompare, Plus, Minus } from "lucide-react";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
-import { SEO } from "@/components/SEO";
+import { Helmet } from "react-helmet";
 import AppHeader from "@/components/AppHeader";
 import PublicHeader from "@/components/PublicHeader";
 import type { RunningShoe } from "@shared/schema";
@@ -268,21 +268,14 @@ export default function ShoeDatabasePage() {
 
   return (
     <>
-      <SEO
-        title="Running Shoe Database: Browse & Filter 224+ Shoes (2026)"
-        description="Filter 224+ running shoes by brand, category, weight, and ratings. Full specs on every model so you can compare options before you buy."
-        keywords="running shoes database, compare running shoes, best running shoes 2026, running shoe reviews"
-        url="https://aitracker.run/tools/shoes"
-        structuredData={{
-          "@context": "https://schema.org",
-          "@type": "SoftwareApplication",
-          "name": "Running Shoe Database",
-          "applicationCategory": "HealthApplication",
-          "operatingSystem": "Web",
-          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-          "description": "Browse and compare 100+ running shoes with specs, reviews & AI insights. Find the best shoes for your running needs."
-        }}
-      />
+      <Helmet>
+        <title>Running Shoe Database: Specs, Sources &amp; Buying Guides</title>
+        <meta name="description" content="Compare running shoes by brand, intended use, weight and construction. Source-checked specs and historical records are clearly distinguished." />
+        <link rel="canonical" href="https://aitracker.run/tools/shoes" />
+        <meta property="og:title" content="Running Shoe Database: Specs, Sources & Buying Guides" />
+        <meta property="og:description" content="Browse specifications, dated sources and evidence-labeled buying guides." />
+        <meta property="og:url" content="https://aitracker.run/tools/shoes" />
+      </Helmet>
 
       <div className="min-h-screen bg-light-grey">
         <PublicHeader />
@@ -300,8 +293,7 @@ export default function ShoeDatabasePage() {
               </h1>
               
               <p className="text-lg text-gray-600 mb-6">
-                Browse {shoes?.length || 100}+ verified running shoes from 16 major brands. 
-                Compare specs, cushioning, and stability features to find the right shoe for your running style.
+                Browse {shoes?.length || 'our'} running-shoe records. Compare specifications, sources and practical buying considerations. Historical records are labeled—not presented as newly verified or wear-tested.
               </p>
 
               <div className="flex flex-wrap justify-center gap-2">

@@ -45,6 +45,9 @@ import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getAct
 import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage, renderToolPage, getAllToolSlugs, renderFaqPage, renderBlogIndex, renderPricingPage, renderFeaturesPage, renderAboutPage, renderEbookLandingPage, renderDevelopersPage, renderDevelopersApiPage, renderToolsHubPage, renderProactiveRunningCoachPage, renderMcpLandingPage, renderMcpDocsPage } from "./ssr/renderer";
 import { getAllBlogPosts } from "./ssr/blogContent";
 import { buildRobotsTxt, isCrawler, isPrivateCrawlerPath } from "./ssr/crawlerPolicy";
+import { registerShoePages } from './ssr/shoePages';
+import { publicShoe } from '../shared/shoeEditorial';
+import { shoePayload, comparisonPayload, comparisonList, publicComparison } from './shoeCatalogPresentation';
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { ownsScheduledJobs, mayInitializeSchema, isMigrationStaging, isCloudflareRuntime } from './config/runtime';
 import { startRuntimeScheduler } from './runtimeServices';
@@ -680,7 +683,7 @@ ${allPages.map(page => `  <url>
           <li><a href="${baseUrl}/tools/aerobic-decoupling-calculator">Aerobic Decoupling Calculator</a>: measure aerobic efficiency.</li>
           <li><a href="${baseUrl}/tools/training-split-analyzer">Training Split Analyzer</a>: see your easy/hard balance.</li>
           <li><a href="${baseUrl}/tools/cadence-analyzer">Cadence Analyzer</a>: analyze running form stability.</li>
-          <li><a href="${baseUrl}/tools/shoes">Running Shoe Database</a>: 280+ shoes with AI insights.</li>
+          <li><a href="${baseUrl}/tools/shoes">Running Shoe Database</a>: Specifications, dated sources and evidence-labeled buying guides.</li>
           <li><a href="${baseUrl}/tools/shoe-finder">Shoe Finder</a>: get matched to the right pair.</li>
           <li><a href="${baseUrl}/tools/rotation-planner">Rotation Planner</a>: build a smart shoe rotation.</li>
 
@@ -743,7 +746,7 @@ ${allPages.map(page => `  <url>
   // Middleware to handle crawler requests for SEO pages (static marketing/tool pages)
   Object.entries(SEO_PAGES).forEach(([route, meta]) => {
     // Skip homepage - it gets full SSG above
-    if (route === '/') {
+    if (route === '/' || route === '/tools/shoes' || route === '/tools/shoes/compare') {
       return;
     }
     // Skip blog posts - they get full SSR below
@@ -880,187 +883,8 @@ ${allPages.map(page => `  <url>
     });
   });
 
-  // SSG for individual shoe pages - serves to crawlers only for SEO, regular users get SPA
-  app.get("/tools/shoes/:slug", async (req: any, res, next) => {
-    const userAgent = req.get('user-agent') || '';
-
-    // Only serve SSG to crawlers (search engines + AI bots): regular users get the rich SPA
-    if (!isCrawler(userAgent)) {
-      next();
-      return;
-    }
-    
-    const { slug } = req.params;
-    const staticFilePath = path.join(process.cwd(), 'dist', 'prerender', `shoes-${slug}.html`);
-    
-    // Validate the current database record before serving any cached SSG file.
-    // This prevents deleted or aliased shoes from continuing to return indexable
-    // 200 responses from an old build artifact.
-    try {
-      const shoe = await storage.getShoeBySlug(slug);
-      
-      if (shoe) {
-        const allShoes = await storage.getShoes({});
-        const sameModelShoes = allShoes.filter((candidate) => normalizedShoeModelKey(candidate) === normalizedShoeModelKey(shoe));
-        const canonicalSlug = canonicalizeShoeCatalog(sameModelShoes).canonicalShoes[0]?.slug;
-        if (canonicalSlug && canonicalSlug !== slug) {
-          return res.redirect(301, `/tools/shoes/${canonicalSlug}`);
-        }
-        if (fs.existsSync(staticFilePath)) {
-          res.setHeader('Content-Type', 'text/html');
-          res.setHeader('X-Robots-Tag', 'index, follow');
-          res.setHeader('Cache-Control', 'public, max-age=3600');
-          return res.send(fs.readFileSync(staticFilePath, 'utf-8'));
-        }
-        console.log(`[SSR] Fallback: serving server-rendered shoe page to crawler: ${slug}`);
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('X-Robots-Tag', 'index, follow');
-        res.setHeader('Cache-Control', 'public, max-age=3600');
-        const similar = await storage.getSimilarShoes(shoe, 3);
-        const html = renderShoePage(slug, {
-          brand: shoe.brand,
-          model: shoe.model,
-          category: shoe.category,
-          weight: shoe.weight,
-          availability: shoe.availability,
-          availableFrom: shoe.availableFrom,
-          heelToToeDrop: shoe.heelToToeDrop,
-          heelStackHeight: shoe.heelStackHeight,
-          forefootStackHeight: shoe.forefootStackHeight,
-          description: shoe.description,
-          cushioningLevel: shoe.cushioningLevel,
-          stability: shoe.stability,
-          bestFor: shoe.bestFor,
-          price: shoe.price,
-          hasCarbonPlate: shoe.hasCarbonPlate,
-          hasSuperFoam: shoe.hasSuperFoam,
-          imageUrl: shoe.imageUrl,
-          comfortRating: shoe.comfortRating,
-          durabilityRating: shoe.durabilityRating,
-          responsivenessRating: shoe.responsivenessRating
-        }, similar
-          .filter((s): s is typeof s & { slug: string } => typeof s.slug === "string")
-          .map(s => ({ brand: s.brand, model: s.model, slug: s.slug, weight: s.weight, price: s.price })));
-        res.send(html);
-      } else {
-        res.status(404);
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('X-Robots-Tag', 'noindex, follow');
-        res.setHeader('Cache-Control', 'public, max-age=300');
-        return res.send('<!doctype html><html><head><title>Running Shoe Not Found | RunAnalytics</title><meta name="robots" content="noindex, follow"></head><body><main><h1>Running shoe not found</h1><p>This record is unavailable or has moved.</p><a href="/tools/shoes">Browse verified running shoes</a></main></body></html>');
-      }
-    } catch (error) {
-      console.error('[SSR] Error generating shoe page:', error);
-      next();
-    }
-  });
-
-  // SSR for shoe comparison pages - crawlers get bare HTML for SEO, humans get React SPA
-  // Server-side HTML cache for comparison SSR pages: avoids repeated DB
-  // round-trips + narrative generation on every Googlebot visit.
-  const comparisonSsrCache = new Map<string, { html: string; ts: number }>();
-  const COMPARISON_SSR_TTL_MS = 60 * 60 * 1000; // 1 hour
-
-  app.get("/tools/shoes/compare/:slug", async (req: any, res, next) => {
-    try {
-      const userAgent = req.headers['user-agent'] || '';
-
-      // Only serve SSR to crawlers (search engines + AI bots): regular users get the rich SPA
-      if (!isCrawler(userAgent)) {
-        return next();
-      }
-
-      const { slug } = req.params;
-
-      // Serve from in-memory cache if fresh
-      const cached = comparisonSsrCache.get(slug);
-      if (cached && Date.now() - cached.ts < COMPARISON_SSR_TTL_MS) {
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('X-Robots-Tag', 'index, follow');
-        res.setHeader('Cache-Control', 'public, max-age=3600');
-        res.setHeader('X-Cache', 'HIT');
-        return res.send(cached.html);
-      }
-
-      const comparison = await storage.getShoeComparisonBySlug(slug);
-      
-      if (comparison) {
-        console.log(`[SSR] Serving server-rendered comparison page to crawler: ${slug}`);
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('X-Robots-Tag', 'index, follow');
-        res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
-        
-        // Fetch both shoes in parallel
-        const [shoe1, shoe2] = await Promise.all([
-          storage.getShoeById(comparison.shoe1Id),
-          storage.getShoeById(comparison.shoe2Id),
-        ]);
-        if (!shoe1 || !shoe2) {
-          res.status(404);
-          res.setHeader('Content-Type', 'text/html');
-          res.setHeader('X-Robots-Tag', 'noindex, follow');
-          res.setHeader('Cache-Control', 'public, max-age=300');
-          return res.send('<!doctype html><html><head><title>Shoe Comparison Not Found | RunAnalytics</title><meta name="robots" content="noindex, follow"></head><body><main><h1>Shoe comparison not found</h1><p>One or more shoe records are unavailable.</p><a href="/tools/shoes/compare">Browse current comparisons</a></main></body></html>');
-        }
-        
-        const html = renderComparisonPage(slug, {
-          title: comparison.title,
-          metaDescription: comparison.metaDescription,
-          verdict: comparison.verdict,
-          keyDifferences: comparison.keyDifferences,
-          shoe1: shoe1 ? {
-            brand: shoe1.brand,
-            model: shoe1.model,
-            weight: shoe1.weight,
-            availability: shoe1.availability,
-            availableFrom: shoe1.availableFrom,
-            dataSource: shoe1.dataSource,
-            heelToToeDrop: shoe1.heelToToeDrop,
-            category: shoe1.category,
-            price: shoe1.price,
-            slug: shoe1.slug,
-            heelStackHeight: shoe1.heelStackHeight,
-            forefootStackHeight: shoe1.forefootStackHeight,
-            cushioningLevel: shoe1.cushioningLevel,
-            stability: shoe1.stability,
-            hasCarbonPlate: shoe1.hasCarbonPlate,
-            hasSuperFoam: shoe1.hasSuperFoam,
-            bestFor: shoe1.bestFor,
-          } : null,
-          shoe2: shoe2 ? {
-            brand: shoe2.brand,
-            model: shoe2.model,
-            weight: shoe2.weight,
-            availability: shoe2.availability,
-            availableFrom: shoe2.availableFrom,
-            dataSource: shoe2.dataSource,
-            heelToToeDrop: shoe2.heelToToeDrop,
-            category: shoe2.category,
-            price: shoe2.price,
-            slug: shoe2.slug,
-            heelStackHeight: shoe2.heelStackHeight,
-            forefootStackHeight: shoe2.forefootStackHeight,
-            cushioningLevel: shoe2.cushioningLevel,
-            stability: shoe2.stability,
-            hasCarbonPlate: shoe2.hasCarbonPlate,
-            hasSuperFoam: shoe2.hasSuperFoam,
-            bestFor: shoe2.bestFor,
-          } : null
-        });
-        comparisonSsrCache.set(slug, { html, ts: Date.now() });
-        res.send(html);
-      } else {
-        res.status(404);
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('X-Robots-Tag', 'noindex, follow');
-        res.setHeader('Cache-Control', 'public, max-age=300');
-        return res.send('<!doctype html><html><head><title>Shoe Comparison Not Found | RunAnalytics</title><meta name="robots" content="noindex, follow"></head><body><main><h1>Shoe comparison not found</h1><p>This comparison is unavailable or has moved.</p><a href="/tools/shoes/compare">Browse current comparisons</a></main></body></html>');
-      }
-    } catch (error) {
-      console.error('[SSR] Error generating comparison page:', error);
-      next();
-    }
-  });
+  // One data-filled React document for visitors and crawlers; no bot-only shoe content.
+  registerShoePages(app, storage);
 
   // Waitlist for email capture (public endpoint)
   app.post("/api/waitlist", async (req, res) => {
@@ -7340,7 +7164,7 @@ ${allPages.map(page => `  <url>
       const search = typeof req.query.q === 'string' ? req.query.q.trim().toLowerCase().slice(0,120) : '';
       const matches = search ? shoes.filter(shoe => search.split(/\s+/).every(word => `${shoe.brand} ${shoe.model} ${shoe.seriesName || ''}`.toLowerCase().includes(word))) : shoes;
       if (req.query.sort === 'verified') matches.sort((a,b) => (b.lastVerified ? new Date(b.lastVerified).getTime() : 0) - (a.lastVerified ? new Date(a.lastVerified).getTime() : 0) || a.brand.localeCompare(b.brand) || a.model.localeCompare(b.model));
-      res.json(matches);
+      res.json(matches.map(publicShoe));
     } catch (error: any) {
       console.error('Get shoes error:', error);
       res.status(500).json({ message: error.message || "Failed to get shoes" });
@@ -7368,7 +7192,7 @@ ${allPages.map(page => `  <url>
       const userGoal = (goal as string) || 'general';
       const userFootType = (footType as string) || 'neutral';
       
-      const allShoes = await storage.getShoes({});
+      const allShoes = (await storage.getShoes({})).map(publicShoe);
       
       // Filter and score shoes based on user profile
       const recommendations = allShoes
@@ -7436,7 +7260,7 @@ ${allPages.map(page => `  <url>
       const userWeight = weight ? parseInt(weight as string) : 160;
       const mileage = weeklyMileage ? parseInt(weeklyMileage as string) : 30;
       
-      const allShoes = await storage.getShoes({});
+      const allShoes = (await storage.getShoes({})).map(publicShoe);
       
       // Helper function to find best shoe for category
       const findBestForCategory = (category: string, preference: 'cushion' | 'responsive' | 'balanced') => {
@@ -7539,7 +7363,7 @@ ${allPages.map(page => `  <url>
       const validShoes = shoes.filter((shoe): shoe is RunningShoe => shoe !== null);
       
       res.json({
-        shoes: validShoes,
+        shoes: validShoes.map(publicShoe),
         requestedCount: slugList.length,
         foundCount: validShoes.length
       });
@@ -7550,43 +7374,9 @@ ${allPages.map(page => `  <url>
   });
 
   // Get a single shoe by slug (for SEO-friendly URLs)
-  app.get("/api/shoes/by-slug/:slug", async (req, res) => {
-    try {
-      const { slug } = req.params;
-      const shoe = await storage.getShoeBySlug(slug);
-      
-      if (!shoe) {
-        return res.status(404).json({ message: "Shoe not found" });
-      }
-
-      const allShoes = await storage.getShoes({});
-      const sameModelShoes = allShoes.filter((candidate) => normalizedShoeModelKey(candidate) === normalizedShoeModelKey(shoe));
-      const { canonicalShoes } = canonicalizeShoeCatalog(sameModelShoes);
-      const canonicalSlug = canonicalShoes[0]?.slug || shoe.slug;
-      
-      // Get related shoes in the same series for comparison charts
-      let seriesShoes: RunningShoe[] = [];
-      if (shoe.seriesName) {
-        const allSeriesShoes = await storage.getShoesBySeries(shoe.brand, shoe.seriesName);
-        // Sort by version number (or release year as fallback)
-        seriesShoes = allSeriesShoes.sort((a, b) => {
-          if (a.versionNumber && b.versionNumber) {
-            return a.versionNumber - b.versionNumber;
-          }
-          return (a.releaseYear || 0) - (b.releaseYear || 0);
-        });
-      }
-      
-      res.json({
-        shoe,
-        canonicalSlug,
-        seriesShoes,
-        hasSeriesData: seriesShoes.length > 1
-      });
-    } catch (error: any) {
-      console.error('Get shoe by slug error:', error);
-      res.status(500).json({ message: error.message || "Failed to get shoe" });
-    }
+  app.get("/api/shoes/by-slug/:slug", async (req,res) => {
+    try { const data=await shoePayload(storage,req.params.slug); if(!data)return res.status(404).json({message:'Shoe not found'}); res.json(data); }
+    catch { res.status(503).json({message:'Shoe data temporarily unavailable'}); }
   });
 
   app.get("/api/shoes/by-slug/:slug/similar", async (req, res) => {
@@ -7597,7 +7387,7 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "Shoe not found" });
       }
       const similar = await storage.getSimilarShoes(shoe, 3);
-      res.json(similar);
+      res.json(similar.map(publicShoe));
     } catch (error: any) {
       console.error('Get similar shoes error:', error);
       res.status(500).json({ message: error.message || "Failed to get similar shoes" });
@@ -7605,55 +7395,13 @@ ${allPages.map(page => `  <url>
   });
 
   // Shoe Comparison endpoints (pre-generated comparisons for SEO)
-  app.get("/api/shoes/comparisons", async (req, res) => {
-    try {
-      const { type, limit } = req.query;
-      const comparisons = await storage.getShoeComparisons({
-        type: type as string | undefined,
-        limit: limit ? parseInt(limit as string) : undefined
-      });
-      
-      // Fetch shoe details for each comparison
-      const comparisonsWithShoes = await Promise.all(
-        comparisons.map(async (comparison) => {
-          const [shoe1, shoe2] = await Promise.all([
-            storage.getShoeById(comparison.shoe1Id),
-            storage.getShoeById(comparison.shoe2Id)
-          ]);
-          return { ...comparison, shoe1, shoe2 };
-        })
-      );
-      
-      res.json(comparisonsWithShoes);
-    } catch (error: any) {
-      console.error('Get shoe comparisons error:', error);
-      res.status(500).json({ message: error.message || "Failed to get comparisons" });
-    }
+  app.get("/api/shoes/comparisons", async(req,res)=>{
+    try { res.json(await comparisonList(storage,{type:typeof req.query.type==='string'?req.query.type:undefined,limit:req.query.limit?Math.min(500,Math.max(1,Number(req.query.limit)||100)):undefined})); }
+    catch {res.status(503).json({message:'Comparisons temporarily unavailable'});}
   });
-
-  app.get("/api/shoes/comparisons/by-slug/:slug", async (req, res) => {
-    try {
-      const { slug } = req.params;
-      const comparison = await storage.getShoeComparisonBySlug(slug);
-      
-      if (!comparison) {
-        return res.status(404).json({ message: "Comparison not found" });
-      }
-      
-      // Increment view count
-      await storage.incrementComparisonViewCount(comparison.id);
-      
-      // Fetch full shoe details
-      const [shoe1, shoe2] = await Promise.all([
-        storage.getShoeById(comparison.shoe1Id),
-        storage.getShoeById(comparison.shoe2Id)
-      ]);
-      
-      res.json({ ...comparison, shoe1, shoe2 });
-    } catch (error: any) {
-      console.error('Get comparison by slug error:', error);
-      res.status(500).json({ message: error.message || "Failed to get comparison" });
-    }
+  app.get("/api/shoes/comparisons/by-slug/:slug",async(req,res)=>{
+    try { const data=await comparisonPayload(storage,req.params.slug);if(!data)return res.status(404).json({message:'Comparison not found'});res.json(data); }
+    catch {res.status(503).json({message:'Comparison temporarily unavailable'});}
   });
 
   app.get("/api/shoes/comparisons/for-shoe/:shoeId", async (req, res) => {
@@ -7668,11 +7416,11 @@ ${allPages.map(page => `  <url>
             storage.getShoeById(comparison.shoe1Id),
             storage.getShoeById(comparison.shoe2Id)
           ]);
-          return { ...comparison, shoe1, shoe2 };
+          return shoe1 && shoe2 ? publicComparison(comparison,shoe1,shoe2) : null;
         })
       );
       
-      res.json(comparisonsWithShoes);
+      res.json(comparisonsWithShoes.filter(Boolean));
     } catch (error: any) {
       console.error('Get comparisons for shoe error:', error);
       res.status(500).json({ message: error.message || "Failed to get comparisons" });
@@ -7689,7 +7437,7 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "Shoe not found" });
       }
       
-      res.json(shoe);
+      res.json(publicShoe(shoe));
     } catch (error: any) {
       console.error('Get shoe error:', error);
       res.status(500).json({ message: error.message || "Failed to get shoe" });

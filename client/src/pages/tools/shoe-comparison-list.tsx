@@ -40,7 +40,7 @@ const comparisonTypeLabels: Record<string, { label: string; description: string;
   },
   popular: { 
     label: "Popular Matchups", 
-    description: "Most-searched brand vs brand comparisons",
+    description: "Compare models across running-shoe brands",
     icon: <Star className="h-5 w-5" />
   }
 };
@@ -106,21 +106,19 @@ export default function ShoeComparisonList() {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>Running Shoe Comparison: 161 Side-by-Side Matchups (2026)</title>
-        <meta name="description" content="Compare running shoes side by side across 161 pairings. Stack specs, ratings, and category rivals to find which shoe wins for your training style." />
-        <meta property="og:title" content="Running Shoe Comparison: 161 Side-by-Side Matchups (2026)" />
-        <meta property="og:description" content="Compare running shoes side by side across 161 pairings. Stack specs, ratings, and category rivals to find which shoe wins for your training style." />
+        <title>Running Shoe Comparisons: Specs, Sources & Upgrade Guides</title>
+        <meta name="description" content="Compare running shoe generations and alternatives with evidence-led buying guidance, source dates, price caveats and clearly labeled unknowns." />
+        <meta property="og:title" content="Running Shoe Comparisons: Specs, Sources & Upgrade Guides" />
+        <meta property="og:description" content="Compare running shoe generations and alternatives. Understand the evidence before upgrading." />
         <link rel="canonical" href="https://aitracker.run/tools/shoes/compare" />
       </Helmet>
 
       <PublicHeader />
 
       <main className="max-w-6xl mx-auto px-4 py-8">
-        <Link href="/tools/shoes">
-          <a className="inline-flex items-center text-gray-600 hover:text-strava-orange mb-6" data-testid="link-back-shoes">
+        <Link href="/tools/shoes" className="inline-flex items-center text-gray-600 hover:text-strava-orange mb-6" data-testid="link-back-shoes">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Running Shoe Hub
-          </a>
         </Link>
 
         <div className="mb-8">
@@ -128,7 +126,7 @@ export default function ShoeComparisonList() {
             Running Shoe Comparisons
           </h1>
           <p className="text-gray-600 dark:text-gray-400 max-w-3xl">
-            Side-by-side comparisons of popular running shoes. Find out which shoe is right for you with our expert verdicts and detailed specs analysis.
+            Compare generations and alternatives, understand the measurements, and decide what to research before buying. Source checks are dated; historical records and missing evidence are clearly labeled. These are specification-based guides, not hands-on reviews.
           </p>
         </div>
 

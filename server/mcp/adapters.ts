@@ -1,4 +1,6 @@
 import { storage, RUNNING_ACTIVITY_TYPES } from "../storage";
+import { sanitizeShoeRecord } from './shoePresentation';
+import { buildShoeGuide, buildComparisonGuide, shoeEvidence, SHOE_METHODOLOGY } from '../../shared/shoeEditorial';
 import { fitnessService } from "../services/fitness";
 import { runnerScoreService } from "../services/runnerScore";
 import { toolsContent } from "../ssr/toolsContent";
@@ -445,38 +447,7 @@ export async function readPostRunBrief(userId: number, activityId: number) {
   };
 }
 
-function sanitizeShoe(shoe: RunningShoe) {
-  return {
-    slug: shoe.slug,
-    brand: shoe.brand,
-    model: shoe.model,
-    seriesName: shoe.seriesName,
-    versionNumber: shoe.versionNumber,
-    category: shoe.category,
-    weightOunces: shoe.weight,
-    availability: shoe.availability,
-    availableFrom: shoe.availableFrom,
-    heelStackHeightMm: shoe.heelStackHeight,
-    forefootStackHeightMm: shoe.forefootStackHeight,
-    heelToToeDropMm: shoe.heelToToeDrop,
-    cushioningLevel: shoe.cushioningLevel,
-    stability: shoe.stability,
-    hasCarbonPlate: shoe.hasCarbonPlate,
-    hasSuperFoam: shoe.hasSuperFoam,
-    priceUsd: shoe.price,
-    bestFor: shoe.bestFor,
-    durabilityRating: shoe.durabilityRating,
-    responsivenessRating: shoe.responsivenessRating,
-    comfortRating: shoe.comfortRating,
-    releaseYear: shoe.releaseYear,
-    description: shoe.description,
-    mileageEstimate: shoe.aiMileageEstimate,
-    targetUsage: shoe.aiTargetUsage,
-    lastVerified: shoe.lastVerified,
-    sourceUrl: shoe.sourceUrl,
-    dataSource: shoe.dataSource,
-  };
-}
+const sanitizeShoe = sanitizeShoeRecord;
 
 export async function searchPublicShoes(input: {
   query?: string;
@@ -507,7 +478,7 @@ export async function readPublicShoe(slug: string) {
   if (!/^[a-z0-9-]{1,120}$/.test(slug)) throw new McpToolError("invalid_arguments", "A valid shoe slug is required");
   const shoe = await storage.getShoeBySlug(slug);
   if (!shoe) throw new McpToolError("not_found", "Shoe not found");
-  return { shoe: sanitizeShoe(shoe) };
+  return { shoe: { ...sanitizeShoe(shoe), editorial: buildShoeGuide(shoe) } };
 }
 
 export async function listPublicShoeFacets() {
@@ -548,6 +519,7 @@ export async function comparePublicShoes(slugs: string[]) {
   const shoes = records as RunningShoe[];
   return {
     shoes: shoes.map(sanitizeShoe),
+    guides: shoes.slice(1).map(shoe => buildComparisonGuide(shoes[0], shoe)),
     comparison: shoes.map((shoe) => ({
       slug: shoe.slug,
       weightOunces: shoe.weight,
@@ -555,9 +527,10 @@ export async function comparePublicShoes(slugs: string[]) {
       heelStackHeightMm: shoe.heelStackHeight,
       forefootStackHeightMm: shoe.forefootStackHeight,
       priceUsd: shoe.price,
-      durabilityRating: shoe.durabilityRating,
-      responsivenessRating: shoe.responsivenessRating,
-      comfortRating: shoe.comfortRating,
+      evidence: shoeEvidence(shoe),
+      durabilityRating: null,
+      responsivenessRating: null,
+      comfortRating: null,
       hasCarbonPlate: shoe.hasCarbonPlate,
       hasSuperFoam: shoe.hasSuperFoam,
       category: shoe.category,
@@ -565,7 +538,7 @@ export async function comparePublicShoes(slugs: string[]) {
       cushioningLevel: shoe.cushioningLevel,
       bestFor: shoe.bestFor,
     })),
-    limitation: "Source-linked specs. Running Warehouse entries use men's/unisex US 9; other sources may use different sizes. USD catalog prices are not live offers. Null ratings/specs mean not verified, not zero or worse performance. Fit testing still matters.",
+    limitation: SHOE_METHODOLOGY + " Historical records are not newly verified. Only compare dated measurements on the same basis. Prices are snapshots, not live offers. Do not convert missing evidence into zero scores or a winner.",
   };
 }
 

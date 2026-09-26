@@ -11,6 +11,11 @@ async function hydratePublicTool() {
   ]);
   const Component = await loadPublicToolComponent(window.location.pathname);
   if (Component) {
+    const state = document.getElementById('public-shoe-state');
+    if (state?.textContent) {
+      const { hydrate } = await import('@tanstack/react-query');
+      try { hydrate(queryClient, JSON.parse(state.textContent)); } catch { /* A fresh public query can recover. */ }
+    }
     hydrateRoot(root, <PublicToolApp Component={Component} queryClient={queryClient} />);
     return;
   }

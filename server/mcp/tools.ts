@@ -303,7 +303,7 @@ export function createPublicMcpServer(): McpServer {
   const server = new McpServer({ name: `${MCP_SERVER_NAME}-public`, version: MCP_SERVER_VERSION });
   server.registerTool("search_running_shoes", {
     title: "Search running shoes",
-    description: "Search the public RunAnalytics running-shoe catalog. Returns at most 50 sanitized catalog records.",
+    description: "Search up to 50 public running-shoe records with source URLs, verification dates, units and evidence status. Historical records are not newly verified. Null ratings are not zero scores. No live stock or hands-on testing is implied.",
     inputSchema: z.object({
       query: z.string().max(120).optional(),
       brand: z.string().max(80).optional(),
@@ -320,7 +320,7 @@ export function createPublicMcpServer(): McpServer {
 
   server.registerTool("get_running_shoe", {
     title: "Get running shoe",
-    description: "Read one public running-shoe catalog record by slug.",
+    description: "Read one public shoe with the same source-backed buying guide, caveats, FAQs and methodology shown on its web page. Preserve evidence status and cite its source URL and recorded check date. This is not a hands-on review.",
     inputSchema: z.object({ slug: z.string().min(1).max(120) }).strict(),
     outputSchema: z.object({ shoe: z.record(z.unknown()) }),
     annotations: READ_ONLY_ANNOTATIONS,
@@ -344,11 +344,12 @@ export function createPublicMcpServer(): McpServer {
 
   server.registerTool("compare_running_shoes", {
     title: "Compare running shoes",
-    description: "Compare two to four public running-shoe catalog records using bounded specifications and ratings. Does not generate or modify catalog data.",
+    description: "Compare two to four public shoes with evidence status, source dates, measurements and buying guides comparing the first shoe to each other shoe. Do not infer a performance winner from unverified records or unpublished values. Read-only.",
     inputSchema: z.object({ slugs: z.array(z.string().min(1).max(120)).min(2).max(4) }).strict(),
     outputSchema: z.object({
       shoes: z.array(z.record(z.unknown())),
       comparison: z.array(z.record(z.unknown())),
+      guides: z.array(z.record(z.unknown())),
       limitation: z.string(),
     }),
     annotations: READ_ONLY_ANNOTATIONS,
