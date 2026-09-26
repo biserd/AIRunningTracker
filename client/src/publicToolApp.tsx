@@ -77,9 +77,9 @@ export function PublicToolApp({ Component, queryClient, ssrPath }: PublicToolApp
           <ExternalLinkPolicy />
           <Toaster />
           <Switch>
-            <Route path="/tools/shoes/compare/:slug" component={Component} />
-            <Route path="/tools/shoes/:slug" component={Component} />
-            <Route component={Component} />
+            <Route path="/tools/shoes/compare/:slug"><Component /></Route>
+            <Route path="/tools/shoes/:slug"><Component /></Route>
+            <Route><Component /></Route>
           </Switch>
         </TooltipProvider>
       </QueryClientProvider>
