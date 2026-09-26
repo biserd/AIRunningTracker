@@ -1,6 +1,23 @@
 import XCTest
 
 final class SignInTests: XCTestCase {
+    func testReviewerSignInIsSeparateFromNormalEmailLinks() {
+        let app=XCUIApplication()
+        app.launchArguments=["--test-sign-in-screen"]
+        app.launch()
+        let help=app.buttons["Trouble signing in?"]
+        for _ in 0..<3 { if help.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(help.waitForExistence(timeout:5)); help.tap()
+        let reviewer=app.buttons["reviewer-sign-in"]
+        for _ in 0..<3 { if reviewer.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(reviewer.waitForExistence(timeout:5)); reviewer.tap()
+        XCTAssertTrue(app.textFields["reviewer-email"].waitForExistence(timeout:5))
+        XCTAssertTrue(app.secureTextFields["reviewer-password"].exists)
+        XCTAssertFalse(app.buttons["reviewer-submit"].isEnabled)
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.buttons["Email me a sign-in link"].exists)
+        // Never send review credentials or sign in to production from UI tests.
+    }
     func testEmailFieldCanBeTappedAndTypedInto() {
         let app = XCUIApplication()
         app.launchArguments = ["--test-sign-in-screen"]

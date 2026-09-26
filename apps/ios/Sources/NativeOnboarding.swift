@@ -3,13 +3,14 @@ import AuthenticationServices
 import StoreKit
 
 struct NativeOnboarding:Decodable {
+    var sampleData:Bool? = nil
     let stravaConnected:Bool
     let syncStatus:String?
     let hasAccess:Bool
     let billingProvider:String?
     let appAccountToken:String
     let purchasesAvailable:Bool
-    var ready:Bool { stravaConnected && hasAccess }
+    var ready:Bool { (stravaConnected || sampleData == true) && hasAccess }
 }
 struct NativeStravaStart:Decodable { let url:String; let state:String }
 
@@ -53,6 +54,10 @@ struct NativeOnboardingView:View {
                 VStack(alignment:.leading,spacing:24) {
                     Text(managing ? "Your account" : "Make it your coach").font(.largeTitle.bold())
                     if let status=store.onboarding {
+                        if status.sampleData == true {
+                            Label("Review account · Sample running data",systemImage:"info.circle")
+                            Text("No personal Strava connection is shared. To test connecting Strava and subscribing, sign out and create a separate account.").font(.footnote).foregroundStyle(.secondary)
+                        }
                         VStack(alignment:.leading,spacing:14) {
                             Label("1. Connect your running",systemImage:status.stravaConnected ? "checkmark.circle.fill" : "figure.run").font(.title2.bold())
                             Text(status.stravaConnected ? "Strava connected. Your runs sync in the background." : "Bring your Strava runs into your coaching.").foregroundStyle(.secondary)

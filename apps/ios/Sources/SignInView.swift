@@ -28,6 +28,7 @@ struct SignInView: View {
     @State private var sending = false
     @State private var signup = false
     @State private var acceptedTerms = false
+    @State private var showReviewer = false
     @FocusState private var emailFocused: Bool
 
     var body: some View {
@@ -98,6 +99,8 @@ struct SignInView: View {
 
                 DisclosureGroup(isExpanded: $showLink) {
                     VStack(alignment: .leading, spacing: 16) {
+                        Button("Reviewer sign-in") { showReviewer=true }
+                            .accessibilityIdentifier("reviewer-sign-in")
                         Text("If your email opens a browser instead, request a fresh link. Press and hold its sign-in button, copy the link, and paste it here without opening it first.")
                             .font(.callout).foregroundStyle(.secondary)
                         TextField("Paste your sign-in link", text: $link, axis: .vertical)
@@ -123,6 +126,7 @@ struct SignInView: View {
         }
         .background { RunAmbientBackdrop() }
         .scrollDismissesKeyboard(.interactively)
+        .sheet(isPresented:$showReviewer) { ReviewerSignInView() }
     }
 
     private func sendLink() {
@@ -135,6 +139,38 @@ struct SignInView: View {
             if await store.requestSignInLink(email: requestedEmail,signup:signup) {
                 sentTo = requestedEmail.trimmingCharacters(in: .whitespacesAndNewlines)
             }
+        }
+    }
+}
+
+struct ReviewerSignInView:View {
+    @EnvironmentObject var store:CoachStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var email=""
+    @State private var password=""
+    var body:some View {
+        NavigationStack {
+            Form {
+                Section("App review account") {
+                    Text("Use the dedicated credentials supplied in App Store Connect. This account contains sample running data, not a connected runner’s Strava account.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                    TextField("Review account email",text:$email)
+                        .textContentType(.username).keyboardType(.emailAddress)
+                        .textInputAutocapitalization(.never).autocorrectionDisabled()
+                        .accessibilityIdentifier("reviewer-email")
+                    SecureField("Review account password",text:$password)
+                        .textContentType(.password).accessibilityIdentifier("reviewer-password")
+                    if let failure=store.signInFailure { Text(failure).foregroundStyle(.red) }
+                    Button { Task {
+                        if await store.reviewerSignIn(email:email,password:password) { password=""; dismiss() }
+                    } } label: {
+                        HStack { if store.verifyingSignIn { ProgressView() }; Text("Sign in to review account") }
+                    }.disabled(store.busy||email.isEmpty||password.isEmpty)
+                        .accessibilityIdentifier("reviewer-submit")
+                }
+            }.navigationTitle("Reviewer sign-in")
+                .toolbar { ToolbarItem(placement:.cancellationAction) { Button("Cancel") { password=""; dismiss() } } }
+                .tint(RunBrand.orange)
         }
     }
 }

@@ -86,6 +86,24 @@ import Combine
             return true
         } catch { signInFailure = error.localizedDescription; return false }
     }
+    func reviewerSignIn(email:String,password:String) async -> Bool {
+        guard !busy,!verifyingSignIn else { return false }
+        let generation=sessionGeneration
+        busy=true; verifyingSignIn=true; signInFailure=nil
+        defer { busy=false; verifyingSignIn=false }
+        do {
+            try await api.reviewerSignIn(email:email.trimmingCharacters(in:.whitespacesAndNewlines).lowercased(),password:password)
+            guard generation==sessionGeneration else { return false }
+            sessionGeneration=UUID(); pendingSignIn=nil; retrySignInLink=nil; canRetrySignIn=false
+            subscriptions?.stop(); subscriptions=nil; onboarding=nil
+            snapshot=nil; companion=nil; messages=[]; reminders=[]; whatsapp=nil; review=nil; reminderReview=nil; verifiedEmail=""
+            needsSignIn=false; await refresh()
+            return !needsSignIn
+        } catch {
+            if generation==sessionGeneration { signInFailure=error.localizedDescription }
+            return false
+        }
+    }
     func retrySignIn() async {
         guard let retrySignInLink, canRetrySignIn else { return }
         await verify(link: retrySignInLink)

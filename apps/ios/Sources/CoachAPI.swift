@@ -65,6 +65,25 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
         session = URLSession(configuration: config, delegate: RejectRedirects(), delegateQueue: nil)
     }
     func restore() throws { credential = try vault.load() }
+    func reviewerSignIn(email:String,password:String) async throws {
+        let current=generation
+        var request=URLRequest(url:URL(string:"https://aitracker.run/api/auth/reviewer-login")!)
+        request.httpMethod="POST"
+        request.setValue("application/json",forHTTPHeaderField:"Content-Type")
+        request.setValue("https://aitracker.run",forHTTPHeaderField:"Origin")
+        request.httpBody=try JSONSerialization.data(withJSONObject:["email":email,"password":password])
+        let (data,response)=try await session.data(for:request)
+        guard current==generation else { throw CancellationError() }
+        guard let http=response as? HTTPURLResponse,data.count<16000 else { throw APIError.invalidResponse }
+        guard http.statusCode==200 else {
+            throw APIError.server(http.statusCode,http.statusCode==429 ? "Too many attempts. Please retry in ten minutes." : "Reviewer sign-in failed. Check the credentials in App Store Connect.")
+        }
+        struct Login:Decodable { let token:String }
+        let result=try JSONDecoder().decode(Login.self,from:data)
+        guard result.token.count<8000,result.token.split(separator:".").count==3 else { throw APIError.invalidResponse }
+        let saved=SavedSession(token:result.token,expires:Date().addingTimeInterval(604800))
+        try vault.save(saved); credential=saved
+    }
     func clear() throws { generation = UUID(); credential = nil; if managesVault { try vault.clear() } }
     func signOutCleanupClient() -> CoachAPI {
         let client = CoachAPI(timeout: 5, vault: vault)

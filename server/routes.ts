@@ -1390,6 +1390,19 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  app.post('/api/auth/reviewer-login', async (req,res) => {
+    res.setHeader('Cache-Control','no-store');
+    try {
+      const {reviewerLogin}=await import('./services/reviewerAccess');
+      const {applicationSqlDatabase}=await import('./d1/runtimeDatabase');
+      res.json(await reviewerLogin(applicationSqlDatabase,req.body,req.ip||'unknown',credentials=>authService.login(credentials)));
+    } catch(error) {
+      const limited=error instanceof Error&&error.message==='REVIEW_RATE_LIMIT';
+      if(limited)res.setHeader('Retry-After','600');
+      res.status(limited?429:401).json({message:limited?'Too many attempts. Please retry in ten minutes.':'Reviewer sign-in failed. Check the review account credentials.'});
+    }
+  });
+
   app.post("/api/auth/login", async (req, res) => {
     try {
       const loginData = loginSchema.parse(req.body);
@@ -7759,13 +7772,14 @@ ${allPages.map(page => `  <url>
       const userId = req.user.id;
       
       // Get user's unit preference (fallback to "km" to match frontend behavior when null)
-      const user = await storage.getUser(userId);
+      const user = await requireCapability(req, res, "training_plans");
+      if (!user) return;
       const unitPreference = user?.unitPreference || "km";
       
       const request = {
+        ...req.body,
         userId,
         unitPreference,
-        ...req.body,
       };
       
       // Use instant generation - returns immediately, enrichment happens in background
@@ -7953,6 +7967,7 @@ ${allPages.map(page => `  <url>
   // Update training plan settings
   app.patch("/api/training/plans/:planId/settings", authenticateJWT, async (req: any, res) => {
     try {
+      if (!await requireCapability(req, res, "training_plans")) return;
       const userId = req.user.id;
       const planId = parseInt(req.params.planId);
       
@@ -8250,6 +8265,7 @@ ${allPages.map(page => `  <url>
   // Adjust training plan - deterministic coach-like adjustments
   app.post("/api/training/plans/:planId/adjust", authenticateJWT, async (req: any, res) => {
     try {
+      if (!await requireCapability(req, res, "training_plans")) return;
       const userId = req.user.id;
       const planId = parseInt(req.params.planId);
       const { feeling, skipSync } = req.body; // "tired" or "strong", optionally skip pre-sync
@@ -8659,7 +8675,8 @@ ${allPages.map(page => `  <url>
       const user=await storage.getUser(req.user.id);
       if(!user)return res.sendStatus(401);
       const apple=await ledger.access(user.id) || (process.env.APPLE_SUBSCRIPTIONS_ALLOW_SANDBOX==='true' ? await ledger.access(user.id,'Sandbox') : null);
-      res.json({stravaConnected:user.stravaConnected===true,syncStatus:user.syncStatus,hasAccess:canAccessCapability(user,'ai_coach'),
+      const {isReviewAccount}=await import('./services/reviewerAccess');
+      res.json({sampleData:isReviewAccount(user),stravaConnected:user.stravaConnected===true,syncStatus:user.syncStatus,hasAccess:canAccessCapability(user,'ai_coach'),
         billingProvider:apple?'apple':user.stripeSubscriptionId?'stripe':null,
         appAccountToken:await ledger.accountToken(user.id),productIDs:APPLE_PRODUCTS,
         purchasesAvailable:true});
