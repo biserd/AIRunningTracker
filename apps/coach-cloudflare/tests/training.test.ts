@@ -13,7 +13,7 @@ test('full active plan context is owner-scoped, preloaded for voice, and omits s
   const urls:string[]=[];
   const env={BACKEND:{fetch:async(url:string,init:RequestInit)=>{
     urls.push(url);assert.equal(new Headers(init.headers).get('Authorization'),'Bearer synthetic');
-    if(url.endsWith('/api/user'))return Response.json({id:105,email:'biserd@gmail.com',firstName:'Runner',stravaAccessToken:'SECRET'});
+    if(url.endsWith('/api/user'))return Response.json({id:105,email:'new.runner@example.test',firstName:'Runner',stravaAccessToken:'SECRET'});
     if(url.endsWith('/api/training/plans'))return Response.json([{id:76,userId:105,status:'active'},{id:99,userId:999,status:'active'}]);
     if(url.endsWith('/plans/76'))return Response.json({id:76,userId:105,weeks:[{weekNumber:18,days:[{id:11,planId:76,title:'Race day',description:'Full race strategy',targetPace:'5:00/km',workoutStructure:{main:'Race'}},{id:12,planId:999,title:'FOREIGN'}]}]});
     if(url.includes('/recovery/'))return new Response('',{status:503});
@@ -26,6 +26,18 @@ test('full active plan context is owner-scoped, preloaded for voice, and omits s
   assert.ok(!urls.some(u=>u.includes('999')||u.endsWith('/99')));
   const prompt=voiceInstructions({...account.state,trainingContext:result});assert.ok(prompt.includes('Delegate detailed training'));assert.ok(JSON.stringify(result).includes('Full race strategy'));
   const other=await trainingContext(env,'synthetic',{...account,runner:{...account.runner,id:106}});assert.equal(other.canWritePlans,false);
+});
+test('plan permissions need entitlement and a verified matching profile, not a particular email',async()=>{
+ for(const [profile,canUseAI,expected] of [
+  [{id:105,email:'another.runner@example.test'},true,true],
+  [{id:105},true,true],
+  [{id:105,email:'biserd@gmail.com'},false,false],
+  [{id:999},true,false],
+  [{},true,false],
+ ] as const){
+  const env={BACKEND:{fetch:async(url:string)=>Response.json(url.endsWith('/api/user')?profile:[])}} as unknown as Env;
+  assert.equal((await trainingContext(env,'synthetic',{...account,canUseAI})).canWritePlans,expected);
+ }
 });
 test('precise workout edits validate operation, duration, ownership and occupied dates',()=>{
  const day=new Date(Date.now()+86400000).toISOString().slice(0,10),rest=new Date(Date.now()+2*86400000).toISOString().slice(0,10);
@@ -54,6 +66,9 @@ test('plan confirmation is explicit, owner scoped, stale-safe and once-only',asy
   await assert.rejects(confirmPlan(f.env,'synthetic','b',account,context,{id:draft.id,confirm:true}));
   await assert.rejects(confirmPlan(f.env,'synthetic','a',account,context,{id:draft.id,confirm:false}));
   await assert.rejects(confirmPlan(f.env,'synthetic','a',account,{...context,plans:[]},{id:draft.id,confirm:true}));
+  await assert.rejects(confirmPlan(f.env,'synthetic','a',{...account,canUseAI:false},context,{id:draft.id,confirm:true}));
+  await assert.rejects(confirmPlan(f.env,'synthetic','a',account,{...context,canWritePlans:false},{id:draft.id,confirm:true}));
+  assert.equal(writes,0);
   const results=await Promise.allSettled([1,2].map(()=>confirmPlan(f.env,'synthetic','a',account,context,{id:draft.id,confirm:true})));
   assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal(writes,1);
 });

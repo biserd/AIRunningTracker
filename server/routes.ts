@@ -8660,6 +8660,8 @@ ${allPages.map(page => `  <url>
 
   app.post('/api/native/strava/start',authenticateJWT,async(req:any,res)=>{
     try {
+      const {isReviewAccount}=await import('./services/reviewerAccess');
+      if(isReviewAccount(await storage.getUser(req.user.id)))return res.status(403).json({message:'Create a separate account to test your own Strava connection. The shared review account uses sample data.'});
       const {NativeStrava}=await import('./services/nativeStrava');
       const {applicationSqlDatabase}=await import('./d1/runtimeDatabase');
       res.setHeader('Cache-Control','no-store');

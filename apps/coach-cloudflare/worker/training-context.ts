@@ -20,8 +20,9 @@ export async function trainingContext(env:Env,token:string,account:AccountSnapsh
     read('athlete profile','/api/training/profile'),
   ]);
   const user=object(profile);
-  // Only the explicitly approved test runner can write through this new surface.
-  const canWritePlans=account.canUseAI && user.id===id && user.email==='biserd@gmail.com';
+  // Eligibility comes from the authenticated backend's paid/trial entitlement,
+  // never an email allowlist. Fail closed if the profile cannot prove ownership.
+  const canWritePlans=account.canUseAI===true && Number.isSafeInteger(id) && id>0 && user.id===id;
   const owned=(Array.isArray(listed)?listed:[]).map(object).filter(p=>p.userId===id);
   const plans=owned.slice(0,30).map(p=>pick(p,planFields));
   // Full active plan, including past and future weeks. No 7-day-only context.

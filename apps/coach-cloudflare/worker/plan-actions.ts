@@ -2,7 +2,7 @@ import {AIError} from './openai';
 import {backend,type AccountSnapshot} from './account';
 import type {PlanIntent,PlanReview,TrainingContext} from '../shared/training';
 export function validatePlanIntent(raw:unknown,context:TrainingContext):PlanIntent{
-  if(!context.canWritePlans)throw new AIError('Plan editing is only enabled for the approved test account.',403);
+  if(!context.canWritePlans)throw new AIError('Plan editing requires eligible coaching access and a verified account.',403);
   if(!raw || typeof raw!=='object' || Array.isArray(raw))throw new AIError('Invalid plan request',400);
   const v=raw as Record<string,unknown>;
   const allowed=v.kind==='workout'?['kind','planId','dayId','operation','minutes','date']:v.kind==='create'?['kind','goalType','raceDate','preferredRunDays','maxWeeklyHours','constraints']:v.kind==='adjust'?['kind','planId','feeling']:['kind','planId','raceDate','targetTime'];
@@ -27,7 +27,7 @@ export function validatePlanIntent(raw:unknown,context:TrainingContext):PlanInte
     const weeks=(Array.isArray(plan.weeks)?plan.weeks:[]).filter(w=>Date.parse(w.weekEndDate)>=Date.now()).slice(0,2);
     const today=new Date().toISOString().slice(0,10);
     // The legacy adjustment route does not skip completed/past days. Do not
-    // expose that behavior through this new agent, even for the test account.
+    // expose that behavior through this agent for any account.
     if(!weeks.length || weeks.some(w=>!Array.isArray(w.days)||w.days.some((d:Record<string,unknown>)=>d.workoutType!=='rest' && (d.status!=='pending'||String(d.date).slice(0,10)<today))))
       throw new AIError('This week includes past or completed workouts. Use the main plan editor; the coach will not overwrite those workouts.',409);
     return {kind:'adjust',planId:v.planId as number,feeling:v.feeling as 'tired'|'strong'};

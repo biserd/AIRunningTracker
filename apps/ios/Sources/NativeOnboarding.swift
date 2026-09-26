@@ -60,8 +60,8 @@ struct NativeOnboardingView:View {
                         }
                         VStack(alignment:.leading,spacing:14) {
                             Label("1. Connect your running",systemImage:status.stravaConnected ? "checkmark.circle.fill" : "figure.run").font(.title2.bold())
-                            Text(status.stravaConnected ? "Strava connected. Your runs sync in the background." : "Bring your Strava runs into your coaching.").foregroundStyle(.secondary)
-                            if !status.stravaConnected {
+                            Text(status.sampleData == true ? "Sample runs are preloaded. No Strava account is connected." : status.stravaConnected ? "Strava connected. Your runs sync in the background." : "Bring your Strava runs into your coaching.").foregroundStyle(.secondary)
+                            if !status.stravaConnected && status.sampleData != true {
                                 Button("Connect Strava") { Task { await connect() } }.buttonStyle(.borderedProminent).disabled(busy)
                             }
                         }.padding(22).frame(maxWidth:.infinity,alignment:.leading).background(RunBrand.surface,in:RoundedRectangle(cornerRadius:22))

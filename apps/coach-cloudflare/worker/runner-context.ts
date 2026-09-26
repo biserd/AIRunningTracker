@@ -22,6 +22,7 @@ export async function runnerFingerprint(account: AccountSnapshot) {
   delete state.updatedAt;
   return digest(
     JSON.stringify({
+      planAccessPolicy: 2,
       runner: account.runner,
       canUseAI: account.canUseAI,
       state,

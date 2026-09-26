@@ -29,7 +29,7 @@ export async function companionAction(user:number,action:string,input:Record<str
  const runner=await storage.getUser(user);if(!runner)throw new Error('Account unavailable.');
  const local=companionLocal(new Date(),runner.coachTimezone||'UTC');
  if(action==='workout-edit'){
-  if(runner.email!=='biserd@gmail.com'||!canAccessCapability(runner,'ai_coach'))throw new Error('Plan editing is not enabled for this account.');
+  if(!canAccessCapability(runner,'ai_coach'))throw new Error('Plan editing requires an active Premium subscription or trial.');
   const {editCoachWorkout}=await import('./coachWorkoutEdit');
   return editCoachWorkout(user,input,local.date);
  }
