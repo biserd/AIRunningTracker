@@ -25,3 +25,13 @@ Run Analytics uses email-link sign-in for ordinary users. A dedicated sample acc
 6. The sample account already has coaching access and no paid subscription. To test the normal signup, Strava connection and Apple subscription flow, sign out and create a separate account with an email inbox you control. The monthly and annual subscriptions offer a seven-day introductory trial to eligible users; StoreKit determines localized prices and eligibility.
 
 These notes must accompany the review credentials; do not supply the owner's login, a one-time email link, or a Strava password.
+
+## Release verification — 26 September 2026
+
+- Native build **1.0 (34)** uploaded successfully in GitHub Actions run `36278199761`, completed Apple processing, and was assigned to **AITracker Internal**. iPhone and iPad CI passed in run `36278181240`.
+- Production backend: `45961e01-5a32-4c63-b031-6733d814bbd6`; container version 30, image digest `4198faf775600526384278255548ac3d6fbae9fa372bcb5365f62a06bc02d069` from commit `70ea379`.
+- Coach Worker: `a2a431c3-9df1-42bc-bee9-0717fb828269`, retaining the live weather fixes.
+- Sample account 688 contains 40 runs, eight saved recaps and four complete plan weeks. Live queries confirmed no Strava secrets, Stripe IDs, GPS routes, streams or laps were copied; outbound marketing/post-run preferences are disabled.
+- Live checks passed: reusable reviewer login, rejection of wrong credentials/ordinary users, native onboarding, score, calendar, recaps, complete plan, cross-account denial and review-account Strava isolation.
+- Coach context loaded without missing sections. A reviewed and confirmed sample workout edit persisted to exactly one day, leaving the other 27 unchanged. This changed only the dedicated sample account.
+- Physical-device voice playback and the new native login on the user's phone still need a TestFlight smoke test. Server chat and native simulator tests are verified.

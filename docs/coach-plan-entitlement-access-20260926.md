@@ -1,6 +1,6 @@
 # Plan access: personal pilot to paid/trial entitlement
 
-Implemented 26 September 2026. Not deployed by this task.
+Implemented and deployed 26 September 2026 as part of the isolated App Review release.
 
 ## Behavior
 
@@ -21,4 +21,6 @@ Implemented 26 September 2026. Not deployed by this task.
 
 ## Release
 
-Deploy main backend and coach Worker together (main entitlement guards first). No D1 migration is needed. Verify on a non-owner eligible account: prepare a plan, confirm, reload, and confirm isolation against a second account. Do not use an existing runner's real plan for destructive smoke tests without approval. No production plan was created or changed during this work.
+Main backend was deployed first: Worker `45961e01-5a32-4c63-b031-6733d814bbd6`, immutable container built from `70ea379`. Coach Worker followed: `a2a431c3-9df1-42bc-bee9-0717fb828269`, preserving the previously deployed WhatsApp weather baseline. No D1 schema migration was needed.
+
+Live verification used only the isolated sample account (688): context loaded with no unavailable sections, plan-write eligibility was true, chat prepared a workout review, confirmation shortened one sample easy run to 20 minutes, and a fresh plan read retained all 28 days with exactly one changed day. Requests for another runner's score were denied. No owner's plan or account data was changed.
