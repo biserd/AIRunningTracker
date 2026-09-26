@@ -70,8 +70,8 @@ struct RunDetailView:View {
         List {
             Section(runnerDay(run.date, today: store.snapshot?.state.today)) {
                 LabeledContent("Distance",value:runnerDistance(run.km,units:miles ? "miles" : "km"))
-                LabeledContent("Moving time",value:detail?.formattedDuration ?? "\(Int(run.minutes)) min")
-                LabeledContent("Average pace",value:runPace(minutes:run.minutes,km:run.km,miles:miles))
+                LabeledContent("Moving time",value:detail?.formattedDuration ?? (run.minutes > 0 ? "\(Int(run.minutes)) min" : (loading ? "Loading…" : "Not recorded")))
+                LabeledContent("Average pace",value:detail?.formattedPace.map { "\($0) \(detail?.paceUnit ?? (miles ? "/mi" : "/km"))" } ?? runPace(minutes:run.minutes,km:run.km,miles:miles))
                 LabeledContent("Average HR",value:heartRate(detail?.averageHeartrate))
                 LabeledContent("Max HR",value:heartRate(detail?.maxHeartrate))
                 LabeledContent("Elevation gain",value:detail?.totalElevationGain.map { "\(Int(($0 * (miles ? 3.28084 : 1)).rounded())) \(miles ? "ft" : "m")" } ?? "Not recorded")
@@ -119,6 +119,13 @@ struct RunDetailView:View {
     }
     private func heartRate(_ value:Double?)->String { value.map { "\(Int($0.rounded())) bpm" } ?? "Not recorded" }
     private func load() async {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--test-calendar-navigation") {
+            detail=try? JSONDecoder().decode(RunDetail.self,from:Data(#"{"formattedDuration":"30:00","formattedPace":"9:39","paceUnit":"/mi","averageHeartrate":145,"lapsData":"[]"}"#.utf8))
+            loading=false; preparingLaps=false
+            return
+        }
+        #endif
         loading=true; failure=nil; preparationFailure=nil; preparingLaps=true
         analysisRefresh += 1
         do { detail=try await store.api.runDetail(run.id).activity; loading=false }

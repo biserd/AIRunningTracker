@@ -41,7 +41,38 @@ final class InsightLayoutTests:XCTestCase {
         XCTAssertFalse(app.buttons["Save"].exists)
     }
     private func capture(_ name:String) {
-        let attachment=XCTAttachment(screenshot:XCUIApplication().screenshot())
+        let attachment=XCTAttachment(screenshot:XCUIDevice.shared.screenshot())
         attachment.name=name; attachment.lifetime = .keepAlways; add(attachment)
+    }
+    func testContributionGridOpensRunDetails() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--test-adaptive-layout", "--test-insights", "--test-calendar-navigation"]
+        app.launch()
+        XCUIDevice.shared.orientation = UIDevice.current.userInterfaceIdiom == .pad ? .landscapeLeft : .portrait
+        defer { XCUIDevice.shared.orientation = .portrait }
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            let progress = app.descendants(matching: .any)["sidebar-progress"].firstMatch
+            XCTAssertTrue(progress.waitForExistence(timeout: 10)); progress.tap()
+        } else { app.tabBars.buttons["Progress"].tap() }
+        let day = app.buttons["activity-day-2026-09-30"]
+        for _ in 0..<7 {
+            if day.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(day.waitForExistence(timeout: 5)); XCTAssertTrue(day.isHittable)
+        day.tap()
+        let run = app.buttons["calendar-run-182"]
+        for _ in 0..<3 {
+            if run.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(run.waitForExistence(timeout: 5))
+        capture("Contribution calendar with linked run")
+        run.tap()
+        XCTAssertTrue(app.navigationBars["Easy run"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["30:00"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["9:39 /mi"].exists)
+        XCTAssertEqual(app.webViews.count, 0)
+        capture("Run opened from activity calendar")
     }
 }

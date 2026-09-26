@@ -66,6 +66,12 @@ struct RunAnalysisView:View {
     }
     @MainActor private func load() async {
         let runner=store.snapshot?.runner.id
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--test-calendar-navigation") {
+            loading=false; preparing=false; recap=nil
+            return
+        }
+        #endif
         loading=true; preparing=false; failure=nil; recap=nil
         for attempt in 0..<15 {
             do {
@@ -95,16 +101,6 @@ struct RunningProgressView:View {
     @State private var calendar:NativeActivityCalendar?
     @State private var failures:[String]=[]
     @State private var loading=false
-    @State private var month=""
-    @State private var selected:NativeActivityCalendar.Day?
-    private var visibleDays:[NativeActivityCalendar.Day] { calendar?.days.filter { $0.date.hasPrefix(month) } ?? [] }
-    private var offset:Int {
-        guard let date=visibleDays.first?.date else { return 0 }
-        let formatter=DateFormatter(); formatter.locale=Locale(identifier:"en_US_POSIX"); formatter.timeZone=TimeZone(secondsFromGMT:0); formatter.dateFormat="yyyy-MM-dd"
-        guard let value=formatter.date(from:date) else { return 0 }
-        var cal=Calendar(identifier:.gregorian); cal.timeZone=TimeZone(secondsFromGMT:0)!
-        return (cal.component(.weekday,from:value)+5)%7
-    }
     var body:some View {
         ScrollView {
             VStack(spacing:20) {
@@ -141,33 +137,7 @@ struct RunningProgressView:View {
                     }
                 }
                 if let calendar {
-                    InsightCard(title:"Activity calendar",symbol:"calendar",color:RunBrand.teal) {
-                        if calendar.days.isEmpty { Text("No calendar data available yet.") }
-                        else {
-                            Picker("Month",selection:$month) { ForEach(calendar.months,id:\.self) { Text(runnerMonth($0)).tag($0) } }.pickerStyle(.menu)
-                            Text("Tap a day to see its runs. Darker means more distance.").font(.caption).foregroundStyle(.secondary)
-                            ScrollView(.horizontal, showsIndicators: false) {
-                            LazyVGrid(columns:Array(repeating:GridItem(.flexible(minimum:44),spacing:2),count:7),spacing:4) {
-                                ForEach(Array(["M","T","W","T","F","S","S"].enumerated()),id:\.offset) { _,day in Text(day).font(.caption).foregroundStyle(.secondary) }
-                                ForEach(0..<offset,id:\.self) { _ in Color.clear.frame(height:44) }
-                                ForEach(visibleDays) { day in
-                                    Button { selected=day } label: {
-                                        Text(String(day.date.suffix(2))).font(.callout.monospacedDigit()).frame(minWidth:44,maxWidth:.infinity,minHeight:44)
-                                            .background(RunBrand.teal.opacity(day.totalDistanceKm>0 ? 0.2+0.55*min(1,day.totalDistanceKm/max(1,calendar.maxDistance)) : 0.06),in:RoundedRectangle(cornerRadius:7))
-                                            .overlay(RoundedRectangle(cornerRadius:7).strokeBorder(selected?.id==day.id ? RunBrand.orange : .clear,lineWidth:2))
-                                    }.buttonStyle(.plain).accessibilityLabel("\(day.date), \(runnerDistance(day.totalDistanceKm,units:calendar.unitPreference)), \(day.activities.count) runs")
-                                }
-                            }.frame(minWidth:320)
-                            }
-                            if let selected {
-                                Text(runnerDay(selected.date, today: store.snapshot?.state.today)).font(.headline)
-                                if selected.activities.isEmpty { Text("No recorded runs.").foregroundStyle(.secondary) }
-                                ForEach(selected.activities) { run in
-                                    HStack { Text(run.name); Spacer(); Text(runnerDistance(run.distanceKm,units:calendar.unitPreference)).foregroundStyle(.secondary) }
-                                }
-                            }
-                        }
-                    }.onChange(of:month) { _,_ in selected=nil }
+                    ActivityContributionCard(calendar: calendar)
                 }
             }.padding(20).frame(maxWidth:760).frame(maxWidth:.infinity)
         }.background(RunBrand.canvas).navigationTitle("Progress")
@@ -200,19 +170,18 @@ struct RunningProgressView:View {
                 return .init(date: formatter.string(from: date), totalDistanceKm: day % 3 == 0 ? 5 : 0,
                     activities: day % 3 == 0 ? [.init(id: offset, name: "Easy run", distanceKm: 5)] : [])
             }, maxDistance: 5, unitPreference: "miles")
-            month = "2026-09"
             return
         }
         #endif
         guard !loading,let id=store.snapshot?.runner.id else { return }
-        loading=true; failures=[]; score=nil; calendar=nil; selected=nil
+        loading=true; failures=[]; score=nil; calendar=nil
         defer { loading=false }
         async let s=fetch { try await store.api.runnerScore(id) }
         async let c=fetch { try await store.api.activityCalendar() }
         let results=await(s,c)
         guard !Task.isCancelled,store.snapshot?.runner.id==id,!store.needsSignIn else { return }
         switch results.0 { case .success(let value):score=value; case .failure:failures.append("Runner Score could not load.") }
-        switch results.1 { case .success(let value):calendar=value; if !value.months.contains(month) { month=value.months.last ?? "" }; case .failure:failures.append("Running distance and activity calendar could not load.") }
+        switch results.1 { case .success(let value):calendar=value; case .failure:failures.append("Running distance and activity calendar could not load.") }
     }
     @MainActor private func fetch<T>(_ action:() async throws -> T) async -> Result<T,Error> { do { return .success(try await action()) } catch { return .failure(error) } }
 }
