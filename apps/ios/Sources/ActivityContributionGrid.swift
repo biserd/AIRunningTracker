@@ -61,7 +61,7 @@ struct ActivityContributionCard: View {
                         ForEach(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], id: \.self) { day in
                             Text(day).font(.caption2).foregroundStyle(.secondary).frame(width: 32, height: cell)
                         }
-                    }.accessibilityHidden(true)
+                    }.frame(width: 32).accessibilityHidden(true)
                     ScrollView(.horizontal) {
                         HStack(alignment: .top, spacing: 4) {
                             ForEach(Array(weeks.enumerated()), id: \.element.id) { index, week in

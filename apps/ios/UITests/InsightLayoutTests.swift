@@ -67,11 +67,14 @@ final class InsightLayoutTests:XCTestCase {
             app.swipeUp()
         }
         XCTAssertTrue(run.waitForExistence(timeout: 5))
+        let grid = app.scrollViews["activity-contribution-grid"].firstMatch
+        XCTAssertTrue(grid.exists)
+        XCTAssertGreaterThan(grid.frame.width, app.frame.width * 0.45, "The contribution grid should use the content width, not share it with an expanding weekday-label column.")
         capture("Contribution calendar with linked run")
         run.tap()
         XCTAssertTrue(app.navigationBars["Easy run"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["30:00"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["9:39 /mi"].exists)
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "30:00")).firstMatch.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "9:39 /mi")).firstMatch.exists)
         XCTAssertEqual(app.webViews.count, 0)
         capture("Run opened from activity calendar")
     }
