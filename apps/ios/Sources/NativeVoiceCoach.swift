@@ -240,7 +240,7 @@ struct NativeVoiceControls: View {
                         .font(.largeTitle).foregroundStyle(RunBrand.orange)
                         .symbolEffect(.variableColor, isActive: voice.phase == .live && !voice.muted)
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(voice.phase == .connecting ? "Connecting…" : voice.phase == .ending ? "Ending call…" : voice.checking ? "Checking your running data…" : voice.muted ? "Microphone muted" : "Connected to your coach")
+                        Text(voice.phase == .connecting ? "Connecting…" : voice.phase == .ending ? "Ending call…" : voice.checking ? "Checking with your coach…" : voice.muted ? "Microphone muted" : "Connected to your coach")
                             .font(.headline).accessibilityAddTraits(.updatesFrequently)
                         if voice.phase == .live { Text("\(voice.remaining / 60):\(String(format: "%02d", voice.remaining % 60)) remaining").font(.caption).foregroundStyle(.secondary) }
                     }

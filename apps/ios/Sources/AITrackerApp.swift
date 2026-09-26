@@ -255,7 +255,11 @@ struct ChatView: View {
                             ForEach(store.messages) { message in
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(message.role == "user" ? "You" : "Coach").font(.caption.bold()).foregroundStyle(.secondary)
-                                    Text(message.content).font(.body).textSelection(.enabled)
+                                    if message.role == "user" {
+                                        Text(message.content).font(.body).textSelection(.enabled)
+                                    } else {
+                                        CoachMessageContent(content: message.content)
+                                    }
                                 }.padding().frame(maxWidth: .infinity, alignment: .leading)
                                     .background(message.role == "user" ? RunBrand.orange.opacity(0.10) : RunBrand.surface)
                                     .clipShape(RoundedRectangle(cornerRadius: 18)).id(message.id)
