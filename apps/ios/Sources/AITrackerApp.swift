@@ -35,6 +35,9 @@ import SwiftUI
                 }
                 if ProcessInfo.processInfo.arguments.contains("--test-adaptive-layout") {
                     // Offline UI fixture only. Never restore a real account in layout tests.
+                    if ProcessInfo.processInfo.arguments.contains("--app-store-capture") {
+                        AppStoreCapture.populate(store)
+                    }
                     store.loading = false
                     store.needsSignIn = false
                     store.busy = ProcessInfo.processInfo.arguments.contains("--test-pending-coach-request")
