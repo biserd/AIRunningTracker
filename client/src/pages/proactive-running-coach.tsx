@@ -109,7 +109,7 @@ const faqs = [
   },
   {
     question: "What about the iOS app?",
-    answer: "The native RunAnalytics app is in limited TestFlight testing and is coming soon. Voice, chat, schedules, progress, and reminders are being brought together in one focused coach experience.",
+    answer: "The native RunAnalytics app for iPhone and iPad is coming soon. Explore the dedicated app page for voice, chat, training plans, progress and screenshots.",
   },
   {
     question: "Is Telegram still supported?",
@@ -240,6 +240,7 @@ export default function ProactiveRunningCoachLanding() {
                 <ChannelPill channel="telegram" status="Also supported" />
               </div>
 
+              <p className="mt-4"><Link href="/ios-app" className="font-semibold text-[#c43c00] underline underline-offset-4">Explore the iPhone &amp; iPad app →</Link></p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <a href={primaryHref} onClick={trackPrimaryClick}>
                   <Button size="lg" className="h-14 w-full bg-slate-950 px-7 text-base text-white hover:bg-slate-800 sm:w-auto" data-testid="proactive-coach-primary-cta">

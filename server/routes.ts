@@ -43,6 +43,7 @@ import { db } from "./db";
 import { sql, eq, isNull } from "drizzle-orm";
 import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getActivityHistoryLimit, getFreeActivityLimit, RATE_LIMITS, canSyncFromStrava, getInitialSyncCap, isPaidPlan } from "./rateLimits";
 import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage, renderToolPage, getAllToolSlugs, renderFaqPage, renderBlogIndex, renderPricingPage, renderFeaturesPage, renderAboutPage, renderEbookLandingPage, renderDevelopersPage, renderDevelopersApiPage, renderToolsHubPage, renderProactiveRunningCoachPage, renderMcpLandingPage, renderMcpDocsPage } from "./ssr/renderer";
+import {renderIosAppPage} from './ssr/iosApp';
 import { getAllBlogPosts } from "./ssr/blogContent";
 import { buildRobotsTxt, isCrawler, isPrivateCrawlerPath } from "./ssr/crawlerPolicy";
 import { registerShoePages } from './ssr/shoePages';
@@ -484,6 +485,13 @@ export async function registerRoutes(app: Express, runtime?: { schedulerDatabase
   });
 
   // SEO: Sitemap (dynamic with shoe pages and lastmod timestamps)
+  // These public app pages render for every visitor, not just user-agent bots.
+  app.get(['/ios-app', '/ios-app/privacy'], (req, res) => {
+    res.setHeader('X-Robots-Tag', 'index, follow');
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.type('html').send(renderIosAppPage(req.path.replace(/\/$/, '') === '/ios-app/privacy'));
+  });
+
   app.get("/sitemap.xml", async (req, res) => {
     try {
       const baseUrl = "https://aitracker.run";
@@ -503,6 +511,8 @@ export async function registerRoutes(app: Express, runtime?: { schedulerDatabase
         { url: "/ai-running-coaching-guide", changefreq: "weekly", priority: "0.9", lastmod: today },
         { url: "/ai-agent-coach", changefreq: "weekly", priority: "0.9", lastmod: today },
         { url: "/proactive-running-coach", changefreq: "weekly", priority: "0.9", lastmod: today },
+        { url: "/ios-app", changefreq: "monthly", priority: "0.9", lastmod: "2026-09-26" },
+        { url: "/ios-app/privacy", changefreq: "monthly", priority: "0.4", lastmod: "2026-09-26" },
         { url: "/chrome-extension", changefreq: "weekly", priority: "0.8", lastmod: today },
         
         // Free Tools

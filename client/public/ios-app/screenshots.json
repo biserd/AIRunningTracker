@@ -1,0 +1,47 @@
+{
+  "source": "Real SwiftUI simulator captures with offline synthetic data; CI 36261950404 and 36249444929. No private runner data.",
+  "images": [
+    {
+      "file": "coach-v1.webp",
+      "source": "00-coach-iphone.png",
+      "width": 600,
+      "height": 1304,
+      "bytes": 43154
+    },
+    {
+      "file": "plan-v1.webp",
+      "source": "00-plan-iphone.png",
+      "width": 600,
+      "height": 1304,
+      "bytes": 33218
+    },
+    {
+      "file": "mileage-v1.webp",
+      "source": "02-mileage-iphone.png",
+      "width": 600,
+      "height": 1304,
+      "bytes": 25604
+    },
+    {
+      "file": "calendar-v1.webp",
+      "source": "03-consistency-iphone.png",
+      "width": 600,
+      "height": 1304,
+      "bytes": 27974
+    },
+    {
+      "file": "insights-v1.webp",
+      "source": "01-coaching-insights-iphone.png",
+      "width": 600,
+      "height": 1304,
+      "bytes": 41654
+    },
+    {
+      "file": "ipad-v1.webp",
+      "source": "00-plan-ipad.png",
+      "width": 1440,
+      "height": 993,
+      "bytes": 36096
+    }
+  ]
+}

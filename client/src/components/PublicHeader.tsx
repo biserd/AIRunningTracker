@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 
 const NAV_LINKS = [
+  { label: "iOS App", href: "/ios-app" },
   { label: "Pricing", href: "/pricing" },
   { label: "Guide", href: "/ai-running-coaching-guide" },
   { label: "Tools", href: "/tools" },
@@ -45,7 +46,7 @@ export default function PublicHeader() {
           </Link>
 
           {/* Desktop center nav */}
-          <nav className="hidden md:flex items-center gap-5 lg:gap-8">
+          <nav className="hidden xl:flex items-center gap-5 lg:gap-8">
             {NAV_LINKS.map(({ label, href }) => (
               <Link key={href} href={href}>
                 <span className={linkClass(href)}>{label}</span>
@@ -54,7 +55,7 @@ export default function PublicHeader() {
           </nav>
 
           {/* Desktop right side */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden xl:flex items-center gap-4">
             <Link href={isAuthenticated ? "/dashboard" : "/auth"}>
               <Button
                 className={isAuthenticated ? "flex items-center gap-2" : "bg-strava-orange text-white hover:bg-strava-orange/90 flex items-center gap-2"}
@@ -69,7 +70,7 @@ export default function PublicHeader() {
 
           {/* Mobile hamburger */}
           <button
-            className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+            className="xl:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
             onClick={() => setMobileOpen((o) => !o)}
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
           >
@@ -80,7 +81,7 @@ export default function PublicHeader() {
 
       {/* Mobile dropdown */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-gray-200 bg-white">
+        <div className="xl:hidden border-t border-gray-200 bg-white">
           <nav className="flex flex-col divide-y divide-gray-100">
             {NAV_LINKS.map(({ label, href }) => (
               <Link key={href} href={href}>

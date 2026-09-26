@@ -27,6 +27,8 @@ const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password"));
 const ResetPasswordPage = lazy(() => import("@/pages/reset-password"));
 const MagicLinkPage = lazy(() => import("@/pages/magic-link"));
 const PrivacyPage = lazy(() => import("@/pages/privacy"));
+const IosAppPage = lazy(() => import("@/pages/ios-app"));
+const IosAppPrivacyPage = lazy(() => import("@/pages/ios-app-privacy"));
 const ContactPage = lazy(() => import("@/pages/contact"));
 const FAQPage = lazy(() => import("@/pages/faq"));
 const RunnerScorePage = lazy(() => import("@/pages/runner-score"));
@@ -180,6 +182,8 @@ function Router() {
         <Route path="/chrome-extension" component={ChromeExtensionLanding} />
         <Route path="/pricing" component={PricingPage} />
         <Route path="/privacy" component={PrivacyPage} />
+        <Route path="/ios-app/privacy" component={IosAppPrivacyPage} />
+        <Route path="/ios-app" component={IosAppPage} />
         <Route path="/contact" component={ContactPage} />
         <Route path="/faq" component={FAQPage} />
         <Route path="/runner-score/:userId" component={RunnerScorePage} />

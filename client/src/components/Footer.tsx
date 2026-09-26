@@ -23,6 +23,7 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold mb-4">Product</h4>
             <ul className="space-y-2 text-gray-400">
+              <li><Link href="/ios-app" className="hover:text-white transition-colors" data-testid="link-ios-app">iPhone &amp; iPad App · Coming Soon</Link></li>
               <li><Link href="/features" className="hover:text-white transition-colors" data-testid="link-features">Features</Link></li>
               <li><Link href="/pricing" className="hover:text-white transition-colors" data-testid="link-pricing">Pricing</Link></li>
               <li><Link href="/tools" className="hover:text-white transition-colors" data-testid="link-tools">Tools</Link></li>
@@ -61,6 +62,7 @@ export default function Footer() {
               <li><Link href="/about" className="hover:text-white transition-colors" data-testid="link-about">About</Link></li>
               <li><Link href="/faq" className="hover:text-white transition-colors" data-testid="link-faq">FAQ</Link></li>
               <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/ios-app/privacy" className="hover:text-white transition-colors">iOS App Privacy</Link></li>
               <li><Link href="/terms" className="hover:text-white transition-colors" data-testid="link-terms">Terms of Service</Link></li>
               <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
             </ul>

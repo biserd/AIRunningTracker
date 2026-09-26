@@ -1448,6 +1448,7 @@ export function renderProactiveRunningCoachPage(): string {
           <a href="/pricing?source=proactive_coach_landing&amp;capability=ai_coach&amp;benefitKey=coach_chat">Start 7 days free &rarr;</a>
         </div>
         <p style="margin-top:24px;text-align:center;"><a href="/blog/ai-agent-coach-proactive-coaching">Read how proactive AI coaching works</a> &bull; <a href="/ai-agent-coach">Explore AI Agent Coach</a></p>
+        <p style="margin-top:16px;text-align:center;"><a href="/ios-app">Explore Run Analytics for iPhone and iPad &mdash; Coming Soon</a></p>
       </article>
     </main>
   </div>

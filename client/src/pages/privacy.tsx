@@ -15,7 +15,7 @@ export default function PrivacyPage() {
         <div className="prose prose-lg max-w-none">
           <div className="mb-8">
             <p className="text-gray-600 text-lg">
-              <strong>Last Updated:</strong> November 2025
+              <strong>Last Updated:</strong> September 26, 2026
             </p>
             <p className="text-gray-600">
               At RunAnalytics, we are committed to protecting your privacy and ensuring the security of your personal information. 
@@ -23,6 +23,11 @@ export default function PrivacyPage() {
             </p>
           </div>
 
+          <aside className="mb-8 rounded-lg border border-orange-200 bg-orange-50 p-6">
+            <h2 className="text-xl font-semibold">Using the iPhone or iPad app?</h2>
+            <p className="mt-2">This policy also applies to your app account. Our app-specific notice explains AI and voice processing, Strava data, notifications, Apple purchases and account controls.</p>
+            <Link href="/ios-app/privacy" className="mt-4 inline-flex rounded-lg bg-[#bd3c08] px-5 py-3 font-semibold text-white">Read the app privacy notice</Link>
+          </aside>
           <div className="grid gap-8">
             <section className="bg-white rounded-lg p-6 border border-gray-200">
               <div className="flex items-center space-x-3 mb-4">
@@ -88,7 +93,7 @@ export default function PrivacyPage() {
                     <ul className="list-disc list-inside space-y-1 text-sm text-purple-800 ml-2">
                       <li>Generate personalized running insights based on your fitness data</li>
                       <li>Improve AI accuracy and response quality over time</li>
-                      <li>Train and optimize our AI models for better coaching</li>
+                      <li>Process relevant running context and messages with AI service providers to generate coaching responses</li>
                       <li>Monitor service quality and identify areas for improvement</li>
                       <li>Provide customer support when you request assistance</li>
                     </ul>
@@ -97,7 +102,7 @@ export default function PrivacyPage() {
                       <li>You can view your complete conversation history at any time</li>
                       <li>You can delete individual conversations or your entire chat history</li>
                       <li>Deleted conversations are permanently removed within 30 days</li>
-                      <li>We never share your individual conversations with third parties</li>
+                      <li>AI service providers process relevant conversation content to deliver responses; see the app notice for native chat and voice details</li>
                     </ul>
                     <p className="text-sm text-purple-700 mt-3">
                       <strong>Important:</strong> By using the AI Running Coach, you consent to the collection and use of 
