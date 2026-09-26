@@ -2,7 +2,7 @@
 
 ## Status
 
-Prepared and locally tested; NOT deployed or imported into production. No production rows, routes, accounts or secrets changed. Production still has 224 catalog records (newest recorded release year 2025); unknown release years in the new batch are intentionally null, not guessed.
+Production schema and both catalog batches imported on September 26: 237 shoes and 171 comparisons. Thirteen shoes added, Alphafly 3 and Adios Pro 4 refreshed in place. The catalog application and follow-up public-tool routing fix are live. No accounts, secrets or runner records changed. Unknown measurements and release years are intentionally null, not guessed.
 
 ## Source policy and coverage
 
@@ -22,7 +22,7 @@ Examples where source consistency matters:
 
 - `data/shoes/2026-09-26.json`: reviewed source manifest.
 - `scripts/shoes/catalog.ts`: validates identity, source and required measurements; dry-run by default, generates SQL only. No database credentials or execution inside the generator. Conflicting slugs/specs fail closed; exact repeat imports are no-ops.
-- `migrations/20260926_shoe_evidence.sql`: relaxes six catalog fields to nullable; copies all columns and IDs, preserves sequence/indexes/NO ACTION comparison references. No user data touched. Apply once in one transaction. Remote schema inspection found only `shoe_comparisons` references to this table and no cascading FKs/triggers.
+- `migrations/20260926_shoe_evidence.sql`: relaxes seven catalog fields to nullable and adds availability fields; copies all columns and IDs, preserves sequence/indexes/NO ACTION comparison references. No user data touched. Applied once in one transaction. Remote schema inspection found only `shoe_comparisons` references to this table and no cascading FKs/triggers.
 - `data/shoes/2026-09-26.import.sql`: generated 12-shoe/seven-comparison artifact, no legacy overwrites.
 - UI, pipeline and automatic comparisons distinguish unknown from zero; the old automatic visitor-triggered seeding call is removed.
 - Recommendation/rotation ranking no longer compares mixed-source ratings or disadvantages an unrated model using a fake zero score. It uses profile/category suitability and published specs instead.
@@ -49,9 +49,18 @@ Apply the racer import after the original batch. Expected total: 237 shoes (13 a
 
 1. Review/isolate this change from other pending workspace edits. Build and verify the main application using its existing staging container build, then manually promote the tested immutable image. Production is intentionally not Git-autodeployed. This host has no Docker executable; repository GitHub workflows currently provide safety checks and iOS builds, not a production container build.
 2. Export `running_shoes` and `shoe_comparisons` and record a D1 Time Travel bookmark before changing live schema. Recheck inbound FKs/triggers and exact column/index layout against the migration. Stop if drift is found.
-3. Deploy null-safe application code first (compatible with the old non-null schema), then execute `migrations/20260926_shoe_evidence.sql` once using Wrangler `d1 execute ... --remote --file ...` as one transaction. Do not split the rebuild across calls.
+3. Execute `migrations/20260926_shoe_evidence.sql` once using Wrangler `d1 execute ... --remote --file ...` as one transaction, then deploy the null-safe application before importing nullable records. The added columns must exist before the new application's SELECTs. Do not split the rebuild across calls or reapply it after completion.
 4. Generate import with `node --import tsx scripts/shoes/catalog.ts data/shoes/2026-09-26.json --out data/shoes/2026-09-26.import.sql`; run the reviewed SQL in one D1 transaction. The generator does not write remotely.
-5. Verify expected total 236 if no other additions occurred, 12 `running_warehouse` rows with this check date, seven pair pages, original IDs/values unchanged, no duplicate brand/model identities and no new foreign-key violations. Rerun conflict guards before retrying an uncertain write.
+5. Apply the racer follow-up after the original batch; verify 237 shoes, 171 comparisons, all 222 untouched historical records unchanged, and all 161 previous comparison identities preserved. Rerun conflict guards before retrying an uncertain write.
 6. Deploy shared coach changes after reviewing the overlapping weather/research implementation; no iOS binary is needed for the server-side catalog additions. Test a named-model request and source links through the web coach and WhatsApp.
 
 Production DB: `aitracker-d1-migration` (`5ee1a1a5-44a5-42c9-aa74-d12fe63b08f2`), main config `apps/api-cloudflare/container/wrangler.production.jsonc`. Never use the coach-preview database for the public main-site catalog.
+
+## Production release evidence
+
+- Catalog commit `66acf96`, Cloudflare build `7982bd38-9290-4c85-8184-5473710bdcef`, image `1e4087b1`, main Worker `8581b7d6-69e6-4011-8210-982eb2da2fdd`.
+- Schema and both imports succeeded. Before/after exports in local `.tmp/shoe-catalog-{before,after}-20260926.sql`; comparison of actual exports confirms all 222 untouched shoes unchanged across every pre-existing column, all 161 comparison identities unchanged, 237/171 totals and no shoe foreign-key violations.
+- Public API returns Alphafly 4 as upcoming with null weight/stacks and October 29 availability; Adios Pro 4 remains ID 188; Alphafly 3 remains ID 670; previous Adios Pro 3/4 comparison remains ID 5.
+- Browser verification uncovered a pre-existing public-tool router omission: components were mounted outside a Route, so useParams returned no slug and pages displayed Not Found without loading their data. Commit `8f55819` adds route contexts and full-document navigation for the single-tool entry. Both SSR tests pass, including explicit shoe/comparison slug assertions. This fix does not ship pending weather/iOS changes.
+- Final routing commit `38a4671`, successful Cloudflare build `996e84b0-85ec-4eb8-bef8-97316cc9a505`, promoted image `f83ec234`, main Worker `959e44b6-e0c5-45de-b2f4-28bd27b38689`. All 25 catalog/D1/SSR/SEO regression tests pass. No affected-file TypeScript errors; unrelated repository-wide failures remain.
+- Live API checks: shoe detail, all four racer comparison endpoints, recommendation, rotation, homepage and health return 200. Upcoming Alphafly 4 is excluded from recommendations/rotation. Browser renders its real title, upcoming badge, source links and Not published/Not rated states. The Alphafly 3/4 page renders its verdict, three evidence-led differences, source links and null-safe specification table.
