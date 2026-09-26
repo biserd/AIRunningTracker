@@ -100,6 +100,11 @@ async function authorized(env:Env,id:string){
  return {t,g};
 }
 export async function validateGrant(env:Env,id:string){await authorized(env,id);}
+export async function whatsappWeatherProfile(env:Env,id:string){
+ const {t}=await authorized(env,id);
+ const profile=await read(env,t.access_token,'get_runner_profile');
+ return obj(profile.preferences);
+}
 // Only read-only, bounded MCP contracts enter the model. Never emails or tokens.
 export function clean(value:unknown):unknown{
  if(Array.isArray(value))return value.slice(0,224).map(clean);

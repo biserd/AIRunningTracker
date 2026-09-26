@@ -3,7 +3,7 @@ import { AIError, coach } from "./openai";
 import { reminderContext, validateReminder, draftReminder } from "./reminders";
 import {draftPlan,validatePlanIntent} from './plan-actions';
 import {voiceDiagnostic, type VoiceStage} from './voice-diagnostics';
-import {runCoachKnowledgeTool} from './coach-knowledge';
+import {accountKnowledge} from './coach-knowledge';
 type RunnerRow = { id: string; state: string; version: number };
 type Limit = (
   env: Env,
@@ -159,7 +159,7 @@ async function runAIRoute(request:Request,env:Env,row:RunnerRow,input:Record<str
         },
         state.trainingContext?.canWritePlans ? {validate:intent=>validatePlanIntent(intent,state.trainingContext!)} : undefined,
         env.AI_GATEWAY_BASE,
-        token ? {run:(name,args)=>runCoachKnowledgeTool(env,token,name,args,state)} : undefined,
+        token ? accountKnowledge(env,token,state,message,signal) : undefined,
       );
       let proposal;
       if (generated.change) {

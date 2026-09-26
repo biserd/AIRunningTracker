@@ -3,7 +3,8 @@ import { boundedJSON } from './openai';
 import { whatsappCoach } from './whatsapp-coach';
 import { history } from './ai';
 import type { State } from '../shared/coach';
-import {hasGrant,oauthConfigured,revokeGrant,whatsappContext,validateGrant} from './whatsapp-oauth';
+import {hasGrant,oauthConfigured,revokeGrant,whatsappContext,validateGrant,whatsappWeatherProfile} from './whatsapp-oauth';
+import {createCoachKnowledge} from './coach-knowledge';
 import {typing,maintainTyping} from './whatsapp-typing';
 import {confirmWhatsAppReminder,reminderTool} from './whatsapp-reminders';
 
@@ -233,7 +234,9 @@ export async function processWhatsApp(env:Env,id:string,warmGeneration?:string,p
      catch(error){if(error instanceof ReminderError)return error.message;throw error;}
     }:undefined;
     const confirmed=action?await confirmWhatsAppReminder(env,id,item.generation,item.body):null;
-    const reply=confirmed??await whatsappCoach(env.OPENAI_API_KEY,state,conversation,item.body,AbortSignal.timeout(25000),action,env.AI_GATEWAY_BASE);
+    const signal=AbortSignal.timeout(60_000);
+    const knowledge=state.source==='production_account'?createCoachKnowledge(env,state,{message:item.body,signal,weatherProfile:()=>whatsappWeatherProfile(env,id)}):undefined;
+    const reply=confirmed??await whatsappCoach(env.OPENAI_API_KEY,state,conversation,item.body,signal,action,env.AI_GATEWAY_BASE,knowledge);
     aiMs=Date.now()-aiStart;stage='authorization';
     if(state.source==='production_account')await validateGrant(env,id);
     // A suspended old consumer must not send after another worker acquired its lease.

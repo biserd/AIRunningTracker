@@ -7,6 +7,14 @@ import { ReminderPanel } from "./Reminders";
 import { RunningChart } from "./RunningChart";
 import { CoachTyping } from "./CoachTyping";
 import { whatsappCall, type WhatsAppStatus } from './WhatsApp';
+import {publicSourceURL} from '../worker/knowledge-tools';
+
+function CoachMessage({content}:{content:string}) {
+  return <p>{content.split(/(https:\/\/[^\s<>]+)/g).map((part,index)=>{
+    const url=publicSourceURL(part);
+    return url?<a key={index} href={url} target="_blank" rel="noopener noreferrer">{new URL(url).hostname}</a>:<React.Fragment key={index}>{part}</React.Fragment>;
+  })}</p>;
+}
 type Message = { role: string; content: string };
 type Answer = {
   planReview?: PlanReview;
@@ -392,7 +400,7 @@ export function CoachAI({
           {messages.map((m, i) => (
             <div key={i} className={"chat-message " + m.role}>
               <small>{m.role === "user" ? "You" : "Coach"}</small>
-              <p>{m.content}</p>
+              {m.role==='assistant'?<CoachMessage content={m.content}/>:<p>{m.content}</p>}
             </div>
           ))}
           {busy && <CoachTyping onStop={() => abort.current?.abort()}/>}
@@ -468,9 +476,9 @@ export function CoachAI({
           <p className="voice-caption">You: {caption}</p>
         )}
         <details className="coach-privacy"><summary>Preview & privacy</summary><p className="footnote">
-          AI-generated replies and voice. Sample plan and messages are sent to
-          OpenAI when you ask. Voice uses your microphone only during a call,
-          limited to three minutes. No real Strava or weather connection yet.
+          AI-generated replies and voice. Your messages and available running context are sent to OpenAI when you ask.
+          Public lookups use only public search terms, not your saved running history. Weather uses a city you name or your opted-in saved location.
+          Voice uses your microphone only during a call, limited to five minutes. Research links open external sites.
         </p>
         </details>
 

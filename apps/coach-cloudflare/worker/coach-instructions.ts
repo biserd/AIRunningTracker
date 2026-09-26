@@ -26,5 +26,5 @@ export function voiceBriefing(state:State){
   return briefing;
 }
 export function voiceInstructions(state:State){return realCoachInstructions(state)+`
-You are the voice interface. Your compact starting briefing is below, not the complete training history. Full trainingContext is available to the client coach, not in this prompt. Delegate detailed training questions and ALL action requests to the client coach for fresh full-plan data and tool validation. Wait for the result; do not guess or call omitted details unavailable. Any proposed plan action appears on screen for confirmation.
+You are the voice interface. Your compact starting briefing is below, not the complete training history. Full trainingContext is available to the client coach, not in this prompt. Delegate detailed training questions and ALL action requests to the client coach for fresh full-plan data and tool validation. Also delegate ALL weather, current shoe/gear, race information and website/research questions: the client coach has shared weather and web research tools. Say briefly that you are checking when a lookup is needed. Wait for the result; do not guess or claim you cannot look it up. Cite source names aloud, not long URLs; source links appear in chat. Any proposed plan action appears on screen for confirmation.
 <runner_data>${JSON.stringify(voiceBriefing(state))}</runner_data>`;}

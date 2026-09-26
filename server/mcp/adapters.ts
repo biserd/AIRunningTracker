@@ -119,6 +119,14 @@ export async function readRunnerProfile(userId: number) {
       coachDaysAvailable: user.coachDaysAvailable || [],
       coachWeeklyMileageCapKm: user.coachWeeklyMileageCap,
       coachTone: user.coachTone,
+      coachTimezone: user.coachTimezone,
+      coachWeatherEnabled: user.coachWeatherEnabled === true,
+      // Explicit weather opt-in only; no route/start-location inference.
+      coachWeatherLocation: user.coachWeatherEnabled && user.coachWeatherLocation ? {
+        label: user.coachWeatherLocation.label,
+        latitude: Math.round(user.coachWeatherLocation.latitude * 100) / 100,
+        longitude: Math.round(user.coachWeatherLocation.longitude * 100) / 100,
+      } : null,
       notifyPostRun: user.notifyPostRun,
       postRunEmailFrequency: user.postRunEmailFrequency,
       coachNotifyRecap: user.coachNotifyRecap,
