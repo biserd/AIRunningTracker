@@ -1,5 +1,19 @@
 # Shared coach weather and public research
 
+## Production release — 2026-09-26
+
+- Application commit: `51e8ed41762bef475757acca580b41f1a2705370`.
+- Coach Worker: `9d82b02b-9751-46b9-99a8-a6e13b341e4d` on `new.aitracker.run`, including the existing WhatsApp queue consumer.
+- Main backend build: `b2a2c3e3-edc4-45c4-bc26-7606fb2740f5`, verified successful in Cloudflare Builds.
+- Promoted immutable container image: `aitracker-api-staging-runanalyticsweb:664dfc57`.
+- Main Worker: `b861103f-bdad-4570-8288-5c5cb9c79e1a`. Advanced the existing one-time restart marker so the updated profile contract loads.
+- No schema migrations, new provider secrets, consent changes, subscription changes or iOS build. Unrelated native source-link changes remain local.
+- `OPENMETEO_API_KEY` is not configured on the coach Worker. Named-city forecasts use cited web research through the existing OpenAI credential; dedicated hourly Open-Meteo service is not activated.
+- Coach typecheck, production frontend build and Worker dry run passed. Coach tests: 95 passed, one skipped. Workers-runtime forecast cache test passed. MCP tests: 14 passed, one PostgreSQL-only lifecycle test skipped. D1 application bundle and container typecheck/dry run passed.
+- Live checks: main `/health` and `/api/shoes/brands` returned 200; unauthenticated `/api/auth/user` remained 401. Coach landing and preview returned 200 with the new asset bundle.
+- Authenticated live forecast/provider access, a physical voice request and WhatsApp delivery still require a signed-in runner test. The browser test session was signed out at release time; no successful end-to-end provider result is claimed.
+- Rollback references: coach `43bb40a6-0dfc-4f97-8db7-9ce106eee4c4`; main `49e31d83-7ae5-4f69-a11b-f5569022cc01`, image `c34bd208`. For a main rollback, restore the old image as well as Worker code and advance the one-time restart marker again if needed.
+
 ## Channel coverage
 
 - Web and native iOS chat: existing `/api/ai/chat`, shared knowledge tools.
