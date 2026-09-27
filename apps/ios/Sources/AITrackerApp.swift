@@ -1,4 +1,7 @@
 import SwiftUI
+#if DEBUG
+import StoreKitTest
+#endif
 
 @main struct AITrackerApp: App {
     @UIApplicationDelegateAdaptor(PushAppDelegate.self) private var appDelegate
@@ -29,6 +32,21 @@ import SwiftUI
             .onChange(of: store.busy) { _, _ in store.processPendingSignIn() }
             .task {
                 #if DEBUG
+                if ProcessInfo.processInfo.arguments.contains("--capture-subscription-review") {
+                    do {
+                        let session = try SKTestSession(configurationFileNamed: "ReviewProducts")
+                        session.resetToDefaultState()
+                        session.disableDialogs = true
+                        let account = UUID()
+                        store.onboarding = NativeOnboarding(stravaConnected: true, syncStatus: nil, hasAccess: false, billingProvider: nil, appAccountToken: account.uuidString, purchasesAvailable: true)
+                        let subscriptions = AppleSubscriptions(accountToken: account, deliver: { _ in throw APIError.invalidResponse })
+                        store.subscriptions = subscriptions
+                        await subscriptions.reloadProducts()
+                        store.needsSignIn = false
+                        store.loading = false
+                    } catch { store.error = error.localizedDescription; store.loading = false }
+                    return
+                }
                 if ProcessInfo.processInfo.arguments.contains("--test-sign-in-screen") {
                     store.loading = false
                     return

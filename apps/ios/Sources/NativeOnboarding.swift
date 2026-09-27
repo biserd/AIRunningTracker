@@ -97,7 +97,12 @@ struct NativeOnboardingView:View {
             } message: { Text("This cannot be undone. Apple subscriptions must also be cancelled in Apple's subscription settings; deleting your account does not cancel Apple billing.") }
         }
     }
-    private func reload() async { do { try await store.refreshOnboarding() } catch { message=error.localizedDescription } }
+    private func reload() async {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--capture-subscription-review") { return }
+        #endif
+        do { try await store.refreshOnboarding() } catch { message=error.localizedDescription }
+    }
     private func connect() async {
         guard !busy else { return }; busy=true; message=nil; defer{busy=false}
         do { try await strava.connect(store.api.startStrava()); try await store.refreshOnboarding() }
