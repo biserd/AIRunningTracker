@@ -1,7 +1,11 @@
 import XCTest
 import UIKit
+import StoreKitTest
 final class SubscriptionCaptureTests: XCTestCase {
-    func testCaptureNativePaywall() {
+    func testCaptureNativePaywall() throws {
+        let session = try SKTestSession(configurationFileNamed: "ReviewProducts")
+        session.resetToDefaultState()
+        session.disableDialogs = true
         XCUIDevice.shared.orientation = .portrait
         let app = XCUIApplication()
         app.launchArguments = ["--capture-subscription-review"]
@@ -16,5 +20,6 @@ final class SubscriptionCaptureTests: XCTestCase {
         attachment.name = "Native subscription paywall - US StoreKit test catalog"
         attachment.lifetime = .keepAlways
         add(attachment)
+        withExtendedLifetime(session) {}
     }
 }

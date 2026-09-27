@@ -50,7 +50,7 @@ targets:
   AITrackerUITests:
     type: bundle.ui-testing
     platform: iOS
-    sources: [UITests]
+    sources: [UITests, Resources/ReviewProducts.storekit]
     dependencies:
       - target: AITracker
 schemes:
