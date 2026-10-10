@@ -15,6 +15,34 @@ test('preserves sender, HTML, text and unsubscribe headers', async () => {
   });
   assert.deepEqual(await transport.send(email), { success: true });
 });
+test('retains the Cloudflare message ID without claiming queued mail was delivered', async () => {
+  const transport = new CloudflareEmailTransport(config, async () => Response.json({ success: true, result: { queued: [email.to], message_id: '<cloudflare-message-id>' } }));
+  assert.deepEqual(await transport.send(email), { success: true, providerMessageId: '<cloudflare-message-id>' });
+});
+test('suppression preflight blocks any account recipient suppression and fails closed', async () => {
+  const transport = new CloudflareEmailTransport(config, async (url, init) => {
+    assert.match(String(url), /email\/sending\/suppressions\?email=runner%40example.com/);
+    assert.equal(init?.method, 'GET');
+    return Response.json({ success: true, result: [
+      { email: email.to, reason: 'hard_bounce', scope: { type: 'sending_domain', value: 'other.example.com' } },
+    ], result_info: { next_cursor: null } });
+  });
+  assert.deepEqual(await transport.checkSuppression(email.to), { status: 'suppressed', reason: 'hard_bounce' });
+  const unavailable = new CloudflareEmailTransport(config, async () => new Response('', { status: 403 }));
+  assert.deepEqual(await unavailable.checkSuppression(email.to), { status: 'unavailable' });
+});
+test('clear suppression preflight requires a complete response', async () => {
+  const clear = new CloudflareEmailTransport(config, async () => Response.json({ success: true, result: [], result_info: { next_cursor: null } }));
+  assert.deepEqual(await clear.checkSuppression(email.to), { status: 'clear' });
+  const anotherRecipient = new CloudflareEmailTransport(config, async () => Response.json({ success: true, result: [
+    { email: 'another@example.com', reason: 'hard_bounce', scope: { type: 'sending_domain', value: 'other.example.com' } },
+  ], result_info: { next_cursor: null } }));
+  assert.deepEqual(await anotherRecipient.checkSuppression(email.to), { status: 'clear' });
+  const partial = new CloudflareEmailTransport(config, async () => Response.json({ success: true, result: [], result_info: { next_cursor: 'next' } }));
+  assert.deepEqual(await partial.checkSuppression(email.to), { status: 'unavailable' });
+  const missingPagination = new CloudflareEmailTransport(config, async () => Response.json({ success: true, result: [] }));
+  assert.deepEqual(await missingPagination.checkSuppression(email.to), { status: 'unavailable' });
+});
 test('permanent bounce and empty acceptance fail closed', async () => {
   for (const result of [{ permanent_bounces: [email.to] }, {}, { delivered: ['another@example.com'] }]) {
     const transport = new CloudflareEmailTransport(config, async () => Response.json({ success: true, result }));

@@ -6,6 +6,7 @@ import { ChatPanel } from "@/components/ChatPanel";
 import { cn } from "@/lib/utils";
 import { useFeatureAccess } from "@/hooks/useSubscription";
 import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
+import { TrialOfferDetails, useTrialOffer } from "@/components/TrialOfferDetails";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
 
 export interface PageContext {
@@ -24,6 +25,7 @@ interface FloatingAICoachProps {
 }
 
 export function FloatingAICoach({ userId, className, pageContext, isOpen: controlledIsOpen, onOpenChange, initialConversationId }: FloatingAICoachProps) {
+  const { data: trialOffer } = useTrialOffer();
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const { canAccessAICoachChat } = useFeatureAccess();
   
@@ -118,13 +120,11 @@ export function FloatingAICoach({ userId, className, pageContext, isOpen: contro
                       data-testid="button-upgrade-to-premium"
                     >
                       <Crown className="w-4 h-4 mr-2" />
-                      Start 7-day free trial
+                      {trialOffer?.trialEligible ? "Start 7-day free trial" : "Unlock AI coaching"}
                     </Button>
                   </DirectCheckoutButton>
                   
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-4">
-                    Premium includes unlimited AI coach access
-                  </p>
+                  <TrialOfferDetails className="mt-4 max-w-xs text-left" benefit="personalized answers grounded in your runs, training load, goals, and recovery." />
                 </div>
               </div>
             )}

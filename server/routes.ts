@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import * as fs from "fs";
 import * as path from "path";
+import crypto from "crypto";
 import { storage, RUNNING_ACTIVITY_TYPES } from "./storage";
 import { canRecommendShoe } from "@shared/shoeEvidence";
 import { stravaService } from "./services/strava";
@@ -26,13 +27,13 @@ import { dataQualityService } from "./services/dataQuality";
 import { efficiencyService } from "./services/efficiency";
 import { dripCampaignService, LIFECYCLE_CAMPAIGNS } from "./services/dripCampaign";
 import { dripCampaignWorker } from "./services/dripCampaignWorker";
-import { createMarketingToken, verifyMarketingToken } from "./services/campaignSecurity";
+import { createMarketingToken, verifyMarketingToken, isRecentCampaignClick } from "./services/campaignSecurity";
 import { sendWeeklySummaries, weeklySummaryWorker } from "./services/weeklySummaryWorker";
 import { accountDormancyWorker, reactivateDormantAccount } from "./services/accountDormancy";
 import { stravaWebhookService } from "./services/stravaWebhook";
 import { proactiveCoachWorker, ensureProactiveCoachSchema, isValidTimezone } from "./services/proactiveCoach";
 import { notificationDeliveryWorker } from "./services/notificationProcessor";
-import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, emailWaitlist, users, stravaWebhookLogs, type Activity, type RunningShoe } from "@shared/schema";
+import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, emailWaitlist, users, funnelEvents, stravaWebhookLogs, type Activity, type RunningShoe } from "@shared/schema";
 import { shoeData } from "./shoe-data";
 import { validateAllShoes, getPipelineStats, findDuplicates, getShoeDataWithMetadata, getShoesWithMetadataFromStorage, getEnrichedShoeData, enrichShoeWithAIData } from "./shoe-pipeline";
 import { z } from "zod";
@@ -40,7 +41,7 @@ import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClie
 import { BillingCatalog } from './services/billingCatalog';
 import { resolvePlan } from "./webhookHandlers";
 import { db } from "./db";
-import { sql, eq, isNull } from "drizzle-orm";
+import { sql, eq, isNull, and, desc, gt } from "drizzle-orm";
 import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getActivityHistoryLimit, getFreeActivityLimit, RATE_LIMITS, canSyncFromStrava, getInitialSyncCap, isPaidPlan } from "./rateLimits";
 import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage, renderToolPage, getAllToolSlugs, renderFaqPage, renderBlogIndex, renderPricingPage, renderFeaturesPage, renderAboutPage, renderEbookLandingPage, renderDevelopersPage, renderDevelopersApiPage, renderToolsHubPage, renderProactiveRunningCoachPage, renderMcpLandingPage, renderMcpDocsPage } from "./ssr/renderer";
 import {renderIosAppPage} from './ssr/iosApp';
@@ -248,6 +249,22 @@ async function isAllowedCheckoutPriceId(priceId: unknown): Promise<boolean> {
   } catch (err) {
     console.warn('[BillingCatalog] Price validation unavailable');
     return false;
+  }
+}
+
+async function isStripeTrialEligible(
+  user: { stripeCustomerId?: string | null; stripeSubscriptionId?: string | null },
+  stripe: Awaited<ReturnType<typeof getUncachableStripeClient>>,
+): Promise<boolean> {
+  if (user.stripeSubscriptionId) return false;
+  if (!user.stripeCustomerId) return true;
+  try {
+    const existing = await stripe.subscriptions.list({ customer: user.stripeCustomerId, status: 'all', limit: 1 });
+    return existing.data.length === 0;
+  } catch (error) {
+    // Keep the offer and Checkout consistent during a transient Stripe lookup failure.
+    console.warn('[checkout] trial-eligibility lookup unavailable; defaulting to new-user trial', error);
+    return true;
   }
 }
 
@@ -966,6 +983,76 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // The same live price and first-time trial rule used by Checkout, shown
+  // before a runner makes a billing decision. Checkout confirms the exact date.
+  app.get("/api/stripe/trial-offer", authenticateJWT, async (req: any, res) => {
+    res.setHeader('Cache-Control', 'private, no-store');
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      const billingPeriod = req.query.billingPeriod === 'annual' ? 'annual' : 'monthly';
+      const priceId = await resolvePremiumPriceId(billingPeriod);
+      if (!priceId) return res.status(503).json({ message: "Premium pricing is temporarily unavailable" });
+      const [stripe, products] = await Promise.all([getUncachableStripeClient(), billingCatalog.publicProducts()]);
+      const price = products.flatMap((product) => product.prices).find((candidate) => candidate.id === priceId);
+      if (!price || price.unit_amount === null || !price.currency) {
+        return res.status(503).json({ message: "Premium pricing is temporarily unavailable" });
+      }
+      const trialEligible = await isStripeTrialEligible(user, stripe);
+      return res.json({
+        billingPeriod,
+        trialEligible,
+        trialDays: trialEligible ? 7 : 0,
+        estimatedFirstChargeAt: trialEligible ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() : null,
+        unitAmount: price.unit_amount,
+        currency: price.currency,
+      });
+    } catch (error) {
+      console.error('[checkout] trial offer unavailable', error);
+      return res.status(503).json({ message: "Premium trial details are temporarily unavailable" });
+    }
+  });
+
+  // A return prompt is based on a real Checkout session, not a speculative
+  // client click. Never prompt after a completed session or trial activation.
+  app.get("/api/stripe/checkout-recovery", authenticateJWT, async (req: any, res) => {
+    res.setHeader('Cache-Control', 'private, no-store');
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user || hasPremiumAccess(user)) return res.json({ recovery: null });
+      const [checkout] = await db.select({
+        id: funnelEvents.id,
+        occurredAt: funnelEvents.occurredAt,
+        source: funnelEvents.source,
+        capability: funnelEvents.capability,
+        properties: funnelEvents.properties,
+      }).from(funnelEvents).where(and(
+        eq(funnelEvents.userId, user.id),
+        eq(funnelEvents.event, 'checkout_session_created'),
+        gt(funnelEvents.occurredAt, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)),
+      )).orderBy(desc(funnelEvents.occurredAt)).limit(1);
+      if (!checkout) return res.json({ recovery: null });
+      const [activated] = await db.select({ id: funnelEvents.id }).from(funnelEvents).where(and(
+        eq(funnelEvents.userId, user.id),
+        eq(funnelEvents.event, 'trial_started'),
+        gt(funnelEvents.occurredAt, checkout.occurredAt),
+      )).limit(1);
+      if (activated) return res.json({ recovery: null });
+      const sessionId = (checkout.properties as { checkoutSessionId?: unknown } | null)?.checkoutSessionId;
+      if (typeof sessionId !== 'string' || !sessionId.startsWith('cs_')) return res.json({ recovery: null });
+      const session = await (await getUncachableStripeClient()).checkout.sessions.retrieve(sessionId);
+      if (session.status === 'complete') return res.json({ recovery: null });
+      if (session.status !== 'expired' && Date.now() - checkout.occurredAt.getTime() < 30 * 60 * 1000) {
+        return res.json({ recovery: null });
+      }
+      return res.json({ recovery: { id: checkout.id, source: checkout.source, capability: checkout.capability } });
+    } catch (error) {
+      // A Stripe outage must not show a false abandonment message.
+      console.warn('[checkout] recovery status unavailable', error);
+      return res.json({ recovery: null });
+    }
+  });
+
   // Funnel analytics ingestion (client-emitted events only). Auth is
   // optional: anonymous visitors can still emit pricing/offer events.
   // Server-authoritative events (trial/paid/cancellation) are rejected here;
@@ -1103,30 +1190,8 @@ ${allPages.map(page => `  <url>
         customerId = customer.id;
       }
 
-      // Decide whether to grant a 7-day free trial. Only first-time
-      // subscribers get the trial: anyone who has ever held a Stripe
-      // subscription on this customer (even canceled) does NOT get
-      // another trial. We also re-check Stripe directly to catch users
-      // whose stripeSubscriptionId was cleared in our DB.
-      // Returning subscribers (anyone we've already linked to a Stripe sub)
-      // never get another trial. For users with no Stripe sub on file, we
-      // double-check Stripe directly to catch DB drift; if that lookup
-      // fails transiently, fail OPEN: grant the trial: so a Stripe
-      // hiccup never silently denies a real new user their 7-day trial.
-      let trialEligible = !user.stripeSubscriptionId;
-      if (trialEligible) {
-        try {
-          const existing = await stripe.subscriptions.list({
-            customer: customerId,
-            status: 'all',
-            limit: 1,
-          });
-          if (existing.data.length > 0) trialEligible = false;
-        } catch (lookupErr) {
-          console.warn('[checkout] trial-eligibility lookup failed; defaulting to GRANT trial for new user', lookupErr);
-          // trialEligible stays true: user has no sub in our DB.
-        }
-      }
+      // Quote and Checkout share the same first-time trial rule.
+      const trialEligible = await isStripeTrialEligible({ ...user, stripeCustomerId: customerId }, stripe);
 
       // Preserve the user's upgrade intent: a sanitized relative returnTo
       // path rides along on the success URL so the billing page can send
@@ -1169,7 +1234,6 @@ ${allPages.map(page => `  <url>
       const appSlug = process.env.APP_SLUG || 'aitracker';
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
-        payment_method_types: ['card'],
         line_items: [{ price: resolvedPriceId!, quantity: 1 }],
         mode: 'subscription',
         allow_promotion_codes: true,
@@ -8920,24 +8984,67 @@ ${allPages.map(page => `  <url>
 
   // ============= DRIP CAMPAIGN ENDPOINTS =============
 
-  // Signed campaign click. The target path comes from the server-side job,
-  // never from the request, preventing IDOR attribution and open redirects.
+  // The signed email URL first opens a confirmation page. Automated mailbox
+  // link scanners may GET the URL, but only the runner's POST can redeem it.
+  // The target path comes from the server-side job, never from the request.
+  const resolveCampaignClick = async (rawToken: unknown) => {
+    const payload = verifyMarketingToken(rawToken, "click");
+    if (!payload?.jobId) return null;
+    const job = await storage.getEmailJob(payload.jobId);
+    if (!job || job.userId !== payload.userId || job.jobType !== "drip" ||
+      job.status !== "sent" || !isRecentCampaignClick(job.sentAt)) return null;
+    const user = await storage.getUser(job.userId);
+    if (!user?.email) return null;
+    const metadata = (job.metadata || {}) as { ctaUrl?: string; ctaKey?: string };
+    return {
+      job, user,
+      targetPath: sanitizeReturnTo(metadata.ctaUrl) || "/pricing",
+      ctaKey: metadata.ctaKey || "primary",
+    };
+  };
+  const escapeCampaignHtml = (value: string) => value.replace(/[&<>"']/g, (character) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character] || character));
+
   app.get("/api/marketing/click", async (req: any, res) => {
     try {
-      const payload = verifyMarketingToken(req.query.token, "click");
-      if (!payload?.jobId) return res.status(400).send("This campaign link is invalid or has expired.");
-      const job = await storage.getEmailJob(payload.jobId);
-      if (!job || job.userId !== payload.userId || job.jobType !== "drip") return res.status(400).send("This campaign link is invalid or has expired.");
-      const metadata = (job.metadata || {}) as { ctaUrl?: string; ctaKey?: string };
-      const targetPath = sanitizeReturnTo(metadata.ctaUrl) || "/dashboard";
-      await storage.createEmailClick({ userId: job.userId, jobId: job.id, campaign: job.campaign, step: job.step, source: "signed_email", ctaKey: metadata.ctaKey || null, dedupeKey: `click:${job.id}:${metadata.ctaKey || "primary"}` });
+      if (!await resolveCampaignClick(req.query.token)) return res.status(410).send("This sign-in link is invalid or has expired. Please sign in normally.");
+      const csrf = crypto.randomBytes(24).toString("base64url");
+      const nonce = crypto.randomBytes(16).toString("base64");
+      res.cookie("campaign_click_csrf", csrf, { maxAge: 10 * 60 * 1000, httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/api/marketing/click" });
+      res.set({ "Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "X-Robots-Tag": "noindex, nofollow",
+        "Content-Security-Policy": `default-src 'none'; script-src 'nonce-${nonce}'; style-src 'nonce-${nonce}'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'` });
+      return res.status(200).type("html").send(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Continue to Run Analytics</title><style nonce="${nonce}">body{font-family:system-ui,sans-serif;background:#f8f6f2;color:#243047;min-height:100vh;display:grid;place-items:center;margin:0;padding:20px;box-sizing:border-box}.card{background:white;border:1px solid #eee0d8;border-radius:20px;max-width:420px;padding:32px;box-shadow:0 12px 36px #26324812}h1{margin:0 0 12px;font-size:26px}p{line-height:1.5;color:#596479}button{width:100%;border:0;border-radius:12px;background:#d84315;color:white;padding:15px;font:600 16px system-ui;cursor:pointer}</style></head><body><main class="card"><h1>Continue to Run Analytics</h1><p>Continue to sign in and review your options. For your security, this email link can be used once.</p><form method="post" action="/api/marketing/click"><input type="hidden" name="token" value="${escapeCampaignHtml(String(req.query.token))}"><input type="hidden" name="csrf" value="${csrf}"><button type="submit">Continue to pricing</button></form></main><script nonce="${nonce}">history.replaceState(null,'','/api/marketing/click');</script></body></html>`);
+    } catch {
+      return res.status(400).send("This campaign link could not be opened.");
+    }
+  });
+
+  app.post("/api/marketing/click", async (req: any, res) => {
+    try {
+      const rawCookies = String(req.headers.cookie || "");
+      const csrfCookie = rawCookies.split(";").map((part) => part.trim()).find((part) => part.startsWith("campaign_click_csrf="))?.slice("campaign_click_csrf=".length);
+      const csrfBody = req.body?.csrf;
+      if (typeof csrfBody !== "string" || !csrfCookie || csrfBody.length !== csrfCookie.length ||
+        !crypto.timingSafeEqual(Buffer.from(csrfBody), Buffer.from(csrfCookie))) {
+        return res.status(403).send("Please open the link from your email again.");
+      }
+      const resolved = await resolveCampaignClick(req.body?.token);
+      if (!resolved) return res.status(410).send("This sign-in link is invalid or has expired. Please sign in normally.");
+      const { job, user, targetPath, ctaKey } = resolved;
+      const sessionToken = authService.generateToken(user);
+      const nonce = crypto.randomBytes(16).toString("base64");
+      const claimed = await storage.claimEmailClick({ userId: job.userId, jobId: job.id, campaign: job.campaign, step: job.step,
+        source: "signed_email", ctaKey, dedupeKey: `click:${job.id}:${ctaKey}` });
+      if (!claimed) return res.status(410).send("This sign-in link has already been used. Please sign in normally.");
+      res.clearCookie("campaign_click_csrf", { path: "/api/marketing/click" });
       const attributionToken = createMarketingToken({ kind: "attribution", userId: job.userId, jobId: job.id }, 14 * 24 * 60 * 60);
       res.cookie("lifecycle_attribution", attributionToken, { maxAge: 14 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/" });
-      const user = await storage.getUser(job.userId);
-      res.redirect(302, await authService.wrapWithEmailMagicLink(user?.email, targetPath));
-    } catch (error) {
-      console.error("Campaign click error:", error);
-      res.status(400).send("This campaign link could not be opened.");
+      const safeScriptValue = (value: string) => JSON.stringify(value).replace(/</g, "\\u003c");
+      res.set({ "Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "X-Robots-Tag": "noindex, nofollow",
+        "Content-Security-Policy": `default-src 'none'; script-src 'nonce-${nonce}'; base-uri 'none'; frame-ancestors 'none'` });
+      return res.status(200).type("html").send(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Signing you in</title></head><body><p>Signing you in to Run Analytics…</p><script nonce="${nonce}">try{localStorage.setItem("auth_token",${safeScriptValue(sessionToken)});window.location.replace(${safeScriptValue(targetPath)})}catch{window.location.replace("/auth")}</script></body></html>`);
+    } catch {
+      return res.status(400).send("This campaign link could not be opened. Please sign in normally.");
     }
   });
 
@@ -9066,6 +9173,9 @@ ${allPages.map(page => `  <url>
   app.post("/api/admin/campaigns/test", authenticateAdmin, async (req: any, res) => {
     try {
       const input = z.object({ segment: z.string(), step: z.string().optional() }).parse(req.body);
+      if (input.segment !== 'checkout_abandoned' || (input.step && input.step !== 'CA1')) {
+        return res.status(400).json({ message: 'Cloudflare test mail is limited to the unfinished-Checkout notice' });
+      }
       if (!(input.segment in LIFECYCLE_CAMPAIGNS)) return res.status(400).json({ message: "Unknown lifecycle segment" });
       const steps = LIFECYCLE_CAMPAIGNS[input.segment as keyof typeof LIFECYCLE_CAMPAIGNS];
       const selected = input.step ? steps.find((candidate) => candidate.step === input.step) : steps[0];

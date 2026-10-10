@@ -13,6 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { SEO } from "@/components/SEO";
 import { AddEmailModal } from "@/components/AddEmailModal";
+import { TrialOfferDetails, useTrialOffer } from "@/components/TrialOfferDetails";
 
 interface StripePrice {
   id: string;
@@ -117,6 +118,12 @@ export default function PricingPage() {
   const searchString = useSearch();
   const { toast } = useToast();
   const checkout = useCheckout(() => setShowEmailModal(true));
+  const { data: trialOffer } = useTrialOffer(billingCycle);
+  const trialButtonLabel = !trialOffer
+    ? "Review Premium in secure Checkout"
+    : trialOffer?.trialEligible === false
+      ? "Continue to secure Checkout"
+      : "Start 7 days free: $0 today";
 
   // Contextual upgrade intent (source, capability, activity, benefit,
   // return destination) carried by Premium gates. Preserved through
@@ -253,11 +260,9 @@ export default function PricingPage() {
                         data-testid="upgrade-intent-subscribe"
                       >
                         <Sparkles className="h-4 w-4 mr-2" />
-                        {checkout.isPending ? 'Processing...' : 'Start 7 days free: $0 today'}
+                        {checkout.isPending ? 'Processing...' : trialButtonLabel}
                       </Button>
-                      <p className="text-xs text-gray-500 mt-2">
-                        Card required · $0 today · {billingCycle === 'monthly' ? 'Then $7.99/month' : 'Then $79.99/year'} · Cancel anytime
-                      </p>
+                      <TrialOfferDetails className="mt-3" billingPeriod={billingCycle} benefit={upgradeIntent.benefit || capabilityLabel(String(upgradeIntent.capability)).toLowerCase() + "."} />
                     </div>
                   )}
                 </div>
@@ -318,7 +323,7 @@ export default function PricingPage() {
               </button>
             </div>
             <p className="text-sm text-gray-500 mt-3">
-              Card required · $0 today · Cancel before the trial ends to avoid a charge
+              First-time subscribers can start with 7 days free. Your exact offer appears before Checkout.
             </p>
           </div>
 
@@ -327,7 +332,7 @@ export default function PricingPage() {
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 shadow-xl text-white relative">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                 <span className="bg-strava-orange text-white px-4 py-1 rounded-full text-sm font-bold">
-                  7-Day Free Trial
+                  {trialOffer?.trialEligible ? "7-Day Free Trial" : "Premium"}
                 </span>
               </div>
 
@@ -392,13 +397,11 @@ export default function PricingPage() {
                   disabled={checkout.isPending}
                   data-testid="subscribe-premium"
                 >
-                  {checkout.isPending ? 'Processing...' : 'Start 7 days free: $0 today'}
+                  {checkout.isPending ? 'Processing...' : trialButtonLabel}
                 </Button>
               )}
               {!isPremium && (
-                <p className="mt-3 text-center text-xs leading-5 text-gray-400">
-                  Card required. Then {billingCycle === 'monthly' ? '$7.99/month' : '$79.99/year'} unless cancelled.
-                </p>
+                <TrialOfferDetails className="mt-3 text-left" billingPeriod={billingCycle} benefit="full run analysis, adaptive plans, race outlook, and personal coaching." />
               )}
             </div>
           </div>

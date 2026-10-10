@@ -1,4 +1,4 @@
-import { CloudflareEmailTransport } from './cloudflareEmail';
+import { CloudflareEmailTransport, type CloudflareSuppressionCheck } from './cloudflareEmail';
 
 interface EmailOptions {
   to: string;
@@ -25,6 +25,10 @@ class EmailService {
 
   isConfigured(): boolean {
     return this.transport.isConfigured();
+  }
+
+  async checkCloudflareSuppression(email: string): Promise<CloudflareSuppressionCheck> {
+    return this.transport.checkSuppression(email);
   }
 
   async sendEmail(options: EmailOptions, retries: number = 3): Promise<boolean> {
@@ -804,6 +808,14 @@ Your AI Coach at RunAnalytics
     listUnsubscribe?: boolean;
   }): Promise<EmailDeliveryResult> {
     const { to, subject, previewText, bodyText, ctaText, ctaUrl, unsubscribeUrl, userName, step, campaign, listUnsubscribe = true } = options;
+    // Cloudflare Email Service is transactional-only. This transport is
+    // deliberately limited to one notice for a Checkout the runner started.
+    if (campaign !== 'checkout_abandoned' || !['CA1', 'TEST:CA1'].includes(step)) {
+      return { success: false, error: 'cloudflare_recovery_only' };
+    }
+    const suppression = await this.checkCloudflareSuppression(to);
+    if (suppression.status === 'unavailable') return { success: false, error: 'cloudflare_suppression_check_unavailable' };
+    if (suppression.status === 'suppressed') return { success: false, error: `cloudflare_suppressed_${suppression.reason}` };
     const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character] || character));
     const safeName = escapeHtml(userName);
     const safePreview = escapeHtml(previewText);
@@ -813,7 +825,7 @@ Your AI Coach at RunAnalytics
     const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; padding: 20px 0; border-bottom: 1px solid #eee;">
-          <h1 style="color: #e74c3c; font-size: 24px; margin: 0;">RunAnalytics</h1>
+          <h1 style="color: #e64a19; font-size: 24px; margin: 0;">Run Analytics</h1>
         </div>
         
         <div style="padding: 30px 0;">
@@ -833,11 +845,11 @@ Your AI Coach at RunAnalytics
         </div>
         
         <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; color: #666; font-size: 14px;">
-          <p>Happy running,<br>Biser from AITracker</p>
+          <p>Run Analytics team</p>
           <p style="font-size: 12px; color: #999;">
-            You opted in to personalized running insights from AITracker.
+            You opted in to emails from Run Analytics.
             <a href="${unsubscribeUrl}" style="color: #666;">Unsubscribe</a><br>
-            AITracker, New York, NY, USA
+            Run Analytics, New York, NY, USA
           </p>
         </div>
       </div>
@@ -850,17 +862,18 @@ ${bodyText}
 
 ${ctaText}: ${ctaUrl}
 
-Happy running,
-Biser from AITracker
+Run Analytics team
 
 ---
-You opted in to personalized running insights from AITracker.
+You opted in to emails from Run Analytics.
 Unsubscribe: ${unsubscribeUrl}
-AITracker, New York, NY, USA
+Run Analytics, New York, NY, USA
     `;
     
-    console.log(`[Email] Sending drip email ${step} (${campaign}) to ${to}`);
+    console.log(`[Email] Sending consented Checkout notice ${step} (${campaign})`);
     
+    // Do not retry an uncertain Cloudflare send: the first request may have
+    // been accepted even when the response was lost.
     return await this.sendEmailDetailed({
       to,
       subject,
@@ -870,7 +883,7 @@ AITracker, New York, NY, USA
         "List-Unsubscribe": `<${unsubscribeUrl}>`,
         "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
       } : undefined,
-    });
+    }, 0);
   }
 
   async sendActivityReadyEmail(options: {

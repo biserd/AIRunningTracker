@@ -12,6 +12,7 @@ import TrainingRecommendations from "@/components/dashboard/TrainingRecommendati
 import RunnerScoreRadar from "@/components/dashboard/RunnerScoreRadar";
 import ProgressChecklist from "@/components/dashboard/ProgressChecklist";
 import PremiumPreviewTeaser from "@/components/dashboard/PremiumPreviewTeaser";
+import CheckoutRecoveryPrompt from "@/components/dashboard/CheckoutRecoveryPrompt";
 import TodayRunDecision from "@/components/dashboard/TodayRunDecision";
 import ThisWeekPlan from "@/components/dashboard/ThisWeekPlan";
 import { SyncProgress } from "@/components/SyncProgress";
@@ -498,6 +499,9 @@ export default function Dashboard() {
             />
           </div>
         )}
+
+        {/* Recover an unfinished Checkout without requiring marketing-email consent. */}
+        <CheckoutRecoveryPrompt />
 
         {/* Lead free runners with proof of value before general guidance. */}
         <PremiumPreviewTeaser />

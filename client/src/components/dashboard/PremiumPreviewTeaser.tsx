@@ -8,6 +8,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { trackFunnelEvent } from "@/lib/analytics";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
 import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
+import { TrialOfferDetails, useTrialOffer } from "@/components/TrialOfferDetails";
 import { isReadOnlyStaging } from '@/lib/runtime';
 
 interface PremiumPreviewTeaserData {
@@ -52,6 +53,7 @@ function PreviewShell({ children, testId }: { children: React.ReactNode; testId:
 
 export default function PremiumPreviewTeaser() {
   const { isFree, isLoading: subscriptionLoading } = useSubscription();
+  const { data: trialOffer } = useTrialOffer();
   const queryClient = useQueryClient();
   const query = useQuery<PremiumPreviewTeaserData>({
     queryKey: ["/api/premium-preview"],
@@ -240,10 +242,10 @@ export default function PremiumPreviewTeaser() {
           </Link>
         </Button>
         <DirectCheckoutButton upgradeUrl={upgradeUrl}>
-          <Button className="bg-amber-500 hover:bg-amber-600 text-white">Unlock my complete run analysis</Button>
+          <Button className="bg-amber-500 hover:bg-amber-600 text-white">{trialOffer?.trialEligible ? "Start my 7-day trial" : "Unlock my complete run analysis"}</Button>
         </DirectCheckoutButton>
       </div>
-      <p className="text-xs text-gray-500 mt-3">7 days free · Card required · $0 today · Then $7.99/month · Cancel anytime</p>
+      <TrialOfferDetails className="mt-4" benefit="this run's full splits, pace and heart-rate detail, comparisons with similar runs, and coaching for your next session." />
     </PreviewShell>
   );
 }

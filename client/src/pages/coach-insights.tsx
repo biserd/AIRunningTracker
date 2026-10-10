@@ -5,6 +5,7 @@ import { useFeatureAccess } from "@/hooks/useSubscription";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
+import { TrialOfferDetails, useTrialOffer } from "@/components/TrialOfferDetails";
 import AppHeader from "@/components/AppHeader";
 import { FloatingAICoach } from "@/components/FloatingAICoach";
 import RacePredictions from "@/components/dashboard/RacePredictions";
@@ -113,6 +114,7 @@ function useFreePremiumPreview(enabled: boolean) {
 
 function FreeInsightsPreview() {
   const { data } = useFreePremiumPreview(true);
+  const { data: trialOffer } = useTrialOffer();
   const preview = data?.preview;
   const upgradeUrl = buildUpgradeUrl({
     source: "coach_insights_preview",
@@ -175,11 +177,11 @@ function FreeInsightsPreview() {
 
       <div className="rounded-xl border border-gray-200 bg-white p-5 sm:flex sm:items-center sm:justify-between sm:gap-5">
         <div>
-          <p className="font-semibold text-charcoal">Unlock the complete picture for 7 days</p>
-          <p className="mt-1 text-sm text-gray-600">Card required · $0 today · Then $7.99/month · Cancel anytime</p>
+          <p className="font-semibold text-charcoal">{trialOffer?.trialEligible ? "Unlock the complete picture with a 7-day trial" : "Unlock the complete picture"}</p>
+          <TrialOfferDetails className="mt-3" benefit="your race outlook, training-load signals, form trends, and a coach who can explain what they mean for your next run." />
         </div>
         <DirectCheckoutButton upgradeUrl={upgradeUrl}>
-          <Button className="mt-4 bg-strava-orange text-white hover:bg-orange-600 sm:mt-0">Unlock my training analysis</Button>
+          <Button className="mt-4 bg-strava-orange text-white hover:bg-orange-600 sm:mt-0">{trialOffer?.trialEligible ? "Start my 7-day trial" : "Unlock my training analysis"}</Button>
         </DirectCheckoutButton>
       </div>
     </div>

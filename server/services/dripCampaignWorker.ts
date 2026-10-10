@@ -22,17 +22,27 @@ class DripCampaignWorker {
   private hourStartedAt = Date.now();
   private sendsThisHour = 0;
   private lastReconciledAt: Date | null = null;
+  private suppressionAccessVerifiedAt: Date | null = null;
   private readonly workerId = `drip-${process.pid}-${crypto.randomBytes(6).toString("hex")}`;
 
   private readiness() {
     const checks = {
       marketingLinkSecret: Boolean(process.env.MARKETING_LINK_SIGNING_SECRET && process.env.MARKETING_LINK_SIGNING_SECRET.length >= 32),
       emailProvider: emailService.isConfigured(),
-      // Fail closed until asynchronous Cloudflare delivery feedback is integrated.
-      deliveryFeedback: false,
+      // Each one-time Checkout notice checks Cloudflare's bounce/complaint
+      // suppression list immediately before sending and fails closed if that
+      // read is unavailable. No marketing drip is sent through Cloudflare.
+      suppressionPreflight: Boolean(this.suppressionAccessVerifiedAt && Date.now() - this.suppressionAccessVerifiedAt.getTime() < 30 * 60 * 1000),
       fromEmail: Boolean(process.env.EMAIL_FROM),
+      checkoutNoticePolicyApproved: process.env.CLOUDFLARE_CHECKOUT_NOTICE_POLICY_APPROVED === 'true',
     };
     return { ready: Object.values(checks).every(Boolean), checks };
+  }
+
+  private async verifySuppressionAccess(): Promise<void> {
+    // Read-only synthetic lookup; this never sends an email or reads a runner.
+    const result = await emailService.checkCloudflareSuppression('recovery-suppression-probe@aitracker.run');
+    this.suppressionAccessVerifiedAt = result.status === 'unavailable' ? null : new Date();
   }
 
   async start(): Promise<void> {
@@ -53,6 +63,7 @@ class DripCampaignWorker {
       this.campaignsEnabled = false;
     }
 
+    if (this.campaignsEnabled) await this.verifySuppressionAccess();
     console.log("[DripWorker] Starting worker with interval:", WORKER_INTERVAL_MS / 1000, "seconds");
     
     setTimeout(() => this.processJobs(), 10000);
@@ -97,6 +108,7 @@ class DripCampaignWorker {
         console.log("[DripWorker] Dry-run active. Eligibility reconciled, delivery skipped.");
         return;
       }
+      if (!this.readiness().checks.suppressionPreflight) await this.verifySuppressionAccess();
       if (!this.readiness().ready) return;
       const jobs = await storage.claimPendingEmailJobs(Math.min(MAX_JOBS_PER_RUN, this.hourlyLimit - this.sendsThisHour), this.workerId);
       
@@ -237,6 +249,7 @@ class DripCampaignWorker {
   }
 
   async setCampaignsEnabled(enabled: boolean): Promise<void> {
+    if (enabled) await this.verifySuppressionAccess();
     if (enabled && !this.dryRun && !this.readiness().ready) throw new Error("Campaign delivery cannot be enabled until all readiness checks pass");
     this.campaignsEnabled = enabled;
     // Persist to database
@@ -251,6 +264,7 @@ class DripCampaignWorker {
 
   async setSafetyConfig(config: { dryRun?: boolean; hourlyLimit?: number }): Promise<void> {
     if (typeof config.dryRun === "boolean") {
+      if (!config.dryRun) await this.verifySuppressionAccess();
       if (!config.dryRun && !this.readiness().ready) throw new Error("Dry-run cannot be disabled until all readiness checks pass");
       this.dryRun = config.dryRun;
       await storage.setSystemSetting(DRY_RUN_KEY, String(config.dryRun));

@@ -4,10 +4,12 @@ import { LIFECYCLE_SEGMENTS, resolveLifecycleSegment, stableLifecycleBucket, typ
 import { db } from "../db";
 import { storage } from "../storage";
 import { emailService } from "./email";
-import { buildMarketingUrl, createMarketingToken } from "./campaignSecurity";
+import { buildMarketingUrl, createMarketingToken, CLICK_SIGN_IN_TTL_SECONDS } from "./campaignSecurity";
+import { getUncachableStripeClient } from "../stripeClient";
 
 interface DripStep { step: string; offsetHours: number; subject: string; previewText: string; body: string; ctaText: string; ctaPath: string; ctaKey: string; }
 export const CAMPAIGN_VERSION = 2;
+const MAX_CHECKOUT_FOLLOWUP_AGE_MS = 48 * 60 * 60 * 1000;
 
 export const LIFECYCLE_CAMPAIGNS: Record<LifecycleSegment, DripStep[]> = {
   signup_no_strava: [
@@ -19,12 +21,11 @@ export const LIFECYCLE_CAMPAIGNS: Record<LifecycleSegment, DripStep[]> = {
     { step: "PRU2", offsetHours: 48, subject: "One useful change for your next run", previewText: "Your latest run already contains a practical next step", body: "Your preview is still waiting. Open it before your next run and use the recommended action as a simple test.", ctaText: "Open My Preview", ctaPath: "/dashboard", ctaKey: "view_preview" },
   ],
   preview_engaged_no_trial: [
-    { step: "PEN1", offsetHours: 2, subject: "Want this depth after every run?", previewText: "Unlock the complete analysis and proactive coach", body: "You have seen the preview. A 7-day Premium trial unlocks the complete run analysis, trends, training plans and proactive Telegram coaching.", ctaText: "Start My 7-Day Trial", ctaPath: "/dashboard?startTrial=1&source=lifecycle_preview", ctaKey: "start_trial" },
-    { step: "PEN2", offsetHours: 96, subject: "Turn one run insight into a training pattern", previewText: "See how effort, recovery and consistency connect", body: "One run is useful. The real value comes from seeing the pattern across several weeks and getting a clear recommendation when the pattern changes.", ctaText: "Unlock My Training Trends", ctaPath: "/dashboard?startTrial=1&source=lifecycle_trends", ctaKey: "start_trial" },
+    { step: "PEN1", offsetHours: 2, subject: "Want this depth after every run?", previewText: "Unlock the complete analysis and proactive coach", body: "You have seen the preview. For eligible first-time subscribers, a 7-day Premium trial unlocks the complete run analysis, trends, training plans and proactive coaching.", ctaText: "Review Premium", ctaPath: "/pricing?source=lifecycle_preview&capability=advanced_insights&benefitKey=advanced_insights", ctaKey: "start_trial" },
+    { step: "PEN2", offsetHours: 96, subject: "Turn one run insight into a training pattern", previewText: "See how effort, recovery and consistency connect", body: "One run is useful. The real value comes from seeing the pattern across several weeks and getting a clear recommendation when the pattern changes.", ctaText: "Unlock My Training Trends", ctaPath: "/pricing?source=lifecycle_trends&capability=advanced_insights&benefitKey=advanced_insights", ctaKey: "start_trial" },
   ],
   checkout_abandoned: [
-    { step: "CA1", offsetHours: 1, subject: "Your 7-day trial is still available", previewText: "Pick up where you left off", body: "You were close to unlocking the complete analysis. Your trial is still available, and you will not be charged until it ends.", ctaText: "Continue to Secure Checkout", ctaPath: "/dashboard?startTrial=1&source=lifecycle_checkout", ctaKey: "resume_checkout" },
-    { step: "CA2", offsetHours: 24, subject: "Any question before you try Premium?", previewText: "What you get, when billing starts and how to cancel", body: "Premium includes complete run analysis, longer-term trends, training plans and the proactive coach. The trial lasts 7 days and you can cancel before billing starts.", ctaText: "Start My Trial", ctaPath: "/dashboard?startTrial=1&source=lifecycle_checkout_help", ctaKey: "resume_checkout" },
+    { step: "CA1", offsetHours: 1, subject: "Your Run Analytics Checkout was not completed", previewText: "Review the Checkout you started", body: "You started a Run Analytics Checkout but did not finish it. If you still want to review the terms and complete it, use the link below. If not, no action is needed.", ctaText: "Review Checkout", ctaPath: "/pricing?source=lifecycle_checkout&capability=advanced_insights&benefitKey=dashboard_trial", ctaKey: "resume_checkout" },
   ],
   trial_needs_activation: [
     { step: "TNA1", offsetHours: 2, subject: "Your trial is live. Start with this run", previewText: "Open the complete analysis and find one action for the next session", body: "Your Premium trial is active. Start with your latest run, then look for the single action you can carry into the next session.", ctaText: "Analyze My Latest Run", ctaPath: "/activities", ctaKey: "activate_trial" },
@@ -63,10 +64,10 @@ export class DripCampaignService {
 
   async getSignals(userId: number): Promise<LifecycleSignals> {
     const rows = await db.select({ event: funnelEvents.event, occurredAt: funnelEvents.occurredAt }).from(funnelEvents)
-      .where(and(eq(funnelEvents.userId, userId), inArray(funnelEvents.event, ["preview_viewed", "preview_cta_clicked", "checkout_session_created", "checkout_started", "trial_started"])))
+      .where(and(eq(funnelEvents.userId, userId), inArray(funnelEvents.event, ["preview_viewed", "preview_cta_clicked", "checkout_session_created", "trial_started"])))
       .orderBy(desc(funnelEvents.occurredAt)).limit(30);
     const latest = (names: string[]) => rows.find((row) => names.includes(row.event))?.occurredAt || null;
-    return { previewViewedAt: latest(["preview_viewed"]), previewCtaClickedAt: latest(["preview_cta_clicked"]), checkoutStartedAt: latest(["checkout_session_created", "checkout_started"]), trialStartedAt: latest(["trial_started"]) };
+    return { previewViewedAt: latest(["preview_viewed"]), previewCtaClickedAt: latest(["preview_cta_clicked"]), checkoutStartedAt: latest(["checkout_session_created"]), trialStartedAt: latest(["trial_started"]) };
   }
 
   async computeUserSegment(user: User): Promise<LifecycleSegment | null> { return resolveLifecycleSegment(user, await this.getSignals(user.id)); }
@@ -87,11 +88,17 @@ export class DripCampaignService {
     return storage.createUserCampaign({ userId: user.id, campaign: segment, campaignVersion: CAMPAIGN_VERSION, currentStep: 1, experimentVariant: stableLifecycleBucket(user.id, `${segment}:copy:v${CAMPAIGN_VERSION}`) < 50 ? "control" : "benefit_copy", isHoldout: stableLifecycleBucket(user.id, `${segment}:holdout:v${CAMPAIGN_VERSION}`) < holdoutPercent });
   }
 
-  async scheduleNextEmailForUser(userId: number, prefetched?: { user: User; segment: LifecycleSegment | null }): Promise<"scheduled" | "suppressed" | "ineligible" | "complete"> {
+  async scheduleNextEmailForUser(userId: number, prefetched?: { user: User; segment: LifecycleSegment | null; signals?: LifecycleSignals }): Promise<"scheduled" | "suppressed" | "ineligible" | "complete"> {
     const user = prefetched?.user || await storage.getUser(userId);
     if (!user) return "ineligible";
     const segment = prefetched ? prefetched.segment : await this.computeUserSegment(user);
     if (!segment) { await this.exitCampaignForUser(userId, "ineligible"); return "ineligible"; }
+    // Cloudflare Email Service currently supports transactional mail only.
+    // Keep all promotional lifecycle segments disabled; only the single,
+    // user-initiated unfinished-Checkout notice may be scheduled.
+    if (segment !== 'checkout_abandoned') return 'ineligible';
+    const checkoutAt = (prefetched?.signals || await this.getSignals(userId)).checkoutStartedAt;
+    if (!checkoutAt || Date.now() - new Date(checkoutAt).getTime() > MAX_CHECKOUT_FOLLOWUP_AGE_MS) return 'ineligible';
     const enrollment = await this.ensureEnrollment(user, segment);
     const { rolloutPercent } = await this.campaignConfig();
     if (enrollment.isHoldout || stableLifecycleBucket(user.id, `${segment}:rollout:v${CAMPAIGN_VERSION}`) >= rolloutPercent) return "suppressed";
@@ -100,8 +107,7 @@ export class DripCampaignService {
       const step = steps[index];
       const dedupeKey = `${userId}:${segment}:v${CAMPAIGN_VERSION}:${step.step}`;
       if (await storage.getEmailJobByDedupeKey(dedupeKey)) continue;
-      const enteredAt = enrollment.enteredAt ? new Date(enrollment.enteredAt) : new Date();
-      const requestedAt = new Date(enteredAt.getTime() + step.offsetHours * 60 * 60 * 1000);
+      const requestedAt = new Date(new Date(checkoutAt).getTime() + step.offsetHours * 60 * 60 * 1000);
       await storage.createEmailJob({ userId, enrollmentId: enrollment.id, jobType: "drip", campaign: segment, campaignVersion: CAMPAIGN_VERSION, experimentVariant: enrollment.experimentVariant, channel: "email", step: step.step, scheduledAt: this.allowedSendTime(user, requestedAt), dedupeKey, metadata: { ctaUrl: step.ctaPath, ctaKey: step.ctaKey, subject: step.subject, previewText: step.previewText } });
       await storage.updateUserCampaign(enrollment.id, { currentStep: index + 1 });
       return "scheduled";
@@ -111,12 +117,24 @@ export class DripCampaignService {
   }
 
   async processEmailJob(job: EmailJob): Promise<boolean> {
+    let deliveryAttemptStarted = false;
     try {
+      if (job.campaign !== 'checkout_abandoned' || job.step !== 'CA1') return this.cancelJob(job, 'cloudflare_checkout_notice_only');
       const user = await storage.getUser(job.userId);
       if (!user) return this.cancelJob(job, "user_not_found");
       if (!user.email) return this.cancelJob(job, "email_missing");
       const segment = await this.computeUserSegment(user);
       if (!segment || segment !== job.campaign) return this.cancelJob(job, `segment_changed:${segment || "none"}`);
+      if (segment === 'checkout_abandoned') {
+        const [checkout] = await db.select({ occurredAt: funnelEvents.occurredAt, properties: funnelEvents.properties }).from(funnelEvents)
+          .where(and(eq(funnelEvents.userId, user.id), eq(funnelEvents.event, 'checkout_session_created')))
+          .orderBy(desc(funnelEvents.occurredAt)).limit(1);
+        if (!checkout || Date.now() - checkout.occurredAt.getTime() > MAX_CHECKOUT_FOLLOWUP_AGE_MS) return this.cancelJob(job, 'checkout_too_old');
+        const sessionId = (checkout?.properties as { checkoutSessionId?: unknown } | null)?.checkoutSessionId;
+        if (typeof sessionId !== 'string' || !sessionId.startsWith('cs_')) return this.cancelJob(job, 'checkout_session_missing');
+        const session = await (await getUncachableStripeClient()).checkout.sessions.retrieve(sessionId);
+        if (session.status === 'complete') return this.cancelJob(job, 'checkout_completed');
+      }
       const step = LIFECYCLE_CAMPAIGNS[segment].find((candidate) => candidate.step === job.step);
       if (!step) return this.failJob(job, "campaign_step_not_found", false);
       const lastSent = await storage.getLastSentEmailForUser(user.id);
@@ -124,15 +142,35 @@ export class DripCampaignService {
         await storage.updateEmailJob(job.id, { status: "pending", scheduledAt: new Date(new Date(lastSent.sentAt).getTime() + 24 * 60 * 60 * 1000), claimedAt: null, claimedBy: null, leaseExpiresAt: null });
         return false;
       }
-      const clickToken = createMarketingToken({ kind: "click", userId: user.id, jobId: job.id }, 45 * 24 * 60 * 60);
-      const unsubscribeToken = createMarketingToken({ kind: "unsubscribe", userId: user.id }, 2 * 365 * 24 * 60 * 60);
+      const issuedAtSeconds = Math.floor(Date.now() / 1000);
+      const clickToken = createMarketingToken({ kind: "click", userId: user.id, jobId: job.id }, CLICK_SIGN_IN_TTL_SECONDS, issuedAtSeconds);
+      const unsubscribeToken = createMarketingToken({ kind: "unsubscribe", userId: user.id }, 2 * 365 * 24 * 60 * 60, issuedAtSeconds);
+      // Cloudflare does not accept an idempotency key. Persist a terminal
+      // marker before the network call so a crash or expired worker lease
+      // cannot automatically send the same notice twice.
+      const marked = await storage.updateEmailJob(job.id, { status: 'failed', errorMessage: 'cloudflare_delivery_attempt_started', claimedAt: null, claimedBy: null, leaseExpiresAt: null });
+      if (!marked) throw new Error('email_job_not_found');
+      deliveryAttemptStarted = true;
       const delivery = await emailService.sendDripEmail({ to: user.email, subject: step.subject, previewText: step.previewText, bodyText: step.body, ctaText: step.ctaText, ctaUrl: buildMarketingUrl("/api/marketing/click", clickToken), unsubscribeUrl: buildMarketingUrl("/api/marketing/unsubscribe", unsubscribeToken), userName: user.firstName || user.username || "Runner", step: step.step, campaign: segment });
-      if (!delivery.success) return this.failJob(job, delivery.error || "email_provider_rejected", true);
+      if (!delivery.success) {
+        const reason = delivery.error || 'cloudflare_email_rejected';
+        if (reason === 'cloudflare_suppressed_soft_bounce') {
+          await storage.updateEmailJob(job.id, { status: 'retry_scheduled', nextAttemptAt: new Date(Date.now() + 25 * 60 * 60 * 1000), claimedAt: null, claimedBy: null, leaseExpiresAt: null, errorMessage: reason });
+          return false;
+        }
+        if (reason.startsWith('cloudflare_suppressed_') || reason === 'cloudflare_email_permanent_bounce' || reason === 'cloudflare_email_suppressed') {
+          await storage.updateUser(user.id, { marketingOptOut: true, marketingConsentStatus: 'suppressed', marketingSuppressionReason: reason });
+          return this.cancelJob(job, reason);
+        }
+        // Cloudflare's send API has no idempotency key. A timeout may follow
+        // acceptance, so never automatically resend an unknown outcome.
+        return this.failJob(job, reason, reason !== 'cloudflare_email_outcome_unknown');
+      }
       await storage.updateEmailJob(job.id, { status: "sent", sentAt: new Date(), providerMessageId: delivery.providerMessageId || null, claimedAt: null, claimedBy: null, leaseExpiresAt: null, errorMessage: null });
       if (job.enrollmentId) await storage.updateUserCampaign(job.enrollmentId, { lastEmailSentAt: new Date() });
       await this.scheduleNextEmailForUser(user.id);
       return true;
-    } catch (error) { return this.failJob(job, error instanceof Error ? error.message : "unknown_error", true); }
+    } catch (error) { return this.failJob(job, error instanceof Error ? error.message : "unknown_error", !deliveryAttemptStarted); }
   }
 
   private async cancelJob(job: EmailJob, reason: string): Promise<false> { await storage.updateEmailJob(job.id, { status: "cancelled", errorMessage: reason, claimedAt: null, claimedBy: null, leaseExpiresAt: null }); return false; }
@@ -163,10 +201,10 @@ export class DripCampaignService {
       SELECT user_id,
         MAX(occurred_at) FILTER (WHERE event = 'preview_viewed') AS preview_viewed_at,
         MAX(occurred_at) FILTER (WHERE event = 'preview_cta_clicked') AS preview_clicked_at,
-        MAX(occurred_at) FILTER (WHERE event IN ('checkout_started', 'checkout_session_created')) AS checkout_at,
+        MAX(occurred_at) FILTER (WHERE event = 'checkout_session_created') AS checkout_at,
         MAX(occurred_at) FILTER (WHERE event = 'trial_started') AS trial_at
       FROM funnel_events
-      WHERE event IN ('preview_viewed', 'preview_cta_clicked', 'checkout_started', 'checkout_session_created', 'trial_started')
+      WHERE event IN ('preview_viewed', 'preview_cta_clicked', 'checkout_session_created', 'trial_started')
       GROUP BY user_id
     `);
     const signalsByUser = new Map<number, LifecycleSignals>();
@@ -175,7 +213,7 @@ export class DripCampaignService {
       const segment = resolveLifecycleSegment(user, signalsByUser.get(user.id) || {});
       if (!segment) { skipped += 1; continue; }
       bySegment[segment] += 1;
-      const result = await this.scheduleNextEmailForUser(user.id, { user, segment });
+      const result = await this.scheduleNextEmailForUser(user.id, { user, segment, signals: signalsByUser.get(user.id) || {} });
       if (result === "scheduled") enrolled += 1; else if (result === "suppressed") suppressed += 1; else skipped += 1;
     }
     return { enrolled, skipped, suppressed, bySegment };
@@ -188,10 +226,10 @@ export class DripCampaignService {
         SELECT user_id,
           MAX(occurred_at) FILTER (WHERE event = 'preview_viewed') AS preview_viewed_at,
           MAX(occurred_at) FILTER (WHERE event = 'preview_cta_clicked') AS preview_clicked_at,
-          MAX(occurred_at) FILTER (WHERE event IN ('checkout_started', 'checkout_session_created')) AS checkout_at,
+          MAX(occurred_at) FILTER (WHERE event = 'checkout_session_created') AS checkout_at,
           MAX(occurred_at) FILTER (WHERE event = 'trial_started') AS trial_at
         FROM funnel_events
-        WHERE event IN ('preview_viewed', 'preview_cta_clicked', 'checkout_started', 'checkout_session_created', 'trial_started')
+        WHERE event IN ('preview_viewed', 'preview_cta_clicked', 'checkout_session_created', 'trial_started')
         GROUP BY user_id
       ), categorized AS (
         SELECT users.id,

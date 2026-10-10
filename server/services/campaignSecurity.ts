@@ -2,6 +2,14 @@ import crypto from "crypto";
 
 type MarketingTokenKind = "click" | "unsubscribe" | "attribution";
 
+export const CLICK_SIGN_IN_TTL_SECONDS = 72 * 60 * 60;
+
+export function isRecentCampaignClick(sentAt: Date | string | null | undefined, nowMs = Date.now()): boolean {
+  if (!sentAt) return false;
+  const sentMs = new Date(sentAt).getTime();
+  return Number.isFinite(sentMs) && sentMs <= nowMs && nowMs - sentMs <= CLICK_SIGN_IN_TTL_SECONDS * 1000;
+}
+
 interface MarketingTokenPayload {
   kind: MarketingTokenKind;
   userId: number;
@@ -24,8 +32,9 @@ function sign(encoded: string): string {
 export function createMarketingToken(
   payload: Omit<MarketingTokenPayload, "exp">,
   ttlSeconds: number,
+  issuedAtSeconds = Math.floor(Date.now() / 1000),
 ): string {
-  const complete = { ...payload, exp: Math.floor(Date.now() / 1000) + ttlSeconds };
+  const complete = { ...payload, exp: issuedAtSeconds + ttlSeconds };
   const encoded = Buffer.from(JSON.stringify(complete), "utf8").toString("base64url");
   return `${encoded}.${sign(encoded)}`;
 }

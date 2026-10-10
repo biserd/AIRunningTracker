@@ -23,6 +23,7 @@ assert.equal(resolveLifecycleSegment({ ...base, stravaConnected: false }, {}, no
 assert.equal(resolveLifecycleSegment({ ...base, premiumPreviewCreatedAt: hoursAgo(2) }, {}, now), "preview_ready_unseen");
 assert.equal(resolveLifecycleSegment({ ...base, premiumPreviewCreatedAt: hoursAgo(2) }, { previewViewedAt: hoursAgo(1) }, now), "preview_engaged_no_trial");
 assert.equal(resolveLifecycleSegment(base, { checkoutStartedAt: hoursAgo(2) }, now), "checkout_abandoned", "checkout intent outranks generic free state");
+assert.equal(resolveLifecycleSegment({ ...base, marketingConsentStatus: "unknown" }, { checkoutStartedAt: hoursAgo(2) }, now), null, "an abandoned checkout does not override missing email consent");
 assert.equal(resolveLifecycleSegment({ ...base, subscriptionStatus: "trialing", trialEndsAt: new Date(now.getTime() + 48 * 60 * 60 * 1000) }, {}, now), "trial_ending");
 assert.equal(resolveLifecycleSegment({ ...base, subscriptionStatus: "trialing", trialEndsAt: new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000) }, {}, now), "trial_needs_activation");
 assert.equal(resolveLifecycleSegment({ ...base, subscriptionStatus: "trialing", trialEndsAt: new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000), activationAt: hoursAgo(1) }, {}, now), "trial_engaged");

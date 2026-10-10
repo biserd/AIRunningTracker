@@ -174,6 +174,7 @@ export interface IStorage {
   getLastSentEmailForUser(userId: number): Promise<EmailJob | null>;
   
   createEmailClick(click: InsertEmailClick): Promise<EmailClick>;
+  claimEmailClick(click: InsertEmailClick): Promise<boolean>;
   getEmailClicksByUser(userId: number, limit?: number): Promise<EmailClick[]>;
   getCampaignAnalytics(): Promise<{
     totalSent: number;
@@ -1666,12 +1667,22 @@ export class DatabaseStorage implements IStorage {
     const [result] = await db
       .insert(emailClicks)
       .values(click)
-      .onConflictDoNothing({ target: emailClicks.dedupeKey })
+      .onConflictDoNothing()
       .returning();
     if (result) return result;
     const [existing] = await db.select().from(emailClicks).where(eq(emailClicks.dedupeKey, click.dedupeKey || "")).limit(1);
     if (!existing) throw new Error("Email click deduplication failed");
     return existing;
+  }
+
+  async claimEmailClick(click: InsertEmailClick): Promise<boolean> {
+    if (!click.dedupeKey) throw new Error("A one-time email click requires a deduplication key");
+    const [inserted] = await db
+      .insert(emailClicks)
+      .values(click)
+      .onConflictDoNothing()
+      .returning({ id: emailClicks.id });
+    return Boolean(inserted);
   }
 
   async getEmailClicksByUser(userId: number, limit = 50): Promise<EmailClick[]> {

@@ -29,6 +29,7 @@ import type { CoachRecap } from "@shared/schema";
 import { normalizeZoneDurations, zonesFromFractions } from "@shared/zoneCalculations";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
 import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
+import { TrialOfferDetails, useTrialOffer } from "@/components/TrialOfferDetails";
 import { trackFunnelEvent } from "@/lib/analytics";
 import { normalizeCadenceToSpm } from "@shared/cadenceNormalization";
 import { formatRunDistance, formatRunPace, runUnitLabels } from "@shared/runFormatting";
@@ -158,6 +159,7 @@ interface PremiumPreviewData {
 }
 
 function PremiumAnalysisUpsell({ activityId }: { activityId: number }) {
+  const { data: trialOffer } = useTrialOffer();
   const pricingUrl = buildUpgradeUrl({
     source: "activity_deep_dive",
     capability: "activity_deep_dive",
@@ -210,12 +212,10 @@ function PremiumAnalysisUpsell({ activityId }: { activityId: number }) {
                 data-testid="activity-premium-upsell-cta"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
-                Unlock this run for 7 days free
+                {trialOffer?.trialEligible ? "Start my 7-day trial" : "Unlock this run"}
               </Button>
             </DirectCheckoutButton>
-            <p className="text-xs text-gray-500 text-center mt-2">
-              Card required · $0 today · then $7.99/month · cancel anytime
-            </p>
+            <TrialOfferDetails className="mt-3" benefit="the full breakdown of this run and a specific next-run recommendation." />
           </div>
         </div>
       </CardContent>
@@ -224,6 +224,7 @@ function PremiumAnalysisUpsell({ activityId }: { activityId: number }) {
 }
 
 function PremiumPreviewCard({ preview, createdAt, unitPreference }: { preview: PremiumPreviewData; createdAt?: string | null; unitPreference?: string }) {
+  const { data: trialOffer } = useTrialOffer();
   // Freshness: age (days) of the preview at the moment it's shown.
   const freshnessDays = createdAt
     ? Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 86_400_000))
@@ -342,11 +343,11 @@ function PremiumPreviewCard({ preview, createdAt, unitPreference }: { preview: P
               className="bg-yellow-500 hover:bg-yellow-600 text-white"
               data-testid="premium-preview-upgrade"
             >
-              <Sparkles className="h-4 w-4 mr-1" /> Unlock my complete run analysis
+              <Sparkles className="h-4 w-4 mr-1" /> {trialOffer?.trialEligible ? "Start my 7-day trial" : "Unlock my complete run analysis"}
             </Button>
           </DirectCheckoutButton>
         </div>
-        <p className="text-xs text-gray-500">7 days free · Card required · $0 today · Then $7.99/month · Cancel anytime</p>
+        <TrialOfferDetails benefit="this run's splits, charts, comparison with similar efforts, and personalized coach guidance." />
       </CardContent>
     </Card>
   );
