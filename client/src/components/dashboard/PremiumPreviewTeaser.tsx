@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, BarChart2, ChevronRight, Flag, Loader2, Sparkles } from "lucide-react";
+import { AlertCircle, LockKeyhole, Loader2, Sparkles } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { trackFunnelEvent } from "@/lib/analytics";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
@@ -35,12 +35,6 @@ interface PremiumPreviewTeaserData {
   createdAt?: string | null;
   status?: "ready" | "preparing" | "waiting_for_run" | "not_connected" | "not_eligible" | "failed";
   reason?: string | null;
-}
-
-function formatPace(seconds: number | null | undefined, unitPreference: "km" | "miles" | undefined): string | null {
-  if (seconds === null || seconds === undefined) return null;
-  const rounded = Math.max(0, Math.round(seconds));
-  return `${Math.floor(rounded / 60)}:${String(rounded % 60).padStart(2, "0")}/${unitPreference === "km" ? "km" : "mi"}`;
 }
 
 function PreviewShell({ children, testId }: { children: React.ReactNode; testId: string }) {
@@ -187,65 +181,48 @@ export default function PremiumPreviewTeaser() {
     benefitKey: "premium_preview",
     returnTo: `/activity/${activityId}`,
   });
-  const comparison = preview.comparison;
-  const baselinePace = formatPace(comparison?.baselinePaceSecondsPerUnit, preview.unitPreference);
-
   return (
     <PreviewShell testId="premium-preview-teaser">
       <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-amber-700">
-        <Sparkles className="h-4 w-4" /> PREMIUM PREVIEW · LAST RUN → NEXT RUN
+        <Sparkles className="h-4 w-4" /> YOUR FIRST RUN INSIGHT
       </div>
-      <h2 className="text-2xl font-bold text-gray-900 mt-3">
-        {comparison ? `${preview.sourceData.name}: compared with ${comparison.sampleSize} similar runs` : `${preview.sourceData.name}: your first personal benchmark`}
-      </h2>
-      <p className="text-sm text-gray-700 mt-1">
-        {comparison
-          ? "A real comparison from your imported history, not a population average."
-          : "This run establishes the baseline that future comparable runs will be measured against."}
-      </p>
-      <p className="text-xs text-gray-500 mt-2">
-        {preview.sourceData.name}{activityDate ? ` · ${activityDate}` : ""}
+      <h2 className="mt-3 text-2xl font-bold text-gray-900">A finding from your own running data</h2>
+      <p className="mt-1 text-sm text-gray-600">
+        From {preview.sourceData.name}{activityDate ? ` · ${activityDate}` : ""}
       </p>
 
-      <div className="grid md:grid-cols-2 gap-3 mt-5">
-        {preview.findings.map((finding, index) => (
-          <div key={index} className="flex items-start gap-3 rounded-lg bg-white p-4 shadow-sm">
-            <BarChart2 className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-            <p className="text-sm text-gray-800">{finding}</p>
+      <div className="mt-5 grid gap-4 lg:grid-cols-2 lg:items-stretch">
+        <div className="flex flex-col justify-between rounded-xl border border-amber-200 bg-white p-5 shadow-sm" data-testid="premium-preview-first-insight">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-amber-700">What we noticed</p>
+            <p className="mt-3 text-lg font-semibold leading-relaxed text-gray-900">{preview.findings[0]}</p>
           </div>
-        ))}
-      </div>
-      {comparison && (
-        <div className="mt-3 grid grid-cols-2 gap-2 rounded-lg border border-amber-200 bg-amber-100/60 p-3 sm:grid-cols-4" data-testid="premium-preview-benchmark">
-          <div><p className="text-[10px] font-semibold uppercase text-amber-700">Benchmark</p><p className="text-sm font-bold text-gray-900">{comparison.sampleSize} similar runs</p></div>
-          {baselinePace && <div><p className="text-[10px] font-semibold uppercase text-amber-700">Usual pace</p><p className="text-sm font-bold text-gray-900">{baselinePace}</p></div>}
-          {comparison.baselineHeartRate !== null && <div><p className="text-[10px] font-semibold uppercase text-amber-700">Usual HR</p><p className="text-sm font-bold text-gray-900">{comparison.baselineHeartRate} bpm</p></div>}
-          {comparison.baselineCadence !== null && <div><p className="text-[10px] font-semibold uppercase text-amber-700">Usual cadence</p><p className="text-sm font-bold text-gray-900">{comparison.baselineCadence} spm</p></div>}
-        </div>
-      )}
-      <div className="flex items-start gap-3 rounded-lg bg-white p-4 shadow-sm border-l-4 border-amber-400 mt-3">
-        <Flag className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-        <div>
-          <p className="text-xs font-bold text-amber-700 uppercase">Recommended action</p>
-          <p className="text-sm text-gray-800 mt-1">{preview.nextAction}</p>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3 mt-5">
-        <Button asChild variant="outline" data-testid="premium-preview-teaser-cta">
-          <Link href={`/activity/${activityId}`} onClick={() => trackFunnelEvent(
-            "preview_cta_clicked",
-            { source: "premium_preview_dashboard", capability: "activity_deep_dive", activityId },
-            { dedupeParts: ["dashboard", activityId, Date.now()] },
-          )}>
-            See why this happened <ChevronRight className="h-4 w-4 ml-1" />
+          <Link href={`/activity/${activityId}`} className="mt-5 w-fit text-sm font-medium text-amber-800 underline underline-offset-2 hover:text-amber-950">
+            View this run
           </Link>
-        </Button>
-        <DirectCheckoutButton upgradeUrl={upgradeUrl}>
-          <Button className="bg-amber-500 hover:bg-amber-600 text-white">{trialOffer?.trialEligible ? "Start my 7-day trial" : "Unlock my complete run analysis"}</Button>
-        </DirectCheckoutButton>
+        </div>
+        <div className="rounded-xl border border-orange-200 bg-orange-100/70 p-5" data-testid="premium-preview-deeper-analysis">
+          <div className="flex items-center gap-2 text-amber-800">
+            <LockKeyhole className="h-4 w-4" />
+            <p className="text-xs font-bold uppercase tracking-wide">Deeper coach analysis</p>
+          </div>
+          <h3 className="mt-3 text-lg font-bold text-gray-900">What does this mean for your next run?</h3>
+          <p className="mt-2 text-sm text-gray-700">Go beyond this first finding with the full run breakdown and a personal next-step recommendation.</p>
+          <DirectCheckoutButton
+            upgradeUrl={upgradeUrl}
+            onBeforeCheckout={() => trackFunnelEvent(
+              "preview_cta_clicked",
+              { source: "premium_preview_dashboard", capability: "activity_deep_dive", activityId },
+              { dedupeParts: ["dashboard", activityId, Date.now()] },
+            )}
+          >
+            <Button className="mt-4 w-full bg-orange-600 text-white hover:bg-orange-700" data-testid="premium-preview-teaser-cta">
+              {trialOffer?.trialEligible ? "Start my 7-day trial" : "Unlock my complete run analysis"}
+            </Button>
+          </DirectCheckoutButton>
+          <TrialOfferDetails className="mt-3" benefit="the full breakdown of this run and a specific recommendation for your next session." />
+        </div>
       </div>
-      <TrialOfferDetails className="mt-4" benefit="this run's full splits, pace and heart-rate detail, comparisons with similar runs, and coaching for your next session." />
     </PreviewShell>
   );
 }

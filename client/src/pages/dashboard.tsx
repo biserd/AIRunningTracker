@@ -500,11 +500,11 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Show the runner's own first insight as soon as Strava data lands. */}
+        <PremiumPreviewTeaser />
+
         {/* Recover an unfinished Checkout without requiring marketing-email consent. */}
         <CheckoutRecoveryPrompt />
-
-        {/* Lead free runners with proof of value before general guidance. */}
-        <PremiumPreviewTeaser />
 
         <div className="mb-6">
           <TodayRunDecision
