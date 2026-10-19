@@ -594,7 +594,7 @@ function AIAgentCoachTab({ user, canAccessAICoachChat }: { user: User; canAccess
             </Link>
           </Button>
         </div>
-        <p className="mt-3 text-center text-xs text-gray-500">Card required · $0 today · Then $7.99/month · Cancel anytime</p>
+        <p className="mt-3 text-center text-xs text-gray-500">Card required · $0 today · Introductory or regular rate confirmed in Checkout · Cancel anytime</p>
       </div>
     );
   }

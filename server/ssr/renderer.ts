@@ -1,6 +1,7 @@
 import { getBlogPostBySlug, BlogPostContent } from './blogContent';
 import { homepageContent, HomepageContent } from './homepageContent';
 import { getToolBySlug, ToolContent } from './toolsContent';
+import { configuredWebIntroCoupon, webIntroOfferForPrice } from '../services/webIntroOffer';
 
 const BASE_URL = "https://aitracker.run";
 
@@ -776,7 +777,15 @@ export function renderComparisonPage(slug: string, comparison: ComparisonData): 
 }
 
 export function renderHomepage(): string {
-  const content = homepageContent;
+  const introductoryOffer = configuredWebIntroCoupon('annual') && webIntroOfferForPrice({ billingPeriod: 'monthly', regularUnitAmount: 799,
+    currency: 'usd', firstTimeSubscriber: true, couponId: configuredWebIntroCoupon('monthly') });
+  const content = introductoryOffer ? {
+    ...homepageContent,
+    pricing: { ...homepageContent.pricing,
+      plans: homepageContent.pricing.plans.map(plan => ({ ...plan,
+        price: '$3.99 first month',
+        description: 'Limited-time web offer for new subscribers: 7 days free, then $3.99 for the first month or $39.99 for the first year. Renews at $7.99/month or $79.99/year. Sign up by November 30. Cancel anytime.' })) },
+  } : homepageContent;
   const meta: PageMeta = {
     title: "RunAnalytics - AI Running Coach & Performance Analytics",
     description: "Chat with your personal AI Running Coach powered by GPT-5.5. Get instant training advice, race predictions, Runner Score (0-100), and comprehensive performance analytics. Free with Strava integration.",
@@ -1140,7 +1149,7 @@ export function renderFaqPage(): string {
   const faqItems = [
     { q: "What is RunAnalytics?", a: "RunAnalytics is an AI-powered running analytics platform that integrates with Strava to provide personalized insights, performance tracking, and training recommendations. We use advanced machine learning algorithms to analyze your running data and help you improve your performance." },
     { q: "Do I need a Strava account?", a: "While you can create an account without Strava, connecting your Strava account unlocks the full potential of our platform. Strava integration provides access to your historical running data, which enables more accurate AI insights and personalized recommendations." },
-    { q: "Is RunAnalytics free to use?", a: "RunAnalytics offers a 7-day free trial with full access to all Premium features: AI coaching, race predictions, training plans, and advanced analytics. After the trial, Premium is $7.99/month or $79.99/year. You can cancel anytime before the trial ends and you won't be charged." },
+    { q: "Is RunAnalytics free to use?", a: "RunAnalytics offers a 7-day free trial with full access to all Premium features: AI coaching, race predictions, training plans, and advanced analytics. Standard renewal pricing is $7.99/month or $79.99/year; a limited-time introductory web offer may lower the first paid period. You can cancel anytime before the trial ends and you won't be charged." },
     { q: "What kind of insights do you provide?", a: "Our AI analyzes your running data to provide insights on performance trends, pace analysis, training load, recovery recommendations, race predictions, injury risk assessment, and personalized training plans. Each insight is tailored to your specific running patterns and goals." },
     { q: "How accurate are the race time predictions?", a: "Race predictions are modeled estimates based on the activity data available. Weather, terrain, pacing, distance from the input effort and data quality can materially change the result; the displayed range is not a calibrated probability interval." },
     { q: "What is the Runner Score?", a: "The Runner Score is our comprehensive fitness metric that evaluates multiple aspects of your running performance including endurance, speed, consistency, and efficiency. It's displayed on a radar chart with scores from 0-100 across different categories." },
@@ -1252,6 +1261,8 @@ ${listSchema}
 
 export function renderPricingPage(): string {
   const url = '/pricing';
+  const introductoryOffer = configuredWebIntroCoupon('annual') && webIntroOfferForPrice({ billingPeriod: 'monthly', regularUnitAmount: 799,
+    currency: 'usd', firstTimeSubscriber: true, couponId: configuredWebIntroCoupon('monthly') });
   const meta: PageMeta = {
     title: "Pricing | Free & Premium Plans | RunAnalytics",
     description: "Start free with basic analytics. Upgrade to Premium for AI insights, training plans, Coach Chat, and unlimited features.",
@@ -1280,7 +1291,8 @@ export function renderPricingPage(): string {
           </ul>
         </section>
         <section>
-          <h2>Premium: $7.99/month or $79.99/year</h2>
+          <h2>${introductoryOffer ? 'Premium web offer: $3.99 first month or $39.99 first year' : 'Premium: $7.99/month or $79.99/year'}</h2>
+          ${introductoryOffer ? '<p>For new web subscribers through November 30. After the first paid period, renews at $7.99/month or $79.99/year. Eligible new accounts can try Premium free for 7 days first; card required, $0 today, cancel anytime.</p>' : ''}
           <p>Everything in Free, plus the full AI coaching suite:</p>
           <h3>Activity Analysis</h3>
           <ul>
@@ -1322,7 +1334,7 @@ export function renderPricingPage(): string {
           </details>
           <details>
             <summary><strong>Is there an annual discount?</strong></summary>
-            <p>Yes. The annual plan is $79.99/year: equivalent to $6.67/month, saving you about 17% compared to the monthly plan.</p>
+            <p>${introductoryOffer ? 'New web subscribers pay $39.99 for their first year after the trial, then $79.99/year. The standard annual rate saves about 17% versus twelve standard monthly payments.' : 'Yes. The annual plan is $79.99/year: equivalent to $6.67/month, saving you about 17% compared to the monthly plan.'}</p>
           </details>
         </section>
         <div class="ssr-cta">

@@ -25,6 +25,14 @@ export default function LandingPage() {
     queryKey: ['/api/platform-stats'],
     staleTime: 60000,
   });
+  const { data: webIntroOffer } = useQuery<{ active: boolean }>({
+    queryKey: ['/api/stripe/web-intro-offer', 'monthly'],
+    queryFn: async () => {
+      const response = await fetch('/api/stripe/web-intro-offer?billingPeriod=monthly');
+      return response.ok ? response.json() : { active: false };
+    },
+    staleTime: 60_000,
+  });
 
   const scrollTools = (direction: 'left' | 'right') => {
     if (toolsCarouselRef.current) {
@@ -49,9 +57,11 @@ export default function LandingPage() {
         "operatingSystem": "Web",
         "offers": {
           "@type": "Offer",
-          "price": "7.99",
+          "price": webIntroOffer?.active ? "3.99" : "7.99",
           "priceCurrency": "USD",
-          "description": "7-day free trial, then $7.99/month or $79.99/year. Cancel anytime."
+          "description": webIntroOffer?.active
+            ? "Limited-time web offer for new subscribers: 7 days free, then $3.99 for the first month or $39.99 for the first year; renews at $7.99/month or $79.99/year. Cancel anytime."
+            : "7-day free trial, then $7.99/month or $79.99/year. Cancel anytime."
         },
         "description": "AI running coach with voice and chat, WhatsApp coaching, Runner Score, race predictions, and personalized training insights"
       },
@@ -100,6 +110,13 @@ export default function LandingPage() {
           <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
             Talk by voice or chat, continue with your coach on WhatsApp, and receive useful guidance after every synced run. The RunAnalytics iOS app is coming soon.
           </p>
+          {webIntroOffer?.active && (
+            <Link href="/pricing" className="mx-4 mb-7 block rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-left shadow-sm transition hover:border-orange-400 hover:shadow-md" data-testid="home-web-intro-offer">
+              <span className="block text-sm font-bold text-orange-800">Limited-time web offer · sign up by November 30</span>
+              <span className="mt-1 block text-base font-semibold text-gray-900">7 days free, then $3.99 for your first month or $39.99 for your first year.</span>
+              <span className="mt-1 block text-xs text-gray-600">For new web subscribers. Renews at $7.99/month or $79.99/year. Card required; cancel anytime. See full terms →</span>
+            </Link>
+          )}
 
           {/* Social Proof with Real Stats */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 mb-6 sm:mb-8 mx-4">

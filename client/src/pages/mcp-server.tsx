@@ -39,7 +39,7 @@ export default function McpServerLandingPage() {
                   <Button asChild size="lg" className="bg-strava-orange text-white hover:bg-orange-600"><Link href={upgradeUrl}>Start 7 days free <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
                   <Button asChild size="lg" variant="outline" className="border-slate-500 bg-transparent text-white hover:bg-white/10"><Link href="/developers/mcp">Read the MCP documentation</Link></Button>
                 </div>
-                <p className="mt-3 text-xs text-slate-400">Private runner access is included with Premium and the trial. Card required · $0 today · Then $7.99/month.</p>
+                <p className="mt-3 text-xs text-slate-400">Private runner access is included with Premium and the trial. Card required · $0 today · See your first charge and renewal rate before Checkout.</p>
               </div>
               <Card className="border-white/10 bg-white/95 shadow-2xl"><CardContent className="p-6 sm:p-8">
                 <div className="flex items-center gap-3"><Bot className="h-8 w-8 text-strava-orange" /><div><p className="font-bold">A useful answer, grounded in you</p><p className="text-sm text-slate-500">Not a generic chatbot memory</p></div></div>

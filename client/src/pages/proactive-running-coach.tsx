@@ -380,7 +380,7 @@ export default function ProactiveRunningCoachLanding() {
           <div className="mx-auto max-w-5xl overflow-hidden rounded-[2rem] bg-[#FC4C02] px-7 py-12 text-center text-white shadow-2xl sm:px-12 sm:py-16">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15"><Sparkles className="h-7 w-7" /></div>
             <h2 className="mx-auto mt-6 max-w-3xl text-3xl font-black tracking-tight sm:text-5xl">Your next useful coaching moment should find you.</h2>
-            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-orange-50">Start the 7-day Premium trial, connect Strava, then opt in to WhatsApp from coach Settings. Premium remains $7.99/month after the trial; the iOS app is coming soon.</p>
+            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-orange-50">Start the 7-day Premium trial, connect Strava, then opt in to WhatsApp from coach Settings. Standard renewal pricing is $7.99/month; see Pricing for the current introductory web offer. The iOS app is coming soon.</p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <a href={primaryHref} onClick={trackPrimaryClick}>
                 <Button size="lg" className="h-14 w-full bg-white px-7 text-base font-bold text-[#C63B00] hover:bg-orange-50 sm:w-auto" data-testid="proactive-coach-bottom-cta">

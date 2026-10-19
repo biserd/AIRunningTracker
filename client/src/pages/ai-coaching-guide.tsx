@@ -86,7 +86,7 @@ const FAQS = [
   {
     question: "Do I need a payment card for the trial?",
     answer:
-      "Yes. Stripe collects a card when you activate the trial. You pay $0 today and can cancel before the trial ends. If you continue, Premium is $7.99 per month or $79.99 per year.",
+      "Yes. Stripe collects a card when you activate the trial. You pay $0 today and can cancel before the trial ends. Standard renewal pricing is $7.99 per month or $79.99 per year; check Pricing for any introductory web offer.",
   },
   {
     question: "Can I buy the ebook without starting a trial?",
@@ -255,7 +255,7 @@ export default function AICoachingGuidePage() {
               <div className="mt-8">
                 <PrimaryAction />
                 <p className="mt-3 text-sm text-slate-300">
-                  $0 today. Card required. Cancel anytime. Then $7.99/month or $79.99/year.
+                  $0 today. Card required. Cancel anytime. Introductory and renewal prices are confirmed before Checkout.
                 </p>
               </div>
 

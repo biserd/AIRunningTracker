@@ -90,7 +90,7 @@ export function TelegramTrialOffer({ source, compact = false }: TelegramTrialOff
               </Button>
             </DirectCheckoutButton>
             <p className="mt-2 text-center text-xs leading-5 text-slate-500">
-              $0 today. Card required. Then $7.99/month. Cancel anytime.
+              $0 today. Card required. Your introductory or regular rate is confirmed in Checkout. Cancel anytime.
             </p>
             <Link
               href="/proactive-running-coach"

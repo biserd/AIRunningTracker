@@ -515,7 +515,7 @@ export default function AICoachLanding() {
                 <CardTitle className="text-lg dark:text-white">How does the free trial work?</CardTitle>
               </CardHeader>
               <CardContent className="text-gray-700 dark:text-gray-300">
-                You get 7 days of full Premium access, including AI coaching, race predictions, training plans, and all analytics. After the trial, it's $7.99/month or $79.99/year. Cancel anytime before the trial ends and you won't be charged.
+                You get 7 days of full Premium access, including AI coaching, race predictions, training plans, and all analytics. Standard renewal pricing is $7.99/month or $79.99/year; a limited-time introductory web offer may lower your first paid period. See Pricing for current terms. Cancel before the trial ends and you won't be charged.
               </CardContent>
             </Card>
 

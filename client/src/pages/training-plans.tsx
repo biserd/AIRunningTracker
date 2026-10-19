@@ -821,7 +821,7 @@ export default function TrainingPlans() {
                           <Crown className="w-4 h-4 mr-2" /> Unlock my training plan
                         </Button>
                       </DirectCheckoutButton>
-                      <p className="text-xs text-gray-500 mt-2">7 days free · Card required · $0 today · Then $7.99/month · Cancel anytime</p>
+                      <p className="text-xs text-gray-500 mt-2">7 days free · Card required · $0 today · Introductory or regular price confirmed in Checkout · Cancel anytime</p>
                     </div>
                   </>
                 )}

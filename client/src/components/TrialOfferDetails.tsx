@@ -8,6 +8,10 @@ export interface TrialOffer {
   estimatedFirstChargeAt: string | null;
   unitAmount: number;
   currency: string;
+  introductoryUnitAmount?: number;
+  regularUnitAmount?: number;
+  introductoryPayments?: number;
+  introOfferEndsAt?: string;
 }
 
 export function useTrialOffer(billingPeriod: "monthly" | "annual" = "monthly") {
@@ -45,6 +49,8 @@ export function TrialOfferDetails({
   const { data: offer, isLoading } = useTrialOffer(billingPeriod);
   const interval = billingPeriod === "annual" ? "year" : "month";
   const amount = offer ? formatTrialAmount(offer.unitAmount, offer.currency) : null;
+  const introductoryAmount = offer?.introductoryUnitAmount != null
+    ? formatTrialAmount(offer.introductoryUnitAmount, offer.currency) : null;
   const freeAmount = offer ? formatTrialAmount(0, offer.currency) : "$0";
   const chargeDate = offer?.estimatedFirstChargeAt
     ? new Date(offer.estimatedFirstChargeAt).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })
@@ -56,7 +62,9 @@ export function TrialOfferDetails({
       {offer?.trialEligible && amount && chargeDate ? (
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           <p><span className="font-bold text-orange-700">{freeAmount} today</span> · Your 7-day trial starts when you complete Checkout.</p>
-          <p><span className="font-bold">Estimated first charge: {chargeDate}</span> · {amount}/{interval} after that.</p>
+          <p><span className="font-bold">Estimated first charge: {chargeDate}</span> · {introductoryAmount
+            ? `${introductoryAmount} for the first ${interval}, then ${amount}/${interval}. Limited-time web offer for new subscribers through November 30.`
+            : `${amount}/${interval} after that.`}</p>
         </div>
       ) : offer && amount ? (
         <p className="mt-3">This account has used its free trial. {amount} is due today, then {amount}/{interval}.</p>

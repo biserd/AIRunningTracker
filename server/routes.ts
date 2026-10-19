@@ -39,6 +39,7 @@ import { validateAllShoes, getPipelineStats, findDuplicates, getShoeDataWithMeta
 import { z } from "zod";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { BillingCatalog } from './services/billingCatalog';
+import { checkoutDiscountOptions, configuredWebIntroCoupon, webIntroOfferForPrice } from './services/webIntroOffer';
 import { resolvePlan } from "./webhookHandlers";
 import { db } from "./db";
 import { sql, eq, isNull, and, desc, gt } from "drizzle-orm";
@@ -983,6 +984,29 @@ ${allPages.map(page => `  <url>
     }
   });
 
+  // Public, server-authoritative campaign terms for visitors comparing plans.
+  app.get('/api/stripe/web-intro-offer', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      const billingPeriod = req.query.billingPeriod === 'annual' ? 'annual' : 'monthly';
+      const priceId = await resolvePremiumPriceId(billingPeriod);
+      const products = await billingCatalog.publicProducts();
+      const price = products.flatMap(product => product.prices).find(candidate => candidate.id === priceId);
+      const offer = configuredWebIntroCoupon('monthly') && configuredWebIntroCoupon('annual') && price?.unit_amount != null
+        ? webIntroOfferForPrice({ billingPeriod, regularUnitAmount: price.unit_amount,
+          currency: price.currency, firstTimeSubscriber: true,
+          couponId: configuredWebIntroCoupon(billingPeriod) })
+        : null;
+      return res.json({ active: Boolean(offer), billingPeriod,
+        ...(offer ? { introductoryUnitAmount: offer.introductoryUnitAmount,
+          regularUnitAmount: offer.regularUnitAmount, currency: price!.currency,
+          introductoryPayments: offer.introductoryPayments, offerEndsAt: offer.offerEndsAt } : {}) });
+    } catch (error) {
+      console.warn('[checkout] public introductory offer unavailable', error);
+      return res.json({ active: false });
+    }
+  });
+
   // The same live price and first-time trial rule used by Checkout, shown
   // before a runner makes a billing decision. Checkout confirms the exact date.
   app.get("/api/stripe/trial-offer", authenticateJWT, async (req: any, res) => {
@@ -999,6 +1023,9 @@ ${allPages.map(page => `  <url>
         return res.status(503).json({ message: "Premium pricing is temporarily unavailable" });
       }
       const trialEligible = await isStripeTrialEligible(user, stripe);
+      const introOffer = webIntroOfferForPrice({ billingPeriod, regularUnitAmount: price.unit_amount,
+        currency: price.currency, firstTimeSubscriber: trialEligible,
+        couponId: configuredWebIntroCoupon(billingPeriod) });
       return res.json({
         billingPeriod,
         trialEligible,
@@ -1006,6 +1033,10 @@ ${allPages.map(page => `  <url>
         estimatedFirstChargeAt: trialEligible ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() : null,
         unitAmount: price.unit_amount,
         currency: price.currency,
+        ...(introOffer ? { introductoryUnitAmount: introOffer.introductoryUnitAmount,
+          regularUnitAmount: introOffer.regularUnitAmount,
+          introductoryPayments: introOffer.introductoryPayments,
+          introOfferEndsAt: introOffer.offerEndsAt } : {}),
       });
     } catch (error) {
       console.error('[checkout] trial offer unavailable', error);
@@ -1164,9 +1195,10 @@ ${allPages.map(page => `  <url>
       // only the tagged Premium price; explicit price IDs remain supported by
       // the pricing page and are still allow-listed below.
       const safeBillingPeriod = requestedBillingPeriod === 'annual' ? 'annual' : 'monthly';
+      const canonicalPriceId = await resolvePremiumPriceId(safeBillingPeriod);
       const resolvedPriceId = typeof priceId === 'string' && priceId
         ? priceId
-        : await resolvePremiumPriceId(safeBillingPeriod);
+        : canonicalPriceId;
 
       // Don't trust client-supplied priceId blindly. Allow only Premium-tagged
       // prices (env override or metadata in the Stripe catalog).
@@ -1192,6 +1224,13 @@ ${allPages.map(page => `  <url>
 
       // Quote and Checkout share the same first-time trial rule.
       const trialEligible = await isStripeTrialEligible({ ...user, stripeCustomerId: customerId }, stripe);
+      const checkoutPrice = await stripe.prices.retrieve(resolvedPriceId!);
+      const introOffer = resolvedPriceId === canonicalPriceId && checkoutPrice.unit_amount != null
+        ? webIntroOfferForPrice({ billingPeriod: safeBillingPeriod,
+          regularUnitAmount: checkoutPrice.unit_amount, currency: checkoutPrice.currency,
+          firstTimeSubscriber: trialEligible,
+          couponId: configuredWebIntroCoupon(safeBillingPeriod) })
+        : null;
 
       // Preserve the user's upgrade intent: a sanitized relative returnTo
       // path rides along on the success URL so the billing page can send
@@ -1236,7 +1275,7 @@ ${allPages.map(page => `  <url>
         customer: customerId,
         line_items: [{ price: resolvedPriceId!, quantity: 1 }],
         mode: 'subscription',
-        allow_promotion_codes: true,
+        ...checkoutDiscountOptions(introOffer?.couponId),
         success_url: `${checkoutBaseUrl}/billing?success=true${safeReturnTo ? `&returnTo=${encodeURIComponent(safeReturnTo)}` : ''}`,
         cancel_url: `${checkoutBaseUrl}${cancelPath}&canceled=true`,
         metadata: {
@@ -1244,6 +1283,7 @@ ${allPages.map(page => `  <url>
           app: appSlug,
           source: safeSource,
           capability: safeCapability,
+          ...(introOffer ? { webIntroCampaign: 'web_intro_2026' } : {}),
           ...(safeActivityId ? { activityId: String(safeActivityId) } : {}),
           ...(safePendingResourceId ? { pendingResourceId: safePendingResourceId } : {}),
           ...(safeExperimentVariant ? { experimentVariant: safeExperimentVariant } : {}),
@@ -1258,6 +1298,7 @@ ${allPages.map(page => `  <url>
             userId: String(userId),
             source: safeSource,
             capability: safeCapability,
+            ...(introOffer ? { webIntroCampaign: 'web_intro_2026' } : {}),
             ...(safePendingResourceId ? { pendingResourceId: safePendingResourceId } : {}),
             ...(safeExperimentVariant ? { experimentVariant: safeExperimentVariant } : {}),
             ...(attributionJob?.campaign ? { lifecycleCampaign: attributionJob.campaign } : {}),
@@ -1282,6 +1323,7 @@ ${allPages.map(page => `  <url>
           priceId: resolvedPriceId!,
           billingPeriod: resolvedBillingPeriod,
           trialEligible,
+          introOfferApplied: Boolean(introOffer),
           source: typeof source === 'string' ? source.slice(0, 100) : undefined,
           capability: typeof capability === 'string' ? capability.slice(0, 100) : undefined,
           checkoutSessionId: session.id,

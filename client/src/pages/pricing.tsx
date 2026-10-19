@@ -13,7 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { SEO } from "@/components/SEO";
 import { AddEmailModal } from "@/components/AddEmailModal";
-import { TrialOfferDetails, useTrialOffer } from "@/components/TrialOfferDetails";
+import { TrialOfferDetails, formatTrialAmount, useTrialOffer } from "@/components/TrialOfferDetails";
 
 interface StripePrice {
   id: string;
@@ -28,6 +28,14 @@ interface StripeProduct {
   description: string | null;
   metadata: Record<string, string> | null;
   prices: StripePrice[];
+}
+
+interface PublicWebIntroOffer {
+  active: boolean;
+  introductoryUnitAmount?: number;
+  regularUnitAmount?: number;
+  currency?: string;
+  offerEndsAt?: string;
 }
 
 // Pick the live price ID for the Premium plan + selected billing cycle from
@@ -119,6 +127,20 @@ export default function PricingPage() {
   const { toast } = useToast();
   const checkout = useCheckout(() => setShowEmailModal(true));
   const { data: trialOffer } = useTrialOffer(billingCycle);
+  const { data: publicIntroOffer } = useQuery<PublicWebIntroOffer>({
+    queryKey: ["/api/stripe/web-intro-offer", billingCycle],
+    queryFn: async () => {
+      const response = await fetch(`/api/stripe/web-intro-offer?billingPeriod=${billingCycle}`);
+      if (!response.ok) return { active: false };
+      return response.json();
+    },
+    staleTime: 60_000,
+  });
+  const introductoryUnitAmount = isAuthenticated
+    ? trialOffer?.introductoryUnitAmount
+    : publicIntroOffer?.active ? publicIntroOffer.introductoryUnitAmount : undefined;
+  const introductoryPrice = introductoryUnitAmount != null
+    ? formatTrialAmount(introductoryUnitAmount, 'usd') : null;
   const trialButtonLabel = !trialOffer
     ? "Review Premium in secure Checkout"
     : trialOffer?.trialEligible === false
@@ -210,6 +232,7 @@ export default function PricingPage() {
     }
     checkout.mutate({
       priceId: premiumPriceId,
+      billingPeriod: billingCycle,
       returnTo: upgradeIntent?.returnTo,
       source: upgradeIntent?.source || "pricing",
       capability: upgradeIntent?.capability ? String(upgradeIntent.capability) : undefined,
@@ -224,7 +247,9 @@ export default function PricingPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
       <SEO
         title="Pricing | RunAnalytics"
-        description="Start your 7-day free trial of RunAnalytics Premium. AI coaching, race predictions, training plans, and deep performance analytics. Cancel anytime."
+        description={publicIntroOffer?.active
+          ? "Limited-time web offer for new subscribers: 7 days free, then $3.99 for the first month or $39.99 for the first year. Regular renewal pricing applies after that. Cancel anytime."
+          : "Start your 7-day free trial of RunAnalytics Premium. AI coaching, race predictions, training plans, and deep performance analytics. Cancel anytime."}
       />
       <PublicHeader />
 
@@ -290,6 +315,12 @@ export default function PricingPage() {
             One plan for run comparisons, adaptive training, and proactive coaching.
           </p>
 
+          {publicIntroOffer?.active && (
+            <p className="mx-auto mb-8 max-w-2xl rounded-xl border border-orange-200 bg-orange-50 px-5 py-3 text-center text-sm text-gray-800" data-testid="web-intro-offer-banner">
+              <strong className="text-orange-800">Limited-time web offer for new subscribers:</strong> 7 days free, then $3.99 for your first month or $39.99 for your first year. Regular renewal prices are $7.99/month or $79.99/year. Sign up by November 30. Cancel anytime.
+            </p>
+          )}
+
           <div className="flex flex-col items-center mb-12">
             <div className="bg-white rounded-full p-1 shadow-md inline-flex">
               <button
@@ -332,7 +363,7 @@ export default function PricingPage() {
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 shadow-xl text-white relative">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                 <span className="bg-strava-orange text-white px-4 py-1 rounded-full text-sm font-bold">
-                  {trialOffer?.trialEligible ? "7-Day Free Trial" : "Premium"}
+                  {introductoryPrice ? "Limited-Time Web Offer" : trialOffer?.trialEligible ? "7-Day Free Trial" : "Premium"}
                 </span>
               </div>
 
@@ -344,21 +375,21 @@ export default function PricingPage() {
                 {billingCycle === 'monthly' ? (
                   <>
                     <div className="flex items-baseline justify-center gap-1">
-                      <span className="text-4xl font-bold text-strava-orange">$7.99</span>
+                      <span className="text-4xl font-bold text-strava-orange">{introductoryPrice || "$7.99"}</span>
                       <span className="text-gray-400">/mo</span>
                     </div>
-                    <p className="text-gray-400 mt-2">after your free trial</p>
+                    <p className="text-gray-400 mt-2">{introductoryPrice ? "First paid month after your trial; then $7.99/month" : "after your free trial"}</p>
                   </>
                 ) : (
                   <>
                     <div className="flex items-baseline justify-center gap-1">
-                      <span className="text-4xl font-bold text-strava-orange">$79.99</span>
+                      <span className="text-4xl font-bold text-strava-orange">{introductoryPrice || "$79.99"}</span>
                       <span className="text-gray-400">/yr</span>
                     </div>
                     <p className="text-green-400 text-sm mt-1 font-medium">
-                      ≈ $6.67/mo: Save 17%
+                      {introductoryPrice ? "First paid year after your trial; then $79.99/year" : "≈ $6.67/mo: Save 17%"}
                     </p>
-                    <p className="text-gray-400 mt-1">after your free trial</p>
+                    {!introductoryPrice && <p className="text-gray-400 mt-1">after your free trial</p>}
                   </>
                 )}
               </div>
