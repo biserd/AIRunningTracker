@@ -25,7 +25,8 @@ test('signup verifies email once, creates no premature user, opts out of marketi
 });
 test('existing email is reused case-insensitively and request cooldown holds',async()=>{
  const {db,port}=setup();let token='',sent=0;const service=new NativeSignup(port,async(_,t)=>{token=t;sent++});
- await service.request('existing@example.com');await service.request('EXISTING@example.com');assert.equal(sent,1);
+ assert.equal(await service.request('existing@example.com'),true);
+ assert.equal(await service.request('EXISTING@example.com'),false);assert.equal(sent,1);
  assert.equal(await service.verify(token),2);assert.equal(db.prepare('SELECT count(*) AS n FROM users').get()?.n,2);
 });
 test('expired signup and failed email cannot create an account',async()=>{

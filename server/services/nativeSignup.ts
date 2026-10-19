@@ -12,12 +12,13 @@ export class NativeSignup {
     const issued=await this.db.prepare(`INSERT INTO native_signup_challenges(token_hash,email,issued_at,expires_at) SELECT ?,?,?,? WHERE (SELECT count(*) FROM native_signup_challenges WHERE issued_at>?)<30
       ON CONFLICT(email) DO UPDATE SET token_hash=excluded.token_hash,issued_at=excluded.issued_at,expires_at=excluded.expires_at
       WHERE native_signup_challenges.issued_at<=? RETURNING email`).bind(hash(token),normalized,time,time+900,time-60,time-60).first<{email:string}>();
-    if(!issued)return;
+    if(!issued)return false;
     try {await this.send(normalized,token);}catch{
       await this.db.prepare('DELETE FROM native_signup_challenges WHERE token_hash=?').bind(hash(token)).run();
       throw new Error('EMAIL_DELIVERY_FAILED');
     }
     await this.db.prepare('DELETE FROM native_signup_challenges WHERE expires_at<?').bind(time).run();
+    return true;
   }
   async verify(token:string):Promise<number>{
     if(!/^signup_[a-f0-9]{64}$/.test(token))throw new Error('INVALID_TOKEN');

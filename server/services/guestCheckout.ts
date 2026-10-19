@@ -32,15 +32,17 @@ export async function emailGuestCheckoutClaim(sessionId: string): Promise<void> 
     } else if (!['canceled', 'incomplete_expired'].includes(subscription.status)) {
       throw new Error('CHECKOUT_NOT_ACTIVE');
     }
-    await new NativeSignup(
+    const issued = await new NativeSignup(
       applicationSqlDatabase,
       (to, token) => emailService.sendExistingAccountCheckoutEmail(to, token),
     ).request(email);
+    if (!issued) throw new Error('CHECKOUT_CLAIM_CHALLENGE_THROTTLED');
     return;
   }
   if (!['active', 'trialing'].includes(subscription.status)) throw new Error('CHECKOUT_NOT_ACTIVE');
-  await new NativeSignup(
+  const issued = await new NativeSignup(
     applicationSqlDatabase,
     (to, token) => emailService.sendCheckoutClaimEmail(to, token, sessionId),
   ).request(email);
+  if (!issued) throw new Error('CHECKOUT_CLAIM_CHALLENGE_THROTTLED');
 }
