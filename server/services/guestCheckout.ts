@@ -1,7 +1,6 @@
 import { getUncachableStripeClient } from '../stripeClient';
 import { emailService } from './email';
 import { NativeSignup } from './nativeSignup';
-import { applicationSqlDatabase } from '../d1/runtimeDatabase';
 import { guestCheckoutDetails } from './guestCheckoutPolicy';
 import { storage } from '../storage';
 import { AppleSubscriptionLedger } from './appleSubscriptions';
@@ -19,6 +18,7 @@ export async function completedGuestCheckout(sessionId: string) {
 
 /** Stripe's email is not an authentication factor. Only the recipient of this link can claim access. */
 export async function emailGuestCheckoutClaim(sessionId: string): Promise<void> {
+  const { applicationSqlDatabase } = await import('../d1/runtimeDatabase');
   const { stripe, subscriptionId, email } = await completedGuestCheckout(sessionId);
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   const existing = await applicationSqlDatabase.prepare('SELECT id FROM users WHERE lower(email)=?')
