@@ -19,11 +19,11 @@ export class RunAnalyticsProduction extends Container<ProductionEnv> {
   envVars = productionEnvironment(this.env);
   async ensureD1Runtime(): Promise<void> {
     await this.ctx.blockConcurrencyWhile(async () => {
-      if (await this.ctx.storage.get('personal-insight-f0269e0-rollout-complete')) return;
+      if (await this.ctx.storage.get('web-intro-30ba1bf-rollout-complete')) return;
       // An image rollout can retain an already-running process and its old env.
       // Stop it once before accepting D1 traffic; external database data is untouched.
       await this.destroy();
-      await this.ctx.storage.put('personal-insight-f0269e0-rollout-complete', true);
+      await this.ctx.storage.put('web-intro-30ba1bf-rollout-complete', true);
     });
   }
 }
