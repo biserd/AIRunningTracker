@@ -1456,7 +1456,7 @@ export function renderProactiveRunningCoachPage(): string {
         </section>
         <div class="ssr-cta">
           <h2>Start with your own training data</h2>
-          <p>Try RunAnalytics Premium for 7 days, connect Strava, then opt in to Telegram from AI Coach Settings. Premium is $7.99/month after the trial.</p>
+          <p>Try RunAnalytics Premium for 7 days, connect Strava, then opt in to Telegram from AI Coach Settings. Standard renewal pricing is $7.99/month; see Pricing for any introductory web offer.</p>
           <a href="/pricing?source=proactive_coach_landing&amp;capability=ai_coach&amp;benefitKey=coach_chat">Start 7 days free &rarr;</a>
         </div>
         <p style="margin-top:24px;text-align:center;"><a href="/blog/ai-agent-coach-proactive-coaching">Read how proactive AI coaching works</a> &bull; <a href="/ai-agent-coach">Explore AI Agent Coach</a></p>
@@ -1657,7 +1657,7 @@ export function renderEbookLandingPage(): string {
         <section>
           <h2>Use AI to train smarter. Keep the runner in control.</h2>
           <p>Learn what AI running coaches can do, what they commonly get wrong, and how to make safer decisions with pace, heart rate, perceived effort, recovery, and real-life context.</p>
-          <p><strong>$0 today.</strong> Card required. Cancel anytime. Premium is $7.99 per month or $79.99 per year after the trial.</p>
+          <p><strong>$0 today.</strong> Card required. Cancel anytime. Standard renewal pricing is $7.99 per month or $79.99 per year; see Pricing for any introductory web offer.</p>
         </section>
         <section>
           <h2>What is inside the guide</h2>
