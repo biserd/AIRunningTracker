@@ -2,7 +2,7 @@ import Footer from "@/components/Footer";
 import PublicHeader from "@/components/PublicHeader";
 import AppHeader from "@/components/AppHeader";
 import { Check, Crown, Trophy, MapPin, Sparkles, ArrowLeft, MessageCircle, ArrowRight } from "lucide-react";
-import { Link, useLocation, useSearch } from "wouter";
+import { Link, useSearch } from "wouter";
 import { parseUpgradeIntent, capabilityLabel } from "@shared/upgradeIntent";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -77,11 +77,10 @@ const premiumFeatures: FeatureSection[] = [
 ];
 
 export default function PricingPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { isPremium } = useSubscription();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [showEmailModal, setShowEmailModal] = useState(false);
-  const [, navigate] = useLocation();
   const searchString = useSearch();
   const checkout = useCheckout(() => setShowEmailModal(true));
   const { data: trialOffer } = useTrialOffer(billingCycle);
@@ -99,7 +98,9 @@ export default function PricingPage() {
     : publicIntroOffer?.active ? publicIntroOffer.introductoryUnitAmount : undefined;
   const introductoryPrice = introductoryUnitAmount != null
     ? formatTrialAmount(introductoryUnitAmount, 'usd') : null;
-  const trialButtonLabel = !trialOffer
+  const trialButtonLabel = !isAuthenticated
+    ? 'Start 7 days free: $0 today'
+    : !trialOffer
     ? "Review Premium in secure Checkout"
     : trialOffer?.trialEligible === false
       ? "Continue to secure Checkout"
@@ -161,18 +162,15 @@ export default function PricingPage() {
   };
 
   const handleSubscribe = () => {
+    if (authLoading) return;
     trackFunnelEvent("checkout_started", {
       source: upgradeIntent?.source || "pricing",
       billingPeriod: billingCycle,
       capability: upgradeIntent?.capability ? String(upgradeIntent.capability) : undefined,
       activityId: upgradeIntent?.activityId,
     }, { dedupeParts: [billingCycle, Date.now()] });
-    if (!isAuthenticated) {
-      const pricingDestination = `/pricing${searchString.startsWith("?") ? searchString : searchString ? `?${searchString}` : ""}`;
-      navigate(`/auth?redirect=${encodeURIComponent(pricingDestination)}`);
-      return;
-    }
     checkout.mutate({
+      guest: !isAuthenticated,
       billingPeriod: billingCycle,
       returnTo: upgradeIntent?.returnTo,
       source: upgradeIntent?.source || "pricing",
@@ -215,20 +213,21 @@ export default function PricingPage() {
                     </p>
                   )}
                   <p className="text-xs text-gray-500 mt-2">
-                    Start the trial and we'll return you to this exact feature after secure checkout.
+                    Start the trial and we'll bring you back to this feature after email confirmation and Strava connection.
                   </p>
                   {!isPremium && (
                     <div className="mt-4">
                       <Button
                         className="w-full sm:w-auto bg-strava-orange text-white hover:bg-strava-orange/90"
                         onClick={handleSubscribe}
-                        disabled={checkout.isPending}
+                        disabled={checkout.isPending || authLoading}
                         data-testid="upgrade-intent-subscribe"
                       >
                         <Sparkles className="h-4 w-4 mr-2" />
                         {checkout.isPending ? 'Processing...' : trialButtonLabel}
                       </Button>
                       <TrialOfferDetails className="mt-3" billingPeriod={billingCycle} benefit={upgradeIntent.benefit || capabilityLabel(String(upgradeIntent.capability)).toLowerCase() + "."} />
+                      {checkout.isError && <p role="alert" className="mt-3 text-sm font-medium text-red-700">{checkout.error instanceof Error ? checkout.error.message : 'Checkout could not start. Please try again.'}</p>}
                     </div>
                   )}
                 </div>
@@ -366,7 +365,7 @@ export default function PricingPage() {
                 <Button
                   className="w-full bg-strava-orange text-white hover:bg-strava-orange/90"
                   onClick={handleSubscribe}
-                  disabled={checkout.isPending}
+                  disabled={checkout.isPending || authLoading}
                   data-testid="subscribe-premium"
                 >
                   {checkout.isPending ? 'Processing...' : trialButtonLabel}
@@ -375,6 +374,8 @@ export default function PricingPage() {
               {!isPremium && (
                 <TrialOfferDetails className="mt-3 text-left" billingPeriod={billingCycle} benefit="full run analysis, adaptive plans, race outlook, and personal coaching." />
               )}
+              {!isPremium && !isAuthenticated && <p className="mt-3 text-center text-xs text-gray-300">Continue without an account. Stripe collects your email, then we send a one-time sign-in link.</p>}
+              {checkout.isError && <p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm font-medium text-red-800">{checkout.error instanceof Error ? checkout.error.message : 'Checkout could not start. Please try again.'}</p>}
             </div>
           </div>
 

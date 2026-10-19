@@ -42,6 +42,7 @@ test("private route matching covers account data without blocking public marketi
     "/training-plans/42",
     "/runner-score/17",
     "/mcp/oauth/authorize",
+    "/checkout/complete",
   ]) {
     assert.equal(isPrivateCrawlerPath(path), true, `${path} is private`);
   }

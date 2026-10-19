@@ -61,6 +61,8 @@ export function useSubscription() {
 }
 
 export interface CheckoutParams {
+  /** Public Pricing checkout; Stripe collects the email before account creation. */
+  guest?: boolean;
   /** Optional for direct checkout; the server resolves the tagged Premium price. */
   priceId?: string;
   billingPeriod?: 'monthly' | 'annual';
@@ -79,12 +81,12 @@ export interface CheckoutParams {
 export function useCheckout(onRequiresEmail?: () => void) {
   return useMutation({
     mutationFn: async (params: string | CheckoutParams) => {
-      const { priceId, billingPeriod, returnTo, source, capability, activityId, benefitKey, pendingResourceId, experimentVariant } =
+      const { guest, priceId, billingPeriod, returnTo, source, capability, activityId, benefitKey, pendingResourceId, experimentVariant } =
         typeof params === "string"
-          ? { priceId: params, billingPeriod: undefined, returnTo: undefined, source: undefined, capability: undefined, activityId: undefined, benefitKey: undefined, pendingResourceId: undefined, experimentVariant: undefined }
+          ? { guest: false, priceId: params, billingPeriod: undefined, returnTo: undefined, source: undefined, capability: undefined, activityId: undefined, benefitKey: undefined, pendingResourceId: undefined, experimentVariant: undefined }
           : params;
       const token = localStorage.getItem("auth_token");
-      const res = await fetch("/api/stripe/create-checkout-session", {
+      const res = await fetch(guest ? "/api/stripe/create-guest-checkout-session" : "/api/stripe/create-checkout-session", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

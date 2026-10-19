@@ -304,6 +304,29 @@ The RunAnalytics Team`;
     await this.sendEmail({ to: email, subject, html, text });
   }
 
+  async sendCheckoutClaimEmail(email: string, signupToken: string, sessionId: string): Promise<void> {
+    const redirect = `/checkout/complete?session_id=${encodeURIComponent(sessionId)}`;
+    const url = `https://aitracker.run/auth/magic-link?token=${encodeURIComponent(signupToken)}&redirect=${encodeURIComponent(redirect)}`;
+    const sent = await this.sendEmail({
+      to: email,
+      subject: 'Finish setting up your Run Analytics trial',
+      html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:24px"><h1 style="color:#c63b00">Run Analytics</h1><p>Your secure checkout is complete. Confirm this email address to connect your trial to your account, then connect Strava to see your running data.</p><p><a href="${url}" style="display:inline-block;background:#c63b00;color:white;padding:14px 22px;border-radius:8px;text-decoration:none">Continue to Run Analytics</a></p><p>This one-time link expires in 15 minutes. If you did not start this checkout, please contact hello@aitracker.run.</p></div>`,
+      text: `Your secure checkout is complete. Confirm your email to connect your trial, then connect Strava.\n\n${url}\n\nThis one-time link expires in 15 minutes. If you did not start this checkout, contact hello@aitracker.run.`,
+    });
+    if (!sent) throw new Error('CHECKOUT_CLAIM_EMAIL_FAILED');
+  }
+
+  async sendExistingAccountCheckoutEmail(email: string, signupToken: string): Promise<void> {
+    const url = `https://aitracker.run/auth/magic-link?token=${encodeURIComponent(signupToken)}&redirect=%2Fbilling`;
+    const sent = await this.sendEmail({
+      to: email,
+      subject: 'Your existing Run Analytics account',
+      html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:24px"><h1 style="color:#c63b00">Run Analytics</h1><p>This email is linked to an account with a current or previous subscription. We canceled the extra trial started in Checkout so it will not renew or charge you. Your existing account is unchanged.</p><p><a href="${url}" style="display:inline-block;background:#c63b00;color:white;padding:14px 22px;border-radius:8px;text-decoration:none">Sign in to your account</a></p><p>If you meant to restart a canceled subscription, sign in and choose a plan from your account. This link expires in 15 minutes. Questions? Contact hello@aitracker.run.</p></div>`,
+      text: `This email is linked to an account with a current or previous subscription. We canceled the extra trial started in Checkout so it will not renew or charge you. Your existing account is unchanged.\n\nSign in: ${url}\n\nIf you meant to restart a canceled subscription, choose a plan from your account. This link expires in 15 minutes. Questions? hello@aitracker.run`,
+    });
+    if (!sent) throw new Error('EXISTING_ACCOUNT_CHECKOUT_EMAIL_FAILED');
+  }
+
   async sendAccountDeletionConfirmation(email: string): Promise<void> {
     const subject = 'Your RunAnalytics Account Has Been Deleted';
     const html = `

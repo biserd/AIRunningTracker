@@ -26,6 +26,7 @@ const AuthPage = lazy(() => import("@/pages/auth"));
 const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password"));
 const ResetPasswordPage = lazy(() => import("@/pages/reset-password"));
 const MagicLinkPage = lazy(() => import("@/pages/magic-link"));
+const CheckoutCompletePage = lazy(() => import("@/pages/checkout-complete"));
 const PrivacyPage = lazy(() => import("@/pages/privacy"));
 const IosAppPage = lazy(() => import("@/pages/ios-app"));
 const IosAppPrivacyPage = lazy(() => import("@/pages/ios-app-privacy"));
@@ -176,6 +177,7 @@ function Router() {
         <Route path="/forgot-password" component={ForgotPasswordPage} />
         <Route path="/reset-password" component={ResetPasswordPage} />
         <Route path="/auth/magic-link" component={MagicLinkPage} />
+        <Route path="/checkout/complete" component={CheckoutCompletePage} />
         <Route path="/about" component={AboutPage} />
         <Route path="/terms" component={TermsPage} />
         <Route path="/features" component={FeaturesPage} />

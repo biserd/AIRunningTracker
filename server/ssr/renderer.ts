@@ -1340,7 +1340,7 @@ export function renderPricingPage(): string {
         <div class="ssr-cta">
           <h3>Start your free 7-day trial</h3>
           <p>Card required. $0 today. Full Premium access during the trial; cancel before it ends to avoid a charge.</p>
-          <a href="/auth">Get Started Free &rarr;</a>
+          <a href="/pricing">Choose Premium in secure Checkout &rarr;</a>
         </div>
       </article>
     </main>

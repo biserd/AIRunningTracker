@@ -65,6 +65,12 @@ export default {
         asset.headers.set('X-Robots-Tag', 'noindex, nofollow');
         return asset;
       }
+      if (request.method === 'POST' && ['/api/stripe/create-guest-checkout-session', '/api/stripe/resend-guest-checkout-link'].includes(new URL(request.url).pathname)) {
+        const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+        if (!(await env.UPLOAD_LIMITER.limit({ key: `guest-checkout:${ip}` })).success) {
+          return Response.json({ message: 'Too many checkout requests. Please try again shortly.' }, { status: 429, headers: { 'X-Robots-Tag': 'noindex, nofollow' } });
+        }
+      }
       const upstream = await container.fetch(request);
       const response = new Response(upstream.body, upstream);
       response.headers.set('X-Robots-Tag', 'noindex, nofollow');

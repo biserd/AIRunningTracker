@@ -40,6 +40,7 @@ import { z } from "zod";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { BillingCatalog } from './services/billingCatalog';
 import { checkoutDiscountOptions, configuredWebIntroCoupon, webIntroOfferForPrice } from './services/webIntroOffer';
+import { completedGuestCheckout, emailGuestCheckoutClaim } from './services/guestCheckout';
 import { resolvePlan } from "./webhookHandlers";
 import { db } from "./db";
 import { sql, eq, isNull, and, desc, gt } from "drizzle-orm";
@@ -1169,6 +1170,139 @@ ${allPages.map(page => `  <url>
     } catch (error: any) {
       console.error("[Ebook] Download failed:", error);
       return res.status(500).json({ message: "Failed to download the guide" });
+    }
+  });
+
+  // Public Pricing checkout: Stripe collects the email; access is only granted
+  // after that address redeems the one-time sign-in challenge.
+  app.post('/api/stripe/create-guest-checkout-session', async (req, res) => {
+    try {
+      const { billingPeriod, source, returnTo } = z.object({
+        billingPeriod: z.enum(['monthly', 'annual']),
+        source: z.string().max(80).optional(),
+        returnTo: z.string().max(300).optional(),
+      }).parse(req.body);
+      const priceId = await resolvePremiumPriceId(billingPeriod);
+      if (!priceId || !(await isAllowedCheckoutPriceId(priceId))) {
+        return res.status(503).json({ message: 'Premium checkout is temporarily unavailable.' });
+      }
+      const stripe = await getUncachableStripeClient();
+      const price = await stripe.prices.retrieve(priceId);
+      const offer = price.unit_amount == null ? null : webIntroOfferForPrice({
+        billingPeriod, regularUnitAmount: price.unit_amount, currency: price.currency,
+        firstTimeSubscriber: true, couponId: configuredWebIntroCoupon(billingPeriod),
+      });
+      const session = await stripe.checkout.sessions.create({
+        mode: 'subscription',
+        line_items: [{ price: priceId, quantity: 1 }],
+        payment_method_collection: 'always',
+        ...checkoutDiscountOptions(offer?.couponId),
+        success_url: 'https://aitracker.run/checkout/complete?session_id={CHECKOUT_SESSION_ID}',
+        cancel_url: 'https://aitracker.run/pricing?canceled=true',
+        metadata: {
+          app: process.env.APP_SLUG || 'aitracker', guestCheckout: 'true',
+          source: source || 'pricing', ...(offer ? { webIntroCampaign: 'web_intro_2026' } : {}),
+          ...(sanitizeReturnTo(returnTo) ? { returnTo: sanitizeReturnTo(returnTo)! } : {}),
+        },
+        subscription_data: {
+          trial_period_days: 7,
+          metadata: {
+            app: process.env.APP_SLUG || 'aitracker', guestCheckout: 'true',
+            source: source || 'pricing', ...(offer ? { webIntroCampaign: 'web_intro_2026' } : {}),
+          },
+        },
+      });
+      await recordFunnelEvent({
+        event: 'checkout_session_created',
+        dedupeKey: buildFunnelDedupeKey('checkout_session_created', [session.id]),
+        props: { billingPeriod, priceId, trialEligible: true, introOfferApplied: Boolean(offer),
+          source: source || 'pricing', capability: 'premium', checkoutSessionId: session.id },
+      });
+      return res.json({ url: session.url });
+    } catch (error) {
+      console.error('[checkout] guest session failed', error);
+      return res.status(503).json({ message: 'Checkout is temporarily unavailable. Please try again.' });
+    }
+  });
+
+  app.post('/api/stripe/resend-guest-checkout-link', async (req, res) => {
+    try {
+      const { sessionId } = z.object({ sessionId: z.string().max(250) }).parse(req.body);
+      await emailGuestCheckoutClaim(sessionId);
+    } catch (error) {
+      // The response must not reveal the buyer's email or whether a session exists.
+      console.warn('[checkout] claim-link request unavailable', error);
+    }
+    return res.json({ message: 'If checkout completed, a sign-in link is on its way to the email used at checkout.' });
+  });
+
+  app.post('/api/stripe/claim-guest-checkout', authenticateJWT, async (req: any, res) => {
+    try {
+      const { sessionId } = z.object({ sessionId: z.string().max(250) }).parse(req.body);
+      const { stripe, session, customerId, subscriptionId, email } = await completedGuestCheckout(sessionId);
+      const user = await storage.getUser(req.user.id);
+      if (!user?.email || user.email.trim().toLowerCase() !== email) {
+        return res.status(403).json({ message: 'Sign in with the email used at checkout to connect this trial.' });
+      }
+      const owner = await storage.getUserByStripeCustomerId(customerId);
+      if (owner && owner.id !== user.id) {
+        return res.status(409).json({ message: 'This checkout is already connected to an account.' });
+      }
+      if (user.stripeSubscriptionId && user.stripeSubscriptionId !== subscriptionId) {
+        return res.status(409).json({ message: 'This email has subscribed before. Please choose a plan from your signed-in account.' });
+      }
+      if (process.env.D1_TRANSPORT_SECRET) {
+        const { applicationSqlDatabase } = await import('./d1/runtimeDatabase');
+        const { AppleSubscriptionLedger } = await import('./services/appleSubscriptions');
+        if (await new AppleSubscriptionLedger(applicationSqlDatabase).access(user.id)) {
+          return res.status(409).json({ message: 'Your account already has an Apple subscription. Contact support to resolve this checkout.' });
+        }
+      }
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      if (subscription.customer !== customerId || subscription.metadata?.app !== (process.env.APP_SLUG || 'aitracker') ||
+          subscription.metadata?.guestCheckout !== 'true' || !['active', 'trialing'].includes(subscription.status) ||
+          !(await isAllowedCheckoutPriceId(subscription.items.data[0]?.price?.id))) {
+        return res.status(409).json({ message: 'This checkout cannot be connected yet. Contact support.' });
+      }
+      if (session.customer_details?.email?.trim().toLowerCase() !== email) {
+        return res.status(409).json({ message: 'Checkout email verification failed. Contact support.' });
+      }
+      if (user.stripeCustomerId !== customerId) await storage.updateStripeCustomerId(user.id, customerId);
+      await stripe.customers.update(customerId, { metadata: { userId: String(user.id), app: process.env.APP_SLUG || 'aitracker' } });
+      await stripe.subscriptions.update(subscriptionId, { metadata: { ...subscription.metadata, userId: String(user.id) } });
+      await storage.updateSubscriptionStatus(user.id, subscription.status, 'premium', subscriptionId);
+      if (user.stravaConnected && user.subscriptionPlan === 'free') {
+        try { await storage.updateUser(user.id, { needsHistoricalBackfill: true }); }
+        catch (backfillError) { console.warn('[checkout] historical backfill flag unavailable', backfillError); }
+      }
+      const conversionEvent = subscription.status === 'trialing' ? 'trial_started' : 'subscription_activated';
+      const conversion = await recordFunnelEvent({
+        event: conversionEvent,
+        dedupeKey: buildFunnelDedupeKey(conversionEvent, [subscriptionId]),
+        userId: user.id,
+        props: {
+          subscriptionId, priceId: subscription.items.data[0]?.price?.id,
+          billingPeriod: billingPeriodFromInterval(subscription.items.data[0]?.price?.recurring?.interval),
+          plan: 'premium', previousPlan: user.subscriptionPlan || 'free',
+          source: subscription.metadata?.source || 'guest_checkout',
+        },
+      });
+      if (conversion.recorded) {
+        try {
+          if (conversionEvent === 'trial_started') {
+            await dripCampaignService.exitCampaignForUser(user.id, 'trial_started');
+            await dripCampaignService.scheduleNextEmailForUser(user.id);
+          } else {
+            await dripCampaignService.onUserSubscribed(user.id);
+          }
+        } catch (campaignError) {
+          console.warn('[checkout] post-claim lifecycle update unavailable', campaignError);
+        }
+      }
+      return res.json({ connected: true, returnTo: user.stravaConnected ? sanitizeReturnTo(session.metadata?.returnTo) : null });
+    } catch (error) {
+      console.error('[checkout] guest claim failed', error);
+      return res.status(400).json({ message: 'We could not connect this checkout. Please try again or contact support.' });
     }
   });
 

@@ -46,6 +46,7 @@ export const PRIVATE_CRAWLER_PATHS = [
   "/admin",
   "/settings",
   "/billing",
+  "/checkout/complete",
   "/activities",
   "/activity/",
   "/performance",

@@ -62,6 +62,12 @@ export default {
         return Number.isSafeInteger(data.id) && data.id!>0 ? data.id! : null;
       },true,async userId => (await env.UPLOAD_LIMITER.limit({key:String(userId)})).success);
       if (uploaded) return uploaded;
+      if (request.method === 'POST' && ['/api/stripe/create-guest-checkout-session', '/api/stripe/resend-guest-checkout-link'].includes(url.pathname)) {
+        const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+        if (!(await env.UPLOAD_LIMITER.limit({ key: `guest-checkout:${ip}` })).success) {
+          return Response.json({ message: 'Too many checkout requests. Please try again shortly.' }, { status: 429 });
+        }
+      }
       // One stable application instance preserves the existing process-local caches and SSE streams.
       // The database leadership lock prevents overlapping deployments from running timers twice.
       const upstream = await container.fetch(request);

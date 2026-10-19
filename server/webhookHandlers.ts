@@ -9,6 +9,7 @@ import { recordFunnelEvent } from './services/funnelAnalytics';
 import { buildFunnelDedupeKey, billingPeriodFromInterval, conversionEventForSubscriptionChange } from '@shared/funnelEvents';
 import { deliverBillingWebhook } from './services/billingWebhookDelivery';
 import { createBillingWebhookStore } from './runtimeServices';
+import { emailGuestCheckoutClaim } from './services/guestCheckout';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'hello@bigappledigital.nyc';
 const APP_SLUG = process.env.APP_SLUG || 'aitracker';
@@ -258,6 +259,12 @@ export class WebhookHandlers {
     }
     
     console.log(`[Webhook] Processing event ${event.id}: ${event.type} (app: ${APP_SLUG})`);
+
+    if (['checkout.session.completed', 'checkout.session.async_payment_succeeded'].includes(event.type) &&
+        event.data.object?.metadata?.guestCheckout === 'true') {
+      await emailGuestCheckoutClaim(event.data.object.id);
+      return;
+    }
     
     // Handle subscription events to update user records
     if (event.type === 'customer.subscription.created' || 
