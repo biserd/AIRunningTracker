@@ -10,25 +10,10 @@ import { useSubscription, useCheckout } from "@/hooks/useSubscription";
 import { useEffect, useState } from "react";
 import { trackFunnelEvent } from "@/lib/analytics";
 import { useQuery } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
 import { SEO } from "@/components/SEO";
 import { AddEmailModal } from "@/components/AddEmailModal";
 import { TrialOfferDetails, formatTrialAmount, useTrialOffer } from "@/components/TrialOfferDetails";
 
-interface StripePrice {
-  id: string;
-  unit_amount: number | null;
-  currency: string;
-  recurring: { interval?: string; interval_count?: number } | null;
-  metadata: Record<string, string> | null;
-}
-interface StripeProduct {
-  id: string;
-  name: string;
-  description: string | null;
-  metadata: Record<string, string> | null;
-  prices: StripePrice[];
-}
 
 interface PublicWebIntroOffer {
   active: boolean;
@@ -36,32 +21,6 @@ interface PublicWebIntroOffer {
   regularUnitAmount?: number;
   currency?: string;
   offerEndsAt?: string;
-}
-
-// Pick the live price ID for the Premium plan + selected billing cycle from
-// the products payload returned by /api/stripe/products. We accept tags on
-// either the price metadata or the product metadata, falling back to the
-// recurring interval if the product is tagged but the prices aren't.
-function pickPremiumPriceId(
-  products: StripeProduct[] | undefined,
-  billing: 'monthly' | 'annual',
-): string | undefined {
-  if (!products?.length) return undefined;
-  const wantedInterval = billing === 'monthly' ? 'month' : 'year';
-  for (const product of products) {
-    const productIsPremium = product.metadata?.plan === 'premium';
-    for (const price of product.prices) {
-      const priceTag = price.metadata?.plan;
-      const billingTag = price.metadata?.billing;
-      const interval = price.recurring?.interval;
-
-      if (priceTag === 'premium' && billingTag === billing) return price.id;
-      if (priceTag === 'premium' && interval === wantedInterval) return price.id;
-      if (productIsPremium && billingTag === billing) return price.id;
-      if (productIsPremium && interval === wantedInterval) return price.id;
-    }
-  }
-  return undefined;
 }
 
 interface FeatureSection {
@@ -124,7 +83,6 @@ export default function PricingPage() {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [, navigate] = useLocation();
   const searchString = useSearch();
-  const { toast } = useToast();
   const checkout = useCheckout(() => setShowEmailModal(true));
   const { data: trialOffer } = useTrialOffer(billingCycle);
   const { data: publicIntroOffer } = useQuery<PublicWebIntroOffer>({
@@ -193,14 +151,6 @@ export default function PricingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch live Stripe products so we use whichever price IDs exist in the
-  // current Stripe environment (test or live). Public endpoint, cached briefly.
-  const { data: productsData, isLoading: isLoadingPrices } = useQuery<{ products: StripeProduct[] }>({
-    queryKey: ["/api/stripe/products"],
-    staleTime: 5 * 60 * 1000,
-  });
-  const premiumPriceId = pickPremiumPriceId(productsData?.products, billingCycle);
-
   const selectBillingCycle = (cycle: 'monthly' | 'annual') => {
     setBillingCycle(cycle);
     trackFunnelEvent("billing_period_selected", {
@@ -222,16 +172,7 @@ export default function PricingPage() {
       navigate(`/auth?redirect=${encodeURIComponent(pricingDestination)}`);
       return;
     }
-    if (!premiumPriceId) {
-      toast({
-        title: "Plan not available",
-        description: "Premium pricing is being updated. Please try again in a moment.",
-        variant: "destructive",
-      });
-      return;
-    }
     checkout.mutate({
-      priceId: premiumPriceId,
       billingPeriod: billingCycle,
       returnTo: upgradeIntent?.returnTo,
       source: upgradeIntent?.source || "pricing",
@@ -514,9 +455,8 @@ export default function PricingPage() {
         onClose={() => setShowEmailModal(false)}
         onSuccess={() => {
           setShowEmailModal(false);
-          if (premiumPriceId) {
-            checkout.mutate({
-              priceId: premiumPriceId,
+          checkout.mutate({
+              billingPeriod: billingCycle,
               returnTo: upgradeIntent?.returnTo,
               source: upgradeIntent?.source || "pricing",
               capability: upgradeIntent?.capability ? String(upgradeIntent.capability) : undefined,
@@ -525,7 +465,6 @@ export default function PricingPage() {
               pendingResourceId: upgradeIntent?.pendingResourceId,
               experimentVariant: upgradeIntent?.experimentVariant,
             });
-          }
         }}
       />
     </div>

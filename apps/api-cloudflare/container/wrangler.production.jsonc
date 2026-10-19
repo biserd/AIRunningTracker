@@ -25,6 +25,8 @@
     "HERMES_MCP_CLIENT_ID": "ra_mcp_client_L0o4CkpSbZeZ8xlI4MyQeNXh",
     "TELEGRAM_BOT_USERNAME": "hermes_3njyz3nxuousjmh2_bot",
     "ALLOWED_PRICE_IDS": "price_1SbtcfRwvWaTf8xfSEO4iKnc,price_1SbtcfRwvWaTf8xfwcVnrRf8",
+    "STRIPE_PRICE_PREMIUM_MONTHLY": "price_1SbtcfRwvWaTf8xfSEO4iKnc",
+    "STRIPE_PRICE_PREMIUM_ANNUAL": "price_1SbtcfRwvWaTf8xfwcVnrRf8",
     "STRIPE_WEB_INTRO_MONTHLY_COUPON": "RA_WEB_INTRO_MONTHLY_2026",
     "STRIPE_WEB_INTRO_ANNUAL_COUPON": "RA_WEB_INTRO_ANNUAL_2026"
   },
