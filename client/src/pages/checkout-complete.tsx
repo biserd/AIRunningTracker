@@ -10,28 +10,30 @@ type Status = 'email' | 'connecting' | 'error';
 
 export default function CheckoutCompletePage() {
   const sessionId = new URLSearchParams(window.location.search).get('session_id');
-  const [status, setStatus] = useState<Status>(() => localStorage.getItem('auth_token') ? 'connecting' : 'email');
+  const [status, setStatus] = useState<Status>(() => localStorage.getItem('auth_token') && sessionStorage.getItem('checkout_claim_proof') ? 'connecting' : 'email');
   const [message, setMessage] = useState('');
   const started = useRef(false);
 
   useEffect(() => {
-    if (started.current || !sessionId || !localStorage.getItem('auth_token')) return;
+    if (started.current || !sessionId || !localStorage.getItem('auth_token') || !sessionStorage.getItem('checkout_claim_proof')) return;
     started.current = true;
     const connect = async () => {
       try {
         const response = await fetch('/api/stripe/claim-guest-checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('auth_token')}` },
-          body: JSON.stringify({ sessionId }),
+          body: JSON.stringify({ sessionId, checkoutClaimProof: sessionStorage.getItem('checkout_claim_proof') }),
         });
         const body = await response.json().catch(() => ({}));
         if (response.status === 401) {
           localStorage.removeItem('auth_token');
+          sessionStorage.removeItem('checkout_claim_proof');
           setMessage('Your sign-in expired. Use the link sent to your checkout email.');
           setStatus('email');
           return;
         }
         if (!response.ok) throw new Error(body.message || 'We could not connect your checkout.');
+        sessionStorage.removeItem('checkout_claim_proof');
         window.location.assign(typeof body.returnTo === 'string' && body.returnTo.startsWith('/') && !body.returnTo.startsWith('//')
           ? body.returnTo : '/dashboard?welcome=1');
       } catch (error) {

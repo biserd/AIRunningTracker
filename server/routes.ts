@@ -1238,10 +1238,14 @@ ${allPages.map(page => `  <url>
 
   app.post('/api/stripe/claim-guest-checkout', authenticateJWT, async (req: any, res) => {
     try {
-      const { sessionId } = z.object({ sessionId: z.string().max(250) }).parse(req.body);
+      const { sessionId, checkoutClaimProof } = z.object({ sessionId: z.string().max(250), checkoutClaimProof: z.string().min(1) }).parse(req.body);
+      const proof = authService.verifyCheckoutClaimProof(checkoutClaimProof);
+      if (!proof || proof.userId !== req.user.id) {
+        return res.status(403).json({ message: 'Open the one-time link sent to your checkout email to connect this trial.' });
+      }
       const { stripe, session, customerId, subscriptionId, email } = await completedGuestCheckout(sessionId);
       const user = await storage.getUser(req.user.id);
-      if (!user?.email || user.email.trim().toLowerCase() !== email) {
+      if (!user?.email || user.email.trim().toLowerCase() !== email || proof.email !== email) {
         return res.status(403).json({ message: 'Sign in with the email used at checkout to connect this trial.' });
       }
       const owner = await storage.getUserByStripeCustomerId(customerId);
@@ -2044,11 +2048,13 @@ ${allPages.map(page => `  <url>
         const userId=await new NativeSignup(applicationSqlDatabase,async()=>{}).verify(token);
         const user=await storage.getUser(userId);
         if(!user)return res.status(401).json({message:'Request a new sign-in link.'});
-        return res.json({token:authService.generateToken(user),user:{id:user.id,email:user.email},accountReactivated:false});
+        return res.json({token:authService.generateToken(user),user:{id:user.id,email:user.email},accountReactivated:false,
+          checkoutClaimProof:authService.generateCheckoutClaimProof(user)});
       }
       const result = await authService.verifyMagicLinkToken(token);
       const reactivation = await reactivateDormantAccount(result.user.id);
-      res.json({ ...result, accountReactivated: reactivation.reactivated });
+      res.json({ ...result, accountReactivated: reactivation.reactivated,
+        checkoutClaimProof: authService.generateCheckoutClaimProof(result.user) });
     } catch (error: any) {
       if (error instanceof AuthError) {
         return res.status(401).json({ message: error.message, code: error.code });

@@ -56,6 +56,9 @@ export default function MagicLinkPage() {
           throw new Error('Missing session token');
         }
         localStorage.setItem("auth_token", body.token);
+        if (credentials.redirect.startsWith('/checkout/complete') && typeof body.checkoutClaimProof === 'string') {
+          sessionStorage.setItem('checkout_claim_proof', body.checkoutClaimProof);
+        }
         notifyExtensionAuth(body.token, body.user || {});
         setStatus("ok");
 

@@ -132,6 +132,22 @@ export class AuthService {
     );
   }
 
+  /** Short-lived proof that this browser just redeemed an emailed sign-in link. */
+  generateCheckoutClaimProof(user: { id: number; email: string | null }): string | null {
+    if (!user.email) return null;
+    return jwt.sign({ userId: user.id, email: user.email.toLowerCase(), purpose: 'guest-checkout-claim' },
+      this.signingSecret, { expiresIn: '15m' });
+  }
+
+  verifyCheckoutClaimProof(token: string): { userId: number; email: string } | null {
+    try {
+      const claims = jwt.verify(token, this.signingSecret) as jwt.JwtPayload;
+      if (claims.purpose !== 'guest-checkout-claim' || !Number.isSafeInteger(claims.userId) ||
+          typeof claims.email !== 'string') return null;
+      return { userId: claims.userId, email: claims.email };
+    } catch { return null; }
+  }
+
   async generatePasswordResetToken(email: string): Promise<string | null> {
     // Find user by email
     const user = await this.store.getUserByEmail(email);
