@@ -242,6 +242,10 @@ export function buildComparisonGuide(a: RunningShoe, b: RunningShoe) {
     },
   ];
   const questions = [
+    ...(a.brand === 'Saucony' && b.brand === 'Saucony' && [a.model, b.model].some(m => /^Endorphin Pro 4$/i.test(m)) && [a.model, b.model].some(m => /^Endorphin Pro 5$/i.test(m)) ? [{
+      question: 'Should I keep my Endorphin Pro 4 or buy the Pro 5 for my next race?',
+      answer: 'If your Pro 4 is comfortable, unworn and already tested at race pace, do not replace it just because the Pro 5 is newer. If you need a replacement, compare the price in your size and test the Pro 5 with your usual socks on a familiar workout. Check heel hold, toe room and comfort late in the run. Our historical figures do not establish a verified performance gain; a race close to today favors the pair you have already rehearsed.',
+    }] : []),
     { question: `Which is better: ${an} or ${bn}?`, answer: verdict },
     {
       question: `Which of these shoes is lighter?`,

@@ -38,7 +38,7 @@ export default function PublicHeader() {
           {/* Logo */}
           <Link href="/">
             <div className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0">
-              <div className="w-10 h-10 bg-strava-orange rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-orange-700 rounded-lg flex items-center justify-center">
                 <Activity className="text-white" size={20} />
               </div>
               <span className="text-2xl font-bold text-charcoal">RunAnalytics</span>
@@ -46,7 +46,7 @@ export default function PublicHeader() {
           </Link>
 
           {/* Desktop center nav */}
-          <nav className="hidden xl:flex items-center gap-5 lg:gap-8">
+          <nav aria-label="Main navigation" className="hidden xl:flex items-center gap-5 lg:gap-8">
             {NAV_LINKS.map(({ label, href }) => (
               <Link key={href} href={href}>
                 <span className={linkClass(href)}>{label}</span>
@@ -56,16 +56,17 @@ export default function PublicHeader() {
 
           {/* Desktop right side */}
           <div className="hidden xl:flex items-center gap-4">
-            <Link href={isAuthenticated ? "/dashboard" : "/auth"}>
               <Button
-                className={isAuthenticated ? "flex items-center gap-2" : "bg-strava-orange text-white hover:bg-strava-orange/90 flex items-center gap-2"}
+                asChild
+                className={isAuthenticated ? "flex items-center gap-2" : "bg-orange-700 text-white hover:bg-orange-700/90 flex items-center gap-2"}
                 variant={isAuthenticated ? "outline" : "default"}
                 data-testid="header-continue-strava"
               >
-                {isAuthenticated ? <ArrowLeft className="h-4 w-4" /> : <SiStrava className="h-4 w-4" />}
+              <Link href={isAuthenticated ? "/dashboard" : "/auth"}>
+                {isAuthenticated ? <ArrowLeft aria-hidden="true" className="h-4 w-4" /> : <SiStrava aria-hidden="true" focusable="false" className="h-4 w-4" />}
                 {isAuthenticated ? "Back to dashboard" : "Continue with Strava or Login"}
+              </Link>
               </Button>
-            </Link>
           </div>
 
           {/* Mobile hamburger */}
@@ -73,6 +74,8 @@ export default function PublicHeader() {
             className="xl:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
             onClick={() => setMobileOpen((o) => !o)}
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileOpen}
+            aria-controls="public-mobile-navigation"
           >
             {mobileOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -82,7 +85,7 @@ export default function PublicHeader() {
       {/* Mobile dropdown */}
       {mobileOpen && (
         <div className="xl:hidden border-t border-gray-200 bg-white">
-          <nav className="flex flex-col divide-y divide-gray-100">
+          <nav id="public-mobile-navigation" aria-label="Mobile navigation" className="flex flex-col divide-y divide-gray-100">
             {NAV_LINKS.map(({ label, href }) => (
               <Link key={href} href={href}>
                 <span
@@ -98,15 +101,16 @@ export default function PublicHeader() {
               </Link>
             ))}
             <div className="px-6 py-4">
-              <Link href={isAuthenticated ? "/dashboard" : "/auth"}>
                 <Button
-                  className="w-full bg-strava-orange text-white hover:bg-strava-orange/90 flex items-center justify-center gap-2"
+                  asChild
+                  className="w-full bg-orange-700 text-white hover:bg-orange-700/90 flex items-center justify-center gap-2"
                   onClick={() => setMobileOpen(false)}
                 >
-                  {isAuthenticated ? <ArrowLeft className="h-4 w-4" /> : <SiStrava className="h-4 w-4" />}
+                <Link href={isAuthenticated ? "/dashboard" : "/auth"}>
+                  {isAuthenticated ? <ArrowLeft aria-hidden="true" className="h-4 w-4" /> : <SiStrava aria-hidden="true" focusable="false" className="h-4 w-4" />}
                   {isAuthenticated ? "Back to dashboard" : "Continue with Strava or Login"}
+                </Link>
                 </Button>
-              </Link>
             </div>
           </nav>
         </div>

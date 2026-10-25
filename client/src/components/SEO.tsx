@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Helmet } from 'react-helmet';
 
 interface SEOProps {
   title: string;
@@ -25,8 +26,10 @@ export function SEO({
 }: SEOProps) {
   useEffect(() => {
     const resolvedUrl = url || `https://aitracker.run${window.location.pathname}`;
-    const resolvedTitle = title.length > 60 ? `${title.slice(0, 57).trimEnd()}...` : title;
-    const resolvedDescription = description.length > 160 ? `${description.slice(0, 157).trimEnd()}...` : description;
+    // Search engines choose their own display width. Never damage authored copy
+    // (or a model/version name) merely to satisfy a character-count heuristic.
+    const resolvedTitle = title.trim();
+    const resolvedDescription = description.trim();
     // Update title
     document.title = resolvedTitle;
 
@@ -94,5 +97,16 @@ export function SEO({
     }
   }, [title, description, keywords, ogImage, url, type, structuredData, ogTitle, ogDescription]);
 
-  return null;
+  // Helmet is collected during public SSR, so useful metadata is present in
+  // the first HTTP response rather than waiting for a browser effect.
+  return <Helmet>
+    <title>{title.trim()}</title>
+    <meta name="description" content={description.trim()} />
+    <meta property="og:title" content={ogTitle || title} />
+    <meta property="og:description" content={ogDescription || description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:type" content={type} />
+    {structuredData && <script id="structured-data" type="application/ld+json">{JSON.stringify(structuredData).replace(/</g, '\\u003c')}</script>}
+    {url && <link rel="canonical" href={url} />}
+  </Helmet>;
 }

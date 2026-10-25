@@ -7,6 +7,7 @@ import {
 } from "../shared/shoeEditorial";
 import {
   canonicalizeShoeCatalog,
+  canonicalizeComparisons,
   normalizedShoeModelKey,
 } from "../shared/shoeCanonicalization";
 
@@ -50,7 +51,7 @@ export async function comparisonList(
     store.getShoes({}),
   ]);
   const byId = new Map(shoes.map((s) => [s.id, s]));
-  return comparisons.flatMap((c) => {
+  return canonicalizeComparisons(comparisons, shoes).canonicalComparisons.flatMap((c) => {
     const a = byId.get(c.shoe1Id),
       b = byId.get(c.shoe2Id);
     if (!a || !b) return [];

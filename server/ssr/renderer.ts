@@ -25,7 +25,10 @@ function escapeHtml(text: string): string {
 
 function truncateMetadata(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
-  return `${text.slice(0, maxLength - 3).trimEnd()}...`;
+  // Preserve whole words; the client never imposes a second truncation pass.
+  const prefix = text.slice(0, maxLength - 1);
+  const boundary = prefix.lastIndexOf(' ');
+  return `${prefix.slice(0, boundary > 0 ? boundary : prefix.length).trimEnd()}…`;
 }
 
 function generateStructuredData(meta: PageMeta, url: string, type: 'BlogPosting' | 'Product' | 'WebPage' = 'WebPage', extra: any = {}): string {
@@ -42,8 +45,8 @@ function generateStructuredData(meta: PageMeta, url: string, type: 'BlogPosting'
         "name": "RunAnalytics",
         "logo": { "@type": "ImageObject", "url": `${BASE_URL}/og-image.jpg` }
       },
-      "datePublished": meta.datePublished || new Date().toISOString().split('T')[0],
-      "dateModified": meta.dateModified || new Date().toISOString().split('T')[0],
+      "datePublished": meta.datePublished || undefined,
+      "dateModified": meta.dateModified || meta.datePublished || undefined,
       "mainEntityOfPage": { "@type": "WebPage", "@id": `${BASE_URL}${url}` },
       "keywords": meta.keywords,
       ...extra
@@ -105,7 +108,7 @@ function generateHtmlHead(meta: PageMeta, url: string, structuredData: string): 
   ${structuredData}
   </script>
   
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" href="/icons/icon-192.png" />
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
     .ssr-container { max-width: 800px; margin: 0 auto; padding: 20px; }
@@ -847,7 +850,7 @@ export function renderHomepage(): string {
   ${structuredData}
   </script>
   
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" href="/icons/icon-192.png" />
   <style>
     * { box-sizing: border-box; }
     body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #1a1a2e; margin: 0; padding: 0; }
@@ -1563,7 +1566,7 @@ export function renderAboutPage(): string {
     "name": "RunAnalytics",
     "url": BASE_URL,
     "description": meta.description,
-    "logo": `${BASE_URL}/favicon.svg`
+    "logo": `${BASE_URL}/icons/icon-192.png`
   }, null, 2);
   const webPageSchema = generateStructuredData(meta, url, 'WebPage');
   const head = generateHtmlHead(meta, url, webPageSchema);

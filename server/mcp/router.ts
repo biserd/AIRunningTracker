@@ -31,6 +31,7 @@ import {
   validateAccessToken,
 } from "./oauthService";
 import { createPrivateMcpServer, createPublicMcpServer } from "./tools";
+import { registerAgentDiscovery } from './discovery';
 
 const PRIVATE_RATE_LIMIT = 120;
 const PUBLIC_RATE_LIMIT = 60;
@@ -118,6 +119,7 @@ async function handleMcpRequest(req: Request, res: Response, isPublic: boolean) 
 }
 
 export async function registerMcpRoutes(app: Express): Promise<void> {
+  registerAgentDiscovery(app);
   if (mayInitializeSchema()) await ensureMcpSchema();
   if (!process.env.MCP_TOKEN_HASH_SECRET || process.env.MCP_TOKEN_HASH_SECRET.length < 32) {
     console.warn("[MCP] Private OAuth disabled until MCP_TOKEN_HASH_SECRET is configured with at least 32 characters");

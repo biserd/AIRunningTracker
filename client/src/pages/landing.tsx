@@ -8,9 +8,14 @@ import { VERSION } from "@shared/version";
 import Footer from "@/components/Footer";
 import PublicHeader from "@/components/PublicHeader";
 import { SEO } from "@/components/SEO";
-import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { useQuery } from "@tanstack/react-query";
 import { trackFunnelEvent } from "@/lib/analytics";
+
+// Public evidence should be readable immediately, without hundreds of
+// count-up renders on a throttled mobile CPU.
+function PublicStatistic({ end, suffix = '', className = '' }: { end: number; suffix?: string; className?: string }) {
+  return <span className={`tabular-nums ${className}`}>{end.toLocaleString('en-US')}{suffix}</span>;
+}
 
 export default function LandingPage() {
   const [showAllFeatures, setShowAllFeatures] = useState(false);
@@ -89,6 +94,7 @@ export default function LandingPage() {
       />
       
       <PublicHeader />
+      <main>
 
       {/* Hero Section */}
       <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6">
@@ -101,7 +107,7 @@ export default function LandingPage() {
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-charcoal mb-4 sm:mb-6 leading-tight">
             Your AI running coach,
-            <span className="text-strava-orange"> wherever you run.</span>
+            <span className="text-orange-700"> wherever you run.</span>
           </h1>
           
           <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4 mb-3">
@@ -110,24 +116,22 @@ export default function LandingPage() {
           <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
             Talk by voice or chat, continue with your coach on WhatsApp, and receive useful guidance after every synced run. The RunAnalytics iOS app is coming soon.
           </p>
-          {webIntroOffer?.active && (
-            <Link href="/pricing" className="mx-4 mb-7 block rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-left shadow-sm transition hover:border-orange-400 hover:shadow-md" data-testid="home-web-intro-offer">
-              <span className="block text-sm font-bold text-orange-800">Limited-time web offer · sign up by November 30</span>
-              <span className="mt-1 block text-base font-semibold text-gray-900">7 days free, then $3.99 for your first month or $39.99 for your first year.</span>
+            <Link href="/pricing" className="mx-4 mb-7 block min-h-[184px] sm:min-h-[140px] rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-left shadow-sm transition hover:border-orange-400 hover:shadow-md" data-testid="home-web-intro-offer">
+              <span className="block text-sm font-bold text-orange-800">{webIntroOffer?.active ? 'Limited-time web offer · sign up by November 30' : 'Try your personal running coach · $0 today'}</span>
+              <span className="mt-1 block text-base font-semibold text-gray-900">{webIntroOffer?.active ? '7 days free, then $3.99 for your first month or $39.99 for your first year.' : '7 days free, then $7.99 per month or $79.99 per year.'}</span>
               <span className="mt-1 block text-xs text-gray-600">For new web subscribers. Renews at $7.99/month or $79.99/year. Card required; cancel anytime. See full terms →</span>
             </Link>
-          )}
 
           {/* Social Proof with Real Stats */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 mb-6 sm:mb-8 mx-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
               <div className="text-center min-h-[72px]">
                 <div className="flex items-center justify-center gap-1 mb-1">
-                  <Users className="h-5 w-5 text-strava-orange" />
+                  <Users className="h-5 w-5 text-orange-700" />
                 </div>
                 <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center h-8 min-w-[60px]">
                   {statsLoading ? <StatSkeleton /> : (
-                    <><AnimatedCounter end={stats?.totalUsers || 0} className="text-strava-orange" /></>
+                    <><PublicStatistic end={stats?.totalUsers || 0} className="text-orange-700" /></>
                   )}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600 font-medium">Registered accounts</div>
@@ -138,29 +142,29 @@ export default function LandingPage() {
                 </div>
                 <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center h-8 min-w-[60px]">
                   {statsLoading ? <StatSkeleton /> : (
-                    <><AnimatedCounter end={stats?.totalInsights || 0} className="text-blue-600" /></>
+                    <><PublicStatistic end={stats?.totalInsights || 0} className="text-blue-600" /></>
                   )}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600 font-medium">Key Insights</div>
               </div>
               <div className="text-center min-h-[72px]">
                 <div className="flex items-center justify-center gap-1 mb-1">
-                  <Activity className="h-5 w-5 text-green-600" />
+                  <Activity className="h-5 w-5 text-green-700" />
                 </div>
                 <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center h-8 min-w-[60px]">
                   {statsLoading ? <StatSkeleton /> : (
-                    <><AnimatedCounter end={stats?.totalActivities || 0} className="text-green-600" />+</>
+                    <><PublicStatistic end={stats?.totalActivities || 0} className="text-green-700" />+</>
                   )}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600 font-medium">Activities Tracked</div>
               </div>
               <div className="text-center min-h-[72px]">
                 <div className="flex items-center justify-center gap-1 mb-1">
-                  <TrendingUp className="h-5 w-5 text-cyan-600" />
+                  <TrendingUp className="h-5 w-5 text-cyan-700" />
                 </div>
                 <div className="text-2xl sm:text-3xl font-bold text-charcoal flex items-center justify-center h-8 min-w-[60px]">
                   {statsLoading ? <StatSkeleton /> : (
-                    <><AnimatedCounter end={Math.round((stats?.totalDistance || 0) / 1609.34)} className="text-cyan-600" />+</>
+                    <><PublicStatistic end={Math.round((stats?.totalDistance || 0) / 1609.34)} className="text-cyan-700" />+</>
                   )}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600 font-medium">Miles Analyzed</div>
@@ -174,7 +178,7 @@ export default function LandingPage() {
               Already have an account?{" "}
               <Link href="/auth">
                 <span
-                  className="text-strava-orange font-medium hover:underline cursor-pointer"
+                  className="text-orange-700 font-medium hover:underline cursor-pointer"
                   data-testid="hero-link-signin"
                 >
                   Sign in
@@ -186,11 +190,11 @@ export default function LandingPage() {
           {/* Trust Indicators */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm text-gray-600 px-4">
             <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
+              <CheckCircle className="h-4 w-4 text-green-700" />
               <span>7-day free trial</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
+              <CheckCircle className="h-4 w-4 text-green-700" />
               <span>Instant access with Strava</span>
             </div>
           </div>
@@ -216,23 +220,23 @@ export default function LandingPage() {
               </p>
               <div className="space-y-4 mb-6">
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <CheckCircle className="h-5 w-5 text-green-700 flex-shrink-0 mt-0.5" />
                   <span className="text-sm sm:text-base text-gray-700"><strong>Turn complex data into plain English.</strong></span>
                 </div>
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <CheckCircle className="h-5 w-5 text-green-700 flex-shrink-0 mt-0.5" />
                   <div className="text-sm sm:text-base text-gray-700">
                     <strong>100% Personal Context.</strong> Unlike generic chatbots, we analyze your last 12 months of running data before answering.
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <CheckCircle className="h-5 w-5 text-green-700 flex-shrink-0 mt-0.5" />
                   <div className="text-sm sm:text-base text-gray-700">
                     <strong>Instant Race-Readiness Checks.</strong> Ask "Am I ready?" and get an honest prediction based on your recent long runs.
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <CheckCircle className="h-5 w-5 text-green-700 flex-shrink-0 mt-0.5" />
                   <div className="text-sm sm:text-base text-gray-700">
                     <strong>Spot Injury Risks Early.</strong> Identify volume spikes and fatigue trends before they sideline you.
                   </div>
@@ -259,7 +263,7 @@ export default function LandingPage() {
                     </div>
                     <div>
                       <div className="font-semibold text-sm text-charcoal">AI Running Coach</div>
-                      <div className="text-xs text-green-600 flex items-center gap-1">
+                      <div className="text-xs text-green-700 flex items-center gap-1">
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                         Online
                       </div>
@@ -270,7 +274,7 @@ export default function LandingPage() {
                   <div className="space-y-3 max-h-[300px] overflow-hidden">
                     {/* User Message */}
                     <div className="flex justify-end">
-                      <div className="bg-strava-orange text-white px-4 py-2 rounded-2xl rounded-tr-sm max-w-[80%] text-sm">
+                      <div className="bg-orange-700 text-white px-4 py-2 rounded-2xl rounded-tr-sm max-w-[80%] text-sm">
                         How has my training been this month?
                       </div>
                     </div>
@@ -280,17 +284,17 @@ export default function LandingPage() {
                       <div className="bg-gray-100 text-gray-800 px-4 py-3 rounded-2xl rounded-tl-sm max-w-[85%] text-sm leading-relaxed">
                         <p className="mb-2">Great question! Looking at your October data:</p>
                         <ul className="space-y-1 text-xs">
-                          <li>• <span className="font-semibold text-green-600">92 miles</span> total - up 15% from last month</li>
+                          <li>• <span className="font-semibold text-green-700">92 miles</span> total - up 15% from last month</li>
                           <li>• Average pace improved by <span className="font-semibold text-blue-600">18 sec/mile</span></li>
                           <li>• Consistency is strong with 4-5 runs/week</li>
                         </ul>
-                        <p className="mt-2 text-strava-orange font-medium">Your training is trending very well!</p>
+                        <p className="mt-2 text-orange-700 font-medium">Your training is trending very well!</p>
                       </div>
                     </div>
                     
                     {/* User Message */}
                     <div className="flex justify-end">
-                      <div className="bg-strava-orange text-white px-4 py-2 rounded-2xl rounded-tr-sm max-w-[80%] text-sm">
+                      <div className="bg-orange-700 text-white px-4 py-2 rounded-2xl rounded-tr-sm max-w-[80%] text-sm">
                         Am I ready for a half marathon?
                       </div>
                     </div>
@@ -305,10 +309,10 @@ export default function LandingPage() {
                   
                   {/* Input Area */}
                   <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
-                    <div className="flex-1 bg-gray-50 rounded-full px-4 py-2 text-sm text-gray-400">
+                    <div className="flex-1 bg-gray-50 rounded-full px-4 py-2 text-sm text-gray-600">
                       Ask me anything...
                     </div>
-                    <div className="w-8 h-8 bg-strava-orange rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 bg-orange-700 rounded-full flex items-center justify-center">
                       <ArrowRight className="h-4 w-4 text-white" />
                     </div>
                   </div>
@@ -318,7 +322,7 @@ export default function LandingPage() {
               {/* Trust Badge */}
               <div className="mt-4 text-center">
                 <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm text-xs text-gray-600">
-                  <Shield className="h-4 w-4 text-green-600" />
+                  <Shield className="h-4 w-4 text-green-700" />
                   <span>Smart coaching • Personalized • Cancel anytime</span>
                 </div>
               </div>
@@ -371,7 +375,7 @@ export default function LandingPage() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Link href="/proactive-running-coach" className="w-full sm:w-auto">
                 <Button
-                  className="h-12 w-full bg-[#FC4C02] px-7 font-bold text-white hover:bg-[#d94200] sm:w-auto"
+                  className="h-12 w-full bg-orange-700 px-7 font-bold text-white hover:bg-orange-800 sm:w-auto"
                   data-testid="homepage-proactive-coach-link"
                   onClick={() => trackFunnelEvent("offer_clicked", {
                     source: "homepage_proactive_coach",
@@ -396,7 +400,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <p className="font-bold">RunAnalytics Coach</p>
-                  <p className="text-xs text-slate-500">runner-scoped · approval required for changes</p>
+                  <p className="text-xs text-slate-600">runner-scoped · approval required for changes</p>
                 </div>
               </div>
               <div className="rounded-2xl rounded-tl-sm bg-white p-5 shadow-sm">
@@ -411,7 +415,7 @@ export default function LandingPage() {
               <div className="ml-auto mt-4 max-w-[85%] rounded-2xl rounded-tr-sm bg-[#d7f7c8] p-4 text-sm shadow-sm">
                 Why not the intervals on my plan?
               </div>
-              <p className="mt-4 text-center text-xs text-slate-500">Example message · training guidance, not medical advice</p>
+              <p className="mt-4 text-center text-xs text-slate-600">Example message · training guidance, not medical advice</p>
             </div>
           </div>
         </div>
@@ -449,17 +453,17 @@ export default function LandingPage() {
               </p>
               <div className="space-y-4 mb-6">
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <CheckCircle className="h-5 w-5 text-green-700 flex-shrink-0 mt-0.5" />
                   <span className="text-sm sm:text-base text-gray-700"><strong>Track 4 Key Metrics at Once</strong></span>
                 </div>
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <CheckCircle className="h-5 w-5 text-green-700 flex-shrink-0 mt-0.5" />
                   <div className="text-sm sm:text-base text-gray-700">
                     <strong>Instant Strengths & Weaknesses.</strong> See instantly if you need more speed or more volume.
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <CheckCircle className="h-5 w-5 text-green-700 flex-shrink-0 mt-0.5" />
                   <div className="text-sm sm:text-base text-gray-700">
                     <strong>The Ultimate "Humble Brag".</strong> Export beautiful, pro-level visuals to share your score on Instagram or Strava.
                   </div>
@@ -531,7 +535,7 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-3 gap-6 sm:gap-8 px-4">
             {/* Smart Performance Insights */}
             <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:shadow-orange-200/50">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 bg-strava-orange rounded-xl flex items-center justify-center mb-4">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 bg-orange-700 rounded-xl flex items-center justify-center mb-4">
                 <Brain className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
               <h3 className="text-lg sm:text-xl font-semibold text-charcoal mb-3">Smart Performance Insights</h3>
@@ -539,7 +543,7 @@ export default function LandingPage() {
                 Get personalized insights about your performance patterns, recovery needs, and training recommendations.
               </p>
               <div className="bg-white p-3 rounded-lg text-sm">
-                <div className="font-medium text-strava-orange">Sample Insight:</div>
+                <div className="font-medium text-orange-700">Sample Insight:</div>
                 <div className="text-gray-600">"Your pace has improved 12% over the last month. Consider adding interval training to break through your current plateau."</div>
               </div>
             </div>
@@ -656,7 +660,7 @@ export default function LandingPage() {
       <section className="py-12 sm:py-16 px-4 sm:px-6 bg-gradient-to-br from-gray-50 via-white to-orange-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center space-x-2 bg-strava-orange/10 text-strava-orange px-4 py-2 rounded-full mb-4">
+            <div className="inline-flex items-center space-x-2 bg-orange-700/10 text-orange-700 px-4 py-2 rounded-full mb-4">
               <Calculator size={20} />
               <span className="font-semibold text-sm">Free Tools for All Runners</span>
             </div>
@@ -768,7 +772,7 @@ export default function LandingPage() {
                     <h3 className="font-semibold text-charcoal">Marathon Fueling</h3>
                   </div>
                   <p className="text-gray-600 text-sm mb-3">Turn a practiced carbohydrate target into a simple race schedule.</p>
-                  <span className="text-orange-600 text-sm font-medium flex items-center">
+                  <span className="text-orange-700 text-sm font-medium flex items-center">
                     Plan Nutrition <ArrowRight className="ml-1 h-3 w-3" />
                   </span>
                 </div>
@@ -784,7 +788,7 @@ export default function LandingPage() {
                     <h3 className="font-semibold text-charcoal">Race Time Predictor</h3>
                   </div>
                   <p className="text-gray-600 text-sm mb-3">Get a modeled finish-time estimate with a practical variability range.</p>
-                  <span className="text-green-600 text-sm font-medium flex items-center">
+                  <span className="text-green-700 text-sm font-medium flex items-center">
                     Predict Times <ArrowRight className="ml-1 h-3 w-3" />
                   </span>
                 </div>
@@ -800,7 +804,7 @@ export default function LandingPage() {
                     <h3 className="font-semibold text-charcoal">Form Stability Analyzer</h3>
                   </div>
                   <p className="text-gray-600 text-sm mb-3">Review cadence stability and late-run change in context.</p>
-                  <span className="text-cyan-600 text-sm font-medium flex items-center">
+                  <span className="text-cyan-700 text-sm font-medium flex items-center">
                     Analyze Form <ArrowRight className="ml-1 h-3 w-3" />
                   </span>
                 </div>
@@ -816,7 +820,7 @@ export default function LandingPage() {
                     <h3 className="font-semibold text-charcoal">Running Shoe Hub</h3>
                   </div>
                   <p className="text-gray-600 text-sm mb-3">Browse 100+ shoe models with detailed specifications.</p>
-                  <span className="text-amber-600 text-sm font-medium flex items-center">
+                  <span className="text-amber-700 text-sm font-medium flex items-center">
                     Browse Shoes <ArrowRight className="ml-1 h-3 w-3" />
                   </span>
                 </div>
@@ -832,7 +836,7 @@ export default function LandingPage() {
                     <h3 className="font-semibold text-charcoal">Personalized Shoe Finder</h3>
                   </div>
                   <p className="text-gray-600 text-sm mb-3">Find your perfect shoes based on your profile.</p>
-                  <span className="text-emerald-600 text-sm font-medium flex items-center">
+                  <span className="text-emerald-700 text-sm font-medium flex items-center">
                     Find My Shoes <ArrowRight className="ml-1 h-3 w-3" />
                   </span>
                 </div>
@@ -848,7 +852,7 @@ export default function LandingPage() {
                     <h3 className="font-semibold text-charcoal">Shoe Rotation Planner</h3>
                   </div>
                   <p className="text-gray-600 text-sm mb-3">Build a complete training rotation for all workouts.</p>
-                  <span className="text-sky-600 text-sm font-medium flex items-center">
+                  <span className="text-sky-700 text-sm font-medium flex items-center">
                     Plan Rotation <ArrowRight className="ml-1 h-3 w-3" />
                   </span>
                 </div>
@@ -874,7 +878,7 @@ export default function LandingPage() {
             {/* Scroll Indicator */}
             <div className="flex justify-center gap-1 mt-4 md:hidden">
               <span className="text-xs text-gray-500">Swipe to see more tools</span>
-              <ChevronRight className="h-4 w-4 text-gray-400" />
+              <ChevronRight className="h-4 w-4 text-gray-600" />
             </div>
           </div>
 
@@ -905,12 +909,12 @@ export default function LandingPage() {
           
           {/* Social Proof */}
           <div className="flex items-center justify-center gap-2 mb-6 sm:mb-8 text-gray-700 px-4">
-            <Users className="h-5 w-5 text-strava-orange" />
+            <Users className="h-5 w-5 text-orange-700" />
             <span className="text-sm sm:text-base font-medium">
               Used by {statsLoading ? (
                 <span className="inline-block h-5 w-12 bg-gray-200 rounded animate-pulse align-middle" />
               ) : (
-                <span className="font-bold text-strava-orange">{(stats?.totalUsers || 0).toLocaleString()}</span>
+                <span className="font-bold text-orange-700">{(stats?.totalUsers || 0).toLocaleString()}</span>
               )} registered runners
             </span>
           </div>
@@ -929,21 +933,22 @@ export default function LandingPage() {
           {/* Trust Indicators */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm text-gray-600 mt-6 px-4">
             <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
+              <CheckCircle className="h-4 w-4 text-green-700" />
               <span>7-day free trial</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
+              <CheckCircle className="h-4 w-4 text-green-700" />
               <span>Setup in 2 minutes</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
+              <CheckCircle className="h-4 w-4 text-green-700" />
               <span>Cancel anytime</span>
             </div>
           </div>
         </div>
       </section>
 
+      </main>
       <Footer />
     </div>
   );

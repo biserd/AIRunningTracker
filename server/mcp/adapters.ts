@@ -1,5 +1,6 @@
 import { storage, RUNNING_ACTIVITY_TYPES } from "../storage";
 import { sanitizeShoeRecord } from './shoePresentation';
+import { canonicalizeShoeCatalog, normalizedShoeModelKey } from '../../shared/shoeCanonicalization';
 import { buildShoeGuide, buildComparisonGuide, shoeEvidence, SHOE_METHODOLOGY } from '../../shared/shoeEditorial';
 import { fitnessService } from "../services/fitness";
 import { runnerScoreService } from "../services/runnerScore";
@@ -477,15 +478,17 @@ export async function searchPublicShoes(input: {
     stability: input.stability,
   });
   const query = input.query?.trim().toLowerCase();
-  const filtered = query ? shoes.filter((shoe) => `${shoe.brand} ${shoe.model} ${shoe.seriesName || ""} ${shoe.category}`.toLowerCase().includes(query)) : shoes;
+  const canonical = canonicalizeShoeCatalog(shoes).canonicalShoes;
+  const filtered = query ? canonical.filter((shoe) => `${shoe.brand} ${shoe.model} ${shoe.seriesName || ""} ${shoe.category}`.toLowerCase().includes(query)) : canonical;
   filtered.sort((a,b) => (b.lastVerified ? new Date(b.lastVerified).getTime() : 0) - (a.lastVerified ? new Date(a.lastVerified).getTime() : 0) || a.brand.localeCompare(b.brand) || a.model.localeCompare(b.model));
   return { shoes: filtered.slice(0, limit).map(sanitizeShoe), returned: Math.min(filtered.length, limit), totalMatches: filtered.length, truncated: filtered.length > limit };
 }
 
 export async function readPublicShoe(slug: string) {
   if (!/^[a-z0-9-]{1,120}$/.test(slug)) throw new McpToolError("invalid_arguments", "A valid shoe slug is required");
-  const shoe = await storage.getShoeBySlug(slug);
+  let shoe = await storage.getShoeBySlug(slug);
   if (!shoe) throw new McpToolError("not_found", "Shoe not found");
+  shoe = canonicalizeShoeCatalog(await storage.getShoes({})).canonicalShoes.find(s => normalizedShoeModelKey(s) === normalizedShoeModelKey(shoe!)) || shoe;
   return { shoe: { ...sanitizeShoe(shoe), editorial: buildShoeGuide(shoe) } };
 }
 
@@ -524,7 +527,9 @@ export async function comparePublicShoes(slugs: string[]) {
   }
   const records = await Promise.all(uniqueSlugs.map((slug) => storage.getShoeBySlug(slug)));
   if (records.some((shoe) => !shoe)) throw new McpToolError("not_found", "One or more shoes were not found");
-  const shoes = records as RunningShoe[];
+  const catalog = canonicalizeShoeCatalog(await storage.getShoes({})).canonicalShoes;
+  const shoes = (records as RunningShoe[]).map(record => catalog.find(s => normalizedShoeModelKey(s) === normalizedShoeModelKey(record)) || record);
+  if (new Set(shoes.map(s => s.id)).size !== shoes.length) throw new McpToolError('invalid_arguments', 'Choose distinct models, not two aliases of the same shoe');
   return {
     shoes: shoes.map(sanitizeShoe),
     guides: shoes.slice(1).map(shoe => buildComparisonGuide(shoes[0], shoe)),

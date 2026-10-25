@@ -85,6 +85,7 @@ function ComparisonCard({ comparison }: { comparison: ComparisonWithShoes }) {
 export default function ShoeComparisonList() {
   const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("all");
+  const [search, setSearch] = useState("");
 
   const { data: comparisons, isLoading } = useQuery<ComparisonWithShoes[]>({
     queryKey: ['/api/shoes/comparisons'],
@@ -96,7 +97,7 @@ export default function ShoeComparisonList() {
   });
 
   const filteredComparisons = comparisons?.filter(c => 
-    activeTab === 'all' || c.comparisonType === activeTab
+    (activeTab === 'all' || c.comparisonType === activeTab) && search.toLowerCase().trim().split(/\s+/).every(term => `${c.shoe1.brand} ${c.shoe1.model} ${c.shoe2.brand} ${c.shoe2.model}`.toLowerCase().includes(term))
   ) || [];
 
   const evolutionCount = comparisons?.filter(c => c.comparisonType === 'evolution').length || 0;
@@ -130,6 +131,17 @@ export default function ShoeComparisonList() {
           </p>
         </div>
 
+        <section className="mb-8 rounded-2xl border border-orange-200 bg-orange-50 p-6" aria-label="Choose a shoe comparison">
+          <h2 className="text-xl font-bold mb-2">Upgrading your current shoe or choosing a new one?</h2>
+          <p className="text-gray-700 mb-4">Start with its job: easy mileage, long runs or race day. Compare the same size and width, then check fit, verified construction changes and the seller’s current price. A lighter shoe is not automatically a better match.</p>
+          <Link href="/tools/shoe-compare" className="inline-flex rounded-lg bg-orange-700 px-4 py-3 font-semibold text-white">Choose two shoes to compare</Link>
+          <p className="mt-4 text-sm text-gray-700">Planning your next race? Pair your shortlist with a <Link href="/tools/rotation-planner" className="underline text-orange-900">training shoe rotation</Link>, a <Link href="/tools/marathon-fueling" className="underline text-orange-900">practiced fueling schedule</Link> and an <Link href="/tools/aerobic-decoupling-calculator" className="underline text-orange-900">aerobic decoupling check</Link> from a steady long run.</p>
+        </section>
+        <div className="mb-6">
+          <label htmlFor="comparison-search" className="mb-2 block font-semibold">Find your models</label>
+          <input id="comparison-search" type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="For example, Endorphin Pro 4 Pro 5" className="w-full rounded-lg border border-gray-300 bg-background p-3" />
+          <p aria-live="polite" className="mt-2 text-sm text-gray-600">{isLoading ? 'Loading comparisons…' : `${filteredComparisons.length} matching comparisons`}</p>
+        </div>
         <div className="grid md:grid-cols-3 gap-4 mb-8">
           {Object.entries(comparisonTypeLabels).map(([type, info]) => {
             const count = type === 'evolution' ? evolutionCount : type === 'category_rival' ? rivalCount : popularCount;
@@ -180,8 +192,8 @@ export default function ShoeComparisonList() {
         ) : filteredComparisons.length === 0 ? (
           <div className="text-center py-12">
             <GitCompare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No comparisons yet</h3>
-            <p className="text-gray-500 mb-4">Check back soon for new shoe comparisons!</p>
+            <h3 className="text-lg font-semibold mb-2">No matching comparisons</h3>
+            <p className="text-gray-500 mb-4">Try a shorter model name, choose All, or build a custom comparison.</p>
             <Link href="/tools/shoe-compare">
               <Button variant="outline" data-testid="button-create-comparison">
                 Create Custom Comparison

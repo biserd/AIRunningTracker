@@ -566,6 +566,8 @@ export function ShoeComparisonPage() {
             label: "Find a shoe for your training",
           },
           { href: "/tools/rotation-planner", label: "Plan a rotation" },
+          { href: "/tools/marathon-fueling", label: "Rehearse race-day fueling alongside your shoe test" },
+          { href: "/tools/aerobic-decoupling-calculator", label: "Check endurance on a steady long run" },
         ]}
       />
     </Shell>

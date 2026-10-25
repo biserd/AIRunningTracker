@@ -10,6 +10,7 @@ import { ExternalLinkPolicy } from "@/components/ExternalLinkPolicy";
 type ToolModule = { default: ComponentType };
 
 const exactToolRoutes: Record<string, () => Promise<ToolModule>> = {
+  "/": () => import("@/pages/landing"),
   "/tools": () => import("@/pages/tools"),
   "/tools/aerobic-decoupling-calculator": () => import("@/pages/tools/aerobic-decoupling-calculator"),
   "/tools/training-split-analyzer": () => import("@/pages/tools/training-split-analyzer"),

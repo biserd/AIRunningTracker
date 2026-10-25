@@ -16,6 +16,7 @@ import {
   type ShoeStore,
 } from "../shoeCatalogPresentation";
 import { publicShoe, safeJson } from "../../shared/shoeEditorial";
+import { canonicalizeShoeCatalog, canonicalizeComparisons } from "../../shared/shoeCanonicalization";
 
 export async function renderShoeDocument(
   path: string,
@@ -26,7 +27,7 @@ export async function renderShoeDocument(
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
   if (path === "/tools/shoes") {
-    const shoes = (await store.getShoes({})).map(publicShoe);
+    const shoes = canonicalizeShoeCatalog(await store.getShoes({})).canonicalShoes.map(publicShoe);
     client.setQueryData(["/api/shoes"], shoes);
     client.setQueryData(
       ["/api/shoes/brands"],
@@ -39,6 +40,10 @@ export async function renderShoeDocument(
     );
   else if (path.startsWith("/tools/shoes/compare/")) {
     const slug = path.split("/").at(-1)!;
+    const [allComparisons, allShoes] = await Promise.all([store.getShoeComparisons({}), store.getShoes({})]);
+    const canonical = canonicalizeComparisons(allComparisons, allShoes);
+    if (canonical.collapsedToShoe.has(slug)) return { status: 301, location: `/tools/shoes/${canonical.collapsedToShoe.get(slug)}` };
+    if (canonical.aliasToCanonical.has(slug)) return { status: 301, location: `/tools/shoes/compare/${canonical.aliasToCanonical.get(slug)}` };
     const data = await comparisonPayload(store, slug);
     if (!data) return { status: 404 };
     client.setQueryData(["/api/shoes/comparisons/by-slug", slug], data);

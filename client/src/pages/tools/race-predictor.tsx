@@ -229,8 +229,8 @@ export default function RacePredictor() {
   return (
     <>
       <SEO
-        title="Race Time Predictor: Any Distance Using Riegel Formula (2026)"
-        description="Predict your finish time for any race distance from a recent result. Uses the Riegel formula plus training variables for accuracy across 5K to ultra."
+        title="Race Time Predictor: 5K, 10K, Half & Marathon"
+        description="Estimate race times from a recent result with the Riegel formula. Compare 5K, 10K, half marathon and marathon targets, then plan pacing and fueling."
         keywords="race predictor, ai race predictor, marathon time predictor, half marathon predictor, 10k race predictor, 5k race predictor, strava race predictor, vdot calculator"
         url="https://aitracker.run/tools/race-predictor"
         structuredData={{
@@ -798,7 +798,12 @@ export default function RacePredictor() {
           </ClientOnlyContent>
         </div>
 
-        <ClientOnlyContent minHeight={600}>
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 py-8" aria-label="Race prediction example and next steps">
+          <h2 className="text-2xl font-bold mb-3">From a recent result to a practical race target</h2>
+          <p className="mb-3">With the baseline Riegel exponent of 1.06, a 50-minute 10K gives about 1:50 for a half marathon and 3:50 for a marathon. Those are equivalent-performance estimates, not promises: this calculator’s training inputs can change the scenario.</p>
+          <p className="mb-3">Use a recent hard effort on a comparable course. A short race alone cannot establish marathon readiness; your long runs, endurance, weather and fueling still matter.</p>
+          <p>Next, turn the target into a <Link href="/tools/marathon-fueling" className="underline text-blue-700">marathon fueling schedule</Link>, check <Link href="/tools/aerobic-decoupling-calculator" className="underline text-blue-700">heart-rate drift on a steady run</Link>, and <Link href="/tools/rotation-planner" className="underline text-blue-700">plan shoes for training and race day</Link>.</p>
+        </section>
         {/* FAQ Section */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
           <Card>
@@ -827,7 +832,6 @@ export default function RacePredictor() {
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6"><ToolEducationPanel variant="race-predictor" /></div>
         <Footer />
-        </ClientOnlyContent>
       </div>
     </>
   );

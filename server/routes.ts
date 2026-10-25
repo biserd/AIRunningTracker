@@ -71,7 +71,9 @@ import { isClientFunnelEvent, buildFunnelDedupeKey, billingPeriodFromInterval } 
 import { getDashboardCalendarPeriods, getLastMonthComparisonEnd, partitionDashboardActivities } from "./services/dashboardPeriods";
 import { formatRunDistance, formatRunDuration, formatRunPace, runUnitLabels } from "@shared/runFormatting";
 import { summarizeTrainingSplit } from "@shared/trainingSplit";
-import { canonicalizeShoeCatalog, normalizedShoeModelKey } from "@shared/shoeCanonicalization";
+import { canonicalizeShoeCatalog, canonicalizeComparisons, normalizedShoeModelKey } from "@shared/shoeCanonicalization";
+import { sitemapDate } from "./ssr/sitemapDates";
+import { registerPublicMarkdown } from './ssr/publicMarkdown';
 import { registerMcpRoutes } from "./mcp/router";
 import { toClientUser } from "./services/clientUser";
 import {
@@ -273,6 +275,7 @@ async function isStripeTrialEligible(
 export async function registerRoutes(app: Express, runtime?: { schedulerDatabase: SqlDatabase }): Promise<Server> {
   registerObjectStorageRoutes(app);
   await registerMcpRoutes(app);
+  registerPublicMarkdown(app);
   if (mayInitializeSchema()) await ensureProactiveCoachSchema();
 
   
@@ -514,54 +517,53 @@ export async function registerRoutes(app: Express, runtime?: { schedulerDatabase
   app.get("/sitemap.xml", async (req, res) => {
     try {
       const baseUrl = "https://aitracker.run";
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
       
       const staticPages = [
-        { url: "/", changefreq: "daily", priority: "1.0", lastmod: today },
+        { url: "/", changefreq: "daily", priority: "1.0" },
         // Utility pages (auth/forgot-password/reset-password) are intentionally
         // excluded: they have no indexable content and just dilute crawl budget.
-        { url: "/about", changefreq: "monthly", priority: "0.7", lastmod: "2026-01-01" },
-        { url: "/features", changefreq: "monthly", priority: "0.8", lastmod: today },
-        { url: "/pricing", changefreq: "weekly", priority: "0.9", lastmod: today },
+        { url: "/about", changefreq: "monthly", priority: "0.7" },
+        { url: "/features", changefreq: "monthly", priority: "0.8" },
+        { url: "/pricing", changefreq: "weekly", priority: "0.9" },
         
         // Blog & Content Marketing: derived from blogContent.ts so no post is ever missed
-        { url: "/blog", changefreq: "weekly", priority: "0.9", lastmod: today },
-        { url: "/ai-running-coach", changefreq: "weekly", priority: "0.9", lastmod: today },
-        { url: "/ai-running-coaching-guide", changefreq: "weekly", priority: "0.9", lastmod: today },
-        { url: "/ai-agent-coach", changefreq: "weekly", priority: "0.9", lastmod: today },
-        { url: "/proactive-running-coach", changefreq: "weekly", priority: "0.9", lastmod: today },
-        { url: "/ios-app", changefreq: "monthly", priority: "0.9", lastmod: "2026-09-26" },
-        { url: "/ios-app/privacy", changefreq: "monthly", priority: "0.4", lastmod: "2026-09-26" },
-        { url: "/chrome-extension", changefreq: "weekly", priority: "0.8", lastmod: today },
+        { url: "/blog", changefreq: "weekly", priority: "0.9" },
+        { url: "/ai-running-coach", changefreq: "weekly", priority: "0.9" },
+        { url: "/ai-running-coaching-guide", changefreq: "weekly", priority: "0.9" },
+        { url: "/ai-agent-coach", changefreq: "weekly", priority: "0.9" },
+        { url: "/proactive-running-coach", changefreq: "weekly", priority: "0.9" },
+        { url: "/ios-app", changefreq: "monthly", priority: "0.9" },
+        { url: "/ios-app/privacy", changefreq: "monthly", priority: "0.4" },
+        { url: "/chrome-extension", changefreq: "weekly", priority: "0.8" },
         
         // Free Tools
-        { url: "/tools", changefreq: "weekly", priority: "0.9", lastmod: today },
-        { url: "/tools/aerobic-decoupling-calculator", changefreq: "weekly", priority: "0.8", lastmod: today },
-        { url: "/tools/training-split-analyzer", changefreq: "weekly", priority: "0.8", lastmod: today },
-        { url: "/tools/marathon-fueling", changefreq: "weekly", priority: "0.8", lastmod: today },
-        { url: "/tools/race-predictor", changefreq: "weekly", priority: "0.8", lastmod: today },
-        { url: "/tools/cadence-analyzer", changefreq: "weekly", priority: "0.8", lastmod: today },
-        { url: "/tools/training-pace-calculator", changefreq: "weekly", priority: "0.8", lastmod: today },
-        { url: "/tools/race-split-calculator", changefreq: "weekly", priority: "0.8", lastmod: today },
-        { url: "/tools/heatmap", changefreq: "weekly", priority: "0.7", lastmod: today },
+        { url: "/tools", changefreq: "weekly", priority: "0.9" },
+        { url: "/tools/aerobic-decoupling-calculator", changefreq: "weekly", priority: "0.8" },
+        { url: "/tools/training-split-analyzer", changefreq: "weekly", priority: "0.8" },
+        { url: "/tools/marathon-fueling", changefreq: "weekly", priority: "0.8" },
+        { url: "/tools/race-predictor", changefreq: "weekly", priority: "0.8" },
+        { url: "/tools/cadence-analyzer", changefreq: "weekly", priority: "0.8" },
+        { url: "/tools/training-pace-calculator", changefreq: "weekly", priority: "0.8" },
+        { url: "/tools/race-split-calculator", changefreq: "weekly", priority: "0.8" },
+        { url: "/tools/heatmap", changefreq: "weekly", priority: "0.7" },
         
         // Running Shoe Hub
-        { url: "/tools/shoes", changefreq: "weekly", priority: "0.9", lastmod: today },
-        { url: "/tools/shoes/compare", changefreq: "weekly", priority: "0.8", lastmod: today },
-        { url: "/tools/shoe-finder", changefreq: "weekly", priority: "0.8", lastmod: today },
-        { url: "/tools/rotation-planner", changefreq: "weekly", priority: "0.8", lastmod: today },
+        { url: "/tools/shoes", changefreq: "weekly", priority: "0.9" },
+        { url: "/tools/shoes/compare", changefreq: "weekly", priority: "0.8" },
+        { url: "/tools/shoe-finder", changefreq: "weekly", priority: "0.8" },
+        { url: "/tools/rotation-planner", changefreq: "weekly", priority: "0.8" },
         
         // Developer API
-        { url: "/developers", changefreq: "weekly", priority: "0.8", lastmod: "2026-01-01" },
-        { url: "/developers/api", changefreq: "weekly", priority: "0.8", lastmod: "2026-01-01" },
-        { url: "/mcp-server", changefreq: "weekly", priority: "0.8", lastmod: today },
-        { url: "/developers/mcp", changefreq: "weekly", priority: "0.8", lastmod: today },
+        { url: "/developers", changefreq: "weekly", priority: "0.8" },
+        { url: "/developers/api", changefreq: "weekly", priority: "0.8" },
+        { url: "/mcp-server", changefreq: "weekly", priority: "0.8" },
+        { url: "/developers/mcp", changefreq: "weekly", priority: "0.8" },
         
         // Other Pages
-        { url: "/faq", changefreq: "monthly", priority: "0.6", lastmod: "2026-01-01" },
-        { url: "/contact", changefreq: "monthly", priority: "0.5", lastmod: "2025-12-01" },
-        { url: "/privacy", changefreq: "yearly", priority: "0.3", lastmod: "2025-11-01" },
-        { url: "/terms", changefreq: "yearly", priority: "0.3", lastmod: "2025-11-01" },
+        { url: "/faq", changefreq: "monthly", priority: "0.6" },
+        { url: "/contact", changefreq: "monthly", priority: "0.5" },
+        { url: "/privacy", changefreq: "yearly", priority: "0.3" },
+        { url: "/terms", changefreq: "yearly", priority: "0.3" },
       ];
 
       // Fetch all shoes for individual shoe pages
@@ -571,19 +573,17 @@ export async function registerRoutes(app: Express, runtime?: { schedulerDatabase
         url: `/tools/shoes/${shoe.slug}`,
         changefreq: "monthly",
         priority: "0.7",
-        lastmod: shoe.createdAt ? new Date(shoe.createdAt).toISOString().split('T')[0] : today
+        lastmod: sitemapDate(shoe.lastVerified || shoe.createdAt)
       }));
 
       // Fetch all shoe comparisons for comparison pages
       const comparisons = await storage.getShoeComparisons({});
-      const existingShoeIds = new Set(shoes.map((shoe) => shoe.id));
-      const comparisonPages = comparisons.filter((comparison) =>
-        existingShoeIds.has(comparison.shoe1Id) && existingShoeIds.has(comparison.shoe2Id)
-      ).map(comparison => ({
+      const comparisonPages = canonicalizeComparisons(comparisons, shoes).canonicalComparisons.map(comparison => ({
         url: `/tools/shoes/compare/${comparison.slug}`,
         changefreq: "monthly",
         priority: "0.7",
-        lastmod: comparison.createdAt ? new Date(comparison.createdAt).toISOString().split('T')[0] : today
+        // A comparison also changes when either model's evidence changes.
+        lastmod: [comparison.createdAt, ...shoes.filter(s => s.id === comparison.shoe1Id || s.id === comparison.shoe2Id).map(s => s.lastVerified)].map(sitemapDate).filter(Boolean).sort().at(-1)
       }));
 
       // Blog pages: derived from blogContent.ts so the sitemap stays in sync
@@ -592,16 +592,18 @@ export async function registerRoutes(app: Express, runtime?: { schedulerDatabase
         url: `/blog/${post.slug}`,
         changefreq: "monthly",
         priority: "0.9",
-        lastmod: today
+        lastmod: sitemapDate(post.date)
       }));
 
-      const allPages = [...staticPages, ...blogPages, ...shoePages, ...comparisonPages];
+      // Static routes have no maintained editorial revision dates. Omission is
+      // more honest than request time or a guessed historical date.
+      const allPages = [...staticPages.map(page => ({ ...page, lastmod: undefined })), ...blogPages, ...shoePages, ...comparisonPages];
 
       const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${allPages.map(page => `  <url>
     <loc>${baseUrl}${page.url}</loc>
-    <lastmod>${page.lastmod}</lastmod>
+    ${page.lastmod ? `<lastmod>${page.lastmod}</lastmod>` : ''}
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
   </url>`).join('\n')}
@@ -669,12 +671,12 @@ ${allPages.map(page => `  <url>
       "@type": "Organization",
       "name": "RunAnalytics",
       "url": "${baseUrl}",
-      "logo": "${baseUrl}/favicon.svg"
+      "logo": "${baseUrl}/icons/icon-192.png"
     }
   }
   </script>
 
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" href="/icons/icon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
@@ -737,33 +739,6 @@ ${allPages.map(page => `  <url>
 </html>`;
   };
 
-  // SSG for homepage - serves to crawlers only for SEO
-  // All other users get the SPA (app uses client-side JWT, not server sessions)
-  app.get("/", (req: any, res, next) => {
-    const userAgent = req.get('user-agent') || '';
-    
-    // Only serve SSG to crawlers (search engines + AI bots) for SEO/GEO benefits
-    const isCrawlerRequest = isCrawler(userAgent);
-    
-    if (isCrawlerRequest) {
-      try {
-        console.log(`[SSG] Serving static-generated homepage to crawler: ${userAgent.substring(0, 50)}`);
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('X-Robots-Tag', 'index, follow');
-        res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
-        const html = renderHomepage();
-        res.send(html);
-        return;
-      } catch (error) {
-        console.error('[SSG] Error serving homepage:', error);
-        next();
-        return;
-      }
-    }
-    
-    // All regular users get the SPA
-    next();
-  });
 
   // Tool slugs that get full SSR with content (not just meta)
   const fullSsrToolSlugs = [
@@ -860,57 +835,6 @@ ${allPages.map(page => `  <url>
     }
   });
 
-  // SSG for free tools pages - serves to crawlers only for SEO, regular users get SPA
-  // Tool slugs: race-predictor, marathon-fueling, aerobic-decoupling-calculator, training-split-analyzer, cadence-analyzer, heatmap, shoe-finder, rotation-planner
-  const toolRouteMap: Record<string, string> = {
-    'race-predictor': 'race-predictor',
-    'marathon-fueling': 'marathon-fueling',
-    'aerobic-decoupling-calculator': 'aerobic-decoupling-calculator',
-    'training-split-analyzer': 'training-split-analyzer',
-    'cadence-analyzer': 'cadence-analyzer',
-    'training-pace-calculator': 'training-pace-calculator',
-    'race-split-calculator': 'race-split-calculator',
-    'heatmap': 'heatmap',
-    'shoe-finder': 'shoe-finder',
-    'rotation-planner': 'rotation-planner'
-  };
-
-  Object.entries(toolRouteMap).forEach(([routeSlug, contentSlug]) => {
-    app.get(`/tools/${routeSlug}`, (req: any, res, next) => {
-      const userAgent = req.get('user-agent') || '';
-
-      // Only serve SSR to crawlers (search engines + AI bots): regular users get the rich SPA
-      if (!isCrawler(userAgent)) {
-        next();
-        return;
-      }
-      
-      const staticFilePath = path.join(process.cwd(), 'dist', 'prerender', `tools-${contentSlug}.html`);
-      
-      // Try to serve pre-rendered static file first (SSG)
-      if (fs.existsSync(staticFilePath)) {
-        console.log(`[SSG] Serving static tool page to crawler: ${contentSlug}`);
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('X-Robots-Tag', 'index, follow');
-        res.setHeader('Cache-Control', 'public, max-age=3600');
-        res.sendFile(staticFilePath);
-        return;
-      }
-      
-      // Fallback to dynamic SSR if static file doesn't exist
-      const html = renderToolPage(contentSlug);
-      if (html) {
-        console.log(`[SSR] Fallback: serving server-rendered tool page to crawler: ${contentSlug}`);
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('X-Robots-Tag', 'index, follow');
-        res.setHeader('Cache-Control', 'public, max-age=3600');
-        res.send(html);
-      } else {
-        // Tool not found, let React handle it
-        next();
-      }
-    });
-  });
 
   // One data-filled React document for visitors and crawlers; no bot-only shoe content.
   registerShoePages(app, storage);
@@ -7433,7 +7357,7 @@ ${allPages.map(page => `  <url>
       const search = typeof req.query.q === 'string' ? req.query.q.trim().toLowerCase().slice(0,120) : '';
       const matches = search ? shoes.filter(shoe => search.split(/\s+/).every(word => `${shoe.brand} ${shoe.model} ${shoe.seriesName || ''}`.toLowerCase().includes(word))) : shoes;
       if (req.query.sort === 'verified') matches.sort((a,b) => (b.lastVerified ? new Date(b.lastVerified).getTime() : 0) - (a.lastVerified ? new Date(a.lastVerified).getTime() : 0) || a.brand.localeCompare(b.brand) || a.model.localeCompare(b.model));
-      res.json(matches.map(publicShoe));
+      res.json(canonicalizeShoeCatalog(matches).canonicalShoes.map(publicShoe));
     } catch (error: any) {
       console.error('Get shoes error:', error);
       res.status(500).json({ message: error.message || "Failed to get shoes" });

@@ -5,7 +5,7 @@ import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
 import viteConfig from "../vite.config";
 import { nanoid } from "nanoid";
-import { renderReactToolPage } from "./ssr/reactToolRenderer";
+import { renderPublicDocument } from "./ssr/reactToolRenderer";
 
 const viteLogger = createLogger();
 
@@ -18,6 +18,12 @@ export function log(message: string, source = "express") {
   });
 
   console.log(`${formattedTime} [${source}] ${message}`);
+}
+
+// Missing discovery documents and retired routes must not return a 200 SPA
+// shell. Keep this after real routes/static files (including Apple association).
+export function missingPublicResource(pathname: string): boolean {
+  return pathname === '/release-notes' || pathname.startsWith('/.well-known/') || pathname === '/ai-catalog.json';
 }
 
 export async function setupVite(app: Express, server: Server) {
@@ -44,6 +50,9 @@ export async function setupVite(app: Express, server: Server) {
   app.use(vite.middlewares);
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
+    if (missingPublicResource(new URL(url, 'http://localhost').pathname)) {
+      return res.status(404).set('X-Robots-Tag', 'noindex, follow').type('text/plain').send('Resource not found. Visit https://aitracker.run/ for current features.');
+    }
 
     try {
       const clientTemplate = path.resolve(
@@ -68,8 +77,7 @@ export async function setupVite(app: Express, server: Server) {
   });
 }
 
-export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "public");
+export function serveStatic(app: Express, distPath = path.resolve(import.meta.dirname, "public")) {
   const indexPath = path.resolve(distPath, "index.html");
 
   if (!fs.existsSync(distPath)) {
@@ -78,23 +86,23 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Let the document renderer handle /; otherwise Express serves the empty SPA index.
+  app.use(express.static(distPath, { index: false }));
 
   // fall through to index.html if the file doesn't exist
   app.use("*", async (req, res, next) => {
     const requestPath = new URL(req.originalUrl, "http://localhost").pathname;
+    if (missingPublicResource(requestPath)) {
+      return res.status(404).set('X-Robots-Tag', 'noindex, follow').type('text/plain').send('Resource not found. Visit https://aitracker.run/ for current features.');
+    }
     try {
-      const serverMarkup = await renderReactToolPage(requestPath);
-      if (!serverMarkup) {
+      const template = await fs.promises.readFile(indexPath, "utf-8");
+      const page = await renderPublicDocument(requestPath, template);
+      if (!page) {
         res.sendFile(indexPath);
         return;
       }
 
-      const template = await fs.promises.readFile(indexPath, "utf-8");
-      const page = template.replace(
-        '<div id="root"></div>',
-        `<div id="root" data-ssr-tool="true">${serverMarkup}</div>`,
-      );
       res.status(200).set({
         "Content-Type": "text/html; charset=utf-8",
         "Cache-Control": "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
