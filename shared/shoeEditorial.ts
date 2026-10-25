@@ -1,9 +1,9 @@
 import type { RunningShoe } from "./schema";
 import { safeShoeSource, shoeNumber, shoeAvailability } from "./shoeEvidence";
 
-export const SHOE_EDITORIAL_VERSION = "2026-09-26.1";
+export const SHOE_EDITORIAL_VERSION = "2026-10-25.1";
 export const SHOE_METHODOLOGY =
-  "Specification-based buying guidance, not a hands-on review. Running Warehouse is our primary specification source. Categories and buying considerations are editorial interpretations, not measured performance. We do not invent comfort scores, durability mileage, fit tests or race-time gains.";
+  "Specification-based buying guidance, not a hands-on review. Running Warehouse is our preferred specification source when it lists a model; otherwise we link the manufacturer or a named specialist source. Measurement sizes and methods can differ. Categories and buying considerations are editorial interpretations, not measured performance. We do not invent comfort scores, durability mileage, fit tests or race-time gains.";
 export const shoeName = (s: Pick<RunningShoe, "brand" | "model">) =>
   `${s.brand} ${s.model}`;
 export const shoeUrl = (s: Pick<RunningShoe, "slug">) =>
@@ -29,23 +29,27 @@ export function evidenceDate(
 export function shoeEvidence(s: RunningShoe) {
   const sourceUrl = safeShoeSource(s.sourceUrl) || null;
   const checked = evidenceDate(s.lastVerified);
-  const primary =
-    !!sourceUrl &&
-    new URL(sourceUrl).hostname === "www.runningwarehouse.com" &&
-    s.dataSource === "running_warehouse" &&
-    !!checked;
+  const host = sourceUrl ? new URL(sourceUrl).hostname : null;
+  const manufacturerHosts: Record<string,string> = {
+    asics: "www.asics.com",
+    lems: "www.lemsshoes.com",
+    reebok: "www.reebok.com",
+    saucony: "www.saucony.com",
+  };
+  const retailer = host === "www.runningwarehouse.com" && s.dataSource === "running_warehouse";
+  const manufacturer = host === manufacturerHosts[s.brand.toLowerCase()] && s.dataSource === "manufacturer";
+  const specialist = host === "www.doctorsofrunning.com" && s.dataSource === "doctors_of_running";
+  const primary = !!checked && (retailer || manufacturer || specialist);
   return {
     status: primary ? "source_checked" : "historical_unverified",
     sourceUrl,
     checked,
-    sourceName: primary
-      ? "Running Warehouse"
-      : sourceUrl
-        ? new URL(sourceUrl).hostname
-        : null,
-    measurementBasis: primary
+    sourceName: retailer ? "Running Warehouse" : manufacturer ? s.brand : specialist ? "Doctors of Running" : host,
+    measurementBasis: retailer
       ? "One men's/unisex US 9 shoe, ounces; stack/drop in millimetres"
-      : "Measurement size and source comparability not verified",
+      : manufacturer || specialist
+        ? "Manufacturer or reviewer nominal specifications; measurement size is noted in the model description when available and may differ from other sources"
+        : "Measurement size and source comparability not verified",
     priceBasis:
       "Recorded USD price; may be colorway-specific or clearance. Not MSRP, a live quote or a stock guarantee.",
     handsOnTested: false,
@@ -179,7 +183,9 @@ export function buildComparisonGuide(a: RunningShoe, b: RunningShoe) {
     ae = shoeEvidence(a),
     be = shoeEvidence(b);
   const comparable =
-    ae.status === "source_checked" && be.status === "source_checked";
+    ae.status === "source_checked" && be.status === "source_checked" &&
+    ((a.dataSource === "running_warehouse" && b.dataSource === "running_warehouse") ||
+      (a.dataSource === "manufacturer" && b.dataSource === "manufacturer" && a.brand === b.brand));
   const sameSeries =
     a.brand === b.brand && !!a.seriesName && a.seriesName === b.seriesName;
   const differences: Section[] = [];
@@ -197,7 +203,9 @@ export function buildComparisonGuide(a: RunningShoe, b: RunningShoe) {
         av == null || bv == null
           ? "A value is unpublished, so no numerical difference is asserted."
           : !comparable
-            ? "At least one record is historical or lacks comparable source evidence; do not treat this as a verified difference."
+            ? ae.status === "historical_unverified" || be.status === "historical_unverified"
+              ? "At least one value comes from a historical, unverified listing; do not treat this as a like-for-like measured difference."
+              : "The sources use different measurement bases; do not treat this as a like-for-like measured difference."
             : av === bv
               ? "The source-checked values are the same."
               : `The recorded difference is ${Math.abs(av - bv)
@@ -213,7 +221,7 @@ export function buildComparisonGuide(a: RunningShoe, b: RunningShoe) {
     a.availability === "upcoming" || b.availability === "upcoming"
       ? `At least one model is upcoming. Shortlist an available, well-fitting shoe for an imminent race; wait for the unreleased model’s confirmed stock and missing specifications before treating it as an upgrade.`
       : !comparable
-        ? `There is not enough comparable, verified evidence to name a winner between ${an} and ${bn}. Use the historical values as research leads, then confirm the source and try the fit.`
+        ? `There is not enough like-for-like measurement evidence to name a winner between ${an} and ${bn}. Check each linked source and try the fit before choosing.`
         : `Choose between ${an} and ${bn} by the session you need it for, fit and current price—not by assuming that lighter, newer or more expensive means better.`;
   const sections: Section[] = [
     {

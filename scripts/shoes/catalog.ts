@@ -6,6 +6,18 @@ import { validateShoeData } from '../../server/shoe-pipeline';
 export type CatalogShoe = Record<string, any> & { slug: string; sourceUrl: string; brand: string; model: string };
 export type CatalogComparison = { pair: string[]; type: 'evolution' | 'category_rival' | 'popular'; differences: string[]; verdict: string };
 export type Catalog = { verifiedAt: string; policy: string; shoes: CatalogShoe[]; comparisons: (string[] | CatalogComparison)[] };
+const manufacturerHosts: Record<string,string> = {
+  asics: 'www.asics.com',
+  lems: 'www.lemsshoes.com',
+  reebok: 'www.reebok.com',
+  saucony: 'www.saucony.com',
+};
+function hasPrimaryEvidence(shoe: CatalogShoe, url: URL): boolean {
+  if (url.protocol !== 'https:' || url.username || url.password) return false;
+  if (url.hostname === 'www.runningwarehouse.com') return shoe.dataSource === 'running_warehouse';
+  if (url.hostname === 'www.doctorsofrunning.com') return shoe.dataSource === 'doctors_of_running';
+  return shoe.dataSource === 'manufacturer' && url.hostname === manufacturerHosts[shoe.brand.toLowerCase()];
+}
 const fields = ['brand','model','slug','seriesName','versionNumber','category','weight','availability','availableFrom','heelStackHeight','forefootStackHeight','heelToToeDrop','cushioningLevel','stability','hasCarbonPlate','hasSuperFoam','price','bestFor','releaseYear','description','sourceUrl','dataSource','lastVerified','durabilityRating','responsivenessRating','comfortRating'];
 const sqlName = (name: string) => '"' + name.replace(/[A-Z]/g, c => '_' + c.toLowerCase()) + '"';
 export function literal(value: unknown): string {
@@ -21,7 +33,7 @@ export function validateCatalog(catalog: Catalog) {
     const result = validateShoeData(shoe);
     if (!result.valid) throw new Error(`${shoe.slug}: ${result.errors.join('; ')}`);
     const url = new URL(shoe.sourceUrl);
-    if (url.protocol !== 'https:' || url.hostname !== 'www.runningwarehouse.com' || url.username || url.password || shoe.dataSource !== 'running_warehouse') throw new Error('Running Warehouse primary evidence required');
+    if (!hasPrimaryEvidence(shoe, url)) throw new Error('Matching primary retailer, manufacturer or specialist source evidence required');
     const name = (shoe.brand + shoe.model).toLowerCase().replace(/[^a-z0-9]/g, '');
     if (!/^[a-z0-9-]+$/.test(shoe.slug) || slugs.has(shoe.slug) || names.has(name)) throw new Error('Duplicate or invalid model identity');
     for (const key of ['durabilityRating','responsivenessRating','comfortRating']) if (shoe[key] != null) throw new Error('This batch has no independently verified wear-test ratings');
@@ -46,7 +58,7 @@ export function validateCatalog(catalog: Catalog) {
 /** Generate a reviewed SQL artifact, never connects to a database or enriches with invented scores. */
 export function catalogStatements(catalog: Catalog): string[] {
   validateCatalog(catalog);
-  const sql = ['-- Generated from a reviewed Running Warehouse manifest. Run as one transaction after the shoe-evidence migration.', 'CREATE TABLE "_shoe_catalog_import_guard" (ok INTEGER NOT NULL CHECK(ok=1));'];
+  const sql = ['-- Generated from a reviewed shoe manifest. Run as one transaction after the shoe-evidence migration.', 'CREATE TABLE "_shoe_catalog_import_guard" (ok INTEGER NOT NULL CHECK(ok=1));'];
   for (const shoe of catalog.shoes) {
     // A same-name legacy row under a different slug needs human reconciliation, not a duplicate.
     sql.push(`INSERT INTO "_shoe_catalog_import_guard" SELECT CASE WHEN EXISTS(SELECT 1 FROM running_shoes WHERE lower(brand)=lower(${literal(shoe.brand)}) AND lower(model)=lower(${literal(shoe.model)}) AND (slug IS NULL OR slug<>${literal(shoe.slug)})) THEN 0 ELSE 1 END;`);
@@ -92,5 +104,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     if (!process.argv[index+1]) throw new Error('--out requires a filename');
     writeFileSync(process.argv[index+1], sql);
   }
-  console.log(JSON.stringify({ dryRun: true, shoes: catalog.shoes.length, comparisons: catalog.comparisons.length, source: 'Running Warehouse', generatedSql: index === -1 ? null : process.argv[index+1], databaseChanged: false }));
+  console.log(JSON.stringify({ dryRun: true, shoes: catalog.shoes.length, comparisons: catalog.comparisons.length, source: 'reviewed primary evidence', generatedSql: index === -1 ? null : process.argv[index+1], databaseChanged: false }));
 }

@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { catalogSql, validateCatalog, literal, type Catalog } from './catalog';
 import { normalizeShoeData, calculateResilienceScore, generateMileageEstimate } from '../../server/shoe-pipeline';
 import { averageShoeRating, shoeNumber, shoeBoolean, ratedHigher, safeShoeSource, canRecommendShoe, shoeAvailability } from '../../shared/shoeEvidence';
+import { shoeEvidence } from '../../shared/shoeEditorial';
 
 const manifest = JSON.parse(readFileSync('data/shoes/2026-09-26.json','utf8')) as Catalog;
 const migration = readFileSync('migrations/20260926_shoe_evidence.sql','utf8');
@@ -100,10 +101,43 @@ test('conflicting reimport fails and the caller can roll back atomically', () =>
 });
 test('source and duplicate guards fail closed; SQL strings escape apostrophes', () => {
   const bad=structuredClone(manifest); bad.shoes[0].sourceUrl='https://example.com/shoe';
-  assert.throws(()=>validateCatalog(bad),/Running Warehouse/);
+  assert.throws(()=>validateCatalog(bad),/primary retailer, manufacturer or specialist source/);
   const dup=structuredClone(manifest); dup.shoes.push(dup.shoes[0]); assert.throws(()=>validateCatalog(dup),/Duplicate/);
   assert.equal(literal("runner's shoe"),"'runner''s shoe'");
 });
+const delta = JSON.parse(readFileSync('data/shoes/2026-10-25-delta-reviewed.json','utf8')) as Catalog;
+test('delta imports eleven shoes and fifteen comparisons directly into existing catalog', () => {
+  const db=fixture(); db.exec('BEGIN'); db.exec(migration); db.exec('COMMIT');
+  const fresh = new Set(delta.shoes.map(s=>s.slug));
+  const existing = new Set(delta.comparisons.flatMap(c=>Array.isArray(c)?c:c.pair).filter(s=>!fresh.has(s)));
+  let id=1100;
+  for (const slug of existing) if (slug !== 'saucony-endorphin-pro-5') db.exec(`INSERT INTO running_shoes(id,brand,model,slug,category,heel_to_toe_drop,cushioning_level,stability,price,best_for) VALUES(${++id},'Fixture',${literal(slug)},${literal(slug)},'daily_trainer',8,'medium','neutral',150,'["easy_runs"]');`);
+  const oldCount=db.prepare('SELECT count(*) n FROM running_shoes').get()?.n as number;
+  db.exec('BEGIN'); db.exec(catalogSql(delta)); db.exec('COMMIT');
+  assert.equal(db.prepare('SELECT count(*) n FROM running_shoes').get()?.n,oldCount+11);
+  assert.equal(db.prepare('SELECT count(*) n FROM shoe_comparisons').get()?.n,16);
+  assert.equal(db.prepare("SELECT count(*) n FROM sqlite_master WHERE name='_shoe_catalog_import_guard'").get()?.n,0);
+  assert.equal(db.prepare("SELECT weight FROM running_shoes WHERE slug='asics-bloomstride'").get()?.weight,null);
+  assert.equal(db.prepare("SELECT heel_stack_height FROM running_shoes WHERE slug='reebok-speedshifter'").get()?.heel_stack_height,null);
+  assert.equal(db.prepare("SELECT weight FROM running_shoes WHERE slug='asics-gel-slowcush'").get()?.weight,10.1);
+  const before=db.prepare('SELECT * FROM running_shoes').all();
+  db.exec('BEGIN'); db.exec(catalogSql(delta)); db.exec('COMMIT');
+  assert.deepEqual(db.prepare('SELECT * FROM running_shoes').all(),before);
+  assert.equal(db.prepare('SELECT count(*) n FROM shoe_comparisons').get()?.n,16);
+  assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(),[]);
+  db.close();
+});
+test('manufacturer and specialist evidence is checked only for matching hosts', () => {
+  validateCatalog(delta);
+  const wrong=structuredClone(delta);
+  wrong.shoes.find(s=>s.slug==='lems-zenspeed-lite')!.sourceUrl='https://www.saucony.com/en/echelon-11/61273M.html';
+  assert.throws(()=>validateCatalog(wrong),/primary retailer, manufacturer or specialist source/);
+  const bloom=delta.shoes.find(s=>s.slug==='asics-bloomstride')!;
+  assert.equal(shoeEvidenceForTest(bloom),'source_checked');
+});
+function shoeEvidenceForTest(shoe: Catalog['shoes'][number]) {
+  return shoeEvidence({...shoe,lastVerified:new Date(delta.verifiedAt)} as any).status;
+}
 test('unknown evidence stays unknown in normalization and presentation', () => {
   const shoe=normalizeShoeData({ ...manifest.shoes[0], heelStackHeight:null, forefootStackHeight:null } as any);
   assert.equal(shoe.durabilityRating,null); assert.equal(shoe.heelStackHeight,null);
