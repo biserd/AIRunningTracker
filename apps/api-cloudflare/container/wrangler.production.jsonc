@@ -35,8 +35,8 @@
     "COACH_BINDING_CALLBACK_SECRET","COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2","COACH_AGENT_WEBHOOK_URL",
     "OPENAI_API_KEY","CLOUDFLARE_EMAIL_API_TOKEN","STRAVA_CLIENT_SECRET",
     "VITE_STRAVA_CLIENT_ID","STRIPE_SECRET_KEY","VITE_STRIPE_PUBLIC_KEY","STRAVA_SUBSCRIPTION_ID"] },
-  // Verified public SEO and agent discovery release 9885567: promote the immutable staging image.
-  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:b3de29efd4cb9f5271f82bd88e4f785fbacaa29c1ad05ab56f54fab38f27aa45",
+  // Reviewed October shoe delta release a4012a0: promote the immutable staging image.
+  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:9cf6b12e0b708323ac38bf32cfb80a03911fb666619207796e39e8e8f23325bf",
     "instance_type":"standard-1","max_instances":2 }],
   "durable_objects": { "bindings": [{ "name":"WEB","class_name":"RunAnalyticsProduction" }] },
   "migrations": [{ "tag":"v1","new_sqlite_classes":["RunAnalyticsProduction"] }],

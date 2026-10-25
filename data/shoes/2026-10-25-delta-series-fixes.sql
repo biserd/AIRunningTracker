@@ -9,3 +9,8 @@ WHERE slug IN ('asics-gel-nimbus-25','asics-gel-nimbus-26')
 
 UPDATE running_shoes SET series_name='Gel Nimbus'
 WHERE slug='asics-gel-nimbus-27' AND brand='ASICS' AND series_name='GEL-Nimbus';
+
+-- Keep comparison-hub titles aligned with the normalized brand spelling.
+UPDATE shoe_comparisons SET title='ASICS Gel Kayano 33 vs ASICS Gel-Kayano 31'
+WHERE slug='asics-gel-kayano-33-vs-asics-gel-kayano-31'
+  AND title='ASICS Gel Kayano 33 vs Asics Gel-Kayano 31';
