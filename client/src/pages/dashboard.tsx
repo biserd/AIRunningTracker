@@ -232,7 +232,7 @@ export default function Dashboard() {
           ? "Your connection is restored. Your one-time Free sync has already been used; an eligible trial or Premium subscription is needed to sync new runs."
           : urlParams.get('sync') === 'queued'
           ? "Your connection is restored and an activity sync has been queued. Runs will appear as it finishes."
-          : "Your connection is restored, but automatic sync could not be confirmed. Use Sync Activities to check your sync access and retry.",
+          : "Your connection is restored, but automatic sync could not be confirmed. Please contact support if your runs do not appear.",
       });
       // Clear URL parameters and refresh data
       window.history.replaceState({}, document.title, window.location.pathname);
