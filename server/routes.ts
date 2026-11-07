@@ -6,6 +6,8 @@ import crypto from "crypto";
 import { storage, RUNNING_ACTIVITY_TYPES } from "./storage";
 import { canRecommendShoe } from "@shared/shoeEvidence";
 import { stravaService } from "./services/strava";
+import { registerWebStravaConnect, webStravaClientId } from "./services/webStravaConnect";
+import { getJwtSecret } from "./config/security";
 import { stravaClient } from "./services/stravaClient";
 import { jobQueue, createListActivitiesJob, createHydrateActivityJob, metrics } from "./services/queue";
 import { aiService } from "./services/ai";
@@ -2024,10 +2026,10 @@ ${allPages.map(page => `  <url>
   // "Continue with Strava" flow). Without it, falls back to the normal
   // web cookie + redirect to /dashboard.
   app.get("/api/auth/strava-login", async (req, res) => {
-    const clientId = process.env.STRAVA_CLIENT_ID || process.env.VITE_STRAVA_CLIENT_ID;
-    if (!clientId) {
-      return res.status(500).json({ message: "Strava client ID not configured" });
-    }
+    let clientId: string;
+    try { clientId = webStravaClientId(); }
+    catch { return res.status(503).json({ message: "Strava sign-in is temporarily unavailable. Please try again later." }); }
+    res.set("Cache-Control", "no-store");
     const origin = `${req.protocol}://${req.get('host')}`;
     const redirectUri = `${origin}/auth/strava/login/callback`;
     // Generate a cryptographically secure random state to prevent CSRF.
@@ -6119,38 +6121,18 @@ ${allPages.map(page => `  <url>
     }
   });
 
-  // Strava OAuth callback handler
-  app.get("/strava/callback", async (req, res) => {
-    try {
-      const { code, state } = req.query;
-      
-      if (!code || !state) {
-        return res.redirect("/?error=missing_params");
-      }
-
-      // Parse state - may include "_audit" suffix for tracking source
-      const stateStr = state as string;
-      const isFromAudit = stateStr.endsWith('_audit');
-      const userIdStr = isFromAudit ? stateStr.replace('_audit', '') : stateStr;
-      const userId = parseInt(userIdStr);
-      
-      if (isNaN(userId)) {
-        return res.redirect("/?error=invalid_user");
-      }
-
-      const tokenData = await stravaService.exchangeCodeForTokens(code as string);
-      
-      await storage.updateUser(userId, {
-        stravaAccessToken: tokenData.access_token,
-        stravaRefreshToken: tokenData.refresh_token,
-        stravaAthleteId: tokenData.athlete.id.toString(),
-        stravaConnected: true,
-        stravaHasWriteScope: true,
-      });
-
-      // Trigger initial activity sync after Strava connection.
-      // Free users get exactly one sync ever: if they've already had it (e.g.
-      // reconnecting Strava), skip; otherwise cap their initial pull at 20.
+  // Browser reconnect uses runtime configuration, an authenticated start and
+  // signed, expiring, browser-bound state. Never accept a plain account ID.
+  registerWebStravaConnect(app, {
+    authenticate: authenticateJWT,
+    clientId: () => webStravaClientId(),
+    signingSecret: getJwtSecret,
+    getUser: id => storage.getUser(id),
+    findAthlete: id => storage.getUserByStravaAthleteId(id),
+    exchange: code => stravaService.exchangeCodeForTokens(code),
+    save: (id, connection) => storage.updateUser(id, connection),
+    afterConnect: async userId => {
+      let sync: "queued" | "upgrade_required" | "unavailable" = "unavailable";
       try {
         const connectedUser = await storage.getUser(userId);
         if (connectedUser && canSyncFromStrava(connectedUser)) {
@@ -6160,8 +6142,10 @@ ${allPages.map(page => `  <url>
             200
           );
           await jobQueue.addJob(createListActivitiesJob(userId, 1, 200, cap));
+          sync = "queued";
           console.log(`[Strava] Queued initial activity sync for user ${userId} (cap=${cap})`);
-        } else {
+        } else if (connectedUser) {
+          sync = "upgrade_required";
           console.log(`[Strava] Skipped resync for free user ${userId} on reconnect (already used one-time sync)`);
         }
       } catch (syncError) {
@@ -6176,13 +6160,8 @@ ${allPages.map(page => `  <url>
         console.error('Drip campaign trigger failed in Strava callback:', campaignError);
       }
 
-      // Always land on the dashboard after Strava connect: the audit-report
-      // funnel was retired with the free-tier pivot.
-      res.redirect("/dashboard?connected=true");
-    } catch (error: any) {
-      console.error('Strava callback error:', error);
-      res.redirect("/dashboard?error=connection_failed");
-    }
+      return sync;
+    },
   });
 
   // Manual Strava activity sync endpoint

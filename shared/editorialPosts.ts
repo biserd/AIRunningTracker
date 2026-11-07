@@ -39,9 +39,9 @@ export const editorialPosts: EditorialPost[] = [
       { question: "Can the comparison tell me which shoe prevents injury?", answer: "No. A specification table or catalogue match cannot establish an individual injury outcome." },
     ],
     sources: [
-      { label: "Running Warehouse: How to Choose Running Shoes (checked November 7, 2026)", href: "https://www.runningwarehouse.com/learningcenter/gear_guides/footwear/how_to_pick_running_shoes.html" },
-      { label: "Running Warehouse: Running Shoe Size and Fit Guide (checked November 7, 2026)", href: "https://www.runningwarehouse.com/learningcenter/gear_guides/footwear/fittips.html" },
-      { label: "Running Warehouse: What Is Stack Height? (checked November 7, 2026)", href: "https://www.runningwarehouse.com/learningcenter/gear_guides/footwear/stack-height.html" },
+      { label: "RunAnalytics: build a running-shoe shortlist", href: "/tools/shoe-finder" },
+      { label: "RunAnalytics: compare two running shoes", href: "/tools/shoe-compare" },
+      { label: "RunAnalytics: plan a useful shoe rotation", href: "/tools/rotation-planner" },
       { label: "RunAnalytics: source dates and specifications in the comparison catalogue", href: "/tools/shoes/compare" },
     ],
   },

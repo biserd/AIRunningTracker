@@ -19,9 +19,11 @@ import { Input } from "@/components/ui/input";
 import PushNotificationToggle from "@/components/PushNotificationToggle";
 import { TelegramTrialOffer } from "@/components/TelegramTrialOffer";
 import { TelegramConnectionCard } from "@/components/TelegramConnectionCard";
+import { useStravaConnect } from "@/hooks/useStravaConnect";
 
 function SettingsPageContent() {
   const { user } = useAuth();
+  const stravaWriteConnect = useStravaConnect(true);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { subscription, plan, status, isPremium, isLoading: subscriptionLoading } = useSubscription();
@@ -564,18 +566,14 @@ function SettingsPageContent() {
                     This is a one-time authorization.
                   </p>
                   <Button 
-                    onClick={() => {
-                      const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID || "default_client_id";
-                      const redirectUri = `${window.location.origin}/strava/callback`;
-                      const scope = "read,activity:read_all,activity:write";
-                      const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&approval_prompt=force&scope=${scope}&state=${user!.id}`;
-                      window.location.href = stravaAuthUrl;
-                    }}
+                    onClick={stravaWriteConnect.connect}
+                    disabled={stravaWriteConnect.isConnecting}
+                    aria-busy={stravaWriteConnect.isConnecting}
                     className="bg-[#FC5200] hover:bg-[#e04900]"
                     data-testid="button-reauth-strava"
                   >
                     <Share2 className="h-4 w-4 mr-2" />
-                    Grant Write Permission
+                    {stravaWriteConnect.isConnecting ? "Opening Strava…" : "Grant Write Permission"}
                   </Button>
                 </div>
               )}

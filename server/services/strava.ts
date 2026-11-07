@@ -52,6 +52,7 @@ interface StravaActivity {
 interface StravaTokenResponse {
   access_token: string;
   refresh_token: string;
+  scope?: string;
   athlete: {
     id: number;
     firstname: string;
@@ -65,11 +66,12 @@ export class StravaService {
   private clientSecret: string;
 
   constructor() {
-    this.clientId = process.env.STRAVA_CLIENT_ID || process.env.VITE_STRAVA_CLIENT_ID || "default_client_id";
-    this.clientSecret = process.env.STRAVA_CLIENT_SECRET || "default_secret";
+    this.clientId = (process.env.STRAVA_CLIENT_ID || process.env.VITE_STRAVA_CLIENT_ID || "").trim();
+    this.clientSecret = process.env.STRAVA_CLIENT_SECRET || "";
   }
 
   async exchangeCodeForTokens(code: string): Promise<StravaTokenResponse> {
+    if (!/^[1-9]\d*$/.test(this.clientId) || !this.clientSecret) throw new Error("Strava connection is not configured");
     const response = await fetch('https://www.strava.com/oauth/token', {
       method: 'POST',
       headers: {

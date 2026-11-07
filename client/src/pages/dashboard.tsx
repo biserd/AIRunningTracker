@@ -27,6 +27,7 @@ import EmailCaptureModal from "@/components/EmailCaptureModal";
 import { Link } from "wouter";
 import { useFeatureAccess, useSubscription } from "@/hooks/useSubscription";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
+import { useStravaConnect } from "@/hooks/useStravaConnect";
 
 function getLocalCalendarDateKey(date: Date = new Date()) {
   return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
@@ -40,6 +41,7 @@ export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const { canAccessAICoachChat, canAccessAdvancedInsights } = useFeatureAccess();
   const { isFree } = useSubscription();
+  const stravaConnect = useStravaConnect();
   const [chartTimeRange, setChartTimeRange] = useState<string>("30days");
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [dashboardCalendarDate, setDashboardCalendarDate] = useState(getLocalCalendarDateKey);
@@ -226,33 +228,36 @@ export default function Dashboard() {
     if (urlParams.get('connected') === 'true') {
       toast({
         title: "Strava Connected!",
-        description: "Activities synced and AI insights generated successfully",
+        description: urlParams.get('sync') === 'upgrade_required'
+          ? "Your connection is restored. Your one-time Free sync has already been used; an eligible trial or Premium subscription is needed to sync new runs."
+          : urlParams.get('sync') === 'queued'
+          ? "Your connection is restored and an activity sync has been queued. Runs will appear as it finishes."
+          : "Your connection is restored, but automatic sync could not be confirmed. Use Sync Activities to check your sync access and retry.",
       });
       // Clear URL parameters and refresh data
       window.history.replaceState({}, document.title, window.location.pathname);
       queryClient.invalidateQueries({ queryKey: [`/api/dashboard/${user.id}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       queryClient.invalidateQueries({ queryKey: [`/api/activities/heatmap?range=3m`] });
       queryClient.invalidateQueries({ queryKey: [`/api/activities/heatmap?range=6m`] });
     } else if (urlParams.get('error')) {
       toast({
         title: "Connection Failed",
-        description: "Failed to connect to Strava. Please try again.",
+        description: urlParams.get('error') === 'strava_already_connected'
+          ? "This Strava athlete is linked to a different RunAnalytics account. Sign in to that account or contact support."
+          : urlParams.get('error') === 'strava_read_permission'
+          ? "Activity-read permission was not granted. Reconnect and allow activity access to sync runs."
+          : urlParams.get('error') === 'strava_state_invalid'
+          ? "This connection request expired or could not be verified. Press Connect with Strava to start again."
+          : urlParams.get('error') === 'strava_denied'
+          ? "Strava authorization was cancelled. Your saved running data is unchanged."
+          : "Failed to connect to Strava. Please try again.",
         variant: "destructive",
       });
       // Clear URL parameters
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, [user?.id]);
-
-  const handleStravaConnect = () => {
-    const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID || "default_client_id";
-    const redirectUri = `${window.location.origin}/strava/callback`;
-    const scope = "read,activity:read_all,activity:write";
-    
-    const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&approval_prompt=force&scope=${scope}&state=${user.id}`;
-    
-    window.location.href = stravaAuthUrl;
-  };
 
   const handleSyncActivities = async () => {
     if (!user) return;
@@ -521,7 +526,8 @@ export default function Dashboard() {
         <div className="mb-6 flex flex-wrap gap-4">
           {!dashboardData?.user?.stravaConnected ? (
             <StravaConnectButton 
-              onClick={handleStravaConnect}
+              onClick={stravaConnect.connect}
+              loading={stravaConnect.isConnecting}
               variant="orange"
               size="default"
             />

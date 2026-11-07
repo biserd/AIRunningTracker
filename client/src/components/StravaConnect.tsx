@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 interface StravaConnectButtonProps {
   onClick: () => void;
   disabled?: boolean;
+  loading?: boolean;
   variant?: "orange" | "white";
   size?: "default" | "sm" | "lg";
 }
@@ -10,6 +11,7 @@ interface StravaConnectButtonProps {
 export function StravaConnectButton({ 
   onClick, 
   disabled = false, 
+  loading = false,
   variant = "orange",
   size = "default" 
 }: StravaConnectButtonProps) {
@@ -30,7 +32,8 @@ export function StravaConnectButton({
     <Button
       mutation
       onClick={onClick}
-      disabled={disabled}
+      disabled={disabled || loading}
+      aria-busy={loading}
       className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]}`}
       data-testid="strava-connect-button"
     >
@@ -42,7 +45,7 @@ export function StravaConnectButton({
       >
         <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.599h4.172L10.463 0l-7 13.828h4.172"/>
       </svg>
-      Connect with Strava
+      {loading ? "Opening Strava…" : "Connect with Strava"}
     </Button>
   );
 }

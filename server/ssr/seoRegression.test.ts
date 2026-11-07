@@ -132,7 +132,14 @@ test("new editorial guides remain substantive, sourced, and internally connected
     const internalArticleLinks = [...post.sections.map((section) => section.html).join(" ").matchAll(/href="\/blog\/[^"#]+/g)];
 
     assert.ok(wordCount >= 900, `${post.slug}: at least 900 words, found ${wordCount}`);
-    assert.ok(externalSources.length >= 3, `${post.slug}: at least three primary or authoritative sources`);
+    if (post.slug === "how-to-compare-running-shoes") {
+      assert.equal(externalSources.length, 0, "buying guide has internal links only");
+      assert.ok(post.sources.length >= 3);
+      assert.ok(post.sources.every(source => source.href.startsWith("/tools/")));
+      assert.doesNotMatch(post.sections.map(section => section.html).join(" "), /href=["']https?:/);
+    } else {
+      assert.ok(externalSources.length >= 3, `${post.slug}: at least three primary or authoritative sources`);
+    }
     assert.ok(internalArticleLinks.length >= 2, `${post.slug}: at least two contextual blog links`);
   }
 });
