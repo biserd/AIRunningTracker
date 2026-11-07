@@ -770,7 +770,7 @@ export function renderComparisonPage(slug: string, comparison: ComparisonData): 
 
         <div class="ssr-cta">
           <h3>Not sure which is right for you?</h3>
-          <p>Use our AI-powered <a href="/tools/shoe-finder">shoe finder</a> for personalized recommendations, or build a smart shoe rotation with the <a href="/tools/rotation-planner">rotation planner</a>.</p>
+          <p>Use the <a href="/tools/shoe-finder">shoe finder</a> to shortlist catalogue options by goal, weight and support preference, or explore shoe roles with the <a href="/tools/rotation-planner">rotation planner</a>. Check fit and current specifications before buying.</p>
         </div>
       </article>
     </main>

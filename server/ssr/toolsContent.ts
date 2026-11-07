@@ -207,25 +207,25 @@ export const toolsContent: ToolContent[] = [
   {
     slug: "rotation-planner",
     title: "Running Shoe Rotation Planner | Build Your Shoe Lineup",
-    description: "Plan the perfect running shoe rotation. Get AI recommendations for daily trainers, speed shoes & race day options.",
+    description: "Explore shoe roles for daily mileage, long runs, speed and races using your weight and weekly mileage. Compare options and save a rotation to review.",
     keywords: "shoe rotation, running shoe lineup, multiple running shoes, shoe rotation planner, running shoe strategy",
     features: [
-      "Build your optimal shoe rotation",
+      "Explore a suggested shoe rotation",
       "Get recommendations for each workout type",
-      "Track mileage on each pair",
-      "Know when to replace each shoe",
+      "Compare recorded shoe specifications",
+      "Save a text copy on this device",
       "Balance cushion, speed, and durability"
     ],
-    howItWorks: "Tell us your weekly training structure (easy runs, tempos, long runs, intervals, races). We'll recommend a rotation strategy and specific shoe models for each purpose, balancing performance and durability across your lineup.",
+    howItWorks: "Enter your weight, weekly mileage and preferred unit. Review suggested models for different running roles, compare their specifications and save a text copy. This tool does not track mileage on your individual pairs or determine when they need replacing.",
     benefits: [
-      "Extend shoe lifespan with strategic rotation",
+      "Identify gaps in your current shoe setup",
       "Match shoes to workout purposes",
-      "Reduce injury risk through variety",
-      "Optimize performance for each session"
+      "Avoid buying a pair for every suggested role",
+      "Review fit and current price before buying"
     ],
     faq: [
       { question: "How many shoes do I need?", answer: "Most runners benefit from 2-3 shoes: a daily trainer for easy/long runs, a lightweight shoe for speed work, and optionally a racing shoe." },
-      { question: "Do carbon plated shoes make you faster?", answer: "Studies show 2-4% improvement for most runners. They're best reserved for races and key workouts due to lower durability." }
+      { question: "Do I need a carbon-plated shoe?", answer: "No. A plate is one part of a shoe's construction, not a guarantee of a faster race. Consider fit, intended session, experience and budget before adding a racing shoe." }
     ]
   }
 ];

@@ -339,13 +339,13 @@ export async function registerRoutes(app: Express, runtime?: { schedulerDatabase
       keywords: "running shoes database, compare running shoes, best running shoes 2026"
     },
     "/tools/shoe-finder": {
-      title: "Running Shoe Finder | Personalized Shoe Recommendations | RunAnalytics",
-      description: "Find your perfect running shoe based on foot type, running style & goals. AI-powered recommendations from 100+ models.",
+      title: "Running Shoe Finder: Build a Shortlist in 3 Questions",
+      description: "Find running-shoe options by goal, body weight and support preference. Review catalogue matches, compare specifications and check fit before buying.",
       keywords: "running shoe finder, best running shoes, shoe recommendations"
     },
     "/tools/rotation-planner": {
       title: "Running Shoe Rotation Planner | Build Your Shoe Lineup | RunAnalytics",
-      description: "Plan the perfect running shoe rotation. Get AI recommendations for daily trainers, speed shoes & race day options.",
+      description: "Explore shoe roles for daily mileage, long runs, speed and races using your weight and weekly mileage. Compare options and save a rotation to review.",
       keywords: "shoe rotation, running shoe lineup, multiple running shoes"
     },
     "/blog": {
