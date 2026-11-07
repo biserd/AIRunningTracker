@@ -14,7 +14,7 @@
 
 Primary source reads on 2026-11-07:
 
-- [RW Vaporfly 4 review](https://www.runningwarehouse.com/reviews/nike-shoe-reviews/nike-vaporfly-4.html): men's US 9 5.9 oz, 36/30 mm, 6 mm drop. Production legacy row had 6.7 oz and 32/26 mm. Apply the narrowly guarded update in `data/shoes/2026-11-07-comparison-audit.sql`.
+- [RW Vaporfly 4 review](https://www.runningwarehouse.com/reviews/nike-shoe-reviews/nike-vaporfly-4.html): men's US 9 5.9 oz, 36/30 mm, 6 mm drop. Production legacy row had 6.7 oz and 32/26 mm. Applied the narrowly guarded update in `data/shoes/2026-11-07-comparison-audit.sql`.
 - [RW Endorphin Pro 4 review](https://www.runningwarehouse.com/reviews/saucony-shoe-reviews/saucony-endorphin-pro-4.html): confirms existing 7.7 oz men's US 9, 40/32 mm, 8 mm. Add the missing citation/date; retain historical price with an explicit caveat.
 - [RW Clifton 10 review](https://www.runningwarehouse.com/reviews/HOKA-shoe-reviews/hoka-clifton-10.html): accessible, but its specification table said “Coming Soon.” Two indexed product-colourway URLs returned 404; HOKA's product page returned 403 to the scraper. Do not mark indexed excerpts as a fresh full-source check. Keep its values historical and prominently flag the unverified 32/24 mm baseline.
 - METASPEED Tokyo is a historical generic family label. RW search distinguishes Sky Tokyo and Edge Tokyo. No values or identity are silently reassigned between them.
@@ -67,3 +67,13 @@ Report offer click-through from matched `offer_clicked / offer_viewed` surfaces;
 - `scripts/verify-tool-journeys.ts` runs a headless browser against local API fixtures with real SSR/Vite UI. It exercises anonymous manual prediction, signed-in run selection, hub-to-comparison navigation, removal, zero-interval recovery, copy/save, finder-to-comparison and return events. It makes no real account, Strava, purchase or production-analytics requests.
 - Browser report/screenshots: `output/tool-journeys-20261107/`. Real Strava OAuth/sync is not recreated by that fixture; server authorization and summary query remain in their existing authenticated route.
 - Repository-wide TypeScript has existing unrelated diagnostics; inspect affected-file diagnostics and the production build separately.
+
+## Production release verification
+
+- Released 2026-11-07. Application code through `9846bcf`, staging Worker version `53377d1f-5402-40c0-870e-952f9de7d83b`, immutable image `sha256:f2a1be25a208c7d0f07f8db3fce70332b2ee7b028201f9478870dfc1fa9c7fec`.
+- Production Worker version `08142beb-cf9b-436e-b040-88f550c66449`; container application version 39, healthy with no reported errors. Previous responses during rolling replacement were not treated as release verification.
+- D1 guarded corrections changed exactly two existing rows. Final read-only counts: 253 `running_shoes`, 186 `shoe_comparisons`, unchanged from baseline. Public API exposes 251 canonical models after existing alias consolidation. No database was created and no rows were deleted.
+- Final focused suite: 18 passing tests including public SSR, catalogue safety, attribution/privacy and fueling arithmetic; all funnel-event checks pass. Eight local fixture browser journeys pass with no browser errors. Vite production build and backend bundle pass. The existing repository-wide TypeScript baseline remains 34 diagnostics, with none newly reported in the tool changes.
+- `scripts/verify-tool-release-live.ts` passes against production: six tool pages plus the new guide, single titles/H1s/canonicals, indexability, stateless prediction, authenticated-only Strava selection, legacy chooser redirect, explained recommendations, invalid-weight rejection, corrected specifications/dates and guide sitemap inclusion. It creates no production accounts, syncs, purchases or synthetic analytics events.
+- The blog retains its existing crawler-HTML/visitor-SPA behavior. Both were checked: crawler HTML contains the full new guide; a fresh mobile-sized browser renders the visitor guide with its worked decision, 17 tool links and no horizontal overflow. Analytics requests were blocked during that browser check. Screenshot: `output/tool-journeys-20261107/buying-guide-live-mobile.png`.
+- Real post-release activation, paid conversion and return uplift remain unmeasured until real traffic accumulates. Real Strava OAuth and sync were not performed by the automated fixture tests.
