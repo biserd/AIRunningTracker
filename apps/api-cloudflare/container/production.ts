@@ -19,11 +19,11 @@ export class RunAnalyticsProduction extends Container<ProductionEnv> {
   envVars = productionEnvironment(this.env);
   async ensureD1Runtime(): Promise<void> {
     await this.ctx.blockConcurrencyWhile(async () => {
-      if (await this.ctx.storage.get('web-strava-reconnect-final-399b02e5-rollout-complete')) return;
+      if (await this.ctx.storage.get('web-whatsapp-settings-f15eab52-rollout-complete')) return;
       // An image rollout can retain an already-running process and its old env.
       // Stop it once before accepting D1 traffic; external database data is untouched.
       await this.destroy();
-      await this.ctx.storage.put('web-strava-reconnect-final-399b02e5-rollout-complete', true);
+      await this.ctx.storage.put('web-whatsapp-settings-f15eab52-rollout-complete', true);
     });
   }
 }
