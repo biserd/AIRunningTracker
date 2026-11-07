@@ -6,6 +6,8 @@ Delivery must stay OFF (`drip_campaigns_enabled=false`) with dry-run ON until th
 
 The owner subsequently expanded this sequence to include `unknown` consent as well as recorded opt-ins. Explicit opt-outs, unsubscribes and delivery suppression still win. Stored consent values are never rewritten. This applies only to this signup sequence; other marketing flows keep their existing consent requirements.
 
+Audience update deployed and verified at `2026-11-07T21:01:18Z`: runtime `9d3c3ba`, container version 44, image `sha256:d7c4f4180da37d7ea6292f7c1667ae3212f36f1ce09bee8fa7c2da028ce197e9`, Worker `84a2bde5-6825-4f17-ae5d-f5d355e6019e`. Admin shows the expanded audience policy. Twenty targeted tests and the real-ORM synthetic D1 test passed, including unknown-consent enrollment without modifying consent and unchanged opt-out/Apple/payment exclusions. Production readback confirmed delivery OFF, dry-run ON and zero campaign emails sent. No activation scripts were executed for this release.
+
 Owner-requested sequence, using the existing Cloudflare Email Service transport. These are promotional follow-ups, not transactional messages. Cloudflare's published transactional-only restriction remains a provider/account risk; the feature flag records application configuration, not Cloudflare approval. Do not set `CLOUDFLARE_CHECKOUT_NOTICE_POLICY_APPROVED` to represent approval of this sequence.
 
 ## Timing and audience
