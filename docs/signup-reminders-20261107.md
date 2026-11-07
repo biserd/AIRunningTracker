@@ -14,12 +14,13 @@ Owner-requested sequence, using the existing Cloudflare Email Service transport.
 
 - `signup_unpaid`, version 3, steps `DAY1`, `DAY7`, `DAY14`.
 - Due 24, 168 and 336 hours after the original signup date, not after enrollment, last visit or Strava connection.
-- Each step expires three days after its due time. Missed historical steps are skipped; accounts at least 17 days old are not backfilled.
+- Each step has a three-day grace period. A deadline falling outside permitted sending hours extends through the next daytime opening plus one hour, so quiet hours do not make a reminder expire overnight. Other missed historical steps are skipped.
 - Recorded opt-in or unknown consent, a usable email and a non-Premium/non-trial account qualify. Explicit opt-outs, unsubscribes, delivery suppression, admins, unknown billing state, past-due/unpaid customers and paid-through cancellations are excluded.
 - Apple entitlements are resolved again through `storage.getUser` before sending, including when the stored web plan is Free.
 - Premium conversion and unsubscribe cancel pending jobs. The recipient is rechecked after provider suppression preflight, immediately before sending.
 - Existing rollout/holdout settings are respected. Launch configuration is 100% of eligible recipients, 0% holdout and at most 25 accepted sends/hour. This is not 100% of all registered users.
-- Default quiet hours are 20:00–08:00 in the runner's timezone. No more than one job-recorded email per recipient per 24 hours.
+- Delivery is limited to 09:00–18:00 in the saved local timezone, additionally respecting custom quiet hours (default 20:00–08:00). UTC/default/missing or invalid timezone uses America/New_York for this campaign only; no profile timezone is overwritten. IANA zones and daylight-saving changes are respected. No more than one job-recorded email per recipient per 24 hours.
+- Operator-selected final holds are stored in `drip_campaigns_preserved_final_users` and require an existing pending/processing/retry `DAY14` job with the exact account-bound dedupe key. These holds survive a pause without expiring; they never override payment, opt-out, unsubscribe, suppression, rollout or one-send protections. A completed/cancelled/sent job is not reactivated. The hold reservation SQL refuses to run unless sending is OFF and dry-run ON.
 
 ## Delivery and links
 
