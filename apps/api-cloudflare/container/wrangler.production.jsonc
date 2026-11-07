@@ -39,8 +39,8 @@
     "COACH_BINDING_CALLBACK_SECRET","COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2","COACH_AGENT_WEBHOOK_URL",
     "OPENAI_API_KEY","CLOUDFLARE_EMAIL_API_TOKEN","STRAVA_CLIENT_SECRET",
     "VITE_STRAVA_CLIENT_ID","STRIPE_SECRET_KEY","VITE_STRIPE_PUBLIC_KEY","STRAVA_SUBSCRIPTION_ID"] },
-  // Landing-copy cleanup 8d30004 with Garmin history 7b75579; staging d167e8cb. Existing health and reminder controls are preserved.
-  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:df825749edd5150276fc4958514daf5f3bfa3a2583842ef3fff696fcd4568ad9",
+  // Garmin admin connection alert f636cb3; staging 47c9dfdf. Existing history, health, public copy and reminder controls are preserved.
+  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:5135108cdbb112acf0f65f11b28f201c0874084effc4cf88303f7d8a8ac7ad4f",
     "instance_type":"standard-1","max_instances":2 }],
   "durable_objects": { "bindings": [{ "name":"WEB","class_name":"RunAnalyticsProduction" }] },
   "migrations": [{ "tag":"v1","new_sqlite_classes":["RunAnalyticsProduction"] }],

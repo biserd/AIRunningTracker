@@ -15,6 +15,7 @@ export interface GarminRouteDependencies {
   config?: typeof garminConfig;
   client?: (config: ReturnType<typeof garminConfig>) => GarminClient;
   session?: (userId:number)=>Promise<string>;
+  onConnected?: (userId: number) => Promise<void>;
 }
 const unavailable: GarminStatus = { available: false, connected: false, status: 'not_connected', connectedAt: null, lastSyncAt: null, activityCount: 0 };
 export function registerGarminRoutes(app: Express, deps: GarminRouteDependencies) {
@@ -62,6 +63,9 @@ export function registerGarminRoutes(app: Express, deps: GarminRouteDependencies
         const client=provider(),tokens=await client.exchange(req.query.code,flow.verifier),identity=await client.identity(tokens.access_token);
         if(!deps.session)throw new Error('GARMIN_SIGNIN_UNAVAILABLE');
         const owner=await signin.resolve(identity,tokens,flow.consentStartedAt),token=await deps.session(owner.userId);
+        if(owner.status==='connected'&&deps.onConnected){
+          try{await deps.onConnected(owner.userId);}catch{console.error(JSON.stringify({event:'garmin_admin_notification_failed'}));}
+        }
         const nonce=randomBytes(16).toString('base64');
         res.set({'X-Robots-Tag':'noindex, nofollow','Content-Security-Policy':`default-src 'none'; script-src 'nonce-${nonce}'; base-uri 'none'; frame-ancestors 'none'`});
         return res.type('html').send(garminSigninHtml(token,flow.returnTo||(owner.isNew?'/settings?garmin=connected#garmin':'/dashboard'),nonce));
@@ -75,6 +79,12 @@ export function registerGarminRoutes(app: Express, deps: GarminRouteDependencies
       if (req.query.error || typeof req.query.code !== 'string' || !req.query.code || req.query.code.length > 4096) return res.redirect('/settings?garmin=denied');
       const tokens = await client.exchange(req.query.code, flow.verifier), identity = await client.identity(tokens.access_token);
       const status = await store.save(flow.userId, identity, tokens, flow.consentStartedAt);
+      if (status === 'connected' && deps.onConnected) {
+        // The single-use OAuth state prevents callback replay notifications.
+        // An admin-email outage must never undo a saved Garmin connection.
+        try { await deps.onConnected(flow.userId); }
+        catch { console.error(JSON.stringify({ event: 'garmin_admin_notification_failed' })); }
+      }
       return res.redirect('/settings?garmin=' + (status === 'connected' ? 'connected' : 'permission_required'));
     } catch {
       console.error(JSON.stringify({ event: 'garmin_connection_failed' }));

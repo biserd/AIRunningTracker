@@ -71,13 +71,13 @@ test('redirects are restricted and inline handoff escapes script boundaries',()=
 test('public sign-in requires consent and same origin, binds cookies and PKCE, rejects replay and provider denial',async()=>{
   const f=fixture(),app=express();app.use(express.json());
   const config:GarminConfig={clientId:'test-client',clientSecret:'private-secret',encryptionKey:key,origin:'https://aitracker.run'};
-  let exchanges=0;
+  let exchanges=0,notifications=0;
   const provider=new GarminClient(config,async(url,options)=>{
     if(String(url).includes('/oauth/token')){exchanges++;assert.equal(new URLSearchParams(String(options!.body)).get('code_verifier')?.length,43);return Response.json(tokens);}
     if(String(url).endsWith('/id'))return Response.json({userId:'login-owner'});
     return Response.json({permissions:['ACTIVITY_EXPORT']});
   });
-  registerGarminRoutes(app,{authenticate:(_req,res)=>res.sendStatus(401),store:async()=>f.store,config:()=>config,client:()=>provider,session:async userId=>'local-session-'+userId});
+  registerGarminRoutes(app,{authenticate:(_req,res)=>res.sendStatus(401),store:async()=>f.store,config:()=>config,client:()=>provider,session:async userId=>'local-session-'+userId,onConnected:async()=>{notifications++;}});
   const server=app.listen(0,'127.0.0.1');await new Promise<void>(resolve=>server.once('listening',resolve));
   const origin='http://127.0.0.1:'+(server.address() as AddressInfo).port;
   const start=(body:unknown,source='https://aitracker.run')=>fetch(origin+'/api/auth/garmin-login',{method:'POST',headers:{'Content-Type':'application/json',Origin:source},body:JSON.stringify(body)});
@@ -94,6 +94,6 @@ test('public sign-in requires consent and same origin, binds cookies and PKCE, r
     const replay=await fetch(callback,{headers:{Cookie:cookie},redirect:'manual'});assert.equal(replay.headers.get('location'),'/auth?error=garmin_failed');assert.equal(exchanges,1);
     const deniedStart=await start({activityConsent:true}),deniedCookie=deniedStart.headers.get('set-cookie')!.split(';')[0],deniedUrl=new URL((await deniedStart.json()).url);
     const denied=await fetch(origin+'/api/garmin/callback?state='+deniedUrl.searchParams.get('state')+'&error=access_denied',{headers:{Cookie:deniedCookie},redirect:'manual'});
-    assert.equal(denied.headers.get('location'),'/auth?error=garmin_denied');assert.equal(exchanges,1);
+    assert.equal(denied.headers.get('location'),'/auth?error=garmin_denied');assert.equal(exchanges,1);assert.equal(notifications,1);
   }finally{await new Promise<void>(resolve=>server.close(()=>resolve()));f.sqlite.close();}
 });
