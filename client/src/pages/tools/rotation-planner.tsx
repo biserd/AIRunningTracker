@@ -15,6 +15,7 @@ import AppHeader from "@/components/AppHeader";
 import PublicHeader from "@/components/PublicHeader";
 import type { RunningShoe } from "@shared/schema";
 import { shoeNumber } from "@shared/shoeEvidence";
+import { ToolResultActions } from "@/components/ToolResultActions";
 
 interface RotationItem {
   role: string;
@@ -79,7 +80,7 @@ export default function RotationPlannerPage() {
     <>
       <SEO
         title="Running Shoe Rotation Planner: Build Your Shoe Setup"
-        description="Get a personalized daily trainer, race shoe, and recovery shoe rotation based on your weekly mileage, weight, and goals. Extends shoe life and reduces injury risk."
+        description="Explore shoe roles for daily mileage, long runs, speed and races using your weight and weekly mileage. Compare catalogued options and save a rotation to review."
         keywords="shoe rotation, running shoe lineup, multiple running shoes, shoe rotation planner"
         url="https://aitracker.run/tools/rotation-planner"
         structuredData={{
@@ -89,7 +90,7 @@ export default function RotationPlannerPage() {
           "applicationCategory": "HealthApplication",
           "operatingSystem": "Web",
           "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-          "description": "Plan the perfect running shoe rotation. Get AI recommendations for daily trainers, speed shoes & race day options."
+          "description": "Explore a catalogue-based shoe rotation and compare options for the runs you actually do."
         }}
       />
 
@@ -105,12 +106,11 @@ export default function RotationPlannerPage() {
               </div>
               
               <h1 className="text-3xl sm:text-4xl font-bold text-charcoal mb-4">
-                Build Your Perfect Shoe Rotation
+                Plan Your Running-Shoe Rotation
               </h1>
               
               <p className="text-lg text-gray-600">
-                Get personalized recommendations for a complete shoe rotation. 
-                Different shoes for different runs keeps you injury-free and performing your best.
+                Explore catalogue options for different training roles. Start with the shoes you already own, then decide whether another pair fills a useful gap.
               </p>
             </div>
           </div>
@@ -319,8 +319,8 @@ export default function RotationPlannerPage() {
                         <Check className="h-3.5 w-3.5 text-green-600" />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">Extend Shoe Life</p>
-                        <p className="text-gray-500">Shoes last longer with rest days between runs</p>
+                        <p className="font-medium text-gray-900">Plan Each Pair's Role</p>
+                        <p className="text-gray-500">Keep a clear purpose for each pair you use</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
@@ -337,8 +337,8 @@ export default function RotationPlannerPage() {
                         <Check className="h-3.5 w-3.5 text-green-600" />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">Strengthen Your Feet</p>
-                        <p className="text-gray-500">Variety builds more resilient muscles</p>
+                        <p className="font-medium text-gray-900">Review Fit and Comfort</p>
+                        <p className="text-gray-500">Test each option on familiar runs</p>
                       </div>
                     </div>
                   </div>
@@ -347,6 +347,7 @@ export default function RotationPlannerPage() {
             </div>
           )}
 
+          {showResults && rotation?.rotation?.some(item => item.shoe) && !isLoading && <ToolResultActions source="rotation_planner_result" capability="shoe_rotation" title="My running-shoe rotation" summary={rotation.rotation.filter(item => item.shoe).map(item => `${item.role}: ${item.shoe.brand} ${item.shoe.model} — ${item.usage}. https://aitracker.run/tools/shoes/${item.shoe.slug}`).join("\n")} />}
           <div className="mt-12 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-bold text-charcoal mb-2">Find & Compare Your Next Shoe</h2>
             <p className="text-sm text-gray-500 mb-5">Once you have your rotation roles, use these tools to pick the right shoe for each slot.</p>
@@ -357,7 +358,7 @@ export default function RotationPlannerPage() {
                     <div className="w-10 h-10 rounded-lg bg-strava-orange flex items-center justify-center">
                       <Zap className="h-5 w-5 text-white" />
                     </div>
-                    <h3 className="font-semibold text-charcoal">AI Shoe Finder</h3>
+                    <h3 className="font-semibold text-charcoal">Running Shoe Finder</h3>
                   </div>
                   <p className="text-sm text-gray-600">
                     Answer 3 questions and get matched to your ideal shoe for each rotation role.
@@ -394,7 +395,7 @@ export default function RotationPlannerPage() {
                     <h3 className="font-semibold text-charcoal">Browse Full Database</h3>
                   </div>
                   <p className="text-sm text-gray-600">
-                    Explore 280+ shoes with detailed specs, AI reviews, and 2026 releases.
+                    Browse models, dated sources and specifications, with unknown fields clearly labeled.
                   </p>
                   <div className="flex items-center gap-1 mt-3 text-strava-orange text-sm font-medium">
                     <span>Browse shoes</span>

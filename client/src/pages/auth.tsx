@@ -16,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { registerSchema, type RegisterData } from "@shared/schema";
 import { sanitizeReturnTo } from "@shared/upgradeIntent";
 import { isReadOnlyStaging } from '@/lib/runtime';
+import { TOOL_OFFER_KEY } from "@/lib/toolJourney";
+import { validToolOfferSource } from "@shared/funnelEvents";
 
 type AuthMode = "signin" | "signup";
 
@@ -52,7 +54,11 @@ export default function AuthPage() {
   });
 
   const registerMutation = useMutation({
-    mutationFn: (data: RegisterData) => apiRequest("/api/auth/register", "POST", data),
+    mutationFn: (data: RegisterData) => {
+      let source: string | undefined;
+      try { const offer = JSON.parse(localStorage.getItem(TOOL_OFFER_KEY) || "null"); if (offer && Date.now() - offer.at < 7 * 86400000 && validToolOfferSource(offer.source)) source = offer.source; } catch { /* Optional attribution. */ }
+      return apiRequest("/api/auth/register", "POST", { ...data, ...(source ? { toolSource: source } : {}) });
+    },
     onSuccess: (response: any) => {
       localStorage.setItem("auth_token", response.token);
       notifyExtensionAuth(response.token, response.user || {});

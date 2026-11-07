@@ -12,17 +12,17 @@ export interface ToolContent {
 export const toolsContent: ToolContent[] = [
   {
     slug: "race-predictor",
-    title: "Race Time Predictor | Riegel Running Calculator",
-    description: "Estimate a race finish time from a recent performance using a transparent Riegel model and clearly labeled scenario range.",
+    title: "Race Predictor for Strava Runs & Manual Race Times",
+    description: "Predict 5K to marathon times from a recent race result. Enter it free or sign in to select a synced Strava run, then review pacing and scenario ranges.",
     keywords: "race predictor, ai race predictor, marathon time predictor, half marathon predictor, 10k race predictor, 5k race predictor, strava race predictor, vdot calculator",
     features: [
       "Predict times for 5K, 10K, Half Marathon, and Marathon",
       "Uses the published Riegel distance relationship",
-      "Import your best race from Strava automatically",
+      "Choose a recent saved Strava run after connecting and syncing",
       "See equivalent times across all standard distances",
       "Shows assumptions and limitations"
     ],
-    howItWorks: "Enter a recent race time or connect Strava to select a suitable performance. The calculator uses the Riegel relationship T2 = T1 × (D2/D1)^1.06, plus the training variables you provide. The output is an estimate rather than a calibrated probability forecast.",
+    howItWorks: "Enter a recent race time without an account, or sign in, connect Strava on the dashboard and sync your runs. The picker shows saved runs of at least 3 km and 10 minutes from up to 100 activities in the last 90 days. You choose the hard effort; it is not detected automatically. The calculator uses a Riegel relationship with your training inputs and displays a planning scenario.",
     benefits: [
       "Set realistic race goals backed by science",
       "Identify which race distance suits you best",
@@ -31,31 +31,31 @@ export const toolsContent: ToolContent[] = [
     ],
     faq: [
       { question: "How accurate is the Race Predictor?", answer: "Use it as a planning estimate. A recent all-out result at a nearby distance is more informative, while weather, terrain, pacing, fueling and distance-specific training can materially change the outcome." },
-      { question: "Do I need a Strava account?", answer: "No! You can manually enter any recent race time. Strava integration just makes it easier by finding your best races automatically." }
+      { question: "Do I need a Strava account?", answer: "No. Manual entry is free and needs no account. To use Strava, sign in, connect and sync from the dashboard, then choose a saved run yourself." }
     ]
   },
   {
     slug: "marathon-fueling",
-    title: "Marathon Fueling Calculator | Gel Timing & Nutrition Plan",
+    title: "Marathon Fueling Calculator: Carbs, Gels & Race Schedule",
     description: "Turn your chosen carbohydrate, product and timing inputs into a marathon fueling schedule that you can rehearse in training.",
     keywords: "marathon fueling, gel timing calculator, marathon nutrition plan, race nutrition, carbohydrate calculator, sodium intake running",
     features: [
-      "Personalized carb targets based on your goal time",
-      "Gel timing schedule with exact mile markers",
-      "Sodium and electrolyte requirements",
+      "Use the hourly intake targets you have practiced",
+      "Gel schedule in elapsed minutes",
+      "Separate pre-start and in-race totals",
       "Choose your preferred gel brand",
-      "Printable race day fueling card"
+      "Copy or print a schedule to rehearse on a long run"
     ],
     howItWorks: "Enter a realistic marathon time and the intake you have practiced. The planner converts product serving sizes and timing preferences into a schedule. It does not measure individual tolerance, sweat rate or medical needs.",
     benefits: [
-      "Avoid the dreaded 'wall' with proper fueling",
+      "See the arithmetic behind your chosen schedule",
       "Practice race-day nutrition in training",
       "Know exactly when and what to consume",
-      "Prevent GI distress with gradual intake"
+      "Compare the schedule with your own tolerance"
     ],
     faq: [
-      { question: "How many gels do I need?", answer: "Typically 4-7 gels for a marathon, depending on your pace and carb tolerance. Faster runners need more carbs per hour." },
-      { question: "When should I start taking gels?", answer: "We recommend starting at 30-45 minutes into the race, before you feel fatigued, to stay ahead of your energy needs." }
+      { question: "How many gels do I need?", answer: "It depends on your chosen target, duration, product serving sizes and drink carbohydrate. The calculator shows the total and separates any pre-start gel." },
+      { question: "What should I do with the result?", answer: "Copy or print the schedule, confirm product labels and aid-station access, then practice it on a long run before using it in a race." }
     ]
   },
   {
@@ -182,17 +182,17 @@ export const toolsContent: ToolContent[] = [
   },
   {
     slug: "shoe-finder",
-    title: "Running Shoe Finder | Personalized Shoe Recommendations",
-    description: "Find your perfect running shoe based on foot type, running style & goals. AI-powered recommendations from 100+ models.",
+    title: "Running Shoe Finder: Build a Shortlist in 3 Questions",
+    description: "Build a running-shoe shortlist from your goal, body weight and support preference. Review catalogue matches, compare specifications and check fit before buying.",
     keywords: "running shoe finder, best running shoes, shoe recommendations, running shoe quiz, personalized shoes",
     features: [
       "Answer a few questions about your running",
-      "Get personalized shoe recommendations",
-      "Browse 100+ shoes in our database",
-      "Filter by brand, price, and features",
+      "See catalogue options for your chosen running goal",
+      "Review the matching category and support preference",
+      "Follow dated sources and compare recorded prices",
       "Compare multiple shoes side-by-side"
     ],
-    howItWorks: "Tell us about your foot type, weekly mileage, running goals, and preferred feel. Our algorithm matches you with shoes that fit your specific needs from our database of 100+ models with detailed specifications and runner reviews.",
+    howItWorks: "Enter your weight, running goal and support preference. The shortlist ranks category matches and uses runner-weight ranges where recorded. It does not diagnose foot mechanics, predict comfort or establish an injury outcome. Compare two options and try the fit before buying.",
     benefits: [
       "Save hours of research",
       "Find shoes that match your running style",
@@ -201,7 +201,7 @@ export const toolsContent: ToolContent[] = [
     ],
     faq: [
       { question: "How often should I replace running shoes?", answer: "Most shoes last 300-500 miles. Heavier runners or those with inefficient gaits may need replacements sooner." },
-      { question: "Should I rotate between multiple shoes?", answer: "Yes! Studies show rotating 2-3 shoes reduces injury risk by varying the stress on your legs." }
+      { question: "Should I rotate between multiple shoes?", answer: "Different shoes can cover different sessions, but you do not need every suggested role. Start with what your current pair does well and add only for a useful purpose." }
     ]
   },
   {

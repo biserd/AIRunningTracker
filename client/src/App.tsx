@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { ExternalLinkPolicy } from "@/components/ExternalLinkPolicy";
+import { ToolJourneyTracker } from "@/components/ToolJourneyTracker";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { MigrationNotice } from '@/components/MigrationNotice';
@@ -333,6 +334,7 @@ function App() {
       <TooltipProvider>
         <ExternalLinkPolicy />
         <RouteScrollManager />
+        <ToolJourneyTracker />
         <MigrationNotice />
         <Toaster />
         <Router />

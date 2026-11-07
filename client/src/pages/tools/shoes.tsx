@@ -260,7 +260,7 @@ export default function ShoeDatabasePage() {
   }, [selectedBrand, selectedCategory, selectedStability, hasCarbonPlate]);
 
   const canAddMore = compareList.length < MAX_COMPARE_SHOES;
-  const compareUrl = `/tools/shoes/compare?shoes=${compareList.join(',')}`;
+  const compareUrl = `/tools/shoe-compare?shoes=${compareList.join(',')}`;
 
   // Get shoe names for the compare bar
   const compareShoeNames = shoes?.filter(s => s.slug && compareList.includes(s.slug))

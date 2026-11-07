@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { notifyExtensionLogout } from "@/lib/extensionBridge";
+import { useLocation } from "wouter";
 
 export function useAuth() {
+  const [location] = useLocation();
   const [token, setToken] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     // Match the anonymous server render for the first hydration pass. Read the
@@ -15,7 +17,7 @@ export function useAuth() {
 
   useEffect(() => {
     setToken(localStorage.getItem("auth_token"));
-  }, []);
+  }, [location]);
   
   const { data: user, isLoading, error } = useQuery({
     queryKey: ["/api/auth/user"],

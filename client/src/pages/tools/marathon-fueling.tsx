@@ -17,6 +17,7 @@ import {
   GUT_TRAINING_PRESETS,
   SODIUM_PRESETS,
   calculateFeedingEvents,
+  fuelingInputErrors,
   calculateFuelingPlan,
   optimizeFuelingPlan,
   formatTimeDisplay,
@@ -29,8 +30,8 @@ import Footer from '@/components/Footer';
 import { FAQSchema } from "@/components/FAQSchema";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ToolEducationPanel } from "@/components/ToolEducationPanel";
-import { ClientOnlyContent } from "@/components/ClientOnlyContent";
 import { ToolResultActions } from "@/components/ToolResultActions";
+import { trackFunnelEvent } from "@/lib/analytics";
 
 const MARATHON_FUELING_FAQS = [
   {
@@ -39,7 +40,7 @@ const MARATHON_FUELING_FAQS = [
   },
   {
     question: "When should I take my first gel during a marathon?",
-    answer: "Take your first gel 30-45 minutes into the race. Starting too early wastes your body's existing glycogen stores, while waiting too long means you'll already be depleted. The 30-45 minute window ensures you're topped up before glycogen depletion starts (around 60-90 minutes) and establishes a consistent fueling rhythm. If you have a nervous stomach, you can start at 45 minutes. Some runners also take a gel 10-15 minutes before the race start."
+    answer: "Choose an early, repeatable schedule that you have practiced, rather than waiting until you feel depleted. This calculator lets you choose the first-gel time, interval and cutoff. A pre-start gel is listed separately and is not counted in the in-race grams per hour. Follow the product's instructions for water."
   },
   {
     question: "What's the difference between regular gels and isotonic gels?",
@@ -51,7 +52,7 @@ const MARATHON_FUELING_FAQS = [
   },
   {
     question: "Should I use caffeine gels during my marathon?",
-    answer: "Caffeine can improve performance and reduce perceived effort, with effective doses around 3-6mg per kg of body weight spread throughout the race. A typical caffeine gel has 25-50mg. For a 70kg runner, that's 210-420mg total - roughly 4-8 gels if they're all caffeinated. Use caffeinated gels strategically in the last 90 minutes when fatigue sets in. Start with non-caffeinated gels, then switch to caffeinated in the second half. Too much caffeine causes jitters, GI distress, and may lead to a crash."
+    answer: "Caffeine is optional and tolerance varies. The calculator shows the total caffeine in the selected gels; it does not include coffee, drinks or other supplements. The optimizer uses non-caffeinated products. Choose a caffeinated product manually only if it fits a plan you have already tested."
   },
   {
     question: "How do I avoid GI issues with my fueling plan?",
@@ -84,6 +85,24 @@ export default function MarathonFuelingPlanner() {
   // Plan state
   const [feedingEvents, setFeedingEvents] = useState<FeedingEvent[]>([]);
   const [plan, setPlan] = useState<FuelingPlan | null>(null);
+  const [reviewed, setReviewed] = useState(false);
+  const [copyStatus, setCopyStatus] = useState("");
+  const currentInputs: FuelingInputs = {
+    finishTimeMinutes: Number(finishHours) * 60 + Number(finishMinutes), feedingIntervalMinutes: Number(feedingInterval),
+    firstGelMinutes: Number(firstGelTime), lastGelCutoffMinutes: Number(lastGelCutoff), preStartGel,
+    carbTargetPerHour: Number(useCustomCarb ? carbTarget : carbPreset), sodiumTargetPerHour: Number(useCustomSodium ? sodiumTarget : sodiumPreset),
+    drinkVolumePerHour: Number(drinkVolume), drinkSodiumPerLiter: Number(drinkSodium), drinkCarbsPerLiter: Number(drinkCarbs),
+  };
+  const inputErrors = fuelingInputErrors(currentInputs);
+  if (Number(finishMinutes) < 0 || Number(finishMinutes) > 59 || finishHours === "" || finishMinutes === "") inputErrors.push("Enter hours and minutes, with minutes between 0 and 59.");
+  const scheduleText = plan ? [
+    `Marathon practice schedule: ${finishHours}h ${finishMinutes}m`,
+    `In-race carbohydrate: ${Math.round(plan.carbsPerHour)} g/h (${Math.round(plan.totalCarbs)} g total); chosen target ${currentInputs.carbTargetPerHour} g/h.`,
+    `In-race sodium: ${Math.round(plan.sodiumPerHour)} mg/h; drink ${drinkVolume} ml/h.`,
+    `Pre-start carbohydrate: ${plan.preStartCarbs} g (separate). Caffeine in all gels: ${plan.totalCaffeine} mg.`,
+    ...feedingEvents.map(event => `${event.isPreStart ? "Pre-start " : ""}${event.timeDisplay}: ${GEL_CATALOG.find(g => g.id === event.gelId)?.brand} ${GEL_CATALOG.find(g => g.id === event.gelId)?.name}`),
+    "Practice during a long run. Confirm product labels, water instructions, aid stations and tolerance before race day.",
+  ].join("\n") : "";
 
   // Regenerate feeding schedule when schedule parameters change
   useEffect(() => {
@@ -119,6 +138,7 @@ export default function MarathonFuelingPlanner() {
       drinkCarbsPerLiter: parseInt(drinkCarbs)
     };
 
+    if (fuelingInputErrors(inputs).length || Number(finishMinutes) > 59 || finishHours === "" || finishMinutes === "") { setPlan(null); return; }
     const calculatedPlan = calculateFuelingPlan(inputs, feedingEvents);
     setPlan(calculatedPlan);
   }, [feedingEvents, carbTarget, carbPreset, useCustomCarb, sodiumTarget, sodiumPreset, useCustomSodium,
@@ -126,6 +146,7 @@ export default function MarathonFuelingPlanner() {
       firstGelTime, lastGelCutoff, preStartGel]);
 
   const handleOptimize = () => {
+    if (inputErrors.length) return;
     const inputs: FuelingInputs = {
       finishTimeMinutes: parseInt(finishHours) * 60 + parseInt(finishMinutes),
       feedingIntervalMinutes: parseInt(feedingInterval),
@@ -141,6 +162,7 @@ export default function MarathonFuelingPlanner() {
 
     const optimized = optimizeFuelingPlan(inputs, feedingEvents);
     setFeedingEvents(optimized);
+    trackFunnelEvent("tool_action", { source: "marathon_fueling", capability: "fueling_plan", action: "optimize_schedule" }, { dedupeParts: ["fueling", "optimize"] });
   };
 
   const updateGelAtEvent = (index: number, gelId: string) => {
@@ -165,8 +187,8 @@ export default function MarathonFuelingPlanner() {
   return (
     <>
       <SEO
-        title="Marathon Fueling Calculator: Plan Your Gel Timing"
-        description="Enter your projected marathon finish time and get a precise race-day nutrition plan with gel timing intervals. Built for any target pace."
+        title="Marathon Fueling Calculator: Carbs, Gels & Race Schedule"
+        description="Build a marathon fueling schedule from finish time, practiced carb targets, gels and drink mix. See in-race grams per hour and copy a plan to test on a long run."
         keywords="marathon fueling, gel timing calculator, marathon nutrition plan, race nutrition, running gel schedule"
         url="https://aitracker.run/tools/marathon-fueling"
         structuredData={{
@@ -186,37 +208,15 @@ export default function MarathonFuelingPlanner() {
         
         <div className="container mx-auto px-4 py-8 max-w-7xl">
           <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-3" data-testid="text-page-title">Marathon Fueling Planner</h1>
+            <h1 className="text-4xl font-bold mb-3" data-testid="text-page-title">Marathon Fueling Calculator</h1>
             <p className="text-xl text-muted-foreground" data-testid="text-page-description">
               Turn a practiced intake target into a simple race schedule, then rehearse it in training.
               Check your <Link href="/tools/race-predictor" className="text-blue-600 hover:text-blue-800 underline">race time estimate</Link> to plan for realistic time on course.
             </p>
           </div>
 
-          <ClientOnlyContent minHeight={900}>
-          {/* CTA for non-authenticated users */}
-          {!isAuthenticated && (
-            <Card className="mb-6 bg-gradient-to-r from-strava-orange/10 to-strava-orange/5 border-strava-orange/20" data-testid="card-signup-cta">
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <Sparkles className="w-6 h-6 text-strava-orange flex-shrink-0 mt-1" />
-                    <div>
-                      <h3 className="font-semibold text-lg mb-1">Want More Running Tools & AI Insights?</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Create a free account to access AI-powered training insights, race predictions, and personalized coaching - plus auto-import your Strava activities for instant analysis.
-                      </p>
-                    </div>
-                  </div>
-                  <Link href="/auth">
-                    <Button className="bg-strava-orange text-white hover:bg-strava-orange/90 whitespace-nowrap" data-testid="button-signup-cta">
-                      Get Started Free
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <p className="mb-5 text-slate-700">Free to use without an account. Enter a realistic finish time, the intake you have practiced and the nutrition on your product labels. Defaults illustrate the arithmetic; they are not recommended intake targets. Results update as you edit; pre-start fuel is counted separately.</p>
+          {inputErrors.length > 0 && <div role="alert" className="mb-5 rounded-xl border border-red-300 bg-red-50 p-4"><h2 className="font-semibold">Check your inputs</h2><ul className="list-disc pl-5">{inputErrors.map(e => <li key={e}>{e}</li>)}</ul></div>}
 
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Left Column - Inputs */}
@@ -228,7 +228,7 @@ export default function MarathonFuelingPlanner() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="finish-time">Projected Finish Time</Label>
+                    <Label htmlFor="finish-hours">Projected Finish Time</Label>
                     <div className="flex gap-2 mt-2">
                       <div className="flex-1">
                         <Input
@@ -246,6 +246,7 @@ export default function MarathonFuelingPlanner() {
                       <div className="flex-1">
                         <Input
                           id="finish-minutes"
+                          aria-label="Finish time minutes"
                           type="number"
                           min="0"
                           max="59"
@@ -557,7 +558,7 @@ export default function MarathonFuelingPlanner() {
                     </div>
                     <Button onClick={handleOptimize} className="bg-strava-orange text-white hover:bg-strava-orange/90" size="sm" data-testid="button-optimize">
                       <TrendingUp className="w-4 h-4 mr-2" />
-                      Optimize
+                      Suggest non-caffeinated gels
                     </Button>
                   </div>
                 </CardHeader>
@@ -642,7 +643,14 @@ export default function MarathonFuelingPlanner() {
                   </CardContent>
                 </Card>
               )}
-              {plan && <ToolResultActions source="marathon_fueling_result" capability="fueling_plan" />}
+              {plan && inputErrors.length === 0 && <section className="rounded-xl border bg-white p-5" aria-label="Practice this fueling schedule">
+                <h2 className="font-bold text-xl">Rehearse this schedule on a long run</h2>
+                <p className="my-3 text-sm">{plan.inRaceGels} in-race gels, plus {plan.totalGels - plan.inRaceGels} pre-start. Pre-start carbohydrate: {plan.preStartCarbs} g, excluded from the in-race hourly figures. Total caffeine in all gels: {plan.totalCaffeine} mg; other caffeine sources are not included.</p>
+                <Button disabled={!scheduleText} onClick={async () => { try { await navigator.clipboard.writeText(scheduleText); setReviewed(true); setCopyStatus("Practice schedule copied."); trackFunnelEvent("tool_action", { source: "marathon_fueling", capability: "fueling_plan", action: "copy_schedule" }, { dedupeParts: ["fueling", "copy"] }); } catch { setCopyStatus("Copy is unavailable. Use Print to keep the schedule."); } }}>Copy practice schedule</Button>
+                <Button variant="outline" className="ml-3" onClick={() => { setReviewed(true); trackFunnelEvent("tool_action", { source: "marathon_fueling", capability: "fueling_plan", action: "print_schedule" }, { dedupeParts: ["fueling", "print"] }); window.print(); }}>Print</Button>
+                <p role="status" className="text-sm mt-3">{copyStatus}</p>
+                {reviewed && <ToolResultActions source="marathon_fueling_result" capability="fueling_plan" title="My marathon fueling schedule" summary={scheduleText} />}
+              </section>}
             </div>
           </div>
 
@@ -661,14 +669,14 @@ export default function MarathonFuelingPlanner() {
                 <li><strong>Set your nutrition targets</strong> - Use presets or customize based on your gut training</li>
                 <li><strong>Configure drink strategy</strong> - Plan your hydration and electrolyte intake</li>
                 <li><strong>Review the timeline</strong> - Create simple prompts you can rehearse and adjust</li>
-                <li><strong>Click "Optimize"</strong> - Let the calculator suggest the best gel combination</li>
+                <li><strong>Suggest non-caffeinated gels</strong> - Review the proposed products against your practiced targets</li>
               </ol>
 
               <h3>Understanding the Gauges</h3>
               <ul>
-                <li><strong className="text-green-600">Green</strong>: You're hitting your targets perfectly</li>
-                <li><strong className="text-yellow-600">Yellow</strong>: Slightly over target (manageable but watch GI distress)</li>
-                <li><strong className="text-red-600">Red</strong>: Under target (risk of bonking) or way over (GI issues likely)</li>
+                <li><strong className="text-green-600">Green</strong>: Close to the target you entered</li>
+                <li><strong className="text-yellow-600">Yellow</strong>: Review the difference from your chosen target</li>
+                <li><strong className="text-red-600">Red</strong>: A larger gap from your chosen target</li>
               </ul>
 
               <h3>Key Principles</h3>
@@ -680,8 +688,8 @@ export default function MarathonFuelingPlanner() {
               </ul>
 
               <h3>Common Strategies</h3>
-              <p><strong>4-hour marathoner (80g/h target)</strong>: Use 40g gels every 30 min = 8 gels total = 320g carbs. Add caffeine gels in final hour.</p>
-              <p><strong>5-hour marathoner (60g/h target)</strong>: Mix 25g and 40g gels every 30 min = 9-10 gels = 300g carbs. Higher sodium in drinks.</p>
+              <p><strong>Worked example: 4 hours, 60 g/h chosen target.</strong> The in-race target is 240 g. Seven 30 g gels at 30, 60, 90, 120, 150, 180 and 210 minutes supply 210 g. A drink providing 15 g/L at 500 ml/h adds 30 g over four hours, bringing the plan to 240 g, or 60 g/h. A pre-start gel is additional and does not close an in-race shortfall.</p>
+              <p>This is arithmetic, not a prescribed intake. Use familiar products, check the current labels and rehearse timing, water access and tolerance. <Link href="/blog/marathon-fueling-calculator-guide" className="underline text-orange-800">Read the full fueling guide</Link>.</p>
             </CardContent>
           </Card>
 
@@ -708,13 +716,10 @@ export default function MarathonFuelingPlanner() {
               </Accordion>
             </CardContent>
           </Card>
-          </ClientOnlyContent>
         </div>
 
-        <ClientOnlyContent minHeight={600}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6"><ToolEducationPanel variant="marathon-fueling" /></div>
         <Footer />
-        </ClientOnlyContent>
       </div>
     </>
   );

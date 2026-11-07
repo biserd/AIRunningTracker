@@ -140,8 +140,8 @@ const tools = [
   },
   {
     id: "shoe-finder",
-    title: "Personalized Shoe Finder",
-    description: "Get shoe recommendations tailored to your weight, running goals, and foot type. Find the perfect shoe match for your running style.",
+    title: "Running Shoe Finder",
+    description: "Build a shortlist from your running goal, weight and support preference. Review catalogue matches, then compare two options and check fit.",
     icon: Target,
     url: "/tools/shoe-finder",
     status: "available",

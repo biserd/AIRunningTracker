@@ -60,6 +60,13 @@ export function trackFunnelEvent(
       }
     }
 
+    if (event.startsWith("tool_") || props.experimentVariant === "contextual_v1") {
+      const gtag = (window as any).gtag;
+      try { if (typeof gtag === "function") gtag("event", event, {
+        source: props.source, capability: props.capability,
+        action: props.action, experiment_variant: props.experimentVariant,
+      }); } catch { /* GA cannot prevent the primary funnel record. */ }
+    }
     const token = localStorage.getItem("auth_token");
     void fetch("/api/analytics/funnel", {
       method: "POST",

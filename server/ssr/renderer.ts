@@ -1914,9 +1914,9 @@ ${listSchema}
           <h2>Running Shoe Hub</h2>
           <ul>
             <li><a href="/tools/shoes"><strong>Running Shoe Database</strong></a>: browse detailed specs, source and verification dates, and clearly labeled editorial insights.</li>
-            <li><a href="/tools/shoe-finder"><strong>Running Shoe Finder</strong></a>: answer a few questions about your running style and get AI-matched shoe recommendations from our full database.</li>
+            <li><a href="/tools/shoe-finder"><strong>Running Shoe Finder</strong></a>: build a catalogue shortlist from your goal, weight and support preference, then compare specifications and check fit.</li>
             <li><a href="/tools/rotation-planner"><strong>Shoe Rotation Planner</strong></a>: build a smart multi-shoe rotation optimized for your training volume, race goals, and surface preferences.</li>
-            <li><a href="/tools/shoes/compare"><strong>Shoe Comparison Tool</strong></a>: compare any two running shoes side-by-side with specs, pros/cons, and an AI verdict.</li>
+            <li><a href="/tools/shoes/compare"><strong>Running Shoe Comparison</strong></a>: choose two catalogued models or browse guides with specifications, dated sources, missing evidence and buying considerations.</li>
           </ul>
         </section>
         <div class="ssr-cta">

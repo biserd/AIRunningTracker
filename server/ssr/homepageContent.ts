@@ -119,7 +119,7 @@ export const homepageContent: HomepageContent = {
     { title: "Cadence Analyzer", description: "Review cadence stability and late-run change", href: "/tools/cadence-analyzer" },
     { title: "Running Heatmap", description: "Visualize your most-run routes", href: "/tools/heatmap" },
     { title: "Shoe Database", description: "Browse and compare 100+ running shoes", href: "/tools/shoes", badge: "New" },
-    { title: "Shoe Finder", description: "Find your perfect running shoe", href: "/tools/shoe-finder" },
+    { title: "Shoe Finder", description: "Build a shortlist for your running goal and support preference", href: "/tools/shoe-finder" },
     { title: "Rotation Planner", description: "Plan your ideal shoe rotation", href: "/tools/rotation-planner" }
   ],
   pricing: {

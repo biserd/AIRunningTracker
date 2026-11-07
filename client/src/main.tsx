@@ -31,6 +31,10 @@ async function bootSpa() {
 }
 
 if (root?.dataset.ssrTool === "true") {
+  const interactiveTool = /^\/tools\/(?:race-predictor|marathon-fueling|shoe-compare|shoe-finder|rotation-planner|shoes\/compare)(?:\/|$)/.test(window.location.pathname);
+  if (interactiveTool) {
+    void hydratePublicTool();
+  } else {
   // Let the browser paint the server-rendered tool before downloading and
   // parsing the hydration graph. A short post-load grace period prevents
   // background module parsing from stealing the first paint on slower CPUs.
@@ -39,6 +43,7 @@ if (root?.dataset.ssrTool === "true") {
   };
   if (document.readyState === "complete") scheduleHydration();
   else window.addEventListener("load", scheduleHydration, { once: true });
+  }
 } else {
   void bootSpa();
 }

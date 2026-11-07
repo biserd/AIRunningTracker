@@ -1,0 +1,21 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import React from "react";
+(globalThis as any).React = React;
+test("priority calculators expose inputs and honest instructions in the initial response", async () => {
+  const { renderPublicDocument } = await import("./reactToolRenderer");
+  const template = "<html><head></head><body><div id=\"root\"></div></body></html>";
+  const race = (await renderPublicDocument("/tools/race-predictor", template))!;
+  assert.match(race, /Strava or Manual Entry/);
+  assert.match(race, /tab-strava/);
+  assert.match(race, /Calculate Race Prediction/);
+  assert.match(race, /not detected automatically|not detect race effort automatically|not detected race efforts|you decide which was a representative hard effort/);
+  const fuel = (await renderPublicDocument("/tools/marathon-fueling", template))!;
+  assert.match(fuel, /id="finish-hours"/);
+  assert.match(fuel, /Worked example: 4 hours/);
+  assert.doesNotMatch(fuel, /card-signup-cta/);
+  const chooser = (await renderPublicDocument("/tools/shoe-compare", template))!;
+  assert.match(chooser, /shoe-chooser-1/);
+  assert.match(chooser, /shoe-chooser-2/);
+  assert.match(chooser, /href="https:\/\/aitracker.run\/tools\/shoe-compare"/);
+});

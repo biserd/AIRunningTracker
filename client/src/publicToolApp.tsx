@@ -6,6 +6,7 @@ import { useBrowserLocation } from "wouter/use-browser-location";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { ExternalLinkPolicy } from "@/components/ExternalLinkPolicy";
+import { ToolJourneyTracker } from "@/components/ToolJourneyTracker";
 
 type ToolModule = { default: ComponentType };
 
@@ -77,6 +78,7 @@ export function PublicToolApp({ Component, queryClient, ssrPath }: PublicToolApp
         <TooltipProvider>
           <ExternalLinkPolicy />
           <Toaster />
+          <ToolJourneyTracker />
           <Switch>
             <Route path="/tools/shoes/compare/:slug"><Component /></Route>
             <Route path="/tools/shoes/:slug"><Component /></Route>

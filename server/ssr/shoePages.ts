@@ -33,12 +33,13 @@ export async function renderShoeDocument(
       ["/api/shoes/brands"],
       Array.from(new Set(shoes.map((s) => s.brand))).sort(),
     );
-  } else if (path === "/tools/shoes/compare")
+  } else if (path === "/tools/shoes/compare") {
     client.setQueryData(
       ["/api/shoes/comparisons"],
       await comparisonList(store),
     );
-  else if (path.startsWith("/tools/shoes/compare/")) {
+    client.setQueryData(["/api/shoes"], canonicalizeShoeCatalog(await store.getShoes({})).canonicalShoes.map(publicShoe));
+  } else if (path.startsWith("/tools/shoes/compare/")) {
     const slug = path.split("/").at(-1)!;
     const [allComparisons, allShoes] = await Promise.all([store.getShoeComparisons({}), store.getShoes({})]);
     const canonical = canonicalizeComparisons(allComparisons, allShoes);
@@ -94,6 +95,10 @@ export function registerShoePages(app: Express, store: ShoeStore) {
     ],
     async (req, res) => {
       const pathname = req.path.replace(/\/$/, "");
+      if (pathname === "/tools/shoes/compare" && typeof req.query.shoes === "string") {
+        const slugs = req.query.shoes.split(",").filter(s => /^[a-z0-9-]{1,100}$/.test(s)).slice(0, 3);
+        if (slugs.length) return res.redirect(301, `/tools/shoe-compare?shoes=${encodeURIComponent(slugs.join(","))}`);
+      }
       try {
         const template = await readFile(
           resolve("dist/public/index.html"),

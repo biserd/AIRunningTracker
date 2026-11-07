@@ -33,6 +33,10 @@ export interface FeedingEvent {
 export interface FuelingPlan {
   feedingEvents: FeedingEvent[];
   totalGels: number;
+  inRaceGels: number;
+  preStartCarbs: number;
+  preStartSodium: number;
+  totalCaffeine: number;
   carbsPerHour: number;
   sodiumPerHour: number;
   totalCarbs: number;
@@ -219,11 +223,26 @@ export const GUT_TRAINING_PRESETS = [
 
 // Sweat rate / sodium presets
 export const SODIUM_PRESETS = [
-  { value: 300, label: 'Light Sweater (300 mg/h)', description: 'Cool conditions, low sweat rate' },
-  { value: 500, label: 'Moderate (500 mg/h)', description: 'Average conditions and sweat rate' },
-  { value: 700, label: 'Heavy Sweater (700 mg/h)', description: 'Hot conditions or high sweat rate' },
-  { value: 900, label: 'Very Heavy (900 mg/h)', description: 'Extreme heat or very high sweat rate' }
+  { value: 300, label: '300 mg/h', description: 'A chosen planning target' },
+  { value: 500, label: '500 mg/h', description: 'A chosen planning target' },
+  { value: 700, label: '700 mg/h', description: 'A chosen planning target' },
+  { value: 900, label: '900 mg/h', description: 'A chosen planning target' }
 ];
+
+export function fuelingInputErrors(inputs: FuelingInputs): string[] {
+  const limits: [keyof FuelingInputs, number, number, string][] = [
+    ["finishTimeMinutes", 120, 480, "Finish time must be between 2 and 8 hours."],
+    ["feedingIntervalMinutes", 5, 90, "Feeding interval must be between 5 and 90 minutes."],
+    ["firstGelMinutes", 0, 120, "First gel must be between 0 and 120 minutes."],
+    ["lastGelCutoffMinutes", 0, 90, "Last-gel cutoff must be between 0 and 90 minutes."],
+    ["carbTargetPerHour", 1, 120, "Carbohydrate target must be between 1 and 120 g/h."],
+    ["sodiumTargetPerHour", 1, 2000, "Sodium target must be between 1 and 2,000 mg/h."],
+    ["drinkVolumePerHour", 0, 2000, "Drink volume must be between 0 and 2,000 ml/h."],
+    ["drinkSodiumPerLiter", 0, 4000, "Drink sodium must be between 0 and 4,000 mg/L."],
+    ["drinkCarbsPerLiter", 0, 250, "Drink carbohydrate must be between 0 and 250 g/L."],
+  ];
+  return limits.filter(([key, min, max]) => !Number.isFinite(inputs[key]) || Number(inputs[key]) < min || Number(inputs[key]) > max).map(([, , , message]) => message);
+}
 
 // Format minutes to HH:MM display
 export function formatTimeDisplay(minutes: number): string {
@@ -237,6 +256,7 @@ export function formatTimeDisplay(minutes: number): string {
 
 // Calculate feeding events
 export function calculateFeedingEvents(inputs: FuelingInputs): FeedingEvent[] {
+  if (fuelingInputErrors(inputs).length) return [];
   const {
     finishTimeMinutes,
     feedingIntervalMinutes,
@@ -285,6 +305,7 @@ export function calculateFuelingPlan(
   inputs: FuelingInputs,
   feedingEvents: FeedingEvent[]
 ): FuelingPlan {
+  if (fuelingInputErrors(inputs).length) throw new Error("Invalid fueling inputs");
   const {
     finishTimeMinutes,
     carbTargetPerHour,
@@ -299,13 +320,17 @@ export function calculateFuelingPlan(
   // Calculate carbs and sodium from gels
   let totalCarbsFromGels = 0;
   let totalSodiumFromGels = 0;
+  let preStartCarbs = 0;
+  let preStartSodium = 0;
+  let totalCaffeine = 0;
   const gelCounts = new Map<string, number>();
 
   feedingEvents.forEach(event => {
     const gel = GEL_CATALOG.find(g => g.id === event.gelId);
     if (gel) {
-      totalCarbsFromGels += gel.carbsPerGel;
-      totalSodiumFromGels += gel.sodiumPerGel;
+      if (event.isPreStart) { preStartCarbs += gel.carbsPerGel; preStartSodium += gel.sodiumPerGel; }
+      else { totalCarbsFromGels += gel.carbsPerGel; totalSodiumFromGels += gel.sodiumPerGel; }
+      totalCaffeine += gel.caffeinePerGel;
       gelCounts.set(event.gelId, (gelCounts.get(event.gelId) || 0) + 1);
     }
   });
@@ -348,7 +373,7 @@ export function calculateFuelingPlan(
   if (sodiumShortfall > 100) {
     warnings.push(
       `You're ${Math.round(sodiumShortfall)}mg short on sodium (${Math.round(sodiumShortfall / raceHours)}mg/h under target). ` +
-      `Increase drink sodium concentration or use higher-sodium gels.`
+      `Review your chosen target and practiced products before changing intake.`
     );
   }
 
@@ -360,13 +385,17 @@ export function calculateFuelingPlan(
 
   if (carbsPerHour > 120) {
     warnings.push(
-      `Carb intake (${Math.round(carbsPerHour)}g/h) exceeds maximum gut absorption (~120g/h). Consider reducing.`
+      `Carb intake (${Math.round(carbsPerHour)}g/h) exceeds this calculator's planning range. Review tolerance and product choices before using the schedule.`
     );
   }
 
   return {
     feedingEvents,
     totalGels: feedingEvents.length,
+    inRaceGels: feedingEvents.filter(e => !e.isPreStart).length,
+    preStartCarbs,
+    preStartSodium,
+    totalCaffeine,
     carbsPerHour,
     sodiumPerHour,
     totalCarbs,
@@ -383,6 +412,7 @@ export function optimizeFuelingPlan(
   inputs: FuelingInputs,
   feedingEvents: FeedingEvent[]
 ): FeedingEvent[] {
+  if (fuelingInputErrors(inputs).length) return [];
   const {
     carbTargetPerHour,
     sodiumTargetPerHour,
@@ -400,18 +430,17 @@ export function optimizeFuelingPlan(
   const carbNeededFromGels = Math.max(0, carbNeededTotal - carbsFromDrink);
   const sodiumNeededFromGels = Math.max(0, sodiumNeededTotal - sodiumFromDrink);
 
-  if (feedingEvents.length === 0) return feedingEvents;
+  const inRaceCount = feedingEvents.filter(e => !e.isPreStart).length;
+  if (inRaceCount === 0) return feedingEvents;
 
   // Target carbs per gel
-  const targetCarbsPerGel = carbNeededFromGels / feedingEvents.length;
-  const targetSodiumPerGel = sodiumNeededFromGels / feedingEvents.length;
+  const targetCarbsPerGel = carbNeededFromGels / inRaceCount;
+  const targetSodiumPerGel = sodiumNeededFromGels / inRaceCount;
 
   // Smart gel selection based on targets
   const ultraHighCarbGel = GEL_CATALOG.find(g => g.carbsPerGel === 60); // PF 60
   const highCarbGel = GEL_CATALOG.find(g => g.carbsPerGel === 40 && g.caffeinePerGel === 0); // Maurten 160 or SiS Beta Fuel
-  const highCarbCafGel = GEL_CATALOG.find(g => g.carbsPerGel === 40 && g.caffeinePerGel >= 100); // SiS Beta Fuel + Caf
   const highSodiumGel = GEL_CATALOG.find(g => g.sodiumPerGel >= 100); // GU Roctane or PF
-  const caffeineGel = GEL_CATALOG.find(g => g.caffeinePerGel >= 100 && g.carbsPerGel >= 25); // Maurten CAF or SiS Beta Fuel CAF
 
   const optimizedEvents = feedingEvents.map((event, index) => {
     // Pre-start gel: use medium carb (25-30g)
@@ -420,16 +449,7 @@ export function optimizeFuelingPlan(
       return { ...event, gelId: preStartGel?.id || GEL_CATALOG[1].id };
     }
 
-    // Last 2-3 gels: use caffeine for the finishing kick
-    const isLastQuarter = index >= feedingEvents.length - Math.min(3, Math.ceil(feedingEvents.length / 4));
-    if (isLastQuarter) {
-      // Prefer high-carb caffeine gel (40g + caffeine) for final gels
-      if (highCarbCafGel && targetCarbsPerGel >= 35) {
-        return { ...event, gelId: highCarbCafGel.id };
-      } else if (caffeineGel) {
-        return { ...event, gelId: caffeineGel.id };
-      }
-    }
+    // Caffeine is an explicit product choice, never introduced by optimization.
 
     // Very high carb targets (>50g per gel): use ultra high-carb gels
     if (targetCarbsPerGel >= 50 && ultraHighCarbGel) {
@@ -442,7 +462,7 @@ export function optimizeFuelingPlan(
     }
 
     // High sodium needs: alternate with high-sodium gels
-    if (targetSodiumPerGel >= 80 && index % 2 === 0 && highSodiumGel) {
+    if (targetSodiumPerGel >= 80 && index % 2 === 0 && highSodiumGel && highSodiumGel.caffeinePerGel === 0) {
       return { ...event, gelId: highSodiumGel.id };
     }
 

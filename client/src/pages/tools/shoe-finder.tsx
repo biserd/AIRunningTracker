@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -17,6 +17,9 @@ import AppHeader from "@/components/AppHeader";
 import PublicHeader from "@/components/PublicHeader";
 import type { RunningShoe } from "@shared/schema";
 import { shoeNumber } from "@shared/shoeEvidence";
+import { shoeEvidence } from "@shared/shoeEditorial";
+import { ToolResultActions } from "@/components/ToolResultActions";
+import { trackFunnelEvent } from "@/lib/analytics";
 
 const categoryLabels: Record<string, string> = {
   daily_trainer: "Daily Trainer",
@@ -29,21 +32,22 @@ const categoryLabels: Record<string, string> = {
 
 const goalOptions = [
   { value: "daily", label: "Daily Training", description: "Versatile shoes for most runs" },
-  { value: "racing", label: "Race Day Performance", description: "Maximum speed and energy return" },
-  { value: "marathon", label: "Marathon Training", description: "Long distance comfort and protection" },
+  { value: "racing", label: "Race Day", description: "Models catalogued for racing" },
+  { value: "marathon", label: "Marathon Training", description: "Long-run and race-day options" },
   { value: "speed", label: "Speed Work & Intervals", description: "Fast workouts and tempo runs" },
-  { value: "recovery", label: "Easy Days & Recovery", description: "Maximum cushion for tired legs" },
+  { value: "recovery", label: "Easy Days & Recovery", description: "Easy-day and recovery categories" },
   { value: "general", label: "All-Around Running", description: "One shoe for everything" }
 ];
 
 const footTypeOptions = [
-  { value: "neutral", label: "Neutral", description: "Normal arch, no overpronation" },
-  { value: "overpronator", label: "Overpronator", description: "Flat feet, need stability support" },
-  { value: "supinator", label: "Supinator (Underpronator)", description: "High arch, need flexibility" }
+  { value: "neutral", label: "Neutral", description: "I usually prefer a neutral shoe" },
+  { value: "overpronator", label: "More support", description: "I prefer a stability category" },
+  { value: "unsure", label: "Not sure", description: "Show options without a support preference" }
 ];
 
 interface ShoeWithScore extends RunningShoe {
   matchScore: number;
+  matchReasons?: string[];
 }
 
 export default function ShoeFinderPage() {
@@ -52,37 +56,43 @@ export default function ShoeFinderPage() {
   const [goal, setGoal] = useState<string>("");
   const [footType, setFootType] = useState<string>("");
   const [showResults, setShowResults] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(3);
+  const [submitted, setSubmitted] = useState({ weight: "", goal: "", footType: "" });
+  useEffect(() => { trackFunnelEvent("tool_viewed", { source: "shoe_finder", capability: "shoe_shortlist" }, { oncePerSession: true, dedupeParts: ["shoe_finder"] }); }, []);
 
-  const { data: results, isLoading: isLoadingResults, refetch: searchShoes } = useQuery<ShoeWithScore[]>({
-    queryKey: ['/api/shoes/recommend', weight, goal, footType],
+  const { data: results, isLoading: isLoadingResults, isError: resultsError, refetch: searchShoes } = useQuery<ShoeWithScore[]>({
+    queryKey: ['/api/shoes/recommend', submitted],
     queryFn: async () => {
       const params = new URLSearchParams({
-        weight: weight,
-        goal: goal,
-        footType: footType
+        weight: submitted.weight,
+        goal: submitted.goal,
+        footType: submitted.footType
       });
       const response = await fetch(`/api/shoes/recommend?${params}`);
       if (!response.ok) throw new Error('Failed to get recommendations');
       return response.json();
     },
-    enabled: showResults && !!weight && !!goal && !!footType
+    enabled: showResults && !!submitted.weight && !!submitted.goal && !!submitted.footType
   });
 
   const handleSearch = () => {
+    setVisibleCount(3);
+    setSubmitted({ weight, goal, footType });
     setShowResults(true);
   };
 
-  const isFormComplete = weight && goal && footType;
+  const validWeight = Number(weight) >= 50 && Number(weight) <= 500;
+  const isFormComplete = validWeight && goal && footType;
 
   return (
     <>
       <SEO
-        title="AI Running Shoe Finder: Find Your Perfect Running Shoe"
-        description="Answer 5 questions and get matched to your ideal running shoe. Filter by pace, surface, brand, and foot type. Free tool used by 10,000+ runners."
+        title="Running Shoe Finder: Build a Shortlist in 3 Questions"
+        description="Find running-shoe options by running goal, body weight and support preference. Review why each model appears, then compare specifications and check fit. Free tool."
         keywords="running shoe finder, best running shoes 2026, shoe recommendations by pace, shoe finder by brand, running shoe quiz"
         url="https://aitracker.run/tools/shoe-finder"
-        ogTitle="AI Running Shoe Finder: Find Your Perfect Running Shoe"
-        ogDescription="Answer 5 questions and get matched to your ideal running shoe by pace, surface, and brand."
+        ogTitle="Running Shoe Finder: Build a Shortlist in 3 Questions"
+        ogDescription="Choose your running goal, weight and support preference, then compare a shortlist of catalogued models."
         structuredData={{
           "@context": "https://schema.org",
           "@type": "SoftwareApplication",
@@ -90,7 +100,7 @@ export default function ShoeFinderPage() {
           "applicationCategory": "HealthApplication",
           "operatingSystem": "Web",
           "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-          "description": "Answer 5 questions and get matched to your ideal running shoe. Filter by pace, surface, brand, and foot type. Free tool used by 10,000+ runners."
+          "description": "A free catalogue shortlist based on three inputs, with source dates and specification comparisons."
         }}
       />
 
@@ -106,12 +116,11 @@ export default function ShoeFinderPage() {
               </div>
               
               <h1 className="text-3xl sm:text-4xl font-bold text-charcoal mb-4">
-                AI Running Shoe Finder: Find Your Perfect Running Shoe
+                Running Shoe Finder
               </h1>
               
               <p className="text-lg text-gray-600">
-                Answer three simple questions and get personalized shoe recommendations 
-                tailored to your body and running goals.
+                Answer three questions to build a running-shoe shortlist. We rank catalogue categories and your preferences; a try-on and your experience decide the fit.
               </p>
             </div>
           </div>
@@ -123,12 +132,14 @@ export default function ShoeFinderPage() {
             
             <div className="space-y-8">
               <div>
-                <Label className="text-base font-medium flex items-center gap-2 mb-3">
+                <Label htmlFor="finder-weight" className="text-base font-medium flex items-center gap-2 mb-3">
                   <Scale className="h-5 w-5 text-gray-400" />
                   Your Weight (lbs)
                 </Label>
                 <Input
+                  id="finder-weight"
                   type="number"
+                  min="50" max="500"
                   placeholder="e.g., 165"
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
@@ -136,8 +147,9 @@ export default function ShoeFinderPage() {
                   data-testid="input-weight"
                 />
                 <p className="text-sm text-gray-500 mt-2">
-                  Weight helps determine cushioning and durability needs
+                  Used only where the catalogue includes a runner-weight range. It does not predict comfort or durability.
                 </p>
+                {weight && !validWeight && <p role="alert" className="text-sm text-red-700 mt-2">Enter a weight between 50 and 500 lb.</p>}
               </div>
 
               <div>
@@ -169,7 +181,7 @@ export default function ShoeFinderPage() {
               <div>
                 <Label className="text-base font-medium flex items-center gap-2 mb-3">
                   <Zap className="h-5 w-5 text-gray-400" />
-                  Your Foot Type
+                  Your Support Preference
                 </Label>
                 <RadioGroup value={footType} onValueChange={setFootType} className="grid sm:grid-cols-3 gap-3">
                   {footTypeOptions.map(option => (
@@ -198,7 +210,7 @@ export default function ShoeFinderPage() {
                 className="w-full bg-strava-orange text-white hover:bg-strava-orange/90 h-12 text-lg"
                 data-testid="button-find-shoes"
               >
-                {isFormComplete ? "Find My Perfect Shoes" : "Complete All Fields to Continue"}
+                {isLoadingResults ? "Finding shoe options…" : isFormComplete ? "Build my shortlist" : "Complete the three questions"}
               </Button>
             </div>
           </div>
@@ -206,11 +218,10 @@ export default function ShoeFinderPage() {
           {showResults && (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-charcoal">
-                Your Top Shoe Recommendations
+                Your Running-Shoe Shortlist
               </h2>
               <p className="text-gray-600">
-                Based on your {weight}lb weight, {goalOptions.find(g => g.value === goal)?.label.toLowerCase()} focus, 
-                and {footTypeOptions.find(f => f.value === footType)?.label.toLowerCase()} foot type.
+                Based on {submitted.weight} lb, {goalOptions.find(g => g.value === submitted.goal)?.label.toLowerCase()} and {footTypeOptions.find(f => f.value === submitted.footType)?.label.toLowerCase()} support preference. Rankings describe catalogue matches, not measured performance or injury prevention.
               </p>
 
               {isLoadingResults ? (
@@ -227,9 +238,9 @@ export default function ShoeFinderPage() {
                     </Card>
                   ))}
                 </div>
-              ) : results && results.length > 0 ? (
+              ) : resultsError ? <p role="alert">Your shortlist could not load. <button onClick={() => searchShoes()} className="underline">Try again</button>.</p> : results && results.length > 0 ? (
                 <div className="space-y-4">
-                  {results.map((shoe, idx) => (
+                  {results.slice(0, visibleCount).map((shoe, idx) => (
                     <Card 
                       key={shoe.id} 
                       className={`relative overflow-hidden ${idx === 0 ? 'ring-2 ring-strava-orange' : ''}`}
@@ -237,7 +248,7 @@ export default function ShoeFinderPage() {
                     >
                       {idx === 0 && (
                         <div className="absolute top-0 right-0 bg-strava-orange text-white px-4 py-1 text-sm font-medium rounded-bl-lg">
-                          Best Match
+                          First option to research
                         </div>
                       )}
                       <CardHeader>
@@ -252,14 +263,16 @@ export default function ShoeFinderPage() {
                           <div className="text-right">
                             <div className="flex items-center gap-1 text-2xl font-bold text-strava-orange">
                               <TrendingUp className="h-5 w-5" />
-                              {shoe.matchScore}
+                              {idx + 1}
                             </div>
-                            <p className="text-xs text-gray-500">Match Score</p>
+                            <p className="text-xs text-gray-500">Shortlist order</p>
                           </div>
                         </div>
                       </CardHeader>
                       <CardContent>
                         <p className="text-gray-600 mb-4">{shoe.description}</p>
+                        <p className="text-sm mb-3">{shoe.matchReasons?.join(" · ") || "Review category and support against your preferences."}</p>
+                        <p className="text-xs text-slate-600 mb-4">Source checked: {shoeEvidence(shoe).checked || "not recorded"}. Recorded USD price; confirm your size and current offer with the source.</p>
                         
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                           <div className="flex items-center gap-2">
@@ -317,7 +330,9 @@ export default function ShoeFinderPage() {
               )}
             </div>
           )}
+          {showResults && results && results.length > 1 && !isLoadingResults && !resultsError && <div className="mt-6"><Link className="inline-block rounded-lg bg-orange-700 text-white font-semibold px-5 py-3" href={`/tools/shoe-compare?shoes=${results.slice(0, 2).map(s => s.slug).join(",")}`}>Compare the first two options →</Link><ToolResultActions source="shoe_finder_result" capability="shoe_shortlist" title="My running-shoe shortlist" summary={results.slice(0, 5).map(s => `${s.brand} ${s.model}: ${s.matchReasons?.join(", ") || s.category}; recorded $${s.price}; https://aitracker.run/tools/shoes/${s.slug}`).join("\n")} /></div>}
 
+          {showResults && results && results.length > visibleCount && <button onClick={() => setVisibleCount(results.length)} className="mt-5 underline text-orange-800">Show {results.length - visibleCount} more options</button>}
           <div className="mt-12 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-bold text-charcoal mb-4">Explore More</h2>
             <div className="grid sm:grid-cols-2 gap-6">
@@ -330,7 +345,7 @@ export default function ShoeFinderPage() {
                     <h3 className="font-semibold">Browse Full Database</h3>
                   </div>
                   <p className="text-sm text-gray-600">
-                    Explore all 35+ shoes with detailed specifications and filter options.
+                    Browse the catalogue by brand, category and specifications.
                   </p>
                 </div>
               </Link>
@@ -348,6 +363,7 @@ export default function ShoeFinderPage() {
                 </div>
               </Link>
             </div>
+            <p className="mt-5 text-sm"><Link href="/tools/shoes/compare" className="underline text-orange-800 mr-4">Compare running shoes</Link><Link href="/blog/how-to-compare-running-shoes" className="underline text-orange-800">How to compare before buying</Link></p>
           </div>
         </div>
 

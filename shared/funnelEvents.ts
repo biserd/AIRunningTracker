@@ -23,6 +23,12 @@ export const FUNNEL_EVENTS = {
   // --- Public acquisition tools ---
   tool_viewed: { side: "client", required: ["source", "capability"] },
   tool_completed: { side: "client", required: ["source", "capability"] },
+  tool_action: { side: "client", required: ["source", "capability", "action"] },
+  tool_result_saved: { side: "client", required: ["source", "capability"] },
+  tool_returned: { side: "client", required: ["source", "capability"] },
+  tool_account_continued: { side: "client", required: ["source", "capability"] },
+  tool_history_connected: { side: "client", required: ["source", "capability"] },
+  tool_signup_created: { side: "server", required: ["source", "capability"] },
 
   // --- Offer surfaces (Premium gates / CTAs) ---
   offer_viewed: { side: "client", required: ["source", "capability"] },
@@ -53,6 +59,10 @@ export const FUNNEL_EVENTS = {
 } as const satisfies Record<string, FunnelEventSpec>;
 
 export type FunnelEventName = keyof typeof FUNNEL_EVENTS;
+export const TOOL_OFFER_SOURCES = ["race_predictor_result", "marathon_fueling_result", "shoe_comparison_result", "shoe_guide_result", "shoe_finder_result", "rotation_planner_result"] as const;
+export function validToolOfferSource(value: unknown): value is typeof TOOL_OFFER_SOURCES[number] {
+  return typeof value === "string" && (TOOL_OFFER_SOURCES as readonly string[]).includes(value);
+}
 
 /**
  * Optional, well-known properties. Anything else supplied is still stored

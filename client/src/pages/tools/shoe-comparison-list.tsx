@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import type { RunningShoe, ShoeComparison } from "@shared/schema";
 import { shoeNumber } from "@shared/shoeEvidence";
+import { shoeEvidence } from "@shared/shoeEditorial";
+import { ShoeChooser } from "@/components/shoes/ShoeChooser";
 
 interface ComparisonWithShoes extends ShoeComparison {
   shoe1: RunningShoe;
@@ -69,10 +71,11 @@ function ComparisonCard({ comparison }: { comparison: ComparisonWithShoes }) {
           <h3 className="font-semibold text-lg mb-2 group-hover:text-strava-orange transition-colors">
             {shoe1.brand} {shoe1.model} vs {shoe2.brand} {shoe2.model}
           </h3>
-          <div className="flex justify-between text-sm text-gray-500">
+          <div className="flex flex-wrap gap-3 justify-between text-sm text-gray-500">
             <span>${shoe1.price} vs ${shoe2.price}</span>
             <span>{shoeNumber(shoe1.weight, ' oz')} vs {shoeNumber(shoe2.weight, ' oz')}</span>
           </div>
+          <p className="text-xs text-slate-600 mt-2">{[shoe1, shoe2].map(s => `${s.model}: ${shoeEvidence(s).checked || "no check date"}${shoeEvidence(s).status === "historical_unverified" ? " · historical" : ""}`).join("; ")}. Prices are recorded USD offers.</p>
           <div className="mt-3 flex items-center text-sm text-strava-orange group-hover:translate-x-1 transition-transform">
             View comparison <ArrowRight className="h-4 w-4 ml-1" />
           </div>
@@ -87,7 +90,7 @@ export default function ShoeComparisonList() {
   const [activeTab, setActiveTab] = useState<string>("all");
   const [search, setSearch] = useState("");
 
-  const { data: comparisons, isLoading } = useQuery<ComparisonWithShoes[]>({
+  const { data: comparisons, isLoading, isError, refetch } = useQuery<ComparisonWithShoes[]>({
     queryKey: ['/api/shoes/comparisons'],
     queryFn: async () => {
       const res = await fetch('/api/shoes/comparisons');
@@ -107,10 +110,10 @@ export default function ShoeComparisonList() {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>Running Shoe Comparisons: Specs, Sources & Upgrade Guides</title>
-        <meta name="description" content="Compare running shoe generations and alternatives with evidence-led buying guidance, source dates, price caveats and clearly labeled unknowns." />
-        <meta property="og:title" content="Running Shoe Comparisons: Specs, Sources & Upgrade Guides" />
-        <meta property="og:description" content="Compare running shoe generations and alternatives. Understand the evidence before upgrading." />
+        <title>Running Shoe Comparison: Choose Models & Compare Specs</title>
+        <meta name="description" content="Compare running shoes side by side. Choose two models or browse comparison guides for weight, drop, stack, recorded prices and dated sources." />
+        <meta property="og:title" content="Running Shoe Comparison: Choose Models & Compare Specs" />
+        <meta property="og:description" content="Choose two running shoes, compare specifications and check the evidence before buying or upgrading." />
         <link rel="canonical" href="https://aitracker.run/tools/shoes/compare" />
       </Helmet>
 
@@ -124,17 +127,18 @@ export default function ShoeComparisonList() {
 
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold mb-4" data-testid="page-title">
-            Running Shoe Comparisons
+            Running Shoe Comparison
           </h1>
           <p className="text-gray-600 dark:text-gray-400 max-w-3xl">
-            Compare generations and alternatives, understand the measurements, and decide what to research before buying. Source checks are dated; historical records and missing evidence are clearly labeled. These are specification-based guides, not hands-on reviews.
+            Choose two running shoes to compare weight, heel-to-toe drop, stack height, construction and recorded price. Or browse model upgrades and alternatives below. Each guide labels dated sources, historical records and missing fields; specifications help build a shortlist, while fit needs a try-on.
           </p>
         </div>
 
-        <section className="mb-8 rounded-2xl border border-orange-200 bg-orange-50 p-6" aria-label="Choose a shoe comparison">
+        <ShoeChooser />
+        <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6" aria-label="How to choose a shoe comparison">
           <h2 className="text-xl font-bold mb-2">Upgrading your current shoe or choosing a new one?</h2>
           <p className="text-gray-700 mb-4">Start with its job: easy mileage, long runs or race day. Compare the same size and width, then check fit, verified construction changes and the seller’s current price. A lighter shoe is not automatically a better match.</p>
-          <Link href="/tools/shoe-compare" className="inline-flex rounded-lg bg-orange-700 px-4 py-3 font-semibold text-white">Choose two shoes to compare</Link>
+          <Link href="/blog/how-to-compare-running-shoes" className="underline font-semibold text-orange-800">Read the running-shoe buying decision guide →</Link>
           <p className="mt-4 text-sm text-gray-700">Planning your next race? Pair your shortlist with a <Link href="/tools/rotation-planner" className="underline text-orange-900">training shoe rotation</Link>, a <Link href="/tools/marathon-fueling" className="underline text-orange-900">practiced fueling schedule</Link> and an <Link href="/tools/aerobic-decoupling-calculator" className="underline text-orange-900">aerobic decoupling check</Link> from a steady long run.</p>
         </section>
         <div className="mb-6">
@@ -189,7 +193,7 @@ export default function ShoeComparisonList() {
               </Card>
             ))}
           </div>
-        ) : filteredComparisons.length === 0 ? (
+        ) : isError ? <p role="alert">Comparison guides could not load. <button onClick={() => refetch()} className="underline">Try again</button>, or use the model chooser above.</p> : filteredComparisons.length === 0 ? (
           <div className="text-center py-12">
             <GitCompare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">No matching comparisons</h3>

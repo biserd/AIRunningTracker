@@ -39,7 +39,7 @@ import { FAQSchema } from "@/components/FAQSchema";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ToolEducationPanel } from "@/components/ToolEducationPanel";
 import { ToolResultActions } from "@/components/ToolResultActions";
-import { ClientOnlyContent } from "@/components/ClientOnlyContent";
+import { trackFunnelEvent } from "@/lib/analytics";
 
 const manualInputSchema = z.object({
   baseDistance: z.coerce.number().min(0.5, "Minimum 0.5").max(50, "Maximum 50"),
@@ -70,23 +70,23 @@ const RACE_PREDICTOR_FAQS = [
   },
   {
     question: "What is the Riegel formula and how does it work?",
-    answer: "The Riegel formula is a mathematical model that predicts race times across different distances based on a recent performance. It uses the equation: T2 = T1 × (D2/D1)^k, where T is time, D is distance, and k is the fatigue exponent (typically 1.06). We personalize this exponent based on your training volume and consistency to provide more accurate predictions tailored to your fitness level."
+    answer: "The Riegel relationship is T2 = T1 × (D2/D1)^k, where T is time, D is distance and k describes slowdown across distances. A common baseline is 1.06. This calculator adjusts k using the training volume and consistency you enter. Those adjustments are planning assumptions; they have not been calibrated as an individual accuracy guarantee."
   },
   {
     question: "What base race distance should I use for prediction?",
-    answer: "For best accuracy, use a recent race or hard effort that's within one distance category of your target. For marathon predictions, use a half marathon, 10K, or tempo run. For 5K predictions, use a recent 5K or 10K. The base effort should represent your current fitness - ideally from the past 4-8 weeks and run at race effort."
+    answer: "Use a recent race or sustained hard effort that represents current fitness and is reasonably close to your target distance. A half-marathon result offers more relevant marathon context than a short sprint, but distance-specific endurance still matters. An easy run, interval session or stopped activity is not equivalent to a continuous race result."
   },
   {
     question: "How do training volume and consistency affect predictions?",
-    answer: "Higher weekly mileage and consistent training improve your endurance, allowing you to maintain pace better over longer distances. We adjust the fatigue exponent based on these factors: runners with 60+ km/week and high consistency get a lower exponent (less slowdown), while those with lower volume get a higher exponent. This makes marathon predictions more accurate for your specific training background."
+    answer: "The model changes the fatigue exponent according to the weekly kilometres and consistency input. This changes the assumed slowdown over longer distances. It does not inspect your complete training history in manual mode or prove that a particular mileage makes you ready for a marathon."
   },
   {
     question: "When should I adjust for course difficulty and weather?",
-    answer: "Add course adjustment time for hilly or challenging terrain (30-120 seconds for moderate hills, 120-300+ for significant elevation). Add weather adjustment for heat above 15°C/59°F (add 30-60 seconds per 5°C above this), strong headwinds (60-180 seconds), or difficult conditions. For ideal conditions on flat courses, leave adjustments at zero."
+    answer: "Course and weather adjustments are seconds you choose to add or subtract from the modeled finish time. The calculator does not fetch a course profile or forecast and does not estimate those penalties for you. Leave them at zero for a baseline, then use a conservative scenario when you have relevant experience of the conditions."
   },
   {
     question: "Can I use this tool with Strava activities?",
-    answer: "Yes! If you're signed in and connected to Strava, you can import recent race efforts directly from your Strava activities. The tool will automatically detect suitable race-pace efforts between 5K and marathon distance, making it easy to base predictions on your actual training data without manual input."
+    answer: "Yes. Sign in, connect Strava from your dashboard and sync your runs, then choose From Strava. The picker lists up to 100 saved activities from the last 90 days, filtered to runs of at least 3 km and 10 minutes. You choose a race or hard effort yourself; we do not detect race effort automatically. Elapsed time is used when available, otherwise moving time. Manual entry is free and needs no account."
   }
 ];
 
@@ -98,7 +98,7 @@ export default function RacePredictor() {
   const [selectedActivityId, setSelectedActivityId] = useState<number | null>(null);
   const [selectedPaceTier, setSelectedPaceTier] = useState<number>(2);
 
-  const { data: activitiesData, isLoading: isLoadingActivities } = useQuery({
+  const { data: activitiesData, isLoading: isLoadingActivities, isError: activitiesError, refetch: retryActivities } = useQuery({
     queryKey: ['/api/race-predictor/suitable-activities'],
     enabled: isAuthenticated && activeTab === "strava",
   });
@@ -172,6 +172,7 @@ export default function RacePredictor() {
 
   const handleActivitySelect = async (activityId: number) => {
     try {
+      if (!(await form.trigger())) return;
       setSelectedActivityId(activityId);
       const activity = (activitiesData as any).activities.find((a: any) => a.id === activityId);
       
@@ -180,7 +181,7 @@ export default function RacePredictor() {
       const input: RacePredictionInput = {
         baseEffort: {
           distance: activity.distance,
-          time: activity.movingTime,
+          time: activity.raceTime || activity.movingTime,
           activityName: activity.name,
           date: activity.startDate,
         },
@@ -229,8 +230,8 @@ export default function RacePredictor() {
   return (
     <>
       <SEO
-        title="Race Time Predictor: 5K, 10K, Half & Marathon"
-        description="Estimate race times from a recent result with the Riegel formula. Compare 5K, 10K, half marathon and marathon targets, then plan pacing and fueling."
+        title="Race Predictor for Strava Runs & Manual Race Times"
+        description="Predict 5K, 10K, half marathon and marathon times. Enter a recent result free, or sign in to select a synced Strava run. Review pacing and scenario ranges."
         keywords="race predictor, ai race predictor, marathon time predictor, half marathon predictor, 10k race predictor, 5k race predictor, strava race predictor, vdot calculator"
         url="https://aitracker.run/tools/race-predictor"
         structuredData={{
@@ -249,7 +250,7 @@ export default function RacePredictor() {
         <PublicHeader />
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-          <div className="mb-8"><h1 className="text-3xl font-bold text-charcoal sm:text-5xl">Race Time Predictor</h1><p className="mt-3 max-w-3xl text-lg text-gray-600">Estimate a finish-time scenario from a recent performance and see the assumptions that make longer-distance predictions less certain.</p></div>
+          <div className="mb-8"><h1 className="text-3xl font-bold text-charcoal sm:text-5xl">Race Predictor: Strava or Manual Entry</h1><p className="mt-3 max-w-3xl text-lg text-gray-600">Estimate your 5K, 10K, half marathon or marathon time from a recent race or hard effort. Enter a result below without an account, or select a run you have synced from Strava.</p><p className="mt-3 text-sm text-slate-700">For Strava: sign in → connect Strava on the dashboard → sync running data → return here and choose From Strava. The picker lists saved runs; you decide which was a representative hard effort.</p></div>
           <Alert className="mb-8 bg-blue-50 border-blue-200">
             <Info className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-sm text-gray-700 ml-2">
@@ -259,7 +260,6 @@ export default function RacePredictor() {
             </AlertDescription>
           </Alert>
 
-          <ClientOnlyContent minHeight={900}>
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -268,7 +268,7 @@ export default function RacePredictor() {
               </CardTitle>
               <CardDescription>
                 {isAuthenticated 
-                  ? "Import a recent race effort from Strava or enter your base performance manually"
+                  ? "Select a synced run from Strava or enter your recent race time manually"
                   : "Enter your base performance and target race distance to get predictions"}
               </CardDescription>
             </CardHeader>
@@ -279,12 +279,10 @@ export default function RacePredictor() {
                     <Calculator className="h-4 w-4 mr-2" />
                     Manual Input
                   </TabsTrigger>
-                  {isAuthenticated && (
                     <TabsTrigger value="strava" data-testid="tab-strava">
                       <ActivityIcon className="h-4 w-4 mr-2" />
                       From Strava
                     </TabsTrigger>
-                  )}
                 </TabsList>
 
                 <TabsContent value="manual">
@@ -549,22 +547,22 @@ export default function RacePredictor() {
                   </Form>
                 </TabsContent>
 
-                {isAuthenticated && (
                   <TabsContent value="strava">
-                    {isLoadingActivities ? (
+                    {!isAuthenticated ? <div className="rounded-xl bg-orange-50 p-5 space-y-3"><h2 className="font-semibold">Use a synced Strava run</h2><p>Sign in and connect Strava on the dashboard, then sync your runs. Return here to choose a recent race or hard effort. You can keep using Manual Input without signing in.</p><a href="/auth?redirect=%2Fdashboard" className="inline-block underline text-orange-800">Sign in to connect Strava →</a></div> : isLoadingActivities ? (
                       <div className="text-center py-12">
                         <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-strava-orange" />
-                        <p className="text-gray-600">Loading your race activities...</p>
+                        <p className="text-gray-600">Loading your saved running activities…</p>
                       </div>
-                    ) : activitiesData && (activitiesData as any).activities && (activitiesData as any).activities.length > 0 ? (
+                    ) : activitiesError ? <p role="alert">Your runs could not load. <button className="underline" onClick={() => retryActivities()}>Try again</button> or use Manual Input.</p> : activitiesData && (activitiesData as any).activities && (activitiesData as any).activities.length > 0 ? (
                       <div className="space-y-4">
                         <p className="text-sm text-gray-600">
-                          Select a recent race or hard effort to use as your base prediction:
+                          Choose a race or hard effort yourself. These are saved runs, not detected race efforts. Time uses elapsed time when available, including stops; check it against your official race result.
                         </p>
                         <div className="max-h-96 overflow-y-auto space-y-2">
                           {(activitiesData as any).activities.map((activity: any) => (
                             <button
                               key={activity.id}
+                              disabled={calculateMutation.isPending}
                               onClick={() => handleActivitySelect(activity.id)}
                               className={`w-full text-left p-4 rounded-lg border transition-all ${
                                 selectedActivityId === activity.id
@@ -586,11 +584,11 @@ export default function RacePredictor() {
                                 </div>
                                 <div>
                                   <span className="text-gray-500">Time:</span>{' '}
-                                  <span className="font-medium">{formatTime(activity.movingTime)}</span>
+                                  <span className="font-medium">{formatTime(activity.raceTime || activity.movingTime)} ({activity.timeBasis || "moving"})</span>
                                 </div>
                                 <div>
                                   <span className="text-gray-500">Pace:</span>{' '}
-                                  <span className="font-medium">{formatPace(activity.movingTime / (activity.distance / 1000))}/km</span>
+                                  <span className="font-medium">{formatPace((activity.raceTime || activity.movingTime) / (activity.distance / 1000))}/km</span>
                                 </div>
                               </div>
                             </button>
@@ -628,6 +626,7 @@ export default function RacePredictor() {
                               />
                             </div>
                           </div>
+                          <Button className="mt-4 bg-orange-700 text-white" disabled={!selectedActivityId || calculateMutation.isPending} onClick={() => selectedActivityId && handleActivitySelect(selectedActivityId)}>Recalculate selected run with these settings</Button>
                         </div>
                       </div>
                     ) : (
@@ -635,13 +634,11 @@ export default function RacePredictor() {
                         <ActivityIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                         <p className="text-lg font-medium mb-2">No Suitable Activities Found</p>
                         <p className="text-sm">
-                          We look for race-pace efforts (5K-Marathon distance). 
-                          Try syncing your Strava data or use manual input.
+                          The picker uses up to 100 saved activities from the last 90 days and shows runs of at least 3 km and 10 minutes. Connect and sync Strava on your dashboard, or enter a race time manually.
                         </p>
                       </div>
                     )}
                   </TabsContent>
-                )}
               </Tabs>
 
               {result && (
@@ -790,12 +787,11 @@ export default function RacePredictor() {
                       </CardContent>
                     </Card>
                   )}
-                  <ToolResultActions source="race_predictor_result" capability="race_prediction" />
+                  <ToolResultActions source="race_predictor_result" capability="race_prediction" title="My race prediction" summary={`${getDistanceLabel(form.getValues("targetDistance"))}: ${formatTime(result.predictedTime)} at ${formatPace(result.predictedPace)}/km. Scenario range ${formatTime(result.confidenceLower)}–${formatTime(result.confidenceUpper)}. Modeled estimate, not a guaranteed finish time.`} />
                 </div>
               )}
             </CardContent>
           </Card>
-          </ClientOnlyContent>
         </div>
 
         <section className="max-w-6xl mx-auto px-4 sm:px-6 py-8" aria-label="Race prediction example and next steps">

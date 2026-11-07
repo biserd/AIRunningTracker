@@ -1,7 +1,7 @@
 import type { RunningShoe } from "./schema";
 import { safeShoeSource, shoeNumber, shoeAvailability } from "./shoeEvidence";
 
-export const SHOE_EDITORIAL_VERSION = "2026-10-25.1";
+export const SHOE_EDITORIAL_VERSION = "2026-11-07.1";
 export const SHOE_METHODOLOGY =
   "Specification-based buying guidance, not a hands-on review. Running Warehouse is our preferred specification source when it lists a model; otherwise we link the manufacturer or a named specialist source. Measurement sizes and methods can differ. Categories and buying considerations are editorial interpretations, not measured performance. We do not invent comfort scores, durability mileage, fit tests or race-time gains.";
 export const shoeName = (s: Pick<RunningShoe, "brand" | "model">) =>
@@ -116,7 +116,9 @@ export function buildShoeGuide(s: RunningShoe): ShoeGuide {
     label =
       evidence.status === "source_checked" ? "Source-checked" : "Historical";
   const summary =
-    evidence.status === "source_checked" && s.description
+    s.slug === "asics-metaspeed-tokyo" ? "This historical family label does not specify METASPEED Sky Tokyo or Edge Tokyo. Confirm the exact variant and SKU before using its old measurements or choosing a comparison."
+    : s.slug === "hoka-clifton-10" && evidence.status !== "source_checked" ? "Clifton 10 is a historical catalogue record. Its stack and weight have not been reverified against an accessible current primary specification table. Do not treat the old stack values as a measured upgrade difference."
+    : evidence.status === "source_checked" && s.description
       ? s.description
       : `${name} is catalogued for ${categoryName(s.category)}. Its older specifications have not been reverified; treat this page as a starting point for research, not an independently tested recommendation.`;
   const sections: Section[] = [
@@ -188,6 +190,7 @@ export function buildComparisonGuide(a: RunningShoe, b: RunningShoe) {
       (a.dataSource === "manufacturer" && b.dataSource === "manufacturer" && a.brand === b.brand));
   const sameSeries =
     a.brand === b.brand && !!a.seriesName && a.seriesName === b.seriesName;
+  const ambiguousTokyo = [a, b].some(s => s.slug === "asics-metaspeed-tokyo");
   const differences: Section[] = [];
   for (const [field, label, unit] of [
     ["weight", "Weight", "oz"],
@@ -224,6 +227,9 @@ export function buildComparisonGuide(a: RunningShoe, b: RunningShoe) {
         ? `There is not enough like-for-like measurement evidence to name a winner between ${an} and ${bn}. Check each linked source and try the fit before choosing.`
         : `Choose between ${an} and ${bn} by the session you need it for, fit and current price—not by assuming that lighter, newer or more expensive means better.`;
   const sections: Section[] = [
+    ...(ambiguousTokyo ? [{ title: "Confirm the exact METASPEED Tokyo variant", text: "The historical catalogue label METASPEED Tokyo does not identify Sky Tokyo or Edge Tokyo. Treat its old measurements as unconfirmed family data. Confirm the complete model and SKU with the source before comparing geometry, weight or price with the Vaporfly; we cannot select a variant on your behalf." }] : []),
+    ...([a, b].some(s => s.slug === "hoka-clifton-10") ? [{ title: "Clifton 10 evidence gap", text: "The older Clifton 10 record has unverified stack and weight values. On November 7, 2026 the former retailer product links were unavailable, while the retailer review left its specification table unpublished. Do not interpret the old 32/24 mm listing as a verified stack change to Clifton 11. Check the exact current source and try both uppers before making an upgrade decision." }] : []),
+    ...([a, b].every(s => /adios-pro-[34]$/.test(s.slug || "")) ? [{ title: "An Adios Pro upgrade needs a familiar-pair comparison", text: "The Pro 3 baseline remains historical, while the Pro 4 has dated retailer evidence. Its carbon EnergyRods construction should not be described as a conventional solid plate. Compare heel hold, toe room and control at your intended race pace; the recorded weight and geometry cannot establish a race-time gain. Check the source offer in your size because the Pro 4 price was colourway-specific." }] : []),
     {
       title: `When to shortlist ${a.model}`,
       text: `${an} is catalogued for ${categoryName(a.category)}. ${usage[a.category] || ""} ${a.availability === "upcoming" ? "Its upcoming status makes availability a deciding factor." : ""}`,
@@ -273,7 +279,7 @@ export function buildComparisonGuide(a: RunningShoe, b: RunningShoe) {
   ];
   return {
     title: `${an} vs ${bn}`,
-    description: `${a.model} vs ${b.model}: compare ${a.heelToToeDrop ?? "unpublished"}/${b.heelToToeDrop ?? "unpublished"} mm drop, weight, construction, price and whether switching makes sense. ${comparable ? "Source-checked specs." : "Evidence gaps disclosed."}`,
+    description: comparable ? `${a.model} vs ${b.model}: compare drop, weight, stack, construction and recorded prices with dated sources and practical upgrade guidance.` : `${a.model} vs ${b.model}: compare specifications, source dates, missing evidence and buying considerations. Historical measurements are labeled.`,
     verdict,
     sections,
     differences,

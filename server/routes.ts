@@ -67,6 +67,7 @@ import {
 import { normalizeCadenceToSpm } from "@shared/cadenceNormalization";
 import { buildUpgradeUrl, isBenefitKey, sanitizeReturnTo } from "@shared/upgradeIntent";
 import { recordFunnelEvent } from "./services/funnelAnalytics";
+import { validToolOfferSource } from "@shared/funnelEvents";
 import { isClientFunnelEvent, buildFunnelDedupeKey, billingPeriodFromInterval } from "@shared/funnelEvents";
 import { getDashboardCalendarPeriods, getLastMonthComparisonEnd, partitionDashboardActivities } from "./services/dashboardPeriods";
 import { formatRunDistance, formatRunDuration, formatRunPace, runUnitLabels } from "@shared/runFormatting";
@@ -466,8 +467,8 @@ export async function registerRoutes(app: Express, runtime?: { schedulerDatabase
       keywords: "MCP documentation, MCP OAuth, running data tools, Streamable HTTP"
     },
     "/tools/shoes/compare": {
-      title: "Compare Running Shoes | Side-by-Side Comparison | RunAnalytics",
-      description: "Compare running shoes side-by-side. See specs, features, and AI insights to find the best shoes for your running style.",
+      title: "Running Shoe Comparison: Choose Models & Compare Specs",
+      description: "Compare running shoes side by side. Choose two models or browse guides for weight, drop, stack, recorded prices and dated sources.",
       keywords: "compare running shoes, shoe comparison, running shoe specs"
     }
   };
@@ -1536,6 +1537,10 @@ ${allPages.map(page => `  <url>
     try {
       const userData = registerSchema.parse(req.body);
       const result = await authService.register(userData);
+      if (validToolOfferSource(req.body.toolSource)) await recordFunnelEvent({
+        event: "tool_signup_created", userId: result.user.id, dedupeKey: `tool_signup_created:${result.user.id}`,
+        props: { source: req.body.toolSource, capability: "training_history", experimentVariant: "contextual_v1" },
+      });
       
       // Send welcome email to new user
       await emailService.sendWelcomeEmail(userData.email, userData.firstName);
@@ -2126,6 +2131,11 @@ ${allPages.map(page => `  <url>
         subscriptionPlan: 'free',
       });
 
+      const toolSource = requestedRedirect ? new URL(requestedRedirect, "https://aitracker.run").searchParams.get("fromTool") : null;
+      if (validToolOfferSource(toolSource)) await recordFunnelEvent({
+        event: "tool_signup_created", userId: newUser.id, dedupeKey: `tool_signup_created:${newUser.id}`,
+        props: { source: toolSource, capability: "training_history", experimentVariant: "contextual_v1" },
+      });
       // Enqueue initial Strava sync. New accounts default to 'free', so cap
       // the very first pull at 20 activities: they can upgrade to expand it.
       try {
@@ -5279,18 +5289,11 @@ ${allPages.map(page => `  <url>
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - 90);
 
-      const result = await storage.getActivitiesByUserIdPaginated(userId, {
-        page: 1,
-        pageSize: 100,
-        minDistance: 3000, // At least 3km
-        maxDistance: undefined,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-      });
+      const recentActivities = await storage.getActivitiesByUserId(userId, 100, startDate, { summaryOnly: true });
 
-      // Filter for race-effort candidates (fast paces)
-      const suitableActivities = result.activities
-        .filter(activity => activity.movingTime >= 600) // At least 10 minutes
+      // Candidates are saved runs, not automatically detected race efforts.
+      const { raceActivityCandidates } = await import("@shared/raceActivityCandidates");
+      const suitableActivities = raceActivityCandidates(recentActivities.filter(a => new Date(a.startDate) <= endDate))
         .map(activity => {
           const distanceInKm = activity.distance / 1000;
           const distanceConverted = unitPreference === 'miles' ? distanceInKm * 0.621371 : distanceInKm;
@@ -5304,6 +5307,9 @@ ${allPages.map(page => `  <url>
             distance: activity.distance, // Keep in meters for calculation
             distanceFormatted: distanceConverted.toFixed(2),
             movingTime: activity.movingTime,
+            raceTime: activity.raceTime,
+            timeBasis: activity.timeBasis,
+            isTaggedRace: activity.isTaggedRace,
             durationFormatted: `${Math.floor(activity.movingTime / 60)}:${String(Math.floor(activity.movingTime % 60)).padStart(2, '0')}`,
             averageSpeed: activity.averageSpeed,
             paceFormatted: paceConverted > 0 ? `${Math.floor(paceConverted)}:${String(Math.round((paceConverted % 1) * 60)).padStart(2, '0')}` : "0:00",
@@ -7384,6 +7390,9 @@ ${allPages.map(page => `  <url>
       const userWeight = weight ? parseInt(weight as string) : 160;
       const userGoal = (goal as string) || 'general';
       const userFootType = (footType as string) || 'neutral';
+      if (!Number.isFinite(userWeight) || userWeight < 50 || userWeight > 500 || !['daily','racing','marathon','speed','recovery','general'].includes(userGoal) || !['neutral','overpronator','supinator','unsure'].includes(userFootType)) {
+        return res.status(400).json({ message: "Choose a valid running goal, support preference and weight between 50 and 500 lb." });
+      }
       
       const allShoes = (await storage.getShoes({})).map(publicShoe);
       
@@ -7437,7 +7446,11 @@ ${allPages.map(page => `  <url>
         })
         .sort((a, b) => b.score - a.score)
         .slice(0, 10)
-        .map(r => ({ ...r.shoe, matchScore: Math.round(r.score) }));
+        .map(r => ({ ...r.shoe, matchScore: Math.round(r.score), matchReasons: [
+          `Catalogue role: ${r.shoe.category.replace(/_/g, ' ')}`,
+          `Support category: ${r.shoe.stability.replace(/_/g, ' ')}`,
+          ...(r.shoe.minRunnerWeight && r.shoe.maxRunnerWeight && userWeight >= r.shoe.minRunnerWeight && userWeight <= r.shoe.maxRunnerWeight ? ['Within the catalogued runner-weight range'] : []),
+        ] }));
       
       res.json(recommendations);
     } catch (error: any) {

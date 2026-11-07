@@ -27,6 +27,9 @@ import {
 } from "lucide-react";
 import type { RunningShoe } from "@shared/schema";
 import { shoeNumber, shoeBoolean, safeShoeSource, shoeAvailability } from "@shared/shoeEvidence";
+import { ShoeChooser } from "@/components/shoes/ShoeChooser";
+import { ToolResultActions } from "@/components/ToolResultActions";
+import { buildComparisonGuide, shoeEvidence } from "@shared/shoeEditorial";
 
 const categoryLabels: Record<string, string> = {
   daily_trainer: "Daily Trainer",
@@ -204,9 +207,9 @@ export default function ShoeComparePage() {
   const handleRemoveShoe = (slugToRemove: string) => {
     const newSlugs = slugs.filter(s => s !== slugToRemove);
     if (newSlugs.length > 0) {
-      window.location.href = `/tools/shoes/compare?shoes=${newSlugs.join(',')}`;
+      window.location.href = `/tools/shoe-compare?shoes=${newSlugs.join(',')}`;
     } else {
-      window.location.href = '/tools/shoes';
+      window.location.href = '/tools/shoe-compare';
     }
   };
 
@@ -215,7 +218,7 @@ export default function ShoeComparePage() {
     : 'Shoe Comparison Tool | RunAnalytics';
   
   const pageDescription = shoes.length > 0
-    ? `Compare ${shoes.length} running shoes side-by-side: ${shoes.map(s => `${s.brand} ${s.model}`).join(', ')}. View specs, ratings, and find the best shoe for you.`
+    ? `Compare ${shoes.map(s => `${s.brand} ${s.model}`).join(' vs ')}: specifications, dated sources, missing evidence and recorded USD prices.`
     : 'Compare running shoes side-by-side. View weight, drop, cushioning, price, and ratings to find the perfect shoe for your running needs.';
 
   const seoTitle = shoes.length > 0 
@@ -223,8 +226,8 @@ export default function ShoeComparePage() {
     : "Running Shoe Comparison | Side-by-Side Analysis | RunAnalytics";
   
   const seoDescription = shoes.length > 0
-    ? `Compare ${shoes.length} running shoes side-by-side: ${shoes.map(s => `${s.brand} ${s.model}`).join(', ')}. View specs, ratings, and find the best shoe for you.`
-    : "Compare running shoes head-to-head. See specs, features & AI analysis to find your best match.";
+    ? `Compare ${shoes.map(s => `${s.brand} ${s.model}`).join(' vs ')}: specifications, dated sources, missing evidence and recorded USD prices.`
+    : "Choose two running shoes and compare weight, drop, stack, recorded prices and source dates. Free side-by-side comparison with missing data clearly labeled.";
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -232,7 +235,7 @@ export default function ShoeComparePage() {
         title={seoTitle}
         description={seoDescription}
         keywords="compare running shoes, shoe comparison, running shoe vs"
-        url="https://aitracker.run/tools/shoes/compare"
+        url="https://aitracker.run/tools/shoe-compare"
         structuredData={{
           "@context": "https://schema.org",
           "@type": "SoftwareApplication",
@@ -240,7 +243,7 @@ export default function ShoeComparePage() {
           "applicationCategory": "HealthApplication",
           "operatingSystem": "Web",
           "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-          "description": "Compare running shoes head-to-head. See specs, features & AI analysis to find your best match."
+          "description": "Choose running-shoe models and compare dated specifications with missing evidence labeled."
         }}
       />
 
@@ -287,13 +290,15 @@ export default function ShoeComparePage() {
           )}
         </div>
 
+        <ShoeChooser key={slugsParam} initialSlugs={slugs} source="comparison_chooser" />
+        <div id="comparison-result" className="scroll-mt-6">
         {slugs.length === 0 ? (
           <Card className="p-8 text-center">
             <CardContent className="pt-6">
               <Scale className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-              <h2 className="text-xl font-semibold mb-2">No Shoes Selected</h2>
+              <h2 className="text-xl font-semibold mb-2">Your comparison starts above</h2>
               <p className="text-gray-600 mb-6">
-                Go to the shoe database and click "Add to Compare" on shoes you want to compare.
+                Pick two models in the chooser, then select Compare these shoes. You can also browse the catalogue and add up to three models.
               </p>
               <Link href="/tools/shoes">
                 <Button className="bg-strava-orange hover:bg-strava-orange/90" data-testid="button-browse-shoes">
@@ -349,7 +354,8 @@ export default function ShoeComparePage() {
                           <div className="relative group">
                             <button
                               onClick={() => handleRemoveShoe(shoe.slug || '')}
-                              className="absolute -top-2 -right-2 p-1 bg-red-100 text-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-200"
+                              aria-label={`Remove ${shoe.brand} ${shoe.model}`}
+                              className="absolute -top-2 -right-2 p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200"
                               data-testid={`button-remove-${shoe.slug}`}
                             >
                               <X className="h-3 w-3" />
@@ -371,9 +377,9 @@ export default function ShoeComparePage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {specs.map((spec, rowIndex) => {
+                    {specs.filter(spec => !spec.key.endsWith("Rating") || shoes.some(shoe => spec.getValue(shoe) != null)).map((spec, rowIndex) => {
                       const values = shoes.map(shoe => spec.getValue(shoe));
-                      const bestIndex = spec.isBestFn && values.every(value => value != null) ? spec.isBestFn(values as (string | number)[]) : -1;
+                      const bestIndex = -1; // Mixed methods, sizes and recorded prices do not establish a winner.
                       
                       return (
                         <tr 
@@ -443,6 +449,11 @@ export default function ShoeComparePage() {
             </div>
           </div>
         )}
+        </div>
+        {shoes.length >= 2 && <>
+          <section className="mt-6 rounded-xl border bg-white p-6"><h2 className="font-bold text-xl mb-3">How to decide between these shoes</h2><p>{buildComparisonGuide(shoes[0], shoes[1]).verdict}</p><p className="mt-3 text-sm">{shoes.map(s => `${s.model}: ${shoeEvidence(s).checked || "no source-check date"}`).join("; ")}. Check the source links for current prices and your size.</p><Link href="/blog/how-to-compare-running-shoes" className="underline text-orange-800 mt-3 inline-block">Use the buying decision checklist →</Link></section>
+          <ToolResultActions source="shoe_comparison_result" capability="shoe_comparison" title="My running-shoe comparison" summary={shoes.map(s => `${s.brand} ${s.model}: ${shoeNumber(s.weight, " oz")}; ${shoeNumber(s.heelToToeDrop, " mm drop")}; recorded $${s.price}; checked ${shoeEvidence(s).checked || "unknown"}; ${safeShoeSource(s.sourceUrl) || "source unavailable"}`).join("\n")} />
+        </>}
       </main>
 
       <Footer />
