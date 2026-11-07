@@ -32,3 +32,14 @@ Old legacy pending jobs are cancelled, not deleted or sent as a backlog. Existin
 - Signup timing/exclusion and service tests cover the complete sequence, exact signup anchors, deduplication, stale steps, Premium/Apple access, trials, opt-outs, suppression, quiet hours and unknown outcomes.
 - Synthetic D1 integration uses the real application ORM, email-job storage, atomic send claim and Apple ledger; every external provider request is blocked.
 - Email tests verify the feature's default-off allowlist, suppression failure paths, final eligibility callback and one-click unsubscribe headers.
+
+## Production release
+
+- Runtime source `39ba6c6`, image `sha256:5684ced2d79692cfba900b589b1f0961d0abf5fd8773d30615b0e625d51572e2`, container version 43.
+- Worker `8a6a5620-cb9a-40fb-8a06-b89801e397fc`; stable `production-live` identity retained. The non-secret signup-reminder flag is explicitly forwarded from the current Worker environment when ensuring the runtime.
+- The live suppression probe, sender configuration, signing secret and campaign flag passed readiness. Activation used the readiness-guarded SQL script; no Cloudflare policy-approval flag was asserted.
+- Production settings: enabled, dry-run off, 100% eligible rollout, 0% holdout, 25 accepted messages/hour.
+- 265 old pending legacy jobs were cancelled with an audit reason; job history and customer records were not deleted.
+- At release, eight consented Free accounts existed, all outside the signup sequence window. No historical blast was queued. Unknown-consent accounts were not opted in automatically.
+- Eighteen targeted tests and the synthetic D1 integration passed; TypeScript remains at 34 pre-existing diagnostics, with none in the new feature files. Production signup admin assets, admin authentication, WhatsApp settings and existing public tool/Strava checks passed.
+- First confirmed live worker check: `2026-11-07T20:27:44.368Z`, signup reminders enabled, worker active, dry-run false, readiness true, zero processed/failed jobs and no signup-reminder backlog.

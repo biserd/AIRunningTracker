@@ -17,13 +17,17 @@ export class RunAnalyticsProduction extends Container<ProductionEnv> {
   sleepAfter = '10m';
   entrypoint = ['node', 'dist/d1-index.mjs'];
   envVars = productionEnvironment(this.env);
-  async ensureD1Runtime(): Promise<void> {
+  async ensureD1Runtime(signupReminders = false): Promise<void> {
     await this.ctx.blockConcurrencyWhile(async () => {
-      if (await this.ctx.storage.get('web-whatsapp-settings-f15eab52-rollout-complete')) return;
+      // Pass this non-secret release flag explicitly from the current Worker
+      // environment; a warm Durable Object can retain its previous env snapshot.
+      this.envVars.ENABLE_SIGNUP_PAYMENT_REMINDERS = signupReminders ? 'true' : 'false';
+      const release = `signup-reminders-5ace7e4f-env-v2-${signupReminders}-rollout-complete`;
+      if (await this.ctx.storage.get(release)) return;
       // An image rollout can retain an already-running process and its old env.
       // Stop it once before accepting D1 traffic; external database data is untouched.
       await this.destroy();
-      await this.ctx.storage.put('web-whatsapp-settings-f15eab52-rollout-complete', true);
+      await this.ctx.storage.put(release, true);
     });
   }
 }
@@ -52,7 +56,7 @@ export default {
       const asset = await servePublicAsset(request,env.PUBLIC_ASSETS);
       if (asset) return asset;
       const container = getContainer(env.WEB,productionInstance);
-      await container.ensureD1Runtime();
+      await container.ensureD1Runtime(Reflect.get(env,'ENABLE_SIGNUP_PAYMENT_REMINDERS') === 'true');
       const uploaded = await privateAssets(request,env.PUBLIC_ASSETS,async () => {
         const authorization = request.headers.get('authorization');
         if (!authorization?.startsWith('Bearer ')) return null;
@@ -102,7 +106,7 @@ export default {
   async scheduled(_event,env): Promise<void> {
     // Keeps the single scheduler process alive without exposing a public execution endpoint.
     const container = getContainer(env.WEB,productionInstance);
-    await container.ensureD1Runtime();
+    await container.ensureD1Runtime(Reflect.get(env,'ENABLE_SIGNUP_PAYMENT_REMINDERS') === 'true');
     const response = await container.fetch('http://container/health');
     await response.body?.cancel();
     if (!response.ok) throw new Error('Production scheduler health failed');

@@ -22,6 +22,7 @@
     "CLOUDFLARE_EMAIL_ACCOUNT_ID": "73d71a2bef58f7469ecb48e2b8e84c0e",
     "EMAIL_FROM": "RunAnalytics <hello@aitracker.run>",
     "APP_ROLE": "jobs",
+    "ENABLE_SIGNUP_PAYMENT_REMINDERS": "true",
     "HERMES_MCP_CLIENT_ID": "ra_mcp_client_L0o4CkpSbZeZ8xlI4MyQeNXh",
     "TELEGRAM_BOT_USERNAME": "hermes_3njyz3nxuousjmh2_bot",
     "ALLOWED_PRICE_IDS": "price_1SbtcfRwvWaTf8xfSEO4iKnc,price_1SbtcfRwvWaTf8xfwcVnrRf8",
@@ -35,8 +36,8 @@
     "COACH_BINDING_CALLBACK_SECRET","COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2","COACH_AGENT_WEBHOOK_URL",
     "OPENAI_API_KEY","CLOUDFLARE_EMAIL_API_TOKEN","STRAVA_CLIENT_SECRET",
     "VITE_STRAVA_CLIENT_ID","STRIPE_SECRET_KEY","VITE_STRIPE_PUBLIC_KEY","STRAVA_SUBSCRIPTION_ID"] },
-  // Verified WhatsApp web settings f06ac44, staging image f15eab52.
-  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:3f7046e26e95bf543686dd3fe0f0dcb93904db00242057692297fd2d1cd1c1fe",
+  // Verified signup day-1/7/14 reminders 39ba6c6, staging image 5ace7e4f.
+  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:5684ced2d79692cfba900b589b1f0961d0abf5fd8773d30615b0e625d51572e2",
     "instance_type":"standard-1","max_instances":2 }],
   "durable_objects": { "bindings": [{ "name":"WEB","class_name":"RunAnalyticsProduction" }] },
   "migrations": [{ "tag":"v1","new_sqlite_classes":["RunAnalyticsProduction"] }],

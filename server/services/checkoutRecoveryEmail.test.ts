@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { emailService } from './email';
 
-test('Cloudflare path refuses promotional lifecycle campaigns', async () => {
+test('Cloudflare path refuses unselected lifecycle campaigns', async () => {
   const result = await emailService.sendDripEmail({
     to: 'runner@example.com', subject: 'Test', previewText: 'Test', bodyText: 'Test',
     ctaText: 'Review', ctaUrl: 'https://aitracker.run/pricing',

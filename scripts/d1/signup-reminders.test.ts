@@ -60,5 +60,17 @@ sqlite.prepare("INSERT INTO apple_subscriptions(original_transaction_id,environm
 sqlite.prepare("UPDATE email_jobs SET status='processing',claimed_by='fixture-worker',lease_expires_at=? WHERE step='DAY7'").run(new Date(now + 300000).toISOString());
 assert.equal(await service.process({ ...job, id: 2, step: "DAY7" }), false);
 assert.equal(sent, 1, "derived Apple access excludes a runner even if their stored plan is Free");
-console.log("D1 signup reminders passed: real ORM enrollment/deduplication, atomic send claim, day-7 scheduling, payment exclusion, no provider requests.");
+sqlite.exec(readFileSync("scripts/ops/20261107-signup-reminders-prepare.sql", "utf8"));
+const enable = readFileSync("scripts/ops/20261107-signup-reminders-enable.sql", "utf8");
+sqlite.exec(enable);
+assert.equal(sqlite.prepare("SELECT value FROM system_settings WHERE key='drip_campaigns_dry_run'").get()!.value, "true", "missing runtime readiness cannot enable delivery");
+const status = { checkedAt: new Date().toISOString(), signupReminders: true, campaignsEnabled: true, readiness: { ready: false } };
+sqlite.prepare("INSERT INTO system_settings(key,value) VALUES('drip_campaigns_runtime_status',?)").run(JSON.stringify(status));
+sqlite.exec(enable);
+assert.equal(sqlite.prepare("SELECT value FROM system_settings WHERE key='drip_campaigns_dry_run'").get()!.value, "true", "failed readiness cannot enable delivery");
+status.readiness.ready = true;
+sqlite.prepare("UPDATE system_settings SET value=? WHERE key='drip_campaigns_runtime_status'").run(JSON.stringify(status));
+sqlite.exec(enable);
+assert.equal(sqlite.prepare("SELECT value FROM system_settings WHERE key='drip_campaigns_dry_run'").get()!.value, "false");
+console.log("D1 signup reminders passed: real ORM, atomic claims, payment/Apple exclusion, guarded activation, no provider requests.");
 sqlite.close();
