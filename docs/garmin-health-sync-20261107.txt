@@ -51,4 +51,36 @@ TypeScript diagnostics, with none in this feature's files. Browser fixture
 checks cover consent, populated/empty/outage states and 390px mobile layout.
 Synthetic readings were used only locally, never inserted in production.
 
-Release identifiers and final live verification will be recorded after promotion.
+Production release verified at 2026-11-07T22:04Z:
+Application source: 7f9199941bb0047c81bfbc32f8bc08c61796ae0c
+Cloudflare build: 4acf8ac3-5448-491a-80e9-1a768f20415d (successful, 2m16s)
+Staging Worker: 0d86b47f-f5e4-4b4b-83a4-d153801a7e77
+Production Worker: 3b21d199-f34c-4a03-afa6-20ac167044a6
+Production container application: version 48, no reported errors
+Immutable image digest: e5d4ff2ba770a59b6c2092e0693461ab485a375f9914d264e696ff58b6d4bc66
+Stable production-live instance identity and existing environment/mail controls
+are preserved. Container rollouts are asynchronous; live checks were performed
+after the new image was actually serving, rather than after upload alone.
+
+The four health feeds are enabled, not on hold, and all use
+https://aitracker.run/api/garmin/webhook. Persisted state was verified by reopening
+Garmin Endpoint Configuration. Existing activity and common feeds stay active.
+Other health types are disabled. Garmin migrations 0036 and 0037 are recorded in
+D1's migration journal after verifying their installed schema, so future apply
+commands cannot accidentally re-run the ALTER TABLE statements. Retention,
+receipt expiry and owner indexes are installed.
+
+32 targeted tests pass (9 health, 13 original Garmin, 10 Strava/security).
+Live Garmin checks pass for health, JWT protection on six data routes and both
+consent methods, OAuth state rejection, webhook spoof rejection, internal route
+privacy and published recovery/privacy assets. Existing WhatsApp, public tools,
+Strava and signup-reminder release checks also pass. Signed-in /recovery shows
+the separate health-sharing consent screen. Tablet (1024px) and mobile (390px)
+have no horizontal page overflow. No real account's health consent was enabled
+automatically, and no synthetic health records were written to production.
+
+Personal step: review the health-sharing notice, tick the checkbox and click
+Enable health and sleep sync at https://aitracker.run/recovery, then sync the
+watch. New daily data can arrive after sync; sleep/HRV require overnight device
+data and supported sensors. Earlier history is not imported. Real Garmin health
+delivery remains unverified until a consented runner's new summary arrives.

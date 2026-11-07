@@ -11,6 +11,7 @@ CREATE TABLE garmin_health_summaries (
   PRIMARY KEY(user_id,kind,start_at)
 );
 CREATE INDEX garmin_health_dates ON garmin_health_summaries(user_id,calendar_date DESC);
+CREATE INDEX garmin_health_retention ON garmin_health_summaries(calendar_date);
 CREATE TABLE garmin_health_inbox (
   id TEXT PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -23,3 +24,5 @@ CREATE TABLE garmin_health_inbox (
   completed_at TEXT
 );
 CREATE INDEX garmin_health_due ON garmin_health_inbox(retry_at);
+CREATE INDEX garmin_health_expiry ON garmin_health_inbox(expires_at);
+CREATE INDEX garmin_health_owner ON garmin_health_inbox(user_id);
