@@ -6,6 +6,8 @@ import { sanitizeAdminLogText } from "../services/adminTelemetry";
  * Sensitive endpoints where we should NOT log request/response bodies
  */
 const SENSITIVE_ENDPOINTS = [
+  '/api/garmin',
+  '/internal/garmin',
   '/api/auth',
   '/api/mobile',
   '/api/user/password',

@@ -8,6 +8,9 @@ import { canRecommendShoe } from "@shared/shoeEvidence";
 import { stravaService } from "./services/strava";
 import { registerWebStravaConnect, webStravaClientId } from "./services/webStravaConnect";
 import { registerWebWhatsApp } from "./services/webWhatsApp";
+import { registerGarminRoutes, maintainGarminConnection } from './garmin/routes';
+import { GarminStore } from './garmin/store';
+import { GarminClient, garminConfig } from './garmin/client';
 import { signupRemindersEnabled } from "../shared/signupReminders";
 import { getJwtSecret } from "./config/security";
 import { stravaClient } from "./services/stravaClient";
@@ -278,6 +281,22 @@ async function isStripeTrialEligible(
 }
 
 export async function registerRoutes(app: Express, runtime?: { schedulerDatabase: SqlDatabase }): Promise<Server> {
+  const garminStore = async () => {
+    if (!process.env.D1_TRANSPORT_SECRET) throw new Error('GARMIN_D1_REQUIRED');
+    const { applicationSqlDatabase } = await import('./d1/runtimeDatabase');
+    return new GarminStore(applicationSqlDatabase, process.env.GARMIN_TOKEN_ENCRYPTION_KEY || '');
+  };
+  const disconnectGarminForDeletion = async (userId: number) => {
+    if (process.env.GARMIN_SYNC_ENABLED !== 'true') return;
+    const store = await garminStore();
+    const connection = await store.connection(userId);
+    if (!connection || connection.status === 'not_connected') return;
+    await store.disconnect(userId);
+    await maintainGarminConnection(store, new GarminClient(garminConfig()), userId);
+    const remaining = await store.connection(userId);
+    if (remaining?.status === 'disconnect_pending') throw new Error('Please retry account deletion after Garmin disconnection completes.');
+  };
+  registerGarminRoutes(app, { authenticate: authenticateJWT, store: garminStore });
   registerWebWhatsApp(app, { authenticate: authenticateJWT, signingSecret: getJwtSecret });
   registerObjectStorageRoutes(app);
   await registerMcpRoutes(app);
@@ -1792,6 +1811,7 @@ ${allPages.map(page => `  <url>
       }
 
       // Delete all user data
+      await disconnectGarminForDeletion(userId);
       await storage.deleteAccount(userId);
 
       // Send confirmation email to user (skip if Strava-only user with no email)
@@ -1873,6 +1893,7 @@ ${allPages.map(page => `  <url>
       }
 
       // Delete all user data
+      await disconnectGarminForDeletion(userId);
       await storage.deleteAccount(userId);
 
       // Send confirmation + feedback emails (skip if Strava-only user with no email)

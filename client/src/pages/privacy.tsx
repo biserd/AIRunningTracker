@@ -15,7 +15,7 @@ export default function PrivacyPage() {
         <div className="prose prose-lg max-w-none">
           <div className="mb-8">
             <p className="text-gray-600 text-lg">
-              <strong>Last Updated:</strong> September 26, 2026
+              <strong>Last Updated:</strong> November 7, 2026
             </p>
             <p className="text-gray-600">
               At RunAnalytics, we are committed to protecting your privacy and ensuring the security of your personal information. 
@@ -29,6 +29,16 @@ export default function PrivacyPage() {
             <Link href="/ios-app/privacy" className="mt-4 inline-flex rounded-lg bg-[#bd3c08] px-5 py-3 font-semibold text-white">Read the app privacy notice</Link>
           </aside>
           <div className="grid gap-8">
+            <section id="garmin" className="bg-white rounded-lg p-6 border border-gray-200">
+              <h2 className="text-xl font-semibold text-charcoal mb-4">Garmin Connect activity sync</h2>
+              <div className="space-y-3 text-gray-700">
+                <p>When this optional connection is available, you can expressly consent in Settings and authorize RunAnalytics in Garmin Connect to receive new running activity summaries. These may include activity names, dates, distance, duration, speed, elevation, cadence, calories, device information and heart rate where available. Starter access does not import historical Garmin data.</p>
+                <p>Cloudflare hosts the application, stores the private Garmin feed and encrypted connection credentials, and processes delivery notifications for RunAnalytics. We associate imported activities with your own account. We do not sell or license your Garmin data, publish it to other runners, or forward it to Strava.</p>
+                <p><strong>AI transparency:</strong> In this initial direct-sync release, Garmin data and derived information stay outside AI coaching, model prompts, AI training, evaluation and model improvement. We do not send this feed to OpenAI, other AI providers, WhatsApp, Twilio, Meta, Telegram, or email coaching. A future AI feature would require a separate notice and explicit consent, with a way to withdraw it before any such processing starts. The general AI and service-improvement descriptions elsewhere in this policy do not override these Garmin restrictions.</p>
+                <p>You can view and export imported Garmin runs in Settings, delete an imported run, or disconnect Garmin to stop collection and delete the imported feed. Transient delivery records expire within seven days. Correct original activity details in Garmin Connect; contact hello@aitracker.run for access, correction or export assistance, including exports larger than the self-service limit. Account deletion also removes the stored Garmin connection and feed. Deleting the imported copy does not delete your original activities from Garmin Connect.</p>
+                <p>You can also withdraw Garmin activity-sharing permission in Garmin Connect. RunAnalytics responds to Garmin permission and disconnection notifications. If Garmin is temporarily unavailable during disconnection, local sync stops immediately and remote disconnection is retried.</p>
+              </div>
+            </section>
             <section className="bg-white rounded-lg p-6 border border-gray-200">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">

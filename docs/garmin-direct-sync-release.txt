@@ -1,0 +1,75 @@
+Garmin direct activity sync — initial isolated pilot
+Base: 39ba6c6 (codex/ios-testflight), isolated branch codex/garmin-direct-sync.
+
+Scope
+Settings has a private Garmin summary feed. It is deliberately outside activities,
+Strava, AI, email and coach-channel pipelines. Do not merge it into those pipelines
+without an explicit Garmin AI consent/data-source design. No historic backfill.
+
+Before activation
+1. Review and publish the Garmin-specific privacy notice. Approve the exact app
+   registration business/data-use representations; register only Activity API.
+2. Apply apps/d1-migration/migrations/0036_garmin_activity_sync.sql to the live D1
+   database after checking its existing migration state. It is additive.
+3. Add encrypted Worker runtime secrets GARMIN_CLIENT_ID, GARMIN_CLIENT_SECRET,
+   GARMIN_TOKEN_ENCRYPTION_KEY (32 random bytes, base64), GARMIN_WEBHOOK_SECRET
+   (at least 32 random characters). Never put secrets in VITE vars, git or logs.
+   The token-encryption key must be kept stable; rotation needs re-encryption.
+4. Build the frontend and D1 application container, promote its immutable image,
+   and deploy the updated production Worker. Use the current live configuration
+   and preserve other releases; do not overwrite the other checkout's changes.
+5. Set GARMIN_SYNC_ENABLED=true only after schema, secrets and image are ready.
+6. Garmin OAuth redirect: https://aitracker.run/api/garmin/callback
+7. In Garmin API Tools, use PUSH delivery and configure Activities,
+   Manually Updated Activities, Deregistrations and User Permission Changes to:
+   https://aitracker.run/api/garmin/webhook
+   Do not enable Activity Details, Files, Move IQ or Health feeds in this release.
+   Only supported keys are accepted. New delivery domains may require Garmin's
+   domain review; do not claim successful delivery until verified.
+
+Webhook security
+The public route is handled at the Cloudflare edge. It requires the documented
+Garmin source IPv4 CIDRs using Cloudflare's CF-Connecting-IP, and garmin-client-id
+matching the registered app. Do not replace this with X-Forwarded-For or rely on
+the client ID alone. Garmin's source CIDRs are taken from Activity API v2.1;
+verify them against the current portal guide before production enablement.
+The endpoint streams and bounds JSON to 1 MiB and 500 events, strips unrequested
+fields, and atomically persists chunks before returning HTTP 200. Worker
+waitUntil processes receipts; the existing cron retries interrupted work. No
+provider API call is performed while acknowledging a push.
+
+OAuth and maintenance
+Authenticated POST /api/garmin/authorize requires activityConsent=true, records
+a one-time state hash and encrypted PKCE verifier, and issues a Secure HttpOnly
+SameSite=Lax callback cookie. The callback consumes state atomically and gets
+the identity and permissions from Garmin, never callback query parameters.
+Garmin identity is unique across RunAnalytics users. Credentials use AES-256-GCM
+with owner/purpose-specific authenticated context. Tokens are never serialized
+to the frontend or performance logs. Remote revocation is retried durably;
+per-account leases prevent competing refreshes. The public /internal/ path is
+blocked, while the existing scheduler invokes authenticated maintenance.
+
+Validation commands (Node 24)
+node --import tsx --test server/garmin/garmin.test.ts
+node node_modules/vite/bin/vite.js build
+node --import tsx scripts/d1/build-application.ts
+node node_modules/typescript/bin/tsc --noEmit --incremental false --strict
+  --skipLibCheck --target ES2022 --module ESNext --moduleResolution Bundler
+  --esModuleInterop --types node apps/api-cloudflare/container/production.ts
+  apps/api-cloudflare/container/production-configuration.d.ts
+
+End-to-end acceptance still required
+- A real runner authorizes Activity Export and sees Connected in Settings.
+- A newly recorded run is synced to Garmin Connect and arrives once in this feed.
+- Repeated test delivery does not duplicate the activity or affect Strava totals.
+- Heart-rate absence displays as missing rather than zero.
+- Export contains no OAuth credentials and only the authenticated runner's feed.
+- Permission withdrawal stops future collection; disconnect deletes the imported
+  feed, calls Garmin registration deletion, and does not delete Garmin originals.
+- Account deletion revokes Garmin and removes all local Garmin records.
+
+Rollback
+Unset GARMIN_SYNC_ENABLED to stop authorizations and incoming push receipt. Use
+Garmin's On Hold setting during planned interruptions to preserve its delivery
+queue. Keep the additive tables and encryption key so revocations/data controls
+can be recovered. Do not enable AI or alter existing Strava sync as a workaround.

@@ -18,6 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import PushNotificationToggle from "@/components/PushNotificationToggle";
 import { WhatsAppConnectionCard } from "@/components/WhatsAppConnectionCard";
+import { GarminConnectionCard } from '@/components/GarminConnectionCard';
 import { useStravaConnect } from "@/hooks/useStravaConnect";
 
 function SettingsPageContent() {
@@ -379,6 +380,7 @@ function SettingsPageContent() {
           </CardContent>
         </Card>
 
+        <GarminConnectionCard unitPreference={unitPreference}/>
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
