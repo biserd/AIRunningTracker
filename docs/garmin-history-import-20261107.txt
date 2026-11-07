@@ -36,5 +36,24 @@ export, stop/delete and no-AI/no-messaging controls apply as before.
 
 Tests cover DST, invalid source/totals, missing nights, owner/consent guards,
 repeat imports, preservation of live readings and future sync precedence.
-Final import counts, baseline verification and release IDs are recorded below
-after the owner-scoped import and production verification complete.
+Production verification completed at 2026-11-07T22:40Z:
+- Owner-scoped D1 import succeeded: 13 sleeps and 13 HRV summaries, spanning
+  2026-10-25 through 2026-11-07. The missing date has zero imported records.
+- Signed-in production UI shows both baselines calculated from 12 prior nights,
+  labels all three imported latest metrics, and displays the HRV trend gap.
+  Actual personal metric values remain outside Git.
+- Health consent, last live push timestamp and activity records were unchanged.
+- 28 Garmin/health/source tests and 10 Strava/security tests passed. Worker
+  strict type checking and D1 backend build passed. Full-repository type checking
+  still reports 34 pre-existing diagnostics; none concern the new feature files.
+- Production public/auth checks passed for Garmin, recovery, source pages,
+  Strava/public tools and WhatsApp. Private historical data was verified through
+  the signed-in dashboard and owner-scoped D1 counts, not anonymous probes.
+
+Source release: 53f804a (preserved alongside concurrent public-source changes).
+Cloudflare build: e52e0c38-9230-486d-8abe-5ca568da8d31
+Staging Worker: 480edf1e-18dc-4732-aa24-cfb3f53cd3c4
+Production Worker: 825a8c6f-4028-477c-a394-f2f5972ee3c6
+Production container application version: 50; one healthy instance, zero errors.
+Immutable image digest:
+sha256:c7fd13de22258459b5b7ff4895829c58105b1a3e7dd4209155f877fc18cbec5c
