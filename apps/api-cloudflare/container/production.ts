@@ -34,7 +34,7 @@ export class RunAnalyticsProduction extends Container<ProductionEnv> {
         if(typeof garmin[name]==='string')this.envVars[name]=garmin[name];
         else delete this.envVars[name];
       }
-      const release = `running-sources-a48bbe0b-${signupReminders}-${garmin.GARMIN_SYNC_ENABLED==='true'}-rollout-complete`;
+      const release = `landing-copy-d167e8cb-${signupReminders}-${garmin.GARMIN_SYNC_ENABLED==='true'}-rollout-complete`;
       if (await this.ctx.storage.get(release)) return;
       // An image rollout can retain an already-running process and its old env.
       // Stop it once before accepting D1 traffic; external database data is untouched.

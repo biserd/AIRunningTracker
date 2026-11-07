@@ -24,4 +24,11 @@ assert.match(home,/Garmin and Strava connections|Garmin and Strava\. One/);
 assert.match(home,/Initial release: new run summaries and a separate opt-in/);
 const sitemap = await (await get('/sitemap.xml')).text();
 for (const path of ['/integrations','/garmin','/strava']) assert.ok(sitemap.includes(`<loc>https://aitracker.run${path}</loc>`));
+if (process.argv.includes('--no-em-dashes')) {
+  for (const path of ['/','/integrations','/garmin','/strava','/ios-app','/ios-app/privacy','/proactive-running-coach','/ai-running-coach','/ai-agent-coach','/ai-running-coaching-guide','/chrome-extension','/features','/pricing','/about','/faq']) {
+    const response = await get(path);
+    assert.equal(response.status,200,path);
+    assert.doesNotMatch(await response.text(), /\u2014|&mdash;|&#8212;|&#x2014;/i,path);
+  }
+}
 console.log(JSON.stringify({origin,checkedAt:new Date().toISOString(),publicSourcePages:true,humanAndCrawlerContent:true,markdown:true,sitemap:true,homepageSourceLinks:true}));
