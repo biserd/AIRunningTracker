@@ -22,6 +22,7 @@
     "CLOUDFLARE_EMAIL_ACCOUNT_ID": "73d71a2bef58f7469ecb48e2b8e84c0e",
     "EMAIL_FROM": "RunAnalytics <hello@aitracker.run>",
     "APP_ROLE": "jobs",
+    "GARMIN_SYNC_ENABLED": "true",
     "ENABLE_SIGNUP_PAYMENT_REMINDERS": "true",
     "GARMIN_SYNC_ENABLED": "true",
     "HERMES_MCP_CLIENT_ID": "ra_mcp_client_L0o4CkpSbZeZ8xlI4MyQeNXh",
@@ -32,7 +33,8 @@
     "STRIPE_WEB_INTRO_MONTHLY_COUPON": "RA_WEB_INTRO_MONTHLY_2026",
     "STRIPE_WEB_INTRO_ANNUAL_COUPON": "RA_WEB_INTRO_ANNUAL_2026"
   },
-  "secrets": { "required": ["D1_TRANSPORT_SECRET","JWT_SIGNING_SECRET","EMAIL_UNSUBSCRIBE_SIGNING_SECRET_V2",
+  "secrets": { "required": ["GARMIN_CLIENT_ID","GARMIN_CLIENT_SECRET","GARMIN_TOKEN_ENCRYPTION_KEY","GARMIN_WEBHOOK_SECRET",
+    "D1_TRANSPORT_SECRET","JWT_SIGNING_SECRET","EMAIL_UNSUBSCRIBE_SIGNING_SECRET_V2",
     "MARKETING_LINK_SIGNING_SECRET","MCP_TOKEN_HASH_SECRET","CHANNEL_IDENTITY_HASH_SECRET",
     "COACH_BINDING_CALLBACK_SECRET","COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2","COACH_AGENT_WEBHOOK_URL",
     "OPENAI_API_KEY","CLOUDFLARE_EMAIL_API_TOKEN","STRAVA_CLIENT_SECRET",
@@ -42,5 +44,7 @@
     "instance_type":"standard-1","max_instances":2 }],
   "durable_objects": { "bindings": [{ "name":"WEB","class_name":"RunAnalyticsProduction" }] },
   "migrations": [{ "tag":"v1","new_sqlite_classes":["RunAnalyticsProduction"] }],
-  "observability": { "enabled":true,"head_sampling_rate":0.1,"redact_query_string":true }
+  "observability": { "enabled":true,"head_sampling_rate":0.1,
+    "logs":{"enabled":true,"head_sampling_rate":0.1},
+    "traces":{"enabled":false,"head_sampling_rate":0.1},"redact_query_string":true }
 }

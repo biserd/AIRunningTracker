@@ -26,8 +26,8 @@ export class RunAnalyticsProduction extends Container<ProductionEnv> {
   envVars = productionEnvironment(this.env);
   async ensureD1Runtime(signupReminders = false, garmin: Record<string,string> = {}): Promise<void> {
     await this.ctx.blockConcurrencyWhile(async () => {
-      // Pass this non-secret release flag explicitly from the current Worker
-      // environment; a warm Durable Object can retain its previous env snapshot.
+      // Refresh release configuration from the current Worker environment;
+      // a warm Durable Object can retain its previous environment snapshot.
       this.envVars.ENABLE_SIGNUP_PAYMENT_REMINDERS = signupReminders ? 'true' : 'false';
       for(const name of garminRuntimeNames){
         if(typeof garmin[name]==='string')this.envVars[name]=garmin[name];
