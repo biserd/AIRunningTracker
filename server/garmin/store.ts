@@ -21,10 +21,10 @@ export class GarminStore {
     return { state, verifier };
   }
   async consume(state: string) {
-    const row = await this.db.prepare('DELETE FROM garmin_oauth_sessions WHERE state_hash=? AND expires_at>? RETURNING user_id,verifier')
-      .bind(garminHash(state), iso(this.clock())).first<{ user_id: number; verifier: string }>();
+    const row = await this.db.prepare('DELETE FROM garmin_oauth_sessions WHERE state_hash=? AND expires_at>? RETURNING user_id,verifier,expires_at')
+      .bind(garminHash(state), iso(this.clock())).first<{ user_id: number; verifier: string; expires_at: string }>();
     if (!row) throw new Error('GARMIN_INVALID_STATE');
-    return { userId: row.user_id, verifier: openGarmin(row.verifier, this.key, `garmin:oauth:${row.user_id}`) };
+    return { userId: row.user_id, verifier: openGarmin(row.verifier, this.key, `garmin:oauth:${row.user_id}`), consentStartedAt: Date.parse(row.expires_at)-600_000 };
   }
   connection(userId: number) {
     return this.db.prepare('SELECT * FROM garmin_connections WHERE user_id=?').bind(userId).first<GarminConnection>();
@@ -38,19 +38,20 @@ export class GarminStore {
   async releaseOperation(userId: number, owner: string) {
     await this.db.prepare('UPDATE garmin_connections SET operation_owner=NULL,operation_until=NULL WHERE user_id=? AND operation_owner=?').bind(userId,owner).run();
   }
-  async save(userId: number, identity: { userId: string; permissions: string[] }, tokens: GarminTokens) {
+  async save(userId: number, identity: { userId: string; permissions: string[] }, tokens: GarminTokens, consentStartedAt = this.clock()) {
     const previous = await this.connection(userId);
     // An explicit disconnect is required before changing the source Garmin account.
     const switchingAccount = previous && previous.garmin_user_id !== identity.userId;
     if (switchingAccount && previous.status !== 'not_connected') throw new Error('GARMIN_DISCONNECT_FIRST');
     if (previous?.status === 'disconnect_pending') throw new Error('GARMIN_DISCONNECT_PENDING');
     const now = this.clock(), status = identity.permissions.includes('ACTIVITY_EXPORT') ? 'connected' : 'permission_required';
+    if(!Number.isFinite(consentStartedAt)||consentStartedAt>now||consentStartedAt<now-600_000)throw new Error('GARMIN_INVALID_CONSENT_TIME');
     const write = this.db.prepare(`INSERT INTO garmin_connections(user_id,garmin_user_id,tokens,access_expires_at,refresh_expires_at,permissions,status,connected_at,permission_changed_at)
       VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET garmin_user_id=excluded.garmin_user_id,tokens=excluded.tokens,access_expires_at=excluded.access_expires_at,
       refresh_expires_at=excluded.refresh_expires_at,permissions=excluded.permissions,status=excluded.status,connected_at=excluded.connected_at,permission_changed_at=excluded.permission_changed_at
       WHERE garmin_connections.operation_until IS NULL OR garmin_connections.operation_until<=excluded.connected_at`)
       .bind(userId, identity.userId, sealGarmin(JSON.stringify(tokens), this.key, `garmin:tokens:${userId}`),
-        iso(now + Math.max(0, tokens.expires_in - 600) * 1000), iso(now + tokens.refresh_token_expires_in * 1000), JSON.stringify(identity.permissions), status, iso(now), now / 1000);
+        iso(now + Math.max(0, tokens.expires_in - 600) * 1000), iso(now + tokens.refresh_token_expires_in * 1000), JSON.stringify(identity.permissions), status, iso(consentStartedAt), now / 1000);
     const [result] = await this.db.batch([write, ...(switchingAccount ? [this.db.prepare('DELETE FROM garmin_deleted_activities WHERE user_id=?').bind(userId)] : [])]);
     if (result.meta.changes !== 1) throw new Error('GARMIN_CONNECTION_BUSY');
     return status;

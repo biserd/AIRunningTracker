@@ -40,7 +40,7 @@ export function registerGarminRoutes(app: Express, deps: GarminRouteDependencies
       const client = provider(), store = await deps.store(), flow = await store.consume(state);
       if (req.query.error || typeof req.query.code !== 'string' || !req.query.code || req.query.code.length > 4096) return res.redirect('/settings?garmin=denied');
       const tokens = await client.exchange(req.query.code, flow.verifier), identity = await client.identity(tokens.access_token);
-      const status = await store.save(flow.userId, identity, tokens);
+      const status = await store.save(flow.userId, identity, tokens, flow.consentStartedAt);
       return res.redirect('/settings?garmin=' + (status === 'connected' ? 'connected' : 'permission_required'));
     } catch {
       console.error(JSON.stringify({ event: 'garmin_connection_failed' }));

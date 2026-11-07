@@ -62,8 +62,8 @@ test('durable pushes survive restart, deduplicate, respect ownership and process
   const f=fixture();try{
     await f.store.receive(parseGarminPush({activities:[summary()]}));await f.store.process();
     assert.equal((await f.store.activities(1)).length,0);
-    await f.store.save(1,{userId:'garmin-one',permissions:['ACTIVITY_EXPORT']},tokens);f.advance(61_000);
-    await new GarminStore(f.db,key,()=>now+61_000).process();
+    f.advance(1000);await f.store.save(1,{userId:'garmin-one',permissions:['ACTIVITY_EXPORT']},tokens,now);f.advance(61_000);
+    await new GarminStore(f.db,key,()=>now+62_000).process();
     assert.equal((await f.store.activities(1)).length,1);assert.equal((await f.store.activities(2)).length,0);
     await f.store.receive(parseGarminPush({activities:[summary()]}));await f.store.process();assert.equal((await f.store.activities(1)).length,1);
     await f.store.receive(parseGarminPush({manuallyUpdatedActivities:[{...summary(),activityName:'Corrected run',distanceInMeters:5100}]}));await f.store.process();
