@@ -27,6 +27,12 @@ for (const [path, marker] of pages) {
   assert.equal((html.match(/<h1[ >]/g) || []).length, 1, `${path}: H1 count`);
   assert.ok(html.includes(`href="https://aitracker.run${path}"`), `${path}: canonical`);
   assert.doesNotMatch(html, /name="robots"[^>]+noindex/, `${path}: indexability`);
+  if (path === "/blog/how-to-compare-running-shoes") {
+    const external = [...html.matchAll(/<a\b[^>]*href=["'](https?:\/\/[^"']+)/gi)]
+      .map(match => match[1]).filter(href => !["aitracker.run", "www.aitracker.run"].includes(new URL(href).hostname));
+    assert.deepEqual(external, [], "buying guide must link only to AITracker");
+    assert.ok(html.includes("RunAnalytics: build a running-shoe shortlist"));
+  }
   (report.pages as unknown[]).push({ path, status: response.status, rendering: path.startsWith("/blog/") ? "existing crawler HTML" : "shared visitor/crawler HTML", title: html.match(/<title[^>]*>(.*?)<\/title>/)?.[1] });
 }
 const redirect = await get("/tools/shoes/compare?shoes=nike-vaporfly-4,saucony-endorphin-pro-4", { redirect: "manual" });
@@ -52,10 +58,24 @@ for (const [slug, weight, heel, forefoot] of [["nike-vaporfly-4", 5.9, 36, 30], 
 const sitemap = await get("/sitemap.xml");
 assert.equal(sitemap.status, 200);
 assert.ok((await sitemap.text()).includes("/blog/how-to-compare-running-shoes"));
+const anonymousReconnect = await get("/api/strava/authorize", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+assert.equal(anonymousReconnect.status, 401, "reconnect must require sign-in");
+const unsignedCallback = await get("/strava/callback?code=verification-not-a-token&state=unsigned-verification", { redirect: "manual" });
+assert.equal(unsignedCallback.headers.get("location"), "/dashboard?error=strava_state_invalid");
+const signIn = await get("/api/auth/strava-login", { redirect: "manual" });
+assert.equal(signIn.status, 302);
+const authorization = new URL(signIn.headers.get("location")!);
+assert.equal(authorization.hostname, "www.strava.com");
+assert.match(authorization.searchParams.get("client_id") || "", /^[1-9]\d*$/);
+assert.equal(authorization.searchParams.get("redirect_uri"), "https://aitracker.run/auth/strava/login/callback");
 report.canonicalCatalogueCount = shoes.length;
 report.statelessPrediction = "passed";
 report.legacyRedirect = "passed";
 report.recommendations = "passed";
 report.stravaRequiresAuthentication = true;
 report.sitemapGuide = true;
+report.guideInternalLinksOnly = true;
+report.reconnectRequiresSignIn = true;
+report.unsignedReconnectRejected = true;
+report.publicStravaSignInConfigured = true;
 console.log(JSON.stringify(report, null, 2));
