@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { StravaConnectButton } from "@/components/StravaConnect";
+import {GarminDashboardConnection} from '@/components/GarminConnect';
 import { FloatingAICoach } from "@/components/FloatingAICoach";
 import RecentConversations from "@/components/RecentConversations";
 import { CheckCircle2 } from "lucide-react";
@@ -522,8 +523,9 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Strava Sync Actions */}
-        <div className="mb-6 flex flex-wrap gap-4">
+        <section aria-label="Your running connections" className="mb-6 grid gap-4 md:grid-cols-2">
+          <div className="rounded-xl border border-gray-200 bg-white p-4">
+          <h3 className="mb-3 font-semibold text-charcoal">Strava</h3>
           {!dashboardData?.user?.stravaConnected ? (
             <StravaConnectButton 
               onClick={stravaConnect.connect}
@@ -560,7 +562,9 @@ export default function Dashboard() {
               )}
             </div>
           )}
-        </div>
+          </div>
+          <GarminDashboardConnection/>
+        </section>
         
         {/* Sync Progress Indicator */}
         {syncProgress && (

@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Activity, Eye, EyeOff, Mail, CheckCircle2 } from "lucide-react";
 import { SiStrava } from "react-icons/si";
+import {GarminConnectButton} from '@/components/GarminConnect';
+import {useAuth} from '@/hooks/useAuth';
 import { apiRequest } from "@/lib/queryClient";
 import { notifyExtensionAuth } from "@/lib/extensionBridge";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +24,7 @@ import { validToolOfferSource } from "@shared/funnelEvents";
 type AuthMode = "signin" | "signup";
 
 export default function AuthPage() {
+  const {isAuthenticated}=useAuth();
   const [, setLocation] = useLocation();
   const [mode, setMode] = useState<AuthMode>(() =>
     !isReadOnlyStaging && new URLSearchParams(window.location.search).get("mode") === "signup" ? "signup" : "signin"
@@ -39,8 +42,9 @@ export default function AuthPage() {
     const stravaError = params.get("error");
 
     if (stravaError) {
-      const message =
-        stravaError === "strava_denied"
+      const message = stravaError.startsWith('garmin_')
+        ? (stravaError==='garmin_denied'?'Garmin connection was cancelled.':stravaError==='garmin_invalid_state'?'Your Garmin sign-in expired. Please start again.':'Garmin sign-in failed. Please try again.')
+        : stravaError === "strava_denied"
           ? "Strava connection was cancelled."
           : "Strava sign-in failed. Please try again.";
       toast({ title: "Sign-in failed", description: message, variant: "destructive" });
@@ -135,7 +139,8 @@ export default function AuthPage() {
           </CardHeader>
           <CardContent className="space-y-4">
 
-            {/* SIGN IN: two paths only: Strava OAuth or magic-link email */}
+            {mode==='signup'&&<GarminConnectButton signIn={!isAuthenticated} returnTo={requestedRedirect} className="w-full"/>}
+            {/* Provider sign-in and email sign-in remain independent. */}
             {mode === "signin" && !magicLinkSentTo && (
               <>
                 <Button
@@ -148,6 +153,8 @@ export default function AuthPage() {
                   <SiStrava className="h-5 w-5" />
                   Continue with Strava
                 </Button>
+
+                <GarminConnectButton signIn={!isAuthenticated} returnTo={requestedRedirect} className="w-full"/>
 
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">

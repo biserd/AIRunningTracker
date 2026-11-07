@@ -1,0 +1,33 @@
+Connect with Garmin: web signup, sign-in and account linking
+
+Garmin's existing OAuth2/PKCE authorization and verified application-specific
+user ID now support RunAnalytics signup and returning sign-in. The app does not
+receive an email address in this flow. New accounts have no invented email or
+password, start Free, and do not acquire marketing or health consent implicitly.
+Existing Garmin-linked owners return to their own account. Existing Strava or
+email users are instructed to sign in first and link Garmin in Settings; no
+automatic merge uses an unverified email or name.
+
+The Connect with Garmin button appears on both authentication modes and on the
+dashboard for unconnected accounts. Its sharing dialog explains new activity
+sync, separate Recovery opt-in, existing-account linking and terms/privacy.
+Connected users see Garmin status plus management and Recovery links.
+
+Anonymous challenges have their own additive D1 table (0038), hashed states,
+encrypted purpose-bound PKCE verifiers, ten-minute expiry, one-use consumption
+and a bounded issuance rate. Login initiation requires explicit sharing consent
+and the canonical same origin. The existing authenticated account-linking API
+continues to require authentication and uses its own session table/cookie.
+Both flows use the already-registered Garmin callback; no provider secret,
+permission scope or callback configuration changes are required.
+
+New owner creation and Garmin ID binding use an atomic D1 batch. Existing
+identity ownership, pending disconnect and token encryption protections apply.
+The callback hands the RunAnalytics session to same-origin storage through a
+nonce-restricted HTML response with no-store/no-referrer and frame-ancestors
+none. Credentials are absent from URL parameters and readable transfer cookies.
+
+Validation before release: 49 Garmin, Health, Strava and account-isolation tests
+passed; D1 backend build passed. Repository type checking reports the same 34
+existing diagnostics with none in the new feature files or changed UI paths.
+Production release IDs and browser verification are appended after rollout.
