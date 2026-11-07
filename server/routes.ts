@@ -296,7 +296,15 @@ export async function registerRoutes(app: Express, runtime?: { schedulerDatabase
     const remaining = await store.connection(userId);
     if (remaining?.status === 'disconnect_pending') throw new Error('Please retry account deletion after Garmin disconnection completes.');
   };
-  registerGarminRoutes(app, { authenticate: authenticateJWT, store: garminStore });
+  registerGarminRoutes(app, { authenticate: authenticateJWT, store: garminStore,
+    onConnected: async userId => {
+      const user = await storage.getUser(userId);
+      if (!user) throw new Error('GARMIN_NOTIFICATION_USER_NOT_FOUND');
+      const accepted = await emailService.sendGarminConnectionNotification({ userId,
+        firstName: user.firstName, lastName: user.lastName, email: user.email });
+      if (!accepted) throw new Error('GARMIN_ADMIN_EMAIL_NOT_ACCEPTED');
+    },
+  });
   registerWebWhatsApp(app, { authenticate: authenticateJWT, signingSecret: getJwtSecret });
   registerObjectStorageRoutes(app);
   await registerMcpRoutes(app);

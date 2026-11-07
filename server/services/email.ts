@@ -106,6 +106,31 @@ class EmailService {
     });
   }
 
+  async sendGarminConnectionNotification(params: {
+    userId: number;
+    firstName?: string | null;
+    lastName?: string | null;
+    email?: string | null;
+  }): Promise<boolean> {
+    const fullName = [params.firstName, params.lastName].filter(Boolean).join(' ') || '(name not provided)';
+    const userEmail = params.email || '(email not provided)';
+    const connectedAt = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }) + ' ET';
+    const escape = (value: string) => value.replaceAll('&', '&amp;').replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+    return this.sendEmail({
+      to: 'hello@bigappledigital.nyc', // Same admin destination as Strava signup alerts.
+      subject: 'Garmin Connected - RunAnalytics',
+      html: `<h2>Garmin connected successfully</h2>
+        <p>A runner authorized Garmin activity sharing in RunAnalytics.</p>
+        <ul><li><strong>Name:</strong> ${escape(fullName)}</li>
+        <li><strong>Email:</strong> ${escape(userEmail)}</li>
+        <li><strong>User ID:</strong> ${params.userId}</li>
+        <li><strong>Time:</strong> ${escape(connectedAt)}</li></ul>
+        <p>This confirms the connection, not receipt of the first activity. Health and sleep sharing require separate consent.</p>`,
+      text: `Garmin connected successfully\nName: ${fullName}\nEmail: ${userEmail}\nUser ID: ${params.userId}\nTime: ${connectedAt}\n\nThis confirms the connection, not receipt of the first activity. Health and sleep sharing require separate consent.`,
+    }, 1);
+  }
+
   async sendFeedbackNotification(type: string, title: string, description: string, userEmail: string): Promise<void> {
     const feedbackType = type === 'bug' ? 'Bug Report' : 'Feature Suggestion';
     const subject = `[RunAnalytics] New ${feedbackType}: ${title}`;

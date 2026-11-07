@@ -170,3 +170,46 @@ test('browser OAuth integration requires auth, explicit consent, matching cookie
     const status=await (await fetch(origin+'/api/garmin/status',{headers})).json();assert.equal((status as any).connected,true);assert.equal(JSON.stringify(status).includes('private'),false);
   }finally{server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));f.sqlite.close();}
 });
+
+test('admin connection alert fires only after a saved connection, once per OAuth flow; email failure preserves success',async()=>{
+  const f=fixture(),app=express();app.use(express.json());
+  let permissions=['ACTIVITY_EXPORT'],failExchange=false,failNotification=false;
+  const notified:number[]=[];
+  const provider=new GarminClient(config,async(url)=>{
+    if(String(url).includes('/oauth/token')){if(failExchange)throw new Error('provider unavailable');return Response.json(tokens);}
+    if(String(url).endsWith('/id'))return Response.json({userId:'garmin-one'});
+    if(String(url).endsWith('/permissions'))return Response.json({permissions});
+    throw new Error('unexpected provider request');
+  });
+  registerGarminRoutes(app,{
+    authenticate(req,res,next){if(req.get('authorization')!=='Bearer runner-one')return res.sendStatus(401);(req as any).user={id:1};next();},
+    store:async()=>f.store,config:()=>config,client:()=>provider,
+    async onConnected(userId){
+      assert.equal((await f.store.status(userId,true)).connected,true,'connection is committed before notification');
+      notified.push(userId);if(failNotification)throw new Error('email unavailable');
+    },
+  });
+  const server=app.listen(0,'127.0.0.1');await new Promise<void>(resolve=>server.once('listening',resolve));
+  const origin='http://127.0.0.1:'+(server.address() as AddressInfo).port;
+  const start=async()=>{
+    const result=await fetch(origin+'/api/garmin/authorize',{method:'POST',headers:{authorization:'Bearer runner-one','content-type':'application/json'},body:JSON.stringify({activityConsent:true})});
+    assert.equal(result.status,200);const state=new URL((await result.json() as any).url).searchParams.get('state')!;
+    return {state,cookie:result.headers.get('set-cookie')!.split(';')[0]};
+  };
+  const finish=async(flow:{state:string;cookie:string},params:Record<string,string>={code:'one-time-code'})=>fetch(origin+'/api/garmin/callback?'+new URLSearchParams({state:flow.state,...params}),{redirect:'manual',headers:{cookie:flow.cookie}});
+  try{
+    const missing=await fetch(origin+'/api/garmin/callback?state=bad&code=bad',{redirect:'manual'});
+    assert.match(missing.headers.get('location')!,/invalid_state/);assert.deepEqual(notified,[]);
+    assert.match((await finish(await start(),{error:'access_denied'})).headers.get('location')!,/garmin=denied/);assert.deepEqual(notified,[]);
+    failExchange=true;
+    assert.match((await finish(await start())).headers.get('location')!,/garmin=failed/);assert.deepEqual(notified,[]);
+    failExchange=false;permissions=[];
+    assert.match((await finish(await start())).headers.get('location')!,/garmin=permission_required/);assert.deepEqual(notified,[]);
+    permissions=['ACTIVITY_EXPORT'];const valid=await start();
+    assert.match((await finish(valid)).headers.get('location')!,/garmin=connected/);assert.deepEqual(notified,[1]);
+    assert.match((await finish(valid)).headers.get('location')!,/garmin=failed/);assert.deepEqual(notified,[1]);
+    failNotification=true;
+    assert.match((await finish(await start())).headers.get('location')!,/garmin=connected/);
+    assert.deepEqual(notified,[1,1]);assert.equal((await f.store.status(1,true)).connected,true);
+  }finally{server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));f.sqlite.close();}
+});
