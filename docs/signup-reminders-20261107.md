@@ -49,6 +49,7 @@ Old legacy pending jobs are cancelled, not deleted or sent as a backlog. Existin
 - Live signup daytime/admin verification passed at `2026-11-07T21:31:32.753Z`; WhatsApp settings verification also passed.
 - At `2026-11-07T21:34Z`, the owner-selected account's single DAY14 reminder was reserved and read back as pending with no sent timestamp. Its private hold survives the pause; billing, opt-out and suppression checks still apply when delivery is enabled. No personal email address is stored in this release note.
 - Production readback confirmed `drip_campaigns_enabled=false`, `drip_campaigns_dry_run=true`, zero signup campaign emails sent, and unchanged profile timezone/consent. No activation scripts were executed.
+- Final reconciliation preserved the concurrent Garmin secret requirements and observability settings, retaining the verified daytime image. Worker `a91611f6-8290-47d7-ad31-c53df2570277`; signup daytime and Garmin live checks passed again at `2026-11-07T21:36Z`.
 
 ## Historical initial production release (subsequently paused by owner)
 
