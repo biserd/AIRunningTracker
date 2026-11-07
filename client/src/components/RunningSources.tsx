@@ -8,7 +8,7 @@ export default function RunningSources() {
     <div className="mx-auto max-w-6xl">
       <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-orange-700">Your runs, connected</p>
       <div className="mb-8 max-w-3xl"><h2 id="running-sources-title" className="mb-4 text-3xl font-bold text-charcoal sm:text-4xl">Garmin and Strava. One RunAnalytics account.</h2>
-        <p className="text-lg text-gray-600">Choose the connection that fits your routine. Each source has a clear role—see what’s supported before you connect.</p></div>
+        <p className="text-lg text-gray-600">Choose the connection that fits your routine. Each source has a clear role. See what’s supported before you connect.</p></div>
       <div className="grid gap-6 md:grid-cols-2">{Object.entries(runningSources).map(([key, source]) => {
         const Icon = key === 'garmin' ? Watch : Activity;
         return <article key={key} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">

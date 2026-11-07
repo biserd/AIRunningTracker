@@ -8,6 +8,12 @@ import { runningSources } from '../../shared/runningSources';
 (globalThis as any).React = React;
 const template = '<!doctype html><html><head><title>Old</title><meta name="description" content="Old"></head><body><div id="root"></div></body></html>';
 
+test('homepage and product landing copy contains no em dashes', () => {
+  for (const file of ['client/src/pages/landing.tsx','client/src/pages/integrations.tsx','client/src/components/RunningSources.tsx','shared/runningSources.ts','shared/iosAppView.tsx','shared/iosAppContent.ts','client/src/pages/proactive-running-coach.tsx','client/src/pages/ai-running-coach.tsx','client/src/pages/ai-agent-coach.tsx','client/src/pages/ai-coaching-guide.tsx','client/src/pages/chrome-extension.tsx','server/ssr/homepageContent.ts']) {
+    assert.doesNotMatch(readFileSync(file,'utf8'), /\u2014|&mdash;|&#8212;|&#x2014;/i, file);
+  }
+});
+
 test('connection pages deliver real, canonical, accessible content without an account', async () => {
   for (const path of ['/integrations', '/garmin', '/strava']) {
     const html = await renderPublicDocument(path, template);

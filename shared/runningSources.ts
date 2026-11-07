@@ -6,7 +6,7 @@ export const runningSources = {
     title: 'Garmin Connect Running Sync | RunAnalytics',
     description: 'Connect Garmin for private run summaries and optional sleep, HRV and recovery trends. Explore setup, consent, supported metrics and current limits.',
     headline: 'Your Garmin runs. A direct connection.',
-    intro: 'Keep recording on your Garmin. Bring new running summaries into a private RunAnalytics feed, and optionally review sleep and recovery trends—without routing them through Strava.',
+    intro: 'Keep recording on your Garmin. Bring new running summaries into a private RunAnalytics feed, and optionally review sleep and recovery trends, without routing them through Strava.',
     benefit: 'New run summaries, direct from Garmin Connect',
     summary: 'Direct new-run summaries, plus optional sleep, HRV and recovery trends with separate health consent. Manage your activity connection in web Settings.',
     destination: '/settings#garmin', cta: 'Connect Garmin in Settings',
@@ -17,7 +17,7 @@ export const runningSources = {
       { title: 'Record and sync a new run', text: 'Sync your activity to Garmin Connect. Eligible new running summaries appear in the Garmin section of web Settings after provider delivery.' },
     ],
     details: [
-      { title: 'The essentials of your run', text: 'Distance, duration and average pace, plus heart rate, cadence, elevation gain and calories when supplied. Missing sensor fields stay missing—not estimated.' },
+      { title: 'The essentials of your run', text: 'Distance, duration and average pace, plus heart rate, cadence, elevation gain and calories when supplied. Missing sensor fields stay missing, not estimated.' },
       { title: 'A private, separate feed', text: 'Garmin summaries stay separate from your Strava activity history. Connecting both does not add Garmin runs to Strava totals or count the same workout twice in those totals.' },
       { title: 'Controls close to your data', text: 'See sync status, export stored summaries, delete an imported summary or disconnect from web Settings. These controls do not delete your original Garmin activities.' },
     ],
