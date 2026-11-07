@@ -44,6 +44,20 @@ test("sequence is deduplicated and schedules days 1/7/14 from original signup, t
   assert.equal(f.campaigns[0].state, "completed");
   assert.equal(await f.service.schedule(f.user), "complete");
 });
+test("unknown-consent signup can enroll and send without manufacturing opt-in", async () => {
+  const f = fixture(); f.user.marketingConsentStatus = "unknown";
+  assert.equal(await f.service.schedule(f.user), "scheduled");
+  assert.equal(await f.service.process(f.claim()), true);
+  assert.equal(f.sent.length, 1);
+  assert.equal(f.user.marketingConsentStatus, "unknown");
+});
+test("unknown consent never overrides an explicit opt-out or unsubscribe", async () => {
+  for (const patch of [{ marketingConsentStatus: "unknown", marketingOptOut: true }, { marketingConsentStatus: "unsubscribed", marketingOptOut: false }]) {
+    const f = fixture(); Object.assign(f.user, patch);
+    assert.equal(await f.service.schedule(f.user), "ineligible");
+    assert.equal(f.jobs.length, 0);
+  }
+});
 for (const kind of ["paid", "optout", "suppressed", "trial", "disabled"]) test("queued send stops after " + kind, async () => {
   const f = fixture(); await f.service.schedule(f.user); const job = f.claim();
   if (kind === "paid") Object.assign(f.user, { subscriptionPlan: "premium", subscriptionStatus: "active" });

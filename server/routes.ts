@@ -9212,7 +9212,7 @@ ${allPages.map(page => `  <url>
         holdoutPercent,
         operationalState,
         nextAction,
-        signupReminderSchedule: signupRemindersEnabled() ? { campaign: "signup_unpaid", version: 3, daysAfterSignup: [1,7,14], consentRequired: true, missedStepReplay: false } : null,
+        signupReminderSchedule: signupRemindersEnabled() ? { campaign: "signup_unpaid", version: 3, daysAfterSignup: [1,7,14], consentRequired: false, includeUnknownConsent: true, respectExplicitOptOut: true, missedStepReplay: false } : null,
       });
     } catch (error: any) {
       console.error("Worker status error:", error);

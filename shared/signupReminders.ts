@@ -1,4 +1,4 @@
-import { isLifecycleMessageable, type LifecycleUserState } from "./lifecycleCampaigns";
+import type { LifecycleUserState } from "./lifecycleCampaigns";
 
 export const SIGNUP_REMINDER_CAMPAIGN = "signup_unpaid" as const;
 export const SIGNUP_REMINDER_VERSION = 3;
@@ -14,7 +14,10 @@ export function signupReminderExclusion(user: SignupReminderUser, now = Date.now
   if (!user.email) return "missing_email";
   if (user.marketingOptOut || user.marketingConsentStatus === "unsubscribed") return "unsubscribed";
   if (user.marketingConsentStatus === "suppressed") return "delivery_suppressed";
-  if (!isLifecycleMessageable(user)) return "consent_missing";
+  // Owner-selected audience: unknown is eligible, but never override an
+  // unsubscribe, explicit opt-out or delivery suppression. Do not rewrite
+  // anyone's recorded consent to make them eligible.
+  if (!["consented", "unknown"].includes(user.marketingConsentStatus ?? "unknown")) return "consent_missing";
   if (user.isAdmin) return "internal_account";
   if (!["free", "pro", "premium"].includes(user.subscriptionPlan || "")) return "unknown_subscription";
   if (user.subscriptionPlan !== "free" && user.subscriptionStatus === "active") return "paid";

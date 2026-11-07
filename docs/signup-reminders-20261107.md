@@ -1,5 +1,11 @@
 # Signup follow-ups: days 1, 7 and 14
 
+## Current operator instructions
+
+Delivery must stay OFF (`drip_campaigns_enabled=false`) with dry-run ON until the owner enables it manually in Admin. Deployment is not authorization to turn sending on. Do not re-run the historical prepare/enable scripts as part of a release.
+
+The owner subsequently expanded this sequence to include `unknown` consent as well as recorded opt-ins. Explicit opt-outs, unsubscribes and delivery suppression still win. Stored consent values are never rewritten. This applies only to this signup sequence; other marketing flows keep their existing consent requirements.
+
 Owner-requested sequence, using the existing Cloudflare Email Service transport. These are promotional follow-ups, not transactional messages. Cloudflare's published transactional-only restriction remains a provider/account risk; the feature flag records application configuration, not Cloudflare approval. Do not set `CLOUDFLARE_CHECKOUT_NOTICE_POLICY_APPROVED` to represent approval of this sequence.
 
 ## Timing and audience
@@ -7,7 +13,7 @@ Owner-requested sequence, using the existing Cloudflare Email Service transport.
 - `signup_unpaid`, version 3, steps `DAY1`, `DAY7`, `DAY14`.
 - Due 24, 168 and 336 hours after the original signup date, not after enrollment, last visit or Strava connection.
 - Each step expires three days after its due time. Missed historical steps are skipped; accounts at least 17 days old are not backfilled.
-- Only recorded marketing consent, a usable email and a non-Premium/non-trial account qualify. Opt-outs, delivery suppression, admins, unknown billing state, past-due/unpaid customers and paid-through cancellations are excluded.
+- Recorded opt-in or unknown consent, a usable email and a non-Premium/non-trial account qualify. Explicit opt-outs, unsubscribes, delivery suppression, admins, unknown billing state, past-due/unpaid customers and paid-through cancellations are excluded.
 - Apple entitlements are resolved again through `storage.getUser` before sending, including when the stored web plan is Free.
 - Premium conversion and unsubscribe cancel pending jobs. The recipient is rechecked after provider suppression preflight, immediately before sending.
 - Existing rollout/holdout settings are respected. Launch configuration is 100% of eligible recipients, 0% holdout and at most 25 accepted sends/hour. This is not 100% of all registered users.
@@ -15,7 +21,7 @@ Owner-requested sequence, using the existing Cloudflare Email Service transport.
 
 ## Delivery and links
 
-The existing authenticated Cloudflare sender, suppression checks, signed account links, one-click unsubscribe headers and visible unsubscribe footer are retained. Message links use the existing scanner-resistant confirmation page; the recipient does not have to be logged in already. No prices are hardcoded into the sequence; the CTA opens the current pricing page.
+The existing authenticated Cloudflare sender, suppression checks, signed account links, one-click unsubscribe headers and visible unsubscribe footer are retained. This sequence's footer says the recipient created an account, not that they opted in. Message links use the existing scanner-resistant confirmation page; the recipient does not have to be logged in already. No prices are hardcoded into the sequence; the CTA opens the current pricing page.
 
 An atomic, owner/lease-conditional database write marks the email attempt terminal before the network send. Timeouts and unknown outcomes are not automatically retried. Explicit 429 responses, unavailable suppression checks and soft-bounce suppression can retry within the step's validity window. Accepted/queued mail is counted as sent, not proven inbox delivery.
 
@@ -23,7 +29,7 @@ An atomic, owner/lease-conditional database write marks the email attempt termin
 
 `ENABLE_SIGNUP_PAYMENT_REMINDERS=true` selects this narrow sequence. The worker still requires a configured sender, signing secret, a verified suppression lookup, `drip_campaigns_enabled=true` and `drip_campaigns_dry_run=false`. Legacy promotional segment templates remain disabled. Existing checkout-notice mode is unchanged when the new flag is off.
 
-The worker reloads persisted operational settings every check. `drip_campaigns_runtime_status` stores a safe readiness/run summary for deployment verification without exposing credentials or recipient data. Pause immediately with `drip_campaigns_enabled=false`; do not weaken suppression or consent checks.
+The worker reloads persisted operational settings every check. `drip_campaigns_runtime_status` stores a safe readiness/run summary for deployment verification without exposing credentials or recipient data. Pause with `drip_campaigns_enabled=false`; never override explicit opt-outs, unsubscribes or suppression.
 
 Old legacy pending jobs are cancelled, not deleted or sent as a backlog. Existing users and consent records are not changed. No D1 schema migration is needed.
 
@@ -33,7 +39,7 @@ Old legacy pending jobs are cancelled, not deleted or sent as a backlog. Existin
 - Synthetic D1 integration uses the real application ORM, email-job storage, atomic send claim and Apple ledger; every external provider request is blocked.
 - Email tests verify the feature's default-off allowlist, suppression failure paths, final eligibility callback and one-click unsubscribe headers.
 
-## Production release
+## Historical initial production release (subsequently paused by owner)
 
 - Runtime source `39ba6c6`, image `sha256:5684ced2d79692cfba900b589b1f0961d0abf5fd8773d30615b0e625d51572e2`, container version 43.
 - Worker `8a6a5620-cb9a-40fb-8a06-b89801e397fc`; stable `production-live` identity retained. The non-secret signup-reminder flag is explicitly forwarded from the current Worker environment when ensuring the runtime.

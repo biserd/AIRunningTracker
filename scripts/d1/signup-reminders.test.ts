@@ -17,7 +17,7 @@ for (const file of readdirSync("apps/d1-migration/migrations").filter(f => f.end
 sqlite.exec(readFileSync("migrations/20260919_native_onboarding.sql", "utf8"));
 sqlite.exec("INSERT INTO system_settings(key,value) VALUES('drip_campaigns_rollout_percent','100'),('drip_campaigns_holdout_percent','0')");
 const now = Date.now();
-sqlite.prepare("INSERT INTO users(id,email,username,subscription_plan,subscription_status,marketing_consent_status,marketing_opt_out,created_at,coach_quiet_hours_start,coach_quiet_hours_end) VALUES(1,?,?,'free','active','consented',0,?,0,0)").run("fixture@example.test", "fixture", new Date(now - 86400000).toISOString());
+sqlite.prepare("INSERT INTO users(id,email,username,subscription_plan,subscription_status,marketing_consent_status,marketing_opt_out,created_at,coach_quiet_hours_start,coach_quiet_hours_end) VALUES(1,?,?,'free','active','unknown',0,?,0,0)").run("fixture@example.test", "fixture", new Date(now - 86400000).toISOString());
 const execute = async (command: DatabaseCommand) => {
   const statement = sqlite.prepare(command.sql); statement.setReturnArrays(true);
   if (command.method === "run") return { rows: [], changes: Number(statement.run(...command.params).changes) };
@@ -49,6 +49,7 @@ const job = { id: 1, userId: 1, campaign: "signup_unpaid", campaignVersion: 3, s
 assert.equal(await service.process(job), true);
 assert.equal(await service.process(job), false);
 assert.equal(sent, 1);
+assert.equal(sqlite.prepare("SELECT marketing_consent_status FROM users WHERE id=1").get()!.marketing_consent_status, "unknown", "enrollment must not manufacture an opt-in");
 assert.deepEqual(sqlite.prepare("SELECT step,status FROM email_jobs ORDER BY id").all().map(row => ({ ...row })), [{ step: "DAY1", status: "sent" }, { step: "DAY7", status: "pending" }]);
 sqlite.exec("UPDATE users SET subscription_plan='premium',subscription_status='active' WHERE id=1");
 sqlite.prepare("UPDATE email_jobs SET status='processing',claimed_by='fixture-worker',lease_expires_at=? WHERE step='DAY7'").run(new Date(now + 300000).toISOString());

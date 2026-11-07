@@ -13,12 +13,20 @@ test("signup cadence is exactly day 1, 7 and 14 from signup, with no missed-step
   assert.equal(signupReminderExclusion(base, now), null);
   assert.equal(signupReminderExclusion({ ...base, createdAt: new Date(now - 17 * 86400000) }, now), "sequence_expired");
 });
-test("Premium, trial, paid-through cancellations, delinquent billing, opt-outs and missing consent are excluded", () => {
+test("unknown consent is eligible without changing consent, but explicit opt-outs still win", () => {
+  for (const marketingConsentStatus of ["unknown", null, undefined]) {
+    const user = { ...base, marketingConsentStatus };
+    assert.equal(signupReminderExclusion(user, now), null);
+    assert.equal(user.marketingConsentStatus, marketingConsentStatus);
+    assert.equal(signupReminderExclusion({ ...user, marketingOptOut: true }, now), "unsubscribed");
+  }
+});
+test("Premium, trial, paid-through cancellations, delinquent billing, opt-outs and suppressed users are excluded", () => {
   for (const patch of [
     { subscriptionPlan: "premium", subscriptionStatus: "active" }, { subscriptionPlan: "pro", subscriptionStatus: "active" },
     { subscriptionStatus: "trialing" }, { subscriptionStatus: "past_due" }, { subscriptionStatus: "unpaid" },
     { subscriptionStatus: "canceled", subscriptionEndsAt: new Date(now + 86400000) },
     { marketingOptOut: true }, { marketingConsentStatus: "unsubscribed" }, { marketingConsentStatus: "suppressed" },
-    { marketingConsentStatus: "unknown" }, { email: null }, { createdAt: "invalid" }, { createdAt: new Date(now + 1000) }, { isAdmin: true },
+    { marketingConsentStatus: "invalid" }, { email: null }, { createdAt: "invalid" }, { createdAt: new Date(now + 1000) }, { isAdmin: true },
   ]) assert.ok(signupReminderExclusion({ ...base, ...patch }, now), JSON.stringify(patch));
 });

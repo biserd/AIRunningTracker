@@ -840,6 +840,9 @@ Your AI Coach at RunAnalytics
     if (!signupReminder && (campaign !== 'checkout_abandoned' || !['CA1', 'TEST:CA1'].includes(step))) {
       return { success: false, error: 'cloudflare_recovery_only' };
     }
+    const audienceReason = signupReminder
+      ? 'You are receiving this follow-up because you created a Run Analytics account.'
+      : 'You opted in to emails from Run Analytics.';
     const suppression = await this.checkCloudflareSuppression(to);
     if (suppression.status === 'unavailable') return { success: false, error: 'cloudflare_suppression_check_unavailable' };
     if (suppression.status === 'suppressed') return { success: false, error: `cloudflare_suppressed_${suppression.reason}` };
@@ -874,7 +877,7 @@ Your AI Coach at RunAnalytics
         <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; color: #666; font-size: 14px;">
           <p>Run Analytics team</p>
           <p style="font-size: 12px; color: #999;">
-            You opted in to emails from Run Analytics.
+            ${audienceReason}
             <a href="${unsubscribeUrl}" style="color: #666;">Unsubscribe</a><br>
             Run Analytics, New York, NY, USA
           </p>
@@ -892,12 +895,12 @@ ${ctaText}: ${ctaUrl}
 Run Analytics team
 
 ---
-You opted in to emails from Run Analytics.
+${audienceReason}
 Unsubscribe: ${unsubscribeUrl}
 Run Analytics, New York, NY, USA
     `;
     
-    console.log(`[Email] Sending consented follow-up ${step} (${campaign})`);
+    console.log(`[Email] Sending follow-up ${step} (${campaign})`);
     if (options.beforeSend && !await options.beforeSend()) return { success: false, error: 'recipient_no_longer_eligible' };
     
     // Do not retry an uncertain Cloudflare send: the first request may have

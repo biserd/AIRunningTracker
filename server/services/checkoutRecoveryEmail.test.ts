@@ -34,6 +34,9 @@ test('only the explicitly enabled signup sequence is allowed, with suppression, 
     assert.equal(sends, 1);
     assert.equal(captured.headers['List-Unsubscribe-Post'], 'List-Unsubscribe=One-Click');
     assert.ok(captured.html.includes('Unsubscribe'));
+    assert.ok(captured.html.includes('because you created a Run Analytics account'));
+    assert.ok(captured.text.includes('because you created a Run Analytics account'));
+    assert.ok(!captured.html.includes('You opted in'));
     assert.equal((await emailService.sendDripEmail({...options,step:'DAY30'})).success, false);
   } finally {
     emailService.checkCloudflareSuppression = originalCheck; emailService.sendEmailDetailed = originalSend;
