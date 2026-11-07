@@ -1,6 +1,7 @@
 import type { AtomicSqlDatabase } from '../../../server/d1/jobStore';
 import { GarminStore } from '../../../server/garmin/store';
 import { parseGarminPush } from '../../../shared/garmin';
+import {GarminHealthStore} from '../../../server/garmin/healthStore';
 const cidrs: [string, number][] = [['204.77.162.0',23], ['204.77.163.0',24], ['98.199.124.0',23], ['185.132.79.0',24], ['208.65.206.0',23], ['185.207.94.0',23], ['198.233.176.0',24]];
 function ipv4(ip: string): number | null {
   const parts = ip.split('.');
@@ -34,10 +35,13 @@ export async function receiveGarminWebhook(request: Request, database: AtomicSql
     text += decoder.decode();
     const push = parseGarminPush(JSON.parse(text));
     const store = new GarminStore(database, '');
+    const healthStore=new GarminHealthStore(database);
     // Acknowledge only after durable receipt. Processing runs after the response,
     // with a scheduled retry if this Worker is interrupted.
     await store.receive(push);
+    await healthStore.receive(push);
     waitUntil(store.process(1).catch(() => { console.error(JSON.stringify({ event: 'garmin_push_processing_deferred' })); }));
+    waitUntil(healthStore.process(1).catch(()=>{console.error(JSON.stringify({event:'garmin_health_processing_deferred'}));}));
     return new Response('OK', { status: 200, headers: { 'Cache-Control': 'no-store' } });
   } catch {
     // Invalid payloads are retried by Garmin; storage outages must not be acknowledged.

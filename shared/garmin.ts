@@ -1,6 +1,7 @@
-/** First release deliberately keeps Garmin data out of Strava and AI pipelines. */
+import {GARMIN_HEALTH_TYPES,normalizeGarminHealth,type GarminHealthType} from './garminHealth';
+/** Garmin feeds remain isolated from Strava and AI pipelines. */
 export const GARMIN_CALLBACK_PATH = '/api/garmin/callback';
-export const GARMIN_PUSH_TYPES = ['activities', 'manuallyUpdatedActivities', 'deregistrations', 'userPermissionsChange'] as const;
+export const GARMIN_PUSH_TYPES = ['activities', 'manuallyUpdatedActivities', 'deregistrations', 'userPermissionsChange',...GARMIN_HEALTH_TYPES] as const;
 export type GarminPushType = typeof GARMIN_PUSH_TYPES[number];
 export type GarminPush = Partial<Record<GarminPushType, Record<string, unknown>[]>>;
 const running = new Set(['RUNNING', 'INDOOR_RUNNING', 'OBSTACLE_RUN', 'STREET_RUNNING', 'TRACK_RUNNING', 'TRAIL_RUNNING', 'TREADMILL_RUNNING', 'ULTRA_RUN', 'VIRTUAL_RUN']);
@@ -16,6 +17,7 @@ export function parseGarminPush(input: unknown): GarminPush {
       const entry = value as Record<string, unknown>;
       if (typeof entry.userId !== 'string' || !/^[\w-]{1,128}$/.test(entry.userId)) throw new Error('INVALID_GARMIN_USER');
       if (key === 'userPermissionsChange' && (!Array.isArray(entry.permissions) || entry.permissions.length > 20 || entry.permissions.some(p => typeof p !== 'string' || p.length > 80))) throw new Error('INVALID_GARMIN_PERMISSIONS');
+      if((GARMIN_HEALTH_TYPES as readonly string[]).includes(key))return {userId:entry.userId,health:normalizeGarminHealth(key as GarminHealthType,entry)};
       // Discard URLs, tokens, coordinates and unrequested sensor fields at receipt.
       return Object.fromEntries(fields.filter(field => entry[field] !== undefined).map(field => [field, entry[field]]));
     });

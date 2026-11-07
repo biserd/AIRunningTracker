@@ -2,6 +2,8 @@ import type { AtomicSqlDatabase } from '../d1/jobStore';
 import type { GarminPush, GarminRun, GarminStatus } from '../../shared/garmin';
 import { normalizeGarminRun } from '../../shared/garmin';
 import { garminHash, garminRandom, openGarmin, sealGarmin } from './crypto';
+import {GARMIN_HEALTH_TYPES} from '../../shared/garminHealth';
+import {GarminHealthStore} from './healthStore';
 import type { GarminTokens } from './client';
 export interface GarminConnection {
   user_id: number; garmin_user_id: string; tokens: string | null; access_expires_at: string; refresh_expires_at: string;
@@ -54,6 +56,7 @@ export class GarminStore {
         iso(now + Math.max(0, tokens.expires_in - 600) * 1000), iso(now + tokens.refresh_token_expires_in * 1000), JSON.stringify(identity.permissions), status, iso(consentStartedAt), now / 1000);
     const [result] = await this.db.batch([write, ...(switchingAccount ? [this.db.prepare('DELETE FROM garmin_deleted_activities WHERE user_id=?').bind(userId)] : [])]);
     if (result.meta.changes !== 1) throw new Error('GARMIN_CONNECTION_BUSY');
+    await new GarminHealthStore(this.db,this.clock).clearIfUnauthorized(userId);
     return status;
   }
   tokenValue(row: GarminConnection): GarminTokens {
@@ -88,6 +91,9 @@ export class GarminStore {
       this.db.prepare("UPDATE garmin_connections SET status=CASE WHEN tokens IS NULL THEN 'not_connected' ELSE 'disconnect_pending' END,permissions='[]' WHERE user_id=?").bind(userId),
       this.db.prepare('DELETE FROM garmin_activity_summaries WHERE user_id=?').bind(userId),
       this.db.prepare('DELETE FROM garmin_oauth_sessions WHERE user_id=?').bind(userId),
+      this.db.prepare('UPDATE garmin_connections SET health_consented_at=NULL,health_last_push_at=NULL WHERE user_id=?').bind(userId),
+      this.db.prepare('DELETE FROM garmin_health_summaries WHERE user_id=?').bind(userId),
+      this.db.prepare('DELETE FROM garmin_health_inbox WHERE user_id=?').bind(userId),
     ]);
   }
   async finishDisconnect(userId: number, tokens: string | null) {
@@ -96,7 +102,7 @@ export class GarminStore {
       .bind(userId, tokens).run();
   }
   async receive(push: GarminPush) {
-    const entries = Object.entries(push).flatMap(([type,values])=>values.map(value=>({type,value})));
+    const entries = Object.entries(push).filter(([type])=>!(GARMIN_HEALTH_TYPES as readonly string[]).includes(type)).flatMap(([type,values])=>values!.map(value=>({type,value})));
     const now=this.clock(),statements=[];
     // Small durable work items keep post-response processing within Worker limits.
     for(let at=0;at<entries.length;at+=20){
@@ -133,10 +139,12 @@ export class GarminStore {
               this.db.prepare("UPDATE garmin_connections SET status='not_connected',tokens=NULL,permissions='[]' WHERE user_id=? AND connected_at<=?").bind(userId, item.received_at),
               this.db.prepare('DELETE FROM garmin_activity_summaries WHERE user_id=? AND EXISTS(SELECT 1 FROM garmin_connections WHERE user_id=? AND status=\'not_connected\')').bind(userId, userId),
             ]);
+            await new GarminHealthStore(this.db,this.clock).clearIfUnauthorized(userId);
           } else if (type === 'userPermissionsChange') {
             const permissions = entry.permissions as string[], changed = typeof entry.changeTimeInSeconds === 'number' ? entry.changeTimeInSeconds : Date.parse(item.received_at) / 1000;
             await this.db.prepare('UPDATE garmin_connections SET permissions=?,status=?,permission_changed_at=? WHERE user_id=? AND permission_changed_at<=? AND connected_at<=?')
               .bind(JSON.stringify(permissions), permissions.includes('ACTIVITY_EXPORT') ? 'connected' : 'permission_required', changed, userId, changed, item.received_at).run();
+            await new GarminHealthStore(this.db,this.clock).clearIfUnauthorized(userId);
           } else {
             const run = normalizeGarminRun(entry);
             if (!run) continue;

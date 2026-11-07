@@ -3,6 +3,7 @@ import { GARMIN_CALLBACK_PATH, type GarminStatus } from '../../shared/garmin';
 import { GarminClient, garminConfig } from './client';
 import { garminEqual } from './crypto';
 import { GarminStore } from './store';
+import {registerGarminHealthRoutes} from './healthRoutes';
 const cookie = '__Secure-garmin_oauth';
 export interface GarminRouteDependencies {
   authenticate: RequestHandler;
@@ -12,6 +13,7 @@ export interface GarminRouteDependencies {
 }
 const unavailable: GarminStatus = { available: false, connected: false, status: 'not_connected', connectedAt: null, lastSyncAt: null, activityCount: 0 };
 export function registerGarminRoutes(app: Express, deps: GarminRouteDependencies) {
+  registerGarminHealthRoutes(app,deps);
   const config = deps.config ?? garminConfig;
   const provider = () => (deps.client ?? (value => new GarminClient(value)))(config());
   app.get('/api/garmin/status', deps.authenticate, async (req, res) => {

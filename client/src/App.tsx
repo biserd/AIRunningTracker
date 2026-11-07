@@ -18,6 +18,7 @@ import { MigrationNotice } from '@/components/MigrationNotice';
 const MaintenancePage = lazy(() => import("@/pages/maintenance"));
 const Dashboard = lazy(() => import("@/pages/dashboard"));
 const SettingsPage = lazy(() => import("@/pages/settings"));
+const RecoveryPage = lazy(() => import('@/pages/recovery'));
 const MigrationChecks = lazy(() => import("@/pages/migration-checks"));
 const ActivityPage = lazy(() => import("@/pages/activity"));
 const ActivitiesPage = lazy(() => import("@/pages/activities"));
@@ -240,6 +241,7 @@ function Router() {
         <Route path="/dashboard">
           <ProtectedRoute component={Dashboard} />
         </Route>
+        <Route path="/recovery"><ProtectedRoute component={RecoveryPage}/></Route>
         <Route path="/migration-checks"><ProtectedRoute component={MigrationChecks} /></Route>
         <Route path="/coach-insights">
           <ProtectedRoute component={CoachInsightsPage} />

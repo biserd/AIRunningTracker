@@ -9,6 +9,7 @@ import {consentPage} from '../../../shared/mcpConsentPage';
 import {privateCoachNotifications} from './coach-notification-bridge';
 import {receiveGarminWebhook} from './garmin-webhook';
 import {GarminStore} from '../../../server/garmin/store';
+import {GarminHealthStore} from '../../../server/garmin/healthStore';
 import type {AtomicSqlDatabase} from '../../../server/d1/jobStore';
 
 // Promoted after Replit was paused. The old preflight instance has APP_ROLE=web.
@@ -127,6 +128,7 @@ export default {
     if (!response.ok) throw new Error('Production scheduler health failed');
     if (Reflect.get(env,'GARMIN_SYNC_ENABLED') === 'true') {
       await new GarminStore(env.DB as unknown as AtomicSqlDatabase,'').process(3);
+      await new GarminHealthStore(env.DB as unknown as AtomicSqlDatabase).process(3);
       const secret = Reflect.get(env,'GARMIN_WEBHOOK_SECRET');
       if (typeof secret === 'string' && secret.length >= 32) {
         const result = await container.fetch('http://container/internal/garmin/maintenance',{method:'POST',headers:{'X-RunAnalytics-Garmin-Internal':secret}});

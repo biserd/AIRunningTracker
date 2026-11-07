@@ -7,6 +7,7 @@ import {Checkbox} from '@/components/ui/checkbox';
 import {useToast} from '@/hooks/use-toast';
 import type {GarminStatus,GarminRun} from '@shared/garmin';
 import {Watch,Loader2,RefreshCw,Download} from 'lucide-react';
+import {Link} from 'wouter';
 export function GarminConnectionCard({unitPreference='km'}:{unitPreference?:string}) {
   const {toast}=useToast(),[consent,setConsent]=useState(false);
   const status=useQuery<GarminStatus>({queryKey:['/api/garmin/status'],staleTime:0,refetchInterval:30_000});
@@ -19,7 +20,7 @@ export function GarminConnectionCard({unitPreference='km'}:{unitPreference?:stri
     toast({title:result==='connected'?'Garmin connected':'Garmin connection',description:messages[result]||'Please check your Garmin connection.',variant:result==='connected'?'default':'destructive'});
     const url=new URL(window.location.href);url.searchParams.delete('garmin');window.history.replaceState(null,'',url.pathname+url.search+url.hash);
   },[toast]);
-  const connect=useMutation({mutationFn:()=>apiRequest('/api/garmin/authorize','POST',{activityConsent:consent}),onSuccess:data=>{
+  const connect=useMutation({mutationFn:()=>apiRequest('/api/garmin/authorize','POST',{activityConsent:consent||status.data?.connected===true}),onSuccess:data=>{
     const url=new URL(data.url);if(url.origin!=='https://connect.garmin.com')throw new Error('Invalid Garmin destination');window.location.assign(url.toString());
   },onError:()=>toast({title:'Connection unavailable',description:'Please try connecting Garmin again shortly.',variant:'destructive'})});
   const disconnect=useMutation({mutationFn:()=>apiRequest('/api/garmin/disconnect','POST'),onSuccess:async()=>{setConsent(false);await reload();toast({title:'Garmin sync stopped',description:'Your imported Garmin feed was deleted. Garmin disconnection may take a moment to finish.'});},onError:()=>toast({title:'Disconnect failed',description:'Please try again.',variant:'destructive'})});
@@ -41,6 +42,8 @@ export function GarminConnectionCard({unitPreference='km'}:{unitPreference?:stri
           <Button onClick={()=>connect.mutate()} disabled={!consent||connect.isPending} data-testid="connect-garmin">{connect.isPending&&<Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Connect Garmin</Button>
         </>}
         <div className="flex flex-wrap gap-2">
+          <Button variant="outline" asChild><Link href="/recovery">Health, sleep and recovery</Link></Button>
+          {connected&&<Button variant="outline" onClick={()=>connect.mutate()} disabled={connect.isPending}>Review Garmin permissions</Button>}
           <Button variant="outline" onClick={()=>reload()} disabled={status.isFetching||runs.isFetching}><RefreshCw className="mr-2 h-4 w-4"/>Refresh status</Button>
           {!!status.data.activityCount&&<Button variant="outline" onClick={()=>download.mutate()} disabled={download.isPending}><Download className="mr-2 h-4 w-4"/>Export Garmin runs</Button>}
           {status.data.status!=='not_connected'&&<Button variant="destructive" disabled={disconnect.isPending||status.data.status==='disconnect_pending'} onClick={()=>{if(window.confirm('Stop Garmin sync and delete your imported Garmin feed? Your original activities in Garmin Connect will remain.'))disconnect.mutate();}}>Disconnect and delete feed</Button>}

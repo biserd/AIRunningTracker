@@ -1,0 +1,54 @@
+Garmin health/sleep recovery dashboard, 2026-11-07
+
+Scope: optional private dashboard at /recovery, separate from activity sync.
+Feeds: dailies, sleeps, hrv, stressDetails (PUSH JSON). No Training/Courses or
+FIT-file integration is added in this release. No history pull/backfill.
+
+Official references read: Garmin Health API 2.1 (2026-10-21), and the live
+wellness-api OpenAPI schema at https://apis.garmin.com/tools/apiDocs/wellness-api.
+https://developerportal.garmin.com/sites/default/files/Health_API_2.1.pdf
+
+The receiver keeps only normalized recovery summaries; raw sensor maps,
+coordinates and other health categories are discarded. Body Battery retains
+the latest valid level and its observation time, rather than its raw series.
+The existing source-IP and Garmin client-ID checks protect the webhook.
+
+Migration: apps/d1-migration/migrations/0037_garmin_health_sync.sql.
+Applied to production D1 successfully before deployment. Existing activity
+records, account permissions and health consent were not changed by migration.
+
+Health summaries enter an owner-specific durable inbox only when the connection
+has HEALTH_EXPORT and separate health-sleep-v1 consent. Processing rechecks the
+same consent generation. Stop deletes summaries and queued health receipts;
+disconnect, permission withdrawal and account deletion also clear health data.
+Normalized records are retained for 90 days; delivery receipts expire in 7 days
+and their payloads are cleared after processing. Server routes require JWT auth
+and set private/no-store. Provider tokens remain encrypted in existing storage.
+
+Updated summary windows replace prior windows by owner/type/start time; shorter
+late retries cannot replace a longer window. Daily totals and multiple devices
+are not added together. The dashboard shows the longest sleep window per Garmin
+calendar date. Awake time is separate from sleep duration. Tentative sleep is
+labeled and excluded from sleep baselines, along with manual/off-wrist sleep.
+
+Baselines: median over distinct prior Garmin dates within 14 days; at least 7
+dates are required. The latest day is excluded. The chart window can be 7 or 28
+days and does not limit the baseline lookback. Missing readings remain null and
+chart gaps stay visible. Each metric shows its own date; older observations are
+labeled. Garmin score qualifiers are preserved. There is no synthetic readiness
+score, medical diagnosis or training clearance claim.
+
+Privacy: /privacy#garmin-health; separate consent, export and stop/delete controls
+on /recovery. Garmin health, sleep and derived trends do not enter AI, Strava,
+messaging or coaching-email pipelines. Activity totals remain separate.
+
+Verification: dedicated health tests cover normalization, missing sensors,
+updates/retries, consent, permission revocation, owner isolation, deletion,
+retention, calendar dates, baselines and authenticated routes. Original Garmin,
+Strava and tenant-security checks pass. Frontend and D1 backend builds pass;
+Worker strict TypeScript passes. The full repository retains pre-existing
+TypeScript diagnostics, with none in this feature's files. Browser fixture
+checks cover consent, populated/empty/outage states and 390px mobile layout.
+Synthetic readings were used only locally, never inserted in production.
+
+Release identifiers and final live verification will be recorded after promotion.

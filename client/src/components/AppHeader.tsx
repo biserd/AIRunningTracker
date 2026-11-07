@@ -1,4 +1,4 @@
-import { Activity, User, LogOut, Settings, Brain, Home, Shield, MessageCircle, CalendarCheck, List } from "lucide-react";
+import { Activity, User, LogOut, Settings, Brain, Home, Shield, MessageCircle, CalendarCheck, List, Heart } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import FeedbackDialog from "@/components/FeedbackDialog";
 const navigationItems = [
   { path: "/dashboard", label: "Dashboard", mobileLabel: "Home", icon: Home },
   { path: "/activities", label: "Activities", mobileLabel: "Runs", icon: List },
+  { path: '/recovery', label: 'Recovery', mobileLabel: 'Recovery', icon: Heart },
   { path: "/coach-insights", label: "Coach Insights", mobileLabel: "Coach", icon: Brain },
   { path: "/training-plans", label: "Training Plans", mobileLabel: "Plans", icon: CalendarCheck },
 ];
@@ -49,7 +50,7 @@ export default function AppHeader() {
           </div>
 
           {/* Navigation Menu */}
-          <nav className="hidden md:flex items-center space-x-1">
+          <nav className="hidden xl:flex items-center space-x-1">
             {navigationItems.map((item) => {
               const Icon = item.icon;
               const isActive = location === item.path;
@@ -148,8 +149,8 @@ export default function AppHeader() {
 
         {/* Mobile Navigation */}
         <nav
-          className="md:hidden mt-3 grid gap-1"
-          style={{ gridTemplateColumns: `repeat(${user?.isAdmin ? 5 : 4}, minmax(0, 1fr))` }}
+          className="xl:hidden mt-3 grid gap-1"
+          style={{ gridTemplateColumns: `repeat(${navigationItems.length+(user?.isAdmin?1:0)}, minmax(0, 1fr))` }}
         >
           {navigationItems.map((item) => {
             const Icon = item.icon;

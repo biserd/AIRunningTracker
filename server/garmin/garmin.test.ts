@@ -19,6 +19,7 @@ const now=Date.parse('2026-11-07T20:00:00.000Z');
 function fixture(){
   const sqlite=new DatabaseSync(':memory:');sqlite.exec('PRAGMA foreign_keys=ON; CREATE TABLE users(id INTEGER PRIMARY KEY); INSERT INTO users VALUES(1),(2);');
   sqlite.exec(readFileSync('apps/d1-migration/migrations/0036_garmin_activity_sync.sql','utf8'));
+  sqlite.exec(readFileSync('apps/d1-migration/migrations/0037_garmin_health_sync.sql','utf8'));
   const db:AtomicSqlDatabase={
     prepare(sql){let params:(string|number|null)[]=[];const statement:SqlStatement={bind(...values){params=values;return statement;},async first<T>(){return (sqlite.prepare(sql).get(...params)??null) as T|null;},async all<T>(){return {results:sqlite.prepare(sql).all(...params) as T[]};},async run(){const result=sqlite.prepare(sql).run(...params);return {meta:{changes:Number(result.changes)}};}};return statement;},
     async batch(statements){sqlite.exec('BEGIN');try{const result=[];for(const statement of statements)result.push(await statement.run());sqlite.exec('COMMIT');return result;}catch(error){sqlite.exec('ROLLBACK');throw error;}},
