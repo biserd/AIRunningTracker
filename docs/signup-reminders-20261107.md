@@ -42,6 +42,14 @@ Old legacy pending jobs are cancelled, not deleted or sent as a backlog. Existin
 - Synthetic D1 integration uses the real application ORM, email-job storage, atomic send claim and Apple ledger; every external provider request is blocked.
 - Email tests verify the feature's default-off allowlist, suppression failure paths, final eligibility callback and one-click unsubscribe headers.
 
+## Daytime delivery and final reminder hold release
+
+- Combined runtime source `22e8d77` preserves the parallel Garmin sync changes. Thirty-seven targeted tests (including Garmin), the synthetic real-ORM D1 integration and the production bundle passed.
+- Production image `sha256:81f1176a49148a7073ec1c77d70a5ccb4531ea8b367452dae86ab840f85606e9`, container version 47, Worker `daf0f37f-35b5-4f7a-a8d7-080d31903942`. Existing Garmin enablement and secrets were preserved.
+- Live signup daytime/admin verification passed at `2026-11-07T21:31:32.753Z`; WhatsApp settings verification also passed.
+- At `2026-11-07T21:34Z`, the owner-selected account's single DAY14 reminder was reserved and read back as pending with no sent timestamp. Its private hold survives the pause; billing, opt-out and suppression checks still apply when delivery is enabled. No personal email address is stored in this release note.
+- Production readback confirmed `drip_campaigns_enabled=false`, `drip_campaigns_dry_run=true`, zero signup campaign emails sent, and unchanged profile timezone/consent. No activation scripts were executed.
+
 ## Historical initial production release (subsequently paused by owner)
 
 - Runtime source `39ba6c6`, image `sha256:5684ced2d79692cfba900b589b1f0961d0abf5fd8773d30615b0e625d51572e2`, container version 43.

@@ -15,5 +15,8 @@ for (const marker of ["Signup follow-ups", "Days 1, 7 and 14 after signup", "sig
 if (process.argv.includes("--unknown-consent")) {
   for (const marker of ["includeUnknownConsent", "Signup reminders include accounts with unknown consent"]) assert.ok(admin.includes(marker), marker);
 }
+if (process.argv.includes("--daytime")) {
+  for (const marker of ["daytimeWindow", "Daytime delivery:", "America/New_York", "reserved final reminders stay held"]) assert.ok(admin.includes(marker), marker);
+}
 const status = await get("/api/admin/campaigns/worker-status"); assert.ok([401,403].includes(status.status)); await status.body?.cancel();
 console.log(JSON.stringify({ origin, checkedAt: new Date().toISOString(), adminFile, signupSequenceAssets: true, adminStatusProtected: true }));

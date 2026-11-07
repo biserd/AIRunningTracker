@@ -23,6 +23,7 @@
     "EMAIL_FROM": "RunAnalytics <hello@aitracker.run>",
     "APP_ROLE": "jobs",
     "ENABLE_SIGNUP_PAYMENT_REMINDERS": "true",
+    "GARMIN_SYNC_ENABLED": "true",
     "HERMES_MCP_CLIENT_ID": "ra_mcp_client_L0o4CkpSbZeZ8xlI4MyQeNXh",
     "TELEGRAM_BOT_USERNAME": "hermes_3njyz3nxuousjmh2_bot",
     "ALLOWED_PRICE_IDS": "price_1SbtcfRwvWaTf8xfSEO4iKnc,price_1SbtcfRwvWaTf8xfwcVnrRf8",
@@ -36,8 +37,8 @@
     "COACH_BINDING_CALLBACK_SECRET","COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2","COACH_AGENT_WEBHOOK_URL",
     "OPENAI_API_KEY","CLOUDFLARE_EMAIL_API_TOKEN","STRAVA_CLIENT_SECRET",
     "VITE_STRAVA_CLIENT_ID","STRIPE_SECRET_KEY","VITE_STRIPE_PUBLIC_KEY","STRAVA_SUBSCRIPTION_ID"] },
-  // Verified signup audience 9d3c3ba, staging image 3759ccf5. Delivery remains manually OFF.
-  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:d7c4f4180da37d7ea6292f7c1667ae3212f36f1ce09bee8fa7c2da028ce197e9",
+  // Verified daytime/held reminder fix 22e8d77 with Garmin preserved; staging 5acbafe3. Email delivery remains OFF.
+  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:81f1176a49148a7073ec1c77d70a5ccb4531ea8b367452dae86ab840f85606e9",
     "instance_type":"standard-1","max_instances":2 }],
   "durable_objects": { "bindings": [{ "name":"WEB","class_name":"RunAnalyticsProduction" }] },
   "migrations": [{ "tag":"v1","new_sqlite_classes":["RunAnalyticsProduction"] }],
