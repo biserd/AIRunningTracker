@@ -208,9 +208,9 @@ ${faqSchemaHtml}
     <main class="ssr-container">
       <article class="ssr-content">
         <aside class="ssr-byline" aria-label="Article editorial information">
-          <p><strong>By the RunAnalytics Editorial Team</strong> &bull; Product and data claims reviewed &bull; Updated August 7, 2026</p>
+          <p><strong>By the RunAnalytics Editorial Team</strong> &bull; Product and data claims reviewed &bull; Updated ${slug === "how-to-compare-running-shoes" ? escapeHtml(post.date) : "August 7, 2026"}</p>
           <p>Educational content only. Training estimates depend on data quality and are not medical diagnosis.</p>
-          <p><a href="/faq">Methodology and limitations</a> &bull; <a href="https://www.who.int/news-room/fact-sheets/detail/physical-activity" rel="nofollow noopener noreferrer">WHO physical activity guidance</a></p>
+          <p><a href="/faq">Methodology and limitations</a>${slug === "how-to-compare-running-shoes" ? ' &bull; <a href="/tools/shoes/compare">Shoe comparison catalogue</a>' : ' &bull; <a href="https://www.who.int/news-room/fact-sheets/detail/physical-activity" rel="nofollow noopener noreferrer">WHO physical activity guidance</a>'}</p>
         </aside>
         ${editorialUpdateHtml}
         ${tocHtml}

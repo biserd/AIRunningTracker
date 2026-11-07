@@ -36,7 +36,7 @@ export default function EditorialArticlePage() {
         <p className="mx-auto mt-5 max-w-3xl text-lg text-slate-600 dark:text-slate-300">{post.lede}</p>
         <p className="mt-4 text-sm text-slate-500">{post.dateLabel} · {post.readTime}</p>
       </header>
-      <ArticleTrust topic={post.topic} />
+      <ArticleTrust topic={post.topic} internalOnly={post.slug === "how-to-compare-running-shoes"} updated={post.dateLabel} />
       <main className="mx-auto max-w-4xl px-4 pb-16 sm:px-6">
         <nav className="mb-10 rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-900" aria-label="Table of contents"><h2 className="font-bold">In this guide</h2><ol className="mt-3 grid gap-2 sm:grid-cols-2">{post.sections.map((section) => <li key={section.id}><a className="text-blue-700 hover:underline dark:text-blue-300" href={`#${section.id}`}>{section.title}</a></li>)}</ol></nav>
         <article className="prose prose-slate max-w-none dark:prose-invert prose-a:text-blue-700 dark:prose-a:text-blue-300 prose-table:block prose-table:overflow-x-auto">
