@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Activity, ArrowLeft, Menu, X } from "lucide-react";
-import { SiStrava } from "react-icons/si";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 
 const NAV_LINKS = [
   { label: "iOS App", href: "/ios-app" },
+  { label: "Connections", href: "/integrations" },
   { label: "Pricing", href: "/pricing" },
   { label: "Guide", href: "/ai-running-coaching-guide" },
   { label: "Tools", href: "/tools" },
@@ -20,6 +20,7 @@ export default function PublicHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const isActive = (href: string) => {
+    if (href === "/integrations") return ["/integrations", "/garmin", "/strava"].includes(location);
     if (href === "/blog") return location.startsWith("/blog");
     if (href === "/tools") return location.startsWith("/tools");
     if (href === "/ai-running-coaching-guide") return location === href;
@@ -63,8 +64,8 @@ export default function PublicHeader() {
                 data-testid="header-continue-strava"
               >
               <Link href={isAuthenticated ? "/dashboard" : "/auth"}>
-                {isAuthenticated ? <ArrowLeft aria-hidden="true" className="h-4 w-4" /> : <SiStrava aria-hidden="true" focusable="false" className="h-4 w-4" />}
-                {isAuthenticated ? "Back to dashboard" : "Continue with Strava or Login"}
+                {isAuthenticated ? <ArrowLeft aria-hidden="true" className="h-4 w-4" /> : <Activity aria-hidden="true" className="h-4 w-4" />}
+                {isAuthenticated ? "Back to dashboard" : "Get started / Sign in"}
               </Link>
               </Button>
           </div>
@@ -107,8 +108,8 @@ export default function PublicHeader() {
                   onClick={() => setMobileOpen(false)}
                 >
                 <Link href={isAuthenticated ? "/dashboard" : "/auth"}>
-                  {isAuthenticated ? <ArrowLeft aria-hidden="true" className="h-4 w-4" /> : <SiStrava aria-hidden="true" focusable="false" className="h-4 w-4" />}
-                  {isAuthenticated ? "Back to dashboard" : "Continue with Strava or Login"}
+                  {isAuthenticated ? <ArrowLeft aria-hidden="true" className="h-4 w-4" /> : <Activity aria-hidden="true" className="h-4 w-4" />}
+                  {isAuthenticated ? "Back to dashboard" : "Get started / Sign in"}
                 </Link>
                 </Button>
             </div>

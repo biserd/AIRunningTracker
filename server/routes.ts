@@ -559,6 +559,9 @@ export async function registerRoutes(app: Express, runtime?: { schedulerDatabase
         { url: "/proactive-running-coach", changefreq: "weekly", priority: "0.9" },
         { url: "/ios-app", changefreq: "monthly", priority: "0.9" },
         { url: "/ios-app/privacy", changefreq: "monthly", priority: "0.4" },
+        { url: "/integrations", changefreq: "monthly", priority: "0.8" },
+        { url: "/garmin", changefreq: "monthly", priority: "0.8" },
+        { url: "/strava", changefreq: "monthly", priority: "0.8" },
         { url: "/chrome-extension", changefreq: "weekly", priority: "0.8" },
         
         // Free Tools

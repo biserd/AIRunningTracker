@@ -59,13 +59,13 @@ export interface HomepageContent {
 
 export const homepageContent: HomepageContent = {
   hero: {
-    title: "The Missing Analytics Layer for Strava",
-    subtitle: "Strava tracks your miles. We tell you how to run them faster and stay healthy.",
-    description: "Don't just log your runs, learn from them. Sync your history instantly to unlock the AI coaching, race predictions, and deep insights that your dashboard is missing.",
+    title: "Your running, connected with Garmin and Strava",
+    subtitle: "Your familiar recording routine. A clearer view of what comes next.",
+    description: "Connect Strava for training analytics and eligible AI coaching, or connect Garmin directly for new running summaries and optional health and sleep trends with separate consent. Each source has a clear role.",
     cta: { text: "Start Free Trial", href: "/auth" },
     trustIndicators: [
       "7-day free trial",
-      "Instant access with Strava"
+      "Garmin and Strava connections"
     ],
   },
   aiCoach: {
@@ -74,7 +74,7 @@ export const homepageContent: HomepageContent = {
     description: "Stop staring at graphs wondering if you're improving. Just ask. From \"Am I overtraining?\" to \"What's my marathon pace?\", get instant advice based on your actual history.",
     features: [
       { title: "Turn complex data into plain English", description: "" },
-      { title: "100% Personal Context", description: "Unlike generic chatbots, we analyze your last 12 months of Strava logs before answering." },
+      { title: "Personal Training Context", description: "Your available synced Strava runs and saved goals give the conversation a starting point." },
       { title: "Instant Race-Readiness Checks", description: "Ask \"Am I ready?\" and get an honest prediction based on your recent long runs." },
       { title: "Spot Injury Risks Early", description: "Identify volume spikes and fatigue trends before they sideline you." }
     ],

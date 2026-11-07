@@ -23,6 +23,9 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold mb-4">Product</h4>
             <ul className="space-y-2 text-gray-400">
+              <li><Link href="/integrations" className="hover:text-white transition-colors">Garmin &amp; Strava connections</Link></li>
+              <li><Link href="/garmin" className="hover:text-white transition-colors">Garmin Connect sync</Link></li>
+              <li><Link href="/strava" className="hover:text-white transition-colors">Strava analytics</Link></li>
               <li><Link href="/ios-app" className="hover:text-white transition-colors" data-testid="link-ios-app">iPhone &amp; iPad App · Coming Soon</Link></li>
               <li><Link href="/features" className="hover:text-white transition-colors" data-testid="link-features">Features</Link></li>
               <li><Link href="/pricing" className="hover:text-white transition-colors" data-testid="link-pricing">Pricing</Link></li>

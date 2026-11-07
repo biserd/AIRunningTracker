@@ -1,14 +1,18 @@
 import type { Express } from 'express';
 import { toolsContent } from './toolsContent';
 import { authMarkdown } from '../mcp/discovery';
+import { runningSources } from '../../shared/runningSources';
 
 // An allowlist, not a generic response converter: authenticated pages and APIs
 // must never become public via content negotiation or a shared cache.
 export function publicMarkdown(path: string): string | null {
   if (path === '/') return `# RunAnalytics
-Your AI running coach, wherever you run. Talk by voice or chat, continue on WhatsApp, and review guidance based on your synced Strava runs. The iOS/iPad app is coming soon.
+Your AI running coach, wherever you run. Connect Strava for analytics and eligible voice, chat and WhatsApp coaching. Connect Garmin directly for a private feed of new run summaries and optional health and sleep trends with separate consent. Garmin summaries are separate from Strava history and do not yet power AI coaching or Runner Score. The iOS/iPad app is coming soon.
 
 ## Explore
+- [Garmin and Strava connections](https://aitracker.run/integrations)
+- [Garmin Connect sync](https://aitracker.run/garmin)
+- [Strava analytics](https://aitracker.run/strava)
 - [Features](https://aitracker.run/features)
 - [Current trial and subscription terms](https://aitracker.run/pricing)
 - [iOS and iPad app](https://aitracker.run/ios-app)
@@ -19,6 +23,9 @@ Your AI running coach, wherever you run. Talk by voice or chat, continue on What
 ## Privacy and access
 Public shoe research is read-only. Private runner analytics requires authentication and explicit consent. See [Privacy](https://aitracker.run/privacy) and [agent authentication](https://aitracker.run/auth.md).
 `;
+  const source = Object.values(runningSources).find(s => s.path === path);
+  if (source) return `# ${source.headline}\n\n${source.intro}\n\n## Current scope\n${source.scope}\n\n## Setup\n${source.steps.map((s,i)=>`${i+1}. ${s.title}: ${s.text}`).join('\n')}\n\n## Questions\n${source.faqs.map(f=>`### ${f.question}\n${f.answer}`).join('\n\n')}\n\n[Compare connections](https://aitracker.run/integrations) · [Pricing](https://aitracker.run/pricing) · [Privacy](https://aitracker.run/privacy)\n`;
+  if (path === '/integrations') return '# Garmin and Strava connections\n\n' + Object.values(runningSources).map(s=>`## [${s.name}](https://aitracker.run${s.path})\n${s.summary}\n\n${s.scope}`).join('\n\n');
   if (path === '/developers/mcp') return authMarkdown;
   if (path === '/tools') return '# Free running tools\n\n' + toolsContent.map(t => `- [${t.title}](https://aitracker.run/tools/${t.slug}): ${t.description}`).join('\n');
   const tool = toolsContent.find(t => path === `/tools/${t.slug}`);

@@ -8,7 +8,7 @@ import { SEO } from "@/components/SEO";
 export default function FAQPage() {
   return (
     <div className="min-h-screen bg-light-grey">
-      <SEO title="RunAnalytics FAQ | Strava, Data and Premium" description="Answers about RunAnalytics, Strava syncing, running metrics, privacy, free access and the Premium trial." url="https://aitracker.run/faq" />
+      <SEO title="RunAnalytics FAQ | Garmin, Strava and Premium" description="Answers about Garmin run summaries, Strava analytics, running metrics, privacy, free tools and the Premium trial." url="https://aitracker.run/faq" />
       <PublicHeader />
 
       <main className="max-w-4xl mx-auto px-6 py-12">
@@ -49,11 +49,9 @@ export default function FAQPage() {
                 </div>
                 
                 <div>
-                  <h3 className="font-semibold text-charcoal mb-2">Do I need a Strava account?</h3>
+                  <h3 className="font-semibold text-charcoal mb-2">Can I connect Garmin as well as Strava?</h3>
                   <p>
-                    While you can create an account without Strava, connecting your Strava account unlocks the full 
-                    potential of our platform. Strava integration provides access to your historical running data, 
-                    which enables more accurate AI insights and personalized recommendations.
+                    Yes. <Link href="/garmin" className="text-orange-700 underline">Garmin Connect</Link> supplies a separate private feed of new run summaries, without needing Strava. <Link href="/strava" className="text-orange-700 underline">Strava</Link> supplies the history used by analytics, Runner Score and coaching. Garmin history, detailed streams and coaching from the direct Garmin feed are not included in this initial release. You can use manual tools without either connection.
                   </p>
                 </div>
                 

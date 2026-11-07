@@ -31,6 +31,9 @@ const MagicLinkPage = lazy(() => import("@/pages/magic-link"));
 const CheckoutCompletePage = lazy(() => import("@/pages/checkout-complete"));
 const PrivacyPage = lazy(() => import("@/pages/privacy"));
 const IosAppPage = lazy(() => import("@/pages/ios-app"));
+const IntegrationsPage = lazy(() => import("@/pages/integrations"));
+const GarminLandingPage = lazy(() => import("@/pages/integrations").then(m => ({default:m.GarminLandingPage})));
+const StravaLandingPage = lazy(() => import("@/pages/integrations").then(m => ({default:m.StravaLandingPage})));
 const IosAppPrivacyPage = lazy(() => import("@/pages/ios-app-privacy"));
 const ContactPage = lazy(() => import("@/pages/contact"));
 const FAQPage = lazy(() => import("@/pages/faq"));
@@ -188,6 +191,9 @@ function Router() {
         <Route path="/privacy" component={PrivacyPage} />
         <Route path="/ios-app/privacy" component={IosAppPrivacyPage} />
         <Route path="/ios-app" component={IosAppPage} />
+        <Route path="/integrations" component={IntegrationsPage} />
+        <Route path="/garmin" component={GarminLandingPage} />
+        <Route path="/strava" component={StravaLandingPage} />
         <Route path="/contact" component={ContactPage} />
         <Route path="/faq" component={FAQPage} />
         <Route path="/runner-score/:userId" component={RunnerScorePage} />

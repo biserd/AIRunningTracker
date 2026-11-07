@@ -12,6 +12,9 @@ type ToolModule = { default: ComponentType };
 
 const exactToolRoutes: Record<string, () => Promise<ToolModule>> = {
   "/": () => import("@/pages/landing"),
+  "/integrations": () => import("@/pages/integrations"),
+  "/garmin": () => import("@/pages/integrations").then(m => ({default:m.GarminLandingPage})),
+  "/strava": () => import("@/pages/integrations").then(m => ({default:m.StravaLandingPage})),
   "/tools": () => import("@/pages/tools"),
   "/tools/aerobic-decoupling-calculator": () => import("@/pages/tools/aerobic-decoupling-calculator"),
   "/tools/training-split-analyzer": () => import("@/pages/tools/training-split-analyzer"),

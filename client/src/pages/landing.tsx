@@ -7,6 +7,7 @@ import { SiStrava } from "react-icons/si";
 import { VERSION } from "@shared/version";
 import Footer from "@/components/Footer";
 import PublicHeader from "@/components/PublicHeader";
+import RunningSources from "@/components/RunningSources";
 import { SEO } from "@/components/SEO";
 import { useQuery } from "@tanstack/react-query";
 import { trackFunnelEvent } from "@/lib/analytics";
@@ -68,7 +69,7 @@ export default function LandingPage() {
             ? "Limited-time web offer for new subscribers: 7 days free, then $3.99 for the first month or $39.99 for the first year; renews at $7.99/month or $79.99/year. Cancel anytime."
             : "7-day free trial, then $7.99/month or $79.99/year. Cancel anytime."
         },
-        "description": "AI running coach with voice and chat, WhatsApp coaching, Runner Score, race predictions, and personalized training insights"
+        "description": "Connect Garmin for private run summaries and optional recovery trends, or Strava for running analytics and eligible AI voice, chat and WhatsApp coaching."
       },
       {
         "@type": "Organization",
@@ -88,8 +89,8 @@ export default function LandingPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
       <SEO
         title="RunAnalytics - AI Running Coach & Performance Analytics"
-        description="Talk with an attentive AI running coach by voice or chat, continue on WhatsApp, and get personalized guidance from your Strava data. iOS app coming soon. 7-day free trial."
-        keywords="AI running coach, WhatsApp running coach, iOS running app, running analytics, Strava analytics, runner score, race predictions, running performance, training insights, voice coach"
+        description="Connect Garmin for new run summaries or Strava for analytics and AI coaching. Explore voice, chat and WhatsApp coaching. iOS app coming soon."
+        keywords="AI running coach, Garmin Connect sync, Strava analytics, WhatsApp running coach, running analytics, runner score, voice coach"
         structuredData={structuredData}
       />
       
@@ -111,10 +112,10 @@ export default function LandingPage() {
           </h1>
           
           <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4 mb-3">
-            Always available. Always attentive. Ready to talk when you are.
+            Garmin and Strava connections. A clearer view of your running.
           </p>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
-            Talk by voice or chat, continue with your coach on WhatsApp, and receive useful guidance after every synced run. The RunAnalytics iOS app is coming soon.
+            Connect Strava for training insights and voice, chat or WhatsApp coaching. Or connect Garmin directly for new run summaries and optional sleep and recovery trends. The RunAnalytics iOS app is coming soon.
           </p>
             <Link href="/pricing" className="mx-4 mb-7 block min-h-[184px] sm:min-h-[140px] rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-left shadow-sm transition hover:border-orange-400 hover:shadow-md" data-testid="home-web-intro-offer">
               <span className="block text-sm font-bold text-orange-800">{webIntroOffer?.active ? 'Limited-time web offer · sign up by November 30' : 'Try your personal running coach · $0 today'}</span>
@@ -172,7 +173,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Secondary path for returning users: primary Strava CTA is in the header */}
+          {/* Returning users and source-specific setup use the same account. */}
           <div className="flex flex-col items-center gap-3 mb-6 sm:mb-8 px-4">
             <p className="text-sm text-gray-600">
               Already have an account?{" "}
@@ -195,13 +196,14 @@ export default function LandingPage() {
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-700" />
-              <span>Instant access with Strava</span>
+              <a href="#running-sources" className="hover:text-orange-700 hover:underline">Garmin + Strava · see supported features</a>
             </div>
           </div>
         </div>
       </section>
 
       {/* AI Running Coach Showcase */}
+      <RunningSources />
       <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-gradient-to-br from-blue-50 via-white to-orange-50">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center">
@@ -226,7 +228,7 @@ export default function LandingPage() {
                 <div className="flex items-start gap-3">
                   <CheckCircle className="h-5 w-5 text-green-700 flex-shrink-0 mt-0.5" />
                   <div className="text-sm sm:text-base text-gray-700">
-                    <strong>100% Personal Context.</strong> Unlike generic chatbots, we analyze your last 12 months of running data before answering.
+                    <strong>Personal training context.</strong> Your available synced Strava runs and saved goals give the conversation a starting point.
                   </div>
                 </div>
                 <div className="flex items-start gap-3">

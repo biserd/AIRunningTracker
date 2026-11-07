@@ -2,6 +2,7 @@ import { getBlogPostBySlug, BlogPostContent } from './blogContent';
 import { homepageContent, HomepageContent } from './homepageContent';
 import { getToolBySlug, ToolContent } from './toolsContent';
 import { configuredWebIntroCoupon, webIntroOfferForPrice } from '../services/webIntroOffer';
+import { runningSources } from '../../shared/runningSources';
 
 const BASE_URL = "https://aitracker.run";
 
@@ -791,7 +792,7 @@ export function renderHomepage(): string {
   } : homepageContent;
   const meta: PageMeta = {
     title: "RunAnalytics - AI Running Coach & Performance Analytics",
-    description: "Chat with your personal AI Running Coach powered by GPT-5.5. Get instant training advice, race predictions, Runner Score (0-100), and comprehensive performance analytics. Free with Strava integration.",
+    description: "Connect Garmin for new run summaries or Strava for analytics and AI coaching. Explore voice, chat and WhatsApp coaching. iOS app coming soon.",
     keywords: "AI running coach, running analytics, Strava analytics, runner score, race predictions, VO2 max, running performance, training insights, running app, marathon training, AI coach chat",
     type: 'website'
   };
@@ -902,7 +903,7 @@ export function renderHomepage(): string {
 <body>
   <div id="root">
     <section class="ssg-hero">
-      <h1>${escapeHtml(content.hero.title.replace('for Strava', ''))}<span>for Strava</span></h1>
+      <h1>${escapeHtml(content.hero.title)}</h1>
       <p><strong>${escapeHtml(content.hero.subtitle)}</strong></p>
       <p>${escapeHtml(content.hero.description)}</p>
       <a href="${content.hero.cta.href}" class="ssg-cta">${escapeHtml(content.hero.cta.text)}</a>
@@ -911,6 +912,11 @@ export function renderHomepage(): string {
       </div>
     </section>
     
+    <section class="ssg-section" id="running-sources">
+      <h2>Garmin and Strava. One RunAnalytics account.</h2>
+      <div class="ssg-grid">${Object.values(runningSources).map(source => `<article class="ssg-card"><h3>${escapeHtml(source.name)}</h3><p>${escapeHtml(source.summary)}</p><p>${escapeHtml(source.scope)}</p><a href="${source.path}">Explore ${escapeHtml(source.name)}</a></article>`).join('')}</div>
+      <p><a href="/integrations">Compare running connections</a></p>
+    </section>
     <section class="ssg-section">
       <h2>${escapeHtml(content.aiCoach.title)}</h2>
       <p class="ssg-section-subtitle"><strong>${escapeHtml(content.aiCoach.subtitle)}</strong> ${escapeHtml(content.aiCoach.description)}</p>
@@ -1146,12 +1152,12 @@ export function renderFaqPage(): string {
   const url = '/faq';
   const meta: PageMeta = {
     title: "FAQ | Frequently Asked Questions | RunAnalytics",
-    description: "Get answers to common questions about RunAnalytics, Strava integration, AI coaching, subscriptions, and how to get the most from your training data.",
+    description: "Answers about Garmin run summaries, Strava analytics, running metrics, privacy, free tools and the Premium trial.",
     keywords: "FAQ, frequently asked questions, help, support, running analytics help"
   };
   const faqItems = [
     { q: "What is RunAnalytics?", a: "RunAnalytics is an AI-powered running analytics platform that integrates with Strava to provide personalized insights, performance tracking, and training recommendations. We use advanced machine learning algorithms to analyze your running data and help you improve your performance." },
-    { q: "Do I need a Strava account?", a: "While you can create an account without Strava, connecting your Strava account unlocks the full potential of our platform. Strava integration provides access to your historical running data, which enables more accurate AI insights and personalized recommendations." },
+    { q: "Can I connect Garmin as well as Strava?", a: "Yes. Garmin Connect supplies a separate private feed of new run summaries, without needing Strava. Strava supplies the history used by analytics, Runner Score and coaching. Garmin history, detailed streams and coaching from the direct Garmin feed are not included in this initial release. You can use manual tools without either connection." },
     { q: "Is RunAnalytics free to use?", a: "RunAnalytics offers a 7-day free trial with full access to all Premium features: AI coaching, race predictions, training plans, and advanced analytics. Standard renewal pricing is $7.99/month or $79.99/year; a limited-time introductory web offer may lower the first paid period. You can cancel anytime before the trial ends and you won't be charged." },
     { q: "What kind of insights do you provide?", a: "Our AI analyzes your running data to provide insights on performance trends, pace analysis, training load, recovery recommendations, race predictions, injury risk assessment, and personalized training plans. Each insight is tailored to your specific running patterns and goals." },
     { q: "How accurate are the race time predictions?", a: "Race predictions are modeled estimates based on the activity data available. Weather, terrain, pacing, distance from the input effort and data quality can materially change the result; the displayed range is not a calibrated probability interval." },
@@ -1475,7 +1481,7 @@ export function renderFeaturesPage(): string {
   const url = '/features';
   const meta: PageMeta = {
     title: "Features | AI Analytics & Coaching | RunAnalytics",
-    description: "Explore RunAnalytics features: Runner Score, AI insights, race predictions, training plans, shoe tracking, and proactive AI coaching.",
+    description: "Explore Garmin run summaries, Strava training analytics, running tools and optional AI coaching. Compare what each connection supports.",
     keywords: "running app features, AI running features, Strava analytics features"
   };
   const webPageSchema = generateStructuredData(meta, url, 'WebPage');
@@ -1485,10 +1491,16 @@ export function renderFeaturesPage(): string {
   <div id="root">
     <header class="ssr-header">
       <h1>Powerful Features for Serious Runners</h1>
-      <p style="opacity:0.9;margin-top:10px;">Discover how RunAnalytics transforms your Strava data into actionable insights with AI-powered analytics.</p>
+      <p style="opacity:0.9;margin-top:10px;">Garmin run summaries and Strava-powered analytics. Each connection has a clear role.</p>
     </header>
     <main class="ssr-container">
       <article class="ssr-content">
+        <section>
+          <h2>Garmin and Strava connections</h2>
+          <p><a href="/garmin">Garmin Connect</a> brings new running summaries into a private feed in web Settings. No historical import; the feed is separate from Strava totals, Runner Score, AI coaching and messaging.</p>
+          <p>Optional Garmin health and sleep sync adds a private recovery dashboard with separate consent. Available sleep, HRV, resting heart rate, stress and Body Battery trends stay outside AI coaching and messaging.</p>
+          <p><a href="/strava">Strava</a> supplies the activity history used by connected analytics and coaching. <a href="/integrations">Compare supported connections</a> before you connect.</p>
+        </section>
         <section>
           <h2>AI-Powered Insights</h2>
           <p>Get personalized performance analysis powered by advanced AI that understands your unique running patterns. Every activity is automatically graded and summarized by an AI coach.</p>

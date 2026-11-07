@@ -4,11 +4,12 @@ import { Activity, Brain, Target, TrendingUp, Calendar, Shield } from "lucide-re
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { SEO } from "@/components/SEO";
+import RunningSources from '@/components/RunningSources';
 
 export default function FeaturesPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
-      <SEO title="Running Analytics Features | RunAnalytics" description="Explore post-run analysis, training trends, running calculators, shoe comparisons and optional AI coaching built from your Strava data." url="https://aitracker.run/features" />
+      <SEO title="Running Analytics Features | RunAnalytics" description="Explore Garmin run summaries, Strava training analytics, running tools and optional AI coaching. Compare what each connection supports." url="https://aitracker.run/features" />
       <PublicHeader />
 
       {/* Features Content */}
@@ -93,8 +94,9 @@ export default function FeaturesPage() {
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 text-center">
               <Activity className="text-strava-orange mx-auto mb-4" size={48} />
-              <h3 className="text-xl font-bold text-charcoal mb-2">Strava Integration</h3>
-              <p className="text-gray-600">Seamlessly sync all your running data from Strava for comprehensive analysis.</p>
+              <h3 className="text-xl font-bold text-charcoal mb-2">Garmin &amp; Strava Connections</h3>
+              <p className="text-gray-600">Direct Garmin run summaries, or Strava history for analytics and coaching. Different sources, clear roles.</p>
+              <Link href="/integrations" className="mt-3 inline-block py-2 font-semibold text-orange-700 hover:underline">Compare connections →</Link>
             </div>
             
             <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 text-center">
@@ -112,6 +114,7 @@ export default function FeaturesPage() {
         </div>
       </section>
 
+      <RunningSources />
       <Footer />
     </div>
   );
