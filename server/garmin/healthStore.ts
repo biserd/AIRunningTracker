@@ -64,7 +64,7 @@ export class GarminHealthStore {
           statements.push(this.db.prepare(`INSERT INTO garmin_health_summaries(user_id,kind,start_at,calendar_date,summary,received_at)
             SELECT user_id,?,?,?,?,? FROM garmin_connections WHERE user_id=? AND health_consented_at=? AND health_consented_at<=? AND ${permitted}
             ON CONFLICT(user_id,kind,start_at) DO UPDATE SET calendar_date=excluded.calendar_date,summary=excluded.summary,received_at=excluded.received_at
-            WHERE garmin_health_summaries.received_at<=excluded.received_at AND json_extract(garmin_health_summaries.summary,'$.duration')<=json_extract(excluded.summary,'$.duration')`)
+            WHERE garmin_health_summaries.received_at<=excluded.received_at AND (json_extract(garmin_health_summaries.summary,'$.source')='garmin_connect_history' OR json_extract(garmin_health_summaries.summary,'$.duration')<=json_extract(excluded.summary,'$.duration'))`)
             .bind(summary.kind,summary.startAt,summary.date,JSON.stringify(summary),item.received_at,item.user_id,item.consented_at,item.received_at));
         }
         statements.push(this.db.prepare(`UPDATE garmin_connections SET health_last_push_at=CASE WHEN health_last_push_at IS NULL OR health_last_push_at<? THEN ? ELSE health_last_push_at END WHERE user_id=? AND health_consented_at=? AND ${permitted}`).bind(item.received_at,item.received_at,item.user_id,item.consented_at));

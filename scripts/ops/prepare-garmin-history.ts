@@ -1,0 +1,10 @@
+import {readFileSync,writeFileSync} from 'node:fs';
+import {prepareGarminHistory,historyInsertSql} from '../../server/garmin/historyImport';
+const args=process.argv.slice(2),arg=(key:string)=>args[args.indexOf(key)+1];
+for(const key of ['--input','--email','--write-sql'])if(!args.includes(key)||!arg(key)||arg(key).startsWith('--'))throw Error('Required: --input, --email, --write-sql');
+const email=arg('--email');if(!/^[A-Za-z0-9._+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email))throw Error('Invalid owner email');
+const records=prepareGarminHistory(JSON.parse(readFileSync(arg('--input'),'utf8'))),now=new Date().toISOString();
+const literal=(value:string)=>"'"+value.replaceAll("'","''")+"'";
+const sql=records.map(record=>{const values=[record.kind,record.startAt,record.date,JSON.stringify(record),now,record.kind,record.date];let index=0;return historyInsertSql('lower(u.email)='+literal(email.toLowerCase())).replaceAll('?',()=>literal(values[index++]))+';';}).join('\n');
+writeFileSync(arg('--write-sql'),sql,{mode:0o600});
+console.log(JSON.stringify({preparedOnly:true,records:records.length,nights:records.filter(r=>r.kind==='sleeps').length,hrvNights:records.filter(r=>r.kind==='hrv').length,dates:records.filter(r=>r.kind==='sleeps').map(r=>r.date).sort(),liveReadingsWillNotBeOverwritten:true}));

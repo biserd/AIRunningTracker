@@ -9,6 +9,7 @@ import type {SqlStatement} from '../d1/activities';
 import {GarminStore} from './store';
 import {GarminHealthStore} from './healthStore';
 import {registerGarminRoutes} from './routes';
+import {prepareGarminHistory,garminLocalTime,importGarminHistory} from './historyImport';
 import {parseGarminPush} from '../../shared/garmin';
 import {normalizeGarminHealth,recoveryOverview,GARMIN_HEALTH_CONSENT_VERSION,type GarminHealthRecord,type GarminHealthStatus} from '../../shared/garminHealth';
 const now=Date.parse('2026-11-07T20:00:00Z'),key=Buffer.alloc(32,7).toString('base64');
@@ -108,4 +109,32 @@ test('health routes require authentication and versioned consent, isolate owners
     assert.equal((await fetch(origin+'/api/garmin/health/recovery?timezone=invalid',{headers})).status,400);assert.equal((await fetch(origin+'/api/garmin/health/recovery?days=1000',{headers})).status,400);
     assert.equal((await fetch(origin+'/api/garmin/health/consent',{method:'DELETE',headers})).status,200);assert.equal((await f.health.status(1)).enabled,false);
   }finally{server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));f.sqlite.close();}
+});
+const historyNight={date:'2026-11-07',score:80,qualifier:'Good',sleepDuration:'8h 0m',deep:'1h 0m',light:'5h 0m',rem:'2h 0m',awake:'30m',hrv:42,startLocal:'2026-11-06 22:00:00',endLocal:'2026-11-07 06:30:00',sourceUrl:'https://connect.garmin.com/app/sleep/2026-11-07',displayTimezone:'America/New_York'};
+test('history conversion preserves displayed values, skips missing nights and resolves DST without inventing a sleep interval',()=>{
+  const rows=prepareGarminHistory([historyNight,{date:'2026-11-02',missing:true,sourceUrl:'https://connect.garmin.com/app/sleep/2026-11-02/0'}],now);
+  assert.equal(rows.length,2);assert.equal(rows[0].duration,28800);assert.equal(rows[0].startAt,'2026-11-07T03:00:00.000Z');assert.equal(rows[0].sleepQualifier,'Good');assert.equal(rows[1].hrvAverage,42);assert.equal(rows[0].source,'garmin_connect_history');
+  const dst=prepareGarminHistory([{...historyNight,date:'2026-11-01',sourceUrl:'https://connect.garmin.com/app/sleep/2026-11-01',startLocal:'2026-10-31 22:00:00',endLocal:'2026-11-01 06:30:00',sleepDuration:'9h 0m',light:'6h 0m'}],now);
+  assert.equal(dst[0].startAt,'2026-11-01T02:00:00.000Z');assert.equal(dst[1].duration,9.5*3600);
+  assert.throws(()=>garminLocalTime('2026-11-01 01:30:00','America/New_York'));
+  assert.throws(()=>prepareGarminHistory([{...historyNight,sleepDuration:'9h 0m'}],now));
+  assert.throws(()=>prepareGarminHistory([{...historyNight,sourceUrl:'https://unverified.test'}],now));
+});
+test('one-time history import is consent guarded, owner scoped, repeatable and cannot overwrite live readings or fabricate push status',async()=>{
+  const f=fixture();try{
+    await connect(f);const rows=prepareGarminHistory([historyNight],now);await importGarminHistory(f.db,1,rows,now);assert.deepEqual(await f.health.records(1),[]);
+    await f.health.enable(1);await f.health.receive(parseGarminPush({hrv:[{...sample(),lastNightAvg:55}]}));await f.health.process();
+    const pushAt=(await f.health.status(1)).lastSyncAt;await importGarminHistory(f.db,1,rows,now);await importGarminHistory(f.db,1,rows,now);
+    assert.equal((await f.health.records(1)).length,2);assert.equal((await f.health.records(1)).find(row=>row.kind==='hrv')!.hrvAverage,55);assert.equal((await f.health.status(1)).lastSyncAt,pushAt);assert.deepEqual(await f.health.records(2),[]);
+    await f.health.disable(1);await importGarminHistory(f.db,1,rows,now);assert.deepEqual(await f.health.records(1),[]);
+  }finally{f.sqlite.close();}
+});
+test('future Garmin deliveries supersede historical imports even when a corrected sleep is shorter',async()=>{
+  const f=fixture();try{
+    await connect(f);await f.health.enable(1);const rows=prepareGarminHistory([historyNight],now);await importGarminHistory(f.db,1,rows,now);
+    f.advance(1000);await f.health.receive(parseGarminPush({sleeps:[{...sample(),startTimeInSeconds:Date.parse(rows[0].startAt)/1000,durationInSeconds:25000}]}));await f.health.process();
+    const sleep=(await f.health.records(1)).find(row=>row.kind==='sleeps')!;assert.equal(sleep.duration,25000);assert.equal(sleep.source,undefined);
+    const imported={...rows[0],receivedAt:new Date(now+2000).toISOString()},live={...sleep,startAt:new Date(Date.parse(sleep.startAt)+1000).toISOString()};
+    assert.equal(recoveryOverview([live,imported],status,28,'UTC',now+3000).metrics.sleep.value,25000);
+  }finally{f.sqlite.close();}
 });

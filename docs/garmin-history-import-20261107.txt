@@ -1,0 +1,40 @@
+One-time Garmin sleep/HRV history import, 2026-11-07
+
+Starter access excludes historical business API data. The owner expressly
+requested existing sleep/HRV history for an earlier recovery baseline. No
+Enterprise backfill, undocumented API, personal API key or credential change is
+used. The signed-in Garmin Connect nightly summaries provide date, duration,
+stage totals, awake time, score/qualifier and average overnight HRV.
+
+Scope: the 14 Garmin calendar dates 2026-10-25 through 2026-11-07. Thirteen have
+sleep and HRV; 2026-11-02 explicitly says No sleep data and remains missing.
+Only the owner's requested sleep/HRV summary fields are prepared for import.
+Personal readings and generated SQL remain in the private work directory,
+outside Git. They must never be added to this repository or build context.
+
+A sample 2026-11-06 wellness export was downloaded through Garmin's visible
+Export Wellness Data control. Garmin's official FIT JavaScript SDK verifies FIT
+integrity and confirms the nightly HRV average and sleep score in that sample.
+Sleep intervals are not inferred from ambiguous FIT transition semantics.
+The displayed nightly totals are used, reconciling stages and awake time against
+the visible sleep window. America/New_York local clock conversion handles the
+November DST transition and rejects ambiguous or nonexistent times.
+
+prepareGarminHistory validates dates, source page, duration/stage totals,
+scores, HRV units and retention before producing normalized records. The ops
+script generates a private SQL file but does not execute it. Every insert checks
+the target owner, existing health consent and HEALTH_EXPORT permission, and
+skips any already stored reading of the same kind/date. It does not change
+health consent, OAuth tokens, Garmin push timestamps or activity records.
+
+Imported records have source=garmin_connect_history and an import timestamp.
+Dashboard cards and sleep detail label their provenance. Future live Garmin
+summaries supersede imported copies, including corrected shorter sleep windows.
+Missing nights stay blank. Privacy text explains separately requested history
+imports; automatic Starter sync still has no backfill feature. Retention,
+export, stop/delete and no-AI/no-messaging controls apply as before.
+
+Tests cover DST, invalid source/totals, missing nights, owner/consent guards,
+repeat imports, preservation of live readings and future sync precedence.
+Final import counts, baseline verification and release IDs are recorded below
+after the owner-scoped import and production verification complete.

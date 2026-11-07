@@ -4,6 +4,7 @@ export type GarminHealthType = typeof GARMIN_HEALTH_TYPES[number];
 export const GARMIN_HEALTH_RETENTION_DAYS = 90;
 export const GARMIN_HEALTH_CONSENT_VERSION = 'health-sleep-v1';
 export interface GarminHealthSummary {
+  source?: 'garmin_connect_history'; importedAt?: string;
   id: string; kind: GarminHealthType; date: string; startAt: string; duration: number; offset: number;
   restingHeartRate?: number | null; steps?: number | null; activeCalories?: number | null;
   averageStress?: number | null; batteryCharged?: number | null; batteryDrained?: number | null;
@@ -48,7 +49,7 @@ export interface GarminHealthStatus {
 }
 export interface GarminHealthRecord extends GarminHealthSummary {receivedAt: string}
 export interface RecoveryDay {date:string; sleep:GarminHealthRecord|null; daily:GarminHealthRecord|null; hrv:GarminHealthRecord|null; stress:GarminHealthRecord|null}
-export interface RecoveryMetric {value:number|null; date:string|null; observedAt:string|null; receivedAt:string|null; baseline:number|null; baselineDays:number; stale:boolean; tentative:boolean}
+export interface RecoveryMetric {value:number|null; date:string|null; observedAt:string|null; receivedAt:string|null; baseline:number|null; baselineDays:number; stale:boolean; tentative:boolean; source?:'garmin_connect_history'}
 export interface GarminRecovery {
   status: GarminHealthStatus; today:string; timezone:string; days:number; series:RecoveryDay[];
   metrics:Record<'sleep'|'sleepScore'|'restingHeartRate'|'hrv'|'stress'|'bodyBattery',RecoveryMetric>;
@@ -63,7 +64,8 @@ export function recoveryOverview(records: GarminHealthRecord[], status: GarminHe
   for(const record of records){
     const day=byDate.get(record.date);if(!day)continue;
     const key=({sleeps:'sleep',dailies:'daily',hrv:'hrv',stressDetails:'stress'} as const)[record.kind], previous=day[key];
-    if(!previous || (record.kind==='sleeps' ? record.duration>previous.duration || (record.duration===previous.duration&&record.receivedAt>previous.receivedAt) : record.receivedAt>previous.receivedAt))day[key]=record;
+    const preferSource=previous&&record.source!==previous.source ? !record.source : null;
+    if(!previous || preferSource===true || preferSource===null&&(record.kind==='sleeps' ? record.duration>previous.duration || (record.duration===previous.duration&&record.receivedAt>previous.receivedAt) : record.receivedAt>previous.receivedAt))day[key]=record;
   }
   const metric=(source:'sleep'|'daily'|'hrv'|'stress',field:keyof GarminHealthSummary):RecoveryMetric=>{
     const valid=series.map(day=>day[source]).filter((record):record is GarminHealthRecord=>!!record&&typeof record[field]==='number'&&record.date<=today&&Date.parse(record.startAt)<=now+300000);
@@ -75,7 +77,7 @@ export function recoveryOverview(records: GarminHealthRecord[], status: GarminHe
     const values=prior.map(row=>Number(row[field])).sort((a,b)=>a-b),n=values.length;
     const baseline=n>=7?(n%2?values[(n-1)/2]:(values[n/2-1]+values[n/2])/2):null;
     const observedAt=latest?(field==='bodyBattery'?latest.bodyBatteryAt??latest.startAt:new Date(Date.parse(latest.startAt)+(latest.duration+(latest.kind==='sleeps'?(latest.awakeSeconds??0):0))*1000).toISOString()):null;
-    return {value,date:latest?.date??null,observedAt,receivedAt:latest?.receivedAt??null,baseline,baselineDays:n,
+    return {value,date:latest?.date??null,observedAt,receivedAt:latest?.receivedAt??null,baseline,baselineDays:n,source:latest?.source,
       stale:!latest||todayMs-Date.parse(latest.date+'T00:00:00Z')>dayMs||!!observedAt&&now-Date.parse(observedAt)>36*3600000,tentative:latest?.tentative??false};
   };
   return {status,today,timezone,days,series:series.slice(-days),metrics:{sleep:metric('sleep','sleepSeconds'),sleepScore:metric('sleep','sleepScore'),restingHeartRate:metric('daily','restingHeartRate'),
