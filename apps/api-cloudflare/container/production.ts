@@ -26,14 +26,14 @@ export class RunAnalyticsProduction extends Container<ProductionEnv> {
   envVars = productionEnvironment(this.env);
   async ensureD1Runtime(signupReminders = false, garmin: Record<string,string> = {}): Promise<void> {
     await this.ctx.blockConcurrencyWhile(async () => {
-      // Pass this non-secret release flag explicitly from the current Worker
-      // environment; a warm Durable Object can retain its previous env snapshot.
+      // Refresh release configuration from the current Worker environment;
+      // a warm Durable Object can retain its previous environment snapshot.
       this.envVars.ENABLE_SIGNUP_PAYMENT_REMINDERS = signupReminders ? 'true' : 'false';
       for(const name of garminRuntimeNames){
         if(typeof garmin[name]==='string')this.envVars[name]=garmin[name];
         else delete this.envVars[name];
       }
-      const release = `garmin-direct-sync-20261107-v1-${signupReminders}-${garmin.GARMIN_SYNC_ENABLED==='true'}-rollout-complete`;
+      const release = `garmin-direct-sync-20261107-v3-${signupReminders}-${garmin.GARMIN_SYNC_ENABLED==='true'}-rollout-complete`;
       if (await this.ctx.storage.get(release)) return;
       // An image rollout can retain an already-running process and its old env.
       // Stop it once before accepting D1 traffic; external database data is untouched.

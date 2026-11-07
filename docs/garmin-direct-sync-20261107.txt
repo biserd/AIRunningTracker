@@ -1,0 +1,38 @@
+RunAnalytics Garmin direct activity sync: production setup, 2026-11-07
+
+Production: https://aitracker.run/settings#garmin
+Worker: aitracker-main
+Worker version: 68c5fbb2-f267-41b6-9c32-bf9fe21a12b2
+Application source: 5f1549a8cc8cebec0c7b2b94090e3904e6e9767f
+Container image digest: e8e73df8092100a0c13d77a43d094f1976137258f8740fdd395ac5f84640adb0
+Production container application version: 46
+
+Cloudflare encrypted secrets configured: GARMIN_CLIENT_ID, GARMIN_CLIENT_SECRET,
+GARMIN_TOKEN_ENCRYPTION_KEY, GARMIN_WEBHOOK_SECRET. Values are not in Git or this record.
+GARMIN_SYNC_ENABLED=true. Existing mail delivery controls were not enabled.
+Migration 0036_garmin_activity_sync.sql applied to the production D1 database.
+
+Garmin API Tools: PUSH delivery enabled and not on hold for activities,
+manuallyUpdatedActivities, deregistrations and userPermissionsChange.
+All use https://aitracker.run/api/garmin/webhook. Other feeds remain disabled.
+
+Verified: signed-in Settings shows Not connected and the consent/Connect Garmin
+controls; the application configuration is available. Garmin, existing Strava,
+public tools and WhatsApp release checks passed. Worker strict TypeScript check
+passed. Earlier Garmin/security tests passed (31 total); backend/frontend builds
+passed. Temporary readiness probes were removed from the final Worker.
+
+Remaining personal step: runner reviews activity-sharing consent in Settings,
+clicks Connect Garmin, and grants Activity Export in Garmin Connect. A newly
+recorded run must then sync through Garmin Connect to verify actual delivery.
+No live Garmin account grant or real activity delivery has been verified yet.
+
+Initial scope: new running summaries in a private feed with status, export,
+deletion and disconnect controls. No historical import. Feed remains separate
+from Strava totals, Runner Score, AI coaching and messaging in this release.
+
+Deployment note: Cloudflare builds use codex/ios-testflight, while production
+images are promoted explicitly using wrangler.production.jsonc. iOS uploads
+require an ios-testflight-* tag. Preserve the pinned image and Garmin settings
+when promoting a later web image. Container rollouts are asynchronous; a build
+success or Worker upload alone does not prove the new runtime is serving.
