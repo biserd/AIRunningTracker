@@ -17,8 +17,7 @@ import { Settings, Save, Unlink, Trash2, Crown, Zap, CreditCard, ExternalLink, L
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import PushNotificationToggle from "@/components/PushNotificationToggle";
-import { TelegramTrialOffer } from "@/components/TelegramTrialOffer";
-import { TelegramConnectionCard } from "@/components/TelegramConnectionCard";
+import { WhatsAppConnectionCard } from "@/components/WhatsAppConnectionCard";
 import { useStravaConnect } from "@/hooks/useStravaConnect";
 
 function SettingsPageContent() {
@@ -209,11 +208,8 @@ function SettingsPageContent() {
         </div>
 
       <div className="grid gap-6">
-        {!isPremium && (
-          <TelegramTrialOffer source="settings_telegram_offer" compact />
-        )}
         {user?.id && (
-          <TelegramConnectionCard userId={user.id} location="settings" />
+          <WhatsAppConnectionCard userId={user.id} hasAccess={isPremium} />
         )}
 
         <Card>

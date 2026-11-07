@@ -7,6 +7,7 @@ import { storage, RUNNING_ACTIVITY_TYPES } from "./storage";
 import { canRecommendShoe } from "@shared/shoeEvidence";
 import { stravaService } from "./services/strava";
 import { registerWebStravaConnect, webStravaClientId } from "./services/webStravaConnect";
+import { registerWebWhatsApp } from "./services/webWhatsApp";
 import { getJwtSecret } from "./config/security";
 import { stravaClient } from "./services/stravaClient";
 import { jobQueue, createListActivitiesJob, createHydrateActivityJob, metrics } from "./services/queue";
@@ -276,6 +277,7 @@ async function isStripeTrialEligible(
 }
 
 export async function registerRoutes(app: Express, runtime?: { schedulerDatabase: SqlDatabase }): Promise<Server> {
+  registerWebWhatsApp(app, { authenticate: authenticateJWT, signingSecret: getJwtSecret });
   registerObjectStorageRoutes(app);
   await registerMcpRoutes(app);
   registerPublicMarkdown(app);
