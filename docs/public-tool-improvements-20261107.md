@@ -23,6 +23,8 @@ Primary source reads on 2026-11-07:
 
 ## Measurement definitions
 
+Fuel preset safety check: the [PF 30 manufacturer page](https://www.precisionhydration.com/us/en/products/pf-30-gel/) confirms 30 g carbohydrate; [The Feed's displayed nutrition label](https://thefeed.com/products/precision-fuel-and-hydration-pf30-gel) confirms 0 mg sodium (checked 2026-11-07). Corrected the old 100 mg preset. A legacy PF 60 gel preset has no verified current gel label and is excluded from selection/optimization, not silently replaced with a chew bar. Other existing presets are not newly certified by this check; instructions require checking the current packet/flavour labels.
+
 This is a measured first rollout (`contextual_v1`), not a randomized A/B test or evidence of an uplift yet. Compare a suitable post-release period with a comparable prior period and account for traffic mix.
 
 | Event | Meaning |

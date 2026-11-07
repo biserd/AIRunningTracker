@@ -582,7 +582,7 @@ export default function MarathonFuelingPlanner() {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {GEL_CATALOG.map(g => (
+                                  {GEL_CATALOG.filter(g => !g.unverified).map(g => (
                                     <SelectItem key={g.id} value={g.id}>
                                       <div className="flex flex-col">
                                         <span className="font-medium">{g.brand} {g.name}</span>

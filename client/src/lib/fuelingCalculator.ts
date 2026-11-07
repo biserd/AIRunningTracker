@@ -8,6 +8,7 @@ export interface GelProduct {
   sodiumPerGel: number;
   caffeinePerGel: number;
   description?: string;
+  unverified?: boolean;
 }
 
 export interface FuelingInputs {
@@ -98,6 +99,7 @@ export const GEL_CATALOG: GelProduct[] = [
     id: 'precision-fuel-60',
     brand: 'Precision Fuel & Hydration',
     name: 'PF 60 Gel',
+    unverified: true, // Legacy preset: no current gel label verified; exclude from new schedules.
     carbsPerGel: 60,
     sodiumPerGel: 200,
     caffeinePerGel: 0,
@@ -207,7 +209,7 @@ export const GEL_CATALOG: GelProduct[] = [
     brand: 'Precision Fuel & Hydration',
     name: 'PF 30 Gel',
     carbsPerGel: 30,
-    sodiumPerGel: 100,
+    sodiumPerGel: 0, // The Feed PF 30 nutrition label, checked 2026-11-07.
     caffeinePerGel: 0,
     description: 'Medium-carb, 30g carbs'
   }
@@ -438,7 +440,7 @@ export function optimizeFuelingPlan(
   const targetSodiumPerGel = sodiumNeededFromGels / inRaceCount;
 
   // Smart gel selection based on targets
-  const ultraHighCarbGel = GEL_CATALOG.find(g => g.carbsPerGel === 60); // PF 60
+  const ultraHighCarbGel = GEL_CATALOG.find(g => g.carbsPerGel === 60 && !g.unverified);
   const highCarbGel = GEL_CATALOG.find(g => g.carbsPerGel === 40 && g.caffeinePerGel === 0); // Maurten 160 or SiS Beta Fuel
   const highSodiumGel = GEL_CATALOG.find(g => g.sodiumPerGel >= 100); // GU Roctane or PF
 

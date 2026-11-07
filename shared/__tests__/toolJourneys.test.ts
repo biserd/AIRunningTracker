@@ -46,11 +46,15 @@ test("worked four-hour schedule excludes pre-start fuel from hourly race intake"
   assert.equal(p.totalCarbs, 240);
   assert.equal(p.carbsPerHour, 60);
   assert.equal(p.carbShortfall, 0);
+  assert.equal(p.preStartSodium, 0);
+  assert.equal(p.totalSodium, 2000); // Drink only: PF 30 gels contain no sodium.
 });
 test("optimization never adds caffeine and distinguishes the pre-start serving", () => {
   const p = calculateFuelingPlan(inputs, optimizeFuelingPlan(inputs, calculateFeedingEvents(inputs)));
   assert.equal(p.totalCaffeine, 0);
   assert.ok(p.preStartCarbs > 0);
+  const highTarget = { ...inputs, carbTargetPerHour: 120 };
+  assert.ok(optimizeFuelingPlan(highTarget, calculateFeedingEvents(highTarget)).every(e => e.gelId !== "precision-fuel-60"));
 });
 test("Strava candidates exclude other sports and prefer elapsed race time without inferring effort", () => {
   const base = { type: "Run", distance: 10000, movingTime: 2700, elapsedTime: 2760, workoutType: 0 };
