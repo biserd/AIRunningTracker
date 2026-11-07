@@ -8,6 +8,7 @@ import { canRecommendShoe } from "@shared/shoeEvidence";
 import { stravaService } from "./services/strava";
 import { registerWebStravaConnect, webStravaClientId } from "./services/webStravaConnect";
 import { registerWebWhatsApp } from "./services/webWhatsApp";
+import { signupRemindersEnabled } from "../shared/signupReminders";
 import { getJwtSecret } from "./config/security";
 import { stravaClient } from "./services/stravaClient";
 import { jobQueue, createListActivitiesJob, createHydrateActivityJob, metrics } from "./services/queue";
@@ -9175,8 +9176,8 @@ ${allPages.map(page => `  <url>
           CAST(COUNT(*) FILTER (WHERE bounced_at IS NOT NULL) AS INTEGER) AS bounced,
           CAST(COUNT(*) FILTER (WHERE complained_at IS NOT NULL) AS INTEGER) AS complained
         FROM email_jobs
-        WHERE job_type = 'drip' AND campaign_version = 2
-          AND campaign IN ('signup_no_strava', 'preview_ready_unseen', 'preview_engaged_no_trial', 'checkout_abandoned', 'trial_needs_activation', 'trial_engaged', 'trial_ending', 'trial_expired_winback', 'inactive_free')
+        WHERE job_type = 'drip' AND campaign_version IN (2,3)
+          AND campaign IN ('signup_no_strava', 'preview_ready_unseen', 'preview_engaged_no_trial', 'checkout_abandoned', 'trial_needs_activation', 'trial_engaged', 'trial_ending', 'trial_expired_winback', 'inactive_free','signup_unpaid')
         GROUP BY campaign, experiment_variant
       `), db.execute(sql`
         SELECT campaign, CAST(COUNT(DISTINCT job_id) AS INTEGER) AS clicked
@@ -9211,6 +9212,7 @@ ${allPages.map(page => `  <url>
         holdoutPercent,
         operationalState,
         nextAction,
+        signupReminderSchedule: signupRemindersEnabled() ? { campaign: "signup_unpaid", version: 3, daysAfterSignup: [1,7,14], consentRequired: true, missedStepReplay: false } : null,
       });
     } catch (error: any) {
       console.error("Worker status error:", error);
@@ -9273,8 +9275,9 @@ ${allPages.map(page => `  <url>
   app.post("/api/admin/campaigns/test", authenticateAdmin, async (req: any, res) => {
     try {
       const input = z.object({ segment: z.string(), step: z.string().optional() }).parse(req.body);
-      if (input.segment !== 'checkout_abandoned' || (input.step && input.step !== 'CA1')) {
-        return res.status(400).json({ message: 'Cloudflare test mail is limited to the unfinished-Checkout notice' });
+      const signupTest = signupRemindersEnabled() && input.segment === 'signup_unpaid' && (!input.step || ['DAY1','DAY7','DAY14'].includes(input.step));
+      if (!signupTest && (input.segment !== 'checkout_abandoned' || (input.step && input.step !== 'CA1'))) {
+        return res.status(400).json({ message: 'Choose an enabled signup reminder or the unfinished-Checkout notice' });
       }
       if (!(input.segment in LIFECYCLE_CAMPAIGNS)) return res.status(400).json({ message: "Unknown lifecycle segment" });
       const steps = LIFECYCLE_CAMPAIGNS[input.segment as keyof typeof LIFECYCLE_CAMPAIGNS];

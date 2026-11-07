@@ -6,12 +6,15 @@ import { storage } from "../storage";
 import { emailService } from "./email";
 import { buildMarketingUrl, createMarketingToken, CLICK_SIGN_IN_TTL_SECONDS } from "./campaignSecurity";
 import { getUncachableStripeClient } from "../stripeClient";
+import { signupReminderService } from "./signupReminders";
+import { SIGNUP_REMINDER_STEPS, signupReminderExclusion, signupRemindersEnabled } from "../../shared/signupReminders";
 
 interface DripStep { step: string; offsetHours: number; subject: string; previewText: string; body: string; ctaText: string; ctaPath: string; ctaKey: string; }
 export const CAMPAIGN_VERSION = 2;
 const MAX_CHECKOUT_FOLLOWUP_AGE_MS = 48 * 60 * 60 * 1000;
 
 export const LIFECYCLE_CAMPAIGNS: Record<LifecycleSegment, DripStep[]> = {
+  signup_unpaid: [...SIGNUP_REMINDER_STEPS],
   signup_no_strava: [
     { step: "SNS1", offsetHours: 1, subject: "Connect one run and see what AITracker notices", previewText: "Your first useful insight starts with a Strava sync", body: "Connect Strava and AITracker will turn your latest run into a clear finding and one practical next step.", ctaText: "Connect Strava", ctaPath: "/settings?section=connections", ctaKey: "connect_strava" },
     { step: "SNS2", offsetHours: 48, subject: "Still guessing after your runs?", previewText: "See effort, recovery and what to do next in one place", body: "A sync takes less than a minute. Once your run is in, you can see what changed, whether the effort matched the goal, and what to adjust next.", ctaText: "Sync My Runs", ctaPath: "/settings?section=connections", ctaKey: "connect_strava" },
@@ -70,7 +73,10 @@ export class DripCampaignService {
     return { previewViewedAt: latest(["preview_viewed"]), previewCtaClickedAt: latest(["preview_cta_clicked"]), checkoutStartedAt: latest(["checkout_session_created"]), trialStartedAt: latest(["trial_started"]) };
   }
 
-  async computeUserSegment(user: User): Promise<LifecycleSegment | null> { return resolveLifecycleSegment(user, await this.getSignals(user.id)); }
+  async computeUserSegment(user: User): Promise<LifecycleSegment | null> {
+    if (signupRemindersEnabled()) return signupReminderExclusion(user) ? null : "signup_unpaid";
+    return resolveLifecycleSegment(user, await this.getSignals(user.id));
+  }
 
   private async campaignConfig() {
     const rollout = Number(await storage.getSystemSetting("drip_campaigns_rollout_percent") || "5");
@@ -91,6 +97,7 @@ export class DripCampaignService {
   async scheduleNextEmailForUser(userId: number, prefetched?: { user: User; segment: LifecycleSegment | null; signals?: LifecycleSignals }): Promise<"scheduled" | "suppressed" | "ineligible" | "complete"> {
     const user = prefetched?.user || await storage.getUser(userId);
     if (!user) return "ineligible";
+    if (signupRemindersEnabled()) return signupReminderService.schedule(user);
     const segment = prefetched ? prefetched.segment : await this.computeUserSegment(user);
     if (!segment) { await this.exitCampaignForUser(userId, "ineligible"); return "ineligible"; }
     // Cloudflare Email Service currently supports transactional mail only.
@@ -117,6 +124,10 @@ export class DripCampaignService {
   }
 
   async processEmailJob(job: EmailJob): Promise<boolean> {
+    if (signupRemindersEnabled()) {
+      if (job.campaign === "signup_unpaid") return signupReminderService.process(job);
+      return this.cancelJob(job, "legacy_campaign_replaced_by_signup_sequence");
+    }
     let deliveryAttemptStarted = false;
     try {
       if (job.campaign !== 'checkout_abandoned' || job.step !== 'CA1') return this.cancelJob(job, 'cloudflare_checkout_notice_only');
@@ -183,9 +194,9 @@ export class DripCampaignService {
 
   async cancelEmailsForUser(userId: number): Promise<void> { await storage.cancelEmailJobsForUser(userId); }
   async exitCampaignForUser(userId: number, reason: string): Promise<void> { for (const campaign of await storage.getActiveCampaigns(userId)) await storage.exitUserCampaign(campaign.id, reason); await storage.cancelEmailJobsForUser(userId); }
-  async recordActivation(userId: number, _activationType: string): Promise<void> { const user = await storage.getUser(userId); if (user && !user.activationAt) await storage.updateUserActivation(userId, new Date()); await this.exitCampaignForUser(userId, "activation"); await this.scheduleNextEmailForUser(userId); }
+  async recordActivation(userId: number, _activationType: string): Promise<void> { const user = await storage.getUser(userId); if (user && !user.activationAt) await storage.updateUserActivation(userId, new Date()); if (!signupRemindersEnabled()) await this.exitCampaignForUser(userId, "activation"); await this.scheduleNextEmailForUser(userId); }
   async recordLastSeen(userId: number): Promise<void> { await storage.updateUserLastSeen(userId); }
-  async onStravaConnected(userId: number): Promise<void> { await this.exitCampaignForUser(userId, "strava_connected"); await this.scheduleNextEmailForUser(userId); }
+  async onStravaConnected(userId: number): Promise<void> { if (!signupRemindersEnabled()) await this.exitCampaignForUser(userId, "strava_connected"); await this.scheduleNextEmailForUser(userId); }
   async onUserSubscribed(userId: number): Promise<void> { await this.exitCampaignForUser(userId, "subscribed"); }
 
   async scheduleActivityReadyEmail(userId: number, activityId: number): Promise<void> {
@@ -195,6 +206,7 @@ export class DripCampaignService {
   }
 
   async enrollMissingUsers(): Promise<{ enrolled: number; skipped: number; suppressed: number; bySegment: Record<string, number> }> {
+    if (signupRemindersEnabled()) return signupReminderService.enroll();
     let enrolled = 0; let skipped = 0; let suppressed = 0;
     const bySegment: Record<string, number> = Object.fromEntries(LIFECYCLE_SEGMENTS.map((segment) => [segment, 0]));
     const signalRows = await db.execute(sql`
@@ -220,6 +232,7 @@ export class DripCampaignService {
   }
 
   async getSegmentStats(): Promise<{ bySegment: Record<string, number>; eligible: number; suppressed: number; suppressionReasons: Record<string, number> }> {
+    if (signupRemindersEnabled()) return signupReminderService.stats();
     const bySegment: Record<string, number> = Object.fromEntries(LIFECYCLE_SEGMENTS.map((segment) => [segment, 0]));
     const result = await db.execute(sql`
       WITH signals AS (

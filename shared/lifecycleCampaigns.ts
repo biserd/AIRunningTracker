@@ -1,4 +1,5 @@
 export const LIFECYCLE_SEGMENTS = [
+  "signup_unpaid",
   "signup_no_strava",
   "preview_ready_unseen",
   "preview_engaged_no_trial",

@@ -43,3 +43,9 @@ export async function claimEmailJobIds(limit:number,workerId:string,leaseSeconds
     FROM candidates WHERE jobs.id=candidates.id RETURNING jobs.id`);
   return result.rows.map(row=>Number(row.id)).filter(Number.isSafeInteger);
 }
+
+export async function beginEmailDelivery(id:number,workerId:string):Promise<boolean>{
+  const result=await db.execute(sql`UPDATE email_jobs SET status='failed',error_message='cloudflare_delivery_attempt_started',claimed_at=NULL,claimed_by=NULL,lease_expires_at=NULL
+    WHERE id=${id} AND status='processing' AND claimed_by=${workerId} AND lease_expires_at>NOW() RETURNING id`);
+  return result.rows.length===1;
+}

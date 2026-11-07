@@ -1214,7 +1214,7 @@ export const userCampaigns = pgTable("user_campaigns", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   campaign: text("campaign", { 
-    enum: ["segment_a", "segment_b", "segment_c", "segment_d", "signup_no_strava", "preview_ready_unseen", "preview_engaged_no_trial", "checkout_abandoned", "trial_needs_activation", "trial_engaged", "trial_ending", "trial_expired_winback", "inactive_free"]
+    enum: ["segment_a", "segment_b", "segment_c", "segment_d", "signup_no_strava", "preview_ready_unseen", "preview_engaged_no_trial", "checkout_abandoned", "trial_needs_activation", "trial_engaged", "trial_ending", "trial_expired_winback", "inactive_free", "signup_unpaid"]
   }).notNull(),
   state: text("state", { 
     enum: ["active", "completed", "exited", "cancelled"] 

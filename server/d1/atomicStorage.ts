@@ -34,3 +34,9 @@ export async function claimEmailJobIds(limit:number,workerId:string,leaseSeconds
     ORDER BY scheduled_at,id LIMIT ?) RETURNING id`).bind(at,workerId,until,at,at,at,limit).all<{id:number}>();
   return result.results.map(row=>row.id);
 }
+
+export async function beginEmailDelivery(id:number,workerId:string):Promise<boolean>{
+  const row=await db.prepare(`UPDATE email_jobs SET status='failed',error_message='cloudflare_delivery_attempt_started',claimed_at=NULL,claimed_by=NULL,lease_expires_at=NULL
+    WHERE id=? AND status='processing' AND claimed_by=? AND lease_expires_at>? RETURNING id`).bind(positiveId(id),workerId,new Date().toISOString()).first();
+  return !!row;
+}

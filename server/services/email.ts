@@ -1,4 +1,5 @@
 import { CloudflareEmailTransport, type CloudflareSuppressionCheck } from './cloudflareEmail';
+import { SIGNUP_REMINDER_STEPS, signupRemindersEnabled } from '../../shared/signupReminders';
 
 interface EmailOptions {
   to: string;
@@ -829,11 +830,14 @@ Your AI Coach at RunAnalytics
     step: string;
     campaign: string;
     listUnsubscribe?: boolean;
+    beforeSend?: () => Promise<boolean>;
   }): Promise<EmailDeliveryResult> {
     const { to, subject, previewText, bodyText, ctaText, ctaUrl, unsubscribeUrl, userName, step, campaign, listUnsubscribe = true } = options;
-    // Cloudflare Email Service is transactional-only. This transport is
-    // deliberately limited to one notice for a Checkout the runner started.
-    if (campaign !== 'checkout_abandoned' || !['CA1', 'TEST:CA1'].includes(step)) {
+    // Narrow owner-selected signup sequence, not a generic bulk-mail bypass.
+    // These remain marketing messages; enabling the app does not imply that
+    // Cloudflare has approved their use under its transactional-only policy.
+    const signupReminder = signupRemindersEnabled() && campaign === 'signup_unpaid' && SIGNUP_REMINDER_STEPS.some(candidate => step === candidate.step || step === `TEST:${candidate.step}`);
+    if (!signupReminder && (campaign !== 'checkout_abandoned' || !['CA1', 'TEST:CA1'].includes(step))) {
       return { success: false, error: 'cloudflare_recovery_only' };
     }
     const suppression = await this.checkCloudflareSuppression(to);
@@ -893,7 +897,8 @@ Unsubscribe: ${unsubscribeUrl}
 Run Analytics, New York, NY, USA
     `;
     
-    console.log(`[Email] Sending consented Checkout notice ${step} (${campaign})`);
+    console.log(`[Email] Sending consented follow-up ${step} (${campaign})`);
+    if (options.beforeSend && !await options.beforeSend()) return { success: false, error: 'recipient_no_longer_eligible' };
     
     // Do not retry an uncertain Cloudflare send: the first request may have
     // been accepted even when the response was lost.

@@ -3,6 +3,7 @@ import { dripCampaignService } from "./dripCampaign";
 import { emailService } from "./email";
 import type { EmailJob } from "@shared/schema";
 import crypto from "crypto";
+import { signupRemindersEnabled } from "../../shared/signupReminders";
 
 const WORKER_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const MAX_JOBS_PER_RUN = 50;
@@ -29,12 +30,10 @@ class DripCampaignWorker {
     const checks = {
       marketingLinkSecret: Boolean(process.env.MARKETING_LINK_SIGNING_SECRET && process.env.MARKETING_LINK_SIGNING_SECRET.length >= 32),
       emailProvider: emailService.isConfigured(),
-      // Each one-time Checkout notice checks Cloudflare's bounce/complaint
-      // suppression list immediately before sending and fails closed if that
-      // read is unavailable. No marketing drip is sent through Cloudflare.
+      // Every follow-up checks bounce/complaint suppressions before sending.
       suppressionPreflight: Boolean(this.suppressionAccessVerifiedAt && Date.now() - this.suppressionAccessVerifiedAt.getTime() < 30 * 60 * 1000),
       fromEmail: Boolean(process.env.EMAIL_FROM),
-      checkoutNoticePolicyApproved: process.env.CLOUDFLARE_CHECKOUT_NOTICE_POLICY_APPROVED === 'true',
+      selectedCampaignEnabled: signupRemindersEnabled() || process.env.CLOUDFLARE_CHECKOUT_NOTICE_POLICY_APPROVED === 'true',
     };
     return { ready: Object.values(checks).every(Boolean), checks };
   }
@@ -84,9 +83,18 @@ class DripCampaignWorker {
       console.log("[DripWorker] Already processing, skipping");
       return;
     }
+    this.isRunning = true;
 
+    // Honor operational pause/enable changes even when made outside this process.
+    try {
+      this.campaignsEnabled = (await storage.getSystemSetting(SETTING_KEY)) === "true";
+      this.dryRun = (await storage.getSystemSetting(DRY_RUN_KEY)) !== "false";
+      const limit = Number(await storage.getSystemSetting(HOURLY_LIMIT_KEY) || "50");
+      this.hourlyLimit = Number.isFinite(limit) ? Math.max(1, Math.min(500, Math.floor(limit))) : 50;
+    } catch { this.campaignsEnabled = false; }
     if (!this.campaignsEnabled) {
       console.log("[DripWorker] Campaigns disabled, skipping");
+      this.isRunning = false;
       return;
     }
 
@@ -94,9 +102,7 @@ class DripCampaignWorker {
       this.hourStartedAt = Date.now();
       this.sendsThisHour = 0;
     }
-    if (this.sendsThisHour >= this.hourlyLimit) return;
-
-    this.isRunning = true;
+    if (this.sendsThisHour >= this.hourlyLimit) { this.isRunning = false; return; }
     this.lastRunAt = new Date();
 
     try {
@@ -157,6 +163,9 @@ class DripCampaignWorker {
       console.error("[DripWorker] Error fetching jobs:", error);
     } finally {
       this.isRunning = false;
+      try {
+        await storage.setSystemSetting("drip_campaigns_runtime_status", JSON.stringify({ checkedAt: new Date().toISOString(), signupReminders: signupRemindersEnabled(), ...this.getStatus() }));
+      } catch { /* Diagnostic persistence must not restart or duplicate delivery. */ }
     }
   }
 

@@ -1,5 +1,7 @@
 # Lifecycle campaigns
 
+The owner-selected signup sequence is documented in [Signup follow-ups](signup-reminders-20261107.md). When `ENABLE_SIGNUP_PAYMENT_REMINDERS=true`, it replaces legacy delivery with the day-1/day-7/day-14 sequence. The checkout-only configuration below describes legacy mode when that flag is off. The flag is not a claim of Cloudflare policy approval.
+
 The Cloudflare-backed email worker is implemented for one neutral notice about a Checkout session the runner actually started and left unfinished. Delivery is disabled by default. Other promotional lifecycle templates are not scheduled or sent through Cloudflare Email Service. Before enabling this notice, confirm that Cloudflare accepts the specific message as transactional; Cloudflare Email Service does not support marketing campaigns.
 
 ## Safe rollout state

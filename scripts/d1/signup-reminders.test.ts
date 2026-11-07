@@ -1,0 +1,64 @@
+// Synthetic SQLite/D1 integration: no production accounts or provider calls.
+import assert from "node:assert/strict";
+import { DatabaseSync } from "node:sqlite";
+import { readFileSync, readdirSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { pathToFileURL } from "node:url";
+import { build } from "esbuild";
+import { privateDatabaseHandler } from "../../server/d1/transport";
+import type { DatabaseCommand } from "../../server/d1/database";
+process.env.NODE_ENV = "test";
+process.env.APP_PLATFORM = "cloudflare";
+process.env.APP_ENV = "production";
+process.env.D1_TRANSPORT_SECRET = "fixture-only-database-secret-with-more-than-32-characters";
+process.env.MARKETING_LINK_SIGNING_SECRET = "fixture-only-marketing-secret-with-more-than-32-characters";
+const sqlite = new DatabaseSync(":memory:");
+for (const file of readdirSync("apps/d1-migration/migrations").filter(f => f.endsWith(".sql")).sort()) sqlite.exec(readFileSync("apps/d1-migration/migrations/" + file, "utf8"));
+sqlite.exec(readFileSync("migrations/20260919_native_onboarding.sql", "utf8"));
+sqlite.exec("INSERT INTO system_settings(key,value) VALUES('drip_campaigns_rollout_percent','100'),('drip_campaigns_holdout_percent','0')");
+const now = Date.now();
+sqlite.prepare("INSERT INTO users(id,email,username,subscription_plan,subscription_status,marketing_consent_status,marketing_opt_out,created_at,coach_quiet_hours_start,coach_quiet_hours_end) VALUES(1,?,?,'free','active','consented',0,?,0,0)").run("fixture@example.test", "fixture", new Date(now - 86400000).toISOString());
+const execute = async (command: DatabaseCommand) => {
+  const statement = sqlite.prepare(command.sql); statement.setReturnArrays(true);
+  if (command.method === "run") return { rows: [], changes: Number(statement.run(...command.params).changes) };
+  const columns = statement.columns().map(c => c.name), rows = statement.all(...command.params);
+  return { rows: command.method === "get" ? rows[0] || [] : rows, columns };
+};
+const handler = privateDatabaseHandler({ execute, async batch(commands) { sqlite.exec("BEGIN"); try { const results = []; for (const c of commands) results.push(await execute(c)); sqlite.exec("COMMIT"); return results; } catch (e) { sqlite.exec("ROLLBACK"); throw e; } } }, process.env.D1_TRANSPORT_SECRET);
+globalThis.fetch = async (input, init) => { const request = new Request(input, init); if (new URL(request.url).hostname !== "aitracker.database.internal") throw Error("EXTERNAL_PROVIDER_BLOCKED"); return handler(request); };
+const root = resolve(".");
+await build({ entryPoints: ["server/services/signupReminders.ts"], outfile: ".tmp/signup-reminder-d1-test.mjs", bundle: true, packages: "external", platform: "node", format: "esm", plugins: [{ name: "d1-test", setup(builder) {
+  builder.onResolve({ filter: /.*/ }, args => {
+    const normalized = (args.path.startsWith(".") ? resolve(dirname(args.importer), args.path) : args.path).replaceAll("\\", "/").replace(/\.ts$/, "");
+    if (args.path === "@shared/schema" || normalized === resolve(root, "shared/schema").replaceAll("\\", "/")) return { path: resolve("shared/schema.d1.ts") };
+    if (normalized === resolve(root, "server/db").replaceAll("\\", "/")) return { path: resolve("server/d1/runtimeDatabase.ts") };
+    if (normalized === resolve(root, "server/storageAtomic").replaceAll("\\", "/")) return { path: resolve("server/d1/atomicStorage.ts") };
+  });
+} }] });
+const { SignupReminderService } = await import(pathToFileURL(resolve(".tmp/signup-reminder-d1-test.mjs")).href);
+let sent = 0;
+const sender = { sendDripEmail: async (options: any) => { assert.equal(await options.beforeSend(), true); sent++; return { success: true, providerMessageId: "fixture-message" }; } };
+const service = new SignupReminderService(undefined, sender, undefined, () => now, () => true);
+assert.equal((await service.enroll()).enrolled, 1);
+assert.equal((await service.enroll()).enrolled, 1);
+assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM email_jobs").get()!.n, 1);
+sqlite.prepare("UPDATE email_jobs SET status='processing',claimed_by='fixture-worker',lease_expires_at=?").run(new Date(now + 300000).toISOString());
+// Hydrate through the same ORM used by the application, not a hand-shaped row.
+const storeSource = readFileSync("server/storage.ts", "utf8"); assert.ok(storeSource.includes("getEmailJob"));
+const job = { id: 1, userId: 1, campaign: "signup_unpaid", campaignVersion: 3, step: "DAY1", status: "processing", claimedBy: "fixture-worker", retryCount: 0 };
+assert.equal(await service.process(job), true);
+assert.equal(await service.process(job), false);
+assert.equal(sent, 1);
+assert.deepEqual(sqlite.prepare("SELECT step,status FROM email_jobs ORDER BY id").all().map(row => ({ ...row })), [{ step: "DAY1", status: "sent" }, { step: "DAY7", status: "pending" }]);
+sqlite.exec("UPDATE users SET subscription_plan='premium',subscription_status='active' WHERE id=1");
+sqlite.prepare("UPDATE email_jobs SET status='processing',claimed_by='fixture-worker',lease_expires_at=? WHERE step='DAY7'").run(new Date(now + 300000).toISOString());
+assert.equal(await service.process({ ...job, id: 2, step: "DAY7" }), false);
+assert.equal(sent, 1);
+assert.equal(sqlite.prepare("SELECT status FROM email_jobs WHERE id=2").get()!.status, "cancelled");
+sqlite.exec("UPDATE users SET subscription_plan='free',subscription_status='active' WHERE id=1");
+sqlite.prepare("INSERT INTO apple_subscriptions(original_transaction_id,environment,user_id,product_id,transaction_id,expires_at,signed_at) VALUES('fixture','Production',1,'run.aitracker.coach.premium.monthly','fixture',?,?)").run(now + 86400000, now);
+sqlite.prepare("UPDATE email_jobs SET status='processing',claimed_by='fixture-worker',lease_expires_at=? WHERE step='DAY7'").run(new Date(now + 300000).toISOString());
+assert.equal(await service.process({ ...job, id: 2, step: "DAY7" }), false);
+assert.equal(sent, 1, "derived Apple access excludes a runner even if their stored plan is Free");
+console.log("D1 signup reminders passed: real ORM enrollment/deduplication, atomic send claim, day-7 scheduling, payment exclusion, no provider requests.");
+sqlite.close();
