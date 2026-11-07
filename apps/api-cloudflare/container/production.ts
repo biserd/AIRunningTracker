@@ -22,7 +22,7 @@ export class RunAnalyticsProduction extends Container<ProductionEnv> {
       // Pass this non-secret release flag explicitly from the current Worker
       // environment; a warm Durable Object can retain its previous env snapshot.
       this.envVars.ENABLE_SIGNUP_PAYMENT_REMINDERS = signupReminders ? 'true' : 'false';
-      const release = `signup-reminders-5ace7e4f-env-v2-${signupReminders}-rollout-complete`;
+      const release = `signup-audience-3759ccf5-manual-delivery-${signupReminders}-rollout-complete`;
       if (await this.ctx.storage.get(release)) return;
       // An image rollout can retain an already-running process and its old env.
       // Stop it once before accepting D1 traffic; external database data is untouched.
