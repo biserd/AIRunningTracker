@@ -30,4 +30,31 @@ none. Credentials are absent from URL parameters and readable transfer cookies.
 Validation before release: 49 Garmin, Health, Strava and account-isolation tests
 passed; D1 backend build passed. Repository type checking reports the same 34
 existing diagnostics with none in the new feature files or changed UI paths.
-Production release IDs and browser verification are appended after rollout.
+The merge with the existing admin-email feature preserves its best-effort,
+account-metadata-only alert after successful Garmin authorization. Sign-in
+notifications also occur once per consumed OAuth flow; callback replay and
+provider denial do not notify. The merged targeted suite passes 51 tests.
+
+Production release:
+- Source: 965edd9, including current landing pages, health/history and admin alerts.
+- Cloudflare build: e4f3fa0d-de88-484a-81aa-e5b9589d29e8 (successful).
+- Staging Worker: a09614d0-b9cb-4412-83d8-71f66381d037.
+- Immutable image: sha256:71640a015ffd5b51fca36c2dfb9652a6c176728b8fc7e0e9df108bc554d9ea9a.
+- Production Worker: 5675026b-1355-40e0-a7af-d866c5062d42.
+- Container application version: 53, one healthy active instance, no errors.
+- Installed and recorded only additive migration 0038; left the unrelated
+  pending performance-index migration unchanged.
+- Production Garmin consent/origin/authentication and published UI checks,
+  source-page/sitemap/punctuation, WhatsApp, signup daytime and Strava/public
+  tool checks passed after the new image was serving.
+- Browser verified both authentication modes, the sharing consent gate, and
+  connected Garmin status beside Strava on the existing account's dashboard.
+- With explicit owner approval, signed out and completed a real browser Garmin
+  OAuth sign-in. Garmin retained the existing four permission selections. The
+  callback returned to the same RunAnalytics account and dashboard. No new
+  Garmin-signup account was created and the anonymous challenge was consumed.
+- Post-login owner-scoped D1 verification preserved all 28 health records,
+  health consent and last live push timestamps, permissions and activity count.
+  The signed-in Recovery UI still shows both historical baselines calculated
+  from 12 prior nights. Personal readings and account identifiers stay out of
+  this release document and Git.
