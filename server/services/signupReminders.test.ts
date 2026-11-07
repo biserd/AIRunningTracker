@@ -4,11 +4,11 @@ process.env.DATABASE_URL ||= "postgresql://fixture:fixture@127.0.0.1:1/fixture";
 process.env.MARKETING_LINK_SIGNING_SECRET = "fixture-only-signup-link-secret-more-than-thirty-two-characters";
 const { SignupReminderService } = await import("./signupReminders");
 function fixture() {
-  let now = Date.parse("2026-11-07T12:00:00Z"), enabled = true, claims = 0;
+  let now = Date.parse("2026-11-07T15:00:00Z"), enabled = true, claims = 0, preserved = "[]";
   const user: any = { id: 1007, email: "fixture@example.test", subscriptionPlan: "free", subscriptionStatus: "active", marketingConsentStatus: "consented", marketingOptOut: false, createdAt: new Date(now - 86400000), coachTimezone: "UTC" };
   const jobs: any[] = [], campaigns: any[] = [], sent: any[] = [];
   const store: any = {
-    getSystemSetting: async (key: string) => key.includes("rollout") ? "100" : "0",
+    getSystemSetting: async (key: string) => key === "drip_campaigns_preserved_final_users" ? preserved : key.includes("rollout") ? "100" : "0",
     getUser: async () => user, getAllUsers: async () => [user], getUserCampaign: async () => campaigns[0],
     getActiveCampaigns: async () => campaigns.filter(c => c.state === "active"),
     exitUserCampaign: async (id: number, reason: string) => Object.assign(campaigns.find(c => c.id === id), { state: "exited", exitReason: reason }),
@@ -26,7 +26,7 @@ function fixture() {
   const sender = { sendDripEmail: async (value: any) => { beforeSend?.(); if (!await value.beforeSend()) return { success: false, error: "recipient_no_longer_eligible" }; if (failure) return { success: false, error: failure }; sent.push(value); return { success: true, providerMessageId: "fixture-message" }; } };
   const service = new SignupReminderService(store, sender, async (id, owner) => { const j = jobs.find(j => j.id === id); if (j.status !== "processing" || j.claimedBy !== owner) return false; j.status = "failed"; claims++; return true; }, () => now, () => enabled);
   const claim = (index = 0) => { const j = jobs[index]; j.status = "processing"; j.claimedBy = "fixture-worker"; return { ...j }; };
-  return { user, jobs, campaigns, sent, service, claim, advance: (days: number) => { now += days * 86400000; }, fail: (reason: string) => { failure = reason; }, beforeSend: (fn: () => void) => { beforeSend = fn; }, disable: () => { enabled = false; }, claims: () => claims };
+  return { user, jobs, campaigns, sent, service, claim, advance: (days: number) => { now += days * 86400000; }, setNow: (value: string) => { now = Date.parse(value); }, preserve: () => { preserved = "[1007]"; }, fail: (reason: string) => { failure = reason; }, beforeSend: (fn: () => void) => { beforeSend = fn; }, disable: () => { enabled = false; }, claims: () => claims };
 }
 test("sequence is deduplicated and schedules days 1/7/14 from original signup, then completes", async () => {
   const f = fixture();
@@ -92,7 +92,24 @@ test("suppression and retry failures do not claim delivery", async () => {
   }
 });
 test("quiet hours defer a due reminder instead of sending overnight", async () => {
-  const f = fixture(); await f.service.schedule(f.user); f.user.coachTimezone = "America/New_York";
+  const f = fixture(); f.setNow("2026-11-07T23:00:00Z"); await f.service.schedule(f.user); f.user.coachTimezone = "America/New_York";
   assert.equal(await f.service.process(f.claim()), false); assert.equal(f.sent.length, 0);
-  assert.equal(f.jobs[0].scheduledAt.toISOString(), "2026-11-07T13:00:00.000Z");
+  assert.equal(f.jobs[0].scheduledAt.toISOString(), "2026-11-08T14:00:00.000Z");
+});
+test("a reserved final reminder survives a long pause and sends only once in daytime", async () => {
+  const f = fixture(); f.advance(13); await f.service.schedule(f.user); f.preserve();
+  assert.equal(f.jobs[0].step, "DAY14");
+  f.advance(20);
+  assert.equal(await f.service.schedule(f.user), "scheduled");
+  assert.equal((await f.service.stats()).eligible, 1);
+  const job = f.claim();
+  assert.equal(await f.service.process(job), true);
+  assert.equal(await f.service.process(job), false);
+  assert.equal(f.sent.length, 1); assert.equal(f.campaigns[0].state, "completed");
+});
+test("reserved final reminders never bypass payment or opt-out checks", async () => {
+  for (const patch of [{ marketingOptOut: true }, { marketingConsentStatus: "unsubscribed" }, { subscriptionPlan: "premium", subscriptionStatus: "active" }]) {
+    const f = fixture(); f.advance(13); await f.service.schedule(f.user); f.preserve(); f.advance(20); Object.assign(f.user, patch);
+    assert.equal(await f.service.process(f.claim()), false); assert.equal(f.sent.length, 0);
+  }
 });

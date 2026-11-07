@@ -9233,7 +9233,7 @@ ${allPages.map(page => `  <url>
         holdoutPercent,
         operationalState,
         nextAction,
-        signupReminderSchedule: signupRemindersEnabled() ? { campaign: "signup_unpaid", version: 3, daysAfterSignup: [1,7,14], consentRequired: false, includeUnknownConsent: true, respectExplicitOptOut: true, missedStepReplay: false } : null,
+        signupReminderSchedule: signupRemindersEnabled() ? { campaign: "signup_unpaid", version: 3, daysAfterSignup: [1,7,14], consentRequired: false, includeUnknownConsent: true, respectExplicitOptOut: true, missedStepReplay: false, daytimeWindow: { startHour: 9, endHour: 18, defaultUtcFallback: "America/New_York" }, preservedFinalReminders: true } : null,
       });
     } catch (error: any) {
       console.error("Worker status error:", error);

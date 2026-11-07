@@ -10,7 +10,45 @@ export const SIGNUP_REMINDER_STEPS = [
 ] as const;
 
 export type SignupReminderUser = LifecycleUserState & { subscriptionEndsAt?: Date | string | null; isAdmin?: boolean | null };
-export function signupReminderExclusion(user: SignupReminderUser, now = Date.now()): string | null {
+export const SIGNUP_FINAL_HOLDS_SETTING = "drip_campaigns_preserved_final_users";
+export const SIGNUP_FALLBACK_TIMEZONE = "America/New_York";
+type TimingUser = SignupReminderUser & { coachTimezone?: string | null; coachQuietHoursStart?: number | null; coachQuietHoursEnd?: number | null };
+export function signupCampaignTimezone(user: TimingUser): string {
+  try {
+    const timezone = new Intl.DateTimeFormat("en-US", { timeZone: user.coachTimezone || "UTC" }).resolvedOptions().timeZone;
+    // UTC is the existing schema default, not evidence of the runner's location.
+    return ["UTC", "Etc/UTC", "GMT", "Etc/GMT"].includes(timezone) ? SIGNUP_FALLBACK_TIMEZONE : timezone;
+  } catch { return SIGNUP_FALLBACK_TIMEZONE; }
+}
+export function nextSignupSendTime(user: TimingUser, requested: number): number | null {
+  if (!Number.isFinite(requested)) return null;
+  const timezone = signupCampaignTimezone(user);
+  const formatter = new Intl.DateTimeFormat("en-US", { timeZone: timezone, hour: "numeric", hourCycle: "h23" });
+  const validHour = (value: unknown): value is number => Number.isInteger(value) && Number(value) >= 0 && Number(value) <= 23;
+  const start = validHour(user.coachQuietHoursStart) ? user.coachQuietHoursStart : 20;
+  const end = validHour(user.coachQuietHoursEnd) ? user.coachQuietHoursEnd : 8;
+  const allowed = (at: number) => {
+    const hour = Number(formatter.format(at));
+    const quiet = start > end ? hour >= start || hour < end : hour >= start && hour < end;
+    return hour >= 9 && hour < 18 && !quiet;
+  };
+  if (allowed(requested)) return requested;
+  const quarterHour = 15 * 60000;
+  const first = Math.ceil(requested / quarterHour) * quarterHour;
+  for (let index = 0; index <= 72 * 4; index++) {
+    const at = first + index * quarterHour;
+    if (allowed(at)) return at;
+  }
+  return null; // Conflicting preferences must not bypass quiet hours.
+}
+export function signupDeliveryWindow(user: TimingUser, index: number) {
+  const window = signupReminderWindow(user.createdAt!, index);
+  const nextDaytime = nextSignupSendTime(user, window.end);
+  // A deadline falling overnight lasts through the next daytime opening plus
+  // one hour for the worker/cap. This is anchored, not a rolling extension.
+  return { start: window.start, end: nextDaytime !== null && nextDaytime > window.end ? nextDaytime + 3600000 : window.end };
+}
+export function signupReminderExclusion(user: TimingUser, now = Date.now(), preservedFinal = false): string | null {
   if (!user.email) return "missing_email";
   if (user.marketingOptOut || user.marketingConsentStatus === "unsubscribed") return "unsubscribed";
   if (user.marketingConsentStatus === "suppressed") return "delivery_suppressed";
@@ -28,7 +66,7 @@ export function signupReminderExclusion(user: SignupReminderUser, now = Date.now
   if (!["free", "active", "canceled"].includes(user.subscriptionStatus || "")) return "unknown_subscription";
   const created = user.createdAt ? new Date(user.createdAt).getTime() : NaN;
   if (!Number.isFinite(created) || created > now) return "invalid_signup_date";
-  if (now >= created + 17 * DAY) return "sequence_expired";
+  if (!preservedFinal && now >= signupDeliveryWindow(user, 2).end) return "sequence_expired";
   return null;
 }
 export function signupReminderWindow(createdAt: Date | string, index: number) {
