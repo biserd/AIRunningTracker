@@ -15,4 +15,4 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: node --import tsx --test server/services/phoneRuns.test.ts server/garmin/garmin.test.ts server/garmin/runningFeed.test.ts
-      - run: node --test apps/ios/scripts/prepare-testflight-signing.test.mjs
+      - run: node --test apps/ios/scripts/prepare-testflight-signing.test.mjs apps/ios/scripts/verify-testflight-build.test.mjs
