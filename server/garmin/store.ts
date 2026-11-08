@@ -23,6 +23,23 @@ export class GarminStore {
     ]);
     return { state, verifier };
   }
+  async startNative(userId:number) {
+    const flow=await this.start(userId);
+    await this.db.prepare('INSERT INTO native_garmin_sessions(state_hash) VALUES(?)').bind(garminHash(flow.state)).run();
+    return flow;
+  }
+  async launchNative(state:string) {
+    const row=await this.db.prepare(`UPDATE native_garmin_sessions SET launched=1 WHERE state_hash=? AND launched=0
+      AND EXISTS(SELECT 1 FROM garmin_oauth_sessions WHERE state_hash=? AND expires_at>?) RETURNING state_hash`)
+      .bind(garminHash(state),garminHash(state),iso(this.clock())).first();
+    if(!row)throw new Error('GARMIN_INVALID_STATE');
+    const flow=await this.db.prepare('SELECT user_id,verifier FROM garmin_oauth_sessions WHERE state_hash=?').bind(garminHash(state)).first<{user_id:number;verifier:string}>();
+    if(!flow)throw new Error('GARMIN_INVALID_STATE');
+    return openGarmin(flow.verifier,this.key,`garmin:oauth:${flow.user_id}`);
+  }
+  async isNative(state:string) {
+    return !!await this.db.prepare('SELECT state_hash FROM native_garmin_sessions WHERE state_hash=? AND launched=1').bind(garminHash(state)).first();
+  }
   async consume(state: string) {
     const row = await this.db.prepare('DELETE FROM garmin_oauth_sessions WHERE state_hash=? AND expires_at>? RETURNING user_id,verifier,expires_at')
       .bind(garminHash(state), iso(this.clock())).first<{ user_id: number; verifier: string; expires_at: string }>();

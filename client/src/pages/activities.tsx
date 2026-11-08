@@ -21,7 +21,7 @@ import type {FeedRun} from '@shared/runningFeed';
 
 interface ActivityData {
   id: string;
-  source:'strava'|'garmin'; sources:('strava'|'garmin')[]; possibleDuplicate?:boolean; detailUrl:string;deleteUrl:string;garminActivityId:string|null;stravaRecordId:number|null;separateMatch?:FeedRun['separateMatch'];
+  source:FeedRun['source']; sources:FeedRun['sources']; possibleDuplicate?:boolean; detailUrl:string;deleteUrl:string;garminActivityId:string|null;stravaRecordId:number|null;separateMatch?:FeedRun['separateMatch'];
   stravaId: string;
   name: string;
   distance: number;
@@ -435,7 +435,7 @@ export default function ActivitiesPage() {
                     <div key={activity.id} className="relative">
                       {deleteConfirmId === activity.id && (
                         <div className="absolute inset-0 z-10 bg-white/95 rounded-lg flex flex-wrap items-center justify-center gap-3 border-2 border-red-200 p-3 text-center">
-                          <span className="text-sm font-medium text-gray-700">Delete this {activity.source==='garmin'?'Garmin':'Strava'} copy? Other copies remain.</span>
+                          <span className="text-sm font-medium text-gray-700">Delete this {activity.source==='phone'?'RunAnalytics':activity.source==='garmin'?'Garmin':'Strava'} copy? Other copies remain.</span>
                           <Button
                             size="sm"
                             variant="destructive"
@@ -556,7 +556,7 @@ export default function ActivitiesPage() {
                               </button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Delete {activity.source==='garmin'?'Garmin':'Strava'} copy</p>
+                              <p>Delete {activity.source==='phone'?'RunAnalytics':activity.source==='garmin'?'Garmin':'Strava'} copy</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>

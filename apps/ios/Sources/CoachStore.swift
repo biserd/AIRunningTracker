@@ -4,6 +4,13 @@ import Combine
 
 @MainActor final class CoachStore: ObservableObject {
     let api = CoachAPI()
+    let recorder = PhoneRunRecorder()
+    @Published var setupComplete = false
+    @Published var runFeed:NativeRunFeed?
+    @Published var runOverview:NativeRunOverview?
+    @Published var runFeedError:String?
+    @Published var refreshingRuns = false
+    @Published var showingPlan = false
     let voice = NativeVoiceCoach()
     let push = ApplePush()
     private var pushObservation: AnyCancellable?
@@ -50,6 +57,7 @@ import Combine
         error = failure.localizedDescription
         if case APIError.server(401, _) = failure {
             Task { await push.detach() }
+            recorder.selectAccount(nil); runFeed=nil; runOverview=nil; setupComplete=false
             snapshot = nil; companion=nil; refreshedAt=nil; reminderClarification=nil; messages = []; reminders = []; whatsapp = nil; review = nil; reminderReview = nil; verifiedEmail = ""; needsSignIn = true
         }
     }
@@ -57,7 +65,14 @@ import Combine
         guard !didRestore else { return }
         didRestore = true
         defer { loading = false }
-        do { try api.restore(); if api.credential != nil { needsSignIn = false; await refresh() } }
+        do {
+            try api.restore()
+            if api.credential != nil {
+                needsSignIn = false
+                if let key=accountCacheKey, let data=UserDefaults.standard.data(forKey:key),let cached=try? JSONDecoder().decode(NativeOnboarding.self,from:data) { useAccount(cached) }
+                await refresh()
+            }
+        }
         catch { report(error) }
     }
     func receiveSignInLink(_ url: URL) {
@@ -124,6 +139,7 @@ import Combine
             retrySignInLink = nil; canRetrySignIn = false
             sessionGeneration = UUID()
             subscriptions?.stop(); subscriptions=nil; onboarding=nil
+            recorder.selectAccount(nil); runFeed=nil; runOverview=nil; setupComplete=false
             snapshot = nil; companion=nil; refreshedAt=nil; reminderClarification=nil; messages = []; reminders = []; whatsapp = nil; review = nil; reminderReview = nil; verifiedEmail = ""; settingsSheet = nil
             needsSignIn = false; await refresh()
         } catch {
@@ -144,7 +160,7 @@ import Combine
         do {
             try await refreshOnboarding()
             guard generation == sessionGeneration, !needsSignIn else { return }
-            if onboarding?.ready != true { return }
+            if onboarding?.hasAccess != true { return }
             await refreshSchedule(force:true)
             let status: CoachStatus = try await api.request("/api/ai/status")
             guard generation == sessionGeneration, !needsSignIn else { return }
@@ -159,15 +175,15 @@ import Combine
         let generation=sessionGeneration
         let next=try await api.onboarding()
         guard generation==sessionGeneration,!needsSignIn else { throw CancellationError() }
-        onboarding=next
+        useAccount(next)
         if subscriptions == nil, let token=UUID(uuidString:next.appAccountToken) {
             let manager=AppleSubscriptions(accountToken:token) { [weak self] signed in
                 guard let self,generation==self.sessionGeneration,!self.needsSignIn else { throw CancellationError() }
                 try await self.api.deliverApple(signed)
                 let updated=try await self.api.onboarding()
                 guard generation==self.sessionGeneration,!self.needsSignIn else { throw CancellationError() }
-                self.onboarding=updated
-                if updated.ready { await self.refreshSchedule(force:true) }
+                self.useAccount(updated)
+                if updated.hasAccess { await self.refreshSchedule(force:true) }
             }
             subscriptions=manager
             await manager.start()
@@ -175,11 +191,63 @@ import Combine
             await subscriptions.reloadProducts()
         }
     }
+    private var accountCacheKey:String? {
+        api.credential.map { "native-account-" + SHA256.hash(data:Data($0.token.utf8)).map { String(format:"%02x",$0) }.joined() }
+    }
+    private func useAccount(_ status:NativeOnboarding) {
+        if recorder.account != status.appAccountToken { runFeed=nil;runOverview=nil;runFeedError=nil }
+        onboarding=status
+        recorder.selectAccount(status.appAccountToken)
+        if runFeed == nil { runFeed=recorder.cachedFeed() }
+        setupComplete=status.stravaConnected || status.sampleData == true || UserDefaults.standard.bool(forKey:"native-setup-"+status.appAccountToken)
+        if let key=accountCacheKey,let data=try? JSONEncoder().encode(status) { UserDefaults.standard.set(data,forKey:key) }
+    }
+    func completeSetup() {
+        guard let onboarding else { return }
+        UserDefaults.standard.set(true,forKey:"native-setup-"+onboarding.appAccountToken)
+        setupComplete=true
+    }
+    func refreshRuns() async {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--test-adaptive-layout") || ProcessInfo.processInfo.arguments.contains("--test-standalone") { return }
+        #endif
+        guard !needsSignIn,onboarding != nil,!refreshingRuns else { return }
+        let generation=sessionGeneration
+        refreshingRuns=true;defer{refreshingRuns=false}
+        await recorder.sync(api:api)
+        guard generation==sessionGeneration,!needsSignIn else { return }
+        do {
+            var next=try await api.runs()
+            next.fetchedAt=Date()
+            guard generation==sessionGeneration,!needsSignIn else { return }
+            runFeed=next;recorder.cacheFeed(next);runFeedError=nil
+            let overview=try await api.runOverview()
+            guard generation==sessionGeneration,!needsSignIn else { return }
+            runOverview=overview
+        }catch {
+            guard generation==sessionGeneration else { return }
+            runFeedError="Couldn’t refresh. Showing saved runs; pull down to retry."
+            if case APIError.server(401,_)=error { report(error) }
+        }
+    }
+    func loadMoreRuns() async {
+        guard !refreshingRuns,let current=runFeed,current.page<current.totalPages else { return }
+        let generation=sessionGeneration
+        refreshingRuns=true;defer{refreshingRuns=false}
+        do {
+            var next=try await api.runs(page:current.page+1)
+            guard generation==sessionGeneration,!needsSignIn else { return }
+            let ids=Set(current.activities.map(\.id))
+            next.fetchedAt=current.fetchedAt
+            next.activities=current.activities+next.activities.filter{!ids.contains($0.id)}
+            runFeed=next;recorder.cacheFeed(next);runFeedError=nil
+        }catch { if generation==sessionGeneration { runFeedError="Couldn’t load older runs. Please retry." } }
+    }
     func refreshSchedule(force:Bool = false) async {
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("--test-adaptive-layout") { return }
+        if ProcessInfo.processInfo.arguments.contains("--test-adaptive-layout") || ProcessInfo.processInfo.arguments.contains("--test-standalone") { return }
         #endif
-        guard !needsSignIn, !refreshingSchedule else { return }
+        guard !needsSignIn, onboarding?.hasAccess == true, !refreshingSchedule else { return }
         if !force, let refreshedAt, Date().timeIntervalSince(refreshedAt)<60 { return }
         refreshingSchedule=true; defer { refreshingSchedule=false }
         let generation=sessionGeneration
@@ -256,6 +324,8 @@ import Combine
         } catch { report(error) }
     }
     func signOut() async {
+        recorder.selectAccount(nil); runFeed=nil; runOverview=nil; runFeedError=nil; setupComplete=false
+        if let key=accountCacheKey { UserDefaults.standard.removeObject(forKey:key) }
         let cleanup = api.signOutCleanupClient()
         subscriptions?.stop(); subscriptions=nil; onboarding=nil
         sessionGeneration = UUID()

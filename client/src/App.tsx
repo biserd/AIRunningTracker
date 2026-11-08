@@ -183,6 +183,7 @@ function Router() {
       <Switch>
         <Route path="/" component={LandingPage} />
         <Route path="/auth" component={AuthPage} />
+        <Route path="/runs/phone/:id"><ProtectedRoute component={()=> <GarminRunPage phone/>}/></Route>
         <Route path="/runs/garmin/:id"><ProtectedRoute component={GarminRunPage}/></Route>
         <Route path="/garmin-send"><ProtectedRoute component={GarminSendPage}/></Route>
         <Route path="/forgot-password" component={ForgotPasswordPage} />

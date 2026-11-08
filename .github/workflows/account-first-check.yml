@@ -1,0 +1,17 @@
+name: Account-first run storage
+on:
+  pull_request:
+    paths: ['server/garmin/**', 'server/services/phoneRuns*', 'shared/runningFeed.ts', 'apps/d1-migration/migrations/0042_account_first_ios.sql', 'apps/d1-migration/migrations/0043_phone_run_details.sql', '.github/workflows/account-first-check.yml']
+permissions:
+  contents: read
+jobs:
+  account-first:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node --import tsx --test server/services/phoneRuns.test.ts server/garmin/garmin.test.ts server/garmin/runningFeed.test.ts

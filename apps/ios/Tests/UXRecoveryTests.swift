@@ -17,9 +17,9 @@ final class UXRecoveryTests: XCTestCase {
         XCTAssertEqual(runnerDay("2026-08-31", today: "2026-09-01"), "Yesterday")
         XCTAssertEqual(runnerDay("invalid"), "invalid")
     }
-    func testNavigationKeepsPushCompatibility() {
-        XCTAssertEqual(CoachSection.allCases.map(\.title), ["Coach", "Plan", "Progress", "Settings"])
-        XCTAssertEqual(CoachSection.schedule.rawValue, "schedule")
+    func testNavigationStartsWithRecording() {
+        XCTAssertEqual(CoachSection.allCases.map(\.title), ["Run", "Coach", "Progress", "Settings"])
+        XCTAssertEqual(CoachSection.runs.rawValue, "runs")
     }
     func testPushBriefingOpensOnlyItsMatchingSavedUpdate() {
         let reference = PushBriefingReference("coach:weekly:2026-09-23")

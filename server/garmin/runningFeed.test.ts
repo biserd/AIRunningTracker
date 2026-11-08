@@ -41,6 +41,8 @@ function fixture(){
     CREATE TABLE garmin_activity_summaries(user_id INTEGER,activity_id TEXT,start_date TEXT,summary TEXT,PRIMARY KEY(user_id,activity_id));
     INSERT INTO garmin_connections VALUES(1,'connected'),(2,'connected');`);
   sqlite.exec(readFileSync('apps/d1-migration/migrations/0039_garmin_run_display.sql','utf8'));
+  sqlite.exec(readFileSync('apps/d1-migration/migrations/0042_account_first_ios.sql','utf8'));
+  sqlite.exec(readFileSync('apps/d1-migration/migrations/0043_phone_run_details.sql','utf8'));
   const db:AtomicSqlDatabase={prepare(sql){let params:(string|number|null)[]=[];const statement:SqlStatement={bind(...values){params=values;return statement;},async first<T>(){return (sqlite.prepare(sql).get(...params)??null) as T|null;},async all<T>(){return {results:sqlite.prepare(sql).all(...params) as T[]};},async run(){const result=sqlite.prepare(sql).run(...params);return {meta:{changes:Number(result.changes)}};}};return statement;},async batch(statements){const results=[];for(const statement of statements)results.push(await statement.run());return results;}};
   const addG=(owner:number,run:GarminRun)=>sqlite.prepare('INSERT INTO garmin_activity_summaries VALUES(?,?,?,?)').run(owner,run.id,run.startDate,JSON.stringify(run));
   const addS=(owner:number,id:number,run=g(),locked=0)=>sqlite.prepare('INSERT INTO activities VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)').run(id,owner,run.name,run.startDate,'Run',run.distance,run.duration,run.duration,run.averageSpeed,run.averageHeartRate,run.elevationGain,'A',locked);

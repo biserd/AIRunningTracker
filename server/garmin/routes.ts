@@ -57,6 +57,22 @@ export function registerGarminRoutes(app: Express, deps: GarminRouteDependencies
       return res.json({ url: client.authorize(flow.state, flow.verifier) });
     } catch { return res.status(503).json({ message: 'Garmin connection is temporarily unavailable.' }); }
   });
+  app.post('/api/native/garmin/start',deps.authenticate,async(req,res)=>{
+    res.set({'Cache-Control':'no-store','Referrer-Policy':'no-referrer'});
+    if(req.body?.activityConsent!==true)return res.status(400).json({message:'Please agree to Garmin activity sharing.'});
+    try {const settings=config(),flow=await (await deps.store()).startNative((req as any).user.id);
+      return res.json({url:settings.origin+'/api/native/garmin/launch?state='+encodeURIComponent(flow.state),state:flow.state});
+    }catch{return res.status(503).json({message:'Garmin connection is temporarily unavailable.'});}
+  });
+  app.get('/api/native/garmin/launch',async(req,res)=>{
+    res.set({'Cache-Control':'no-store','Referrer-Policy':'no-referrer'});
+    const state=req.query.state;
+    if(typeof state!=='string'||! /^[A-Za-z0-9_-]{43}$/.test(state))return res.sendStatus(400);
+    try {const client=provider(),verifier=await (await deps.store()).launchNative(state);
+      res.cookie(cookie,state,{httpOnly:true,secure:true,sameSite:'lax',path:GARMIN_CALLBACK_PATH,maxAge:600_000});
+      return res.redirect(client.authorize(state,verifier));
+    }catch{return res.status(400).send('This connection link expired or was already used. Return to RunAnalytics and try again.');}
+  });
   app.get(GARMIN_CALLBACK_PATH, async (req, res) => {
     res.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
     const state = req.query.state;
@@ -81,9 +97,12 @@ export function registerGarminRoutes(app: Express, deps: GarminRouteDependencies
     const browserState = req.headers.cookie?.split(';').map(part => part.trim()).find(part => part.startsWith(cookie + '='))?.slice(cookie.length + 1);
     if (typeof state !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(state) || !browserState || !garminEqual(state, browserState)) return res.redirect(signinState?'/auth?error=garmin_invalid_state':'/settings?garmin=invalid_state');
     res.clearCookie(cookie, { secure: true, sameSite: 'lax', path: GARMIN_CALLBACK_PATH });
+    let destination=(status:string)=>'/settings?garmin='+status;
     try {
-      const client = provider(), store = await deps.store(), flow = await store.consume(state);
-      if (req.query.error || typeof req.query.code !== 'string' || !req.query.code || req.query.code.length > 4096) return res.redirect('/settings?garmin=denied');
+      const client = provider(), store = await deps.store();
+      if(await store.isNative(state))destination=(status:string)=>'runanalytics://garmin?state='+encodeURIComponent(state)+'&status='+status;
+      const flow = await store.consume(state);
+      if (req.query.error || typeof req.query.code !== 'string' || !req.query.code || req.query.code.length > 4096) return res.redirect(destination('denied'));
       const tokens = await client.exchange(req.query.code, flow.verifier), identity = await client.identity(tokens.access_token);
       const status = await store.save(flow.userId, identity, tokens, flow.consentStartedAt);
       if (status === 'connected' && deps.onConnected) {
@@ -92,10 +111,10 @@ export function registerGarminRoutes(app: Express, deps: GarminRouteDependencies
         try { await deps.onConnected(flow.userId); }
         catch { console.error(JSON.stringify({ event: 'garmin_admin_notification_failed' })); }
       }
-      return res.redirect('/settings?garmin=' + (status === 'connected' ? 'connected' : 'permission_required'));
+      return res.redirect(destination(status === 'connected' ? 'connected' : 'permission_required'));
     } catch {
       console.error(JSON.stringify({ event: 'garmin_connection_failed' }));
-      return res.redirect('/settings?garmin=failed');
+      return res.redirect(destination('failed'));
     }
   });
   app.get('/api/garmin/activities', deps.authenticate, async (req, res) => {

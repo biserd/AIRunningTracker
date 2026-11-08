@@ -21,6 +21,7 @@ function fixture(){
   sqlite.exec(readFileSync('apps/d1-migration/migrations/0036_garmin_activity_sync.sql','utf8'));
   sqlite.exec(readFileSync('apps/d1-migration/migrations/0037_garmin_health_sync.sql','utf8'));
   sqlite.exec(readFileSync('apps/d1-migration/migrations/0040_garmin_details.sql','utf8'));
+  sqlite.exec(readFileSync('apps/d1-migration/migrations/0042_account_first_ios.sql','utf8'));
   const db:AtomicSqlDatabase={
     prepare(sql){let params:(string|number|null)[]=[];const statement:SqlStatement={bind(...values){params=values;return statement;},async first<T>(){return (sqlite.prepare(sql).get(...params)??null) as T|null;},async all<T>(){return {results:sqlite.prepare(sql).all(...params) as T[]};},async run(){const result=sqlite.prepare(sql).run(...params);return {meta:{changes:Number(result.changes)}};}};return statement;},
     async batch(statements){sqlite.exec('BEGIN');try{const result=[];for(const statement of statements)result.push(await statement.run());sqlite.exec('COMMIT');return result;}catch(error){sqlite.exec('ROLLBACK');throw error;}},
@@ -212,5 +213,27 @@ test('admin connection alert fires only after a saved connection, once per OAuth
     failNotification=true;
     assert.match((await finish(await start())).headers.get('location')!,/garmin=connected/);
     assert.deepEqual(notified,[1,1]);assert.equal((await f.store.status(1,true)).connected,true);
+  }finally{server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));f.sqlite.close();}
+});
+
+test('native Garmin launch is one-use and returns to the correct account without browser login or session tokens in URLs',async()=>{
+  const f=fixture(),app=express();app.use(express.json());
+  const provider=new GarminClient(config,async(url)=>String(url).includes('/oauth/token')?Response.json(tokens):String(url).endsWith('/id')?Response.json({userId:'native-runner'}):Response.json({permissions:['ACTIVITY_EXPORT']}));
+  registerGarminRoutes(app,{authenticate(req,res,next){if(req.get('authorization')!=='Bearer owner')return res.sendStatus(401);(req as any).user={id:1};next();},store:async()=>f.store,config:()=>config,client:()=>provider});
+  const server=app.listen(0,'127.0.0.1');await new Promise<void>(resolve=>server.once('listening',resolve));const origin='http://127.0.0.1:'+(server.address() as AddressInfo).port;
+  const start=(consent=true,auth=true)=>fetch(origin+'/api/native/garmin/start',{method:'POST',headers:{'content-type':'application/json',...(auth?{authorization:'Bearer owner'}:{})},body:JSON.stringify({activityConsent:consent})});
+  try {
+    assert.equal((await start(true,false)).status,401);assert.equal((await start(false)).status,400);
+    const flow=await (await start()).json() as {url:string;state:string};assert.ok(flow.url.startsWith(config.origin));assert.equal(flow.url.includes('owner'),false);
+    const path=new URL(flow.url),launch=await fetch(origin+path.pathname+path.search,{redirect:'manual'});
+    assert.equal(launch.status,302);const cookie=launch.headers.get('set-cookie')!.split(';')[0];assert.ok(launch.headers.get('location')!.includes('code_challenge='));
+    assert.equal((await fetch(origin+path.pathname+path.search,{redirect:'manual'})).status,400);
+    const callback='/api/garmin/callback?state='+flow.state+'&code=native-code';
+    assert.ok((await fetch(origin+callback,{redirect:'manual'})).headers.get('location')!.includes('invalid_state'));
+    const result=await fetch(origin+callback,{redirect:'manual',headers:{cookie}}),destination=new URL(result.headers.get('location')!);
+    assert.equal(destination.protocol,'runanalytics:');assert.equal(destination.hostname,'garmin');assert.equal(destination.searchParams.get('state'),flow.state);assert.equal(destination.searchParams.get('status'),'connected');
+    assert.equal((await f.store.connection(1))!.garmin_user_id,'native-runner');assert.equal(await f.store.connection(2),null);
+    assert.ok(!(await fetch(origin+callback,{redirect:'manual',headers:{cookie}})).headers.get('location')!.includes('status=connected'));
+    const expired=await f.store.startNative(1);f.advance(600_001);await assert.rejects(f.store.launchNative(expired.state));
   }finally{server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));f.sqlite.close();}
 });
