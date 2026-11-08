@@ -10,7 +10,6 @@ import ActivityHeatmap from "@/components/dashboard/ActivityHeatmap";
 import AIInsights from "@/components/dashboard/AIInsights";
 import TrainingRecommendations from "@/components/dashboard/TrainingRecommendations";
 import RunnerScoreRadar from "@/components/dashboard/RunnerScoreRadar";
-import ProgressChecklist from "@/components/dashboard/ProgressChecklist";
 import PremiumPreviewTeaser from "@/components/dashboard/PremiumPreviewTeaser";
 import CheckoutRecoveryPrompt from "@/components/dashboard/CheckoutRecoveryPrompt";
 import TodayRunDecision from "@/components/dashboard/TodayRunDecision";
@@ -21,6 +20,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { StravaConnectButton } from "@/components/StravaConnect";
 import {GarminDashboardConnection} from '@/components/GarminConnect';
+import {RecentFeedRuns,RunFeedNotice} from '@/components/RunningFeed';
+import type {FeedRun} from '@shared/runningFeed';
+import type {runningOverview} from '../../../server/garmin/runningFeed';
 import { FloatingAICoach } from "@/components/FloatingAICoach";
 import RecentConversations from "@/components/RecentConversations";
 import { CheckCircle2 } from "lucide-react";
@@ -196,9 +198,11 @@ export default function Dashboard() {
   });
 
   // Chart data query with time range
-  const { data: chartData } = useQuery({
-    queryKey: ['/api/chart', user?.id, chartTimeRange],
-    queryFn: () => apiRequest(`/api/chart/${user?.id}?range=${chartTimeRange}`, "GET"),
+  const runningFeed=useQuery<ReturnType<typeof runningOverview>&{recent:FeedRun[];garminConnected:boolean;stravaConnected:boolean;unitPreference:string}>({
+    queryKey: ['/api/runs/overview', chartTimeRange],
+    queryFn: () => apiRequest(`/api/runs/overview?range=${chartTimeRange}`, "GET"),
+    refetchInterval:30_000,
+    staleTime:0,
     enabled: !!user?.id,
   });
 
@@ -409,7 +413,7 @@ export default function Dashboard() {
     return null;
   }
 
-  if (isLoading || !dashboardData) {
+  if (isLoading || !dashboardData || runningFeed.isPending) {
     return (
       <div className="min-h-screen bg-light-grey">
         <AppHeader />
@@ -456,7 +460,7 @@ export default function Dashboard() {
     !showEmailCaptureModal &&
     !!dashboardData?.user?.stravaConnected &&
     !dashboardData?.user?.lastSyncAt &&
-    (dashboardData?.activities?.length ?? 0) === 0;
+    (dashboardData?.activities?.length ?? 0) === 0 && !runningFeed.data?.recent.length && !runningFeed.data?.garminConnected;
 
   if (showSyncingScreen) {
     return (
@@ -492,27 +496,23 @@ export default function Dashboard() {
 
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-charcoal sm:text-3xl">{isFree ? "Your latest run, clearly explained" : "Your running today"}</h1>
-          <p className="mt-1 text-sm text-gray-500">{isFree ? "A personal comparison, one next step, and your recent progress." : "One next step, your latest evidence, and this week’s progress."}</p>
+          <h1 className="text-2xl font-bold text-charcoal sm:text-3xl">{isFree&&dashboardData?.user?.stravaConnected ? "Your latest run, clearly explained" : "Your running today"}</h1>
+          <p className="mt-1 text-sm text-gray-500">{!dashboardData?.user?.stravaConnected?'Your run summaries, totals and recent progress.':isFree ? "A personal comparison, one next step, and your recent progress." : "One next step, your latest evidence, and this week’s progress."}</p>
         </div>
 
-        {!(dashboardData?.user?.stravaConnected && (dashboardData?.activities?.length || 0) > 0) && (
+        {!runningFeed.data?.garminConnected&&!dashboardData?.user?.stravaConnected&&!runningFeed.data?.recent.length && (
           <div className="mb-6">
-            <ProgressChecklist
-              isStravaConnected={dashboardData?.user?.stravaConnected || false}
-              hasActivities={(dashboardData?.activities?.length || 0) > 0}
-              hasViewedScore={true}
-            />
+            <p className="rounded-xl border bg-white p-5 text-sm text-gray-600">Connect Garmin or Strava below to bring your runs into RunAnalytics. Strava is optional.</p>
           </div>
         )}
 
         {/* Show the runner's own first insight as soon as Strava data lands. */}
-        <PremiumPreviewTeaser />
+        {dashboardData?.user?.stravaConnected&&<PremiumPreviewTeaser />}
 
         {/* Recover an unfinished Checkout without requiring marketing-email consent. */}
         <CheckoutRecoveryPrompt />
 
-        <div className="mb-6">
+        {dashboardData?.user?.stravaConnected&&<div className="mb-6">
           <TodayRunDecision
             recoveryData={recoveryData}
             isStravaConnected={!!dashboardData?.user?.stravaConnected}
@@ -521,7 +521,7 @@ export default function Dashboard() {
             availability={dashboardData?.user?.coachDailyAvailabilityDate === getLocalIsoDateKey() ? dashboardData?.user?.coachDailyAvailability : null}
             onAvailabilityChange={canAccessAICoachChat ? updateTodayAvailability : undefined}
           />
-        </div>
+        </div>}
 
         <section aria-label="Your running connections" className="mb-6 grid gap-4 md:grid-cols-2">
           <div className="rounded-xl border border-gray-200 bg-white p-4">
@@ -580,28 +580,26 @@ export default function Dashboard() {
         )}
         
         <div className="mb-6">
-          <QuickStats stats={dashboardData?.stats || {
-            monthlyTotalDistance: "0.0", monthlyAvgPace: "0:00", monthlyTotalMinutes: 0, monthlyTotalActivities: 0,
-            weeklyTotalDistance: "0.0", weeklyAvgPace: "0:00", weeklyTotalMinutes: 0, weeklyTotalActivities: 0,
-            totalDistance: "0.0", avgPace: "0:00", runningTimeMinutes: 0, recovery: "Unknown",
-          }} />
+          <RunFeedNotice/>
+          {runningFeed.data?<QuickStats stats={runningFeed.data.stats}/>:<p role="alert">Your combined running feed could not load. <Button variant="link" onClick={()=>runningFeed.refetch()}>Try again</Button></p>}
+          {runningFeed.data&&<RecentFeedRuns runs={runningFeed.data.recent} units={runningFeed.data.unitPreference}/>}
         </div>
 
         <div className="mb-8">
-          <ThisWeekPlan />
+          {dashboardData?.user?.stravaConnected&&<ThisWeekPlan />}
         </div>
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           <PerformanceChart
-            data={(chartData?.chartData?.length ? chartData.chartData : dashboardData?.chartData) || []}
+            data={runningFeed.data?.chartData || []}
             unitPreference={dashboardData?.user?.unitPreference}
             onTimeRangeChange={handleTimeRangeChange}
             currentTimeRange={chartTimeRange}
           />
-          <RunnerScoreRadar />
+          {dashboardData?.user?.stravaConnected&&<div><p className="mb-2 text-xs text-gray-500">Runner Score uses Strava analysis. Garmin summary data is excluded.</p><RunnerScoreRadar /></div>}
         </div>
 
-        {!isFree && (
+        {!isFree && dashboardData?.user?.stravaConnected && (
           <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
             <AIInsights insights={dashboardData?.insights || {}} userId={user.id} insightsStatus={dashboardData?.insightsStatus} />
             <TrainingRecommendations recommendations={dashboardData?.insights?.recommendations || []} userId={user.id} insightsStatus={dashboardData?.insightsStatus} />
@@ -624,7 +622,7 @@ export default function Dashboard() {
         </details>
       </main>
       
-      {user && (
+      {user && dashboardData?.user?.stravaConnected && (
         <FloatingAICoach 
           userId={user.id} 
           isOpen={isChatOpen}

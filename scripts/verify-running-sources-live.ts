@@ -11,7 +11,7 @@ for (const path of ['/integrations','/garmin','/strava']) {
     assert.equal([...html.matchAll(/<title\b/g)].length,1);
     assert.ok(html.includes(`href="https://aitracker.run${path}"`));
     assert.match(html,/Garmin/);assert.match(html,/Strava/);
-    if (path === '/garmin') { assert.match(html,/No historical import/);assert.match(html,/separate from Strava totals, Runner Score, AI coaching and messaging/); }
+    if (path === '/garmin') { assert.match(html,/No historical import/);assert.match(html,/Garmin data stays outside Runner Score, AI coaching and messaging/);assert.match(html,/clear matches count once/i); }
     if (path === '/strava') assert.match(html,/FAQPage/);
   }
   const markdown = await get(path,{Accept:'text/markdown'});

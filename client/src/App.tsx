@@ -87,6 +87,7 @@ const TrainingPlanDetailPage = lazy(() => import("@/pages/training-plan-detail")
 const CoachOnboardingPage = lazy(() => import("@/pages/coach-onboarding"));
 const CoachSettingsPage = lazy(() => import("@/pages/coach-settings"));
 const NotFound = lazy(() => import("@/pages/not-found"));
+const GarminRunPage=lazy(()=>import('@/pages/garmin-run'));
 
 // Pick up Strava OAuth JWT from short-lived cookie (_sta) set by the server callback.
 // Runs synchronously at module load so useAuth sees the token on first render.
@@ -179,6 +180,7 @@ function Router() {
       <Switch>
         <Route path="/" component={LandingPage} />
         <Route path="/auth" component={AuthPage} />
+        <Route path="/runs/garmin/:id"><ProtectedRoute component={GarminRunPage}/></Route>
         <Route path="/forgot-password" component={ForgotPasswordPage} />
         <Route path="/reset-password" component={ResetPasswordPage} />
         <Route path="/auth/magic-link" component={MagicLinkPage} />

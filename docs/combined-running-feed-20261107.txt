@@ -1,0 +1,54 @@
+Garmin and Strava main running views
+
+Garmin-only runners can use Dashboard totals, recent runs, recorded-run trends,
+the activity calendar and the Activities list without connecting Strava. Garmin
+rows have a private summary detail page, source attribution and honest missing
+measurements. GPS maps still use available Strava routes; Garmin coordinates
+and detailed streams are not introduced in this release.
+
+New authenticated /api/runs endpoints create a read-only display projection of
+the separately stored source copies. Existing Strava activity, dashboard, AI,
+Runner Score, MCP, plan and messaging inputs are unchanged. The web dashboard's
+basic cards consume the combined projection; coach page context continues to
+use the original Strava data. Garmin-only users do not get Strava analysis
+widgets presented as if their Garmin summaries were analyzed.
+
+Matching is conservative and owner scoped. Cross-service candidates must start
+within 60 seconds, differ in distance by no more than max(25 m, 2%), and have
+reported durations within max(60 s, 5%). Strava elapsed time can match a Garmin
+duration when pauses make moving time differ. Manual and zero-duration runs
+are not automatically matched. A match must be unique in both directions.
+Strava stays the primary displayed copy so its existing detail/analysis link is
+preserved; the row lists both sources and contributes once to basic totals.
+Ambiguous nearby candidates remain separate and visibly flagged.
+
+Users can keep an automatic match as two runs, then permit matching again.
+Migration 0039 stores only this display preference, with owner/source foreign
+keys and deletion cascades. Preference writes verify both source copies belong
+to the authenticated runner. Source data is never rewritten or discarded by a
+match or correction. Delete controls identify the source copy being deleted;
+the other source can remain visible. Source disconnects remove Garmin from the
+projection without a stale server-side feed cache.
+
+Matching runs before date/distance filtering and pagination. Transport reads
+use complete bounded pages, avoiding a hidden 500/1000-row history truncation.
+Existing Free Strava visibility/grade rules apply before matching and filtering;
+Garmin basics remain available. Calendar totals retain existing period rules
+and exclude future runs. Missing pace, heart rate and elevation are not zeroed.
+
+Validation: eight feed tests cover matching, pauses, ambiguous/manual cases,
+arrival order, non-destructive reads, owner isolation, Free/locked rows, history
+beyond a transport page, pagination/filters, preferences and source-delete
+cascades. Existing Garmin/OAuth/health/history, calendar-period, tenant-security
+and public-source tests passed. Repository type checking retains 34 existing
+diagnostics with none in the new files or changed UI paths. Frontend and D1
+backend builds passed before final browser layout adjustments.
+The final desktop/phone adjustments also passed the production build, and the
+full targeted regression selection passed 64 tests. Source management controls
+invalidate combined-view caches, and combined queries refresh on return.
+
+Local browser verification uses conspicuously labeled synthetic runs, never
+fabricated production activity records. Verified a Garmin-only main dashboard
+with two runs and correct totals, mixed-source Activities with one shared row,
+reversible split/match controls, distance filters, Garmin details with missing
+elevation, and a corrected phone layout. Release IDs and live checks follow.
