@@ -13,9 +13,9 @@ const eula='https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
 export async function auditReview(api) {
  const app=(await api('GET','/v1/apps/'+appID)).data;
  assert.equal(app.attributes.bundleId,appIdentifier,'Unexpected app identifier');
- const submission=(await api('GET','/v1/reviewSubmissions/'+submissionID)).data;
- assert.equal(submission.relationships.app.data.id,appID,'Submission belongs to another app');
- const items=(await api('GET','/v1/reviewSubmissions/'+submissionID+'/items?limit=200')).data;
+ const submission=(await api('GET','/v1/reviewSubmissions/'+submissionID+'?include=app')).data;
+ assert.equal(submission.relationships?.app?.data?.id,appID,'Submission belongs to another app or its app relationship is missing');
+ const items=(await api('GET','/v1/reviewSubmissions/'+submissionID+'/items?limit=200&include=appStoreVersion,subscriptionVersion,subscriptionGroupVersion')).data;
  assert.equal(items.length,4,'Unexpected review items; inspect before submitting');
  const appItems=items.filter(item=>item.relationships.appStoreVersion?.data);
  assert.equal(appItems.length,1,'Expected exactly one app version');

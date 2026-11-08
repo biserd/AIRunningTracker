@@ -8,8 +8,9 @@ function fixture({selectedBuild=buildID,state='UNRESOLVED_ISSUES'}={}) {
   calls.push({method,path,body});
   if(method==='PATCH'){submitted=true;return {data:{}};}
   if(path==='/v1/apps/'+appID)return {data:{attributes:{bundleId:'run.aitracker.coach'}}};
-  if(path==='/v1/reviewSubmissions/'+submissionID)return {data:{attributes:{state:submitted?'WAITING_FOR_REVIEW':state},relationships:{app:{data:{id:appID}}}}};
-  if(path.includes('/items?'))return {data:['appStoreVersion','subscriptionVersion','subscriptionVersion','subscriptionGroupVersion'].map((type,index)=>({attributes:{state:'READY_FOR_REVIEW'},relationships:{[type]:{data:{id:index===0?'version':'item'+index}}}}))};
+  if(path==='/v1/reviewSubmissions/'+submissionID+'?include=app')return {data:{attributes:{state},relationships:{app:{data:{id:appID}}}}};
+  if(path==='/v1/reviewSubmissions/'+submissionID)return {data:{attributes:{state:submitted?'WAITING_FOR_REVIEW':state}}};
+  if(path==='/v1/reviewSubmissions/'+submissionID+'/items?limit=200&include=appStoreVersion,subscriptionVersion,subscriptionGroupVersion')return {data:['appStoreVersion','subscriptionVersion','subscriptionVersion','subscriptionGroupVersion'].map((type,index)=>({attributes:{state:'READY_FOR_REVIEW'},relationships:{[type]:{data:{id:index===0?'version':'item'+index}}}}))};
   if(path.includes('/appStoreVersions?'))return {data:[{id:'version'}]};
   if(path.endsWith('/build'))return {data:{id:selectedBuild,attributes:{version:'41',processingState:'VALID'}}};
   if(path.endsWith('/appStoreReviewDetail'))return {data:{attributes:{demoAccountRequired:true,demoAccountName:'app-review-purchase@review.aitracker.invalid',demoAccountPassword:'private-fixture-password-never-log',notes:'private fixture notes'}}};
