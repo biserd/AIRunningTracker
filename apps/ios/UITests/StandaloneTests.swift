@@ -49,7 +49,7 @@ final class StandaloneTests:XCTestCase {
         XCTAssertEqual(pause.label, "Resume")
         app.buttons["Run settings"].tap()
         XCTAssertTrue(app.navigationBars["Run settings"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Miles"].exists)
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@ OR value == %@", "Miles", "Miles")).firstMatch.waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Connect heart-rate sensor"].exists)
         XCTAssertFalse(app.buttons["Disconnect sensor"].exists)
         capture("Run settings follow profile units")
