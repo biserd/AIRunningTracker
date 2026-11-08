@@ -59,7 +59,7 @@ import Combine
         error = failure.localizedDescription
         if case APIError.server(401, _) = failure {
             Task { await push.detach() }
-            recorder.selectAccount(nil); runFeed=nil; runOverview=nil; setupComplete=false
+            recorder.selectAccount(nil); runFeed=nil; runOverview=nil; garminConnection=nil; garminStatusError=nil; setupComplete=false
             snapshot = nil; companion=nil; refreshedAt=nil; reminderClarification=nil; messages = []; reminders = []; whatsapp = nil; review = nil; reminderReview = nil; verifiedEmail = ""; needsSignIn = true
         }
     }

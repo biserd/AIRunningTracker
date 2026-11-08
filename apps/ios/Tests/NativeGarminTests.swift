@@ -25,6 +25,15 @@ final class NativeGarminTests: XCTestCase {
         XCTAssertEqual(NativeGarminRecovery.Kind.hrv.formatted(42.4), "42.4 ms")
         XCTAssertEqual(NativeGarminRecovery.Kind.hrv.formatted(.infinity), "Not received")
     }
+    @MainActor func testExpiredSessionClearsPublishedGarminConnectionState() {
+        let store = CoachStore()
+        store.garminConnection = NativeGarminStatus(available: true, connected: true, status: "connected", activityCount: 3)
+        store.garminStatusError = "A saved status error"
+        store.report(APIError.server(401, "Expired"))
+        XCTAssertNil(store.garminConnection)
+        XCTAssertNil(store.garminStatusError)
+        XCTAssertTrue(store.needsSignIn)
+    }
     func testExistingGarminStatusRemainsCompatibleAndIncludesDeliveryCount() throws {
         let legacy = try JSONDecoder().decode(NativeGarminStatus.self, from: Data(#"{"available":true,"connected":true,"status":"connected"}"#.utf8))
         XCTAssertNil(legacy.activityCount)
