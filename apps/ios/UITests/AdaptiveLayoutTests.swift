@@ -87,7 +87,7 @@ final class AdaptiveLayoutTests: XCTestCase {
         let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         screenshot.name = "Simple Coach home with one voice action"; screenshot.lifetime = .keepAlways; add(screenshot)
         app.buttons["Read summary"].tap()
-        XCTAssertTrue(app.navigationBars["Your week in running"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Coaching update"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "leave room to recover afterward")).firstMatch.exists)
     }
     private func tapSetting(_ title: String, app: XCUIApplication) {
