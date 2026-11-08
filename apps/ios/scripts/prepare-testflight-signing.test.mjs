@@ -11,8 +11,10 @@ test('supplied profiles require both targets and avoid changing API permissions'
 test('uploaded profiles must match the app, certificate, expiry, entitlements and distribution type', () => {
   const fixture = {team: 'DB5JRGGB6A', app: 'DB5JRGGB6A.' + appIdentifier, uuid: 'DAD00000-0000-4000-8000-000000000002', expires: Date.parse('2035-01-01'), certificates: ['AABB'], health: true, domains: ['*'], push: 'production'};
   assert.equal(validateProfile(fixture, 'app', 'AA:BB'), fixture.uuid);
+  assert.equal(validateProfile({...fixture, domains: '*'}, 'app', 'AA:BB'), fixture.uuid);
+  assert.equal(validateProfile({...fixture, domains: ['applinks:new.aitracker.run']}, 'app', 'AA:BB'), fixture.uuid);
   assert.equal(validateProfile({...fixture, app: 'DB5JRGGB6A.' + widgetIdentifier, health: false, domains: []}, 'widget', 'AA:BB'), fixture.uuid);
-  for (const change of [{app: 'DB5JRGGB6A.other'}, {team: 'OTHER'}, {expires: 0}, {certificates: ['CCDD']}, {health: false}, {domains: []}, {push: 'development'}, {development: true}, {devices: true}, {allDevices: true}]) {
+  for (const change of [{app: 'DB5JRGGB6A.other'}, {team: 'OTHER'}, {expires: 0}, {certificates: ['CCDD']}, {health: false}, {domains: []}, {domains: 'unexpected'}, {domains: ['applinks:other.example']}, {push: 'development'}, {development: true}, {devices: true}, {allDevices: true}]) {
     assert.throws(() => validateProfile({...fixture, ...change}, 'app', 'AA:BB'));
   }
 });

@@ -21,7 +21,8 @@ export function validateProfile(check, kind, fingerprint, now = Date.now()) {
   if (!/^[0-9A-Fa-f-]{36}$/.test(check.uuid) || !Number.isFinite(check.expires) || check.expires <= now) throw new Error('Signing profile is invalid or expired');
   if (!check.certificates?.some(value => fingerprintKey(value) === fingerprintKey(fingerprint))) throw new Error('Signing profile does not include the installed distribution certificate');
   if (check.development || check.devices || check.allDevices) throw new Error('An App Store distribution profile is required');
-  if (kind === 'app' && (check.health !== true || !Array.isArray(check.domains) || !check.domains.length || check.push !== 'production')) throw new Error('App signing profile is missing HealthKit, associated domains, or production push');
+  const domainsAllowed = check.domains === '*' || (Array.isArray(check.domains) && check.domains.some(domain => domain === '*' || domain === 'applinks:new.aitracker.run'));
+  if (kind === 'app' && (check.health !== true || !domainsAllowed || check.push !== 'production')) throw new Error('App signing profile is missing HealthKit, associated domains, or production push');
   return check.uuid;
 }
 
