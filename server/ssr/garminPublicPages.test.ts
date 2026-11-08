@@ -49,10 +49,10 @@ test('Garmin guides are discovered from the homepage, source page and connection
   assert.match(recovery, /outside AI coaching/);
   assert.match(recovery, /Automatic historical backfill is not included/);
   const setup = (await renderPublicDocument('/garmin/setup', template))!;
-  assert.match(setup, /not a RunAnalytics signup or login method/);
+  assert.match(setup, /Existing Garmin-linked users can return with Connect with Garmin/);
   assert.match(setup, /Activity Export/);
   assert.match(setup, /href="\/contact"/);
-  assert.match(setup, /not merged into Strava totals/);
+  assert.match(setup, /Stored source copies are not merged/);
 });
 test('private Garmin recovery does not become public Markdown', () => {
   for (const path of ['/recovery', '/settings', '/api/garmin/health/recovery']) assert.equal(publicMarkdown(path), null);

@@ -40,10 +40,10 @@ export const garminPublicPages = {
     intro: 'Keep recording with your Garmin and syncing to Garmin Connect. Follow this guide to bring new running summaries into RunAnalytics, with optional sleep and recovery sharing as a separate choice.',
     sections: [
       { id: 'connect', title: 'Set up your Garmin running connection', items: [
-        { title: '1. Sign in to RunAnalytics', text: 'Create a RunAnalytics account or sign in to your existing one. Open web Settings and find Garmin Connect. Garmin is a data connection, not a RunAnalytics signup or login method.' },
+        { title: '1. Choose your account path', text: 'New to RunAnalytics? The Connect with Garmin option on the sign-in page supports account creation after you review sharing, terms and privacy. If you already have an email or Strava account, sign in to that account first and link Garmin in web Settings to keep your data together. Existing Garmin-linked users can return with Connect with Garmin.' },
         { title: '2. Review activity sharing', text: 'Read the activity-sharing notice and select Agree to Garmin activity sharing. Then choose Connect Garmin. You will be taken to Garmin’s official authorization screen; enter your Garmin credentials only there.' },
         { title: '3. Approve Activity Export', text: 'Approve the activity permission on Garmin’s screen and return to RunAnalytics. Check the connection status in Settings. If you cancel or decline the required permission, the activity connection cannot be completed.' },
-        { title: '4. Record and sync a new run', text: 'Record a new run after connecting, then sync your device to Garmin Connect. Eligible new running summaries appear under Recent Garmin runs in web Settings after Garmin delivers them. Delivery is not instant or guaranteed.' },
+        { title: '4. Record and sync a new run', text: 'Record a new run after connecting, then sync your device to Garmin Connect. Eligible new running summaries appear on Dashboard and in Activities after Garmin delivers them. Settings also shows Recent Garmin runs and connection status. Delivery is not instant or guaranteed.' },
       ] },
       { id: 'health', title: 'Optionally add sleep and recovery trends', items: [
         { title: 'Grant health permission separately', text: 'Allow the relevant Garmin health permission for the connection. Open Recovery in RunAnalytics, review the separate health and sleep notice, and select Agree to Garmin health and sleep sharing. Activity consent alone is not enough.' },
@@ -58,12 +58,12 @@ export const garminPublicPages = {
       ] },
       { id: 'limits', title: 'Know the boundaries before connecting', items: [
         { title: 'Summaries, not a watch-workout service', text: 'Distance, duration and average pace are shown, with heart rate, cadence, elevation and calories when supplied. GPS routes, detailed activity streams, course uploads and planned workouts sent to your watch are not included.' },
-        { title: 'Garmin and Strava have different roles', text: 'Garmin supplies its own private new-run feed and optional recovery dashboard. It is not merged into Strava totals, Runner Score, AI coaching or messaging. Garmin-recorded activities shared to Strava can use the separate Strava analytics workflow, subject to your plan.' },
+        { title: 'Garmin and Strava have different roles', text: 'Garmin and eligible Strava runs appear together in basic dashboard totals, trends, the activity calendar and Activities. Clear cross-service matches count once and show both sources; uncertain overlaps stay separate. Stored source copies are not merged. Garmin summaries remain outside Runner Score, AI coaching and messaging.' },
         { title: 'You can stop sharing', text: 'Review status, export or delete stored Garmin summaries, and disconnect from web Settings. Recovery also has health export and stop/delete controls. Deleting an imported summary does not delete the original in Garmin Connect.' },
       ] },
     ],
     faqs: [
-      { question: 'Can I use Continue with Garmin to create an account?', answer: 'No. First create or sign in to your RunAnalytics account, then connect Garmin in web Settings. Garmin-based signup and login are not currently offered.' },
+      { question: 'Can I create an account or sign in with Garmin?', answer: 'Yes. Choose Connect with Garmin on the RunAnalytics sign-in page and review the sharing notice. If you already use RunAnalytics through email or Strava, sign in to your existing account first and link Garmin in Settings instead of creating another account. Health sharing remains a separate opt-in.' },
       { question: 'Does connecting Garmin require Strava?', answer: 'No. Direct Garmin run summaries and optional recovery sharing work independently. Strava is a separate connection for history-based analytics and eligible coaching.' },
       { question: 'Will disconnecting and reconnecting restore my old runs?', answer: 'No. The current direct Garmin integration does not automatically backfill previous activities. Check permissions, the date of the run and Garmin Connect sync before reconnecting.' },
       { question: 'Where can I get help with a missing sync?', answer: 'Use the RunAnalytics Contact page after checking the troubleshooting steps above. Include the approximate activity time, timezone and visible connection status, but do not share credentials, tokens or authorization links.' },

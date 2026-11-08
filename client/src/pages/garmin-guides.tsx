@@ -35,7 +35,7 @@ function GarminGuide({ pageKey }: { pageKey: GarminPublicPage }) {
         <h1 className="mb-6 text-4xl font-bold leading-tight text-charcoal sm:text-5xl">{page.headline}</h1>
         <p className="mb-7 text-lg leading-relaxed text-gray-600">{page.intro}</p>
         <Link href={href} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-orange-700 px-6 py-3 font-semibold text-white hover:bg-orange-800">{recovery ? 'Open my recovery dashboard' : 'Connect Garmin in Settings'}<ArrowRight size={18} aria-hidden="true"/></Link>
-        <p className="mt-4 text-sm text-gray-600">Web account required. Strava is not required. {recovery ? 'Health sharing is optional and needs separate consent.' : 'Authorize Garmin only after signing in to RunAnalytics.'}</p>
+        <p className="mt-4 text-sm text-gray-600">Web account required. Strava is not required. {recovery ? 'Health sharing is optional and needs separate consent.' : 'Already have an account? Sign in first, then link Garmin in Settings.'}</p>
         <nav aria-label="On this page" className="mt-8 flex flex-wrap gap-x-5 gap-y-2 border-t border-gray-200 pt-5">{page.sections.map(section => <a key={section.id} href={'#' + section.id} className="inline-flex min-h-11 items-center text-sm font-semibold text-orange-700 underline underline-offset-4">{section.title}</a>)}</nav>
       </section>
       {page.sections.map((section, index) => <section key={section.id} id={section.id} className="mx-auto max-w-6xl scroll-mt-24 px-6 py-8">
