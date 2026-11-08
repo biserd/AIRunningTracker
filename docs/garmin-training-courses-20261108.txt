@@ -55,3 +55,37 @@ scheduling, partial retry, ambiguous responses, rolling limits and deletion.
 Existing activity, health, recovery, sign-in and duplicate-run suites included.
 Browser QA uses a clearly labeled synthetic preview and makes no Garmin writes.
 Real Garmin POSTs and actual watch delivery require a user-reviewed first send.
+
+Verified source and build
+Feature source 3f37a88b7de4364b0206abc77ecc82dc6fcb1991, corrected retry
+8227791, private crawler policy aa51089b6d147e31a8bd8a25e2b0ee2d7c0984de.
+Final Cloudflare source build 9a56e347-af68-4737-9f52-0797eb9ad4a6 succeeded;
+staging Worker f7800f5d-1b7d-4876-8298-e7f588a096e2. Immutable image digest
+bf3e7348c991c2dfd0272380f14a63c17db12698adb5d267abcdb8458cb16e28.
+Production Worker bc09eb57-b509-4a0e-bacb-95e29ad3ddfe deployed with keep-vars;
+existing production-live instance and restart guard retained. Container runtime
+activation is verified separately below before completion.
+Only migration 0041 applied and journaled; 97 D1 tables. No unrelated pending
+migrations applied. All 88 targeted tests plus 3 crawler-policy tests pass.
+Vite and D1 application builds and Worker dry-run pass. Repo typecheck retains
+34 pre-existing diagnostics, none in the new feature paths.
+Desktop/mobile fixture browser tests cover interval selection, confirmation,
+GPX parsing/review/send receipt and responsive layout. All Garmin requests in
+these fixture tests are local mock responses. Authenticated production preview
+shows WORKOUT_IMPORT and COURSE_IMPORT allowed, 12 upcoming running days, exact
+pace targets where supplied and explicit notes-only conversion where necessary.
+No real workout or course has been sent, scheduled, updated or deleted by this
+release verification. Watch delivery cannot be claimed without a real first send
+and subsequent Garmin Connect / device sync.
+
+Final production verification, 2026-11-08 15:04 UTC
+Container application version 59 and production-live instance version 59 are
+running the final bf3e7348 image, with one healthy instance and no rollout errors.
+All eight anonymous live suites pass: outbound sends, details, base Garmin sync,
+combined running feed, public source pages, WhatsApp, signup reminders and tools.
+New send endpoints require authentication; the review UI chunk is published and
+/garmin-send returns noindex, nofollow. The new verifier's regex was corrected
+before its successful execution; that script change does not affect runtime code.
+Owner-account read-only audit: zero direct Garmin runs, 32 health summaries,
+four detailed wellness records, zero outbound items. The existing recovery data
+and permissions remain intact. No sample provider items were created.
