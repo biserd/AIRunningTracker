@@ -61,7 +61,7 @@ PR #1 is merged into `codex/ios-testflight` at `be7fd84bf2c7c970a6b6a1585afa824c
 
 ## Simplified UX update (build 40)
 
-- Recording has explicit large lap/save buttons and pinned Pause/Resume and Finish controls. Sensor pairing and audio cues are in Run settings; the disconnected sensor no longer shows a disconnect action. Discard is in the recording menu with confirmation. The tab bar stays visible without the duplicate coach accessory.
+- Recording has explicit large lap/save buttons and pinned Pause/Resume and Finish controls. Sensor pairing and audio cues are in Run settings; no disconnect action is shown until a sensor has been selected. Discard is in the recording menu with confirmation. The tab bar stays visible without the duplicate coach accessory.
 - Recording and history use the existing saved account distance preference from the run feed, cached per account for offline use. A first run waits for profile units to load; ongoing runs keep their original units. There is no separate phone unit picker. Account switching and deletion reset the published unit state.
 - Coach has one voice entry point, a short briefing with Read summary, and a Daily check-in button opening the existing check-in controls.
 - Final iPhone 17 Pro and iPad Pro 13-inch (M5) checks passed on iOS 26.2: 63 unit tests and 10 UI tests each. Screenshots were reviewed. The tested `9814383` tree exactly matches merge `7fc77ea`: https://github.com/biserd/AIRunningTracker/actions/runs/42517737369. CI selects the newest installed simulator runtime. UI queries account for labeled values and iOS 26 nested confirmation-button accessibility.
