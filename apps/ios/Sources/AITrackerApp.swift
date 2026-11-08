@@ -38,7 +38,8 @@ import SwiftUI
                     let token="DAD00000-0000-4000-8000-000000000001"
                     store.onboarding=NativeOnboarding(stravaConnected:false,syncStatus:nil,hasAccess:false,billingProvider:nil,appAccountToken:token,purchasesAvailable:false)
                     store.recorder.selectAccount(token)
-                    if ProcessInfo.processInfo.arguments.contains("--test-run-display") { store.recorder.installRunDisplayFixture() }
+                    store.recorder.applyProfileUnits(ProcessInfo.processInfo.arguments.contains("--test-profile-miles") ? "miles" : "km")
+                    if ProcessInfo.processInfo.arguments.contains("--test-run-display") { store.recorder.installRunDisplayFixture(running: ProcessInfo.processInfo.arguments.contains("--test-run-active")) }
                     return
                 }
                 if ProcessInfo.processInfo.arguments.contains("--test-adaptive-layout") {
@@ -48,6 +49,10 @@ import SwiftUI
                     if ProcessInfo.processInfo.arguments.contains("--test-insights") {
                         store.setupComplete = true
                         store.onboarding = NativeOnboarding(stravaConnected: true, syncStatus: nil, hasAccess: true, billingProvider: nil, appAccountToken: "DAD00000-0000-4000-8000-000000000002", purchasesAvailable: false)
+                    }
+                    if ProcessInfo.processInfo.arguments.contains("--test-coach-ux") {
+                        store.snapshot = Snapshot(runner: Runner(id: 9001, name: "Demo runner", timezone: "UTC", unitPreference: "miles"), state: RunningState(today: "2026-11-08", goal: "Half marathon", days: []), canUseAI: true, version: 1)
+                        store.companion = CompanionData(preferences: CompanionPreferences(notes: "", evening: false, weekly: false, hour: 18, quietStart: 22, quietEnd: 7), insights: [], briefings: [CoachBriefing(kind: "weekly", reference: "2026-11-08", title: "Your week in running", body: "You’re building toward your half marathon. You ran three times this week and kept your easy runs comfortable. Your next session is a relaxed long run. Keep the effort conversational and leave room to recover afterward.", date: "2026-11-08T12:00:00Z")], checkins: [])
                     }
                     store.busy = ProcessInfo.processInfo.arguments.contains("--test-pending-coach-request")
                     return
@@ -95,15 +100,7 @@ struct CoachTabs: View {
                     }
                 }.navigationSplitViewStyle(.balanced)
             } else {
-                if #available(iOS 26.0, *) {
-                    compactTabs
-                        .tabBarMinimizeBehavior(.onScrollDown)
-                        .tabViewBottomAccessory {
-                            CoachVoiceAccessory(selected: $selected)
-                        }
-                } else {
-                    compactTabs
-                }
+                compactTabs
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .applePushOpen)) { _ in openPush() }
@@ -220,52 +217,13 @@ struct CoachTabs: View {
     }
 }
 
-@available(iOS 26.0, *)
-private struct CoachVoiceAccessory: View {
-    @EnvironmentObject private var store: CoachStore
-    @Binding var selected: CoachSection
-
-    var body: some View {
-        Button {
-            selected = .coach
-            if store.onboarding?.hasAccess == true && !store.voice.active { store.voice.start(store: store) }
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: store.voice.active ? "waveform" : "mic.fill")
-                    .symbolEffect(.variableColor, isActive: store.voice.phase == .live && !store.voice.muted)
-                    .foregroundStyle(RunBrand.orange)
-                Text(accessoryTitle).font(.subheadline.bold()).lineLimit(1)
-                Spacer(minLength: 8)
-                if store.voice.phase == .live {
-                    Text("\(store.voice.remaining / 60):\(String(format: "%02d", store.voice.remaining % 60))")
-                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                } else {
-                    Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.secondary)
-                }
-            }
-            .padding(.horizontal, 4)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .disabled(!store.voice.active && (store.snapshot?.canUseAI != true || store.busy))
-        .accessibilityLabel(store.voice.active ? "Return to active voice coach" : "Talk to your coach")
-    }
-
-    private var accessoryTitle: String {
-        switch store.voice.phase {
-        case .connecting: return "Connecting to coach…"
-        case .live: return store.voice.muted ? "Coach · muted" : "Coach is listening"
-        case .ending: return "Ending voice session…"
-        case .off: return "Talk to your coach"
-        }
-    }
-}
-
 struct ChatView: View {
     @EnvironmentObject var store: CoachStore
     @Binding var text: String
     @Binding var channel: String
     @FocusState private var composerFocused: Bool
+    @State private var showingCheckIn = false
+    @State private var selectedBriefing: CoachBriefing?
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -280,10 +238,15 @@ struct ChatView: View {
                             if store.messages.isEmpty {
                                 if let briefing = store.companion?.briefings.first {
                                     Text(briefing.title).font(.headline)
-                                    Text(briefing.body).font(.body)
+                                    Text(briefing.body).font(.body).lineLimit(3)
+                                    Button { selectedBriefing = briefing } label: {
+                                        Label("Read summary", systemImage: "doc.text").frame(maxWidth: .infinity, minHeight: 30)
+                                    }.buttonStyle(.bordered).controlSize(.large)
                                 } else { Text("How are you feeling today?").font(.title2).foregroundStyle(.secondary) }
                             }
-                            DisclosureGroup("Check in & running context") { CoachCompanionCards() }
+                            Button { showingCheckIn = true } label: {
+                                Label("Daily check-in", systemImage: "checkmark.circle").frame(maxWidth: .infinity, minHeight: 30)
+                            }.buttonStyle(.bordered).controlSize(.large).accessibilityIdentifier("coach-check-in")
                             ForEach(store.messages) { message in
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(message.role == "user" ? "You" : "Coach").font(.caption.bold()).foregroundStyle(.secondary)
@@ -322,6 +285,14 @@ struct ChatView: View {
                 .padding(.horizontal)
                 .padding(.bottom, 8)
             }.background { RunAmbientBackdrop() }.navigationTitle("Let’s talk running")
+                .sheet(isPresented: $showingCheckIn) {
+                    NavigationStack {
+                        ScrollView { CoachCompanionCards().padding().frame(maxWidth: 700).frame(maxWidth: .infinity) }
+                            .navigationTitle("Daily check-in").navigationBarTitleDisplayMode(.inline)
+                            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showingCheckIn = false } } }
+                    }
+                }
+                .sheet(item: $selectedBriefing) { CoachBriefingView(briefing: $0) }
                 .toolbar {
                     ToolbarItemGroup(placement: .keyboard) {
                         Spacer()

@@ -21,7 +21,7 @@ final class SignOutTests: XCTestCase {
         for _ in 0..<3 { if signOut.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(signOut.isEnabled)
         signOut.tap()
-        let confirm = app.buttons["confirm-sign-out"]
+        let confirm = app.buttons.matching(identifier: "confirm-sign-out").firstMatch
         XCTAssertTrue(confirm.waitForExistence(timeout: 3))
         confirm.tap()
         XCTAssertTrue(app.buttons["Email me a sign-in link"].waitForExistence(timeout: 2))

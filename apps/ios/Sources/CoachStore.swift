@@ -161,6 +161,8 @@ import Combine
         do {
             try await refreshOnboarding()
             guard generation == sessionGeneration, !needsSignIn else { return }
+            await refreshRuns()
+            guard generation == sessionGeneration, !needsSignIn else { return }
             if onboarding?.hasAccess != true { return }
             await refreshSchedule(force:true)
             let status: CoachStatus = try await api.request("/api/ai/status")

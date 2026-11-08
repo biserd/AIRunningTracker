@@ -60,6 +60,7 @@ struct RunHome: View {
     @EnvironmentObject var store: CoachStore
     @ObservedObject var recorder: PhoneRunRecorder
     @State private var accountSheet = false
+    @State private var settingsSheet = false
     @State private var finishSheet = false
     @State private var discard = false
     @State private var name = "Phone run"
@@ -75,97 +76,119 @@ struct RunHome: View {
         NavigationStack {
             List {
                 Section {
-                    if let draft = recorder.draft {
-                        Label(draft.running ? "Recording" : "Paused", systemImage: "record.circle").foregroundStyle(RunBrand.orange)
-                        HStack {
-                            metric("Distance", String(format: "%.2f %@", draft.distance / (miles ? 1609.344 : 1000), miles ? "mi" : "km"))
-                            metric("Time", runDuration(draft.seconds))
-                            metric("Pace", runPace(distance: draft.distance, seconds: draft.seconds, miles: miles))
-                        }
-                        Text(recorder.gpsStatus).font(.caption).foregroundStyle(.secondary)
-                        if let pace = draft.recentPace { LabeledContent("Recent pace", value: runDuration(pace * (miles ? 1.609344 : 1)) + (miles ? " /mi" : " /km")) }
-                        LiveRunMap(recording: draft).frame(height: 230).accessibilityIdentifier("live-run-map")
-                        RunHeartRatePanel(sensor: recorder.heartRate)
-                        let lastMark = draft.lapMarks?.last
-                        LabeledContent("Current lap pace", value: runPace(distance: draft.distance - (lastMark?.distance ?? 0), seconds: draft.seconds - (lastMark?.seconds ?? 0), miles: miles) + (miles ? " /mi" : " /km"))
-                        Button("Mark lap") { recorder.markLap() }.disabled(!draft.running)
-                        if let lap = draft.laps.last { Text("Lap \(lap.number): \(runDuration(lap.seconds)) · \(runPace(distance: lap.distance, seconds: lap.seconds, miles: miles)) /\(miles ? "mi" : "km")").font(.caption) }
-                        HStack {
-                            Button(draft.running ? "Pause" : "Resume") { draft.running ? recorder.pause() : recorder.startOrResume() }.buttonStyle(.bordered)
-                            Button("Finish") { recorder.pause(); finishSheet = true }.buttonStyle(.borderedProminent)
-                            Button("Discard", role: .destructive) { discard = true }.buttonStyle(.borderless)
-                        }
-                    } else {
-                        Text("Ready for a run?").font(.title2.bold())
-                        Text("Record with your iPhone. No watch or connected service required.").foregroundStyle(.secondary)
-                        Picker("Distance units", selection: $recorder.usesMiles) { Text("Kilometres").tag(false); Text("Miles").tag(true) }.pickerStyle(.segmented)
-                        RunHeartRatePanel(sensor: recorder.heartRate)
-                        Button { recorder.startOrResume() } label: { Label("Start run", systemImage: "figure.run") }
-                            .buttonStyle(.borderedProminent).disabled(!recorder.storageReady).accessibilityIdentifier("start-phone-run")
-                    }
-                    Toggle("Audio distance and lap announcements", isOn: $recorder.audioAnnouncements)
-                    Text("Haptic feedback accompanies laps, distance milestones and pause. Lock Screen statistics appear when Live Activities are enabled.").font(.caption).foregroundStyle(.secondary)
-                    if let status = recorder.liveActivityMessage { Text(status).font(.caption).foregroundStyle(.secondary) }
-                    if let message = recorder.message { Text(message).font(.footnote).foregroundStyle(.secondary) }
-                    if recorder.permissionDenied {
-                        Link("Open iPhone Settings", destination: URL(string: UIApplication.openSettingsURLString)!)
-                    }
-                } footer: {
-                    Text("Location is used only while recording. Run summaries sync to your account; GPS routes stay on this iPhone. Force-quitting stops recording.")
-                }
-                if let draft = recorder.draft {
-                    RunSplitSection(title: "Splits so far", splits: draft.splits(unit: miles ? 1609.344 : 1000), miles: miles)
-                }
-                if recorder.saved.contains(where: { !$0.synced }) {
-                    Section {
-                        Label("\(recorder.saved.filter { !$0.synced }.count) run(s) saved on this iPhone, waiting to sync", systemImage: "icloud.and.arrow.up")
-                        Button("Retry sync") { Task { await store.refreshRuns() } }.disabled(recorder.syncing)
-                    }
-                }
-                Section("Recent runs") {
-                    if runs.isEmpty { ContentUnavailableView("Your running starts here", systemImage: "figure.run", description: Text("Record your first run or connect Garmin or Strava to import activities.")) }
-                    ForEach(runs) { run in
-                        NavigationLink { NativeRunSummary(run: run, miles: miles, recorder: recorder) } label: {
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text(run.name).font(.headline)
-                                Text("\(run.sourceName) · \(String(format: "%.2f", run.distance / (miles ? 1609.344 : 1000))) \(miles ? "mi" : "km") · \(runDuration(run.movingTime))").font(.subheadline)
-                                if let date = run.date { Text(date, format: .dateTime.month().day().hour().minute()).font(.caption).foregroundStyle(.secondary) }
+                    VStack(alignment: .leading, spacing: 14) {
+                        if let draft = recorder.draft {
+                            Label(draft.running ? "Recording" : "Paused", systemImage: draft.running ? "record.circle" : "pause.circle")
+                                .font(.headline).foregroundStyle(RunBrand.orange)
+                            HStack(spacing: 12) {
+                                metric("Distance", String(format: "%.2f %@", draft.distance / (miles ? 1609.344 : 1000), miles ? "mi" : "km"))
+                                metric("Time", runDuration(draft.seconds))
+                                metric("Pace", runPace(distance: draft.distance, seconds: draft.seconds, miles: miles))
+                            }
+                            LiveRunMap(recording: draft).frame(height: 180).clipShape(RoundedRectangle(cornerRadius: 14)).accessibilityIdentifier("live-run-map")
+                            Text(draft.running ? recorder.gpsStatus : "GPS paused").font(.caption).foregroundStyle(.secondary)
+                            if let bpm = recorder.heartRate.bpm { Label("\(bpm) bpm", systemImage: "heart.fill").foregroundStyle(.red) }
+                            let lastMark = draft.lapMarks?.last
+                            LabeledContent("Current lap pace", value: runPace(distance: draft.distance - (lastMark?.distance ?? 0), seconds: draft.seconds - (lastMark?.seconds ?? 0), miles: miles) + (miles ? " /mi" : " /km"))
+                            if let pace = draft.recentPace { LabeledContent("Recent pace", value: runDuration(pace * (miles ? 1.609344 : 1)) + (miles ? " /mi" : " /km")) }
+                            Button { recorder.markLap() } label: { Label("Mark lap", systemImage: "flag").frame(maxWidth: .infinity, minHeight: 30) }
+                                .buttonStyle(.bordered).controlSize(.large).disabled(!draft.running)
+                            if let lap = draft.laps.last { Text("Lap \(lap.number): \(runDuration(lap.seconds)) · \(runPace(distance: lap.distance, seconds: lap.seconds, miles: miles)) /\(miles ? "mi" : "km")").font(.caption) }
+                        } else {
+                            Text("Ready for a run?").font(.title2.bold())
+                            Text("Your route, pace and distance. Just press Start.").foregroundStyle(.secondary)
+                            Button { recorder.startOrResume() } label: { Label("Start run", systemImage: "figure.run").frame(maxWidth: .infinity, minHeight: 32) }
+                                .buttonStyle(.borderedProminent).controlSize(.large)
+                                .disabled(!recorder.storageReady || !recorder.profileUnitsReady).accessibilityIdentifier("start-phone-run")
+                            if !recorder.profileUnitsReady {
+                                if store.runFeedError != nil {
+                                    Text("Connect to load your profile before your first run.").font(.callout).foregroundStyle(.secondary)
+                                    Button("Retry") { Task { await store.refreshRuns() } }.buttonStyle(.bordered)
+                                } else { ProgressView("Loading your profile…") }
                             }
                         }
-                    }
-                    if let feed = store.runFeed, feed.page < feed.totalPages {
-                        Button("Load older runs") { Task { await store.loadMoreRuns() } }.disabled(store.refreshingRuns)
-                    }
-                    if let error = store.runFeedError { Text(error).font(.footnote).foregroundStyle(.secondary) }
+                        if let message = recorder.message { Text(message).font(.footnote).foregroundStyle(.secondary) }
+                        if recorder.permissionDenied {
+                            Link("Open iPhone Settings", destination: URL(string: UIApplication.openSettingsURLString)!).buttonStyle(.bordered)
+                        }
+                    }.padding(.vertical, 8)
                 }
-                Section {
-                    Button("Garmin & Strava connections") { accountSheet = true }
+                if let draft = recorder.draft {
+                    RunSplitSection(title: "Splits", splits: draft.splits(unit: miles ? 1609.344 : 1000), miles: miles)
+                } else {
+                    if recorder.saved.contains(where: { !$0.synced }) {
+                        Section {
+                            Label("\(recorder.saved.filter { !$0.synced }.count) run(s) waiting to sync", systemImage: "icloud.and.arrow.up")
+                            Button("Retry sync") { Task { await store.refreshRuns() } }.buttonStyle(.bordered).disabled(recorder.syncing)
+                        }
+                    }
+                    Section("Recent runs") {
+                        if runs.isEmpty { ContentUnavailableView("Your running starts here", systemImage: "figure.run", description: Text("Record a run or connect Garmin or Strava.")) }
+                        ForEach(runs) { run in
+                            NavigationLink { NativeRunSummary(run: run, miles: miles, recorder: recorder) } label: {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text(run.name).font(.headline)
+                                    Text("\(run.sourceName) · \(String(format: "%.2f", run.distance / (miles ? 1609.344 : 1000))) \(miles ? "mi" : "km") · \(runDuration(run.movingTime))").font(.subheadline)
+                                    if let date = run.date { Text(date, format: .dateTime.month().day().hour().minute()).font(.caption).foregroundStyle(.secondary) }
+                                }
+                            }
+                        }
+                        if let feed = store.runFeed, feed.page < feed.totalPages {
+                            Button("Load older runs") { Task { await store.loadMoreRuns() } }.buttonStyle(.bordered).disabled(store.refreshingRuns)
+                        }
+                        if let error = store.runFeedError { Text(error).font(.footnote).foregroundStyle(.secondary) }
+                    }
+                    Section {
+                        Button { accountSheet = true } label: { Label("Garmin & Strava connections", systemImage: "link").frame(maxWidth: .infinity, minHeight: 30) }.buttonStyle(.bordered)
+                    }
                 }
             }
             .navigationTitle("Run")
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if let draft = recorder.draft {
+                    HStack(spacing: 12) {
+                        Button { draft.running ? recorder.pause() : recorder.startOrResume() } label: {
+                            Label(draft.running ? "Pause" : "Resume", systemImage: draft.running ? "pause.fill" : "play.fill").frame(maxWidth: .infinity, minHeight: 34)
+                        }.buttonStyle(.borderedProminent).accessibilityIdentifier("run-pause-resume")
+                        Button { recorder.pause(); finishSheet = true } label: { Label("Finish", systemImage: "stop.fill").frame(maxWidth: .infinity, minHeight: 34) }
+                            .buttonStyle(.bordered).accessibilityIdentifier("finish-phone-run")
+                    }.controlSize(.large).padding(16).frame(maxWidth: 760).frame(maxWidth: .infinity).background(.bar)
+                }
+            }
+            .toolbar {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button { settingsSheet = true } label: { Image(systemName: "gearshape").frame(minWidth: 32, minHeight: 32) }.accessibilityLabel("Run settings")
+                    if recorder.draft != nil {
+                        Menu { Button("Discard run", role: .destructive) { discard = true } } label: { Image(systemName: "ellipsis.circle").frame(minWidth: 32, minHeight: 32) }.accessibilityLabel("More run options")
+                    }
+                }
+            }
             .refreshable { await store.refreshRuns() }
             .task { await store.refreshRuns() }
             .sheet(isPresented: $accountSheet) { NativeOnboardingView(managing: true) }
+            .sheet(isPresented: $settingsSheet) { RunRecordingSettings(recorder: recorder) }
             .sheet(isPresented: $finishSheet) {
                 NavigationStack {
                     Form {
-                        TextField("Run name", text: $name)
-                        Picker("Effort", selection: $effort) {
-                            Text("Skip effort rating").tag(0)
-                            ForEach(1...10, id: \.self) { value in Text("\(value) / 10").tag(value) }
+                        Section {
+                            TextField("Run name", text: $name)
+                            Picker("Effort", selection: $effort) {
+                                Text("Skip effort rating").tag(0)
+                                ForEach(1...10, id: \.self) { value in Text("\(value) / 10").tag(value) }
+                            }
+                            Text("1 = very easy · 10 = maximum effort").font(.caption)
+                            TextField("How did it feel?", text: $notes, axis: .vertical).lineLimit(3...6)
                         }
-                        Text("1 = very easy · 10 = maximum effort").font(.caption)
-                        TextField("How did it feel?", text: $notes, axis: .vertical).lineLimit(3...6)
-                        Text("Effort, notes, splits and average sensor heart rate sync with your run summary.").font(.caption)
-                        Text("Save this run to your RunAnalytics account. It will upload when you’re connected.")
-                        Button("Save run") {
-                            recorder.finish(name: name, effort: effort == 0 ? nil : effort, notes: notes)
-                            if recorder.draft == nil { finishSheet = false; Task { await store.refreshRuns() } }
-                        }.disabled(recorder.draft == nil)
-                        if let message = recorder.message { Text(message).font(.footnote) }
+                        Section {
+                            Button {
+                                recorder.finish(name: name, effort: effort == 0 ? nil : effort, notes: notes)
+                                if recorder.draft == nil { finishSheet = false; Task { await store.refreshRuns() } }
+                            } label: { Label("Save run", systemImage: "checkmark").frame(maxWidth: .infinity, minHeight: 32) }.buttonStyle(.borderedProminent).controlSize(.large).disabled(recorder.draft == nil)
+                            if let message = recorder.message { Text(message).font(.footnote) }
+                        } footer: { Text("Saved to your account when you’re online. Your GPS route stays on this iPhone.") }
                     }.navigationTitle("Save your run")
                     .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Keep paused") { finishSheet = false } } }
-                }.presentationDetents([.medium, .large])
+                }.presentationDetents([.large])
             }
             .confirmationDialog("Discard this unfinished run?", isPresented: $discard, titleVisibility: .visible) {
                 Button("Discard run", role: .destructive) { recorder.discard() }
@@ -174,6 +197,28 @@ struct RunHome: View {
     }
     private func metric(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 6) { Text(label).font(.caption).foregroundStyle(.secondary); Text(value).font(.title3.monospacedDigit().bold()) }.frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+struct RunRecordingSettings: View {
+    @ObservedObject var recorder: PhoneRunRecorder
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    LabeledContent("Distance units", value: recorder.usesMiles ? "Miles" : "Kilometres")
+                } footer: { Text("Uses your saved RunAnalytics profile preference.") }
+                Section {
+                    Toggle("Audio cues", isOn: $recorder.audioAnnouncements)
+                } footer: { Text("Spoken distance and lap updates while you run.") }
+                Section("Heart-rate sensor") { RunHeartRatePanel(sensor: recorder.heartRate) }
+                Section {
+                    Text("GPS routes stay on the recording iPhone. Run summaries sync to your account. Force-quitting stops recording.").font(.footnote).foregroundStyle(.secondary)
+                    if let status = recorder.liveActivityMessage { Text(status).font(.footnote).foregroundStyle(.secondary) }
+                }
+            }.navigationTitle("Run settings").navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+        }
     }
 }
 struct NativeRunSummary: View {
@@ -203,7 +248,7 @@ struct NativeRunSummary: View {
             RunSplitSection(title: "Manual laps", splits: recording?.laps ?? run.laps ?? [], miles: miles)
             if let recording {
                 Section {
-                    Button("Save to Apple Health") { exportHealth = true }
+                    Button("Save to Apple Health") { exportHealth = true }.buttonStyle(.bordered).controlSize(.large)
                     Text("Choose whether to include your GPS route. Apple Health saving is separate from account sync.").font(.caption).foregroundStyle(.secondary)
                 }
             }
@@ -280,11 +325,16 @@ struct RunHeartRatePanel: View {
         VStack(alignment: .leading, spacing: 8) {
             if let bpm = sensor.bpm { Label("\(bpm) bpm", systemImage: "heart.fill").foregroundStyle(.red) }
             Text(sensor.status).font(.caption).foregroundStyle(.secondary)
-            HStack {
-                Button(sensor.scanning ? "Stop searching" : "Find heart-rate sensor") { sensor.scanning ? sensor.stopScan() : sensor.scan() }.buttonStyle(.borderless)
-                Button("Disconnect") { sensor.disconnect() }.buttonStyle(.borderless)
+            if sensor.hasConnection {
+                Button { sensor.disconnect() } label: { Label("Disconnect sensor", systemImage: "xmark.circle").frame(maxWidth: .infinity, minHeight: 30) }.buttonStyle(.bordered).controlSize(.large)
+            } else {
+                Button { sensor.scanning ? sensor.stopScan() : sensor.scan() } label: {
+                    Label(sensor.scanning ? "Stop searching" : "Connect heart-rate sensor", systemImage: sensor.scanning ? "stop.circle" : "heart.circle").frame(maxWidth: .infinity, minHeight: 30)
+                }.buttonStyle(.bordered).controlSize(.large)
             }
-            ForEach(sensor.devices, id: \.identifier) { device in Button(device.name ?? "Heart-rate sensor") { sensor.connect(device) }.buttonStyle(.borderless) }
+            ForEach(sensor.devices, id: \.identifier) { device in
+                Button { sensor.connect(device) } label: { Label(device.name ?? "Heart-rate sensor", systemImage: "heart").frame(maxWidth: .infinity, minHeight: 30) }.buttonStyle(.bordered)
+            }
         }
     }
 }
@@ -299,7 +349,7 @@ struct RunHealthExportView: View {
                 Text("Save this run’s time, distance and available sensor heart rate to Apple Health.")
                 Toggle("Include GPS route in Apple Health", isOn: $includeRoute)
                 Text("Your location stays on this iPhone unless you choose this export. Apple Health manages data according to your device settings.").font(.caption)
-                Button("Save workout") { Task { await exporter.save(run, includeRoute: includeRoute) } }.disabled(exporter.busy)
+                Button("Save workout") { Task { await exporter.save(run, includeRoute: includeRoute) } }.buttonStyle(.borderedProminent).controlSize(.large).disabled(exporter.busy)
                 if exporter.busy { ProgressView("Saving to Apple Health…") }
                 if let status = exporter.status { Text(status) }
             }.navigationTitle("Apple Health")

@@ -32,7 +32,8 @@ jobs:
       - name: Build and test without signing
         working-directory: apps/ios
         run: |
-          DEVICE_ID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(v["udid"] for vs in d["devices"].values() for v in vs if v["name"].startswith("${{ matrix.device }}")))')
+          DEVICE_ID=$(xcrun simctl list devices available -j | python3 -c 'import json,re,sys; d=json.load(sys.stdin); runtimes=sorted(d["devices"],key=lambda name:tuple(map(int,re.findall(r"\d+",name))),reverse=True); print(next(v["udid"] for runtime in runtimes for v in d["devices"][runtime] if v["name"].startswith("${{ matrix.device }}")))')
+          xcrun simctl list devices available | grep "$DEVICE_ID"
           xcodebuild -project AITracker.xcodeproj -scheme AITracker -destination "platform=iOS Simulator,id=$DEVICE_ID" -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO test
       - name: Verify recording background mode
         working-directory: apps/ios
