@@ -69,6 +69,9 @@ test('source deletion tombstones defeat detailed retries, revoke removes records
 test('current push names, nutrition and variable-length sleep breathing periods normalize without inventing measurements',()=>{
  assert.equal(normalizeWellnessDetail('pulseox',health({timeOffsetSpo2Values:{0:97}})).kind,'pulseOx');
  assert.equal(normalizeWellnessDetail('allDayRespiration',health({timeOffsetEpochToBreaths:{0:15}})).kind,'respiration');
+ assert.equal(normalizeWellnessDetail('dailies',health({averageStressLevel:-1,restingHeartRateInBeatsPerMinute:0})).data.averageStressLevel,null);
+ assert.equal(normalizeWellnessDetail('dailies',health({restingHeartRateInBeatsPerMinute:0})).data.restingHeartRateInBeatsPerMinute,null);
+ assert.equal(normalizeWellnessDetail('skinTemp',health({avgDeviationCelsius:-0.3})).data.avgDeviationCelsius,-0.3);
  const nutrition=normalizeWellnessDetail('nutrition',{summaryId:'n',calendarDate:'2026-11-08',dailyNutritionIntake:{kiloCalories:2100,carbsInGrams:200,token:'secret'},loggedFoods:[{mealConsumedTimeInLocal:'07:30:00',nutritionContentIntake:{proteinInGrams:30}}]});assert.equal(nutrition.data.dailyNutritionIntake.kiloCalories,2100);assert.equal(JSON.stringify(nutrition).includes('secret'),false);
  const breath=normalizeWellnessDetail('breathingVariations',{summaryId:'b',calendarDate:'2026-11-08',variation:'MINIMAL',readings:[{variation:'FEW',startTimeInSeconds:start,endTimeInSeconds:start+60},{variation:'MINIMAL',startTimeInSeconds:start+60,endTimeInSeconds:start+600}]});assert.equal(breath.startAt,new Date(start*1000).toISOString());assert.equal(breath.data.readings[1].endTimeInSeconds-breath.data.readings[1].startTimeInSeconds,540);
 });
@@ -78,7 +81,11 @@ test('health correction with a changed summary ID replaces its window and shorte
 });
 test('detail HTTP routes require authentication and explicit versioned consent; internal ingest is private',async()=>{
  const f=fixture(),app=express();app.use(express.json());await connect(f);registerGarminRoutes(app,{authenticate:(req,res,next)=>req.headers.authorization==='Bearer fixture'?((req as any).user={id:1},next()):res.sendStatus(401),store:async()=>f.base,config:()=>config});const server=app.listen(0,'127.0.0.1');await new Promise<void>(r=>server.once('listening',r));const url='http://127.0.0.1:'+(server.address()as AddressInfo).port;
+ const originalSecret=process.env.GARMIN_WEBHOOK_SECRET;
  try{for(const path of ['/api/garmin/details/status','/api/garmin/details/run/123','/api/garmin/details/wellness','/api/garmin/details/export'])assert.equal((await fetch(url+path)).status,401);assert.equal((await fetch(url+'/internal/garmin/ingest',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).status,404);
  const send=(body:object)=>fetch(url+'/api/garmin/details/consent',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer fixture'},body:JSON.stringify(body)});assert.equal((await send({category:'activity',consent:true,version:'old'})).status,400);assert.equal((await send({category:'activity',consent:true,version:'garmin-details-v1',userId:2})).status,200);assert.equal((await f.details.status(2)).grants.length,0);
- }finally{server.close();f.sqlite.close();}
+ await f.health.enable(1);process.env.GARMIN_WEBHOOK_SECRET='fixture-only-internal-secret-32-characters';
+ assert.equal((await fetch(url+'/internal/garmin/ingest',{method:'POST',headers:{'Content-Type':'application/json','X-RunAnalytics-Garmin-Internal':process.env.GARMIN_WEBHOOK_SECRET},body:JSON.stringify({hrv:[health()]})})).status,200);
+ assert.equal(f.sqlite.prepare('SELECT count(*) n FROM garmin_health_inbox').get()!.n,1,'detailed endpoint preserves summary sync without extra consent');assert.equal((await f.details.wellness(1)).length,0);
+ }finally{if(originalSecret===undefined)delete process.env.GARMIN_WEBHOOK_SECRET;else process.env.GARMIN_WEBHOOK_SECRET=originalSecret;server.close();f.sqlite.close();}
 });
