@@ -11,7 +11,8 @@ import Combine
     @Published var runFeedError:String?
     @Published var refreshingRuns = false
     private let runRefreshes = RunRefreshQueue()
-    @Published var showingPlan = false
+    @Published var garminConnection: NativeGarminStatus?
+    @Published var garminStatusError: String?
     let voice = NativeVoiceCoach()
     let push = ApplePush()
     private var pushObservation: AnyCancellable?
@@ -198,7 +199,7 @@ import Combine
         api.credential.map { "native-account-" + SHA256.hash(data:Data($0.token.utf8)).map { String(format:"%02x",$0) }.joined() }
     }
     private func useAccount(_ status:NativeOnboarding) {
-        if recorder.account != status.appAccountToken { runFeed=nil;runOverview=nil;runFeedError=nil }
+        if recorder.account != status.appAccountToken { runFeed=nil;runOverview=nil;runFeedError=nil;garminConnection=nil;garminStatusError=nil }
         onboarding=status
         recorder.selectAccount(status.appAccountToken)
         if runFeed == nil { runFeed=recorder.cachedFeed() }
@@ -233,6 +234,15 @@ import Combine
                 guard generation==sessionGeneration else { return }
                 runFeedError="Couldn’t refresh. Showing saved runs; pull down to retry."
                 if case APIError.server(401,_)=error { report(error) }
+            }
+            guard generation==sessionGeneration,!needsSignIn else { return }
+            do {
+                let connection = try await api.garminStatus()
+                guard generation==sessionGeneration,!needsSignIn else { return }
+                garminConnection = connection; garminStatusError = nil
+            } catch {
+                guard generation==sessionGeneration,!needsSignIn else { return }
+                garminStatusError = "Garmin status could not refresh. Pull down to retry."
             }
         }
     }
@@ -333,7 +343,7 @@ import Combine
         } catch { report(error) }
     }
     func signOut() async {
-        recorder.selectAccount(nil); runFeed=nil; runOverview=nil; runFeedError=nil; setupComplete=false
+        recorder.selectAccount(nil); runFeed=nil; runOverview=nil; runFeedError=nil; garminConnection=nil; garminStatusError=nil; setupComplete=false
         if let key=accountCacheKey { UserDefaults.standard.removeObject(forKey:key) }
         let cleanup = api.signOutCleanupClient()
         subscriptions?.stop(); subscriptions=nil; onboarding=nil

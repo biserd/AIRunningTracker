@@ -36,6 +36,7 @@ struct NativeRunFeed: Codable {
     var page: Int
     var fetchedAt: Date? = nil
     let unitPreference: String
+    var garminConnected: Bool? = nil
 }
 struct NativeRunOverview: Decodable {
     struct Stats: Decodable {
@@ -97,6 +98,7 @@ struct RunHome: View {
                         } else {
                             Text("Ready for a run?").font(.title2.bold())
                             Text("Your route, pace and distance. Just press Start.").foregroundStyle(.secondary)
+                            Text("Saved runs also appear on your RunAnalytics web dashboard.").font(.footnote).foregroundStyle(.secondary)
                             Button { recorder.startOrResume() } label: { Label("Start run", systemImage: "figure.run").frame(maxWidth: .infinity, minHeight: 32) }
                                 .buttonStyle(.borderedProminent).controlSize(.large)
                                 .disabled(!recorder.storageReady || !recorder.profileUnitsReady).accessibilityIdentifier("start-phone-run")
@@ -121,6 +123,9 @@ struct RunHome: View {
                             Label("\(recorder.saved.filter { !$0.synced }.count) run(s) waiting to sync", systemImage: "icloud.and.arrow.up")
                             Button("Retry sync") { Task { await store.refreshRuns() } }.buttonStyle(.bordered).disabled(recorder.syncing)
                         }
+                    }
+                    if store.garminConnection?.connected == true || ["reconnect_required", "permission_required", "disconnect_pending"].contains(store.garminConnection?.status ?? "") || (store.garminConnection == nil && store.runFeed?.garminConnected == true) {
+                        Section { NativeGarminConnectionCard() }
                     }
                     Section("Recent runs") {
                         if runs.isEmpty { ContentUnavailableView("Your running starts here", systemImage: "figure.run", description: Text("Record a run or connect Garmin or Strava.")) }
@@ -269,6 +274,10 @@ struct AllSourceProgress: View {
     @EnvironmentObject var store: CoachStore
     var body: some View {
         List {
+            Section("Garmin") {
+                NavigationLink { NativeGarminRecoveryView() } label: { Label("Sleep, HRV & recovery", systemImage: "heart.text.square") }
+                    .accessibilityIdentifier("garmin-recovery")
+            }
             if let overview = store.runOverview {
                 Section("This month") {
                     LabeledContent("Distance", value: overview.stats.monthlyTotalDistance + (overview.unitPreference == "miles" ? " mi" : " km"))

@@ -73,7 +73,10 @@ final class AdaptiveLayoutTests: XCTestCase {
         if UIDevice.current.userInterfaceIdiom == .pad {
             app.descendants(matching: .any)["sidebar-coach"].firstMatch.tap()
         } else { app.tabBars.buttons["Coach"].tap() }
-        app.segmentedControls.buttons["Plan"].tap()
+        XCTAssertFalse(app.segmentedControls["Coaching"].exists)
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            app.descendants(matching: .any)["sidebar-plan"].firstMatch.tap()
+        } else { app.tabBars.buttons["Plan"].tap() }
         XCTAssertTrue(app.navigationBars["Plan"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["Run history"].exists)
     }

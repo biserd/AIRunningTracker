@@ -42,7 +42,11 @@ The generated Xcode project is ignored; project.yml is the source of truth.
 
 ## Implemented
 
-- Native Coach, Schedule and Settings tabs, Dynamic Type, orange primary actions.
+- Native Run, Coach, Plan, Progress and Settings tabs, Dynamic Type, orange primary actions.
+- Plan has its own tab/sidebar destination. Progress and the Run connection card
+  open native Garmin sleep/HRV/recovery readings from the existing read-only web
+  recovery endpoint. Missing values, observation dates and incomplete baselines
+  remain explicit. Sharing permissions are managed through the existing web flow.
 - iOS 26 Liquid Glass navigation, voice controls, chat composer and sign-in
   surfaces. The tab bar stays visible; Coach has one voice entry point.
   iOS 17–25 retain the existing high-contrast material fallbacks.
