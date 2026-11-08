@@ -1,6 +1,6 @@
 # Account-first RunAnalytics iOS
 
-PR #1 is merged into `codex/ios-testflight` at `be7fd84bf2c7c970a6b6a1585afa824c6d2ef540`. It remained draft until all required checks passed on November 8, 2026. The production backend is active on container version 60. TestFlight version 1.0 build 38 is processed and available to the existing AITracker Internal group (four testers), released from verified commit `7f2c867`. Prior signing-preparation attempts did not upload. The existing app identifier, App Store Connect listing, accounts, distribution certificate and backend are retained. No App Store production submission was made.
+PR #1 is merged into `codex/ios-testflight` at `be7fd84bf2c7c970a6b6a1585afa824c6d2ef540`; UX follow-up PR #2 is merged at `7fc77eae0e9c05dddf29d28053314e0a980aad13`. Both remained draft until their required checks passed on November 8, 2026. The production backend remains active on container version 60. TestFlight version 1.0 build 40 is processed and available to the existing AITracker Internal group (four testers), released from `a168542`. The existing app identifier, App Store Connect listing, accounts, distribution certificate and backend are retained. No App Store production submission was made.
 
 ## User flow
 
@@ -35,7 +35,7 @@ PR #1 is merged into `codex/ios-testflight` at `be7fd84bf2c7c970a6b6a1585afa824c
 - Garmin FIT session end fallback validates optional elapsed time before calculating an end timestamp; missing/malformed timing is rejected.
 - Native UI tests follow Progress into coach insights and expand the iPad sidebar through landscape layout before navigation.
 
-## Verification
+## Account-first verification (build 38)
 
 - Required PR checks passed on `6beccb3`, whose tree exactly matches merge commit `be7fd84`: account-first storage, Cloudflare migration safety, iPhone, iPad.
 - Each device passed 62 native unit tests and 8 UI tests. Checks also verify recording background modes and the embedded Run Widget. Screenshots cover standalone Run home, live route/metrics, the effort/notes form and insights navigation.
@@ -58,6 +58,15 @@ PR #1 is merged into `codex/ios-testflight` at `be7fd84bf2c7c970a6b6a1585afa824c
 - The user approved proceeding on November 8. Enabled HealthKit on the existing main App ID, regenerated the existing `AITrackerRunning TestFlight` profile with its original distribution certificate, verified the profile identifiers, expiry, HealthKit, production push, associated domains and certificate fingerprint, and updated the existing `IOS_PROVISIONING_PROFILE` secret. App Store Connect key permissions remain unchanged.
 - Final release tag `ios-testflight-20261108-existing-signing` uses `7f2c867`. Both iPhone and iPad checks passed on this commit: https://github.com/biserd/AIRunningTracker/actions/runs/42511607349. Build 38 passed signing, simulator tests, archive/export, the encryption declaration check and upload: https://github.com/biserd/AIRunningTracker/actions/runs/42511617763
 - Upload targets TestFlight only. The workflow verifies Apple's processing state before reporting the build ready. Final upload/processing result: build 38 uploaded without errors at 18:53 UTC on November 8; Apple reported `VALID` at 19:02 UTC. App Store Connect build ID `cff361f6-df3f-4604-a0a2-0e4c66792717`. The release workflow and temporary credential cleanup succeeded. Saved beta testing notes and added the existing AITracker Internal group (four testers). External testing/App Store review were not submitted.
+
+## Simplified UX update (build 40)
+
+- Recording has explicit large lap/save buttons and pinned Pause/Resume and Finish controls. Sensor pairing and audio cues are in Run settings; the disconnected sensor no longer shows a disconnect action. Discard is in the recording menu with confirmation. The tab bar stays visible without the duplicate coach accessory.
+- Recording and history use the existing saved account distance preference from the run feed, cached per account for offline use. A first run waits for profile units to load; ongoing runs keep their original units. There is no separate phone unit picker. Account switching and deletion reset the published unit state.
+- Coach has one voice entry point, a short briefing with Read summary, and a Daily check-in button opening the existing check-in controls.
+- Final iPhone 17 Pro and iPad Pro 13-inch (M5) checks passed on iOS 26.2: 63 unit tests and 10 UI tests each. Screenshots were reviewed. The tested `9814383` tree exactly matches merge `7fc77ea`: https://github.com/biserd/AIRunningTracker/actions/runs/42517737369. CI selects the newest installed simulator runtime. UI queries account for labeled values and iOS 26 nested confirmation-button accessibility.
+- Release tag `ios-testflight-20261108-run-ux-checked` uses `a168542`, a workflow-diagnostics-only follow-up with identical iOS source. Build 39 stopped during simulator tests before upload and did not retain failure details. Build 40's first attempt was cancelled after signing setup stalled; a fresh runner passed signing, all 63 unit and 10 UI release tests, archive/export, encryption verification and upload. The release workflow now retains failed simulator results and full test output.
+- Build 40 uploaded without errors at 20:51 UTC on November 8; Apple reported `VALID` at 20:53 UTC. Build ID `f01e6f06-cab0-410a-ab37-13ded70fcdab`. Workflow and temporary credential cleanup succeeded: https://github.com/biserd/AIRunningTracker/actions/runs/42520332860. Saved beta notes and added the same AITracker Internal group (four testers). External testing and App Store review were not submitted. This update did not deploy backend changes.
 
 ## Device testing
 
