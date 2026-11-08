@@ -53,3 +53,35 @@ The server migration, deployment, physical-device validation, and App Store rele
 Local validation: all 24 backend tests pass, with additional assertions for detail validation, idempotency, ownership, and effort/notes/split round trips. Web bundling passes. TypeScript still has the same 34 baseline diagnostics. Swift syntax parsing and YAML/plist structural checks pass; they do not replace an Xcode build. New native tests cover split interpolation, manual-lap differences, older-record decoding, BLE measurement formats/contact loss, and reachability of the recording display/save form. These native tests have not run in this Linux environment.
 
 Before release, build both app and widget in Xcode and test each feature on an iPhone, including Bluetooth loss/reconnect, app backgrounding, Live Activity expiry, Health permission denial, repeated exports, audio interruptions, GPS gaps, and offline sync. GitHub publishing and the draft PR were authorized on November 8. Deployment and release remain separate steps.
+
+## PR review fixes and beta release preparation (November 8)
+
+The user authorized fixing PR #1, resolving Cloudflare checking, rerunning checks,
+and publishing a new TestFlight build once ready. Keep the PR draft until the
+required checks pass. No App Store production submission is authorized.
+
+- HealthKit sample attachment now awaits its completion callback and propagates
+  both explicit errors and a false result.
+- Each recording/resume establishes a persisted segment timestamp. Cached fixes
+  from before that boundary are rejected; legacy recordings still decode.
+- History reads and pagination share a serial refresh queue. A save during an
+  in-flight operation coalesces into a trailing upload/refresh, retaining account
+  generation checks. Tests cover the interleaving and account replacement.
+- FIT session end fallback validates optional elapsed time; malformed timing fails
+  closed. Regression fixtures cover an absent end timestamp and absent timing.
+- Local validation: 64 backend/Garmin tests, 38 Worker tests, 37 D1 tests, all three
+  Cloudflare type checks, and Worker dry-run build pass.
+- TestFlight signing now validates the installed distribution certificate against
+  App Store Connect, ensures the app's required capabilities, registers only the
+  exact Run Widget identifier if needed, and creates separate distribution profiles
+  for app and widget. It neither creates nor revokes signing certificates. Credentials
+  remain in trusted runner secrets/temporary files, with cleanup on success/failure.
+  Three isolated signing tests validate token format, certificate scoping, and refusal
+  to mutate signing resources when the certificate or app does not match.
+- Public and app-specific privacy notices describe optional phone recording,
+  background location, sensor samples, private summary uploads, Apple Health export,
+  Live Activities, retention and deletion before the beta is published.
+
+Simulator CI, production server rollout and TestFlight processing are recorded
+below after their results are observed. Physical-device GPS/BLE/Health/Live Activity
+validation remains part of installing and testing the beta.

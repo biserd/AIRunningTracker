@@ -51,6 +51,9 @@ targets:
       configs:
         Debug:
           APNS_ENVIRONMENT: development
+        Release:
+          CODE_SIGN_STYLE: Manual
+          PROVISIONING_PROFILE_SPECIFIER: $(RUNANALYTICS_APP_PROFILE)
   RunWidget:
     type: app-extension
     platform: iOS
@@ -62,6 +65,10 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         SKIP_INSTALL: YES
         APPLICATION_EXTENSION_API_ONLY: YES
+      configs:
+        Release:
+          CODE_SIGN_STYLE: Manual
+          PROVISIONING_PROFILE_SPECIFIER: $(RUNANALYTICS_WIDGET_PROFILE)
     info:
       path: Generated/RunWidget-Info.plist
       properties:
