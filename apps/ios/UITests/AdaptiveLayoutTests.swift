@@ -9,6 +9,15 @@ final class AdaptiveLayoutTests: XCTestCase {
         defer { XCUIDevice.shared.orientation = .portrait }
         XCTAssertTrue(app.navigationBars["Let’s talk running"].waitForExistence(timeout: 10))
 
+        XCTAssertEqual(app.buttons["Talk to your coach"].count, 1, "Coach has one voice entry point")
+        let checkIn = app.buttons["coach-check-in"]
+        XCTAssertTrue(checkIn.waitForExistence(timeout: 5)); checkIn.tap()
+        XCTAssertTrue(app.navigationBars["Daily check-in"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Good"].exists)
+        let checkInImage = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        checkInImage.name = "Simple daily check-in"; checkInImage.lifetime = .keepAlways; add(checkInImage)
+        app.buttons["Done"].tap()
+
         // Enter a draft offline: no sign-in, microphone, or provider requests.
         let composer = app.descendants(matching: .any)["coach-composer"].firstMatch
         XCTAssertTrue(composer.waitForExistence(timeout: 5))
@@ -67,6 +76,19 @@ final class AdaptiveLayoutTests: XCTestCase {
         app.segmentedControls.buttons["Plan"].tap()
         XCTAssertTrue(app.navigationBars["Plan"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["Run history"].exists)
+    }
+    func testCoachHasSingleVoiceAndClearSummaryActions() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--test-adaptive-layout", "--test-coach-ux"]
+        app.launch()
+        XCTAssertTrue(app.buttons["Read summary"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.buttons["Talk to your coach"].count, 1)
+        XCTAssertTrue(app.buttons["coach-check-in"].isHittable)
+        let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        screenshot.name = "Simple Coach home with one voice action"; screenshot.lifetime = .keepAlways; add(screenshot)
+        app.buttons["Read summary"].tap()
+        XCTAssertTrue(app.navigationBars["Your week in running"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "leave room to recover afterward")).firstMatch.exists)
     }
     private func tapSetting(_ title: String, app: XCUIApplication) {
         let button = app.buttons["settings-\(title)"]

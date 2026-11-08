@@ -35,6 +35,7 @@ import ActivityKit
     var onPulse: ((Int) -> Void)?
     private var central: CBCentralManager?
     private var peripheral: CBPeripheral?
+    var hasConnection: Bool { peripheral != nil }
     private var scanTimeout: Task<Void, Never>?
     private var pendingScan = false
     private var lastPulse: Date?

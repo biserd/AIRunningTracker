@@ -96,8 +96,12 @@ struct PhoneRecording: Codable, Identifiable {
     let healthExport = RunHealthExport()
     private let feedback = RunFeedback()
     private let live = RunLiveActivity()
-    @Published var usesMiles = UserDefaults.standard.bool(forKey: "run-use-miles") {
-        didSet { UserDefaults.standard.set(usesMiles, forKey: "run-use-miles") }
+    @Published private(set) var usesMiles = false
+    @Published private(set) var profileUnitsReady = false
+    func applyProfileUnits(_ preference: String) {
+        guard account != nil, ["km", "miles"].contains(preference) else { return }
+        usesMiles = preference == "miles"
+        profileUnitsReady = true
     }
     @Published var audioAnnouncements = UserDefaults.standard.bool(forKey: "run-audio-announcements") {
         didSet { UserDefaults.standard.set(audioAnnouncements, forKey: "run-audio-announcements") }
@@ -127,6 +131,7 @@ struct PhoneRecording: Codable, Identifiable {
         guard token != account else { return }
         pause(); live.end(); heartRate.disconnect(); feedback.stop()
         location.stopUpdatingLocation(); timer = nil; awaitingPermission = false
+        usesMiles = false; profileUnitsReady = false
         account = token; directory = nil; storageReady = false; draft = nil; saved = []; message = nil
         guard let token, UUID(uuidString: token) != nil else { return }
         do {
@@ -146,11 +151,12 @@ struct PhoneRecording: Codable, Identifiable {
             // Recover at the last durable checkpoint; never invent time or distance while terminated.
             if draft != nil { draft?.running = false; draft?.segment += 1; message = "Recovered your unfinished run. Resume or save it when you’re ready." }
             saved.sort { $0.startedAt > $1.startedAt }
+            if let feed = cachedFeed() { applyProfileUnits(feed.unitPreference) }
             storageReady = true
         } catch { message = "Saved runs could not be opened. Please restart the app before recording. Your files have been kept." }
     }
     func startOrResume() {
-        guard account != nil, storageReady, draft?.running != true else { return }
+        guard account != nil, storageReady, (draft != nil || profileUnitsReady), draft?.running != true else { return }
         switch location.authorizationStatus {
         case .notDetermined:
             awaitingPermission = true; location.requestWhenInUseAuthorization()
@@ -246,9 +252,11 @@ struct PhoneRecording: Codable, Identifiable {
         location.stopUpdatingLocation(); timer = nil; awaitingPermission = false
         if let directory { try FileManager.default.removeItem(at: directory) }
         draft = nil; saved = []; account = nil; directory = nil; storageReady = false
+        usesMiles = false; profileUnitsReady = false
     }
     func cacheFeed(_ feed: NativeRunFeed) {
         guard let directory else { return }
+        applyProfileUnits(feed.unitPreference)
         do { try JSONEncoder().encode(feed).write(to: directory.appendingPathComponent("feed.json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]) }
         catch { message = "Runs loaded, but the offline history could not be saved." }
     }
@@ -270,9 +278,9 @@ struct PhoneRecording: Codable, Identifiable {
         }
     }
     #if DEBUG
-    func installRunDisplayFixture() {
+    func installRunDisplayFixture(running: Bool = false) {
         var run = PhoneRecording(now: Date().addingTimeInterval(-900))
-        run.seconds = 900; run.distance = 2500; run.running = false; run.checkpoint = Date()
+        run.seconds = 900; run.distance = 2500; run.running = running; run.checkpoint = Date(); run.unitMiles = usesMiles
         run.progress = [RunProgress(distance: 0, seconds: 0), RunProgress(distance: 2500, seconds: 900)]
         run.fixes = [RunFix(latitude: 40.78, longitude: -73.97, timestamp: Date().addingTimeInterval(-10), accuracy: 5, segment: 0), RunFix(latitude: 40.79, longitude: -73.96, timestamp: Date(), accuracy: 5, segment: 0)]
         draft = run

@@ -70,6 +70,34 @@ final class PhoneRunRecorderTests: XCTestCase {
         XCTAssertEqual(recorder.draft?.id,run.id)
         XCTAssertEqual(recorder.draft?.seconds,60)
     }
+    @MainActor func testSavedProfileUnitsSurviveOfflineRestoreAndStayAccountScoped() throws {
+        let owner = UUID().uuidString, other = UUID().uuidString
+        let recorder = PhoneRunRecorder()
+        defer { recorder.selectAccount(owner); try? recorder.clearAccountFiles(); recorder.selectAccount(other); try? recorder.clearAccountFiles() }
+        recorder.selectAccount(owner)
+        XCTAssertFalse(recorder.profileUnitsReady)
+        recorder.cacheFeed(NativeRunFeed(activities: [], total: 0, totalPages: 1, page: 1, unitPreference: "miles"))
+        XCTAssertTrue(recorder.usesMiles)
+        XCTAssertTrue(recorder.profileUnitsReady)
+        recorder.selectAccount(other)
+        XCTAssertFalse(recorder.usesMiles, "Another account must not inherit the previous runner’s units")
+        XCTAssertFalse(recorder.profileUnitsReady)
+        recorder.cacheFeed(NativeRunFeed(activities: [], total: 0, totalPages: 1, page: 1, unitPreference: "km"))
+        XCTAssertFalse(recorder.usesMiles)
+        XCTAssertTrue(recorder.profileUnitsReady)
+        recorder.selectAccount(owner)
+        XCTAssertTrue(recorder.usesMiles, "Offline restore uses this account’s cached profile preference")
+        XCTAssertTrue(recorder.profileUnitsReady)
+        recorder.applyProfileUnits("unknown")
+        XCTAssertTrue(recorder.usesMiles, "Invalid profile values cannot silently change distance units")
+        recorder.installRunDisplayFixture()
+        recorder.applyProfileUnits("km")
+        XCTAssertFalse(recorder.usesMiles)
+        XCTAssertEqual(recorder.draft?.unitMiles, true, "An in-progress run keeps the units it started with")
+        recorder.selectAccount(nil)
+        XCTAssertFalse(recorder.profileUnitsReady)
+        XCTAssertFalse(recorder.usesMiles)
+    }
     func testSplitsInterpolateBoundariesAndRetainPartialDistance() {
         var run=PhoneRecording(now:start)
         run.distance=2500;run.seconds=1500
