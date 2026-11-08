@@ -1,0 +1,66 @@
+name: App Store review audit
+on:
+  pull_request:
+    paths: ['scripts/ios-review*.mjs', '.github/workflows/app-review.yml']
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Audit only, or submit the existing build 41 review after device verification
+        type: choice
+        options: [audit, submit]
+        default: audit
+      iphone_signup:
+        description: Fresh signup email opened build 41 on an actual iPhone
+        type: boolean
+        default: false
+      ipad_signup:
+        description: Fresh signup email opened build 41 on an actual iPad
+        type: boolean
+        default: false
+      sandbox_purchase:
+        description: Actual TestFlight sandbox purchase unlocked coaching
+        type: boolean
+        default: false
+      restore:
+        description: Actual sandbox purchase restored after sign-out and sign-in
+        type: boolean
+        default: false
+      expiry:
+        description: Actual sandbox expiration removed coaching access
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: app-store-review
+  cancel-in-progress: false
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --test scripts/ios-review.test.mjs
+  review:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/codex/ios-testflight'
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify existing submission or submit after verified device checks
+        env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+          REVIEW_ACTION: ${{ inputs.action }}
+          IPHONE_SIGNUP: ${{ inputs.iphone_signup }}
+          IPAD_SIGNUP: ${{ inputs.ipad_signup }}
+          SANDBOX_PURCHASE: ${{ inputs.sandbox_purchase }}
+          RESTORE: ${{ inputs.restore }}
+          EXPIRY: ${{ inputs.expiry }}
+        run: node scripts/ios-review.mjs
