@@ -59,6 +59,36 @@ final class StandaloneTests:XCTestCase {
         XCTAssertTrue(app.buttons["Save run"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Save run"].isHittable)
     }
+    func testGarminConnectionAndRecoveryAreVisibleWithoutStrava() {
+        XCUIDevice.shared.orientation = UIDevice.current.userInterfaceIdiom == .pad ? .landscapeLeft : .portrait
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let app = XCUIApplication()
+        app.launchArguments = ["--test-standalone", "--test-garmin-display"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Garmin connected"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Waiting for your first direct Garmin run")).firstMatch.exists)
+        let recovery = app.buttons["garmin-recovery"]
+        for _ in 0..<4 { if recovery.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(recovery.isHittable)
+        capture("Run with connected Garmin delivery status")
+        recovery.tap()
+        XCTAssertTrue(app.navigationBars["Garmin recovery"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["8h 0m"].waitForExistence(timeout: 5))
+        for _ in 0..<4 { if app.staticTexts["42 ms"].isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(app.staticTexts["42 ms"].exists)
+        capture("Private Garmin sleep and HRV in the existing app")
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            let settings = app.descendants(matching: .any)["sidebar-settings"].firstMatch
+            XCTAssertTrue(settings.waitForExistence(timeout: 5)); settings.tap()
+        } else { app.tabBars.buttons["Settings"].tap() }
+        let signOut = app.buttons["Sign out"]
+        for _ in 0..<5 { if signOut.isHittable { break }; app.swipeUp() }
+        signOut.tap()
+        app.buttons.matching(identifier: "confirm-sign-out").firstMatch.tap()
+        XCTAssertTrue(app.buttons["Email me a sign-in link"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["42 ms"].exists)
+        XCTAssertFalse(app.navigationBars["Garmin recovery"].exists)
+    }
     private func capture(_ name: String) {
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)

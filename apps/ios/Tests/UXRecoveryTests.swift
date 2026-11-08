@@ -18,7 +18,7 @@ final class UXRecoveryTests: XCTestCase {
         XCTAssertEqual(runnerDay("invalid"), "invalid")
     }
     func testNavigationStartsWithRecording() {
-        XCTAssertEqual(CoachSection.allCases.map(\.title), ["Run", "Coach", "Progress", "Settings"])
+        XCTAssertEqual(CoachSection.allCases.map(\.title), ["Run", "Coach", "Plan", "Progress", "Settings"])
         XCTAssertEqual(CoachSection.runs.rawValue, "runs")
     }
     func testPushBriefingOpensOnlyItsMatchingSavedUpdate() {

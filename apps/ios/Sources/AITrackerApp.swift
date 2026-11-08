@@ -39,6 +39,9 @@ import SwiftUI
                     store.onboarding=NativeOnboarding(stravaConnected:false,syncStatus:nil,hasAccess:false,billingProvider:nil,appAccountToken:token,purchasesAvailable:false)
                     store.recorder.selectAccount(token)
                     store.recorder.applyProfileUnits(ProcessInfo.processInfo.arguments.contains("--test-profile-miles") ? "miles" : "km")
+                    if ProcessInfo.processInfo.arguments.contains("--test-garmin-display") {
+                        store.garminConnection = NativeGarminStatus(available: true, connected: true, status: "connected", activityCount: 0)
+                    }
                     if ProcessInfo.processInfo.arguments.contains("--test-run-display") { store.recorder.installRunDisplayFixture(running: ProcessInfo.processInfo.arguments.contains("--test-run-active")) }
                     return
                 }
@@ -94,7 +97,8 @@ struct CoachTabs: View {
                 } detail: {
                     switch selected {
                     case .runs: RunHome(recorder:store.recorder)
-                    case .coach: coachingHome
+                    case .coach: coachingSection(plan: false)
+                    case .plan: coachingSection(plan: true)
                     case .progress: NavigationStack { AllSourceProgress() }
                     case .settings: SettingsView()
                     }
@@ -148,19 +152,18 @@ struct CoachTabs: View {
     private var compactTabs: some View {
         TabView(selection: $selected) {
             RunHome(recorder:store.recorder).tabItem { Label("Run",systemImage:CoachSection.runs.symbol) }.tag(CoachSection.runs)
-            coachingHome
+            coachingSection(plan: false)
                 .tabItem { Label("Coach", systemImage: CoachSection.coach.symbol) }.tag(CoachSection.coach)
+            coachingSection(plan: true)
+                .tabItem { Label("Plan", systemImage: CoachSection.plan.symbol) }.tag(CoachSection.plan)
             NavigationStack { AllSourceProgress() }
                 .tabItem { Label("Progress", systemImage: CoachSection.progress.symbol) }.tag(CoachSection.progress)
             SettingsView().tabItem { Label("Settings", systemImage: CoachSection.settings.symbol) }.tag(CoachSection.settings)
         }
     }
-    @ViewBuilder private var coachingHome:some View {
+    @ViewBuilder private func coachingSection(plan: Bool) -> some View {
         if store.onboarding?.hasAccess == true || ProcessInfo.processInfo.arguments.contains("--test-adaptive-layout") {
-            VStack(spacing:0) {
-                Picker("Coaching",selection:$store.showingPlan) { Text("Coach").tag(false); Text("Plan").tag(true) }.pickerStyle(.segmented).padding(.horizontal)
-                if store.showingPlan { ScheduleView() } else { ChatView(text:$draft,channel:$reminderChannel) }
-            }
+            if plan { ScheduleView() } else { ChatView(text:$draft,channel:$reminderChannel) }
         } else {
             NavigationStack {
                 ScrollView {
@@ -170,15 +173,14 @@ struct CoachTabs: View {
                         Text("Garmin and phone runs appear in your history and totals. Garmin data is not shared with the AI coach.").font(.footnote).foregroundStyle(.secondary)
                         if let subscriptions=store.subscriptions { NativePaywall(subscriptions:subscriptions) }
                     }.padding(24).frame(maxWidth:650)
-                }.navigationTitle("Coach")
+                }.navigationTitle(plan ? "Plan" : "Coach")
             }
         }
     }
     private func openPush() {
         guard !store.needsSignIn, let target = UserDefaults.standard.string(forKey: "pushDestination") else { return }
         UserDefaults.standard.removeObject(forKey: "pushDestination")
-        selected = .coach
-        store.showingPlan = target == "schedule"
+        selected = target == "schedule" ? .plan : .coach
         let activity=UserDefaults.standard.integer(forKey:"pushActivity")
         UserDefaults.standard.removeObject(forKey:"pushActivity")
         let briefing=UserDefaults.standard.string(forKey:"pushBriefing").flatMap(PushBriefingReference.init)
@@ -463,11 +465,12 @@ struct SettingsView: View {
 }
 
 enum CoachSection: String, CaseIterable, Identifiable {
-    case runs, coach, progress, settings
+    case runs, coach, plan, progress, settings
     var id: String { rawValue }
     var title: String {
         switch self {
         case .coach: return "Coach"
+        case .plan: return "Plan"
         case .runs: return "Run"
         case .progress: return "Progress"
         case .settings: return "Settings"
@@ -476,6 +479,7 @@ enum CoachSection: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .coach: return "bubble.left.and.bubble.right"
+        case .plan: return "calendar"
         case .runs: return "figure.run"
         case .progress: return "chart.bar.xaxis"
         case .settings: return "slider.horizontal.3"
