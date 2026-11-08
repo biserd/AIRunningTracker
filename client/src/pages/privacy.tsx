@@ -29,6 +29,15 @@ export default function PrivacyPage() {
             <Link href="/ios-app/privacy" className="mt-4 inline-flex rounded-lg bg-[#bd3c08] px-5 py-3 font-semibold text-white">Read the app privacy notice</Link>
           </aside>
           <div className="grid gap-8">
+            <section id="phone-recordings" className="bg-white rounded-lg p-6 border border-gray-200">
+              <h2 className="text-xl font-semibold text-charcoal mb-4">Phone run recording and Apple Health</h2>
+              <div className="space-y-3 text-gray-700">
+                <p>The native app can record runs without a connected service or coaching subscription. Starting a run requests precise location permission. Location updates continue during active recording in the background or with the screen locked, and stop when paused, finished, discarded or signed out. An interrupted recording can recover at its last saved checkpoint; force-quitting stops recording.</p>
+                <p>GPS routes, individual Bluetooth heart-rate samples and drafts remain in protected, account-scoped files on the recording device. Run names, dates, distance, running and elapsed time, and optional effort, notes, splits, laps and average heart rate sync privately to your account on Cloudflare. Raw GPS coordinates and individual heart-rate samples are excluded from that upload. Phone summaries are not forwarded to the AI coach, messaging services, Garmin or Strava.</p>
+                <p>Bluetooth sensors require permission and your selection. Route maps use Apple map services. If you choose Save to Apple Health, separate system permissions control saving the workout and heart rate; GPS route export also requires your explicit choice. Apple Health manages exported copies according to your device and Apple settings. Live Activities can display run statistics on your Lock Screen; audio announcements are optional.</p>
+                <p>Signing out pauses recording and retains that account’s local files. Account deletion from the app removes its local recording files and server summaries. Removing the app removes its local recordings but does not delete your account. Copies already exported to Apple Health remain there and can be managed in Apple Health.</p>
+              </div>
+            </section>
             <section id="garmin" className="bg-white rounded-lg p-6 border border-gray-200">
               <h2 className="text-xl font-semibold text-charcoal mb-4">Garmin Connect activity sync</h2>
               <div className="space-y-3 text-gray-700">

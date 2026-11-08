@@ -93,7 +93,7 @@ struct SignInView: View {
                         Text("Check \(sentTo) for your secure link. Tap it on this device to continue. Check spam too.")
                             .font(.callout).foregroundStyle(.secondary)
                     } else {
-                        Text(signup ? "Verify your email, then connect Strava. No charge to create an account." : "Use the email for your existing account.").font(.callout).foregroundStyle(.secondary)
+                        Text(signup ? "Verify your email to start recording runs. Garmin and Strava are optional." : "Use the email for your existing account.").font(.callout).foregroundStyle(.secondary)
                     }
                 }.padding(24).runGlassSurface()
 

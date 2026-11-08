@@ -12,7 +12,9 @@ export function decodeGarminFit(bytes:Uint8Array,metadata:Record<string,any>):Ga
   // Never flatten multisport sessions into a fictitious single run.
   if(sessions.length!==1)return null;
   const s=sessions[0],start=timestamp(s.startTime);if(start===null)throw new Error('INVALID_GARMIN_FIT');
-  const end=timestamp(s.timestamp)??start+s.totalElapsedTime;
+  const elapsed=finite(s.totalElapsedTime,0,2592000);
+  const end=timestamp(s.timestamp)??(elapsed===null?null:start+elapsed);
+  if(end===null||!Number.isFinite(end)||end<start)throw new Error('INVALID_GARMIN_FIT');
   const events=(messages.eventMesgs||[]).filter((e:any)=>e.event==='timer'&&timestamp(e.timestamp)!==null).sort((a:any,b:any)=>timestamp(a.timestamp)!-timestamp(b.timestamp)!);
   const timer=(at:number)=>{let stopped:number|null=null,pause=0;for(const event of events){const time=timestamp(event.timestamp)!;if(time<start||time>at)continue;if(String(event.eventType).startsWith('stop')){if(stopped===null)stopped=time;}else if(event.eventType==='start'&&stopped!==null){pause+=time-stopped;stopped=null;}}return at-start-pause-(stopped===null?0:at-stopped);};
   const result=normalizeRunDetails({activityId:metadata.activityId,summaryId:metadata.summaryId,summary:{...metadata,activityType:'RUNNING',startTimeInSeconds:start,durationInSeconds:s.totalTimerTime??s.totalElapsedTime,distanceInMeters:s.totalDistance,averageSpeedInMetersPerSecond:s.enhancedAvgSpeed??s.avgSpeed,averageHeartRateInBeatsPerMinute:s.avgHeartRate,maxHeartRateInBeatsPerMinute:s.maxHeartRate,averageRunCadenceInStepsPerMinute:steps(s.avgCadence,s.avgFractionalCadence),totalElevationGainInMeters:s.totalAscent,activeKilocalories:s.totalCalories},

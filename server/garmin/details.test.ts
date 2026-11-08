@@ -26,11 +26,11 @@ function fixture(){
  let time=now;return {sqlite,db,base:new GarminStore(db,key,()=>time),health:new GarminHealthStore(db,()=>time),details:new GarminDetailsStore(db,key,()=>time),advance:(ms:number)=>{time+=ms;}};
 }
 async function connect(f:ReturnType<typeof fixture>){await f.base.save(1,{userId:'garmin-one',permissions:['ACTIVITY_EXPORT','HEALTH_EXPORT']},{access_token:'private',refresh_token:'private',expires_in:86400,refresh_token_expires_in:7776000});}
-function fit(){const encoder=new Encoder(),at=(s:number)=>new Date((start+s)*1000);encoder.writeMesg({mesgNum:Profile.MesgNum.FILE_ID,type:'activity',manufacturer:'garmin',timeCreated:at(0)});
+function fit(timing: 'normal'|'elapsed'|'missing'='normal'){const encoder=new Encoder(),at=(s:number)=>new Date((start+s)*1000);encoder.writeMesg({mesgNum:Profile.MesgNum.FILE_ID,type:'activity',manufacturer:'garmin',timeCreated:at(0)});
  encoder.writeMesg({mesgNum:Profile.MesgNum.EVENT,event:'timer',eventType:'start',timestamp:at(0)});encoder.writeMesg({mesgNum:Profile.MesgNum.EVENT,event:'timer',eventType:'stop',timestamp:at(300)});encoder.writeMesg({mesgNum:Profile.MesgNum.EVENT,event:'timer',eventType:'start',timestamp:at(310)});
  for(let i=0;i<=60;i++)encoder.writeMesg({mesgNum:Profile.MesgNum.RECORD,timestamp:at(i*10),positionLat:Math.round((40+i/10000)*2147483648/180),positionLong:Math.round((-74+i/10000)*2147483648/180),distance:i*100/3,heartRate:145,cadence:85,speed:10/3,altitude:20,verticalOscillation:80,stanceTime:240});
  for(let i=0;i<2;i++)encoder.writeMesg({mesgNum:Profile.MesgNum.LAP,startTime:at(i*300),timestamp:at((i+1)*300),totalTimerTime:i===0?300:290,totalElapsedTime:300,totalDistance:1000,avgHeartRate:145,avgCadence:85,totalAscent:10});
- encoder.writeMesg({mesgNum:Profile.MesgNum.SESSION,sport:'running',startTime:at(0),timestamp:at(600),totalElapsedTime:600,totalTimerTime:590,totalDistance:2000,avgHeartRate:145,avgCadence:85,totalAscent:20,totalTrainingEffect:2.8,totalAnaerobicTrainingEffect:0.5});return encoder.close();}
+ encoder.writeMesg({mesgNum:Profile.MesgNum.SESSION,sport:'running',startTime:at(0),...(timing==='normal'?{timestamp:at(600)}:{}),...(timing!=='missing'?{totalElapsedTime:600}:{}),totalTimerTime:590,totalDistance:2000,avgHeartRate:145,avgCadence:85,totalAscent:20,totalTrainingEffect:2.8,totalAnaerobicTrainingEffect:0.5});return encoder.close();}
 test('JSON normalizer preserves GPS and correct units, isolates gaps, marks sample laps and rejects implausible sensors',()=>{
  const d=detail();d.samples[10].heartRate=-1;d.samples[11].latitudeInDegree=999;const normalized=normalizeRunDetails({...d,secret:'discard-me'})!;
  assert.equal(normalized.samples[0].cadence,170);assert.equal(normalized.samples[10].heartRate,null);assert.equal(normalized.samples[11].longitude,null);assert.equal(normalized.laps.length,2);assert.equal(normalized.laps[0].estimated,true);assert.equal(normalized.laps[0].distance,1000);assert.equal(JSON.stringify(normalized).includes('discard-me'),false);
@@ -38,6 +38,10 @@ test('JSON normalizer preserves GPS and correct units, isolates gaps, marks samp
 });
 test('official FIT codec preserves lap summaries, doubles running cycles to steps and excludes pauses from split timers',()=>{
  const value=decodeGarminFit(fit(),summary)!;assert.equal(value.format,'FIT');assert.equal(value.samples[0].cadence,170);assert.ok(Math.abs(value.samples[0].latitude!-40)<0.0001);assert.equal(value.run.duration,590);assert.equal(value.laps[1].duration,290);assert.equal(value.laps[0].estimated,false);assert.equal(value.trainingEffect,2.8);assert.equal(value.samples.at(-1)!.timer,590);assert.throws(()=>decodeGarminFit(new Uint8Array([1,2,3]),summary));
+});
+test('FIT session bounds use validated elapsed duration when the end timestamp is absent',()=>{
+ const decoded=decodeGarminFit(fit('elapsed'),summary)!;assert.equal(decoded.samples.at(-1)!.seconds,600);assert.equal(decoded.run.duration,590);
+ assert.throws(()=>decodeGarminFit(fit('missing'),summary),/INVALID_GARMIN_FIT/);
 });
 test('unconsented and unknown detail deliveries are not stored; opted-in run storage is owner scoped and summary arrival can be late',async()=>{
  const f=fixture();try{await connect(f);await f.details.receive({activityDetails:[detail()]});assert.equal(await f.details.run(1,'123'),null);assert.equal(f.sqlite.prepare('SELECT count(*) n FROM garmin_detail_records').get()!.n,0);

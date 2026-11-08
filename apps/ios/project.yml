@@ -16,9 +16,16 @@ targets:
   AITracker:
     type: application
     platform: iOS
-    sources: [Sources, Resources]
+    sources: [Sources, Resources, Shared]
+    info:
+      path: Generated/Info.plist
+      properties:
+        UIBackgroundModes: [audio, location, bluetooth-central]
+        NSSupportsLiveActivities: true
     dependencies:
       - package: WebRTC
+      - target: RunWidget
+        embed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: run.aitracker.coach
@@ -33,7 +40,10 @@ targets:
         INFOPLIST_KEY_NSCameraUsageDescription: Run Analytics does not use your camera. Its calling library includes camera support, but coaching uses only your microphone.
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
-        INFOPLIST_KEY_UIBackgroundModes: audio
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: Record your route, distance and pace when you start a run.
+        INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription: Connect a heart-rate sensor you select to record heart rate during your runs.
+        INFOPLIST_KEY_NSHealthShareUsageDescription: Access workout information when you choose Apple Health integration.
+        INFOPLIST_KEY_NSHealthUpdateUsageDescription: Save your recorded runs and optional routes and sensor heart rate to Apple Health when you choose Export.
         TARGETED_DEVICE_FAMILY: '1,2'
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: AITracker.entitlements
@@ -41,6 +51,30 @@ targets:
       configs:
         Debug:
           APNS_ENVIRONMENT: development
+        Release:
+          CODE_SIGN_STYLE: Manual
+          PROVISIONING_PROFILE_SPECIFIER: $(RUNANALYTICS_APP_PROFILE)
+  RunWidget:
+    type: app-extension
+    platform: iOS
+    sources: [RunWidget, Shared]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: run.aitracker.coach.runwidget
+        DEVELOPMENT_TEAM: DB5JRGGB6A
+        GENERATE_INFOPLIST_FILE: YES
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+      configs:
+        Release:
+          CODE_SIGN_STYLE: Manual
+          PROVISIONING_PROFILE_SPECIFIER: $(RUNANALYTICS_WIDGET_PROFILE)
+    info:
+      path: Generated/RunWidget-Info.plist
+      properties:
+        CFBundleDisplayName: Run Analytics
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
   AITrackerTests:
     type: bundle.unit-test
     platform: iOS

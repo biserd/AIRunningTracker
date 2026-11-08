@@ -7,9 +7,9 @@ import SwiftUI
     var body: some Scene {
         WindowGroup {
             Group {
-                if store.loading { ProgressView("Opening your coach…") }
+                if store.loading { ProgressView("Opening RunAnalytics…") }
                 else if store.needsSignIn { SignInView() }
-                else if store.onboarding?.ready != true && !ProcessInfo.processInfo.arguments.contains("--test-adaptive-layout") { NativeOnboardingView() }
+                else if !store.setupComplete && !ProcessInfo.processInfo.arguments.contains("--test-adaptive-layout") { NativeOnboardingView() }
                 else { CoachTabs() }
             }
             .environmentObject(store)
@@ -18,7 +18,7 @@ import SwiftUI
             }
             .onReceive(NotificationCenter.default.publisher(for: .applePushFailure)) { _ in store.push.status = "Could not connect to Apple. Please retry." }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active && !store.needsSignIn { Task { await store.push.resume(); await store.refreshSchedule() } }
+                if phase == .active && !store.needsSignIn { Task { await store.push.resume(); await store.refreshRuns(); await store.refreshSchedule() } }
             }
             .tint(RunBrand.orange)
             .onOpenURL { store.receiveSignInLink($0) }
@@ -33,10 +33,22 @@ import SwiftUI
                     store.loading = false
                     return
                 }
+                if ProcessInfo.processInfo.arguments.contains("--test-standalone") {
+                    store.loading=false;store.needsSignIn=false;store.setupComplete=true
+                    let token="DAD00000-0000-4000-8000-000000000001"
+                    store.onboarding=NativeOnboarding(stravaConnected:false,syncStatus:nil,hasAccess:false,billingProvider:nil,appAccountToken:token,purchasesAvailable:false)
+                    store.recorder.selectAccount(token)
+                    if ProcessInfo.processInfo.arguments.contains("--test-run-display") { store.recorder.installRunDisplayFixture() }
+                    return
+                }
                 if ProcessInfo.processInfo.arguments.contains("--test-adaptive-layout") {
                     // Offline UI fixture only. Never restore a real account in layout tests.
                     store.loading = false
                     store.needsSignIn = false
+                    if ProcessInfo.processInfo.arguments.contains("--test-insights") {
+                        store.setupComplete = true
+                        store.onboarding = NativeOnboarding(stravaConnected: true, syncStatus: nil, hasAccess: true, billingProvider: nil, appAccountToken: "DAD00000-0000-4000-8000-000000000002", purchasesAvailable: false)
+                    }
                     store.busy = ProcessInfo.processInfo.arguments.contains("--test-pending-coach-request")
                     return
                 }
@@ -53,7 +65,7 @@ import SwiftUI
 struct CoachTabs: View {
     @EnvironmentObject var store: CoachStore
     @Environment(\.horizontalSizeClass) private var sizeClass
-    @State private var selected: CoachSection = .coach
+    @State private var selected: CoachSection = ProcessInfo.processInfo.arguments.contains("--test-adaptive-layout") ? .coach : .runs
     @State private var draft = ""
     @State private var reminderChannel = "email"
     @State private var openedBriefing: CoachBriefing?
@@ -76,9 +88,9 @@ struct CoachTabs: View {
                     .navigationSplitViewColumnWidth(min: 220, ideal: 250, max: 300)
                 } detail: {
                     switch selected {
-                    case .coach: ChatView(text: $draft, channel: $reminderChannel)
-                    case .schedule: ScheduleView()
-                    case .progress: NavigationStack { RunningProgressView() }
+                    case .runs: RunHome(recorder:store.recorder)
+                    case .coach: coachingHome
+                    case .progress: NavigationStack { AllSourceProgress() }
                     case .settings: SettingsView()
                     }
                 }.navigationSplitViewStyle(.balanced)
@@ -138,18 +150,38 @@ struct CoachTabs: View {
     }
     private var compactTabs: some View {
         TabView(selection: $selected) {
-            ChatView(text: $draft, channel: $reminderChannel)
+            RunHome(recorder:store.recorder).tabItem { Label("Run",systemImage:CoachSection.runs.symbol) }.tag(CoachSection.runs)
+            coachingHome
                 .tabItem { Label("Coach", systemImage: CoachSection.coach.symbol) }.tag(CoachSection.coach)
-            ScheduleView().tabItem { Label("Plan", systemImage: CoachSection.schedule.symbol) }.tag(CoachSection.schedule)
-            NavigationStack { RunningProgressView() }
+            NavigationStack { AllSourceProgress() }
                 .tabItem { Label("Progress", systemImage: CoachSection.progress.symbol) }.tag(CoachSection.progress)
             SettingsView().tabItem { Label("Settings", systemImage: CoachSection.settings.symbol) }.tag(CoachSection.settings)
+        }
+    }
+    @ViewBuilder private var coachingHome:some View {
+        if store.onboarding?.hasAccess == true || ProcessInfo.processInfo.arguments.contains("--test-adaptive-layout") {
+            VStack(spacing:0) {
+                Picker("Coaching",selection:$store.showingPlan) { Text("Coach").tag(false); Text("Plan").tag(true) }.pickerStyle(.segmented).padding(.horizontal)
+                if store.showingPlan { ScheduleView() } else { ChatView(text:$draft,channel:$reminderChannel) }
+            }
+        } else {
+            NavigationStack {
+                ScrollView {
+                    VStack(alignment:.leading,spacing:24) {
+                        Text("Your optional running coach").font(.largeTitle.bold())
+                        Text("Keep recording and reviewing runs for free. Add a subscription when you want personal coaching.")
+                        Text("Garmin and phone runs appear in your history and totals. Garmin data is not shared with the AI coach.").font(.footnote).foregroundStyle(.secondary)
+                        if let subscriptions=store.subscriptions { NativePaywall(subscriptions:subscriptions) }
+                    }.padding(24).frame(maxWidth:650)
+                }.navigationTitle("Coach")
+            }
         }
     }
     private func openPush() {
         guard !store.needsSignIn, let target = UserDefaults.standard.string(forKey: "pushDestination") else { return }
         UserDefaults.standard.removeObject(forKey: "pushDestination")
-        selected = target == "schedule" ? .schedule : .coach
+        selected = .coach
+        store.showingPlan = target == "schedule"
         let activity=UserDefaults.standard.integer(forKey:"pushActivity")
         UserDefaults.standard.removeObject(forKey:"pushActivity")
         let briefing=UserDefaults.standard.string(forKey:"pushBriefing").flatMap(PushBriefingReference.init)
@@ -196,7 +228,7 @@ private struct CoachVoiceAccessory: View {
     var body: some View {
         Button {
             selected = .coach
-            if !store.voice.active { store.voice.start(store: store) }
+            if store.onboarding?.hasAccess == true && !store.voice.active { store.voice.start(store: store) }
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: store.voice.active ? "waveform" : "mic.fill")
@@ -395,8 +427,8 @@ struct SettingsView: View {
             Form {
                 Section("Your account") {
                     Text(store.snapshot?.runner.name ?? "Run Analytics runner").font(.headline)
-                    settingsRow("Subscription & Strava", symbol: "person.crop.circle") { accountSheet=true }
-                    LabeledContent("Units", value: store.snapshot?.runner.unitPreference ?? "")
+                    settingsRow("Account & connections", symbol: "person.crop.circle") { accountSheet=true }
+                    LabeledContent("Units", value: store.runFeed?.unitPreference ?? store.snapshot?.runner.unitPreference ?? "km")
                     LabeledContent("Timezone", value: store.snapshot?.runner.timezone ?? "")
                 }
                 Section {
@@ -410,6 +442,8 @@ struct SettingsView: View {
                             Spacer()
                             Text(date,style:.time).foregroundStyle(.secondary)
                         }
+                    } else if let feed=store.runFeed {
+                        Text("\(feed.total) runs in your account.").foregroundStyle(.secondary)
                     } else {
                         Text("Running data not loaded yet.").foregroundStyle(.secondary)
                     }
@@ -417,8 +451,9 @@ struct SettingsView: View {
                 } header: {
                     Text("Running data")
                 } footer: {
-                    Text("Pull down to refresh your saved runs and plan. This does not start a new Strava sync.")
+                    Text("Pull down to refresh your saved runs and plan. Your Garmin and Strava connections sync separately.")
                 }
+                if store.onboarding?.hasAccess == true || ProcessInfo.processInfo.arguments.contains("--test-adaptive-layout") {
                 Section("Connections") {
                     settingsRow("WhatsApp", symbol: "message", status: store.whatsapp.map { $0.connected && $0.authorized ? "Connected" : "Not connected" } ?? "Not loaded") { store.settingsSheet = .whatsapp }
                     settingsRow("Email", symbol: "envelope", status: store.verifiedEmail.isEmpty ? "Not connected" : "Connected") { store.settingsSheet = .email }
@@ -430,9 +465,10 @@ struct SettingsView: View {
                     settingsRow("Apple notifications", symbol: "bell.badge", status: store.push.status) { store.settingsSheet = .notifications }
                     settingsRow("All reminders", symbol: "clock") { store.settingsSheet = .reminders }
                 }
+                }
                 Section {
                     Button("Sign out", role: .destructive) { confirmLogout = true }
-                } footer: { Text("Same Run Analytics account and running data. No separate subscription.") }
+                } footer: { Text("Your RunAnalytics account works with or without connected services.") }
             }.frame(maxWidth: 760).frame(maxWidth: .infinity)
                 .scrollContentBackground(.hidden).background(RunBrand.canvas)
                 .navigationTitle("Settings")
@@ -456,12 +492,12 @@ struct SettingsView: View {
 }
 
 enum CoachSection: String, CaseIterable, Identifiable {
-    case coach, schedule, progress, settings
+    case runs, coach, progress, settings
     var id: String { rawValue }
     var title: String {
         switch self {
         case .coach: return "Coach"
-        case .schedule: return "Plan"
+        case .runs: return "Run"
         case .progress: return "Progress"
         case .settings: return "Settings"
         }
@@ -469,7 +505,7 @@ enum CoachSection: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .coach: return "bubble.left.and.bubble.right"
-        case .schedule: return "calendar"
+        case .runs: return "figure.run"
         case .progress: return "chart.bar.xaxis"
         case .settings: return "slider.horizontal.3"
         }

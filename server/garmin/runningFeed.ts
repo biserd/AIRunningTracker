@@ -1,6 +1,7 @@
 import type {Express,RequestHandler} from 'express';
 import type {AtomicSqlDatabase} from '../d1/jobStore';
 import {garminFeedRun,mergeRunningFeed,type FeedRun} from '../../shared/runningFeed';
+import {phoneFeedRun,type PhoneRunRow} from '../services/phoneRuns';
 import type {GarminRun} from '../../shared/garmin';
 import {FREE_ACTIVITY_LIMIT,hasPremiumAccess} from '../../shared/entitlements';
 import {getDashboardCalendarPeriods,getLastMonthComparisonEnd,partitionDashboardActivities} from '../services/dashboardPeriods';
@@ -30,9 +31,15 @@ export class RunningFeed {
         garmin.push(...rows.results.map(row=>garminFeedRun(JSON.parse(row.summary) as GarminRun)));if(rows.results.length<1000)break;
       }
     }
+    const phone:FeedRun[]=[];
+    for(let offset=0;;offset+=1000){
+      const rows=await this.db.prepare('SELECT * FROM phone_runs WHERE user_id=? ORDER BY start_date DESC,id DESC LIMIT 1000 OFFSET ?').bind(userId,offset).all<PhoneRunRow>();
+      phone.push(...rows.results.map(phoneFeedRun));if(rows.results.length<1000)break;
+    }
+    const combine=(rows:FeedRun[])=>[...rows,...phone].sort((a,b)=>Date.parse(b.startDate)-Date.parse(a.startDate)||a.id.localeCompare(b.id));
     const exclusions=await this.db.prepare('SELECT strava_record_id,garmin_activity_id FROM garmin_run_match_exclusions WHERE user_id=?').bind(userId).all<{strava_record_id:number;garmin_activity_id:string}>();
     return {unitPreference:user.unit_preference||'km',garminConnected:connection?.status==='connected',stravaConnected:!!user.strava_connected,
-      all:mergeRunningFeed(strava,garmin,exclusions.results),visible:mergeRunningFeed(cap===null?strava:strava.slice(0,cap),garmin,exclusions.results),freeTier:cap!==null&&strava.length>cap?{capped:true as const,limit:cap,source:'strava'}:undefined};
+      all:combine(mergeRunningFeed(strava,garmin,exclusions.results)),visible:combine(mergeRunningFeed(cap===null?strava:strava.slice(0,cap),garmin,exclusions.results)),freeTier:cap!==null&&strava.length>cap?{capped:true as const,limit:cap,source:'strava'}:undefined};
   }
 }
 const distance=(rows:FeedRun[])=>rows.reduce((sum,row)=>sum+row.distance,0);

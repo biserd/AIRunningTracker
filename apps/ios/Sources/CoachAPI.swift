@@ -128,6 +128,11 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
     }
     func runningSnapshot() async throws -> Snapshot { try await issuerRequest("/api/coach/experience") }
     func onboarding() async throws -> NativeOnboarding { try await issuerRequest("/api/native/onboarding") }
+    func garminStatus() async throws -> NativeGarminStatus { try await issuerRequest("/api/garmin/status") }
+    func startGarmin() async throws -> NativeStravaStart { try await issuerRequest("/api/native/garmin/start",body:["activityConsent":true]) }
+    func runs(page:Int = 1) async throws -> NativeRunFeed { try await issuerRequest("/api/runs",query:[URLQueryItem(name:"page",value:String(page)),URLQueryItem(name:"pageSize",value:"50")]) }
+    func runOverview() async throws -> NativeRunOverview { try await issuerRequest("/api/runs/overview") }
+    func savePhoneRun(_ run:PhoneRecording) async throws { let _:SavedRunResponse = try await issuerRequest("/api/native/runs",body:run.body) }
     func startStrava() async throws -> NativeStravaStart { try await issuerRequest("/api/native/strava/start",body:[:]) }
     func deliverApple(_ signed:String) async throws { let _:OK = try await issuerRequest("/api/native/apple/transaction",body:["signedTransaction":signed]) }
     func deleteAccount() async throws { let _:OK = try await issuerRequest("/api/user/delete-with-feedback",body:["reason":"other","details":"Deleted from the iOS app"]) }
@@ -161,7 +166,7 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
     }
     private func issuerRequest<T: Decodable>(_ path: String, query: [URLQueryItem] = [], body: [String: Any]? = nil) async throws -> T {
         let current = generation
-        let native = (path == "/api/native/onboarding" && body == nil) || (["/api/native/strava/start","/api/native/apple/transaction","/api/user/delete-with-feedback"].contains(path) && body != nil)
+        let native = (["/api/native/onboarding","/api/garmin/status","/api/runs","/api/runs/overview"].contains(path) && body == nil) || (["/api/native/runs","/api/native/garmin/start","/api/native/strava/start","/api/native/apple/transaction","/api/user/delete-with-feedback"].contains(path) && body != nil)
         guard native || (Self.isInsightReadPath(path) && body == nil) || (Self.isRunPreparationPath(path) && body != nil) || ["/api/coach/experience","/api/coach/companion/reminder-draft","/api/coach/companion/read","/api/coach/companion/preferences","/api/coach/companion/checkin","/mcp/oauth/authorization-request", "/mcp/oauth/authorize/decision", "/api/apple-push/register", "/api/apple-push/unregister", "/api/apple-push/reminders", "/api/apple-push/reminder", "/api/apple-push/test"].contains(path),
               let credential, credential.expires > Date() else { throw APIError.missingSession }
         var url = URLComponents(string: "https://aitracker.run" + path)!
@@ -182,7 +187,7 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
             let response = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
             throw APIError.server(http.statusCode, response?["message"] as? String ?? "Could not complete the request. Please retry.")
         }
-        guard data.count < (path.hasPrefix("/api/activities/") ? 8_000_000 : 300_000) else { throw APIError.invalidResponse }
+        guard data.count < ((path.hasPrefix("/api/activities/") || path.hasPrefix("/api/runs")) ? 8_000_000 : 300_000) else { throw APIError.invalidResponse }
         return try JSONDecoder().decode(T.self, from: data)
     }
     func request<T: Decodable>(_ path: String, body: [String: Any]? = nil) async throws -> T {
@@ -220,3 +225,6 @@ final class RejectRedirects: NSObject, URLSessionTaskDelegate {
         return try JSONDecoder().decode(T.self, from: data)
     }
 }
+
+struct NativeGarminStatus:Decodable { let available:Bool; let connected:Bool; let status:String }
+private struct SavedRunResponse:Decodable { let activity:NativeRun }

@@ -1,0 +1,60 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {DatabaseSync} from 'node:sqlite';
+import {readFileSync} from 'node:fs';
+import express from 'express';
+import type {AddressInfo} from 'node:net';
+import type {AtomicSqlDatabase} from '../d1/jobStore';
+import type {SqlStatement} from '../d1/activities';
+import {registerPhoneRuns} from './phoneRuns';
+import {RunningFeed} from '../garmin/runningFeed';
+const now=new Date('2026-11-08T10:00:00.000Z');
+const run={id:'DAD00000-0000-4000-8000-000000000002',name:'Morning phone run',startDate:'2026-11-08T08:00:00Z',distance:5123.4,movingTime:1800,elapsedTime:1900};
+function fixture(){
+  const sqlite=new DatabaseSync(':memory:');sqlite.exec(`PRAGMA foreign_keys=ON;
+    CREATE TABLE users(id INTEGER PRIMARY KEY,unit_preference TEXT,subscription_plan TEXT,subscription_status TEXT,strava_connected INTEGER);
+    INSERT INTO users VALUES(1,'km','free','active',0),(2,'miles','free','active',0);
+    CREATE TABLE activities(id INTEGER PRIMARY KEY,user_id INTEGER,name TEXT,start_date TEXT,type TEXT,distance REAL,moving_time INTEGER,elapsed_time INTEGER,average_speed REAL,average_heartrate REAL,total_elevation_gain REAL,cached_grade TEXT,locked_for_free INTEGER);`);
+  for(const file of ['0036_garmin_activity_sync','0039_garmin_run_display','0042_account_first_ios','0043_phone_run_details'])sqlite.exec(readFileSync('apps/d1-migration/migrations/'+file+'.sql','utf8'));
+  const db:AtomicSqlDatabase={prepare(sql){let args:(string|number|null)[]=[];const stmt:SqlStatement={bind(...values){args=values;return stmt;},async first<T>(){return sqlite.prepare(sql).get(...args) as T||null;},async all<T>(){return {results:sqlite.prepare(sql).all(...args) as T[]};},async run(){return {meta:{changes:Number(sqlite.prepare(sql).run(...args).changes)}};}};return stmt;},async batch(statements){const results=[];for(const statement of statements)results.push(await statement.run());return results;}};
+  return {sqlite,db};
+}
+test('standalone account stores runs without providers or payment; retries are idempotent, ownership and deletion remain isolated',async()=>{
+  const f=fixture(),app=express();app.use(express.json());
+  registerPhoneRuns(app,{db:async()=>f.db,now:()=>now,authenticate(req,res,next){const id=req.get('authorization');if(id!=='Bearer 1'&&id!=='Bearer 2')return res.sendStatus(401);(req as any).user={id:Number(id.slice(-1))};next();}});
+  const server=app.listen(0,'127.0.0.1');await new Promise<void>(resolve=>server.once('listening',resolve));
+  const origin='http://127.0.0.1:'+(server.address() as AddressInfo).port;
+  const request=(path:string,method='GET',body?:unknown,owner=1)=>fetch(origin+path,{method,headers:{authorization:'Bearer '+owner,'content-type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
+  try {
+    assert.equal((await request('/api/native/runs','POST',run,0)).status,401);
+    assert.equal((await request('/api/native/runs','POST',{...run,userId:2})).status,400);
+    assert.equal((await request('/api/native/runs','POST',{...run,distance:-1})).status,400);
+    assert.equal((await request('/api/native/runs','POST',{...run,movingTime:2000})).status,400);
+    assert.equal((await request('/api/native/runs','POST',{...run,startDate:'2027-01-01T00:00:00Z'})).status,400);
+    assert.equal((await request('/api/native/runs','POST',run)).status,200);
+    assert.equal((await request('/api/native/runs','POST',run)).status,200);
+    assert.equal((await request('/api/native/runs','POST',{...run,distance:100})).status,409);
+    assert.equal(f.sqlite.prepare('SELECT count(*) n FROM phone_runs').get()!.n,1);
+    const feed=await new RunningFeed(f.db).read(1);assert.equal(feed.stravaConnected,false);assert.equal(feed.garminConnected,false);assert.equal(feed.visible[0].source,'phone');assert.equal(feed.visible[0].distance,run.distance);
+    assert.equal((await new RunningFeed(f.db).read(2)).visible.length,0);
+    assert.equal((await request('/api/runs/phone/'+run.id,'GET',undefined,2)).status,404);
+    assert.equal((await request('/api/native/runs/'+run.id,'DELETE',undefined,2)).status,200);
+    assert.equal((await request('/api/runs/phone/'+run.id)).status,200);
+    assert.equal((await request('/api/native/runs/'+run.id,'DELETE')).status,200);
+    assert.equal((await request('/api/runs/phone/'+run.id)).status,404);
+    const detailed={...run,effort:7,notes:'Steady hills',averageHeartrate:154,splits:[{number:1,distance:1000,seconds:310}],laps:[{number:1,distance:800,seconds:240}]};
+    assert.equal((await request('/api/native/runs','POST',{...detailed,effort:11})).status,400);
+    assert.equal((await request('/api/native/runs','POST',{...detailed,averageHeartrate:999})).status,400);
+    assert.equal((await request('/api/native/runs','POST',{...detailed,splits:[{number:1,distance:-1,seconds:20}]})).status,400);
+    assert.equal((await request('/api/native/runs','POST',{...detailed,notes:'x'.repeat(2001)})).status,400);
+    assert.equal((await request('/api/native/runs','POST',detailed)).status,200);
+    assert.equal((await request('/api/native/runs','POST',detailed)).status,200);
+    const saved=await (await request('/api/runs/phone/'+run.id)).json() as any;
+    assert.equal(saved.activity.effort,7);assert.equal(saved.activity.notes,'Steady hills');assert.equal(saved.activity.averageHeartrate,154);
+    assert.deepEqual(saved.activity.splits,detailed.splits);assert.deepEqual(saved.activity.laps,detailed.laps);
+    assert.equal((await request('/api/native/runs','POST',{...detailed,effort:6})).status,409);
+    assert.equal((await request('/api/runs/phone/'+run.id,'GET',undefined,2)).status,404);
+    f.sqlite.exec('DELETE FROM users WHERE id=1');
+    assert.equal(f.sqlite.prepare('SELECT count(*) n FROM phone_runs').get()!.n,0);
+  }finally{server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));f.sqlite.close();}
+});

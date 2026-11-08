@@ -11,6 +11,7 @@ import { registerWebWhatsApp } from "./services/webWhatsApp";
 import { registerGarminRoutes, maintainGarminConnection } from './garmin/routes';
 import { GarminStore } from './garmin/store';
 import {registerRunningFeed} from './garmin/runningFeed';
+import {registerPhoneRuns} from './services/phoneRuns';
 import { GarminClient, garminConfig } from './garmin/client';
 import { signupRemindersEnabled } from "../shared/signupReminders";
 import { getJwtSecret } from "./config/security";
@@ -297,6 +298,7 @@ export async function registerRoutes(app: Express, runtime?: { schedulerDatabase
     const remaining = await store.connection(userId);
     if (remaining?.status === 'disconnect_pending') throw new Error('Please retry account deletion after Garmin disconnection completes.');
   };
+  registerPhoneRuns(app,{authenticate:authenticateJWT,db:async()=>(await garminStore()).db});
   registerRunningFeed(app,{authenticate:authenticateJWT,db:async()=>(await garminStore()).db});
   registerGarminRoutes(app, { authenticate: authenticateJWT, store: garminStore,
     planDays:async(userId,planId)=>{

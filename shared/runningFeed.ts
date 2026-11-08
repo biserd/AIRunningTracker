@@ -1,10 +1,11 @@
 import type {GarminRun} from './garmin';
-export type RunSource='garmin'|'strava';
+export type RunSource='garmin'|'strava'|'phone';
 export interface FeedRun {
   id:string; source:RunSource; sources:RunSource[]; name:string; startDate:string; type:string;
   distance:number; movingTime:number; elapsedTime:number|null; averageSpeed:number;
   averageHeartrate:number|null; totalElevationGain:number|null; grade:string|null;
   garminActivityId:string|null; stravaRecordId:number|null; detailUrl:string; deleteUrl:string;
+  effort?:number;notes?:string;splits?:unknown;laps?:unknown;
   manual?:boolean; possibleDuplicate?:boolean;
   separateMatch?:{stravaRecordId:number;garminActivityId:string};
 }
@@ -47,5 +48,5 @@ export function mergeRunningFeed(strava:FeedRun[],garmin:FeedRun[],exclusions:{s
   return [...left,...right.filter(run=>!consumed.has(run.id))].sort((a,b)=>Date.parse(b.startDate)-Date.parse(a.startDate)||a.id.localeCompare(b.id));
 }
 export function sourceLabel(run:Pick<FeedRun,'sources'|'possibleDuplicate'>) {
-  return run.sources.length===2?'Strava + Garmin · counted once':run.sources[0]==='garmin'?'Garmin':'Strava';
+  return run.sources[0]==='phone'?'RunAnalytics':run.sources.length===2?'Strava + Garmin · counted once':run.sources[0]==='garmin'?'Garmin':'Strava';
 }
