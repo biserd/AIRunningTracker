@@ -152,7 +152,7 @@ struct RunHome: View {
                         }.buttonStyle(.borderedProminent).accessibilityIdentifier("run-pause-resume")
                         Button { recorder.pause(); finishSheet = true } label: { Label("Finish", systemImage: "stop.fill").frame(maxWidth: .infinity, minHeight: 34) }
                             .buttonStyle(.bordered).accessibilityIdentifier("finish-phone-run")
-                    }.controlSize(.large).padding(16).frame(maxWidth: 760).frame(maxWidth: .infinity).background(.bar).accessibilityIdentifier("recording-controls")
+                    }.controlSize(.large).padding(16).frame(maxWidth: 760).frame(maxWidth: .infinity).background(.bar)
                 }
             }
             .toolbar {
