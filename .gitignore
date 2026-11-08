@@ -6,6 +6,7 @@ server/public
 vite.config.ts.*
 *.tar.gz
 .tmp/app-review-credentials.json
+.tmp/app-review-*
 
 # XcodeGen native app metadata
 apps/ios/Generated/

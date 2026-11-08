@@ -5,7 +5,8 @@ import {readFileSync} from 'node:fs';
 import bcrypt from 'bcrypt';
 import {AuthService} from '../../server/services/authCore';
 import {D1Accounts} from '../../server/d1/accounts';
-import {reviewerLogin,isReviewAccount,REVIEW_EMAIL,REVIEW_USERNAME} from '../../server/services/reviewerAccess';
+import {reviewerLogin,isReviewAccount,REVIEW_EMAIL,REVIEW_USERNAME,PURCHASE_REVIEW_EMAIL,PURCHASE_REVIEW_USERNAME} from '../../server/services/reviewerAccess';
+import {getEntitlementState,canAccessCapability} from '../../shared/entitlements';
 import type {SqlDatabase,SqlStatement} from '../../server/d1/activities';
 function setup(){
  const raw=new DatabaseSync(':memory:');raw.exec(readFileSync('apps/d1-migration/migrations/0001_application.sql','utf8'));
@@ -35,5 +36,23 @@ test('review login is rate limited and missing/invalid credentials fail closed',
  await assert.rejects(reviewerLogin(db,null,'different-ip',login),/REVIEW_CREDENTIALS/);
  raw.prepare("UPDATE mcp_rate_limits SET window_started_at='2000-01-01T00:00:00Z'").run();
  await assert.rejects(reviewerLogin(db,null,'one-ip',login),/REVIEW_CREDENTIALS/);
+ }finally{raw.close()}
+});
+
+test('purchase review identity signs in normally with expired access and cannot become the premium demo',async()=>{
+ const {raw,db,auth}=setup();try{
+ const password='purchase-review-test-password';
+ raw.prepare("INSERT INTO users(email,username,password,subscription_plan,subscription_status) VALUES(?,?,?,'premium','canceled')")
+   .run(PURCHASE_REVIEW_EMAIL,PURCHASE_REVIEW_USERNAME,await bcrypt.hash(password,10));
+ const session=await reviewerLogin(db,{email:PURCHASE_REVIEW_EMAIL.toUpperCase(),password,userId:999},'purchase-ip',v=>auth.login(v));
+ const user=await auth.verifyToken(session.token);assert.ok(user);assert.equal(user.id,1);
+ const subject=raw.prepare('SELECT subscription_plan AS subscriptionPlan,subscription_status AS subscriptionStatus FROM users WHERE id=1').get()!;
+ assert.equal(getEntitlementState(subject),'expired');assert.equal(canAccessCapability(subject,'ai_coach'),false);
+ assert.equal(isReviewAccount({email:PURCHASE_REVIEW_EMAIL,username:PURCHASE_REVIEW_USERNAME}),true);
+ assert.equal(isReviewAccount({email:PURCHASE_REVIEW_EMAIL,username:REVIEW_USERNAME}),false);
+ assert.equal(isReviewAccount({email:PURCHASE_REVIEW_EMAIL,username:PURCHASE_REVIEW_USERNAME,isAdmin:true}),false);
+ await assert.rejects(reviewerLogin(db,{email:PURCHASE_REVIEW_EMAIL,password:'incorrect-password'},'purchase-ip',v=>auth.login(v)));
+ raw.prepare('UPDATE users SET username=?').run(REVIEW_USERNAME);
+ await assert.rejects(reviewerLogin(db,{email:PURCHASE_REVIEW_EMAIL,password},'purchase-ip',v=>auth.login(v)),/REVIEW_CREDENTIALS/);
  }finally{raw.close()}
 });

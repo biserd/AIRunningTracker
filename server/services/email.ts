@@ -327,7 +327,8 @@ Didn't request this? You can safely ignore this email.
 Happy running!
 The RunAnalytics Team`;
 
-    await this.sendEmail({ to: email, subject, html, text });
+    const sent = await this.sendEmail({ to: email, subject, html, text });
+    if (!sent) throw new Error('MAGIC_LINK_EMAIL_FAILED');
   }
 
   async sendCheckoutClaimEmail(email: string, signupToken: string, sessionId: string): Promise<void> {

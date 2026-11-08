@@ -2008,14 +2008,20 @@ ${allPages.map(page => `  <url>
         const host = req.get('host');
         const proto = req.get('x-forwarded-proto') || req.protocol;
         const baseUrl = client === "coach" ? "https://new.aitracker.run" : host ? `${proto}://${host}` : 'https://aitracker.run';
-        console.log(`[MagicLink] Sending link to ${email} via ${baseUrl}`);
         await emailService.sendMagicLinkEmail(email, token, baseUrl, safeRedirect || undefined);
-      } else {
-        console.log(`[MagicLink] No account for ${email} (silently 200ing)`);
       }
       // Always return 200 to prevent email enumeration.
       res.json({ message: "If an account exists with that email, a sign-in link has been sent." });
     } catch (error: any) {
+      if (error?.message === 'EMAIL_DELIVERY_FAILED') {
+        console.error(JSON.stringify({event:'magic_link_delivery_failed'}));
+        return res.status(503).json({message:'We could not send your sign-in link. Please try again shortly.'});
+      }
+      if (error?.message === 'MAGIC_LINK_EMAIL_FAILED') {
+        // Existing-account sign-in must not reveal whether the address exists.
+        console.error(JSON.stringify({event:'magic_link_delivery_failed'}));
+        return res.json({message:'If an account exists with that email, a sign-in link has been sent.'});
+      }
       console.error('Magic link request error:', error);
       res.status(400).json({ message: "Invalid email address" });
     }

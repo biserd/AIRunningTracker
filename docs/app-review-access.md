@@ -1,6 +1,15 @@
 # App Review access
 
-The native app keeps email-link sign-in for normal runners. Under **Trouble signing in? → Reviewer sign-in**, reviewers may enter the dedicated account credentials supplied privately in App Store Connect.
+The native app keeps email-link sign-in for normal runners. Under **Trouble signing in? → Reviewer sign-in**, reviewers may enter either dedicated account's credentials supplied privately in App Store Connect.
+
+## Purchase-flow review account
+
+- The second reserved identity is `app-review-purchase@review.aitracker.invalid` / `app-store-review-purchase-v1`. It has a canceled Premium application entitlement and a past trial end, with no active coaching access, provider links, real billing identifiers, or fabricated Apple transactions.
+- This is an explicit application-entitlement fixture, not evidence of a historical App Store purchase. Real purchases and introductory-offer eligibility remain controlled by StoreKit and Apple's signed transactions.
+- Create it once with `tsx scripts/d1/seed-purchase-review-account.ts --create-isolated-purchase-review-account`. Credentials are generated locally and saved only in ignored `.tmp/app-review-purchase-credentials.json`. Reruns validate the existing identity/password/state and never reset either review account or an Apple purchase.
+- Use this account in App Review's username/password fields for purchase testing. The original Premium sample account remains available for content/coaching review. Keep both credentials private; never commit or attach credential files publicly.
+- Build 41 can use both identities through its existing reviewer sign-in screen; the backend still verifies real bcrypt passwords, exact email/username pairs, non-admin status and per-IP attempt limits. This does not broaden ordinary-account password login.
+- After signing in, use **Run** for free recording or **Settings > Connections & subscription** for the monthly/annual StoreKit paywall, renewal terms, Restore purchases and Manage Apple subscription. Buying a real sandbox subscription may legitimately change this demo's entitlement. Do not relabel or reset that transaction with the seed.
 
 ## Security and data
 
