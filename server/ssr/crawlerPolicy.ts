@@ -54,6 +54,7 @@ export const PRIVATE_CRAWLER_PATHS = [
   "/chat-history",
   "/year-recap",
   "/training-plans",
+  "/garmin-send",
   "/coach/",
   "/coach-settings",
   "/runner-score/",

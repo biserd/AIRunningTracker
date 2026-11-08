@@ -40,6 +40,7 @@ test("private route matching covers account data without blocking public marketi
     "/activity/123",
     "/coach/settings",
     "/training-plans/42",
+    "/garmin-send",
     "/runner-score/17",
     "/mcp/oauth/authorize",
     "/checkout/complete",
