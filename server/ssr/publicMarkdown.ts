@@ -2,6 +2,7 @@ import type { Express } from 'express';
 import { toolsContent } from './toolsContent';
 import { authMarkdown } from '../mcp/discovery';
 import { runningSources } from '../../shared/runningSources';
+import { garminPublicPages } from '../../shared/garminPublicContent';
 
 // An allowlist, not a generic response converter: authenticated pages and APIs
 // must never become public via content negotiation or a shared cache.
@@ -12,6 +13,8 @@ Your AI running coach, wherever you run. Connect Strava for analytics and eligib
 ## Explore
 - [Garmin and Strava connections](https://aitracker.run/integrations)
 - [Garmin Connect sync](https://aitracker.run/garmin)
+- [Garmin sleep and HRV dashboard](https://aitracker.run/garmin/recovery)
+- [Garmin setup and sync guide](https://aitracker.run/garmin/setup)
 - [Strava analytics](https://aitracker.run/strava)
 - [Features](https://aitracker.run/features)
 - [Current trial and subscription terms](https://aitracker.run/pricing)
@@ -23,6 +26,8 @@ Your AI running coach, wherever you run. Connect Strava for analytics and eligib
 ## Privacy and access
 Public shoe research is read-only. Private runner analytics requires authentication and explicit consent. See [Privacy](https://aitracker.run/privacy) and [agent authentication](https://aitracker.run/auth.md).
 `;
+  const guide = Object.values(garminPublicPages).find(p => p.path === path);
+  if (guide) return `# ${guide.headline}\n\n${guide.intro}\n\n${guide.sections.map(s => `## ${s.title}\n\n${s.items.map(i => `### ${i.title}\n${i.text}`).join('\n\n')}`).join('\n\n')}\n\n## Questions\n${guide.faqs.map(f => `### ${f.question}\n${f.answer}`).join('\n\n')}\n\n[Garmin connection](https://aitracker.run/garmin) · [Recovery features](https://aitracker.run/garmin/recovery) · [Setup guide](https://aitracker.run/garmin/setup) · [Health privacy](https://aitracker.run/privacy#garmin-health) · [Contact support](https://aitracker.run/contact)\n`;
   const source = Object.values(runningSources).find(s => s.path === path);
   if (source) return `# ${source.headline}\n\n${source.intro}\n\n## Current scope\n${source.scope}\n\n## Setup\n${source.steps.map((s,i)=>`${i+1}. ${s.title}: ${s.text}`).join('\n')}\n\n## Questions\n${source.faqs.map(f=>`### ${f.question}\n${f.answer}`).join('\n\n')}\n\n[Compare connections](https://aitracker.run/integrations) · [Pricing](https://aitracker.run/pricing) · [Privacy](https://aitracker.run/privacy)\n`;
   if (path === '/integrations') return '# Garmin and Strava connections\n\n' + Object.values(runningSources).map(s=>`## [${s.name}](https://aitracker.run${s.path})\n${s.summary}\n\n${s.scope}`).join('\n\n');

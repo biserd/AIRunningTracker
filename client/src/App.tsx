@@ -33,6 +33,8 @@ const PrivacyPage = lazy(() => import("@/pages/privacy"));
 const IosAppPage = lazy(() => import("@/pages/ios-app"));
 const IntegrationsPage = lazy(() => import("@/pages/integrations"));
 const GarminLandingPage = lazy(() => import("@/pages/integrations").then(m => ({default:m.GarminLandingPage})));
+const GarminRecoveryPage = lazy(() => import("@/pages/garmin-guides").then(m => ({default:m.GarminRecoveryPage})));
+const GarminSetupPage = lazy(() => import("@/pages/garmin-guides").then(m => ({default:m.GarminSetupPage})));
 const StravaLandingPage = lazy(() => import("@/pages/integrations").then(m => ({default:m.StravaLandingPage})));
 const IosAppPrivacyPage = lazy(() => import("@/pages/ios-app-privacy"));
 const ContactPage = lazy(() => import("@/pages/contact"));
@@ -193,6 +195,8 @@ function Router() {
         <Route path="/ios-app" component={IosAppPage} />
         <Route path="/integrations" component={IntegrationsPage} />
         <Route path="/garmin" component={GarminLandingPage} />
+        <Route path="/garmin/recovery" component={GarminRecoveryPage} />
+        <Route path="/garmin/setup" component={GarminSetupPage} />
         <Route path="/strava" component={StravaLandingPage} />
         <Route path="/contact" component={ContactPage} />
         <Route path="/faq" component={FAQPage} />

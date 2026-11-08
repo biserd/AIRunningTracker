@@ -14,6 +14,8 @@ const exactToolRoutes: Record<string, () => Promise<ToolModule>> = {
   "/": () => import("@/pages/landing"),
   "/integrations": () => import("@/pages/integrations"),
   "/garmin": () => import("@/pages/integrations").then(m => ({default:m.GarminLandingPage})),
+  "/garmin/recovery": () => import("@/pages/garmin-guides").then(m => ({default:m.GarminRecoveryPage})),
+  "/garmin/setup": () => import("@/pages/garmin-guides").then(m => ({default:m.GarminSetupPage})),
   "/strava": () => import("@/pages/integrations").then(m => ({default:m.StravaLandingPage})),
   "/tools": () => import("@/pages/tools"),
   "/tools/aerobic-decoupling-calculator": () => import("@/pages/tools/aerobic-decoupling-calculator"),

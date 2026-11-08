@@ -64,6 +64,7 @@ const ALLOWED_RETURN_PATHS = [
   /^\/training-plans(?:\/\d+)?(?:[/?#]|$)/,
   /^\/billing(?:[/?#]|$)/,
   /^\/settings(?:[/?#]|$)/,
+  /^\/recovery(?:[?#]|$)/,
   /^\/coach\/settings(?:[/?#]|$)/,
   /^\/ai-running-coaching-guide(?:[/?#]|$)/,
   /^\/mcp\/consent(?:[/?#]|$)/,

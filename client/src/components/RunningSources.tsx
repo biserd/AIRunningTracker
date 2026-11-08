@@ -17,6 +17,7 @@ export default function RunningSources() {
           <p className="mb-4 text-gray-700">{source.summary}</p>
           <p className="mb-6 border-t border-gray-100 pt-4 text-sm leading-relaxed text-gray-600">{source.scope}</p>
           <Link href={source.path} className="inline-flex min-h-11 items-center gap-2 font-semibold text-orange-700 hover:underline">Explore {source.name}<ArrowRight aria-hidden="true" size={17}/></Link>
+          {key === 'garmin' && <div className="mt-3 flex flex-wrap gap-x-5 border-t border-gray-100 pt-3"><Link href="/garmin/recovery" className="inline-flex min-h-11 items-center text-sm font-semibold text-orange-700 underline">Sleep and HRV trends</Link><Link href="/garmin/setup" className="inline-flex min-h-11 items-center text-sm font-semibold text-orange-700 underline">Garmin setup guide</Link></div>}
         </article>;
       })}</div>
       <Link href="/integrations" className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-gray-700 hover:text-orange-700">Compare connection options <ArrowRight aria-hidden="true" size={16}/></Link>

@@ -569,6 +569,8 @@ export async function registerRoutes(app: Express, runtime?: { schedulerDatabase
         { url: "/ios-app/privacy", changefreq: "monthly", priority: "0.4" },
         { url: "/integrations", changefreq: "monthly", priority: "0.8" },
         { url: "/garmin", changefreq: "monthly", priority: "0.8" },
+        { url: "/garmin/recovery", changefreq: "monthly", priority: "0.8" },
+        { url: "/garmin/setup", changefreq: "monthly", priority: "0.7" },
         { url: "/strava", changefreq: "monthly", priority: "0.8" },
         { url: "/chrome-extension", changefreq: "weekly", priority: "0.8" },
         

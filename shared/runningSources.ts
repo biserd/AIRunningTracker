@@ -3,9 +3,9 @@
 export const runningSources = {
   garmin: {
     name: 'Garmin Connect', path: '/garmin', label: 'Direct run sync · Optional recovery trends',
-    title: 'Garmin Connect Running Sync | RunAnalytics',
-    description: 'Connect Garmin for private run summaries and optional sleep, HRV and recovery trends. Explore setup, consent, supported metrics and current limits.',
-    headline: 'Your Garmin runs. A direct connection.',
+    title: 'Garmin Running Dashboard & Recovery Trends | RunAnalytics',
+    description: 'Connect Garmin for new run summaries and optional sleep, HRV and recovery trends. See supported metrics, privacy controls and a step-by-step setup guide.',
+    headline: 'Your Garmin runs, sleep and recovery trends. A clearer view.',
     intro: 'Keep recording on your Garmin. Bring new running summaries into a private RunAnalytics feed, and optionally review sleep and recovery trends, without routing them through Strava.',
     benefit: 'New run summaries, direct from Garmin Connect',
     summary: 'Direct new-run summaries, plus optional sleep, HRV and recovery trends with separate health consent. Manage your activity connection in web Settings.',
