@@ -29,11 +29,6 @@ jobs:
           brew install xcodegen
           swift scripts/prepare-icon.swift ../mobile/assets/icon.png Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png
           xcodegen generate
-      - name: Run simulator tests before signing
-        working-directory: apps/ios
-        run: |
-          DEVICE_ID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(v["udid"] for vs in d["devices"].values() for v in vs if v["name"].startswith("iPhone")))')
-          xcodebuild -quiet -project AITracker.xcodeproj -scheme AITracker -destination "platform=iOS Simulator,id=$DEVICE_ID" -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO test
       - name: Install temporary signing credentials
         env:
           P12_BASE64: ${{ secrets.IOS_DISTRIBUTION_P12 }}
@@ -57,6 +52,11 @@ jobs:
           security find-certificate -c "Apple Distribution" -p "$KEYCHAIN_PATH" > "$RUNNER_TEMP/distribution-certificate.pem"
           export SIGNING_CERTIFICATE_PATH="$RUNNER_TEMP/distribution-certificate.pem"
           node apps/ios/scripts/prepare-testflight-signing.mjs
+      - name: Run simulator tests before signing
+        working-directory: apps/ios
+        run: |
+          DEVICE_ID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(v["udid"] for vs in d["devices"].values() for v in vs if v["name"].startswith("iPhone")))')
+          xcodebuild -quiet -project AITracker.xcodeproj -scheme AITracker -destination "platform=iOS Simulator,id=$DEVICE_ID" -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO test
       - name: Archive and export signed app
         working-directory: apps/ios
         run: |

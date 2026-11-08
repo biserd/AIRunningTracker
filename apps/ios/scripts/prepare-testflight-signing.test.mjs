@@ -18,7 +18,7 @@ test('profiles use only the installed certificate, add required capability, and 
     calls.push({method, path, body});
     if (path.startsWith('/v1/certificates')) return {data: [{id: 'cert', attributes: {serialNumber: '00AB', certificateType: 'DISTRIBUTION', expirationDate: '2035-01-01'}}]};
     if (method === 'GET' && path.includes(appIdentifier + '&')) return {data: [{id: 'app', attributes: {identifier: appIdentifier}}]};
-    if (path.includes('/bundleIdCapabilities?')) return {data: ['PUSH_NOTIFICATIONS', 'ASSOCIATED_DOMAINS'].map(capabilityType => ({attributes: {capabilityType}}))};
+    if (path === '/v1/bundleIds/app/bundleIdCapabilities') return {data: ['PUSH_NOTIFICATIONS', 'ASSOCIATED_DOMAINS'].map(capabilityType => ({attributes: {capabilityType}}))};
     if (method === 'GET' && path.includes(widgetIdentifier)) return {data: []};
     if (path === '/v1/bundleIds') return {data: {id: 'widget', attributes: body.data.attributes}};
     if (path === '/v1/profiles') return {data: {attributes: {uuid: 'fixture-uuid', profileContent: 'fixture-only', profileState: 'ACTIVE', expirationDate: '2035-01-01'}}};

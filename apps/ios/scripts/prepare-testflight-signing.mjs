@@ -30,7 +30,9 @@ export function appleAPI(env, request = fetch) {
     if (!response.ok) {
       // Apple error details can include request content. Print status/code only.
       const error = await response.json().catch(() => ({}));
-      throw new Error(`Apple signing request ${method} ${path.split('?')[0]} failed: HTTP ${response.status} (${error.errors?.[0]?.code || 'UNKNOWN'}).`);
+      const parameter = error.errors?.[0]?.source?.parameter;
+      const source = typeof parameter === 'string' && /^[a-zA-Z0-9_[\].-]{1,80}$/.test(parameter) ? `; parameter ${parameter}` : '';
+      throw new Error(`Apple signing request ${method} ${path.split('?')[0]} failed: HTTP ${response.status} (${error.errors?.[0]?.code || 'UNKNOWN'}${source}).`);
     }
     return response.json();
   };
@@ -46,7 +48,7 @@ export async function createProfiles(api, serial, release, now = Date.now()) {
   const bundles = await api('GET', '/v1/bundleIds?filter%5Bidentifier%5D=' + appIdentifier + '&limit=200');
   const app = bundles.data?.find(item => item.attributes?.identifier === appIdentifier);
   if (!app) throw new Error('The existing RunAnalytics app identifier was not found. Refusing to create a replacement.');
-  const capabilities = await api('GET', '/v1/bundleIds/' + app.id + '/bundleIdCapabilities?limit=200');
+  const capabilities = await api('GET', '/v1/bundleIds/' + app.id + '/bundleIdCapabilities');
   for (const type of ['PUSH_NOTIFICATIONS', 'ASSOCIATED_DOMAINS', 'HEALTHKIT']) {
     if (!capabilities.data?.some(item => item.attributes?.capabilityType === type)) {
       await api('POST', '/v1/bundleIdCapabilities', {data: {type: 'bundleIdCapabilities', attributes: {capabilityType: type}, relationships: {bundleId: {data: {type: 'bundleIds', id: app.id}}}}});
