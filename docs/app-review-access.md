@@ -2,6 +2,16 @@
 
 The native app keeps email-link sign-in for normal runners. Under **Trouble signing in? → Reviewer sign-in**, reviewers may enter either dedicated account's credentials supplied privately in App Store Connect.
 
+## Verification and submission preparation - 8 November 2026
+
+- PR #4 merged as `bc8439ec0c3002c7103eacf96464c0a2656608a3` after CI run `42532075490` passed. The tested and merged source trees matched. Twenty-one local auth, signup, mail-transport and reviewer-isolation tests passed, as did the D1 bundle, production Worker type check and deployment dry-run.
+- Cloudflare build `e31caff2-5bb0-447a-9513-a54f50a4096a` succeeded for that commit. Staging Worker `b4aee328-683f-499f-b6e1-516b188ce16e` produced immutable image `sha256:8d96be8834849602f87c23b4186206d564855a0ed6275b85d75e0edb34a2b328`. Production Worker `b08c5ad1-6a34-49b0-a65f-fe23d3cfcff0` promoted it with existing variables retained; container version 61 was verified active before final live checks. No iOS binary was changed.
+- Two fresh native signup requests, before and after deployment, delivered to isolated Gmail test aliases in the inbox within seconds. SPF, DKIM and DMARC passed. Each emailed challenge created a session; replay returned 401. The new ordinary account loaded free onboarding without provider connections, with no paid access and both subscription product IDs available. Recipient addresses, email tokens and session credentials are omitted from this record.
+- Live reviewer login passed for both identities. The original account retained Premium access; the purchase account returned `hasAccess=false`, `canUseAI=false`, `purchasesAvailable=true` and two product IDs. Wrong passwords were rejected and client-supplied account IDs did not select a different user. The purchase seed was rerun successfully without changing credentials or existing accounts.
+- The purchase account represents expired application access; it has no fabricated App Store purchase/receipt history. No StoreKit transaction was initiated or completed during these checks. StoreKit and its signed transaction verification remain authoritative for purchases.
+- In App Store Connect, the purchase credentials were saved privately in App Review's username/password fields. The original Premium demo credentials were retained only in private reviewer notes for feature testing. Notes explain the native signup link, successful live verification, both account purposes, the purchase flow and current Garmin/recording privacy boundaries.
+- **Update Review** prepared the existing submission: app version **1.0 (41)**, the Premium group and the monthly/annual subscriptions all show **Ready for Review**, with **Resubmit to App Review** enabled. The final resubmission button was not clicked and no separate review message was sent.
+
 ## Purchase-flow review account
 
 - The second reserved identity is `app-review-purchase@review.aitracker.invalid` / `app-store-review-purchase-v1`. It has a canceled Premium application entitlement and a past trial end, with no active coaching access, provider links, real billing identifiers, or fabricated Apple transactions.
