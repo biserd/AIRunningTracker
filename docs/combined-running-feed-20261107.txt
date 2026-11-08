@@ -51,4 +51,26 @@ Local browser verification uses conspicuously labeled synthetic runs, never
 fabricated production activity records. Verified a Garmin-only main dashboard
 with two runs and correct totals, mixed-source Activities with one shared row,
 reversible split/match controls, distance filters, Garmin details with missing
-elevation, and a corrected phone layout. Release IDs and live checks follow.
+elevation, and a corrected phone layout.
+
+Production release verified November 7, 2026, about 7:20 PM America/New_York
+(2026-11-08T00:20Z). Feature source a79fc17949a6af9a37b9ccb8c079290cc91c5374.
+Cloudflare build 4b71711b-8d2e-41ba-96be-d892999eb080 completed successfully;
+staging Worker 3073e713-ac28-4eb0-9d7a-0e5a47cde86a produced immutable image
+sha256:c4c69626b991a8d3d0b6c63d6de2f7855658358f94067c270024a612de0bf1bd.
+Production Worker 848ecbfb-4101-421f-bffe-73ecb6999fb4 promoted that image with
+keep-vars; the production container reached version 54 with no reported errors.
+Stable production-live routing and the existing restart guard stayed unchanged.
+Only migration 0039 was applied and recorded in production D1. Unrelated pending
+migrations were not applied, and no source activity records were changed.
+
+After rollout, anonymous checks passed for combined endpoint authentication,
+matching-preference authentication, Dashboard/Activities/private Garmin detail
+assets, Garmin OAuth/health/private webhook protections, public source pages,
+WhatsApp, signup reminders, public tools and the existing Strava sign-in path.
+The signed-in browser showed the new source labels and notice on Activities,
+all 1,142 existing runs, and combined-feed totals plus recent runs on Dashboard.
+No production source match, delete, sign-in or preference write was performed.
+The reviewed account still had no Garmin activity deliveries; Garmin-only and
+positive duplicate behavior were verified with local synthetic fixtures, not
+claimed as real Garmin delivery. New synced runs can now appear in these views.
