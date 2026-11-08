@@ -14,6 +14,7 @@ final class InsightLayoutTests:XCTestCase {
             XCTAssertTrue(app.tabBars.buttons["Progress"].waitForExistence(timeout: 10))
             app.tabBars.buttons["Progress"].tap()
         }
+        openCoachProgress(app)
         let insights=app.buttons["Coach insights"]
         XCTAssertTrue(insights.waitForExistence(timeout:10))
         XCTAssertTrue(app.staticTexts["Running distance"].waitForExistence(timeout: 5))
@@ -40,6 +41,12 @@ final class InsightLayoutTests:XCTestCase {
         XCTAssertTrue(app.staticTexts["After your run"].exists)
         XCTAssertFalse(app.buttons["Save"].exists)
     }
+    private func openCoachProgress(_ app: XCUIApplication) {
+        let link = app.buttons["Coach insights"]
+        XCTAssertTrue(link.waitForExistence(timeout: 10))
+        link.tap()
+        XCTAssertTrue(app.staticTexts["Running distance"].waitForExistence(timeout: 10))
+    }
     private func capture(_ name:String) {
         let attachment=XCTAttachment(screenshot:XCUIScreen.main.screenshot())
         attachment.name=name; attachment.lifetime = .keepAlways; add(attachment)
@@ -54,6 +61,7 @@ final class InsightLayoutTests:XCTestCase {
             let progress = app.descendants(matching: .any)["sidebar-progress"].firstMatch
             XCTAssertTrue(progress.waitForExistence(timeout: 10)); progress.tap()
         } else { app.tabBars.buttons["Progress"].tap() }
+        openCoachProgress(app)
         let day = app.buttons["activity-day-2026-09-30"]
         for _ in 0..<7 {
             if day.isHittable { break }

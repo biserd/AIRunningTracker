@@ -45,6 +45,10 @@ import SwiftUI
                     // Offline UI fixture only. Never restore a real account in layout tests.
                     store.loading = false
                     store.needsSignIn = false
+                    if ProcessInfo.processInfo.arguments.contains("--test-insights") {
+                        store.setupComplete = true
+                        store.onboarding = NativeOnboarding(stravaConnected: true, syncStatus: nil, hasAccess: true, billingProvider: nil, appAccountToken: "DAD00000-0000-4000-8000-000000000002", purchasesAvailable: false)
+                    }
                     store.busy = ProcessInfo.processInfo.arguments.contains("--test-pending-coach-request")
                     return
                 }
