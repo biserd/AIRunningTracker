@@ -87,6 +87,49 @@ Garmin detail and derived information stay outside AI, Runner Score, MCP,
 Strava, messaging and coaching-email inputs. The private route view has no map
 provider egress. Privacy notices and source pages describe the new scope.
 
-Verification and release identity follow after live checks. Local screenshots
-use conspicuously labeled synthetic data; no synthetic runs or health readings
-are inserted in production.
+Verification and release identity
+77 targeted tests pass on the final source, covering FIT encoding/decoding,
+cadence units, timer pauses, owner isolation, versioned chunks, retry ordering,
+consent, retained summary fanout, tombstones, deletion, permissions, and existing
+Garmin/Strava/tenant/combined-feed/public-page behavior. Frontend and D1 backend
+builds pass. Worker dry-run bundling passes. Full-repository type checking keeps
+34 existing diagnostics and had none in the new feature paths. Desktop and
+390px mobile browser checks verified route/sensor/lap/split views, sleep stages,
+HRV, breathing, nutrition and missing-sensor displays without page overflow.
+Local run screenshots use conspicuously labeled synthetic data; no synthetic
+runs or health readings were inserted in production.
+
+Only migration 0040 was applied and journaled in production D1. Earlier pending
+unrelated migrations were not applied. The final application source is
+38fd8eab24909593379d3d47b7e41be16abd9126 (feature source 7d6dacc).
+Final Cloudflare build b1b00a45-a2af-4722-bd83-ccb89ad3d35f succeeded and produced
+staging Worker 832334e0-b1dc-4d37-bde8-0e5b0b9c3799, with immutable image digest
+sha256:afd6b9984515c5fd4878dd814e0e59294edbe55c8e2d16efe72b521f2f5bda7e.
+Production Worker 4fd2fb8a-73e4-45a7-91e2-9e28168daf42 promoted that image using
+keep-vars. The production container reached version 57, healthy without errors.
+Stable production-live identity, restart guard, existing credentials, billing,
+email, signup-reminder and messaging settings were preserved.
+
+After actual rollout, live checks passed for detail endpoint/consent protection,
+source-IP spoof rejection, private ingest, published run/recovery/detail-choice
+assets, existing Garmin OAuth/health, combined running views, public source
+pages, WhatsApp, signup reminders, public tools and Strava sign-in protections.
+
+The user explicitly approved saving the prepared feed configuration and enabling
+all three detailed-data choices for their account. Garmin confirmed Save; a
+reload verified 22 enabled feeds, none on hold. 18 activity-detail/wellness feeds
+use https://aitracker.run/api/garmin/details-webhook. Existing activities, manual
+updates, deregistration and permission changes retain the original webhook.
+The three account choices were enabled through the live consent UI and verified.
+
+Garmin's Summary Resender was used only for the connected account and today's
+upload window, not historical backfill. Four real categories arrived through the
+new receiver: dailies, sleeps, hrv and stressDetails. A second request for the
+other available health/MoveIQ categories returned the same four available
+domains. D1 confirmed four detailed records, while the original 32 summary
+records stayed intact. The signed-in Recovery page rendered the real sleep-stage
+intervals and overnight HRV curve; the verified page was left open. Additional
+device categories remain empty until Garmin supplies them. The account still
+has zero direct Garmin run deliveries, so real run/FIT end-to-end verification
+requires a newly recorded and synced run. JSON/FIT detail behavior was verified
+with local fixtures, including files encoded by Garmin's official SDK.
