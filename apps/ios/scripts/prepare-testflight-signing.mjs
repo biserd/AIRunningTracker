@@ -7,7 +7,23 @@ import {execFileSync} from 'node:child_process';
 
 export const appIdentifier = 'run.aitracker.coach';
 export const widgetIdentifier = appIdentifier + '.runwidget';
-const serialKey = value => String(value).replace(/^0+/, '').toUpperCase();
+const fingerprintKey = value => String(value).replaceAll(':', '').toUpperCase();
+
+export function suppliedProfiles(env) {
+  const app = env.IOS_PROVISIONING_PROFILE, widget = env.IOS_WIDGET_PROVISIONING_PROFILE;
+  if (!app || !widget) throw new Error('Both app and widget distribution profiles must be supplied');
+  return [{kind: 'app', identifier: appIdentifier, profileContent: app}, {kind: 'widget', identifier: widgetIdentifier, profileContent: widget}];
+}
+
+export function validateProfile(check, kind, fingerprint, now = Date.now()) {
+  const identifier = kind === 'app' ? appIdentifier : kind === 'widget' ? widgetIdentifier : null;
+  if (!identifier || check.team !== 'DB5JRGGB6A' || check.app !== 'DB5JRGGB6A.' + identifier) throw new Error('Signing profile is for the wrong app/team');
+  if (!/^[0-9A-Fa-f-]{36}$/.test(check.uuid) || !Number.isFinite(check.expires) || check.expires <= now) throw new Error('Signing profile is invalid or expired');
+  if (!check.certificates?.some(value => fingerprintKey(value) === fingerprintKey(fingerprint))) throw new Error('Signing profile does not include the installed distribution certificate');
+  if (check.development || check.devices || check.allDevices) throw new Error('An App Store distribution profile is required');
+  if (kind === 'app' && (check.health !== true || !Array.isArray(check.domains) || !check.domains.length || check.push !== 'production')) throw new Error('App signing profile is missing HealthKit, associated domains, or production push');
+  return check.uuid;
+}
 
 export function appleToken(env, now = Math.floor(Date.now() / 1000)) {
   for (const key of ['APP_STORE_CONNECT_KEY_ID', 'APP_STORE_CONNECT_ISSUER_ID', 'APP_STORE_CONNECT_PRIVATE_KEY']) {
@@ -38,60 +54,20 @@ export function appleAPI(env, request = fetch) {
   };
 }
 
-export async function createProfiles(api, serial, release, now = Date.now()) {
-  if (!/^[\w-]{1,100}$/.test(release)) throw new Error('Invalid release identifier');
-  const certificateResponse = await api('GET', '/v1/certificates?filter%5BserialNumber%5D=' + encodeURIComponent(serial) + '&limit=200');
-  const certificate = certificateResponse.data?.find(item => serialKey(item.attributes?.serialNumber) === serialKey(serial) &&
-    ['DISTRIBUTION', 'IOS_DISTRIBUTION'].includes(item.attributes?.certificateType) && Date.parse(item.attributes.expirationDate) > now + 3600000);
-  if (!certificate) throw new Error('The installed Apple Distribution certificate is missing or expired. No signing profiles were changed.');
-
-  const bundles = await api('GET', '/v1/bundleIds?filter%5Bidentifier%5D=' + appIdentifier + '&limit=200');
-  const app = bundles.data?.find(item => item.attributes?.identifier === appIdentifier);
-  if (!app) throw new Error('The existing RunAnalytics app identifier was not found. Refusing to create a replacement.');
-  const capabilities = await api('GET', '/v1/bundleIds/' + app.id + '/bundleIdCapabilities');
-  for (const type of ['PUSH_NOTIFICATIONS', 'ASSOCIATED_DOMAINS', 'HEALTHKIT']) {
-    if (!capabilities.data?.some(item => item.attributes?.capabilityType === type)) {
-      await api('POST', '/v1/bundleIdCapabilities', {data: {type: 'bundleIdCapabilities', attributes: {capabilityType: type}, relationships: {bundleId: {data: {type: 'bundleIds', id: app.id}}}}});
-    }
-  }
-  const widgetBundles = await api('GET', '/v1/bundleIds?filter%5Bidentifier%5D=' + widgetIdentifier + '&limit=200');
-  let widget = widgetBundles.data?.find(item => item.attributes?.identifier === widgetIdentifier);
-  if (!widget) {
-    const created = await api('POST', '/v1/bundleIds', {data: {type: 'bundleIds', attributes: {identifier: widgetIdentifier, name: 'RunAnalytics Run Widget', platform: 'IOS'}}});
-    widget = created.data;
-  }
-  if (widget?.attributes?.identifier !== widgetIdentifier) throw new Error('Apple returned an unexpected widget identifier');
-
-  const result = [];
-  for (const [kind, bundle] of [['app', app], ['widget', widget]]) {
-    const response = await api('POST', '/v1/profiles', {data: {
-      type: 'profiles', attributes: {name: `RunAnalytics TestFlight ${kind} ${release}`, profileType: 'IOS_APP_STORE'},
-      relationships: {bundleId: {data: {type: 'bundleIds', id: bundle.id}}, certificates: {data: [{type: 'certificates', id: certificate.id}]}},
-    }});
-    const profile = response.data?.attributes;
-    if (!profile?.uuid || !profile.profileContent || profile.profileState !== 'ACTIVE' || Date.parse(profile.expirationDate) <= now) throw new Error('Apple did not return an active signing profile');
-    result.push({kind, identifier: bundle.attributes.identifier, ...profile});
-  }
-  return result;
-}
-
 async function main() {
   const env = process.env;
   if (!env.RUNNER_TEMP || !env.GITHUB_ENV || !env.SIGNING_CERTIFICATE_PATH) throw new Error('TestFlight runner configuration is missing');
   const certificate = new X509Certificate(readFileSync(env.SIGNING_CERTIFICATE_PATH));
-  const release = `${env.GITHUB_RUN_ID}-${env.GITHUB_RUN_ATTEMPT}`;
-  const profiles = await createProfiles(appleAPI(env), certificate.serialNumber, release);
+  const profiles = suppliedProfiles(env);
   const folder = join(env.RUNNER_TEMP, 'runanalytics-profiles');
   mkdirSync(folder, {recursive: true, mode: 0o700});
   const bindings = {};
   for (const profile of profiles) {
-    if (!/^[0-9A-Fa-f-]{36}$/.test(profile.uuid)) throw new Error('Invalid signing profile UUID');
     const path = join(folder, profile.kind + '.mobileprovision');
     writeFileSync(path, Buffer.from(profile.profileContent, 'base64'), {mode: 0o600});
     const xml = execFileSync('/usr/bin/security', ['cms', '-D', '-i', path]);
-    const check = JSON.parse(execFileSync('python3', ['-c', 'import plistlib,json,sys; p=plistlib.loads(sys.stdin.buffer.read()); e=p["Entitlements"]; print(json.dumps({"team":p["TeamIdentifier"][0],"app":e["application-identifier"],"health":e.get("com.apple.developer.healthkit"),"domains":e.get("com.apple.developer.associated-domains"),"push":e.get("aps-environment")}))'], {input: xml, encoding: 'utf8'}));
-    if (check.team !== 'DB5JRGGB6A' || check.app !== 'DB5JRGGB6A.' + profile.identifier) throw new Error('Signing profile is for the wrong app/team');
-    if (profile.kind === 'app' && (check.health !== true || !check.domains || check.push !== 'production')) throw new Error('App signing profile is missing HealthKit, associated domains, or production push');
+    const check = JSON.parse(execFileSync('python3', ['-c', 'import plistlib,json,sys,datetime,hashlib; p=plistlib.loads(sys.stdin.buffer.read()); e=p["Entitlements"]; print(json.dumps({"team":p["TeamIdentifier"][0],"app":e["application-identifier"],"health":e.get("com.apple.developer.healthkit"),"domains":e.get("com.apple.developer.associated-domains"),"push":e.get("aps-environment"),"uuid":p["UUID"],"expires":p["ExpirationDate"].replace(tzinfo=datetime.timezone.utc).timestamp()*1000,"certificates":[hashlib.sha256(c).hexdigest() for c in p["DeveloperCertificates"]],"development":e.get("get-task-allow",False),"devices":bool(p.get("ProvisionedDevices")),"allDevices":bool(p.get("ProvisionsAllDevices"))}))'], {input: xml, encoding: 'utf8'}));
+    profile.uuid = validateProfile(check, profile.kind, certificate.fingerprint256);
     const install = join(env.HOME, 'Library/MobileDevice/Provisioning Profiles');
     mkdirSync(install, {recursive: true, mode: 0o700});
     writeFileSync(join(install, profile.uuid + '.mobileprovision'), Buffer.from(profile.profileContent, 'base64'), {mode: 0o600});
@@ -101,7 +77,7 @@ async function main() {
   const exportOptions = {method: 'app-store-connect', destination: 'export', signingStyle: 'manual', teamID: 'DB5JRGGB6A', signingCertificate: 'Apple Distribution', manageAppVersionAndBuildNumber: false, testFlightInternalTestingOnly: false, provisioningProfiles: bindings};
   const exported = execFileSync('python3', ['-c', 'import plistlib,json,sys; sys.stdout.buffer.write(plistlib.dumps(json.load(sys.stdin)))'], {input: JSON.stringify(exportOptions)});
   writeFileSync(join(env.RUNNER_TEMP, 'RunAnalytics-ExportOptions.plist'), exported, {mode: 0o600});
-  console.log('Prepared and validated App Store profiles for RunAnalytics and its Run Widget. No certificates were created or revoked.');
+  console.log('Validated the existing RunAnalytics app and widget distribution profiles. No identifiers, capabilities, profiles or certificates were created or changed by CI.');
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   main().catch(error => { console.error(error.message); process.exitCode = 1; });

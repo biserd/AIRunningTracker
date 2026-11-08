@@ -1,87 +1,63 @@
 # Account-first RunAnalytics iOS
 
-Status: local implementation on `codex/account-first-ios`, based on the native Swift/TestFlight branch at `b556a88`. Not deployed or uploaded to TestFlight. The user authorized publishing this branch and opening its draft PR on November 8.
+PR #1 is merged into `codex/ios-testflight` at `be7fd84bf2c7c970a6b6a1585afa824c6d2ef540`. It remained draft until all required checks passed on November 8, 2026. The production backend is active on container version 60. TestFlight upload is pending signing setup: builds 35 and 36 stopped before upload. The existing app identifier, App Store Connect listing, accounts, distribution certificate and backend are retained. No App Store production submission was made.
 
 ## User flow
 
-1. Create or sign in to a RunAnalytics account using the existing one-time email link. No external provider establishes the account identity.
-2. Choose Garmin, Strava, or **Use RunAnalytics**. Connections can be added later; both providers can coexist. Returning Strava-connected/reviewer accounts retain access without repeating setup.
-3. Open **Run** to record with the iPhone or view recent imported activities. Navigation is Run, Coach, Progress, Settings; Plan lives within Coach.
-4. Recording and basic history/totals do not require a coaching subscription. Existing paid coaching entitlement checks and purchase verification remain in place.
+1. Sign in to a RunAnalytics account using the existing one-time email link.
+2. Choose Garmin, Strava, or **Use RunAnalytics**. Connections can be added later and can coexist. Existing connected/reviewer accounts retain access.
+3. Use **Run** to record on the iPhone or view combined activity history. Navigation is Run, Coach (including Plan), Progress, Settings.
+4. Recording, basic history and totals do not require a coaching subscription. Coaching keeps its existing entitlement checks and supported-data boundaries.
 
-## Implemented behavior
+## Recording and privacy
 
-- Foreground permission request on Start, precise-location guidance, background GPS capability while recording, pause/resume, and explicit save/discard.
-- Atomic, protected, account-scoped local recording files. An interrupted run recovers paused at its last saved checkpoint; time and distance while the app was terminated are not invented. Signing out pauses and retains that account's draft.
-- GPS accuracy/jump/stale-fix filters, stationary-jitter suppression, and route segments across pauses or GPS gaps. Routes remain on the recording device; only summaries upload.
-- Retriable, idempotent summary uploads identified by account plus UUID. Failed uploads remain on the device. No automatic export of recordings to Garmin or Strava.
-- Combined Garmin/Strava/RunAnalytics history and monthly totals. Existing Garmin/Strava matching remains intact. Phone recordings stay separate: recording the same outing on phone and watch can produce two entries.
-- Native Garmin connection uses authenticated initiation, explicit activity consent, PKCE, a single-use browser launch, the existing registered callback, browser-cookie/state validation, and an app callback containing no account session credential.
-- Garmin health and sleep permission remains separate. This change does not feed Garmin or phone data into the AI coach. Optional coaching UI states this limitation.
-- Web history can display and delete RunAnalytics summaries; account deletion cascades through their storage. The iOS account-deletion flow also clears local account files.
+- Starting a run requests foreground precise-location permission. Location continues while recording in the background or with the screen locked. Pause, finish, discard and sign-out stop location updates. Force-quitting stops recording; a protected, account-scoped draft recovers paused at its last checkpoint.
+- GPS accuracy, stale-fix, jump and stationary-jitter filters protect distance calculations. Route segments separate pauses and GPS gaps. A persisted recording/resume timestamp rejects cached positions from before the current segment.
+- Live MapKit routes, GPS accuracy/status, recent/average/current-lap pace, kilometre/mile units, interpolated automatic splits and manual laps are available while recording. The final partial split is retained.
+- The save form accepts optional 1–10 effort and notes. Summaries upload with an account-scoped UUID and safe retries. Only name, date, distance, running/elapsed time and optional effort, notes, splits, laps and average sensor heart rate upload privately to Cloudflare. Raw routes and individual sensor samples stay on the recording device. Phone data is not sent to AI, messaging services, Garmin or Strava.
+- Local files are atomic and protected. Interrupted uploads remain available for retry. Sign-out retains that account's paused draft; account deletion clears local account files and cascades server summaries.
+- Optional Bluetooth SIG heart-rate sensors require user-selected pairing and standard BLE broadcasting. Decoding supports 8-/16-bit values and contact-loss checks, clears stale values, and records only during an active run. Garmin account linking does not provide a live heart-rate sensor feed. A dedicated Apple Watch app is not included.
+- Optional audio distance/lap announcements duck other audio; haptic feedback accompanies milestones and pause. Health export is explicit and can separately include the route. Stable metadata supports repeat exports; segments do not invent locations across pauses. Errors retain the local recording.
+- ActivityKit/WidgetKit shows distance, running time, pace and recording/paused status on Lock Screen/Dynamic Island. Updates are throttled to five seconds and stale after thirty seconds. Controls open the app.
+- Public and native privacy notices describe recording, background location, sensor samples, Cloudflare summaries, Apple map services, optional Apple Health, Live Activities, retention and deletion.
 
-## Validation completed locally
+## Activity sources and native Garmin
 
-- 24 backend tests pass with `node --import tsx --test server/services/phoneRuns.test.ts server/garmin/garmin.test.ts server/garmin/runningFeed.test.ts`.
-- Checks cover authentication, ownership, input limits, repeated saves, conflicting duplicate IDs, deletion, account deletion, provider-independent totals, native Garmin launch replay/expiry, callback state, and existing provider matching.
-- Web entry bundles successfully with esbuild.
-- TypeScript reports 34 existing diagnostics on both the base and this branch. Normalized diagnostic comparison reports no new errors.
-- Swift syntax was checked with tree-sitter. Its only parser error also occurs in the unchanged baseline StoreKit `if await` expression; this is not an Xcode type check.
-- Added native tests for distance filtering, GPS gaps, pause accounting, durable recovery, account isolation, and the free/no-provider app flow. These have **not run**: this environment has no Xcode/iOS simulator.
+- Combined history and monthly totals include Garmin, Strava and RunAnalytics summaries. Clear Garmin/Strava matches count once; uncertain overlaps remain separate. A separate phone recording of the same outing remains separate.
+- Web history can display and delete phone summaries. Native history retains an account-scoped offline cache. A serial refresh queue schedules a trailing upload/read when a save arrives during an in-flight refresh and retains account-generation checks.
+- Native Garmin linking requires authenticated initiation and explicit activity consent. PKCE, one-use browser launch, the registered callback, browser-cookie/state validation and an app callback without session credentials remain enforced. Health/sleep permission is separate. No new Garmin callback registration is required.
 
-## Required before release
+## Review fixes
 
-1. Publish the review branch after approval and run the iPhone/iPad simulator workflow. It builds/tests without signing and validates that the generated Info.plist contains both audio and location background modes. There is no deployment or TestFlight upload in that workflow.
-2. Apply additive D1 migration `apps/d1-migration/migrations/0042_account_first_ios.sql` before deploying the server. It creates `phone_runs` and `native_garmin_sessions`; then apply `0043_phone_run_details.sql` for optional effort, notes, splits, laps, and average heart rate. Existing Garmin callbacks also expect the native session table.
-3. Verify the configured production Garmin account, callback, and permissions in the actual iPhone browser flow. No new registered Garmin callback is required.
-4. Test on an iPhone outdoors: screen locked, app backgrounded, pause/resume, GPS loss, denied/approximate location, force-quit/relaunch, offline save, upload retry, sign-out/account switch, and exhausted storage. Check the measured distance against a known route.
-5. Update the app's privacy disclosures and release notes for recording location and storing run summaries. Location access is requested only when starting a phone recording.
+- HealthKit sample attachment awaits its completion callback and propagates an error or a false result.
+- Recording/resume boundaries reject pre-resume cached GPS fixes and remain compatible with older saved recordings.
+- History reads, pagination and uploads use a serial queue with a coalesced follow-up, preventing a save during refresh from losing its upload trigger.
+- Garmin FIT session end fallback validates optional elapsed time before calculating an end timestamp; missing/malformed timing is rejected.
+- Native UI tests follow Progress into coach insights and expand the iPad sidebar through landscape layout before navigation.
 
-The server migration, deployment, physical-device validation, and App Store release are not performed by this change.
+## Verification
 
-## Native recording features added November 8
+- Required PR checks passed on `6beccb3`, whose tree exactly matches merge commit `be7fd84`: account-first storage, Cloudflare migration safety, iPhone, iPad.
+- Each device passed 62 native unit tests and 8 UI tests. Checks also verify recording background modes and the embedded Run Widget. Screenshots cover standalone Run home, live route/metrics, the effort/notes form and insights navigation.
+- Local checks passed: 64 backend/Garmin tests, 38 Worker tests, 37 D1 tests, 6 signing/processing tests, 6 iOS public-page tests, all three Cloudflare type checks, Worker dry-run, Vite build and D1 application build.
+- Repository-wide TypeScript still reports the same 34 baseline diagnostics. This release introduces no new diagnostics; those pre-existing errors are outside this fix.
+- Production checks passed after rollout: application health; recording/native Garmin authentication and invalid-launch rejection; published recording privacy; combined dashboard/activity and detail assets; Garmin activity, recovery, detailed-data consent and webhook protection; training/course send protection; source pages; WhatsApp settings; signup reminders; public tools. These anonymous checks do not read private health data, create a sample run or send a workout/course.
 
-- Live MapKit route and user location during recording, GPS accuracy/weak-signal status, recent pace, average pace, and current manual-lap pace.
-- User-selectable kilometre/mile units, interpolated automatic splits including the final partial split, and manual laps. Splits are visible during recording and in the saved detail view.
-- Optional 1–10 effort and notes collected in the save form; bounded metadata is persisted account-side and returned in history. Raw sensor samples and GPS locations are not uploaded to RunAnalytics.
-- Optional audio announcements at distance milestones and manual laps, with haptic feedback. Audio ducks other playback and releases the audio session after speech. Actual audio routing and haptic behavior while locked require physical-device tests.
-- Bluetooth SIG heart-rate sensor discovery and user-selected pairing, 8-/16-bit measurement decoding, contact-loss checks, stale-value clearing, disconnect handling, and recording of samples only during an active run. Standard BLE heart-rate broadcasting is required; connecting a Garmin account does not provide a live sensor feed. A dedicated Apple Watch app is not part of this change.
-- Explicit Apple Health export of the workout and available sensor samples, with separately chosen GPS route export. Stable sync metadata supports repeat exports, and segmented routes do not invent locations across pauses. Export errors leave the local recording intact. This is workout saving; importing general health/sleep data is not implemented here.
-- ActivityKit statistics with a WidgetKit extension for Lock Screen and Dynamic Island: distance, recorded running time, average pace, and recording/paused state. Updates are throttled to five seconds and become stale after thirty seconds without updates. Controls open the app; there are no background pause/finish buttons.
-- Added HealthKit entitlement, permission descriptions, Bluetooth background mode, shared activity attributes, and the embedded widget target. The Apple developer App ID/provisioning profiles must support HealthKit and the widget before signing a release.
+## Backend release
 
-Local validation: all 24 backend tests pass, with additional assertions for detail validation, idempotency, ownership, and effort/notes/split round trips. Web bundling passes. TypeScript still has the same 34 baseline diagnostics. Swift syntax parsing and YAML/plist structural checks pass; they do not replace an Xcode build. New native tests cover split interpolation, manual-lap differences, older-record decoding, BLE measurement formats/contact loss, and reachability of the recording display/save form. These native tests have not run in this Linux environment.
+- Applied only additive D1 migrations `0042_account_first_ios.sql` and `0043_phone_run_details.sql`, then verified their journal records, both tables and `phone_runs.metadata`. Existing Garmin callbacks and the combined feed need these tables before server deployment.
+- Cloudflare source build `8d0233bf-3d39-4c79-a16f-1577c7289e5b` succeeded for `be7fd84`; staging Worker version `00e22195-d416-4389-934d-2aefa62b3073`.
+- Production Worker version `2bec872b-35d6-46aa-8baa-81245d7f0e3b`, container version 60, immutable image `sha256:b2f087c4f915574ce008fa2c09a37c0d4616e4af9da1aa27e0b036594b6dd697` verified active and healthy. Stable Durable Object identity, restart guard and existing runtime settings were retained.
 
-Before release, build both app and widget in Xcode and test each feature on an iPhone, including Bluetooth loss/reconnect, app backgrounding, Live Activity expiry, Health permission denial, repeated exports, audio interruptions, GPS gaps, and offline sync. GitHub publishing and the draft PR were authorized on November 8. Deployment and release remain separate steps.
+## TestFlight
 
-## PR review fixes and beta release preparation (November 8)
+- Existing main app: `run.aitracker.coach`, Apple team `DB5JRGGB6A`, App Store Connect app `6813680941`. The separate identifier `run.aitracker.coach.runwidget` is only the embedded Lock Screen/Dynamic Island extension, not a second main app or listing.
+- The existing TestFlight workflow and signing certificate remain in use. Build 35 passed simulator tests and stopped on an unsupported capability-list parameter; build 36 corrected that request, then stopped because the API key could not enable HealthKit. Neither uploaded. Latest attempt: https://github.com/biserd/AIRunningTracker/actions/runs/42503946321
+- CI now reuses the existing `IOS_PROVISIONING_PROFILE`, distribution P12/password and App Store Connect key, plus one `IOS_WIDGET_PROVISIONING_PROFILE` for the extension. It validates exact app/team identifiers, certificate fingerprints, expiry, App Store distribution type and required entitlements before archiving. CI does not create identifiers, change capabilities, or generate/revoke profiles or certificates. Credentials stay in trusted runner secrets/temporary files with cleanup.
+- Registered the widget identifier and generated its App Store profile using the existing distribution certificate. Verified the downloaded profile and stored it in the existing repository CI secrets.
+- HealthKit enablement is prepared but unsaved on the existing main App ID. It awaits action-time user approval under the browser confirmation policy. After approval, regenerate the existing main distribution profile with HealthKit, update the existing main-profile secret and rerun the beta upload. Do not broaden the App Store Connect key permissions.
+- Upload targets TestFlight only. The workflow verifies Apple's processing state before reporting the build ready. Final upload/processing result: not uploaded; blocked on the pending HealthKit approval and main-profile refresh.
 
-The user authorized fixing PR #1, resolving Cloudflare checking, rerunning checks,
-and publishing a new TestFlight build once ready. Keep the PR draft until the
-required checks pass. No App Store production submission is authorized.
+## Device testing
 
-- HealthKit sample attachment now awaits its completion callback and propagates
-  both explicit errors and a false result.
-- Each recording/resume establishes a persisted segment timestamp. Cached fixes
-  from before that boundary are rejected; legacy recordings still decode.
-- History reads and pagination share a serial refresh queue. A save during an
-  in-flight operation coalesces into a trailing upload/refresh, retaining account
-  generation checks. Tests cover the interleaving and account replacement.
-- FIT session end fallback validates optional elapsed time; malformed timing fails
-  closed. Regression fixtures cover an absent end timestamp and absent timing.
-- Local validation: 64 backend/Garmin tests, 38 Worker tests, 37 D1 tests, all three
-  Cloudflare type checks, and Worker dry-run build pass.
-- TestFlight signing now validates the installed distribution certificate against
-  App Store Connect, ensures the app's required capabilities, registers only the
-  exact Run Widget identifier if needed, and creates separate distribution profiles
-  for app and widget. It neither creates nor revokes signing certificates. Credentials
-  remain in trusted runner secrets/temporary files, with cleanup on success/failure.
-  Three isolated signing tests validate token format, certificate scoping, and refusal
-  to mutate signing resources when the certificate or app does not match.
-- Public and app-specific privacy notices describe optional phone recording,
-  background location, sensor samples, private summary uploads, Apple Health export,
-  Live Activities, retention and deletion before the beta is published.
-
-Simulator CI, production server rollout and TestFlight processing are recorded
-below after their results are observed. Physical-device GPS/BLE/Health/Live Activity
-validation remains part of installing and testing the beta.
+Install the beta and check an outdoor run against a known distance, locked/background recording, pause/resume, denied/approximate location, GPS loss, force-quit/relaunch, offline save and reconnect, upload retry, account switching and exhausted storage. Verify Bluetooth loss/reconnection, audio interruptions, haptics, Apple Health denial/repeated export and Live Activity expiry on actual hardware. Simulator and anonymous production checks do not establish those hardware behaviors or complete a real native Garmin browser authorization.
