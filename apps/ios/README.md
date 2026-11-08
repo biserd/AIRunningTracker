@@ -43,9 +43,14 @@ The generated Xcode project is ignored; project.yml is the source of truth.
 ## Implemented
 
 - Native Coach, Schedule and Settings tabs, Dynamic Type, orange primary actions.
-- iOS 26 Liquid Glass adoption for navigation chrome, a minimizing tab bar,
-  persistent voice-coach accessory, voice controls, chat composer and sign-in
-  surfaces. iOS 17–25 retain the existing high-contrast material fallbacks.
+- iOS 26 Liquid Glass navigation, voice controls, chat composer and sign-in
+  surfaces. The tab bar stays visible; Coach has one voice entry point.
+  iOS 17–25 retain the existing high-contrast material fallbacks.
+- Phone recording uses the saved account distance preference from the run feed,
+  cached per account for offline use. A first run waits for the profile to load;
+  an ongoing run keeps its original units. Pause/Resume and Finish stay pinned
+  above the tabs; sensor and audio controls live in Run settings.
+- Coach shows a short briefing with Read summary and Daily check-in buttons.
 - Email-link-only sign-in; no password field or password-login call in the client.
   Keychain session persistence and device-local logout are unchanged.
 - Universal Links open email sign-in directly in the app; paste-link recovery is

@@ -9,7 +9,7 @@ final class AdaptiveLayoutTests: XCTestCase {
         defer { XCUIDevice.shared.orientation = .portrait }
         XCTAssertTrue(app.navigationBars["Let’s talk running"].waitForExistence(timeout: 10))
 
-        XCTAssertEqual(app.buttons["Talk to your coach"].count, 1, "Coach has one voice entry point")
+        XCTAssertEqual(app.buttons.matching(identifier: "Talk to your coach").count, 1, "Coach has one voice entry point")
         let checkIn = app.buttons["coach-check-in"]
         XCTAssertTrue(checkIn.waitForExistence(timeout: 5)); checkIn.tap()
         XCTAssertTrue(app.navigationBars["Daily check-in"].waitForExistence(timeout: 5))
@@ -82,7 +82,7 @@ final class AdaptiveLayoutTests: XCTestCase {
         app.launchArguments = ["--test-adaptive-layout", "--test-coach-ux"]
         app.launch()
         XCTAssertTrue(app.buttons["Read summary"].waitForExistence(timeout: 10))
-        XCTAssertEqual(app.buttons["Talk to your coach"].count, 1)
+        XCTAssertEqual(app.buttons.matching(identifier: "Talk to your coach").count, 1)
         XCTAssertTrue(app.buttons["coach-check-in"].isHittable)
         let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         screenshot.name = "Simple Coach home with one voice action"; screenshot.lifetime = .keepAlways; add(screenshot)
