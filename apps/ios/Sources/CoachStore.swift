@@ -10,6 +10,7 @@ import Combine
     @Published var runOverview:NativeRunOverview?
     @Published var runFeedError:String?
     @Published var refreshingRuns = false
+    private let runRefreshes = RunRefreshQueue()
     @Published var showingPlan = false
     let voice = NativeVoiceCoach()
     let push = ApplePush()
@@ -211,37 +212,43 @@ import Combine
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--test-adaptive-layout") || ProcessInfo.processInfo.arguments.contains("--test-standalone") { return }
         #endif
-        guard !needsSignIn,onboarding != nil,!refreshingRuns else { return }
+        guard !needsSignIn,onboarding != nil else { return }
         let generation=sessionGeneration
-        refreshingRuns=true;defer{refreshingRuns=false}
-        await recorder.sync(api:api)
-        guard generation==sessionGeneration,!needsSignIn else { return }
-        do {
-            var next=try await api.runs()
-            next.fetchedAt=Date()
+        await runRefreshes.run { [self] in
             guard generation==sessionGeneration,!needsSignIn else { return }
-            runFeed=next;recorder.cacheFeed(next);runFeedError=nil
-            let overview=try await api.runOverview()
+            refreshingRuns=true;defer{refreshingRuns=false}
+            await recorder.sync(api:api)
             guard generation==sessionGeneration,!needsSignIn else { return }
-            runOverview=overview
-        }catch {
-            guard generation==sessionGeneration else { return }
-            runFeedError="Couldn’t refresh. Showing saved runs; pull down to retry."
-            if case APIError.server(401,_)=error { report(error) }
+            do {
+                var next=try await api.runs()
+                next.fetchedAt=Date()
+                guard generation==sessionGeneration,!needsSignIn else { return }
+                runFeed=next;recorder.cacheFeed(next);runFeedError=nil
+                let overview=try await api.runOverview()
+                guard generation==sessionGeneration,!needsSignIn else { return }
+                runOverview=overview
+            }catch {
+                guard generation==sessionGeneration else { return }
+                runFeedError="Couldn’t refresh. Showing saved runs; pull down to retry."
+                if case APIError.server(401,_)=error { report(error) }
+            }
         }
     }
     func loadMoreRuns() async {
         guard !refreshingRuns,let current=runFeed,current.page<current.totalPages else { return }
         let generation=sessionGeneration
-        refreshingRuns=true;defer{refreshingRuns=false}
-        do {
-            var next=try await api.runs(page:current.page+1)
+        await runRefreshes.run { [self] in
             guard generation==sessionGeneration,!needsSignIn else { return }
-            let ids=Set(current.activities.map(\.id))
-            next.fetchedAt=current.fetchedAt
-            next.activities=current.activities+next.activities.filter{!ids.contains($0.id)}
-            runFeed=next;recorder.cacheFeed(next);runFeedError=nil
-        }catch { if generation==sessionGeneration { runFeedError="Couldn’t load older runs. Please retry." } }
+            refreshingRuns=true;defer{refreshingRuns=false}
+            do {
+                var next=try await api.runs(page:current.page+1)
+                guard generation==sessionGeneration,!needsSignIn else { return }
+                let ids=Set(current.activities.map(\.id))
+                next.fetchedAt=current.fetchedAt
+                next.activities=current.activities+next.activities.filter{!ids.contains($0.id)}
+                runFeed=next;recorder.cacheFeed(next);runFeedError=nil
+            }catch { if generation==sessionGeneration { runFeedError="Couldn’t load older runs. Please retry." } }
+        }
     }
     func refreshSchedule(force:Bool = false) async {
         #if DEBUG

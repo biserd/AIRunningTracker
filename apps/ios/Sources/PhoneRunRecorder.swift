@@ -36,18 +36,20 @@ struct PhoneRecording: Codable, Identifiable {
     var effort: Int?
     var notes: String?
     var unitMiles: Bool?
+    // Optional so existing recordings still decode. Every resume sets a new boundary.
+    var segmentStartedAt: Date?
 
-    init(now: Date = Date()) { id = UUID(); startedAt = now; checkpoint = now }
+    init(now: Date = Date()) { id = UUID(); startedAt = now; checkpoint = now; segmentStartedAt = now }
     mutating func advance(to now: Date) {
         if running { seconds += max(0, now.timeIntervalSince(checkpoint)) }
         checkpoint = max(checkpoint, now)
     }
     mutating func pause(at now: Date) { advance(to: now); running = false; segment += 1 }
-    mutating func resume(at now: Date) { checkpoint = now; running = true; segment += 1 }
+    mutating func resume(at now: Date) { checkpoint = now; segmentStartedAt = now; running = true; segment += 1 }
     // Reject stale/inaccurate fixes and jumps. Never bridge pauses or GPS gaps.
     @discardableResult mutating func add(latitude: Double, longitude: Double, accuracy: Double, at: Date, now: Date) -> Bool {
         guard running, accuracy >= 0, accuracy <= 30, abs(now.timeIntervalSince(at)) <= 15,
-              at >= startedAt, (-90...90).contains(latitude), (-180...180).contains(longitude), fixes.count < 50_000 else { return false }
+              at >= (segmentStartedAt ?? startedAt), (-90...90).contains(latitude), (-180...180).contains(longitude), fixes.count < 50_000 else { return false }
         let next = RunFix(latitude: latitude, longitude: longitude, timestamp: at, accuracy: accuracy, segment: segment)
         if let last = fixes.last {
             let dt = at.timeIntervalSince(last.timestamp)

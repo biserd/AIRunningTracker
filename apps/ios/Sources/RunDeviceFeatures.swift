@@ -124,7 +124,15 @@ import ActivityKit
                 let samples = (run.pulses ?? []).enumerated().map { index, pulse in
                     HKQuantitySample(type: heart, quantity: HKQuantity(unit: HKUnit.count().unitDivided(by: .minute()), doubleValue: Double(pulse.bpm)), start: pulse.date, end: pulse.date, metadata: [HKMetadataKeySyncIdentifier: "runanalytics:pulse:\(run.id.uuidString):\(index)", HKMetadataKeySyncVersion: 1])
                 }
-                if !samples.isEmpty { try await health.add(samples, to: workout) }
+                if !samples.isEmpty {
+                    try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                        health.add(samples, to: workout) { success, error in
+                            if let error { continuation.resume(throwing: error) }
+                            else if success { continuation.resume() }
+                            else { continuation.resume(throwing: NSError(domain: "RunAnalyticsHealth", code: 1, userInfo: [NSLocalizedDescriptionKey: "Heart-rate samples could not be added to the workout."])) }
+                        }
+                    }
+                }
             }
             if includeRoute, !run.fixes.isEmpty {
                 guard health.authorizationStatus(for: routeType) == .sharingAuthorized else { status = "Workout saved. Route permission was declined."; return }

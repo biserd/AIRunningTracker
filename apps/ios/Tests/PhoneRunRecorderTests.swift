@@ -29,6 +29,30 @@ final class PhoneRunRecorderTests: XCTestCase {
         XCTAssertEqual(restored.fixes, run.fixes)
         XCTAssertNil(restored.body["fixes"], "GPS route is not uploaded with a summary")
     }
+    func testResumeRejectsCachedPositionsFromThePausedInterval() throws {
+        var run = PhoneRecording(now: start)
+        XCTAssertTrue(run.add(latitude: 40, longitude: -73, accuracy: 5, at: start, now: start))
+        run.pause(at: start.addingTimeInterval(5))
+        run.resume(at: start.addingTimeInterval(100))
+        XCTAssertFalse(run.add(latitude: 40.001, longitude: -73, accuracy: 5, at: start.addingTimeInterval(95), now: start.addingTimeInterval(100)))
+        XCTAssertEqual(run.fixes.count, 1)
+        XCTAssertTrue(run.add(latitude: 40.002, longitude: -73, accuracy: 5, at: start.addingTimeInterval(100), now: start.addingTimeInterval(100)))
+        XCTAssertEqual(run.distance, 0)
+        XCTAssertTrue(run.add(latitude: 40.0021, longitude: -73, accuracy: 5, at: start.addingTimeInterval(105), now: start.addingTimeInterval(105)))
+        XCTAssertEqual(run.distance, 11.12, accuracy: 0.1)
+        let restored = try JSONDecoder().decode(PhoneRecording.self, from: JSONEncoder().encode(run))
+        XCTAssertEqual(restored.segmentStartedAt, start.addingTimeInterval(100))
+    }
+    func testRecordingWithoutSegmentBoundaryDecodesAndEstablishesOneOnResume() throws {
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(PhoneRecording(now: start))) as? [String: Any])
+        json.removeValue(forKey: "segmentStartedAt")
+        var legacy = try JSONDecoder().decode(PhoneRecording.self, from: JSONSerialization.data(withJSONObject: json))
+        XCTAssertNil(legacy.segmentStartedAt)
+        legacy.pause(at: start.addingTimeInterval(5))
+        legacy.resume(at: start.addingTimeInterval(20))
+        XCTAssertFalse(legacy.add(latitude: 40, longitude: -73, accuracy: 5, at: start.addingTimeInterval(19), now: start.addingTimeInterval(20)))
+        XCTAssertTrue(legacy.add(latitude: 40, longitude: -73, accuracy: 5, at: start.addingTimeInterval(20), now: start.addingTimeInterval(20)))
+    }
     @MainActor func testUnfinishedRunRecoveryAndAccountSwitchingStayIsolated() throws {
         let owner=UUID().uuidString,other=UUID().uuidString
         let root=try FileManager.default.url(for:.applicationSupportDirectory,in:.userDomainMask,appropriateFor:nil,create:true).appendingPathComponent("RunRecordings")
