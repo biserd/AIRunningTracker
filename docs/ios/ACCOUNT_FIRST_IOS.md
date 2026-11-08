@@ -1,12 +1,12 @@
 # Account-first RunAnalytics iOS
 
-PR #1 is merged into `codex/ios-testflight` at `be7fd84bf2c7c970a6b6a1585afa824c6d2ef540`; UX follow-up PR #2 is merged at `7fc77eae0e9c05dddf29d28053314e0a980aad13`. Both remained draft until their required checks passed on November 8, 2026. The production backend remains active on container version 60. TestFlight version 1.0 build 40 is processed and available to the existing AITracker Internal group (four testers), released from `a168542`. The existing app identifier, App Store Connect listing, accounts, distribution certificate and backend are retained. No App Store production submission was made.
+PR #1 is merged into `codex/ios-testflight` at `be7fd84bf2c7c970a6b6a1585afa824c6d2ef540`; UX follow-up PR #2 is merged at `7fc77eae0e9c05dddf29d28053314e0a980aad13`; Plan and Garmin follow-up PR #3 is merged at `f2c5b7127777a6aabdb71bba0aef562e6ead72a2`. All remained draft until their required checks passed on November 8, 2026. The production backend remains active on container version 60. TestFlight version 1.0 build 41 is processed and available to the existing AITracker Internal group (four testers), released from `f2c5b71`. The existing app identifier, App Store Connect listing, accounts, distribution certificate and backend are retained. No App Store production submission was made.
 
 ## User flow
 
 1. Sign in to a RunAnalytics account using the existing one-time email link.
 2. Choose Garmin, Strava, or **Use RunAnalytics**. Connections can be added later and can coexist. Existing connected/reviewer accounts retain access.
-3. Use **Run** to record on the iPhone or view combined activity history. Navigation is Run, Coach (including Plan), Progress, Settings.
+3. Use **Run** to record on the iPhone or view combined activity history. Navigation is Run, Coach, Plan, Progress, Settings.
 4. Recording, basic history and totals do not require a coaching subscription. Coaching keeps its existing entitlement checks and supported-data boundaries.
 
 ## Recording and privacy
@@ -67,6 +67,15 @@ PR #1 is merged into `codex/ios-testflight` at `be7fd84bf2c7c970a6b6a1585afa824c
 - Final iPhone 17 Pro and iPad Pro 13-inch (M5) checks passed on iOS 26.2: 63 unit tests and 10 UI tests each. Screenshots were reviewed. The tested `9814383` tree exactly matches merge `7fc77ea`: https://github.com/biserd/AIRunningTracker/actions/runs/42517737369. CI selects the newest installed simulator runtime. UI queries account for labeled values and iOS 26 nested confirmation-button accessibility.
 - Release tag `ios-testflight-20261108-run-ux-checked` uses `a168542`, a workflow-diagnostics-only follow-up with identical iOS source. Build 39 stopped during simulator tests before upload and did not retain failure details. Build 40's first attempt was cancelled after signing setup stalled; a fresh runner passed signing, all 63 unit and 10 UI release tests, archive/export, encryption verification and upload. The release workflow now retains failed simulator results and full test output.
 - Build 40 uploaded without errors at 20:51 UTC on November 8; Apple reported `VALID` at 20:53 UTC. Build ID `f01e6f06-cab0-410a-ab37-13ded70fcdab`. Workflow and temporary credential cleanup succeeded: https://github.com/biserd/AIRunningTracker/actions/runs/42520332860. Saved beta notes and added the same AITracker Internal group (four testers). External testing and App Store review were not submitted. This update did not deploy backend changes.
+
+## Plan and Garmin recovery update (build 41)
+
+- Plan has its own tab and iPad sidebar destination. The top Coach/Plan switch is removed. Schedule notifications open Plan directly, and a typed Coach draft survives moving between destinations.
+- Run shows the connected Garmin delivery status, received activity count and latest activity receipt when available. A first direct run has an explicit waiting state. Existing runs imported through Strava retain that source label until a matching Garmin copy arrives. Saved phone runs use the same account feed as the main web Dashboard and Activities.
+- Run and Progress open a native private Garmin recovery overview through the existing authenticated, read-only `/api/garmin/health/recovery` endpoint. It shows sleep duration, Garmin sleep score, HRV, resting heart rate, stress and Body Battery with their own Garmin dates, baseline status, decimal precision and stale/tentative flags. Missing values remain explicit. Full trends and health-sharing controls remain in the existing web dashboard. Garmin readings are not sent to AI coaching or messaging.
+- Health request/account guards discard superseded responses. Sign-out and expired sessions clear Garmin connection state. Native UI checks cover opening recovery without Strava, signing out from a recovery session, separate Plan navigation and preserving a Coach draft. Four new native unit tests cover API compatibility, missing readings, dates/precision and expired-session cleanup.
+- Final iPhone/iPad checks passed on iOS 26.2: 67 unit tests and 11 UI tests each, with screenshots reviewed. The tested `c42878d` tree exactly matches merge `f2c5b71`: https://github.com/biserd/AIRunningTracker/actions/runs/42525743349. Nine shared-feed/storage tests also passed locally. No backend, database, Garmin-permission or signing-infrastructure changes were required.
+- Release tag `ios-testflight-20261108-plan-garmin` uses `f2c5b71`. The release workflow passed the same 67 unit and 11 UI simulator tests, signing validation, archive/export, encryption verification, upload and temporary credential cleanup: https://github.com/biserd/AIRunningTracker/actions/runs/42527168495. Build 41 uploaded without errors at 22:05 UTC on November 8; Apple reported `VALID` at 22:08 UTC. Build ID `76111388-62c9-4b47-9fc7-9ddd47ee5c60`. Beta notes are saved and the existing AITracker Internal group has access (four testers). External testing and App Store review were not submitted.
 
 ## Device testing
 
