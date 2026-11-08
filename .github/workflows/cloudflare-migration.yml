@@ -27,6 +27,9 @@ jobs:
       - name: Test Apple notification delivery
         working-directory: .
         run: npx tsx --test scripts/d1/apple-push.test.ts scripts/d1/coach-companion.test.ts scripts/d1/native-reminder-draft.test.ts scripts/d1/coach-workout-edit.test.ts scripts/d1/coach-recurrence.test.ts scripts/d1/coach-notifications.test.ts scripts/d1/native-onboarding.test.ts
+      - name: Test signup delivery and isolated reviewer access
+        working-directory: .
+        run: npx tsx --test scripts/d1/reviewer-access.test.ts server/services/magicLinkEmail.test.ts server/services/cloudflareEmail.test.ts
       - run: npm run check
       - run: npx tsc --noEmit -p container/tsconfig.json
       - run: npx tsc --noEmit -p container/tsconfig.production.json
