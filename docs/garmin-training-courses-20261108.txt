@@ -1,0 +1,57 @@
+Garmin Training and Courses release, 2026-11-08
+
+Scope
+Manual, owner-scoped, reviewed sends to the existing linked Garmin account.
+Training plans: choose up to 31 calendar days, select up to 20 upcoming pending
+running workouts per send. Precise duration/distance/pace and HR-zone targets,
+warmups, cooldowns and interval repeats are supported when conversion is exact.
+Free-text steps require an explicit one-step run with notes; there is no AI
+interpretation or silent approximation. Notes truncation is disclosed.
+Rest, cross-training and completed workouts cannot be sent. Later edits do not
+automatically update or remove remote items; manage those in Garmin Connect.
+
+Courses: one continuous GPX track/route, 2 MB and 10,000 point limits, or a
+continuous opted-in direct Garmin run route. Distance and elevation totals are
+validated from geometry. Missing elevation requires explicitly supplied totals.
+Local SVG preview; no maps vendor, AI service or Strava receives coordinates.
+No course-point/turn-by-turn generation or saved route library in this release.
+
+Contracts
+Official Garmin portal docs retrieved 2026-11-08: Training API V2 2.0 PDF
+section 3.3 explicitly specifies POST /workoutportal/workout/v2 for creation;
+section 4.3 specifies POST /training-api/schedule/. Courses API 2.0 specifies
+POST /training-api/courses/v1/course. Workout schema uses segments and nested
+WorkoutStep/WorkoutRepeatStep. Courses use WGS84 points and RUNNING,
+TRAIL_RUNNING or HIKING. API Tools OpenAPI confirms permission families and
+course requirements but currently lists legacy Workout creation only. No
+alternate endpoint fallbacks are attempted after a POST.
+
+Sources:
+https://developerportal.garmin.com/sites/default/files/Training%20API%20V2%202.0.zip
+https://developerportal.garmin.com/sites/default/files/Courses%20API%202.0.pdf
+https://apis.garmin.com/tools/apiDocs/training-api-workouts
+https://apis.garmin.com/tools/apiDocs/training-api-courses
+
+Safety and delivery
+WORKOUT_IMPORT / COURSE_IMPORT checked server-side. OAuth refresh shares the
+existing connection lease; no new scopes, credentials or access grants.
+Migration 0041 adds metadata-only per-user, per-Garmin-account send receipts,
+content hashes, remote IDs, schedule IDs and delivery state. Precise route
+geometry and full workout payloads are not persisted in this ledger. Ledger
+remains on disconnect to prevent duplicate sends after reconnect; account
+deletion cascades it. Existing imported-data deletion behavior is unchanged.
+Hash-bound preview rejects content changes, including changes during sending.
+Creation is persisted before scheduling, so rejected scheduling can safely
+resume with the same workout ID. Unconfirmed POSTs and interrupted operations
+block automatic recreation. No automatic background outbound sends or retries.
+Local rolling budget reserves headroom below Starter's 100 calls/app/minute
+and 200 calls/user/day. Provider 429, auth rejection and timeout are handled.
+Sent means Garmin Connect accepted it; there is no watch-delivery ack API.
+
+Validation / release
+Local SQLite integration tests cover tenant isolation, permission revocation,
+leases, conservative conversion, hash checks, route validation, creation +
+scheduling, partial retry, ambiguous responses, rolling limits and deletion.
+Existing activity, health, recovery, sign-in and duplicate-run suites included.
+Browser QA uses a clearly labeled synthetic preview and makes no Garmin writes.
+Real Garmin POSTs and actual watch delivery require a user-reviewed first send.

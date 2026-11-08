@@ -788,6 +788,7 @@ export default function TrainingPlanDetail() {
           </DropdownMenu>
         </div>
         
+        <div className="mb-6"><Button variant="outline" asChild><Link href={'/garmin-send?plan='+planId}>Send plan to Garmin</Link></Button></div>
         {/* Enrichment Progress Banner */}
         {(plan.enrichmentStatus === "enriching" || enrichmentProgress?.status === "enriching") && (
           <Card className="mb-6 border-l-4 border-l-strava-orange bg-gradient-to-r from-orange-50 to-white dark:from-orange-950/20 dark:to-gray-900" data-testid="card-enrichment-progress">

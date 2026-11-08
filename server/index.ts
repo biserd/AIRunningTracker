@@ -88,6 +88,8 @@ app.post('/api/webhooks/resend', express.raw({ type: 'application/json' }), asyn
 // Detailed Garmin pushes can be large. This path is private at the edge and the
 // handler verifies the Worker secret; no larger limit applies to public APIs.
 app.use('/internal/garmin/ingest',express.json({limit:'100mb'}));
+// Bounded course geometry; all outbound routes still require bearer authentication.
+app.use('/api/garmin/send/courses',express.json({limit:'2mb'}));
 app.use(express.json({
   // Hermes binding callbacks are authenticated over the exact received bytes.
   // Keep the raw body only for this narrow endpoint; never log it.

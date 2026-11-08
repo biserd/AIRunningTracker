@@ -44,6 +44,7 @@ export function GarminConnectionCard({unitPreference='km'}:{unitPreference?:stri
         </>}
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" asChild><Link href="/recovery">Health, sleep and recovery</Link></Button>
+          <Button variant="outline" asChild><Link href="/garmin-send">Send workouts and courses</Link></Button>
           {connected&&<Button variant="outline" onClick={()=>connect.mutate()} disabled={connect.isPending}>Review Garmin permissions</Button>}
           <Button variant="outline" onClick={()=>reload()} disabled={status.isFetching||runs.isFetching}><RefreshCw className="mr-2 h-4 w-4"/>Refresh status</Button>
           {!!status.data.activityCount&&<Button variant="outline" onClick={()=>download.mutate()} disabled={download.isPending}><Download className="mr-2 h-4 w-4"/>Export Garmin runs</Button>}

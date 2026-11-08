@@ -6,6 +6,8 @@ import { GarminStore } from './store';
 import {registerGarminHealthRoutes} from './healthRoutes';
 import {registerGarminDetailRoutes} from './detailsRoutes';
 import {GarminDetailsStore} from './detailsStore';
+import {registerGarminSendRoutes} from './sendRoutes';
+import type {GarminPlanDay} from '../../shared/garminSend';
 import {GarminSignin,garminSigninHtml} from './signin';
 import {randomBytes} from 'node:crypto';
 const cookie = '__Secure-garmin_oauth';
@@ -18,11 +20,13 @@ export interface GarminRouteDependencies {
   client?: (config: ReturnType<typeof garminConfig>) => GarminClient;
   session?: (userId:number)=>Promise<string>;
   onConnected?: (userId: number) => Promise<void>;
+  planDays?: (userId:number,planId:number)=>Promise<GarminPlanDay[]|null>;
 }
 const unavailable: GarminStatus = { available: false, connected: false, status: 'not_connected', connectedAt: null, lastSyncAt: null, activityCount: 0 };
 export function registerGarminRoutes(app: Express, deps: GarminRouteDependencies) {
   registerGarminHealthRoutes(app,deps);
   registerGarminDetailRoutes(app,deps);
+  registerGarminSendRoutes(app,deps);
   const config = deps.config ?? garminConfig;
   const provider = () => (deps.client ?? (value => new GarminClient(value)))(config());
   app.post('/api/auth/garmin-login',async(req,res)=>{

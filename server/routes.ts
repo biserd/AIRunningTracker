@@ -298,7 +298,12 @@ export async function registerRoutes(app: Express, runtime?: { schedulerDatabase
     if (remaining?.status === 'disconnect_pending') throw new Error('Please retry account deletion after Garmin disconnection completes.');
   };
   registerRunningFeed(app,{authenticate:authenticateJWT,db:async()=>(await garminStore()).db});
-  registerGarminRoutes(app, { authenticate: authenticateJWT, store: garminStore, session:async(userId)=>{
+  registerGarminRoutes(app, { authenticate: authenticateJWT, store: garminStore,
+    planDays:async(userId,planId)=>{
+      const plan=await storage.getTrainingPlanById(planId);
+      if(!plan||plan.userId!==userId)return null;
+      return (await storage.getPlanDaysByPlanId(planId)).map(day=>({...day,date:day.date,workoutType:day.workoutType||'easy',title:day.title||'Run'}));
+    }, session:async(userId)=>{
     const user=await storage.getUser(userId);
     if(!user)throw new Error('GARMIN_ACCOUNT_UNAVAILABLE');
     await reactivateDormantAccount(userId);
