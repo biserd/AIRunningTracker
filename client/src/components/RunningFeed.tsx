@@ -11,7 +11,7 @@ export function RunSourceBadge({run}:{run:Pick<FeedRun,'sources'|'possibleDuplic
 export function SeparateRunCopies({run}:{run:Pick<FeedRun,'sources'|'stravaRecordId'|'garminActivityId'|'separateMatch'>}) {
   const {toast}=useToast(),pair=run.separateMatch||(run.sources.length===2?{stravaRecordId:run.stravaRecordId,garminActivityId:run.garminActivityId}:null);
   const mutation=useMutation({mutationFn:()=>apiRequest('/api/runs/keep-separate',run.separateMatch?'DELETE':'POST',pair),onSuccess:async()=>{await Promise.all(['/api/runs','/api/runs/overview','/api/runs/calendar'].map(path=>queryClient.invalidateQueries({queryKey:[path]})));},onError:()=>toast({title:'Could not update matching',description:'Please try again.',variant:'destructive'})});
-  return pair?<Button type="button" variant="outline" size="sm" mutation disabled={mutation.isPending} onClick={()=>mutation.mutate()}>{run.separateMatch?'Check for duplicate again':'Keep as two runs'}</Button>:null;
+  return <div className="flex flex-wrap gap-2">{run.sources.length===2&&run.garminActivityId&&<Link href={'/runs/garmin/'+encodeURIComponent(run.garminActivityId)} className="self-center text-xs text-teal-800 underline">View Garmin details</Link>}{pair&&<Button type="button" variant="outline" size="sm" mutation disabled={mutation.isPending} onClick={()=>mutation.mutate()}>{run.separateMatch?'Check for duplicate again':'Keep as two runs'}</Button>}</div>;
 }
 export function RunFeedNotice(){return <p className="text-sm leading-6 text-gray-600">Runs from your connected services appear together. Clear Garmin and Strava matches count once; possible overlaps stay separate. Durations use each source’s reported time.</p>;}
 export function RecentFeedRuns({runs,units}:{runs:FeedRun[];units:string}) {

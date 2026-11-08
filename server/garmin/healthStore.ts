@@ -2,6 +2,7 @@ import type {AtomicSqlDatabase} from '../d1/jobStore';
 import type {GarminPush} from '../../shared/garmin';
 import {GARMIN_HEALTH_TYPES,GARMIN_HEALTH_RETENTION_DAYS,recoveryOverview,type GarminHealthSummary,type GarminHealthStatus,type GarminHealthRecord} from '../../shared/garminHealth';
 import {garminHash} from './crypto';
+import {GarminDetailsStore} from './detailsStore';
 const iso=(value:number)=>new Date(value).toISOString();
 const permitted=`health_consented_at IS NOT NULL AND status IN ('connected','permission_required') AND EXISTS(SELECT 1 FROM json_each(permissions) WHERE value='HEALTH_EXPORT')`;
 export class GarminHealthStore {
@@ -20,6 +21,8 @@ export class GarminHealthStore {
     return this.status(userId);
   }
   async disable(userId:number){
+    const details=new GarminDetailsStore(this.db,'',this.clock);
+    await details.disable(userId,'recovery');await details.disable(userId,'additional');
     await this.db.batch([
       this.db.prepare('UPDATE garmin_connections SET health_consented_at=NULL,health_last_push_at=NULL WHERE user_id=?').bind(userId),
       this.db.prepare('DELETE FROM garmin_health_summaries WHERE user_id=?').bind(userId),

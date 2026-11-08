@@ -10,7 +10,7 @@ export const runningSources = {
     benefit: 'New run summaries, direct from Garmin Connect',
     summary: 'Direct new-run summaries, plus optional sleep, HRV and recovery trends with separate health consent. Manage your activity connection in web Settings.',
     destination: '/settings#garmin', cta: 'Connect Garmin in Settings',
-    scope: 'Initial release: new run summaries and a separate opt-in health and sleep dashboard. No historical import through automatic sync. Garmin and eligible Strava runs appear together on your dashboard and in Activities; clear matches count once. Garmin data stays outside Runner Score, AI coaching and messaging.',
+    scope: 'Direct sync: new runs, optional recorded activity details and a separately consented recovery dashboard. No historical import through automatic sync. Garmin and eligible Strava runs appear together on your dashboard and in Activities; clear matches count once. Garmin data stays outside Runner Score, AI coaching and messaging.',
     steps: [
       { title: 'Sign in to RunAnalytics', text: 'Create an account or use your existing account. Open web Settings and find Garmin Connect.' },
       { title: 'Choose what you share', text: 'Review the activity-sharing consent, select Connect Garmin, and approve Activity Export on Garmin’s authorization screen.' },
@@ -26,7 +26,7 @@ export const runningSources = {
       { question: 'Will my old Garmin activities be imported?', answer: 'No. This release receives new running summaries after you authorize activity sharing. Historical backfill and detailed activity-file import are not included.' },
       { question: 'Does Garmin power the AI coach or Runner Score?', answer: 'Not in this initial release. Garmin summaries contribute to basic run totals, trends and browsing. Strava remains the source for Runner Score, AI coaching and messaging; Garmin summaries do not enter those features.' },
       { question: 'Can I see Garmin sleep, HRV and Body Battery?', answer: 'Yes, optionally. After connecting Garmin and granting health sharing, review and accept the separate health notice on the Recovery page. Available sleep, HRV, resting heart rate, stress and Body Battery summaries appear there. Device support and new Garmin deliveries determine which readings are available. They do not enter AI coaching or messaging.' },
-      { question: 'Are routes or planned workouts synced?', answer: 'No. GPS routes, detailed activity streams, workout uploads and course uploads to your watch are not included. The recovery dashboard does not generate a readiness score or medical advice.' },
+      { question: 'Are routes or planned workouts synced?', answer: 'Optional detailed run sync adds GPS route previews, recorded laps, splits, heart rate, cadence and available FIT metrics. Device support varies. Planned workout and course uploads to your watch are not included. Recovery includes optional sleep-stage, HRV and sensor timelines without a synthetic readiness score.' },
       { question: 'Why is my Garmin feed empty?', answer: 'Check that Activity Export was granted and record a new run after connecting. Sync it to Garmin Connect, then check your status in web Settings. Delivery is not instant or guaranteed; contact support if it remains empty.' },
       { question: 'Can I use Garmin and Strava together?', answer: 'Yes. Your main dashboard and Activities list show Garmin and eligible Strava runs together. Clear matches based on start time, distance and duration count once and show both sources. Ambiguous overlaps stay separate. A matched run keeps its Strava analysis link, and each stored source copy remains independently controlled.' },
     ],
@@ -53,7 +53,7 @@ export const runningSources = {
     ],
     faqs: [
       { question: 'Is RunAnalytics part of Strava?', answer: 'No. RunAnalytics is an independent service. You authorize access through Strava and can disconnect the connection in RunAnalytics Settings.' },
-      { question: 'Can I keep recording with my Garmin watch?', answer: 'Yes. If your watch activities already sync to Strava, RunAnalytics can use the Strava copy through your authorized connection. The separate direct Garmin feed has a different, summary-only scope.' },
+      { question: 'Can I keep recording with my Garmin watch?', answer: 'Yes. If your watch activities already sync to Strava, RunAnalytics can use the Strava copy through your authorized connection. The separate direct Garmin feed has its own summary and optional activity-detail scope.' },
       { question: 'Why are some run metrics missing?', answer: 'RunAnalytics can only analyze the fields and streams supplied for that activity and your access level. Heart rate, cadence, route and split data are not present on every run.' },
       { question: 'Do I need Premium?', answer: 'Premium or an active trial is required for syncing new Strava runs and paid coaching. Manual calculators and public shoe research are available without connecting. See Pricing for current trial terms and access limits.' },
       { question: 'Can I use manual tools without connecting?', answer: 'Yes. Tools such as the race predictor, pacing and marathon-fueling calculators support manual entry. Connecting Strava is only needed for features that use your saved activity history.' },

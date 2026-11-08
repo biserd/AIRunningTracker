@@ -15,7 +15,7 @@ const tokens:GarminTokens={access_token:'private-access',refresh_token:'private-
 function fixture(){
   const sqlite=new DatabaseSync(':memory:');
   sqlite.exec(`PRAGMA foreign_keys=ON;CREATE TABLE users(id INTEGER PRIMARY KEY,username TEXT UNIQUE,email TEXT UNIQUE,password TEXT,subscription_plan TEXT,marketing_opt_out INTEGER,marketing_consent_status TEXT);INSERT INTO users(id,email) VALUES(1,'existing@example.test'),(2,'other@example.test');`);
-  for(const file of ['0036_garmin_activity_sync.sql','0037_garmin_health_sync.sql','0038_garmin_signin.sql'])sqlite.exec(readFileSync('apps/d1-migration/migrations/'+file,'utf8'));
+  for(const file of ['0036_garmin_activity_sync.sql','0037_garmin_health_sync.sql','0040_garmin_details.sql','0038_garmin_signin.sql'])sqlite.exec(readFileSync('apps/d1-migration/migrations/'+file,'utf8'));
   const db:AtomicSqlDatabase={prepare(sql){let params:(string|number|null)[]=[];const statement:SqlStatement={bind(...values){params=values;return statement;},async first<T>(){return (sqlite.prepare(sql).get(...params)??null) as T|null;},async all<T>(){return {results:sqlite.prepare(sql).all(...params) as T[]};},async run(){const result=sqlite.prepare(sql).run(...params);return {meta:{changes:Number(result.changes)}};}};return statement;},async batch(statements){sqlite.exec('BEGIN');try{const results=[];for(const statement of statements)results.push(await statement.run());sqlite.exec('COMMIT');return results;}catch(error){sqlite.exec('ROLLBACK');throw error;}}};
   let now=Date.now();const store=new GarminStore(db,key,()=>now),signin=new GarminSignin(store,key,()=>now);
   return {sqlite,store,signin,advance:(ms:number)=>now+=ms,now:()=>now};

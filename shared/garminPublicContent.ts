@@ -57,7 +57,7 @@ export const garminPublicPages = {
         { title: 'The feed stays empty', text: 'If the checks above do not resolve it, contact RunAnalytics support with the approximate run date, timezone and connection status. Hide sensitive details in screenshots. Do not send full health exports or OAuth callback links.' },
       ] },
       { id: 'limits', title: 'Know the boundaries before connecting', items: [
-        { title: 'Summaries, not a watch-workout service', text: 'Distance, duration and average pace are shown, with heart rate, cadence, elevation and calories when supplied. GPS routes, detailed activity streams, course uploads and planned workouts sent to your watch are not included.' },
+        { title: 'Your run, in more detail', text: 'Distance, duration and average pace are shown, with optional GPS routes, sensor charts, laps, splits and available FIT metrics after separate detailed-data consent. Recovery can include sleep stages and overnight sensor timelines. Course uploads and planned workouts sent to your watch are not included.' },
         { title: 'Garmin and Strava have different roles', text: 'Garmin and eligible Strava runs appear together in basic dashboard totals, trends, the activity calendar and Activities. Clear cross-service matches count once and show both sources; uncertain overlaps stay separate. Stored source copies are not merged. Garmin summaries remain outside Runner Score, AI coaching and messaging.' },
         { title: 'You can stop sharing', text: 'Review status, export or delete stored Garmin summaries, and disconnect from web Settings. Recovery also has health export and stop/delete controls. Deleting an imported summary does not delete the original in Garmin Connect.' },
       ] },

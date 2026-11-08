@@ -4,6 +4,8 @@ import { GarminClient, garminConfig } from './client';
 import { garminEqual } from './crypto';
 import { GarminStore } from './store';
 import {registerGarminHealthRoutes} from './healthRoutes';
+import {registerGarminDetailRoutes} from './detailsRoutes';
+import {GarminDetailsStore} from './detailsStore';
 import {GarminSignin,garminSigninHtml} from './signin';
 import {randomBytes} from 'node:crypto';
 const cookie = '__Secure-garmin_oauth';
@@ -20,6 +22,7 @@ export interface GarminRouteDependencies {
 const unavailable: GarminStatus = { available: false, connected: false, status: 'not_connected', connectedAt: null, lastSyncAt: null, activityCount: 0 };
 export function registerGarminRoutes(app: Express, deps: GarminRouteDependencies) {
   registerGarminHealthRoutes(app,deps);
+  registerGarminDetailRoutes(app,deps);
   const config = deps.config ?? garminConfig;
   const provider = () => (deps.client ?? (value => new GarminClient(value)))(config());
   app.post('/api/auth/garmin-login',async(req,res)=>{
@@ -123,6 +126,7 @@ export function registerGarminRoutes(app: Express, deps: GarminRouteDependencies
     if (secret.length < 32 || !garminEqual(req.get('X-RunAnalytics-Garmin-Internal') || '', secret)) return res.sendStatus(404);
     try {
       const client = provider(), store = await deps.store();
+      await new GarminDetailsStore(store.db,config().encryptionKey).processFiles();
       const rows = await store.db.prepare(`SELECT user_id FROM garmin_connections WHERE status='disconnect_pending' OR
         (status IN ('connected','permission_required') AND refresh_expires_at<?) LIMIT 5`)
         .bind(new Date(Date.now() + 7 * 86400_000).toISOString()).all<{ user_id: number }>();

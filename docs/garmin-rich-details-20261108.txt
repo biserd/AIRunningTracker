@@ -1,0 +1,92 @@
+Garmin run detail and recovery expansion — November 8, 2026
+
+Access audit
+The registered RunAnalytics app is Approved, Connect Developer - Starter, OAuth
+2.0, with Activity, Health, Training and Courses APIs enabled. The current
+portal documentation is Activity API 2.1, Health API 2.1, Training API V2 2.0,
+Courses API 2.0 and Start Guide 2.0. Starter supports new push-delivered data,
+up to 1,000 connected users, and no historical API backfill. Activity Files
+arrive as pushed metadata plus a one-use file download URL, valid for 24 hours;
+Starter permits 50 file calls per minute. This is distinct from enterprise
+summary Ping/Pull access. No historical or ad-hoc summary pull was attempted.
+
+Implemented Activity coverage
+- Existing running summaries, manual updates, deregistration and permission
+  changes remain on the original receiver.
+- New activityDetails JSON and activityFiles FIT receiver. Supported running
+  types only; MoveIQ is displayed as wellness context, never as another run.
+- GPS route preview rendered locally inside the app, without third-party map
+  tiles or sending coordinates to a map vendor. Zoom/pan/reset and GPS gaps.
+- Heart rate, cadence, pace, elevation, power, temperature and available FIT
+  vertical oscillation, ground-contact time, stride length and stamina charts.
+- JSON lap values are labeled sample estimates. FIT lap summaries preserve
+  recorded distance/time/heart rate/cadence/ascent. Kilometer/mile splits require
+  continuous distance/timer samples; partial final splits are omitted.
+- Official Garmin FIT SDK 21.221.0 validates file integrity and decodes scales.
+  FIT running cadence cycles/minute are converted to steps/minute. Timer pause
+  events are excluded from derived split duration. Multisport files with more
+  than one running session are not flattened into a fictitious single run.
+- A detailed delivery can create its Garmin summary if it arrives first, with
+  the existing owner/tombstone guards. Existing cross-service duplicate rules
+  and Strava analysis remain unchanged. Matched entries link to Garmin detail.
+
+Implemented Health coverage
+Summary sync and the existing baselines remain intact. Separate optional detail
+choices retain sleep-stage intervals; overnight HRV values; sleep respiration
+and oxygen; all-day heart rate; stress and Body Battery series; and the current
+breathingVariations feed's variable-length reported intervals and labels.
+Additional health opt-in accepts epochs, bodyComps, pulseox, allDayRespiration,
+healthSnapshot, userMetrics, skinTemp, nutrition, hydration and bloodPressures.
+The API tool names pulseox/allDayRespiration are mapped to canonical internal
+types. Nutrition and breathingVariations are in the current PDF and endpoint
+tool but absent from the OpenAPI schema; their documented fields are explicitly
+allowlisted. Solar is in the OpenAPI schema but not the current endpoint tool;
+its normalizer exists, and no solar feed is enabled or claimed to deliver.
+Device/firmware/sensor availability controls whether values are supplied.
+
+Recovery UI adds sleep-stage timeline, selectable overnight/daily sensor charts,
+recorded-value inspection, available measurement cards, breathing variation
+intervals, logged nutrition totals, and exports. Missing data is not filled.
+Different summary IDs replace the same wellness window, and shorter retries
+cannot erase a longer complete window. Existing sleep/HRV history and baselines
+are not replaced by fabricated detailed samples.
+
+Training and Courses capability audit
+Training API can create/read/update/delete structured workouts, including steps,
+repeats and supported targets, and create/read/update/delete workout schedules.
+Courses API can create/read/update/delete courses with geometry and course
+points for compatible devices. These are outbound capabilities, not additional
+sources of health history. Sending workouts or courses is not implemented in
+this activity/recovery release. No real workout, schedule or course was sent,
+updated or deleted as a verification test. Separate user-reviewed send flows,
+owner-scoped remote IDs, idempotency/retry handling and permission checks are
+needed before exposing those actions. Women's Health is a separate API and is
+not one of the four APIs approved on this registration.
+
+Consent, security and storage
+Migration 0040 adds optional activity/recovery/additional consent generations,
+versioned detail records/chunks and encrypted temporary file jobs. Existing
+summary consent does not automatically enable any new detailed category.
+The new receiver authenticates Garmin source IP and client ID at the edge and
+forwards only to the private container path with the existing internal secret.
+The dedicated JSON parser accepts up to 100 MiB; public APIs keep their prior
+limits. Existing four summary health types fan out to the original durable
+inbox as well as the new detail path, preserving summary sync for users without
+detailed consent. Unconsented/unknown owners' detail never enters storage.
+
+One-use FIT callback URLs are HTTPS-only, exact-host/path/query allowlisted and
+encrypted at rest. No redirects or bearer token forwarding. Downloaded files
+are temporarily encrypted until decoding commits, then removed. Temporary file
+jobs expire after 24 hours. No callback URLs, raw bodies, tokens or coordinates
+are logged. Detail endpoints authenticate and use private/no-store. Health
+detail retention is 90 days; run detail remains until deletion/withdrawal.
+Stopping each detail category deletes its data. Stopping health summary sync
+also clears detailed health consent/data. Disconnect, permission withdrawal,
+source-run deletion and account deletion clear associated detail and file jobs.
+Garmin detail and derived information stay outside AI, Runner Score, MCP,
+Strava, messaging and coaching-email inputs. The private route view has no map
+provider egress. Privacy notices and source pages describe the new scope.
+
+Verification and release identity follow after live checks. Local screenshots
+use conspicuously labeled synthetic data; no synthetic runs or health readings
+are inserted in production.

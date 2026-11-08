@@ -6,6 +6,7 @@ import {Button} from '@/components/ui/button';
 import {GarminActivityConsent} from './GarminConnect';
 import {useToast} from '@/hooks/use-toast';
 import type {GarminStatus,GarminRun} from '@shared/garmin';
+import {GarminDetailControls} from './GarminDetailControls';
 import {Watch,Loader2,RefreshCw,Download} from 'lucide-react';
 import {Link} from 'wouter';
 export function GarminConnectionCard({unitPreference='km'}:{unitPreference?:string}) {
@@ -51,6 +52,7 @@ export function GarminConnectionCard({unitPreference='km'}:{unitPreference?:stri
         {runs.isError&&<p role="alert">Could not load Garmin runs. Please refresh status.</p>}
         {!!runs.data?.activities.length&&<div><h3 className="font-semibold mb-2">Recent Garmin runs</h3><p className="mb-3 text-xs text-gray-500">Showing the latest {runs.data.activities.length} of {status.data.activityCount}. Source: Garmin Connect.</p><ul className="divide-y">{runs.data.activities.map(run=><li key={run.id} className="py-3 flex items-start justify-between gap-3"><div><p className="font-medium">{run.name}</p><p className="text-xs text-gray-500">{new Date(run.startDate).toLocaleString()}{run.manual?' · Manually entered':''}</p><p className="text-sm mt-1">{(run.distance/divisor).toFixed(2)} {label} · {Math.round(run.duration/60)} min · {pace(run)}{run.averageHeartRate!==null?` · ${Math.round(run.averageHeartRate)} bpm`:''}</p></div><Button variant="ghost" size="sm" disabled={remove.isPending} onClick={()=>{if(window.confirm('Delete this imported Garmin run from RunAnalytics?'))remove.mutate(run.id);}}>Delete</Button></li>)}</ul></div>}
       </>}
+      <GarminDetailControls categories={['activity']}/>
     </CardContent>
   </Card>;
 }

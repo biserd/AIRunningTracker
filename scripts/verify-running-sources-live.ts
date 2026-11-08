@@ -21,7 +21,7 @@ for (const path of ['/integrations','/garmin','/strava']) {
 const home = await (await get('/')).text();
 for (const path of ['/integrations','/garmin','/strava']) assert.ok(home.includes(`href="${path}"`));
 assert.match(home,/Garmin and Strava connections|Garmin and Strava\. One/);
-assert.match(home,/Initial release: new run summaries and a separate opt-in/);
+assert.match(home,/Direct sync: new runs, optional recorded activity details/);
 const sitemap = await (await get('/sitemap.xml')).text();
 for (const path of ['/integrations','/garmin','/strava']) assert.ok(sitemap.includes(`<loc>https://aitracker.run${path}</loc>`));
 if (process.argv.includes('--no-em-dashes')) {

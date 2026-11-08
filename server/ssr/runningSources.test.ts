@@ -40,7 +40,7 @@ test('Garmin copy does not promise parity, historic import or automatic coaching
   assert.match(html, /No historical import/);
   assert.match(html, /Garmin data stays outside Runner Score, AI coaching and messaging/);
   assert.match(html, /clear matches count once/i);
-  assert.match(html, /GPS routes, detailed activity streams, workout uploads and course uploads/);
+  assert.match(html, /Optional detailed run sync adds GPS route previews/);
   assert.match(html, /Separate health consent/);
   assert.match(html, /Health data stays outside AI coaching, messaging and Strava/);
   assert.match(html, /href="\/privacy#garmin-health"/);
@@ -56,7 +56,7 @@ test('homepage and machine-readable copy discover both sources with honest scope
     assert.ok(readFileSync('server/routes.ts','utf8').includes(`url: "${path}"`));
   }
   assert.match(html, /Garmin and Strava connections|Garmin and Strava\. One/);
-  assert.match(html, /Initial release: new run summaries and a separate opt-in/);
+  assert.match(html, /Direct sync: new runs, optional recorded activity details/);
   assert.match(publicMarkdown('/')!, /Garmin summaries remain outside AI coaching and Runner Score/);
   for (const source of Object.values(runningSources)) {
     assert.ok(source.title.length <= 60);

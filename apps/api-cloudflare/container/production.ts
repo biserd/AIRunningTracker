@@ -7,7 +7,7 @@ import { privateAssets } from './private-assets';
 import { productionEnvironment } from './production-environment';
 import {consentPage} from '../../../shared/mcpConsentPage';
 import {privateCoachNotifications} from './coach-notification-bridge';
-import {receiveGarminWebhook} from './garmin-webhook';
+import {receiveGarminWebhook,isGarminSource} from './garmin-webhook';
 import {GarminStore} from '../../../server/garmin/store';
 import {GarminHealthStore} from '../../../server/garmin/healthStore';
 import type {AtomicSqlDatabase} from '../../../server/d1/jobStore';
@@ -56,6 +56,17 @@ export default {
     if (!['aitracker.run','www.aitracker.run'].includes(url.hostname)) return new Response('Not found',{status:404});
     if (url.hostname === 'www.aitracker.run') { url.hostname='aitracker.run'; return Response.redirect(url.toString(),308); }
     if (url.pathname.startsWith('/internal/')) return new Response('Not found',{status:404});
+    if(url.pathname==='/api/garmin/details-webhook'){
+      const clientId=String(Reflect.get(env,'GARMIN_CLIENT_ID')||''),secret=String(Reflect.get(env,'GARMIN_WEBHOOK_SECRET')||'');
+      if(Reflect.get(env,'GARMIN_SYNC_ENABLED')!=='true'||!clientId||secret.length<32)return new Response('Unavailable',{status:503});
+      if(!isGarminSource(request.headers.get('CF-Connecting-IP')||'')||request.headers.get('garmin-client-id')!==clientId)return new Response('Forbidden',{status:403});
+      if(request.method!=='POST')return new Response('Method not allowed',{status:405});
+      if(!request.headers.get('content-type')?.startsWith('application/json'))return new Response('JSON required',{status:415});
+      if(Number(request.headers.get('content-length'))>100*1024*1024)return new Response('Payload too large',{status:413});
+      try{const target=getContainer(env.WEB,productionInstance);await target.ensureD1Runtime(Reflect.get(env,'ENABLE_SIGNUP_PAYMENT_REMINDERS')==='true',garminRuntime(env));
+        return await target.fetch(new Request('http://container/internal/garmin/ingest',{method:'POST',headers:{'Content-Type':'application/json','X-RunAnalytics-Garmin-Internal':secret},body:request.body}));
+      }catch{return new Response('Receipt deferred',{status:503});}
+    }
     if (url.pathname === '/api/garmin/webhook') {
       if (Reflect.get(env,'GARMIN_SYNC_ENABLED') !== 'true') return new Response('Garmin sync unavailable',{status:503});
       return receiveGarminWebhook(request,env.DB as unknown as AtomicSqlDatabase,String(Reflect.get(env,'GARMIN_CLIENT_ID') || ''),work=>ctx.waitUntil(work));
