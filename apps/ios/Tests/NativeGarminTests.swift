@@ -17,9 +17,13 @@ final class NativeGarminTests: XCTestCase {
     func testRecoveryUsesEachMetricDateAndReportsStaleReadings() throws {
         let value = NativeGarminRecovery.preview
         XCTAssertTrue(value.metrics["restingHeartRate"]?.stale == true)
+        XCTAssertEqual(value.metrics["restingHeartRate"]?.date, "2026-11-06")
+        XCTAssertEqual(value.metrics["hrv"]?.date, "2026-11-08")
         XCTAssertEqual(NativeGarminRecovery.Kind.hrv.formatted(value.metrics["hrv"]?.value), "42 ms")
         XCTAssertEqual(NativeGarminRecovery.Kind.restingHeartRate.formatted(value.metrics["restingHeartRate"]?.value), "55 bpm")
         XCTAssertEqual(NativeGarminRecovery.Kind.sleepScore.formatted(nil), "Not received")
+        XCTAssertEqual(NativeGarminRecovery.Kind.hrv.formatted(42.4), "42.4 ms")
+        XCTAssertEqual(NativeGarminRecovery.Kind.hrv.formatted(.infinity), "Not received")
     }
     func testExistingGarminStatusRemainsCompatibleAndIncludesDeliveryCount() throws {
         let legacy = try JSONDecoder().decode(NativeGarminStatus.self, from: Data(#"{"available":true,"connected":true,"status":"connected"}"#.utf8))

@@ -33,14 +33,14 @@ struct NativeGarminRecovery: Decodable {
             guard let value, value.isFinite, value >= 0 else { return "Not received" }
             if self == .sleep { let minutes = Int(value / 60); return "\(minutes / 60)h \(minutes % 60)m" }
             let unit = self == .hrv ? " ms" : self == .restingHeartRate ? " bpm" : " / 100"
-            return String(format: "%.0f", value) + unit
+            return String(format: value.rounded() == value ? "%.0f" : "%.1f", value) + unit
         }
     }
     #if DEBUG
     static let preview = NativeGarminRecovery(status: Status(connected: true, enabled: true, lastSyncAt: "2026-11-08T20:22:00Z", summaryCount: 20), today: "2026-11-08", metrics: [
         "sleep": Metric(value: 28800, date: "2026-11-08", baseline: 27000, baselineDays: 12, stale: false, tentative: false),
         "hrv": Metric(value: 42, date: "2026-11-08", baseline: 40, baselineDays: 12, stale: false, tentative: false),
-        "restingHeartRate": Metric(value: 55, date: "2026-11-08", baseline: nil, baselineDays: 2, stale: true, tentative: false)
+        "restingHeartRate": Metric(value: 55, date: "2026-11-06", baseline: nil, baselineDays: 2, stale: true, tentative: false)
     ])
     #endif
 }
@@ -50,20 +50,23 @@ struct NativeGarminConnectionCard: View {
     @State private var manage = false
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label(store.garminConnection?.connected == false ? "Garmin sync needs attention" : "Garmin connected", systemImage: store.garminConnection?.connected == false ? "exclamationmark.circle" : "checkmark.circle.fill").font(.headline)
+            HStack {
+                Label(store.garminConnection?.connected == false ? "Garmin sync needs attention" : "Garmin connected", systemImage: store.garminConnection?.connected == false ? "exclamationmark.circle" : "checkmark.circle.fill").font(.headline)
+                Spacer()
+                Button { manage = true } label: { Image(systemName: "gearshape").frame(minWidth: 44, minHeight: 44) }.buttonStyle(.bordered).accessibilityLabel("Manage Garmin connection")
+            }
             if store.garminConnection?.connected == false {
                 Text("Review your Garmin connection to resume direct activity sync.")
             } else if store.garminConnection?.activityCount == 0 {
-                Text("Waiting for your first direct Garmin run. Record a new run, then sync your watch with Garmin Connect.")
-                Text("Older runs received through Strava keep their Strava label until Garmin sends a matching copy.").font(.caption).foregroundStyle(.secondary)
+                Text("Waiting for your first direct Garmin run. Record a run, then sync Garmin Connect.")
+                Text("Earlier runs imported through Strava remain labeled Strava.").font(.caption).foregroundStyle(.secondary)
             } else if let count = store.garminConnection?.activityCount {
-                Text("\(count) direct Garmin \(count == 1 ? "run" : "runs") received. Garmin and Strava matches appear once with both sources labeled.").font(.callout)
+                Text("\(count) direct Garmin \(count == 1 ? "run" : "runs") received.").font(.callout)
             } else { Text("Your Garmin runs appear in Recent runs when received.").font(.callout) }
             if let date = store.garminConnection?.lastSyncAt { Text("Last activity received: \(coachTimestamp(date))").font(.caption).foregroundStyle(.secondary) }
             NavigationLink { NativeGarminRecoveryView() } label: {
                 Label("Sleep, HRV & recovery", systemImage: "heart.text.square").frame(maxWidth: .infinity, minHeight: 30)
             }.buttonStyle(.bordered).accessibilityIdentifier("garmin-recovery")
-            Button("Manage Garmin connection") { manage = true }.buttonStyle(.bordered)
             if let error = store.garminStatusError { Text(error).font(.caption).foregroundStyle(.secondary) }
         }.padding(.vertical, 8)
             .sheet(isPresented: $manage) { NativeOnboardingView(managing: true) }
